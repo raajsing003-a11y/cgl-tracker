@@ -326,7 +326,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+  import { getDatabase, ref, get, set, onValue, push } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBmGn402mqnzCNpjzU13gLQbMPBIkma2ws",
@@ -365,6 +365,19 @@
   window.__fbNewId = function(){
     return (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : ('r'+Date.now()+Math.random().toString(36).slice(2))).slice(0,20);
   };
+  // Real-time listener for chat: resolves once signed in, then subscribes
+  // and returns an unsubscribe function. Used for the Doubt Chat feature.
+  window.__fbListenReady = async function(path, cb){
+    await window.__fbReadyPromise;
+    const r = ref(db, path);
+    return onValue(r, (snap)=> cb(snap.exists() ? snap.val() : null), (err)=>{ console.error('chat listen failed', err); cb(null); });
+  };
+  window.__fbPush = async function(path, value){
+    await window.__fbReadyPromise;
+    const newRef = push(ref(db, path));
+    await set(newRef, value);
+    return newRef.key;
+  };
 </script>
 
 <div class="wrap">
@@ -402,6 +415,11 @@
     <div class="loading">Loading leaderboard…</div>
   </div>
 
+  <div class="grid-label" style="margin-top:0;">💬 Doubt Chat — Room ke members ke saath baat karo</div>
+  <div class="panel" id="chatPanel">
+    <div class="loading">Loading chat…</div>
+  </div>
+
   <div class="rewardBanner" id="rewardBanner">
     <div class="rTitle" id="rewardTitle"></div>
     <div class="rMsg" id="rewardMsg"></div>
@@ -430,6 +448,9 @@
 
   <div class="grid-label" style="margin-top:0;">📉 Loss Log — kis din, kitna paisa gaya</div>
   <div class="panel" id="lossLog"></div>
+
+  <div class="grid-label" style="margin-top:0;">🤦 Silly Mistakes Log — pehle ki galtiyan yaad rakho</div>
+  <div class="panel" id="mistakesLog"></div>
 
   <div class="grid-label" style="margin-top:0;">🗺️ Campaign Map — tap any day (✅ cleared · ⏳ partial · 😴 rest)</div>
   <div class="daygrid" id="dayGrid"></div>
@@ -482,7 +503,9 @@
   <div class="btnrow" style="margin-top:6px;">
     <button class="nav-btn" id="refreshBtn">🔄 Refresh Numbers</button>
     <button class="nav-btn" id="installBtn" style="display:none;">📱 Add to Home Screen</button>
+    <button class="nav-btn" id="notifBtn">🔕 Notifications Off</button>
   </div>
+  <div class="losshint" style="margin-top:8px;">🔔 Notification tabhi aayega jab app/tab khula ho ya background mein chal raha ho (poori tarah band/swipe-away karne par nahi aayega — ye free, bina-server tareeka hai).</div>
   <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
 </div>
 
@@ -557,6 +580,7 @@ let state = {};
 let selectedDay = 1;
 let notesTimer = null;
 let scoreTimer = null;
+let mistakesTimer = null;
 let myName = null;       // this device's chosen player name
 let viewingName = null;  // whose tracker is currently on screen (me or a friend)
 const REGISTRY_KEY = 'cgl50-players-registry';
@@ -578,6 +602,7 @@ function getDay(n){
   if(!d.mock) d.mock = {math:'',reasoning:'',english:'',gk:''};
   if(!d.sect) d.sect = {s1:'',s2:'',s3:'',s4:''};
   if(typeof d.notes !== 'string') d.notes = '';
+  if(typeof d.mistakes !== 'string') d.mistakes = '';
   if(typeof d.rest !== 'boolean') d.rest = false;
   return d;
 }
@@ -613,6 +638,7 @@ function isDayTouched(d){
   if(hasVal(d.mock.math)||hasVal(d.mock.reasoning)||hasVal(d.mock.english)||hasVal(d.mock.gk)) return true;
   if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)) return true;
   if(d.notes && d.notes.trim()) return true;
+  if(d.mistakes && d.mistakes.trim()) return true;
   return false;
 }
 // The furthest day the user has actually put any data into. Earned/Lost
@@ -647,7 +673,7 @@ function clearRoomCode(){
 // finish loading + signing in anonymously, however long that takes.
 async function waitForFirebase(timeoutMs=10000){
   const start = Date.now();
-  while(!(window.__fbGet && window.__fbSet && window.__fbNewId && window.__fbReadyPromise)){
+  while(!(window.__fbGet && window.__fbSet && window.__fbNewId && window.__fbReadyPromise && window.__fbListenReady && window.__fbPush)){
     if(Date.now()-start > timeoutMs) throw new Error('Firebase load nahi ho paya (timeout) — page reload karo.');
     await new Promise(r=>setTimeout(r,50));
   }
@@ -832,6 +858,29 @@ function saveFriendsList(list){
   try{ localStorage.setItem('cgl50-my-friends', JSON.stringify(list)); }catch(e){}
 }
 
+// ===== Offline compete: friend's data via pasted backup code =====
+// No internet/Firebase needed — friend shares their "Show Backup Code"
+// text (WhatsApp/manual), we store it locally as a frozen snapshot and
+// compute their stats from it, right alongside your own live stats.
+function loadOfflineFriends(){
+  try{ const raw = localStorage.getItem('cgl50-offline-friends'); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveOfflineFriends(obj){
+  try{ localStorage.setItem('cgl50-offline-friends', JSON.stringify(obj)); }catch(e){}
+}
+function addOfflineFriendSnapshot(name, code){
+  const parsed = JSON.parse(code); // throws if not valid JSON backup code
+  const all = loadOfflineFriends();
+  all[name] = { state: parsed, updatedAt: Date.now() };
+  saveOfflineFriends(all);
+}
+function removeOfflineFriend(name){
+  const all = loadOfflineFriends();
+  delete all[name];
+  saveOfflineFriends(all);
+}
+
 // Pure, DOM-free stats computation used for the leaderboard, so we can
 // compute a friend's numbers from their raw state without touching the
 // globals that drive the main on-screen tracker.
@@ -936,37 +985,245 @@ function renderProfileBar(){
   }
 }
 
+// ===== Doubt Chat (room-based, needs Firebase/internet) =====
+// Messages are stored under rooms/{room}/chat and streamed live via
+// onValue, so everyone in the same Sync Room sees new messages/images
+// without refreshing.
+let chatUnsub = null;
+let lastChatRoomInited = undefined; // undefined = never inited yet
+let pendingChatImage = null;
+let lastNotifiedChatKey = null; // tracks newest chat message we've already notified about
+
+function compressImageFile(file, maxDim=480, quality=0.55){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=> reject(new Error('Image padhi nahi gayi.'));
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onerror = ()=> reject(new Error('Image load nahi hui.'));
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w>=h){ if(w>maxDim){ h = Math.round(h*maxDim/w); w = maxDim; } }
+        else { if(h>maxDim){ w = Math.round(w*maxDim/h); h = maxDim; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderChatMessages(msgsObj){
+  const wrap = document.getElementById('chatMessages');
+  if(!wrap) return;
+  const keys = msgsObj ? Object.keys(msgsObj).sort() : [];
+  if(keys.length===0){
+    wrap.innerHTML = `<div class="losshint" style="padding:0;">Abhi tak koi message nahi — pehla message ya doubt bhejo!</div>`;
+    return;
+  }
+  const wasNearBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60);
+  wrap.innerHTML = keys.map(k=>{
+    const m = msgsObj[k] || {};
+    const mine = (m.sender||'').toLowerCase() === myName.toLowerCase();
+    const time = new Date(m.ts||0).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    const imgHtml = m.image ? `<img src="${m.image}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;">` : '';
+    const textHtml = m.text ? `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.text)}</div>` : '';
+    return `
+      <div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};">
+        <div style="max-width:82%;">
+          ${mine?'':`<div style="font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:2px;">${escapeHtml(m.sender||'?')}</div>`}
+          <div style="background:${mine?'var(--accent-dim)':'var(--panel2)'};color:${mine?'#1a1404':'var(--text)'};border:1px solid var(--border-strong);border-radius:10px;padding:8px 10px;font-size:12.5px;">
+            ${textHtml}${imgHtml}
+            <div style="font-size:9.5px;color:${mine?'#4a3f22':'var(--muted)'};text-align:right;margin-top:3px;">${time}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  if(wasNearBottom){ wrap.scrollTop = wrap.scrollHeight; }
+
+  // Notify on a genuinely new message from someone else, but only when the
+  // app isn't already the thing the person is actively looking at.
+  if(keys.length){
+    const lastKey = keys[keys.length-1];
+    if(lastNotifiedChatKey === null){
+      lastNotifiedChatKey = lastKey; // first load: don't notify for chat history
+    } else if(lastKey !== lastNotifiedChatKey){
+      lastNotifiedChatKey = lastKey;
+      const m = msgsObj[lastKey] || {};
+      const isMine = (m.sender||'').toLowerCase() === myName.toLowerCase();
+      if(!isMine && (document.hidden || !document.hasFocus())){
+        fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : '📷 Photo bheji');
+      }
+    }
+  }
+}
+
+async function renderChatPanel(){
+  const el = document.getElementById('chatPanel');
+  if(!el) return;
+  if(chatUnsub){ try{ chatUnsub(); }catch(e){} chatUnsub = null; }
+  lastNotifiedChatKey = null;
+  const room = getRoomCode();
+  if(!room){
+    el.innerHTML = `<div class="losshint" style="padding:0;">Chat ke liye pehle upar 🔗 Sync Room banao ya dost ka Room Code se Join karo (internet chahiye).</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div id="chatMessages" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;"><div class="loading">Chat load ho raha hai…</div></div>
+    <div id="chatImgPreviewWrap" style="display:none;margin-top:8px;position:relative;width:126px;"></div>
+    <div class="btnrow" style="margin-top:10px;gap:6px;flex-wrap:nowrap;">
+      <input type="text" id="chatTextInput" placeholder="Apna doubt/message likho..." style="flex:1;min-width:0;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;padding:8px 10px;">
+      <label class="nav-btn" style="cursor:pointer;display:flex;align-items:center;padding:8px 10px;margin:0;" for="chatImgInput">📷</label>
+      <input type="file" id="chatImgInput" accept="image/*" style="display:none;">
+      <button class="nav-btn" id="chatSendBtn">➤</button>
+    </div>
+    <div class="losshint" style="padding-top:6px;">Ye chat isi Room Code se jude sabhi members ko dikhegi. Kisi ki bhi private/sensitive photo mat bhejna.</div>
+  `;
+  const textInp = document.getElementById('chatTextInput');
+  const imgInp = document.getElementById('chatImgInput');
+  const previewWrap = document.getElementById('chatImgPreviewWrap');
+  const sendBtn = document.getElementById('chatSendBtn');
+
+  const clearPendingImage = ()=>{
+    pendingChatImage = null;
+    previewWrap.style.display = 'none';
+    previewWrap.innerHTML = '';
+    imgInp.value = '';
+  };
+
+  imgInp.addEventListener('change', async ()=>{
+    const file = imgInp.files && imgInp.files[0];
+    if(!file) return;
+    try{
+      const dataUrl = await compressImageFile(file);
+      if(dataUrl.length > 350000){
+        alert('Ye image bahut badi hai. Kam resolution wali ya doosri image try karo.');
+        clearPendingImage();
+        return;
+      }
+      pendingChatImage = dataUrl;
+      previewWrap.style.display = 'block';
+      previewWrap.innerHTML = `
+        <img src="${dataUrl}" style="max-width:120px;max-height:120px;border-radius:8px;border:1px solid var(--border-strong);display:block;">
+        <button type="button" id="chatImgRemoveBtn" style="position:absolute;top:-6px;left:104px;background:var(--loss);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;line-height:1;cursor:pointer;">✕</button>
+      `;
+      document.getElementById('chatImgRemoveBtn').addEventListener('click', clearPendingImage);
+    }catch(e){
+      alert('Image load nahi ho payi, doosri try karo.');
+      clearPendingImage();
+    }
+  });
+
+  const doSend = async ()=>{
+    const text = (textInp.value||'').trim();
+    if(!text && !pendingChatImage) return;
+    sendBtn.disabled = true;
+    try{
+      await Promise.race([
+        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/chat`, { sender: myName, text, image: pendingChatImage||null, ts: Date.now() }); })(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet slow ya Firebase tak pahunch nahi paya.')), 8000))
+      ]);
+      textInp.value = '';
+      clearPendingImage();
+    }catch(e){
+      alert('Message nahi bhej paya.\n\nWajah: ' + ((e&&e.message)?e.message:String(e)));
+    }
+    sendBtn.disabled = false;
+    textInp.focus();
+  };
+  sendBtn.addEventListener('click', doSend);
+  textInp.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); doSend(); } });
+
+  try{
+    await waitForFirebase();
+    chatUnsub = await window.__fbListenReady(`rooms/${room}/chat`, (val)=>{ renderChatMessages(val); });
+  }catch(e){
+    const msgEl = document.getElementById('chatMessages');
+    if(msgEl) msgEl.innerHTML = `<div class="losshint" style="padding:0;">Chat load nahi ho payi.\nWajah: ${escapeHtml((e&&e.message)?e.message:String(e))}</div>`;
+  }
+}
+
+// Cheap to call often (e.g. from the room auto-sync loop): only actually
+// rebuilds the chat panel/listener when the room code has changed, so
+// typing in the chat box never gets interrupted by unrelated refreshes.
+async function ensureChatPanel(){
+  const room = getRoomCode();
+  if(room === lastChatRoomInited) return;
+  lastChatRoomInited = room;
+  await renderChatPanel();
+}
+
+let lastFriendStatsSnapshot = null; // null = not yet initialized (avoids a notification burst on first load)
 async function renderCompetePanel(){
   const el = document.getElementById('competePanel');
   if(!el) return;
   const friends = loadFriendsList();
   const roomNames = await loadRoomRegistry();
-  const merged = [myName, ...friends, ...roomNames];
+  const offline = loadOfflineFriends();
+  const offlineNames = Object.keys(offline);
+  const merged = [myName, ...friends, ...roomNames, ...offlineNames];
   const names = merged.filter((n,i)=> n && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
   const rows = [];
   for(const nm of names){
-    const st = await loadPlayerState(nm);
-    rows.push({ name: nm, ...computeStatsFrom(st) });
+    const offKey = offlineNames.find(o=>o.toLowerCase()===nm.toLowerCase());
+    if(offKey){
+      rows.push({ name: nm, ...computeStatsFrom(offline[offKey].state), snapshotAt: offline[offKey].updatedAt, isLive: false });
+    } else {
+      const st = await loadPlayerState(nm);
+      rows.push({ name: nm, ...computeStatsFrom(st), isLive: true });
+    }
   }
   rows.sort((a,b)=> b.pct-a.pct || b.streak-a.streak);
+
+  // Notify when a live room-member's progress moved forward since the last
+  // check (offline/snapshot friends are manual pastes, so skip those).
+  const newSnapshot = {};
+  rows.forEach(r=>{ newSnapshot[r.name.toLowerCase()] = { pct:r.pct, streak:r.streak }; });
+  if(lastFriendStatsSnapshot){
+    rows.forEach(r=>{
+      if(!r.isLive) return;
+      if(r.name.toLowerCase() === myName.toLowerCase()) return;
+      const prev = lastFriendStatsSnapshot[r.name.toLowerCase()];
+      if(prev && r.pct > prev.pct){
+        fireNotification('📈 ' + r.name, r.name + ' ne progress update kiya — ab ' + r.pct + '% complete (🔥' + r.streak + ')');
+      }
+    });
+  }
+  lastFriendStatsSnapshot = newSnapshot;
 
   let html = `<div class="lbwrap">` + rows.map(r=>{
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
+    const snapTag = r.snapshotAt ? ` <span style="color:var(--muted);font-weight:600;">(📌 snapshot ${new Date(r.snapshotAt).toLocaleString('en-IN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})</span>` : '';
+    let actionBtn = '';
+    if(isMe){ actionBtn=''; }
+    else if(r.snapshotAt){ actionBtn = `<button class="nav-btn lbremove" data-remove-offline="${escapeHtml(r.name)}">🗑️ Hatao</button>`; }
+    else { actionBtn = `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`; }
     return `
       <div class="lbrow ${isViewing?'active':''}">
-        <div class="lbname">${isMe?'🟢 ':'⚪ '}${escapeHtml(r.name)}${isMe?' (You)':''}</div>
+        <div class="lbname">${isMe?'🟢 ':'⚪ '}${escapeHtml(r.name)}${isMe?' (You)':''}${snapTag}</div>
         <div class="lbstats"><span>🔥${r.streak}</span><span>📈${r.pct}%</span><span>⏱️${fmtHours(r.studyMins)}</span></div>
-        ${isMe ? '' : `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`}
+        ${actionBtn}
       </div>`;
   }).join('') + `</div>`;
 
   html += `
     <div class="addfriend">
-      <input type="text" id="friendNameInput" placeholder="Dost ka exact naam likho...">
+      <input type="text" id="friendNameInput" placeholder="Dost ka exact naam likho (same room)...">
       <button class="nav-btn" id="addFriendBtn">➕ Add</button>
     </div>
-    <div class="losshint">Dost se wahi exact naam pucho jo unhone apni tracker mein daala tha. Agar dono ne upar wala 🔗 Sync Room same code se join kiya hai, to Chrome ho ya koi bhi browser — dono ka data turant sync ho jayega.</div>
+    <div class="losshint">Ye tabhi kaam karega jab dono ne upar wala 🔗 Sync Room same code se join kiya ho (internet chahiye).</div>
+
+    <div class="grid-label" style="margin-top:14px;border-top:1px dashed var(--border);padding-top:14px;">📌 Bina Internet — Dost Ka Backup Code Se Compete Karo</div>
+    <div class="losshint" style="padding-top:0;">Dost ko bolo neeche "💾 Backup / Restore" mein "📋 Show Backup Code" dabaye aur wo code WhatsApp/kahin se bhi bhej de. Wo code yaha paste karo — turant compare ho jayega. Ye ek snapshot hai (live nahi), naya progress dekhne ke liye dost se naya code lekar dobara "Add/Update" karo.</div>
+    <input type="text" id="offlineFriendName" placeholder="Dost ka naam..." style="width:100%;box-sizing:border-box;margin-bottom:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;padding:8px 10px;">
+    <textarea id="offlineFriendCode" placeholder="Dost ka backup code yaha paste karo..." style="width:100%;box-sizing:border-box;min-height:70px;"></textarea>
+    <div class="btnrow" style="margin-top:8px;">
+      <button class="nav-btn" id="addOfflineFriendBtn">➕ Snapshot Add/Update Karo</button>
+    </div>
   `;
   el.innerHTML = html;
 
@@ -974,6 +1231,14 @@ async function renderCompetePanel(){
     btn.addEventListener('click', async ()=>{
       await switchViewing(btn.getAttribute('data-view'));
       await renderCompetePanel();
+    });
+  });
+  el.querySelectorAll('.lbremove').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const nm = btn.getAttribute('data-remove-offline');
+      if(!confirm(`"${nm}" ka snapshot hatana hai?`)) return;
+      removeOfflineFriend(nm);
+      renderCompetePanel();
     });
   });
   const addBtn = document.getElementById('addFriendBtn');
@@ -989,6 +1254,22 @@ async function renderCompetePanel(){
     inp.value='';
     renderCompetePanel();
   });
+  const addOfflineBtn = document.getElementById('addOfflineFriendBtn');
+  if(addOfflineBtn) addOfflineBtn.addEventListener('click', ()=>{
+    const nameInp = document.getElementById('offlineFriendName');
+    const codeInp = document.getElementById('offlineFriendCode');
+    const nm = (nameInp.value||'').trim();
+    const code = (codeInp.value||'').trim();
+    if(!nm || !code){ alert('Naam aur backup code dono chahiye.'); return; }
+    if(nm.toLowerCase()===myName.toLowerCase()){ alert('Ye tumhara apna naam hai — dost ka alag naam likho.'); return; }
+    try{
+      addOfflineFriendSnapshot(nm, code);
+      renderCompetePanel();
+    }catch(e){
+      alert('Ye backup code valid nahi hai. Dost se poora code copy karke (bina kaate-chhaate) paste karo.');
+    }
+  });
+  ensureChatPanel();
 }
 
 async function renderRoomPanel(){
@@ -1307,6 +1588,11 @@ function renderPanel(){
   `;
 
   html += `
+    <div class="subhead">🤦 SILLY MISTAKES — aaj ki chhoti galtiyan</div>
+    <div class="notes"><textarea id="mistakesArea" placeholder="Jaise: sign galat likha, question dobara nahi padha, time waste hua..." ${isReadOnly?'readonly':''}>${d.mistakes}</textarea></div>
+  `;
+
+  html += `
     <div class="footer-row">
       <button class="nav-btn" id="prevBtn">⬅️ Prev Day</button>
       <button class="nav-btn" id="nextBtn">Next Day ➡️</button>
@@ -1364,6 +1650,12 @@ function renderPanel(){
     getDay(selectedDay).notes = e.target.value;
     clearTimeout(notesTimer);
     notesTimer = setTimeout(save, 600);
+  });
+  document.getElementById('mistakesArea').addEventListener('input', (e)=>{
+    if(isReadOnly) return;
+    getDay(selectedDay).mistakes = e.target.value;
+    clearTimeout(mistakesTimer);
+    mistakesTimer = setTimeout(async ()=>{ await save(); renderMistakesLog(); }, 600);
   });
   document.getElementById('prevBtn').addEventListener('click', ()=>{ if(selectedDay>1){ selectedDay--; renderAll(); } });
   document.getElementById('nextBtn').addEventListener('click', ()=>{ if(selectedDay<TOTAL_DAYS){ selectedDay++; renderAll(); } });
@@ -1480,6 +1772,30 @@ function renderLossLog(){
   `).join('') + (rows.length>10 ? `<div class="losshint">+ ${rows.length-10} aur din pending hai list mein…</div>` : '');
 }
 
+function renderMistakesLog(){
+  const el = document.getElementById('mistakesLog');
+  if(!el) return;
+  const tn = activeUptoDay();
+  let rows = [];
+  for(let i=tn;i>=1;i--){
+    const d = getDay(i);
+    if(d.mistakes && d.mistakes.trim()){
+      rows.push({ day:i, text:d.mistakes.trim() });
+    }
+  }
+  if(rows.length===0){
+    el.innerHTML = `<div class="losshint">Abhi tak koi silly mistake note nahi hui — jab bhi ho, Day panel ke "🤦 Silly Mistakes" box mein likh dena, yahan list ban jayegi.</div>`;
+    return;
+  }
+  const shown = rows.slice(0,15);
+  el.innerHTML = shown.map(r=>`
+    <div class="lossrow" style="flex-direction:column;align-items:flex-start;gap:3px;">
+      <span class="lday">🤦 Day ${r.day} <span style="color:var(--muted);font-weight:600;">(${fmtDate(r.day)})</span></span>
+      <span style="font-size:12.5px;color:var(--text);font-weight:600;white-space:pre-wrap;word-break:break-word;">${escapeHtml(r.text)}</span>
+    </div>
+  `).join('') + (rows.length>15 ? `<div class="losshint">+ ${rows.length-15} aur purani entries hain (upar 15 sabse recent hain).</div>` : '');
+}
+
 function renderBestWorst(){
   const el = document.getElementById('bestWorst');
   if(!el) return;
@@ -1506,7 +1822,7 @@ function renderBestWorst(){
 }
 
 function exportCSV(){
-  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Mock Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Notes'];
+  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Mock Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Notes','Silly Mistakes'];
   const rows = [header];
   for(let i=1;i<=TOTAL_DAYS;i++){
     const d = getDay(i);
@@ -1514,7 +1830,7 @@ function exportCSV(){
     const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
     const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
     const r = dayEarnLoss(d);
-    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, mockTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), (d.notes||'')]);
+    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, mockTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), (d.notes||''), (d.mistakes||'')]);
   }
   const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
@@ -1627,6 +1943,7 @@ function renderAll(){
   safeRun(renderBestWorst, 'renderBestWorst');
   safeRun(renderChart, 'renderChart');
   safeRun(renderLossLog, 'renderLossLog');
+  safeRun(renderMistakesLog, 'renderMistakesLog');
   safeRun(renderWeekly, 'renderWeekly');
   safeRun(renderStudyHours, 'renderStudyHours');
   safeRun(computeStats, 'computeStats');
@@ -1716,6 +2033,59 @@ function setupHomeScreenIcon(){
   }catch(e){ console.error('Home screen icon setup failed', e); }
 }
 
+// ===== Simple, free, no-server notifications =====
+// Uses the browser's built-in Notification API directly. This works while
+// the tab/installed app is open OR running in the background (Android
+// Chrome keeps it alive for a while), but will NOT wake the app up once
+// it's fully closed/swiped-away — that would need a push server (FCM +
+// Cloud Functions), which is a separate, paid-plan setup.
+function notifPref(){
+  try{ return localStorage.getItem('cgl50-notif-enabled')==='1'; }catch(e){ return false; }
+}
+function setNotifPref(v){
+  try{ localStorage.setItem('cgl50-notif-enabled', v ? '1':'0'); }catch(e){}
+}
+async function ensureNotificationPermission(){
+  if(!('Notification' in window)){
+    alert('Ye browser notifications support nahi karta.');
+    return false;
+  }
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied'){
+    alert('Notifications is site ke liye block hain. Browser/site settings mein jaake manually allow karo.');
+    return false;
+  }
+  try{
+    const res = await Notification.requestPermission();
+    return res === 'granted';
+  }catch(e){ return false; }
+}
+function fireNotification(title, body){
+  if(!notifPref()) return;
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try{
+    const n = new Notification(title, { body, tag: 'cgl50-'+title });
+    n.onclick = ()=>{ window.focus(); n.close(); };
+  }catch(e){ console.error('notification failed', e); }
+}
+function updateNotifBtnLabel(){
+  const btn = document.getElementById('notifBtn');
+  if(!btn) return;
+  const on = notifPref() && ('Notification' in window) && Notification.permission === 'granted';
+  btn.textContent = on ? '🔔 Notifications On' : '🔕 Notifications Off';
+}
+document.getElementById('notifBtn').addEventListener('click', async ()=>{
+  const currentlyOn = notifPref() && ('Notification' in window) && Notification.permission === 'granted';
+  if(currentlyOn){
+    setNotifPref(false);
+  } else {
+    const ok = await ensureNotificationPermission();
+    setNotifPref(ok);
+    if(ok) fireNotification('🎯 CGL 50 Tracker', 'Notifications on ho gaye — naye chat message aur friends ke tracker update yahan dikhenge.');
+  }
+  updateNotifBtnLabel();
+});
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
@@ -1744,6 +2114,7 @@ document.getElementById('installBtn').style.display = 'inline-block';
   applyLoadedExtras();
   selectedDay = todayDayNum();
   setupHomeScreenIcon();
+  updateNotifBtnLabel();
   renderExamLine();
   renderTaskEditForm();
   renderAll();
