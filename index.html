@@ -664,7 +664,7 @@
   </div>
 
   <div class="tabview" id="tab-chat" data-tabview="chat">
-    <div class="grid-label" style="margin-top:0;">💬 Doubt Chat</div>
+    <div class="grid-label" style="margin-top:0;">💬 Private Chat (1-to-1)</div>
     <div class="panel" id="chatPanel">
       <div class="loading">Loading chat…</div>
     </div>
@@ -1375,48 +1375,75 @@ function renderProfileBar(){
   }
 }
 
-// ===== Doubt Chat (room-based, needs Firebase/internet) =====
-// Messages are stored under rooms/{room}/chat and streamed live via
-// onValue, so everyone in the same Sync Room sees new messages/images
-// without refreshing.
-let chatUnsub = null;
-let lastChatRoomInited = undefined; // undefined = never inited yet
+// ===== Private Chat (1-to-1 DMs, room-based, needs Firebase/internet) =====
+// Each pair of people gets their own private thread at
+// rooms/{room}/dm/{pairKey}/msgs — pairKey is built from both safe-names so
+// it's identical no matter who opens it first. Nobody else's screen ever
+// asks for this pairKey, so only the two people who pick each other as a
+// chat partner ever see these messages inside the app.
+let dmUnsub = null;
+let lastDmRoomInited = undefined; // undefined = never inited yet
 let pendingChatImage = null;
-let lastNotifiedChatKey = null; // tracks newest chat message we've already notified about
+let lastNotifiedDmKey = null; // tracks newest DM (for the open partner) we've already notified about
+let dmTreeCache = null;        // latest full { pairKey: {msgs,seen} } tree for this room
+let chatContacts = [];         // known people (friends + room members), excluding myself
+let currentChatPartner = null; // who the Chat tab is currently open with
 
-// ===== Chat "seen" receipts =====
-// Each person writes their own last-seen timestamp under rooms/{room}/chatSeen/{key}
-// whenever the Chat tab is actually open on their screen. Everyone else's
-// messages then show a "Seen" tick once your timestamp passes their message time.
-let chatSeenUnsub = null;
-let chatSeenMap = {};       // { safeNameKey: lastSeenTimestamp }
-let lastChatMsgsObj = null; // most recent raw messages object, for re-rendering on seen updates
 function chatSeenKey(name){
   return (name||'').trim().toLowerCase().replace(/[.#$\[\]\/]/g,'_') || 'unknown';
+}
+// Same private key no matter who opens it first — smaller safe-name first,
+// joined with "::" (never produced by chatSeenKey) so it can't be confused
+// with a name that happens to contain "__".
+function dmPairKey(nameA, nameB){
+  const a = chatSeenKey(nameA), b = chatSeenKey(nameB);
+  return a < b ? (a+'::'+b) : (b+'::'+a);
+}
+function getSavedChatPartner(){
+  try{ return localStorage.getItem('cgl50-chat-partner:'+getRoomCode()) || null; }catch(e){ return null; }
+}
+function saveChatPartner(name){
+  try{ localStorage.setItem('cgl50-chat-partner:'+getRoomCode(), name||''); }catch(e){}
 }
 function isChatTabActive(){
   const el = document.getElementById('tab-chat');
   return !!(el && el.classList.contains('active'));
 }
+// Friends list + everyone who's joined this Sync Room, minus yourself — the
+// people you're allowed to pick as a private chat partner.
+async function loadChatContacts(){
+  const friends = loadFriendsList();
+  const roomNames = await loadRoomRegistry();
+  const merged = [...friends, ...roomNames];
+  return merged.filter((n,i)=> n && n.toLowerCase()!==myName.toLowerCase() && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+}
 async function markMyChatSeen(){
   const room = getRoomCode();
-  if(!room) return;
+  if(!room || !currentChatPartner) return;
   try{
     await waitForFirebase();
-    await window.__fbSet(`rooms/${room}/chatSeen/${chatSeenKey(myName)}`, Date.now());
+    const pairKey = dmPairKey(myName, currentChatPartner);
+    await window.__fbSet(`rooms/${room}/dm/${pairKey}/seen/${chatSeenKey(myName)}`, Date.now());
   }catch(e){ /* best-effort, no need to surface errors for read receipts */ }
 }
-function updateChatDot(msgsObj){
+// True if ANY private thread (with any contact) has a message from them that
+// I haven't seen yet — drives the small red dot on the Chat tab icon.
+function computeAnyUnseenDm(){
+  if(!dmTreeCache || !chatContacts.length) return false;
+  const myKey = chatSeenKey(myName);
+  const chatOpen = isChatTabActive();
+  return chatContacts.some(nm=>{
+    if(chatOpen && currentChatPartner && nm.toLowerCase()===currentChatPartner.toLowerCase()) return false; // that thread is on-screen right now
+    const pair = dmTreeCache[dmPairKey(myName, nm)];
+    if(!pair || !pair.msgs) return false;
+    const mySeen = (pair.seen && pair.seen[myKey]) || 0;
+    return Object.values(pair.msgs).some(m=> (m.sender||'').toLowerCase()!==myName.toLowerCase() && (m.ts||0) > mySeen);
+  });
+}
+function updateChatDot(){
   const dot = document.getElementById('chatDot');
   if(!dot) return;
-  const keys = msgsObj ? Object.keys(msgsObj) : [];
-  if(!keys.length){ dot.classList.remove('show'); return; }
-  const mySeen = chatSeenMap[chatSeenKey(myName)] || 0;
-  const hasUnseen = keys.some(k=>{
-    const m = msgsObj[k] || {};
-    return (m.sender||'').toLowerCase() !== myName.toLowerCase() && (m.ts||0) > mySeen && !isChatTabActive();
-  });
-  dot.classList.toggle('show', hasUnseen);
+  dot.classList.toggle('show', computeAnyUnseenDm());
 }
 
 // ===== Presence: is the other person online right now? =====
@@ -1498,10 +1525,10 @@ function compressImageFile(file, maxDim=480, quality=0.55){
 }
 
 let chatMsgNodes = {}; // msg key -> {el, tickEl} — reused across renders
-const CHAT_KEEP_COUNT = 4; // only the newest N messages are shown; rest auto-delete
+const CHAT_KEEP_COUNT = 4; // only the newest N messages (per pair) are shown; rest auto-delete
 
 let chatTrimInFlight = false;
-async function enforceChatLimit(allKeysSorted){
+async function enforceChatLimit(pairKey, allKeysSorted){
   const room = getRoomCode();
   if(!room || chatTrimInFlight) return;
   const toDelete = allKeysSorted.slice(0, allKeysSorted.length - CHAT_KEEP_COUNT);
@@ -1509,147 +1536,220 @@ async function enforceChatLimit(allKeysSorted){
   chatTrimInFlight = true;
   try{
     await waitForFirebase();
-    // Deletes are for the whole room (not just my screen) so everyone's
-    // chat stays capped at the last CHAT_KEEP_COUNT messages.
-    await Promise.all(toDelete.map(k => window.__fbSet(`rooms/${room}/chat/${k}`, null)));
+    // Deletes are for both people in this pair (not just my screen) so the
+    // thread stays capped at the last CHAT_KEEP_COUNT messages for both.
+    await Promise.all(toDelete.map(k => window.__fbSet(`rooms/${room}/dm/${pairKey}/msgs/${k}`, null)));
   }catch(e){ console.error('chat auto-trim failed', e); }
   finally{ chatTrimInFlight = false; }
 }
 
-function renderChatMessages(msgsObj){
-  lastChatMsgsObj = msgsObj;
+// Renders the thread for whoever `currentChatPartner` currently is, reading
+// straight out of dmTreeCache (kept fresh by the single rooms/{room}/dm listener).
+function renderChatMessages(){
   const wrap = document.getElementById('chatMessages');
-  updateChatDot(msgsObj);
-  if(!wrap) return;
+  if(!wrap || !currentChatPartner) return;
+  const pairKey = dmPairKey(myName, currentChatPartner);
+  const pair = (dmTreeCache && dmTreeCache[pairKey]) || {};
+  const msgsObj = pair.msgs || null;
+  const seenObj = pair.seen || {};
   const allKeys = msgsObj ? Object.keys(msgsObj).sort() : [];
   if(allKeys.length > CHAT_KEEP_COUNT){
-    enforceChatLimit(allKeys); // fire-and-forget: deletes the older ones for everyone
+    enforceChatLimit(pairKey, allKeys); // fire-and-forget: deletes the older ones for both people
   }
   const keys = allKeys.slice(-CHAT_KEEP_COUNT);
   if(keys.length===0){
-    wrap.innerHTML = `<div class="losshint" style="padding:0;">Abhi tak koi message nahi — pehla message ya doubt bhejo!</div>`;
+    wrap.innerHTML = `<div class="losshint" style="padding:0;">Abhi tak koi message nahi — ${escapeHtml(currentChatPartner)} ko pehla message bhejo!</div>`;
     chatMsgNodes = {};
+  } else {
+    // Perf: previously this rebuilt EVERY message bubble (and re-decoded
+    // every embedded photo) from scratch on every single update — including
+    // just a "seen" tick changing. Now each bubble is built once and kept;
+    // only the small "Seen/Sent" tick gets patched.
+    if(Object.keys(chatMsgNodes).length===0 || wrap.querySelector('.losshint')){
+      wrap.innerHTML = '';
+      chatMsgNodes = {};
+    }
+    // Drop any bubbles for messages outside the visible window (deleted,
+    // pushed out by CHAT_KEEP_COUNT, or belonging to a partner we just left).
+    Object.keys(chatMsgNodes).forEach(k=>{
+      if(keys.indexOf(k)===-1){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
+    });
+
+    const partnerSeenTs = seenObj[chatSeenKey(currentChatPartner)] || 0;
+    const wasNearBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60);
+
+    keys.forEach(k=>{
+      const m = msgsObj[k] || {};
+      const mine = (m.sender||'').toLowerCase() === myName.toLowerCase();
+      let entry = chatMsgNodes[k];
+      if(!entry){
+        const time = new Date(m.ts||0).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+        const imgHtml = m.image ? `<img src="${m.image}" loading="lazy" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;">` : '';
+        const textHtml = m.text ? `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.text)}</div>` : '';
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.alignItems = mine ? 'flex-end' : 'flex-start';
+        row.innerHTML = `
+          <div style="max-width:82%;">
+            <div style="background:${mine?'var(--accent-dim)':'var(--panel2)'};color:${mine?'#1a1404':'var(--text)'};border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:13.5px;">
+              ${textHtml}${imgHtml}
+              <div style="display:flex;justify-content:${mine?'space-between':'flex-end'};align-items:center;gap:8px;margin-top:3px;">
+                ${mine?'<span class="chatTick"></span>':''}
+                <div style="font-size:9.5px;color:${mine?'#4a3f22':'var(--muted)'};">${time}</div>
+              </div>
+            </div>
+          </div>`;
+        wrap.appendChild(row);
+        entry = { el: row, tickEl: mine ? row.querySelector('.chatTick') : null };
+        chatMsgNodes[k] = entry;
+      }
+      if(mine && entry.tickEl){
+        const seen = partnerSeenTs >= (m.ts||0);
+        const cls = 'chatTick ' + (seen?'seen':'sent');
+        if(entry.tickEl.className !== cls){
+          entry.tickEl.className = cls;
+          entry.tickEl.textContent = seen?'✓✓ Seen':'✓ Sent';
+        }
+      }
+    });
+    if(wasNearBottom){ wrap.scrollTop = wrap.scrollHeight; }
+
+    // Notify on a genuinely new message from this partner, but only when the
+    // app isn't already the thing the person is actively looking at.
+    if(keys.length){
+      const lastKey = keys[keys.length-1];
+      if(lastNotifiedDmKey === null){
+        lastNotifiedDmKey = lastKey; // first load: don't notify for chat history
+      } else if(lastKey !== lastNotifiedDmKey){
+        lastNotifiedDmKey = lastKey;
+        const m = msgsObj[lastKey] || {};
+        const isMine = (m.sender||'').toLowerCase() === myName.toLowerCase();
+        if(!isMine && (document.hidden || !document.hasFocus() || !isChatTabActive())){
+          fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : '📷 Photo bheji');
+        }
+      }
+    }
+  }
+
+  // Mark messages as seen by me only while this thread is actually open.
+  if(isChatTabActive()) markMyChatSeen();
+  updateChatDot();
+}
+
+// Tappable row of contacts at the top of the Chat tab — pick exactly who you
+// want to privately message. A small red dot marks anyone with an unseen
+// message waiting for you. Only you and the person you pick ever see that
+// thread — nobody else in the room sees it.
+function renderChatContactChips(){
+  const bar = document.getElementById('chatContactBar');
+  if(!bar) return;
+  if(chatContacts.length===0){
+    bar.innerHTML = `<div class="losshint" style="padding:0;">Abhi koi contact nahi — 🤝 Compete tab mein dost add karo ya Room join karo, fir unse yahan private chat kar sakte ho.</div>`;
     return;
   }
-  // Perf: previously this rebuilt EVERY message bubble (and re-decoded
-  // every embedded photo) from scratch on every single update — including
-  // just a "seen" tick changing. The more a chat grew, the slower every
-  // new message or seen-update made the whole app feel. Now each bubble
-  // is built once and kept; only the small "Seen/Sent" tick gets patched.
-  if(Object.keys(chatMsgNodes).length===0 || wrap.querySelector('.losshint')){
-    wrap.innerHTML = '';
-    chatMsgNodes = {};
+  bar.innerHTML = chatContacts.map(nm=>{
+    const isActive = currentChatPartner && nm.toLowerCase()===currentChatPartner.toLowerCase();
+    const pair = dmTreeCache && dmTreeCache[dmPairKey(myName, nm)];
+    let hasUnread = false;
+    if(pair && pair.msgs){
+      const mySeen = (pair.seen && pair.seen[chatSeenKey(myName)]) || 0;
+      hasUnread = Object.values(pair.msgs).some(m=> (m.sender||'').toLowerCase()!==myName.toLowerCase() && (m.ts||0) > mySeen);
+    }
+    const p = presenceLabel(nm);
+    return `<button type="button" class="nav-btn" data-partner="${escapeHtml(nm)}" style="position:relative;white-space:nowrap;font-size:12px;padding:8px 12px;flex-shrink:0;${isActive?'background:var(--white);color:#000;border-color:var(--white);':''}">${p.dot} ${escapeHtml(nm)}${hasUnread?'<span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--loss);border:1.5px solid var(--panel);"></span>':''}</button>`;
+  }).join('');
+  bar.querySelectorAll('[data-partner]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openChatWithPartner(btn.getAttribute('data-partner')));
+  });
+}
+
+function updateChatHeaderAndInputState(){
+  const head = document.getElementById('chatThreadHead');
+  const inputRow = document.getElementById('chatInputRow');
+  const hint = document.getElementById('chatPrivacyHint');
+  const clearBtn = document.getElementById('chatClearBtn');
+  if(!currentChatPartner){
+    if(head) head.innerHTML = chatContacts.length ? 'Upar se ek contact chuno chat shuru karne ke liye 👆' : '';
+    if(inputRow) inputRow.style.display = 'none';
+    if(hint) hint.style.display = 'none';
+    if(clearBtn) clearBtn.style.display = 'none';
+    return;
   }
-  // Drop any bubbles for messages outside the visible window (deleted,
-  // or pushed out by CHAT_KEEP_COUNT).
-  Object.keys(chatMsgNodes).forEach(k=>{
-    if(keys.indexOf(k)===-1){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
-  });
+  const p = presenceLabel(currentChatPartner);
+  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b> <span style="color:var(--muted);font-weight:700;font-size:11px;">· ${p.dot} ${p.text}</span>`;
+  if(inputRow) inputRow.style.display = 'flex';
+  if(hint){ hint.style.display = ''; hint.textContent = `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi. Seen tick tabhi aayega jab ${currentChatPartner} ye thread khole.`; }
+  if(clearBtn) clearBtn.style.display = '';
+}
 
-  // Newest timestamp among everyone ELSE in the room — used to show a
-  // "Seen" tick on my own messages once that timestamp passes them.
-  const myKey = chatSeenKey(myName);
-  let othersMaxSeen = 0;
-  Object.keys(chatSeenMap||{}).forEach(k=>{
-    if(k!==myKey) othersMaxSeen = Math.max(othersMaxSeen, chatSeenMap[k]||0);
-  });
-  const wasNearBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60);
-
-  keys.forEach(k=>{
-    const m = msgsObj[k] || {};
-    const mine = (m.sender||'').toLowerCase() === myName.toLowerCase();
-    let entry = chatMsgNodes[k];
-    if(!entry){
-      const time = new Date(m.ts||0).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-      const imgHtml = m.image ? `<img src="${m.image}" loading="lazy" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;">` : '';
-      const textHtml = m.text ? `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.text)}</div>` : '';
-      const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.flexDirection = 'column';
-      row.style.alignItems = mine ? 'flex-end' : 'flex-start';
-      row.innerHTML = `
-        <div style="max-width:82%;">
-          ${mine?'':`<div style="font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:2px;">${escapeHtml(m.sender||'?')}</div>`}
-          <div style="background:${mine?'var(--accent-dim)':'var(--panel2)'};color:${mine?'#1a1404':'var(--text)'};border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:13.5px;">
-            ${textHtml}${imgHtml}
-            <div style="display:flex;justify-content:${mine?'space-between':'flex-end'};align-items:center;gap:8px;margin-top:3px;">
-              ${mine?'<span class="chatTick"></span>':''}
-              <div style="font-size:9.5px;color:${mine?'#4a3f22':'var(--muted)'};">${time}</div>
-            </div>
-          </div>
-        </div>`;
-      wrap.appendChild(row);
-      entry = { el: row, tickEl: mine ? row.querySelector('.chatTick') : null };
-      chatMsgNodes[k] = entry;
-    }
-    if(mine && entry.tickEl){
-      const seen = othersMaxSeen >= (m.ts||0);
-      const cls = 'chatTick ' + (seen?'seen':'sent');
-      if(entry.tickEl.className !== cls){
-        entry.tickEl.className = cls;
-        entry.tickEl.textContent = seen?'✓✓ Seen':'✓ Sent';
-      }
-    }
-  });
-  if(wasNearBottom){ wrap.scrollTop = wrap.scrollHeight; }
-
-  // Notify on a genuinely new message from someone else, but only when the
-  // app isn't already the thing the person is actively looking at.
-  if(keys.length){
-    const lastKey = keys[keys.length-1];
-    if(lastNotifiedChatKey === null){
-      lastNotifiedChatKey = lastKey; // first load: don't notify for chat history
-    } else if(lastKey !== lastNotifiedChatKey){
-      lastNotifiedChatKey = lastKey;
-      const m = msgsObj[lastKey] || {};
-      const isMine = (m.sender||'').toLowerCase() === myName.toLowerCase();
-      if(!isMine && (document.hidden || !document.hasFocus())){
-        fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : '📷 Photo bheji');
-      }
-    }
-  }
-
-  // Mark messages as seen by me only while the Chat tab is actually open.
-  if(isChatTabActive()) markMyChatSeen();
+function openChatWithPartner(name){
+  if(!name) return;
+  currentChatPartner = name;
+  saveChatPartner(name);
+  lastNotifiedDmKey = null;
+  chatMsgNodes = {};
+  const wrap = document.getElementById('chatMessages');
+  if(wrap) wrap.innerHTML = `<div class="loading">Chat load ho raha hai…</div>`;
+  renderChatContactChips();
+  updateChatHeaderAndInputState();
+  renderChatMessages();
 }
 
 async function renderChatPanel(){
   const el = document.getElementById('chatPanel');
   if(!el) return;
-  if(chatUnsub){ try{ chatUnsub(); }catch(e){} chatUnsub = null; }
-  lastNotifiedChatKey = null;
+  if(dmUnsub){ try{ dmUnsub(); }catch(e){} dmUnsub = null; }
+  lastNotifiedDmKey = null;
   chatMsgNodes = {};
+  dmTreeCache = null;
   const room = getRoomCode();
   if(!room){
     el.innerHTML = `<div class="losshint" style="padding:0;">Chat ke liye pehle neeche 🔗 Sync Room banao ya dost ka Room Code se Join karo (internet chahiye).</div>`;
     return;
   }
+  chatContacts = await loadChatContacts();
+  const saved = getSavedChatPartner();
+  if(saved && chatContacts.some(n=>n.toLowerCase()===saved.toLowerCase())){
+    currentChatPartner = chatContacts.find(n=>n.toLowerCase()===saved.toLowerCase());
+  } else if(chatContacts.length && (!currentChatPartner || !chatContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase()))){
+    currentChatPartner = chatContacts[0];
+  } else if(!chatContacts.length){
+    currentChatPartner = null;
+  }
+
   el.innerHTML = `
     <div id="chatPresenceBar" class="presenceBar"></div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <button class="nav-btn" id="chatClearBtn" style="font-size:10.5px;padding:6px 10px;">🗑️ Clear Chat</button>
+    <div id="chatContactBar" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin:2px 0 10px;-webkit-overflow-scrolling:touch;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
+      <div id="chatThreadHead" style="font-size:12.5px;font-weight:800;color:var(--white);"></div>
+      <button class="nav-btn" id="chatClearBtn" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;">🗑️ Clear</button>
     </div>
     <div id="chatMessages" style="max-height:300px;min-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 4px;"><div class="loading">Chat load ho raha hai…</div></div>
     <div id="chatImgPreviewWrap" style="display:none;margin-top:8px;position:relative;width:126px;"></div>
-    <div class="btnrow" style="margin-top:10px;gap:6px;flex-wrap:nowrap;">
+    <div id="chatInputRow" class="btnrow" style="margin-top:10px;gap:6px;flex-wrap:nowrap;">
       <input type="text" id="chatTextInput" placeholder="Apna doubt/message likho..." style="flex:1;min-width:0;background:var(--panel2);border:1.5px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14.5px;padding:12px 12px;">
       <label class="nav-btn" style="cursor:pointer;display:flex;align-items:center;padding:10px 12px;margin:0;font-size:15px;" for="chatImgInput">📷</label>
       <input type="file" id="chatImgInput" accept="image/*" style="display:none;">
       <button class="nav-btn" id="chatSendBtn" style="padding:10px 16px;font-size:15px;">➤</button>
     </div>
-    <div class="losshint" style="padding-top:6px;">Sirf isi Room ke members dekhenge — private photo mat bhejo. Seen tick tabhi aayega jab dost Chat tab khole.</div>
+    <div id="chatPrivacyHint" class="losshint" style="padding-top:6px;"></div>
   `;
+  renderChatContactChips();
+  updateChatHeaderAndInputState();
+
   const textInp = document.getElementById('chatTextInput');
   const imgInp = document.getElementById('chatImgInput');
   const previewWrap = document.getElementById('chatImgPreviewWrap');
   const sendBtn = document.getElementById('chatSendBtn');
   const clearChatBtn = document.getElementById('chatClearBtn');
   if(clearChatBtn) clearChatBtn.addEventListener('click', async ()=>{
-    if(!confirm('Ye is Room ke saare chat messages sabke liye delete kar dega. Pakka clear karna hai?')) return;
+    if(!currentChatPartner) return;
+    if(!confirm(`Ye sirf tumhare aur ${currentChatPartner} ke beech ka chat delete karega (kisi aur ka chat nahi chhuta). Pakka clear karna hai?`)) return;
     clearChatBtn.disabled = true;
     try{
       await waitForFirebase();
-      await window.__fbSet(`rooms/${room}/chat`, null);
+      await window.__fbSet(`rooms/${room}/dm/${dmPairKey(myName, currentChatPartner)}/msgs`, null);
     }catch(e){
       alert('Chat clear nahi ho paya.\n\nWajah: ' + ((e&&e.message)?e.message:String(e)));
     }
@@ -1687,12 +1787,14 @@ async function renderChatPanel(){
   });
 
   const doSend = async ()=>{
+    if(!currentChatPartner){ alert('Pehle upar se ek contact chuno.'); return; }
     const text = (textInp.value||'').trim();
     if(!text && !pendingChatImage) return;
     sendBtn.disabled = true;
     try{
+      const pairKey = dmPairKey(myName, currentChatPartner);
       await Promise.race([
-        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/chat`, { sender: myName, text, image: pendingChatImage||null, ts: Date.now() }); })(),
+        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/dm/${pairKey}/msgs`, { sender: myName, text, image: pendingChatImage||null, ts: Date.now() }); })(),
         new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet slow ya Firebase tak pahunch nahi paya.')), 8000))
       ]);
       textInp.value = '';
@@ -1708,20 +1810,15 @@ async function renderChatPanel(){
 
   try{
     await waitForFirebase();
-    chatUnsub = await window.__fbListenReady(`rooms/${room}/chat`, (val)=>{ renderChatMessages(val); });
+    dmUnsub = await window.__fbListenReady(`rooms/${room}/dm`, (val)=>{
+      dmTreeCache = val || {};
+      renderChatContactChips();
+      renderChatMessages();
+    });
   }catch(e){
     const msgEl = document.getElementById('chatMessages');
     if(msgEl) msgEl.innerHTML = `<div class="losshint" style="padding:0;">Chat load nahi ho payi.\nWajah: ${escapeHtml((e&&e.message)?e.message:String(e))}</div>`;
   }
-
-  if(chatSeenUnsub){ try{ chatSeenUnsub(); }catch(e){} chatSeenUnsub = null; }
-  try{
-    await waitForFirebase();
-    chatSeenUnsub = await window.__fbListenReady(`rooms/${room}/chatSeen`, (val)=>{
-      chatSeenMap = val || {};
-      renderChatMessages(lastChatMsgsObj);
-    });
-  }catch(e){ /* seen ticks are best-effort, no need to surface errors */ }
 
   renderChatPresenceBar();
   startPresenceHeartbeat();
@@ -1731,17 +1828,27 @@ async function renderChatPanel(){
     presenceUnsub = await window.__fbListenReady(`rooms/${room}/presence`, (val)=>{
       presenceMap = val || {};
       renderChatPresenceBar();
+      renderChatContactChips();
     });
   }catch(e){ /* presence is best-effort, no need to surface errors */ }
 }
 
-// Cheap to call often (e.g. from the room auto-sync loop): only actually
-// rebuilds the chat panel/listener when the room code has changed, so
+// Cheap to call often (e.g. from the room auto-sync loop): only fully
+// rebuilds the chat panel/listener when the room code has changed. Otherwise
+// it just refreshes the contact list (in case a friend was just added), so
 // typing in the chat box never gets interrupted by unrelated refreshes.
 async function ensureChatPanel(){
   const room = getRoomCode();
-  if(room === lastChatRoomInited) return;
-  lastChatRoomInited = room;
+  if(room === lastDmRoomInited){
+    if(room){
+      chatContacts = await loadChatContacts();
+      renderChatContactChips();
+      updateChatHeaderAndInputState();
+      updateChatDot();
+    }
+    return;
+  }
+  lastDmRoomInited = room;
   await renderChatPanel();
 }
 
@@ -1891,11 +1998,16 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
     const dotHtml = isMe ? '🟢' : (r.snapshotAt ? '📌' : presenceLabel(r.name).dot);
+    // One-click shortcut straight into an opponent's full tracker (Today tab:
+    // tasks, mock/sectional scores, notes, mistakes, day grid) — no need to
+    // go via the Compete tab and tap "View" separately.
+    const viewBtn = isMe ? '' : `<button class="nav-btn homeLBViewBtn" data-view="${escapeHtml(r.name)}" title="${escapeHtml(r.name)} ka pura tracker dekho" style="font-size:12px;padding:5px 8px;flex-shrink:0;">👀</button>`;
     return `
       <div class="homeLBrow ${isMe?'me':''} ${rank===1?'lead':''}">
         <div class="homeLBrank">${medal}</div>
         <div class="homeLBname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}</div>
         <div class="homeLBmeta"><span>🔥${r.streak}</span><span>📈${r.pct}%</span></div>
+        ${viewBtn}
       </div>`;
   }).join('');
   const rankMsg = rows.length>1 && myRank
@@ -1908,6 +2020,13 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
       <button class="nav-btn" id="homeLBOpenBtn" style="font-size:11px;padding:6px 10px;">Poora Leaderboard + Chat ➜</button>
     </div>
   `;
+  el.querySelectorAll('.homeLBViewBtn').forEach(btn=>{
+    btn.addEventListener('click', async (ev)=>{
+      ev.stopPropagation();
+      await switchViewing(btn.getAttribute('data-view'));
+      switchTab('today');
+    });
+  });
   const btn = document.getElementById('homeLBOpenBtn');
   if(btn) btn.addEventListener('click', ()=> switchTab('compete'));
 }
@@ -2234,36 +2353,50 @@ function buildTimeGuideHtml(){
   const cur = nowMinutes();
   const dayEndIdx = TASK_START_MIN.length-1;
   const dayEnd = TASK_START_MIN[dayEndIdx] + (TASK_DURATIONS_MIN[dayEndIdx]||0);
+
+  // Tag each pending task against its ORIGINAL scheduled slot (so we still
+  // know what's missed/live/upcoming) — but the time shown to the person
+  // below is a brand-new plan built from right now onward, so it never
+  // shows a slot that has already gone by.
   const pending = [];
   TASKS.forEach((t, idx)=>{
     if(!d.tasks[idx]){
       const {start,end} = taskSlot(idx);
       let tag, tagClass;
-      if(cur>=end){ tag='⚠️ Missed Slot'; tagClass='tagmiss'; }
-      else if(cur>=start && cur<end){ tag='🔵 Abhi Chal Raha Hai'; tagClass='tagnow'; }
-      else { tag='⏳ Aane Wala'; tagClass='tagnext'; }
-      pending.push({ idx, name:t, start, end, tag, tagClass, mins: TASK_DURATIONS_MIN[idx]||0 });
+      if(cur>=end){ tag='⚠️ Chuk Gaya'; tagClass='tagmiss'; }
+      else if(cur>=start && cur<end){ tag='🔵 Chal Raha'; tagClass='tagnow'; }
+      else { tag='⏳ Aage Hai'; tagClass='tagnext'; }
+      pending.push({ idx, name:t, tag, tagClass, mins: TASK_DURATIONS_MIN[idx]||0 });
     }
   });
   if(pending.length===0){
     return `<div class="guideDone">🎉 Aaj ke saare tasks clear ho chuke hain! Poora ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')} kama liya — kal isi josh ke saath phir milte hain.</div>`;
   }
+
+  // Rebuild the rest of the day back-to-back, starting from THIS MOMENT —
+  // this is the actual "next time" plan, not the stale original slot.
+  let cursor = cur;
+  pending.forEach(p=>{
+    p.newStart = cursor;
+    p.newEnd = cursor + p.mins;
+    cursor = p.newEnd;
+  });
+  const finishTime = cursor;
   const neededMins = pending.reduce((a,p)=>a+p.mins, 0);
-  const remainingMins = Math.max(0, dayEnd - cur);
   const potentialEarn = Math.round(pending.reduce((a,p)=>a+taskValue(p.idx), 0));
+
   let head;
-  if(cur >= dayEnd){
-    head = `⏰ Abhi <b>${fmtClock(cur)}</b> hai — aaj ka scheduled time khatam ho chuka hai, lekin ${pending.length} task${pending.length>1?'s':''} abhi bhi baaki hain. Jitna abhi ho sake turant nipta do, taaki loss kam se kam rahe.`;
-  } else if(neededMins <= remainingMins){
-    head = `⏰ Abhi <b>${fmtClock(cur)}</b> hai — bache hue ${pending.length} task${pending.length>1?'s':''} (~${fmtHours(neededMins)}) aaram se fit ho jayenge bache hue ${fmtHours(remainingMins)} mein. Schedule ke hisaab se lage raho!`;
+  if(finishTime <= dayEnd){
+    head = `⏰ Abhi <b>${fmtClock(cur)}</b> hai — abhi se lagatar shuru karo to bache hue ${pending.length} task${pending.length>1?'s':''} (~${fmtHours(neededMins)}) <b>${fmtClock(finishTime)}</b> tak khatam ho jayenge — aaj ke ${fmtClock(dayEnd)} wale schedule ke andar hi. Neeche diye naye time ke hisaab se ek-ek karke nipta do!`;
   } else {
-    const shortfall = neededMins - remainingMins;
-    head = `⚠️ Abhi <b>${fmtClock(cur)}</b> hai — bache hue ${pending.length} tasks ~${fmtHours(neededMins)} maangte hain, par sirf ${fmtHours(remainingMins)} bache hain (~${fmtHours(shortfall)} kam). Neeche diye order mein sabse zaroori/overdue task pehle nipta do, phir baaki mein speed badhao — jyada se jyada output isi tarah milega.`;
+    const overBy = finishTime - dayEnd;
+    head = `⚠️ Abhi <b>${fmtClock(cur)}</b> hai — abhi se lagatar shuru karke bhi bache hue ${pending.length} task${pending.length>1?'s':''} (~${fmtHours(neededMins)}) <b>${fmtClock(finishTime)}</b> tak hi khatam honge — aaj ke ${fmtClock(dayEnd)} target se ~${fmtHours(overBy)} zyada. Speed thodi badhao ya sabse chhota/kam zaroori task kal ke liye rakho — par turant neeche wale naye time-plan se shuru ho jao.`;
   }
+
   const rows = pending.map(p=>`
     <div class="guideRow ${p.tagClass}">
       <div class="guideTaskName">${escapeHtml(p.name)}</div>
-      <div class="guideTaskMeta"><span>${fmtClock(p.start)}–${fmtClock(p.end)}</span><span class="guideTag">${p.tag}</span></div>
+      <div class="guideTaskMeta"><span>${fmtClock(p.newStart)}–${fmtClock(p.newEnd)}</span><span class="guideTag">${p.tag}</span></div>
     </div>`).join('');
   return `
     <div class="guideHead">${head}</div>
@@ -2819,8 +2952,9 @@ function switchTab(name){
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
   if(name==='chat'){
     markMyChatSeen();
-    updateChatDot(lastChatMsgsObj);
+    updateChatDot();
     renderChatPresenceBar();
+    renderChatContactChips();
   }
 }
 function initTabs(){
