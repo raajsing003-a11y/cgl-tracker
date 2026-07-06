@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation CGL — 50 Day Tracker</title>
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CGL 50">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08070a;
+    --panel:#111013;
+    --panel2:#1a181d;
+    --border:#333038;
+    --border-strong:#726d7a;
+    --text:#f5f4f7;
+    --muted:#98939f;
+    --white:#ffffff;
+    --gain:#4ade80;
+    --loss:#f87171;
+    --accent:#fbbf24;
+    --accent-dim:#7a5f14;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(251,191,36,0.09), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(251,191,36,0.04), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    padding:20px 12px 70px;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  .eyebrow{
+    font-size:11px;letter-spacing:3px;color:var(--border-strong);
+    text-transform:uppercase;margin-bottom:6px;font-weight:700;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,7vw,44px);
+    margin:0 0 4px;
+    letter-spacing:0.5px;
+    color:var(--white);
+    border-bottom:3px solid var(--accent);
+    padding-bottom:10px;
+    display:inline-block;
+  }
+  .sub{color:var(--muted);font-size:13px;margin:12px 0 20px;font-weight:600;}
+
+  .statrow, .wallet{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;
+  }
+  .wallet{margin-bottom:22px;}
+  .stat{
+    background:var(--panel);border:1px solid var(--border);border-radius:9px;
+    padding:14px 8px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,0.35);
+  }
+  .stat.invert{background:linear-gradient(160deg,#fff,#f1e4bd);border-color:var(--accent);}
+  .stat .num{
+    font-family:'Oswald',sans-serif;font-size:clamp(19px,5vw,27px);font-weight:800;color:var(--white);
+  }
+  .stat.invert .num{color:#1a1404;}
+  .stat .lbl{font-size:9.5px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:700;}
+  .stat.invert .lbl{color:#4a3f22;}
+
+  .grid-label{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:22px 0 10px;font-weight:700;
+    border-top:1px dashed var(--border);padding-top:16px;}
+  .daygrid{
+    display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:24px;
+  }
+  @media (max-width:480px){
+    .daygrid{grid-template-columns:repeat(7,1fr);}
+    .statrow, .wallet{grid-template-columns:repeat(3,1fr);}
+  }
+  .daycell{
+    aspect-ratio:1;border-radius:4px;border:1px solid var(--border);
+    background:var(--panel);color:var(--muted);
+    font-size:11px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;font-weight:700;
+  }
+  .daycell{transition:transform .1s ease,box-shadow .15s ease;}
+  .daycell:active{transform:scale(0.92);}
+  .daycell.today{border:2px double var(--accent);color:var(--accent);}
+  .daycell.partial{border:1px dashed var(--border-strong);color:var(--text);}
+  .daycell.done{background:linear-gradient(160deg,#fff,#f1e0a8);color:#000;font-weight:800;border-color:var(--accent);}
+  .daycell.rest{background:repeating-linear-gradient(45deg, var(--panel2), var(--panel2) 4px, #211f24 4px, #211f24 8px);color:var(--muted);}
+  .daycell.selected{box-shadow:0 0 0 2px var(--accent);}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border-strong);border-radius:12px;
+    padding:18px 16px 10px;margin-bottom:20px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.4);
+  }
+  .panel-head{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;gap:6px;
+  }
+  .panel-head h2{
+    font-family:'Oswald',sans-serif;font-size:clamp(18px,4vw,22px);margin:0;color:var(--white);font-weight:800;
+  }
+  .panel-head .date{color:var(--muted);font-size:12px;font-weight:700;}
+  .bar{
+    height:7px;background:var(--panel2);border-radius:5px;overflow:hidden;margin:10px 0 16px;border:1px solid var(--border);
+  }
+  .bar-fill{height:100%;background:linear-gradient(90deg,#fff,var(--accent));transition:width .25s ease;}
+
+  .restbtn{
+    display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 10px;
+    border:1px dashed var(--border-strong);border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted);font-weight:700;
+  }
+  .restbtn.active{background:var(--white);color:#000;border-color:var(--white);}
+  .restbtn input{width:16px;height:16px;}
+
+  .task{
+    display:flex;align-items:center;gap:10px;padding:10px 0;
+    border-bottom:1px solid var(--border);flex-wrap:wrap;
+  }
+  .task:last-child{border-bottom:none;}
+  .task input[type=checkbox]{
+    appearance:none;width:22px;height:22px;min-width:22px;
+    border:2px solid var(--border-strong);border-radius:4px;cursor:pointer;position:relative;flex-shrink:0;
+    background:var(--panel2);
+  }
+  .task input[type=checkbox]:checked{background:var(--white);border-color:var(--white);}
+  .task input[type=checkbox]:checked::after{
+    content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid #000;border-width:0 3px 3px 0;transform:rotate(40deg);
+  }
+  .taskinfo{flex:1;min-width:150px;}
+  .task .name{font-size:13.5px;line-height:1.35;font-weight:700;}
+  .task.checked .name{color:var(--white);text-decoration:line-through;text-decoration-color:var(--border-strong);}
+  .task .value{font-size:12px;color:var(--muted);font-weight:800;min-width:50px;text-align:right;}
+  .task.checked .value{color:var(--white);}
+
+  .subhead{
+    font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);
+    margin:20px 0 10px;font-weight:800;border-top:1px dashed var(--border);padding-top:16px;
+  }
+  .scoreform{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
+  @media (max-width:480px){.scoreform{grid-template-columns:repeat(2,1fr);}}
+  .scorefield label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;font-weight:700;}
+  .scorefield input{
+    width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
+    padding:8px 6px;text-align:center;
+  }
+  .scorefield input:focus{outline:none;border-color:var(--white);}
+  .scoretotal{font-size:12px;color:var(--muted);text-align:right;margin-bottom:4px;font-weight:800;}
+  .scoretotal b{color:var(--white);font-size:14px;}
+
+  .notes textarea{
+    width:100%;min-height:80px;background:var(--panel2);border:1px solid var(--border-strong);
+    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;
+    padding:10px;resize:vertical;
+  }
+  .notes textarea:focus{outline:none;border-color:var(--white);}
+
+  .footer-row{
+    display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .nav-btn{
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--text);
+    padding:9px 14px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;
+    transition:all .15s ease;
+  }
+  .nav-btn:hover{border-color:var(--accent);background:var(--accent);color:#1a1404;}
+  .nav-btn:active{transform:scale(0.96);}
+
+  .perfwrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  @media (max-width:600px){.perfwrap{grid-template-columns:1fr;}}
+  .perfcard{
+    background:var(--panel);border:1px solid var(--border-strong);border-radius:10px;padding:14px 14px 8px;
+  }
+  .perfcard h3{
+    font-family:'Oswald',sans-serif;font-size:14px;margin:0 0 10px;color:var(--white);
+    letter-spacing:0.5px;font-weight:700;
+  }
+  .perfrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .perfrow:last-child{border-bottom:none;}
+  .perfrow span:first-child{color:var(--muted);}
+  .perfrow span:last-child{font-weight:800;color:var(--text);}
+  .perfrow.total span:last-child{color:var(--white);font-size:14px;}
+
+  .weekwrap{margin-bottom:22px;}
+  .weekrow{
+    display:flex;justify-content:space-between;align-items:center;padding:8px 12px;
+    border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--panel);font-size:12px;
+  }
+  .weekrow .wname{font-weight:800;color:var(--white);}
+  .weekrow .wrange{color:var(--muted);font-size:10.5px;}
+  .weekrow .wpct{font-weight:800;}
+
+  .daybadge{position:absolute;top:-6px;right:-5px;font-size:9px;line-height:1;filter:drop-shadow(0 0 1px #000);}
+  .chartcard{overflow:hidden;}
+  .chartscroll{overflow-x:auto;padding-bottom:4px;}
+  .chartlegend{display:flex;gap:16px;font-size:10.5px;color:var(--muted);margin-top:8px;font-weight:700;}
+  .chartlegend b{font-weight:800;}
+  .lossrow{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+  .lossrow:last-child{border-bottom:none;}
+  .lossrow .lday{color:var(--text);}
+  .lossrow .lamt{color:var(--loss);font-weight:800;white-space:nowrap;}
+  .losshint{font-size:12px;color:var(--muted);padding:6px 0;font-weight:600;}
+  .bwrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .bwrow:last-child{border-bottom:none;}
+  .bwrow .tag{color:var(--muted);}
+  .bwrow .amt.gain{color:var(--gain);font-weight:800;}
+  .bwrow .amt.loss{color:var(--loss);font-weight:800;}
+  .streakfire{color:var(--accent);}
+  .backupwrap{margin-top:24px;border-top:1px dashed var(--border);padding-top:16px;}
+  .backupwrap textarea{
+    width:100%;min-height:70px;background:var(--panel2);border:1px solid var(--border-strong);
+    border-radius:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;
+    padding:10px;margin-top:8px;
+  }
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+
+  .reset{
+    background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;
+    margin-top:14px;font-weight:700;padding:0;
+  }
+  .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center;}
+
+  .streakfire{display:inline-block;}
+
+  /* ===== Reward Banner ===== */
+  .rewardBanner{
+    display:none;
+    background:var(--white);color:#000;
+    border:2px solid var(--white);border-radius:10px;
+    padding:16px 16px;margin-bottom:16px;
+  }
+  .rewardBanner.show{display:block;}
+  .rewardBanner .rTitle{
+    font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;
+  }
+  .rewardBanner .rMsg{font-size:13px;font-weight:600;line-height:1.5;margin-bottom:10px;}
+  .rewardBanner .rAmt{font-size:13px;font-weight:800;margin-bottom:10px;}
+  .rewardBanner .rClose{
+    background:#000;color:#fff;border:none;border-radius:6px;padding:7px 12px;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;cursor:pointer;
+  }
+
+  /* ===== Badge Unlock Banner ===== */
+  .badgeBanner{
+    display:none;
+    background:linear-gradient(135deg,#1a1404,#0a0a0a);color:var(--accent);
+    border:2px solid var(--accent);border-radius:10px;
+    padding:16px 16px;margin-bottom:16px;
+    box-shadow:0 0 24px rgba(251,191,36,0.25);
+  }
+  .badgeBanner.show{display:block;}
+  .badgeBanner .rTitle{font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;color:var(--accent);}
+  .badgeBanner .rMsg{font-size:13px;font-weight:600;line-height:1.5;margin-bottom:10px;color:var(--text);}
+  .badgeBanner .rClose{
+    background:var(--accent);color:#1a1404;border:none;border-radius:6px;padding:7px 12px;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;cursor:pointer;
+  }
+
+  /* ===== Achievement Badges ===== */
+  .badgeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .badgeChip{
+    border:1px solid var(--border);border-radius:10px;padding:12px 6px;text-align:center;
+    background:var(--panel2);opacity:0.4;filter:grayscale(1);transition:all .2s ease;
+  }
+  .badgeChip.earned{opacity:1;filter:none;border-color:var(--accent);background:linear-gradient(160deg,#1a1404,#141014);box-shadow:0 0 14px rgba(251,191,36,0.15);}
+  .badgeChip .bEmoji{font-size:26px;line-height:1;margin-bottom:6px;}
+  .badgeChip .bLabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+  .badgeChip.earned .bLabel{color:var(--accent);}
+  .badgeChip .bStatus{font-size:9px;color:var(--muted);margin-top:3px;font-weight:600;}
+
+  /* ===== Task Name Editor ===== */
+  .taskEditIntro{font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:600;}
+  .taskEditRow{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .taskEditRow .tNum{font-size:11px;color:var(--muted);min-width:18px;font-weight:800;}
+  .taskEditRow input{
+    flex:1;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;
+    padding:8px 10px;
+  }
+  .taskEditRow input:focus{outline:none;border-color:var(--accent);}
+
+  /* ===== Multiplayer: Profile Bar & Leaderboard ===== */
+  .profilebar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    background:var(--panel);border:1px solid var(--border);border-radius:9px;
+    padding:10px 12px;margin-bottom:18px;font-size:12.5px;
+  }
+  .profilebar .pbrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;width:100%;}
+  .profilebar.viewing{border-color:var(--accent);background:linear-gradient(135deg,#1a1404,#111013);}
+  .profilebar.viewing span{color:var(--accent);}
+  .lbwrap{margin-bottom:4px;}
+  .lbrow{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:9px 4px;border-bottom:1px solid var(--border);font-size:12.5px;
+  }
+  .lbrow:last-child{border-bottom:none;}
+  .lbrow.active{background:rgba(251,191,36,0.08);border-radius:6px;}
+  .lbname{flex:1;min-width:90px;font-weight:800;}
+  .lbstats{display:flex;gap:10px;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .lbview{padding:5px 10px;font-size:10.5px;}
+  .addfriend{display:flex;gap:8px;margin-top:12px;}
+  .addfriend input{
+    flex:1;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12.5px;padding:8px 10px;
+  }
+  .addfriend input:focus{outline:none;border-color:var(--white);}
+  .readonly-banner{
+    background:linear-gradient(135deg,#1a1404,#0a0a0a);color:var(--accent);
+    border:1px dashed var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:14px;
+    font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+</style>
+</head>
+<body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmGn402mqnzCNpjzU13gLQbMPBIkma2ws",
+    authDomain: "study-414cf.firebaseapp.com",
+    databaseURL: "https://study-414cf-default-rtdb.firebaseio.com",
+    projectId: "study-414cf",
+    storageBucket: "study-414cf.firebasestorage.app",
+    messagingSenderId: "165701458469",
+    appId: "1:165701458469:web:e6870346d665a6508ebdcc"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  // Sign in anonymously (this is the "login" — silent, no form needed) and
+  // expose a promise that resolves once that's done, plus tiny get/set
+  // helpers, on window so the classic <script> below can use them.
+  window.__fbReadyPromise = new Promise((resolve, reject) => {
+    onAuthStateChanged(auth, (user) => { if(user) resolve(user); });
+    signInAnonymously(auth).catch(err => {
+      console.error('Firebase anonymous sign-in failed', err);
+      reject(err);
+    });
+  });
+  window.__fbGet = async function(path){
+    await window.__fbReadyPromise;
+    const snap = await get(ref(db, path));
+    return snap.exists() ? snap.val() : null;
+  };
+  window.__fbSet = async function(path, value){
+    await window.__fbReadyPromise;
+    await set(ref(db, path), value);
+    return true;
+  };
+  window.__fbNewId = function(){
+    return (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : ('r'+Date.now()+Math.random().toString(36).slice(2))).slice(0,20);
+  };
+</script>
+
+<div class="wrap">
+  <div class="eyebrow">🚀 Mission Countdown</div>
+  <h1>🎯 OPERATION CGL // 50 DAYS</h1>
+  <div class="sub" id="examLine">Loading dates…</div>
+  <div class="profilebar" id="profileBar"></div>
+
+  <div class="grid-label" style="margin-top:0;">🔗 Sync Room — Chrome ya kisi bhi browser mein khole, dono sync</div>
+  <div class="panel" id="roomPanel">
+    <div class="loading">Loading sync status…</div>
+  </div>
+
+  <div class="statrow">
+    <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">📅 Days Cleared</div></div>
+    <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">🔥 Streak (50%+ din)</div></div>
+    <div class="stat"><div class="num" id="statPct">0%</div><div class="lbl">📈 Overall Progress</div></div>
+  </div>
+
+  <div class="wallet">
+    <div class="stat"><div class="num" id="statEarn">₹0</div><div class="lbl">💰 Earned</div></div>
+    <div class="stat"><div class="num" id="statLoss">₹0</div><div class="lbl">💸 Lost</div></div>
+    <div class="stat invert"><div class="num" id="statNet">₹0</div><div class="lbl">🏦 Net Balance</div></div>
+  </div>
+
+  <div class="grid-label" style="margin-top:0;">⏱️ Study Hours — task complete karne se auto count hoti hai</div>
+  <div class="statrow">
+    <div class="stat"><div class="num" id="statHoursToday">0h</div><div class="lbl">📖 Is Din Ki Study</div></div>
+    <div class="stat"><div class="num" id="statHoursTotal">0h</div><div class="lbl">📚 Total Study</div></div>
+    <div class="stat"><div class="num" id="statHoursAvg">0h</div><div class="lbl">📊 Daily Avg</div></div>
+  </div>
+
+  <div class="grid-label" style="margin-top:0;">🤝 Compete With Friends</div>
+  <div class="panel" id="competePanel">
+    <div class="loading">Loading leaderboard…</div>
+  </div>
+
+  <div class="rewardBanner" id="rewardBanner">
+    <div class="rTitle" id="rewardTitle"></div>
+    <div class="rMsg" id="rewardMsg"></div>
+    <div class="rAmt" id="rewardAmt"></div>
+    <button class="rClose" id="rewardClose">Theek Hai ✕</button>
+  </div>
+
+  <div class="badgeBanner" id="badgeBanner">
+    <div class="rTitle" id="badgeTitle"></div>
+    <div class="rMsg" id="badgeMsg"></div>
+    <button class="rClose" id="badgeClose">Zabardast ✕</button>
+  </div>
+
+  <div class="grid-label" style="margin-top:0;">🏅 Streak Badges</div>
+  <div class="panel" id="badgesPanel"></div>
+
+  <div class="grid-label" style="margin-top:0;">📊 Daily Wallet Trend — har din ka kamaya vs khoya paisa</div>
+  <div class="panel chartcard">
+    <div class="chartscroll" id="walletChart"></div>
+    <div class="chartlegend">
+      <span>⬆️ <b style="color:var(--gain);">Earned</b></span>
+      <span>⬇️ <b style="color:var(--loss);">Lost</b></span>
+      <span style="margin-left:auto;">✦ Latest Day</span>
+    </div>
+  </div>
+
+  <div class="grid-label" style="margin-top:0;">📉 Loss Log — kis din, kitna paisa gaya</div>
+  <div class="panel" id="lossLog"></div>
+
+  <div class="grid-label" style="margin-top:0;">🗺️ Campaign Map — tap any day (✅ cleared · ⏳ partial · 😴 rest)</div>
+  <div class="daygrid" id="dayGrid"></div>
+
+  <div class="panel" id="panel">
+    <div class="loading">Loading tracker…</div>
+  </div>
+
+  <div class="perfwrap">
+    <div class="perfcard">
+      <h3>🧪 FULL MOCK — ALL-TIME AVG</h3>
+      <div id="perfMock"></div>
+    </div>
+    <div class="perfcard">
+      <h3>🧮 SECTIONAL MATH — ALL-TIME AVG</h3>
+      <div id="perfSect"></div>
+    </div>
+  </div>
+
+  <div class="perfcard" style="margin-bottom:20px;">
+    <h3>🏆 Best & Toughest Day</h3>
+    <div id="bestWorst"></div>
+  </div>
+
+  <div class="grid-label">🗓️ Weekly Breakdown</div>
+  <div class="weekwrap" id="weekWrap"></div>
+
+  <div id="taskEditSection">
+    <div class="grid-label" style="margin-top:0;">✏️ Customize Task Names</div>
+    <div class="panel" id="taskEditPanel">
+      <div class="taskEditIntro">Naam badal sakte ho, tasks ki ginti (11) aur ₹ split same rahega.</div>
+      <div id="taskEditForm"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="saveTasksBtn">💾 Save Task Names</button>
+        <button class="nav-btn" id="resetTasksBtn">↩️ Reset to Default</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="backupwrap" id="backupSection">
+    <div class="grid-label" style="margin-top:0;border-top:none;padding-top:0;">💾 Backup / Restore (data safe rehta hai, ye sirf manual copy hai)</div>
+    <div class="btnrow">
+      <button class="nav-btn" id="showBackupBtn">📋 Show Backup Code</button>
+      <button class="nav-btn" id="restoreBtn">♻️ Restore From Code</button>
+      <button class="nav-btn" id="exportBtn">⬇️ Export Data (CSV)</button>
+    </div>
+    <textarea id="backupArea" placeholder="Backup code yaha dikhega / paste karke restore karo…"></textarea>
+  </div>
+
+  <div class="btnrow" style="margin-top:6px;">
+    <button class="nav-btn" id="refreshBtn">🔄 Refresh Numbers</button>
+    <button class="nav-btn" id="installBtn" style="display:none;">📱 Add to Home Screen</button>
+  </div>
+  <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
+</div>
+
+<script>
+const START_DATE = new Date('2026-07-06T00:00:00');
+const TOTAL_DAYS = 50;
+const DAILY_TARGET = 5000;
+const DEFAULT_TASKS = [
+  "Math Formula + GK Revise",
+  "Vocab",
+  "Full Mock (Attempt Only)",
+  "Calculation",
+  "Math Chapter (1.5 hrs)",
+  "Mock Analysis",
+  "English (10 PQRS, 2 RC, 2 CT)",
+  "GK",
+  "4 Sectional Math (15 min each)",
+  "Analysis + 1 Reasoning Sectional",
+  "Backup + Reading / GK"
+];
+let TASKS = DEFAULT_TASKS.slice();
+const PER_TASK = DAILY_TARGET / DEFAULT_TASKS.length;
+// Minutes per task, in the same fixed order as DEFAULT_TASKS (renaming a task
+// doesn't change its position, so this mapping stays correct). These are
+// never printed next to a task name — they only drive the auto Study Hours
+// count below, based on: 07-08 (50m), 08-09 (60m), 09-10 (60m), 11-11:30 (30m),
+// 11:30-1 (90m), 1-2 (60m), 3-4 (60m), 4-5 (60m), 5-6 (60m), 7-8:30 (90m), 9-10 (60m).
+const TASK_DURATIONS_MIN = [50,60,60,30,90,60,60,60,60,90,60];
+function dayStudyMinutes(d){
+  let mins = 0;
+  d.tasks.forEach((checked,idx)=>{ if(checked) mins += (TASK_DURATIONS_MIN[idx]||0); });
+  return mins;
+}
+function fmtHours(mins){
+  mins = Math.round(mins);
+  const h = Math.floor(mins/60), m = mins%60;
+  if(h<=0) return m+'m';
+  return m>0 ? h+'h '+m+'m' : h+'h';
+}
+// A day "meets target" for streak purposes once at least 50% of tasks are
+// done — full completion is no longer required to keep the streak alive.
+function meetsStreakTarget(d){
+  const done = d.tasks.filter(Boolean).length;
+  return (done/TASKS.length) >= 0.5;
+}
+const STORAGE_KEY = 'cgl-tracker-state-v2';
+const BADGES = [
+  {days:7,  emoji:'🥉', label:'7-Day Streak'},
+  {days:14, emoji:'🥈', label:'14-Day Streak'},
+  {days:30, emoji:'🥇', label:'30-Day Streak'}
+];
+const BADGE_MESSAGES = {
+  7:  "1 hafta lagatar poora! Momentum ban raha hai — isse tootne mat do.",
+  14: "2 hafte non-stop! Ye habit ab tumhara identity ban rahi hai.",
+  30: "30 din ka streak — respect. Ab sirf 20 din aur, finish line saamne hai!"
+};
+
+const MOTIVATION_MESSAGES = [
+  "Ek din aur pura — consistency hi asli syllabus hai. Kal phir yahi josh chahiye!",
+  "Full day clear! Ye ₹5,000 tumne kamaya hai, kisi ne diya nahi. Keep going!",
+  "Selection sirf un logo ko milti hai jo aise hi din-dar-din grind karte hain. Bohot badhiya!",
+  "Aaj ka din pura — CGL ka result aaj ke jaise 50 dino se hi banega.",
+  "Zabardast! Jo aaj kiya wo kal exam hall me kaam aayega.",
+  "Poora din complete — tumhara future-self tumhe thank you bolega.",
+  "Ek aur brick set ho gayi is foundation me. Solid kaam!",
+  "Consistency > Motivation. Aaj tumne consistency dikhayi — badhiya!",
+  "Din pura, wallet full — isi tarah 50 din tak chalna hai.",
+  "Mehnat dikh rahi hai. Yahi routine tumhe topper banayega."
+];
+
+let state = {};
+let selectedDay = 1;
+let notesTimer = null;
+let scoreTimer = null;
+let myName = null;       // this device's chosen player name
+let viewingName = null;  // whose tracker is currently on screen (me or a friend)
+const REGISTRY_KEY = 'cgl50-players-registry';
+
+function fmtDate(dayNum){
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + (dayNum-1));
+  return d.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
+}
+function todayDayNum(){
+  const now = new Date();
+  const diff = Math.floor((new Date(now.toDateString()) - new Date(START_DATE.toDateString()))/86400000)+1;
+  return Math.min(Math.max(diff,1), TOTAL_DAYS);
+}
+function getDay(n){
+  if(!state[n]) state[n] = {};
+  const d = state[n];
+  if(!d.tasks) d.tasks = new Array(TASKS.length).fill(false);
+  if(!d.mock) d.mock = {math:'',reasoning:'',english:'',gk:''};
+  if(!d.sect) d.sect = {s1:'',s2:'',s3:'',s4:''};
+  if(typeof d.notes !== 'string') d.notes = '';
+  if(typeof d.rest !== 'boolean') d.rest = false;
+  return d;
+}
+function dayStatus(n){
+  const d = getDay(n);
+  if(d.rest) return 'rest';
+  const done = d.tasks.filter(Boolean).length;
+  if(done===0) return 'empty';
+  if(done===TASKS.length) return 'done';
+  return 'partial';
+}
+function num(v){ const f = parseFloat(v); return isNaN(f) ? 0 : f; }
+function hasVal(v){ return v!==undefined && v!==null && v!=='' && !isNaN(parseFloat(v)); }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Single source of truth for a day's earned/lost amounts.
+// A rest day never contributes to either earned or lost.
+function dayEarnLoss(d){
+  if(d.rest) return {earned:0, lost:0};
+  const done = d.tasks.filter(Boolean).length;
+  return { earned: done*PER_TASK, lost: (TASKS.length-done)*PER_TASK };
+}
+
+// A day counts as "touched" if the user has actually interacted with it —
+// checked a task, marked it rest, entered a score, or written a note.
+// This lets us count earning/loss for every day the user has filled in,
+// instead of being limited to how many real calendar days have passed.
+function isDayTouched(d){
+  if(d.rest) return true;
+  if(d.tasks.some(Boolean)) return true;
+  if(hasVal(d.mock.math)||hasVal(d.mock.reasoning)||hasVal(d.mock.english)||hasVal(d.mock.gk)) return true;
+  if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)) return true;
+  if(d.notes && d.notes.trim()) return true;
+  return false;
+}
+// The furthest day the user has actually put any data into. Earned/Lost
+// and related totals are counted across every day up to this point —
+// so a day you left tasks unchecked still counts as a loss, no matter
+// how many days you fill in during one sitting.
+function activeUptoDay(){
+  const tn = todayDayNum();
+  let max = tn; // never less than the real-world "today", so day 1 still shows up on a fresh start
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    if(isDayTouched(getDay(i))) max = Math.max(max, i);
+  }
+  return max;
+}
+
+// ===== Sync Room: Firebase Realtime Database backend =====
+// A "Room Code" is basically a lightweight login: whoever has the code
+// can read/write the same shared room. This is what makes sync work
+// in Chrome (or any browser, any device) — not just inside Claude.
+let roomSyncTimer = null;
+function getRoomCode(){
+  try{ return (localStorage.getItem('cgl50-room-code') || '').trim(); }
+  catch(e){ return ''; }
+}
+function setRoomCode(code){
+  try{ localStorage.setItem('cgl50-room-code', (code||'').trim()); }catch(e){}
+}
+function clearRoomCode(){
+  try{ localStorage.removeItem('cgl50-room-code'); }catch(e){}
+}
+// Waits for the Firebase module <script> (loaded at the top of <body>) to
+// finish loading + signing in anonymously, however long that takes.
+async function waitForFirebase(timeoutMs=10000){
+  const start = Date.now();
+  while(!(window.__fbGet && window.__fbSet && window.__fbNewId && window.__fbReadyPromise)){
+    if(Date.now()-start > timeoutMs) throw new Error('Firebase load nahi ho paya (timeout) — page reload karo.');
+    await new Promise(r=>setTimeout(r,50));
+  }
+  await window.__fbReadyPromise;
+}
+async function kvdbCreateRoom(){
+  try{
+    await waitForFirebase();
+    const id = window.__fbNewId();
+    await window.__fbSet(`rooms/${id}/_created`, Date.now());
+    return { ok:true, id };
+  }catch(e){
+    console.error('room create failed', e);
+    return { ok:false, error: (e && e.message) ? e.message : String(e) };
+  }
+}
+async function kvdbGet(key){
+  const room = getRoomCode();
+  if(!room) return null;
+  try{
+    await waitForFirebase();
+    const val = await window.__fbGet(`rooms/${room}/${encodeURIComponent(key)}`);
+    if(val === null || val === undefined) return null;
+    return typeof val === 'string' ? val : JSON.stringify(val);
+  }catch(e){ console.error('firebase get failed', e); return null; }
+}
+async function kvdbSet(key, value){
+  const room = getRoomCode();
+  if(!room) return false;
+  try{
+    await waitForFirebase();
+    await window.__fbSet(`rooms/${room}/${encodeURIComponent(key)}`, value);
+    return true;
+  }catch(e){ console.error('firebase set failed', e); return false; }
+}
+async function addToRoomRegistry(name){
+  const room = getRoomCode();
+  if(!room) return;
+  try{
+    const raw = await kvdbGet('_registry');
+    let list = [];
+    if(raw){ try{ list = JSON.parse(raw); }catch(e){ list=[]; } }
+    if(!Array.isArray(list)) list = [];
+    if(!list.some(n=>n.toLowerCase()===name.toLowerCase())){
+      list.push(name);
+      await kvdbSet('_registry', JSON.stringify(list));
+    }
+  }catch(e){ console.error('room registry update failed', e); }
+}
+async function loadRoomRegistry(){
+  const room = getRoomCode();
+  if(!room) return [];
+  const raw = await kvdbGet('_registry');
+  if(!raw) return [];
+  try{ const list = JSON.parse(raw); return Array.isArray(list) ? list : []; }
+  catch(e){ return []; }
+}
+function startRoomAutoSync(){
+  if(roomSyncTimer){ clearInterval(roomSyncTimer); roomSyncTimer = null; }
+  if(!getRoomCode()) return;
+  roomSyncTimer = setInterval(async ()=>{
+    try{
+      await renderCompetePanel();
+      if(viewingName !== myName){
+        state = await loadPlayerState(viewingName);
+        applyLoadedExtras();
+        renderAll();
+      }
+    }catch(e){ console.error('auto sync tick failed', e); }
+  }, 25000);
+}
+
+// ===== Multiplayer: per-player shared storage =====
+// Every player's tracker lives under its own key, but marked "shared" so
+// a friend who knows your exact name can load and view (read-only) the
+// same data. Nobody but the owner ever writes to their own key.
+function playerKey(name){ return 'cgl50-state:' + name.trim().toLowerCase(); }
+
+async function loadPlayerState(name){
+  const key = playerKey(name);
+  if(getRoomCode()){
+    const raw = await kvdbGet(key);
+    if(raw){
+      try{ return JSON.parse(raw); }catch(e){ /* fall through */ }
+    }
+  }
+  if(window.storage && typeof window.storage.get === 'function'){
+    try{
+      const res = await window.storage.get(key, true);
+      if(res && res.value) return JSON.parse(res.value);
+    }catch(e){ /* fall through */ }
+  }
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* ignore */ }
+  return {};
+}
+
+async function save(){
+  // Never write to anyone else's data — only the owner's own key.
+  if(viewingName !== myName) return;
+  const json = JSON.stringify(state);
+  const key = playerKey(myName);
+  try{ localStorage.setItem(key, json); }
+  catch(e){ console.error('localStorage save failed', e); }
+  if(window.storage && typeof window.storage.set === 'function'){
+    try{ await window.storage.set(key, json, true); }
+    catch(e){ console.error('window.storage save failed', e); }
+  }
+  if(getRoomCode()){
+    await kvdbSet(key, json);
+  }
+}
+
+// One-time migration: older single-player versions of this tracker stored
+// everything under a private, non-shared key. If that old data exists and
+// this player's new shared key is still empty, copy it over so nobody's
+// progress gets lost when upgrading to the multiplayer version.
+async function migrateOldDataIfNeeded(name){
+  const oldKey = 'cgl-tracker-state-v2';
+  const newKey = playerKey(name);
+  let hasNew = false;
+  try{ if(localStorage.getItem(newKey)) hasNew = true; }catch(e){}
+  if(!hasNew && window.storage && typeof window.storage.get === 'function'){
+    try{ const r = await window.storage.get(newKey, true); if(r && r.value) hasNew = true; }catch(e){}
+  }
+  if(hasNew) return;
+  let oldRaw = null;
+  try{ oldRaw = localStorage.getItem(oldKey); }catch(e){}
+  if(!oldRaw && window.storage && typeof window.storage.get === 'function'){
+    try{ const r = await window.storage.get(oldKey, false); if(r && r.value) oldRaw = r.value; }catch(e){}
+  }
+  if(!oldRaw) return;
+  try{ localStorage.setItem(newKey, oldRaw); }catch(e){}
+  if(window.storage && typeof window.storage.set === 'function'){
+    try{ await window.storage.set(newKey, oldRaw, true); }catch(e){}
+  }
+}
+
+function getOrCreateMyName(){
+  let name = null;
+  try{ name = localStorage.getItem('cgl50-myname'); }catch(e){}
+  if(!name){
+    name = (prompt('👤 Apna naam likho (dost isi naam se tumhara progress dekh payega):','') || '').trim();
+    if(!name) name = 'Player' + Math.floor(100 + Math.random()*900);
+    try{ localStorage.setItem('cgl50-myname', name); }catch(e){}
+  }
+  return name;
+}
+
+async function loadRegistry(){
+  if(window.storage && typeof window.storage.get === 'function'){
+    try{
+      const res = await window.storage.get(REGISTRY_KEY, true);
+      if(res && res.value) return JSON.parse(res.value);
+    }catch(e){ /* fall through */ }
+  }
+  try{ const raw = localStorage.getItem(REGISTRY_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+async function saveRegistry(list){
+  const json = JSON.stringify(list);
+  try{ localStorage.setItem(REGISTRY_KEY, json); }catch(e){}
+  if(window.storage && typeof window.storage.set === 'function'){
+    try{ await window.storage.set(REGISTRY_KEY, json, true); }catch(e){}
+  }
+}
+async function registerPlayer(name){
+  const list = await loadRegistry();
+  if(!list.some(n=>n.toLowerCase()===name.toLowerCase())){
+    list.push(name);
+    await saveRegistry(list);
+  }
+}
+
+function loadFriendsList(){
+  try{ const raw = localStorage.getItem('cgl50-my-friends'); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveFriendsList(list){
+  try{ localStorage.setItem('cgl50-my-friends', JSON.stringify(list)); }catch(e){}
+}
+
+// Pure, DOM-free stats computation used for the leaderboard, so we can
+// compute a friend's numbers from their raw state without touching the
+// globals that drive the main on-screen tracker.
+function getDayFrom(st, n){
+  if(!st[n]) st[n] = {};
+  const d = st[n];
+  if(!d.tasks) d.tasks = new Array(DEFAULT_TASKS.length).fill(false);
+  if(typeof d.rest !== 'boolean') d.rest = false;
+  if(typeof d.notes !== 'string') d.notes = '';
+  return d;
+}
+function isDayTouchedFrom(d){
+  if(d.rest) return true;
+  if(d.tasks.some(Boolean)) return true;
+  if(d.notes && d.notes.trim()) return true;
+  return false;
+}
+function computeStatsFrom(st){
+  let activeUpto = todayDayNum();
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    if(isDayTouchedFrom(getDayFrom(st,i))) activeUpto = Math.max(activeUpto,i);
+  }
+  let daysDone=0, totalChecked=0, totalPossible=0, studyMins=0, earned=0, lost=0;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const d = getDayFrom(st,i);
+    if(d.rest) continue;
+    const done = d.tasks.filter(Boolean).length;
+    totalChecked += done; totalPossible += DEFAULT_TASKS.length;
+    if(done===DEFAULT_TASKS.length) daysDone++;
+    if(i<=activeUpto){
+      studyMins += dayStudyMinutes(d);
+      earned += done*PER_TASK;
+      lost += (DEFAULT_TASKS.length-done)*PER_TASK;
+    }
+  }
+  let streak=0;
+  for(let i=activeUpto;i>=1;i--){
+    const d = getDayFrom(st,i);
+    if(d.rest) continue;
+    const done = d.tasks.filter(Boolean).length;
+    if((done/DEFAULT_TASKS.length)>=0.5){ streak++; continue; }
+    break;
+  }
+  const pct = totalPossible ? Math.round((totalChecked/totalPossible)*100) : 0;
+  return { daysDone, pct, streak, earned, lost, studyMins };
+}
+
+async function switchViewing(name){
+  viewingName = name;
+  state = await loadPlayerState(name);
+  applyLoadedExtras();
+  selectedDay = todayDayNum();
+  renderAll();
+  renderProfileBar();
+  applyReadOnlyUI();
+}
+
+function applyReadOnlyUI(){
+  const ro = viewingName !== myName;
+  const editSection = document.getElementById('taskEditSection');
+  const backupSection = document.getElementById('backupSection');
+  const resetBtn = document.getElementById('resetBtn');
+  if(editSection) editSection.style.display = ro ? 'none' : '';
+  if(backupSection) backupSection.style.display = ro ? 'none' : '';
+  if(resetBtn) resetBtn.style.display = ro ? 'none' : '';
+}
+
+function renderProfileBar(){
+  const el = document.getElementById('profileBar');
+  if(!el) return;
+  const ro = viewingName !== myName;
+  el.className = 'profilebar' + (ro ? ' viewing' : '');
+  if(!ro){
+    el.innerHTML = `
+      <div class="pbrow">
+        <span>👤 Playing as <b>${escapeHtml(myName)}</b></span>
+        <button class="nav-btn" id="changeNameBtn">✏️ Naam Badlo</button>
+      </div>`;
+    const btn = document.getElementById('changeNameBtn');
+    if(btn) btn.addEventListener('click', async ()=>{
+      const newName = (prompt('Naya naam:', myName) || '').trim();
+      if(!newName) return;
+      myName = newName;
+      try{ localStorage.setItem('cgl50-myname', myName); }catch(e){}
+      await registerPlayer(myName);
+      await migrateOldDataIfNeeded(myName);
+      if(getRoomCode()) await addToRoomRegistry(myName);
+      await switchViewing(myName);
+      await renderCompetePanel();
+    });
+  } else {
+    el.innerHTML = `
+      <div class="pbrow">
+        <span>👀 Viewing <b>${escapeHtml(viewingName)}</b>'s tracker (read-only)</span>
+        <button class="nav-btn" id="backToMineBtn">⬅️ Meri Tracker</button>
+      </div>`;
+    const btn = document.getElementById('backToMineBtn');
+    if(btn) btn.addEventListener('click', async ()=>{
+      await switchViewing(myName);
+      await renderCompetePanel();
+    });
+  }
+}
+
+async function renderCompetePanel(){
+  const el = document.getElementById('competePanel');
+  if(!el) return;
+  const friends = loadFriendsList();
+  const roomNames = await loadRoomRegistry();
+  const merged = [myName, ...friends, ...roomNames];
+  const names = merged.filter((n,i)=> n && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+  const rows = [];
+  for(const nm of names){
+    const st = await loadPlayerState(nm);
+    rows.push({ name: nm, ...computeStatsFrom(st) });
+  }
+  rows.sort((a,b)=> b.pct-a.pct || b.streak-a.streak);
+
+  let html = `<div class="lbwrap">` + rows.map(r=>{
+    const isMe = r.name.toLowerCase()===myName.toLowerCase();
+    const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
+    return `
+      <div class="lbrow ${isViewing?'active':''}">
+        <div class="lbname">${isMe?'🟢 ':'⚪ '}${escapeHtml(r.name)}${isMe?' (You)':''}</div>
+        <div class="lbstats"><span>🔥${r.streak}</span><span>📈${r.pct}%</span><span>⏱️${fmtHours(r.studyMins)}</span></div>
+        ${isMe ? '' : `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`}
+      </div>`;
+  }).join('') + `</div>`;
+
+  html += `
+    <div class="addfriend">
+      <input type="text" id="friendNameInput" placeholder="Dost ka exact naam likho...">
+      <button class="nav-btn" id="addFriendBtn">➕ Add</button>
+    </div>
+    <div class="losshint">Dost se wahi exact naam pucho jo unhone apni tracker mein daala tha. Agar dono ne upar wala 🔗 Sync Room same code se join kiya hai, to Chrome ho ya koi bhi browser — dono ka data turant sync ho jayega.</div>
+  `;
+  el.innerHTML = html;
+
+  el.querySelectorAll('.lbview').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await switchViewing(btn.getAttribute('data-view'));
+      await renderCompetePanel();
+    });
+  });
+  const addBtn = document.getElementById('addFriendBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const inp = document.getElementById('friendNameInput');
+    const val = inp.value.trim();
+    if(!val) return;
+    const list = loadFriendsList();
+    if(!list.some(n=>n.toLowerCase()===val.toLowerCase())){
+      list.push(val);
+      saveFriendsList(list);
+    }
+    inp.value='';
+    renderCompetePanel();
+  });
+}
+
+async function renderRoomPanel(){
+  const el = document.getElementById('roomPanel');
+  if(!el) return;
+  const room = getRoomCode();
+  if(!room){
+    el.innerHTML = `
+      <div class="losshint" style="padding-top:0;">Room Code ek chhota "login" jaisa hai — jiske paas code hai, wahi sync mein judega. Isse Chrome, phone, laptop — kahin bhi same data dikhega, koi signup nahi chahiye.</div>
+      <div class="btnrow">
+        <button class="nav-btn" id="createRoomBtn">✨ Naya Room Banao</button>
+      </div>
+      <div class="addfriend">
+        <input type="text" id="joinRoomInput" placeholder="Ya dost ka Room Code paste karo...">
+        <button class="nav-btn" id="joinRoomBtn">🔑 Join</button>
+      </div>
+      <div class="losshint" id="roomStatusMsg" style="padding-top:8px;display:none;"></div>
+    `;
+    const createBtn = document.getElementById('createRoomBtn');
+    const statusEl = document.getElementById('roomStatusMsg');
+    const showStatus = (msg)=>{ if(statusEl){ statusEl.style.display='block'; statusEl.textContent = msg; } };
+    if(createBtn) createBtn.addEventListener('click', async ()=>{
+      createBtn.textContent = '⏳ Banaya ja raha hai...';
+      createBtn.disabled = true;
+      showStatus('Internet/Firebase se connect ho raha hai… (max 8 second)');
+      let result;
+      try{
+        // Hard cap so the button can NEVER get stuck forever, no matter
+        // what hangs inside kvdbCreateRoom (network, firebase, etc).
+        result = await Promise.race([
+          kvdbCreateRoom(),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet/Firebase tak pahunch nahi paya.')), 8000))
+        ]);
+      }catch(e){
+        result = { ok:false, error: (e && e.message) ? e.message : String(e) };
+      }
+      if(!result || !result.ok){
+        const errMsg = 'Room nahi ban paya.\n\nWajah: ' + (result ? result.error : 'unknown error') + '\n\nYe HTML file "content://" ke andar (kisi local viewer app) khuli hai — us app ko internet access nahi milta ya Google/Firebase ke scripts load nahi kar paata. Isse fix karne ke liye: is file ko Chrome browser mein kholo (file ko download karke ya Chrome se "Open with Chrome" karke), phir Naya Room Banao try karo.';
+        showStatus(errMsg);
+        try{ alert(errMsg); }catch(e2){}
+        createBtn.textContent = '✨ Naya Room Banao';
+        createBtn.disabled = false;
+        return;
+      }
+      showStatus('Room ban gaya ✅');
+      setRoomCode(result.id);
+      await save();
+      await addToRoomRegistry(myName);
+      startRoomAutoSync();
+      renderRoomPanel();
+      await renderCompetePanel();
+    });
+    const joinBtn = document.getElementById('joinRoomBtn');
+    if(joinBtn) joinBtn.addEventListener('click', async ()=>{
+      const inp = document.getElementById('joinRoomInput');
+      const val = (inp.value||'').trim();
+      if(!val) return;
+      joinBtn.textContent = '⏳ Judh raha hai...';
+      joinBtn.disabled = true;
+      showStatus('Internet/Firebase se connect ho raha hai… (max 8 second)');
+      setRoomCode(val);
+      try{
+        await Promise.race([
+          (async ()=>{ await save(); await addToRoomRegistry(myName); })(),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet/Firebase tak pahunch nahi paya.')), 8000))
+        ]);
+      }catch(e){
+        clearRoomCode();
+        const errMsg = 'Room join nahi ho paya.\n\nWajah: ' + ((e && e.message) ? e.message : String(e)) + '\n\nYe HTML file "content://" ke andar (kisi local viewer app) khuli hai — us app ko internet access nahi milta. Is file ko Chrome browser mein kholo aur dobara try karo.';
+        showStatus(errMsg);
+        try{ alert(errMsg); }catch(e2){}
+        joinBtn.textContent = '🔑 Join';
+        joinBtn.disabled = false;
+        return;
+      }
+      startRoomAutoSync();
+      renderRoomPanel();
+      await renderCompetePanel();
+    });
+  } else {
+    el.innerHTML = `
+      <div class="pbrow" style="margin-bottom:8px;">
+        <span>🔗 Room Code: <b style="color:var(--accent);">${escapeHtml(room)}</b></span>
+        <button class="nav-btn" id="copyRoomBtn">📋 Copy</button>
+      </div>
+      <div class="losshint" style="padding-top:0;">Ye code dost ko bhejo — wo "Join" karke isi room mein aa jayega. Sabka data alag rehta hai (naam se), sirf room shared hota hai.</div>
+      <div class="btnrow">
+        <button class="nav-btn" id="leaveRoomBtn">🚪 Room Chodo</button>
+      </div>
+    `;
+    const copyBtn = document.getElementById('copyRoomBtn');
+    if(copyBtn) copyBtn.addEventListener('click', ()=>{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(room).then(()=>alert('Room Code copy ho gaya ✅')).catch(()=>prompt('Manually copy karo:', room));
+      } else {
+        prompt('Manually copy karo:', room);
+      }
+    });
+    const leaveBtn = document.getElementById('leaveRoomBtn');
+    if(leaveBtn) leaveBtn.addEventListener('click', async ()=>{
+      if(!confirm('Room chodne se ye device wapas sirf local/Claude storage pe chala jayega (data delete nahi hoga). Pakka?')) return;
+      clearRoomCode();
+      startRoomAutoSync();
+      renderRoomPanel();
+      await renderCompetePanel();
+    });
+  }
+}
+
+function applyLoadedExtras(){
+  if(Array.isArray(state.taskNames) && state.taskNames.length===DEFAULT_TASKS.length){
+    TASKS = state.taskNames.slice();
+  } else {
+    TASKS = DEFAULT_TASKS.slice();
+  }
+  if(!state.badgesEarned || typeof state.badgesEarned !== 'object') state.badgesEarned = {};
+}
+
+function computeStats(){
+  let daysDone=0;
+  for(let i=1;i<=TOTAL_DAYS;i++){ if(dayStatus(i)==='done') daysDone++; }
+  let streak=0;
+  const activeUpto = activeUptoDay();
+  for(let i=activeUpto;i>=1;i--){
+    const d = getDay(i);
+    if(d.rest) continue;
+    if(meetsStreakTarget(d)) { streak++; continue; }
+    break;
+  }
+  let totalChecked=0, totalPossible=0;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const d = getDay(i);
+    if(d.rest) continue;
+    totalChecked += d.tasks.filter(Boolean).length;
+    totalPossible += TASKS.length;
+  }
+  const pct = totalPossible ? Math.round((totalChecked/totalPossible)*100) : 0;
+
+  // Earned/Lost reflect every day that has any data in it, however many
+  // days that spans — not just how many real calendar days have passed.
+  let earned=0, lost=0;
+  for(let i=1;i<=activeUpto;i++){
+    const d = getDay(i);
+    const r = dayEarnLoss(d);
+    earned += r.earned;
+    lost += r.lost;
+  }
+
+  document.getElementById('statDone').textContent = daysDone;
+  document.getElementById('statStreak').innerHTML = streak + (streak>0 ? ' <span class="streakfire">🔥</span>' : '');
+  document.getElementById('statPct').textContent = pct+'%';
+  document.getElementById('statEarn').textContent = '₹'+Math.round(earned).toLocaleString('en-IN');
+  document.getElementById('statLoss').textContent = '₹'+Math.round(lost).toLocaleString('en-IN');
+  const net = Math.round(earned-lost);
+  const netEl = document.getElementById('statNet');
+  netEl.textContent = (net<0?'-':'')+'₹'+Math.abs(net).toLocaleString('en-IN');
+  netEl.style.color = net<0 ? 'var(--loss)' : '#000';
+}
+
+// Longest-ever run of fully "done" days, where rest days pass through
+// without breaking the run (mirrors the current-streak logic above).
+function longestStreak(){
+  const tn = activeUptoDay();
+  let longest=0, current=0;
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(d.rest){ /* neutral, streak continues */ continue; }
+    if(meetsStreakTarget(d)){ current++; if(current>longest) longest=current; }
+    else { current=0; }
+  }
+  return longest;
+}
+
+function checkAndAwardBadges(){
+  if(viewingName !== myName) return; // don't mutate or pop up badges while browsing a friend's data
+  const longest = longestStreak();
+  let newlyEarned = null;
+  BADGES.forEach(b=>{
+    if(longest>=b.days && !state.badgesEarned[b.days]){
+      state.badgesEarned[b.days] = true;
+      newlyEarned = b;
+    }
+  });
+  if(newlyEarned){
+    showBadge(newlyEarned);
+    save();
+  }
+}
+
+function showBadge(badge){
+  const banner = document.getElementById('badgeBanner');
+  if(!banner) return;
+  document.getElementById('badgeTitle').textContent = `${badge.emoji} Badge Unlocked: ${badge.label}!`;
+  document.getElementById('badgeMsg').textContent = BADGE_MESSAGES[badge.days] || 'Zabardast consistency!';
+  banner.classList.add('show');
+}
+document.getElementById('badgeClose').addEventListener('click', ()=>{
+  document.getElementById('badgeBanner').classList.remove('show');
+});
+
+function renderBadges(){
+  const el = document.getElementById('badgesPanel');
+  if(!el) return;
+  const longest = longestStreak();
+  el.innerHTML = `<div class="badgeRow">` + BADGES.map(b=>{
+    const earned = !!state.badgesEarned[b.days];
+    return `
+      <div class="badgeChip ${earned?'earned':''}">
+        <div class="bEmoji">${b.emoji}</div>
+        <div class="bLabel">${b.label}</div>
+        <div class="bStatus">${earned ? 'Unlocked ✅' : (longest+'/'+b.days+' din')}</div>
+      </div>
+    `;
+  }).join('') + `</div>`;
+}
+
+function showReward(dayNum){
+  const banner = document.getElementById('rewardBanner');
+  if(!banner) return;
+  const msg = MOTIVATION_MESSAGES[Math.floor(Math.random()*MOTIVATION_MESSAGES.length)];
+  document.getElementById('rewardTitle').textContent = `🎉 Day ${dayNum} Complete!`;
+  document.getElementById('rewardMsg').textContent = msg;
+  document.getElementById('rewardAmt').textContent = `Aaj ka full ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')} kama liya. 🔥`;
+  banner.classList.add('show');
+}
+document.getElementById('rewardClose').addEventListener('click', ()=>{
+  document.getElementById('rewardBanner').classList.remove('show');
+});
+
+function renderGrid(){
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML='';
+  const tn = todayDayNum();
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const cell = document.createElement('div');
+    const status = dayStatus(i);
+    cell.className = 'daycell ' + status;
+    if(i===tn) cell.classList.add('today');
+    if(i===selectedDay) cell.classList.add('selected');
+    let badge = '';
+    if(status==='done') badge = '✅';
+    else if(status==='rest') badge = '😴';
+    else if(status==='partial') badge = '⏳';
+    cell.innerHTML = i + (badge ? `<span class="daybadge">${badge}</span>` : '');
+    cell.title = fmtDate(i);
+    cell.addEventListener('click', ()=>{ selectedDay=i; renderAll(); });
+    grid.appendChild(cell);
+  }
+}
+
+function renderPanel(){
+  const panel = document.getElementById('panel');
+  const d = getDay(selectedDay);
+  const done = d.tasks.filter(Boolean).length;
+  const pct = Math.round((done/TASKS.length)*100);
+  const isReadOnly = viewingName !== myName;
+  const dis = isReadOnly ? 'disabled' : '';
+
+  let html = '';
+  if(isReadOnly){
+    html += `
+      <div class="readonly-banner">
+        <span>👀 ${escapeHtml(viewingName)}'s tracker — sirf dekh sakte ho, edit nahi</span>
+      </div>`;
+  }
+  html += `
+    <div class="panel-head">
+      <h2>📌 Day ${selectedDay} / ${TOTAL_DAYS}</h2>
+      <div class="date">${fmtDate(selectedDay)}</div>
+    </div>
+    <div class="restbtn ${d.rest?'active':''}" id="restToggle">
+      <input type="checkbox" id="restCheck" ${d.rest?'checked':''} ${dis}>
+      <span>😴 Mark as Rest Day (tasks/loss ignored today)</span>
+    </div>
+    <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+  `;
+  TASKS.forEach((t, idx)=>{
+    const checked = d.tasks[idx] ? 'checked' : '';
+    const cls = d.tasks[idx] ? 'task checked' : 'task';
+    html += `
+      <div class="${cls}">
+        <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
+        <div class="taskinfo"><div class="name">${checked? '✅' : '📌'} ${t}</div></div>
+        <div class="value">₹${Math.round(PER_TASK)}</div>
+      </div>
+    `;
+  });
+
+  const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
+  html += `
+    <div class="subhead">🧪 FULL MOCK SCORE</div>
+    <div class="scoreform">
+      <div class="scorefield"><label>Math</label><input type="number" step="any" inputmode="decimal" data-mock="math" value="${d.mock.math}" ${dis}></div>
+      <div class="scorefield"><label>Reasoning</label><input type="number" step="any" inputmode="decimal" data-mock="reasoning" value="${d.mock.reasoning}" ${dis}></div>
+      <div class="scorefield"><label>English</label><input type="number" step="any" inputmode="decimal" data-mock="english" value="${d.mock.english}" ${dis}></div>
+      <div class="scorefield"><label>GK</label><input type="number" step="any" inputmode="decimal" data-mock="gk" value="${d.mock.gk}" ${dis}></div>
+    </div>
+    <div class="scoretotal">Total: <b id="mockTotalVal">${mockTotal}</b></div>
+  `;
+
+  const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+  html += `
+    <div class="subhead">🧮 4 SECTIONAL MATH SCORES</div>
+    <div class="scoreform">
+      <div class="scorefield"><label>Sec 1</label><input type="number" step="any" inputmode="decimal" data-sect="s1" value="${d.sect.s1}" ${dis}></div>
+      <div class="scorefield"><label>Sec 2</label><input type="number" step="any" inputmode="decimal" data-sect="s2" value="${d.sect.s2}" ${dis}></div>
+      <div class="scorefield"><label>Sec 3</label><input type="number" step="any" inputmode="decimal" data-sect="s3" value="${d.sect.s3}" ${dis}></div>
+      <div class="scorefield"><label>Sec 4</label><input type="number" step="any" inputmode="decimal" data-sect="s4" value="${d.sect.s4}" ${dis}></div>
+    </div>
+    <div class="scoretotal">Total: <b id="sectTotalVal">${sectTotal}</b></div>
+  `;
+
+  html += `
+    <div class="subhead">📝 NOTES / ERROR LOG</div>
+    <div class="notes"><textarea id="notesArea" placeholder="Aaj kya galat hua, kya seekha..." ${isReadOnly?'readonly':''}>${d.notes}</textarea></div>
+  `;
+
+  html += `
+    <div class="footer-row">
+      <button class="nav-btn" id="prevBtn">⬅️ Prev Day</button>
+      <button class="nav-btn" id="nextBtn">Next Day ➡️</button>
+    </div>
+  `;
+  panel.innerHTML = html;
+
+  document.getElementById('restCheck').addEventListener('change', async (e)=>{
+    if(isReadOnly) return;
+    getDay(selectedDay).rest = e.target.checked;
+    renderAll();
+    await save();
+  });
+  panel.querySelectorAll('input[type=checkbox][data-idx]').forEach(cb=>{
+    cb.addEventListener('change', async (e)=>{
+      if(isReadOnly) return;
+      const idx = parseInt(e.target.getAttribute('data-idx'));
+      const dayObj = getDay(selectedDay);
+      const doneBefore = dayObj.tasks.filter(Boolean).length;
+      dayObj.tasks[idx] = e.target.checked;
+      const doneAfter = dayObj.tasks.filter(Boolean).length;
+      renderAll();
+      await save();
+      if(doneBefore < TASKS.length && doneAfter === TASKS.length){
+        showReward(selectedDay);
+      }
+    });
+  });
+  panel.querySelectorAll('input[data-mock]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      if(isReadOnly) return;
+      const d = getDay(selectedDay);
+      d.mock[e.target.getAttribute('data-mock')] = e.target.value;
+      const totalEl = document.getElementById('mockTotalVal');
+      if(totalEl) totalEl.textContent = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
+      renderPerformance();
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(save, 500);
+    });
+  });
+  panel.querySelectorAll('input[data-sect]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      if(isReadOnly) return;
+      const d = getDay(selectedDay);
+      d.sect[e.target.getAttribute('data-sect')] = e.target.value;
+      const totalEl = document.getElementById('sectTotalVal');
+      if(totalEl) totalEl.textContent = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+      renderPerformance();
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(save, 500);
+    });
+  });
+  document.getElementById('notesArea').addEventListener('input', (e)=>{
+    if(isReadOnly) return;
+    getDay(selectedDay).notes = e.target.value;
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(save, 600);
+  });
+  document.getElementById('prevBtn').addEventListener('click', ()=>{ if(selectedDay>1){ selectedDay--; renderAll(); } });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{ if(selectedDay<TOTAL_DAYS){ selectedDay++; renderAll(); } });
+}
+
+function avgOf(getter){
+  let sum=0,count=0,best=0;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const v = getter(getDay(i));
+    if(hasVal(v)){ const f=parseFloat(v); sum+=f; count++; if(f>best) best=f; }
+  }
+  return { avg: count? (sum/count) : null, count, best };
+}
+function avgTotalOf(getters){
+  let sum=0,count=0,best=0;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const day = getDay(i);
+    const vals = getters.map(g=>g(day));
+    if(vals.some(hasVal)){
+      const t = vals.reduce((a,v)=>a+num(v),0);
+      sum+=t; count++; if(t>best) best=t;
+    }
+  }
+  return { avg: count? (sum/count) : null, count, best };
+}
+function fmtAvg(res){ return res.avg===null ? '—' : res.avg.toFixed(1); }
+
+function renderPerformance(){
+  const mMath = avgOf(d=>d.mock.math);
+  const mReas = avgOf(d=>d.mock.reasoning);
+  const mEng = avgOf(d=>d.mock.english);
+  const mGk = avgOf(d=>d.mock.gk);
+  const mTot = avgTotalOf([d=>d.mock.math,d=>d.mock.reasoning,d=>d.mock.english,d=>d.mock.gk]);
+  document.getElementById('perfMock').innerHTML = `
+    <div class="perfrow"><span>Math avg</span><span>${fmtAvg(mMath)}</span></div>
+    <div class="perfrow"><span>Reasoning avg</span><span>${fmtAvg(mReas)}</span></div>
+    <div class="perfrow"><span>English avg</span><span>${fmtAvg(mEng)}</span></div>
+    <div class="perfrow"><span>GK avg</span><span>${fmtAvg(mGk)}</span></div>
+    <div class="perfrow total"><span>Total avg (${mTot.count} mocks)</span><span>${fmtAvg(mTot)}</span></div>
+    <div class="perfrow"><span>Best total</span><span>${mTot.best||'—'}</span></div>
+  `;
+  const s1=avgOf(d=>d.sect.s1), s2=avgOf(d=>d.sect.s2), s3=avgOf(d=>d.sect.s3), s4=avgOf(d=>d.sect.s4);
+  const sTot = avgTotalOf([d=>d.sect.s1,d=>d.sect.s2,d=>d.sect.s3,d=>d.sect.s4]);
+  document.getElementById('perfSect').innerHTML = `
+    <div class="perfrow"><span>Section 1 avg</span><span>${fmtAvg(s1)}</span></div>
+    <div class="perfrow"><span>Section 2 avg</span><span>${fmtAvg(s2)}</span></div>
+    <div class="perfrow"><span>Section 3 avg</span><span>${fmtAvg(s3)}</span></div>
+    <div class="perfrow"><span>Section 4 avg</span><span>${fmtAvg(s4)}</span></div>
+    <div class="perfrow total"><span>Total avg (${sTot.count} sets)</span><span>${fmtAvg(sTot)}</span></div>
+    <div class="perfrow"><span>Best total</span><span>${sTot.best||'—'}</span></div>
+  `;
+}
+
+function renderChart(){
+  const el = document.getElementById('walletChart');
+  if(!el) return;
+  const tn = activeUptoDay();
+  const barW = 12, gap = 4, half = 80;
+  const chartH = half*2, totalW = TOTAL_DAYS*(barW+gap);
+  const maxVal = DAILY_TARGET;
+  let bars = '';
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const x = (i-1)*(barW+gap);
+    const d = getDay(i);
+    const isFuture = i>tn;
+    let earnedAmt=0, lostAmt=0;
+    if(!isFuture){
+      const r = dayEarnLoss(d);
+      earnedAmt = r.earned;
+      lostAmt = r.lost;
+    }
+    const earnH = Math.max(0,(earnedAmt/maxVal)*half);
+    const lostH = Math.max(0,(lostAmt/maxVal)*half);
+    const gainColor = isFuture ? '#2a2a2a' : (d.rest ? '#555' : 'var(--gain)');
+    const lossColor = isFuture ? '#2a2a2a' : (d.rest ? '#555' : 'var(--loss)');
+    bars += `<rect x="${x}" y="${half-earnH}" width="${barW}" height="${earnH}" fill="${gainColor}" rx="2"></rect>`;
+    bars += `<rect x="${x}" y="${half}" width="${barW}" height="${lostH}" fill="${lossColor}" rx="2"></rect>`;
+    if(i===tn){
+      bars += `<rect x="${x-1.5}" y="1" width="${barW+3}" height="${chartH-2}" fill="none" stroke="var(--white)" stroke-width="1" stroke-dasharray="2,2" rx="3"></rect>`;
+    }
+  }
+  el.innerHTML = `
+    <svg width="${totalW}" height="${chartH}" viewBox="0 0 ${totalW} ${chartH}" style="display:block;">
+      <line x1="0" y1="${half}" x2="${totalW}" y2="${half}" stroke="var(--border-strong)" stroke-width="1"></line>
+      ${bars}
+    </svg>
+  `;
+}
+
+function renderLossLog(){
+  const el = document.getElementById('lossLog');
+  if(!el) return;
+  const tn = activeUptoDay();
+  let rows = [];
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(d.rest) continue;
+    const done = d.tasks.filter(Boolean).length;
+    const missed = TASKS.length-done;
+    if(missed<=0) continue;
+    rows.push({ day:i, missed, lostAmt: missed*PER_TASK });
+  }
+  if(rows.length===0){
+    el.innerHTML = `<div class="losshint">🎉 Abhi tak koi loss nahi — sab tasks poore ho rahe hain!</div>`;
+    return;
+  }
+  rows.sort((a,b)=> b.lostAmt-a.lostAmt || b.day-a.day);
+  const shown = rows.slice(0,10);
+  el.innerHTML = shown.map(r=>`
+    <div class="lossrow">
+      <span class="lday">📉 Day ${r.day} <span style="color:var(--muted);font-weight:600;">(${fmtDate(r.day)})</span> · ${r.missed} miss</span>
+      <span class="lamt">-₹${Math.round(r.lostAmt).toLocaleString('en-IN')}</span>
+    </div>
+  `).join('') + (rows.length>10 ? `<div class="losshint">+ ${rows.length-10} aur din pending hai list mein…</div>` : '');
+}
+
+function renderBestWorst(){
+  const el = document.getElementById('bestWorst');
+  if(!el) return;
+  const tn = activeUptoDay();
+  let best=null, worst=null;
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(d.rest) continue;
+    const done = d.tasks.filter(Boolean).length;
+    if(done===0 && i===tn) continue;
+    const r = dayEarnLoss(d);
+    const net = r.earned - r.lost;
+    if(!best || net>best.net) best = {day:i, net, done};
+    if(!worst || net<worst.net) worst = {day:i, net, done};
+  }
+  if(!best){
+    el.innerHTML = `<div class="bwrow"><span class="tag">Abhi data nahi hai — aaj ke tasks complete karo!</span></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="bwrow"><span>🏆 Best Day — Day ${best.day} (${fmtDate(best.day)})</span><span class="amt gain">+₹${Math.round(best.net).toLocaleString('en-IN')}</span></div>
+    <div class="bwrow"><span>😓 Toughest Day — Day ${worst.day} (${fmtDate(worst.day)})</span><span class="amt ${worst.net<0?'loss':'gain'}">${worst.net<0?'-':'+'}₹${Math.abs(Math.round(worst.net)).toLocaleString('en-IN')}</span></div>
+  `;
+}
+
+function exportCSV(){
+  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Mock Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Notes'];
+  const rows = [header];
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    const d = getDay(i);
+    const done = d.tasks.filter(Boolean).length;
+    const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
+    const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+    const r = dayEarnLoss(d);
+    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, mockTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), (d.notes||'')]);
+  }
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cgl_tracker_' + (viewingName||'me').replace(/[^a-z0-9]/gi,'_') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function renderStudyHours(){
+  const todayEl = document.getElementById('statHoursToday');
+  const totalEl = document.getElementById('statHoursTotal');
+  const avgEl = document.getElementById('statHoursAvg');
+  if(!todayEl) return;
+
+  const dSel = getDay(selectedDay);
+  todayEl.textContent = dSel.rest ? '😴 Rest' : fmtHours(dayStudyMinutes(dSel));
+
+  const tn = activeUptoDay();
+  let totalMins = 0, countedDays = 0;
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(d.rest) continue;
+    if(!isDayTouched(d)) continue;
+    totalMins += dayStudyMinutes(d);
+    countedDays++;
+  }
+  totalEl.textContent = fmtHours(totalMins);
+  avgEl.textContent = countedDays ? fmtHours(totalMins/countedDays) : '0m';
+}
+
+function renderWeekly(){
+  const wrap = document.getElementById('weekWrap');
+  let html='';
+  for(let start=1; start<=TOTAL_DAYS; start+=7){
+    const end = Math.min(start+6, TOTAL_DAYS);
+    let completed=0, possible=0;
+    for(let i=start;i<=end;i++){
+      const d = getDay(i);
+      if(d.rest) continue;
+      completed += d.tasks.filter(Boolean).length;
+      possible += TASKS.length;
+    }
+    const pct = possible ? Math.round((completed/possible)*100) : 0;
+    const wname = 'Week ' + Math.ceil(start/7);
+    html += `
+      <div class="weekrow">
+        <div>
+          <div class="wname">${wname}</div>
+          <div class="wrange">Day ${start}–${end} (${fmtDate(start)} to ${fmtDate(end)})</div>
+        </div>
+        <div class="wpct">${possible? pct+'%' : '—'}</div>
+      </div>
+    `;
+  }
+  wrap.innerHTML = html;
+}
+
+function renderTaskEditForm(){
+  const form = document.getElementById('taskEditForm');
+  if(!form) return;
+  form.innerHTML = TASKS.map((t,idx)=>`
+    <div class="taskEditRow">
+      <span class="tNum">${idx+1}.</span>
+      <input type="text" data-task-idx="${idx}" value="${t.replace(/"/g,'&quot;')}">
+    </div>
+  `).join('');
+}
+document.getElementById('saveTasksBtn').addEventListener('click', async ()=>{
+  const inputs = document.querySelectorAll('#taskEditForm input[data-task-idx]');
+  const newNames = TASKS.slice();
+  inputs.forEach(inp=>{
+    const idx = parseInt(inp.getAttribute('data-task-idx'));
+    const val = inp.value.trim();
+    if(val) newNames[idx] = val;
+  });
+  TASKS = newNames;
+  state.taskNames = TASKS.slice();
+  await save();
+  renderAll();
+  renderTaskEditForm();
+  alert('Task names save ho gaye ✅');
+});
+document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
+  if(!confirm('Sab task names default pe reset kar du?')) return;
+  TASKS = DEFAULT_TASKS.slice();
+  delete state.taskNames;
+  await save();
+  renderAll();
+  renderTaskEditForm();
+});
+
+function renderExamLine(){
+  const examDate = new Date(START_DATE);
+  examDate.setDate(examDate.getDate() + TOTAL_DAYS - 1);
+  const opts = {day:'2-digit',month:'long',year:'numeric'};
+  document.getElementById('examLine').textContent =
+    `Day 1: ${START_DATE.toLocaleDateString('en-IN',opts)}  →  Day 50: ${examDate.toLocaleDateString('en-IN',opts)}. Har task ₹${Math.round(PER_TASK)} ka hai — 50 din, poora ₹2,50,000 ka target.`;
+}
+
+function safeRun(fn, label){
+  try{ fn(); }
+  catch(err){ console.error('Tracker render error in '+label+':', err); }
+}
+function renderAll(){
+  safeRun(renderGrid, 'renderGrid');
+  safeRun(renderPanel, 'renderPanel');
+  safeRun(renderPerformance, 'renderPerformance');
+  safeRun(renderBestWorst, 'renderBestWorst');
+  safeRun(renderChart, 'renderChart');
+  safeRun(renderLossLog, 'renderLossLog');
+  safeRun(renderWeekly, 'renderWeekly');
+  safeRun(renderStudyHours, 'renderStudyHours');
+  safeRun(computeStats, 'computeStats');
+  safeRun(checkAndAwardBadges, 'checkAndAwardBadges');
+  safeRun(renderBadges, 'renderBadges');
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+  renderAll();
+  await save();
+  await renderCompetePanel();
+});
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(confirm('Ye sab progress, marks aur earnings delete kar dega. Pakka reset karna hai?')){
+    state = {};
+    selectedDay = todayDayNum();
+    await save();
+    renderAll();
+  }
+});
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('showBackupBtn').addEventListener('click', ()=>{
+  document.getElementById('backupArea').value = JSON.stringify(state);
+});
+document.getElementById('restoreBtn').addEventListener('click', async ()=>{
+  const val = document.getElementById('backupArea').value.trim();
+  if(!val) return;
+  try{
+    const parsed = JSON.parse(val);
+    state = parsed;
+    await save();
+    renderAll();
+    alert('Restore ho gaya.');
+  }catch(e){
+    alert('Ye backup code valid nahi hai.');
+  }
+});
+
+// ===== Home Screen / PWA setup =====
+// Generates a simple gold-on-black app icon at runtime and wires it up as
+// both an apple-touch-icon and a data-URI web manifest, so "Add to Home
+// Screen" on iOS/Android shows a proper icon + standalone app window
+// instead of a generic browser bookmark, with no server required.
+function setupHomeScreenIcon(){
+  try{
+    const size = 192;
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0,0,size,size);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(8,8,size-16,size-16);
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = "800 54px 'Oswald', sans-serif";
+    ctx.fillText('CGL', size/2, size/2-18);
+    ctx.font = "700 26px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('50 DAYS', size/2, size/2+38);
+    const iconUrl = canvas.toDataURL('image/png');
+
+    let touchIcon = document.querySelector("link[rel='apple-touch-icon']");
+    if(!touchIcon){ touchIcon = document.createElement('link'); touchIcon.rel='apple-touch-icon'; document.head.appendChild(touchIcon); }
+    touchIcon.href = iconUrl;
+
+    let favicon = document.querySelector("link[rel='icon']");
+    if(!favicon){ favicon = document.createElement('link'); favicon.rel='icon'; document.head.appendChild(favicon); }
+    favicon.href = iconUrl;
+
+    const manifest = {
+      name: "Operation CGL — 50 Day Tracker",
+      short_name: "CGL 50",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#0a0a0a",
+      theme_color: "#0a0a0a",
+      icons: [{ src: iconUrl, sizes: "192x192", type: "image/png" }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    let manifestLink = document.querySelector("link[rel='manifest']");
+    if(!manifestLink){ manifestLink = document.createElement('link'); manifestLink.rel='manifest'; document.head.appendChild(manifestLink); }
+    manifestLink.href = manifestUrl;
+  }catch(e){ console.error('Home screen icon setup failed', e); }
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'inline-block';
+});
+document.getElementById('installBtn').addEventListener('click', async ()=>{
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  } else {
+    alert('iPhone: Share button 🔗 → "Add to Home Screen".\nAndroid Chrome: Menu (⋮) → "Add to Home Screen" / "Install App".');
+  }
+});
+// Always show the button as a manual fallback where the auto-prompt (Chrome-only) isn't available.
+document.getElementById('installBtn').style.display = 'inline-block';
+
+(async function init(){
+  myName = getOrCreateMyName();
+  viewingName = myName;
+  await migrateOldDataIfNeeded(myName);
+  await registerPlayer(myName);
+  state = await loadPlayerState(myName);
+  applyLoadedExtras();
+  selectedDay = todayDayNum();
+  setupHomeScreenIcon();
+  renderExamLine();
+  renderTaskEditForm();
+  renderAll();
+  renderProfileBar();
+  applyReadOnlyUI();
+  renderRoomPanel();
+  if(getRoomCode()) await addToRoomRegistry(myName);
+  await renderCompetePanel();
+  startRoomAutoSync();
+})();
+</script>
+</body>
+</html>
