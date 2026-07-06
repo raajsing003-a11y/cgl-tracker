@@ -1498,13 +1498,34 @@ function compressImageFile(file, maxDim=480, quality=0.55){
 }
 
 let chatMsgNodes = {}; // msg key -> {el, tickEl} — reused across renders
+const CHAT_KEEP_COUNT = 4; // only the newest N messages are shown; rest auto-delete
+
+let chatTrimInFlight = false;
+async function enforceChatLimit(allKeysSorted){
+  const room = getRoomCode();
+  if(!room || chatTrimInFlight) return;
+  const toDelete = allKeysSorted.slice(0, allKeysSorted.length - CHAT_KEEP_COUNT);
+  if(toDelete.length===0) return;
+  chatTrimInFlight = true;
+  try{
+    await waitForFirebase();
+    // Deletes are for the whole room (not just my screen) so everyone's
+    // chat stays capped at the last CHAT_KEEP_COUNT messages.
+    await Promise.all(toDelete.map(k => window.__fbSet(`rooms/${room}/chat/${k}`, null)));
+  }catch(e){ console.error('chat auto-trim failed', e); }
+  finally{ chatTrimInFlight = false; }
+}
 
 function renderChatMessages(msgsObj){
   lastChatMsgsObj = msgsObj;
   const wrap = document.getElementById('chatMessages');
   updateChatDot(msgsObj);
   if(!wrap) return;
-  const keys = msgsObj ? Object.keys(msgsObj).sort() : [];
+  const allKeys = msgsObj ? Object.keys(msgsObj).sort() : [];
+  if(allKeys.length > CHAT_KEEP_COUNT){
+    enforceChatLimit(allKeys); // fire-and-forget: deletes the older ones for everyone
+  }
+  const keys = allKeys.slice(-CHAT_KEEP_COUNT);
   if(keys.length===0){
     wrap.innerHTML = `<div class="losshint" style="padding:0;">Abhi tak koi message nahi — pehla message ya doubt bhejo!</div>`;
     chatMsgNodes = {};
@@ -1519,9 +1540,10 @@ function renderChatMessages(msgsObj){
     wrap.innerHTML = '';
     chatMsgNodes = {};
   }
-  // Drop any bubbles for messages that no longer exist (e.g. "Clear Chat").
+  // Drop any bubbles for messages outside the visible window (deleted,
+  // or pushed out by CHAT_KEEP_COUNT).
   Object.keys(chatMsgNodes).forEach(k=>{
-    if(!msgsObj[k]){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
+    if(keys.indexOf(k)===-1){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
   });
 
   // Newest timestamp among everyone ELSE in the room — used to show a
