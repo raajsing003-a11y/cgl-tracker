@@ -513,25 +513,6 @@
   }
   .guideNote{font-size:12px;color:var(--muted);font-weight:700;padding:10px;text-align:center;}
 
-  /* ===== Chat: seen ticks + clear chat ===== */
-  .chatTick{font-size:9.5px;font-weight:800;}
-  .chatTick.seen{color:var(--gain);}
-  .chatTick.sent{opacity:0.6;}
-
-  /* ===== Presence: online/offline chips in Chat ===== */
-  .presenceBar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .presenceChip{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:5px 10px;border-radius:20px;font-size:11px;font-weight:800;
-    border:1px solid var(--border-strong);background:var(--panel2);color:var(--muted);
-  }
-  .presenceChip.on{border-color:var(--gain);color:var(--gain);background:rgba(74,222,128,0.1);}
-  .presenceDot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
-  .presenceChip.on .presenceDot{
-    background:var(--gain);box-shadow:0 0 0 3px rgba(74,222,128,0.2);
-    animation:dotPulse2 1.6s ease-in-out infinite;
-  }
-  .presenceEmpty{font-size:12px;color:var(--muted);font-weight:700;padding:2px 0 10px;}
 </style>
 </head>
 <body>
@@ -1383,7 +1364,6 @@ function renderProfileBar(){
 // chat partner ever see these messages inside the app.
 let dmUnsub = null;
 let lastDmRoomInited = undefined; // undefined = never inited yet
-let pendingChatImage = null;
 let lastNotifiedDmKey = null; // tracks newest DM (for the open partner) we've already notified about
 let dmTreeCache = null;        // latest full { pairKey: {msgs,seen} } tree for this room
 let chatContacts = [];         // known people (friends + room members), excluding myself
@@ -1488,40 +1468,7 @@ function presenceLabel(name){
 async function renderChatPresenceBar(){
   const el = document.getElementById('chatPresenceBar');
   if(!el) return;
-  const room = getRoomCode();
-  if(!room){ el.innerHTML = ''; return; }
-  const roomNames = await loadRoomRegistry();
-  const others = roomNames.filter(n=> n && n.toLowerCase()!==myName.toLowerCase());
-  if(others.length===0){
-    el.innerHTML = `<div class="presenceEmpty">🔗 Is Room mein abhi tumhare alawa koi join nahi hua — Room Code dost ko bhejo.</div>`;
-    return;
-  }
-  el.innerHTML = others.map(n=>{
-    const p = presenceLabel(n);
-    return `<span class="presenceChip ${p.cls}"><span class="presenceDot"></span>${escapeHtml(n)} · ${p.text}</span>`;
-  }).join('');
-}
-
-function compressImageFile(file, maxDim=480, quality=0.55){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onerror = ()=> reject(new Error('Image padhi nahi gayi.'));
-    reader.onload = ()=>{
-      const img = new Image();
-      img.onerror = ()=> reject(new Error('Image load nahi hui.'));
-      img.onload = ()=>{
-        let w = img.width, h = img.height;
-        if(w>=h){ if(w>maxDim){ h = Math.round(h*maxDim/w); w = maxDim; } }
-        else { if(h>maxDim){ w = Math.round(w*maxDim/h); h = maxDim; } }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
+  el.innerHTML = ''; // Online status bar removed
 }
 
 let chatMsgNodes = {}; // msg key -> {el, tickEl} — reused across renders
@@ -1575,7 +1522,6 @@ function renderChatMessages(){
       if(keys.indexOf(k)===-1){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
     });
 
-    const partnerSeenTs = seenObj[chatSeenKey(currentChatPartner)] || 0;
     const wasNearBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60);
 
     keys.forEach(k=>{
@@ -1584,7 +1530,6 @@ function renderChatMessages(){
       let entry = chatMsgNodes[k];
       if(!entry){
         const time = new Date(m.ts||0).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-        const imgHtml = m.image ? `<img src="${m.image}" loading="lazy" style="max-width:100%;border-radius:8px;margin-top:6px;display:block;">` : '';
         const textHtml = m.text ? `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.text)}</div>` : '';
         const row = document.createElement('div');
         row.style.display = 'flex';
@@ -1593,24 +1538,15 @@ function renderChatMessages(){
         row.innerHTML = `
           <div style="max-width:82%;">
             <div style="background:${mine?'var(--accent-dim)':'var(--panel2)'};color:${mine?'#1a1404':'var(--text)'};border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:13.5px;">
-              ${textHtml}${imgHtml}
-              <div style="display:flex;justify-content:${mine?'space-between':'flex-end'};align-items:center;gap:8px;margin-top:3px;">
-                ${mine?'<span class="chatTick"></span>':''}
+              ${textHtml}
+              <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:3px;">
                 <div style="font-size:9.5px;color:${mine?'#4a3f22':'var(--muted)'};">${time}</div>
               </div>
             </div>
           </div>`;
         wrap.appendChild(row);
-        entry = { el: row, tickEl: mine ? row.querySelector('.chatTick') : null };
+        entry = { el: row };
         chatMsgNodes[k] = entry;
-      }
-      if(mine && entry.tickEl){
-        const seen = partnerSeenTs >= (m.ts||0);
-        const cls = 'chatTick ' + (seen?'seen':'sent');
-        if(entry.tickEl.className !== cls){
-          entry.tickEl.className = cls;
-          entry.tickEl.textContent = seen?'✓✓ Seen':'✓ Sent';
-        }
       }
     });
     if(wasNearBottom){ wrap.scrollTop = wrap.scrollHeight; }
@@ -1626,7 +1562,7 @@ function renderChatMessages(){
         const m = msgsObj[lastKey] || {};
         const isMine = (m.sender||'').toLowerCase() === myName.toLowerCase();
         if(!isMine && (document.hidden || !document.hasFocus() || !isChatTabActive())){
-          fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : '📷 Photo bheji');
+          fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : 'Naya message');
         }
       }
     }
@@ -1656,8 +1592,7 @@ function renderChatContactChips(){
       const mySeen = (pair.seen && pair.seen[chatSeenKey(myName)]) || 0;
       hasUnread = Object.values(pair.msgs).some(m=> (m.sender||'').toLowerCase()!==myName.toLowerCase() && (m.ts||0) > mySeen);
     }
-    const p = presenceLabel(nm);
-    return `<button type="button" class="nav-btn" data-partner="${escapeHtml(nm)}" style="position:relative;white-space:nowrap;font-size:12px;padding:8px 12px;flex-shrink:0;${isActive?'background:var(--white);color:#000;border-color:var(--white);':''}">${p.dot} ${escapeHtml(nm)}${hasUnread?'<span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--loss);border:1.5px solid var(--panel);"></span>':''}</button>`;
+    return `<button type="button" class="nav-btn" data-partner="${escapeHtml(nm)}" style="position:relative;white-space:nowrap;font-size:12px;padding:8px 12px;flex-shrink:0;${isActive?'background:var(--white);color:#000;border-color:var(--white);':''}">${escapeHtml(nm)}${hasUnread?'<span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--loss);border:1.5px solid var(--panel);"></span>':''}</button>`;
   }).join('');
   bar.querySelectorAll('[data-partner]').forEach(btn=>{
     btn.addEventListener('click', ()=> openChatWithPartner(btn.getAttribute('data-partner')));
@@ -1676,10 +1611,9 @@ function updateChatHeaderAndInputState(){
     if(clearBtn) clearBtn.style.display = 'none';
     return;
   }
-  const p = presenceLabel(currentChatPartner);
-  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b> <span style="color:var(--muted);font-weight:700;font-size:11px;">· ${p.dot} ${p.text}</span>`;
+  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b>`;
   if(inputRow) inputRow.style.display = 'flex';
-  if(hint){ hint.style.display = ''; hint.textContent = `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi. Seen tick tabhi aayega jab ${currentChatPartner} ye thread khole.`; }
+  if(hint){ hint.style.display = ''; hint.textContent = `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi.`; }
   if(clearBtn) clearBtn.style.display = '';
 }
 
@@ -1726,11 +1660,8 @@ async function renderChatPanel(){
       <button class="nav-btn" id="chatClearBtn" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;">🗑️ Clear</button>
     </div>
     <div id="chatMessages" style="max-height:300px;min-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 4px;"><div class="loading">Chat load ho raha hai…</div></div>
-    <div id="chatImgPreviewWrap" style="display:none;margin-top:8px;position:relative;width:126px;"></div>
     <div id="chatInputRow" class="btnrow" style="margin-top:10px;gap:6px;flex-wrap:nowrap;">
       <input type="text" id="chatTextInput" placeholder="Apna doubt/message likho..." style="flex:1;min-width:0;background:var(--panel2);border:1.5px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14.5px;padding:12px 12px;">
-      <label class="nav-btn" style="cursor:pointer;display:flex;align-items:center;padding:10px 12px;margin:0;font-size:15px;" for="chatImgInput">📷</label>
-      <input type="file" id="chatImgInput" accept="image/*" style="display:none;">
       <button class="nav-btn" id="chatSendBtn" style="padding:10px 16px;font-size:15px;">➤</button>
     </div>
     <div id="chatPrivacyHint" class="losshint" style="padding-top:6px;"></div>
@@ -1739,8 +1670,6 @@ async function renderChatPanel(){
   updateChatHeaderAndInputState();
 
   const textInp = document.getElementById('chatTextInput');
-  const imgInp = document.getElementById('chatImgInput');
-  const previewWrap = document.getElementById('chatImgPreviewWrap');
   const sendBtn = document.getElementById('chatSendBtn');
   const clearChatBtn = document.getElementById('chatClearBtn');
   if(clearChatBtn) clearChatBtn.addEventListener('click', async ()=>{
@@ -1756,49 +1685,18 @@ async function renderChatPanel(){
     clearChatBtn.disabled = false;
   });
 
-  const clearPendingImage = ()=>{
-    pendingChatImage = null;
-    previewWrap.style.display = 'none';
-    previewWrap.innerHTML = '';
-    imgInp.value = '';
-  };
-
-  imgInp.addEventListener('change', async ()=>{
-    const file = imgInp.files && imgInp.files[0];
-    if(!file) return;
-    try{
-      const dataUrl = await compressImageFile(file);
-      if(dataUrl.length > 350000){
-        alert('Ye image bahut badi hai. Kam resolution wali ya doosri image try karo.');
-        clearPendingImage();
-        return;
-      }
-      pendingChatImage = dataUrl;
-      previewWrap.style.display = 'block';
-      previewWrap.innerHTML = `
-        <img src="${dataUrl}" style="max-width:120px;max-height:120px;border-radius:8px;border:1px solid var(--border-strong);display:block;">
-        <button type="button" id="chatImgRemoveBtn" style="position:absolute;top:-6px;left:104px;background:var(--loss);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;line-height:1;cursor:pointer;">✕</button>
-      `;
-      document.getElementById('chatImgRemoveBtn').addEventListener('click', clearPendingImage);
-    }catch(e){
-      alert('Image load nahi ho payi, doosri try karo.');
-      clearPendingImage();
-    }
-  });
-
   const doSend = async ()=>{
     if(!currentChatPartner){ alert('Pehle upar se ek contact chuno.'); return; }
     const text = (textInp.value||'').trim();
-    if(!text && !pendingChatImage) return;
+    if(!text) return;
     sendBtn.disabled = true;
     try{
       const pairKey = dmPairKey(myName, currentChatPartner);
       await Promise.race([
-        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/dm/${pairKey}/msgs`, { sender: myName, text, image: pendingChatImage||null, ts: Date.now() }); })(),
+        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/dm/${pairKey}/msgs`, { sender: myName, text, ts: Date.now() }); })(),
         new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet slow ya Firebase tak pahunch nahi paya.')), 8000))
       ]);
       textInp.value = '';
-      clearPendingImage();
     }catch(e){
       alert('Message nahi bhej paya.\n\nWajah: ' + ((e&&e.message)?e.message:String(e)));
     }
