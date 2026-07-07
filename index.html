@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Operation CGL — 50 Day Tracker</title>
+<title>CGL Tracker — 50 Day Plan</title>
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CGL 50">
+<meta name="apple-mobile-web-app-title" content="CGL Tracker">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -44,7 +44,7 @@
   }
   .wrap{max-width:900px;margin:0 auto;}
   .eyebrow{
-    font-size:11px;letter-spacing:3px;color:var(--border-strong);
+    font-size:12.5px;letter-spacing:3px;color:var(--border-strong);
     text-transform:uppercase;margin-bottom:6px;font-weight:700;
   }
   h1{
@@ -73,7 +73,9 @@
     font-family:'Oswald',sans-serif;font-size:clamp(19px,5vw,27px);font-weight:800;color:var(--white);
   }
   .stat.invert .num{color:#1a1404;}
-  .stat .lbl{font-size:9.5px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:700;}
+  .stat .lbl{font-size:12px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:700;}
+  .freezeInfo{font-size:13px;margin-top:4px;letter-spacing:1px;}
+  .freezeInfo .freezeEmpty{opacity:0.25;filter:grayscale(1);}
   .stat.invert .lbl{color:#4a3f22;}
   .stat.stat-gain{background:linear-gradient(165deg,rgba(74,222,128,0.14),#0d0c0f);border-color:rgba(74,222,128,0.35);}
   .stat.stat-gain .num{color:var(--gain);}
@@ -92,7 +94,7 @@
   .daycell{
     aspect-ratio:1;border-radius:4px;border:1px solid var(--border);
     background:var(--panel);color:var(--muted);
-    font-size:11px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;display:flex;align-items:center;justify-content:center;
     cursor:pointer;position:relative;font-weight:700;
   }
   .daycell{transition:transform .1s ease,box-shadow .15s ease;}
@@ -101,6 +103,7 @@
   .daycell.partial{border:1px dashed var(--border-strong);color:var(--text);}
   .daycell.done{background:linear-gradient(160deg,#fff,#f1e0a8);color:#000;font-weight:800;border-color:var(--accent);}
   .daycell.rest{background:repeating-linear-gradient(45deg, var(--panel2), var(--panel2) 4px, #211f24 4px, #211f24 8px);color:var(--muted);}
+  .daycell.frozen{background:linear-gradient(160deg,rgba(96,165,250,0.28),rgba(96,165,250,0.06));border-color:var(--blue);color:var(--blue);}
   .daycell.selected{box-shadow:0 0 0 2px var(--accent);}
 
   /* ===== Merged Calendar+Grid View ===== */
@@ -110,7 +113,7 @@
     margin:0 0 8px;letter-spacing:0.3px;
   }
   .calWeekHead{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
-  .calWeekHead span{font-size:9.5px;color:var(--muted);text-align:center;font-weight:800;text-transform:uppercase;}
+  .calWeekHead span{font-size:11.5px;color:var(--muted);text-align:center;font-weight:800;text-transform:uppercase;}
   .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .daycell.outrange{opacity:0.28;cursor:default;background:var(--panel2);}
   .daycell.outrange:active{transform:none;}
@@ -178,7 +181,7 @@
   }
   .scoreform{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
   @media (max-width:480px){.scoreform{grid-template-columns:repeat(2,1fr);}}
-  .scorefield label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;font-weight:700;}
+  .scorefield label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;font-weight:700;}
   .scorefield input{
     width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
     color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
@@ -188,7 +191,16 @@
   .scoretotal{font-size:12px;color:var(--muted);text-align:right;margin-bottom:4px;font-weight:800;}
   .scoretotal b{color:var(--white);font-size:14px;}
 
-  .chapterQuickHint{font-size:11px;color:var(--muted);font-weight:700;margin:0 0 10px;line-height:1.4;}
+  .chapterQuickHint{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 10px;line-height:1.4;}
+  .searchBox{margin-bottom:14px;}
+  .searchBox input{
+    width:100%;box-sizing:border-box;background:var(--panel2);border:1.5px solid var(--border-strong);
+    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;
+    font-size:13px;padding:10px 12px;
+  }
+  .searchBox input:focus{outline:none;border-color:var(--accent);}
+  .searchBox input::placeholder{color:var(--muted);}
+  .chapterEmptyMsg{font-size:12.5px;color:var(--muted);font-weight:700;padding:10px 2px;text-align:center;}
   .chapterQuickRow{
     display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;
   }
@@ -199,11 +211,11 @@
   .chapterQuickRow select:focus{outline:none;border-color:var(--white);}
   .chapterQuickBtn{
     background:var(--panel2);border:1.5px solid var(--purple);color:var(--purple);
-    padding:8px 10px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;
+    padding:8px 10px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:800;
     white-space:nowrap;
   }
   .chapterQuickBtn:active{transform:scale(0.94);}
-  .chapterQuickCount{font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap;width:100%;text-align:right;}
+  .chapterQuickCount{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;width:100%;text-align:right;}
 
   .chapterRow{
     display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;
@@ -262,12 +274,12 @@
     border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--panel);font-size:12px;
   }
   .weekrow .wname{font-weight:800;color:var(--white);}
-  .weekrow .wrange{color:var(--muted);font-size:10.5px;}
+  .weekrow .wrange{color:var(--muted);font-size:12px;}
   .weekrow .wpct{font-weight:800;}
   .weekstat{
     display:flex;justify-content:space-between;gap:6px;padding:6px 12px 10px;margin-top:-6px;margin-bottom:6px;
     background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;
-    font-size:10.5px;color:var(--muted);font-weight:700;flex-wrap:wrap;
+    font-size:12px;color:var(--muted);font-weight:700;flex-wrap:wrap;
   }
 
   .daybadge{position:absolute;top:-6px;right:-5px;font-size:9px;line-height:1;filter:drop-shadow(0 0 1px #000);}
@@ -279,7 +291,7 @@
   .daycell.done .planDayBadge{color:#7a5f14;background:rgba(255,255,255,0.5);}
   .chartcard{overflow:hidden;}
   .chartscroll{overflow-x:auto;padding-bottom:4px;}
-  .chartlegend{display:flex;gap:16px;font-size:10.5px;color:var(--muted);margin-top:8px;font-weight:700;}
+  .chartlegend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;font-weight:700;}
   .chartlegend b{font-weight:800;}
   .lossrow{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
   .lossrow:last-child{border-bottom:none;}
@@ -295,13 +307,13 @@
   .backupwrap{margin-top:24px;border-top:1px dashed var(--border);padding-top:16px;}
   .backupwrap textarea{
     width:100%;min-height:70px;background:var(--panel2);border:1px solid var(--border-strong);
-    border-radius:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;
+    border-radius:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;
     padding:10px;margin-top:8px;
   }
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 
   .reset{
-    background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;
+    background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline;
     margin-top:14px;font-weight:700;padding:0;
   }
   .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center;}
@@ -323,7 +335,7 @@
   .rewardBanner .rAmt{font-size:13px;font-weight:800;margin-bottom:10px;}
   .rewardBanner .rClose{
     background:#000;color:#fff;border:none;border-radius:6px;padding:7px 12px;
-    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;cursor:pointer;
   }
 
   /* ===== Badge Unlock Banner ===== */
@@ -339,7 +351,7 @@
   .badgeBanner .rMsg{font-size:13px;font-weight:700;line-height:1.5;margin-bottom:10px;color:var(--text);}
   .badgeBanner .rClose{
     background:var(--accent);color:#1a1404;border:none;border-radius:6px;padding:7px 12px;
-    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;cursor:pointer;
   }
 
   /* ===== Achievement Badges ===== */
@@ -350,9 +362,9 @@
   }
   .badgeChip.earned{opacity:1;filter:none;border-color:var(--accent);background:linear-gradient(160deg,#1a1404,#141014);box-shadow:0 0 14px rgba(251,191,36,0.15);}
   .badgeChip .bEmoji{font-size:26px;line-height:1;margin-bottom:6px;}
-  .badgeChip .bLabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+  .badgeChip .bLabel{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
   .badgeChip.earned .bLabel{color:var(--accent);}
-  .badgeChip .bStatus{font-size:9px;color:var(--muted);margin-top:3px;font-weight:700;}
+  .badgeChip .bStatus{font-size:11px;color:var(--muted);margin-top:3px;font-weight:700;}
 
   /* ===== XP / Level Card (Home) ===== */
   .levelCard{
@@ -371,8 +383,8 @@
   }
   .levelInfo{flex:1;min-width:0;}
   .levelName{font-family:'Oswald',sans-serif;font-size:15px;color:var(--white);font-weight:800;line-height:1.3;}
-  .levelSub{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:0.3px;margin-top:3px;}
-  .levelXpText{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:6px;text-align:right;}
+  .levelSub{font-size:12.5px;color:var(--accent);font-weight:700;letter-spacing:0.3px;margin-top:3px;}
+  .levelXpText{font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;text-align:right;}
 
   /* ===== Task Name/Time Editor ===== */
   .taskEditIntro{font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:700;}
@@ -382,7 +394,7 @@
   }
   .taskEditRow:last-of-type{border-bottom:none;margin-bottom:4px;padding-bottom:0;}
   .taskEditTop{display:flex;align-items:center;gap:8px;}
-  .taskEditTop .tNum{font-size:11px;color:var(--muted);min-width:18px;font-weight:800;}
+  .taskEditTop .tNum{font-size:12.5px;color:var(--muted);min-width:18px;font-weight:800;}
   .taskEditRow input{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
     color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;
@@ -392,7 +404,7 @@
   .taskEditTop input.teName{flex:1;min-width:0;}
   .taskEditBottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-left:26px;}
   .taskEditBottom label{
-    font-size:9.5px;color:var(--muted);font-weight:800;letter-spacing:0.5px;
+    font-size:11px;color:var(--muted);font-weight:800;letter-spacing:0.5px;
     display:flex;align-items:center;gap:5px;text-transform:uppercase;
   }
   .taskEditBottom input.teStart{width:104px;font-size:12px;padding:6px 8px;}
@@ -402,7 +414,7 @@
     background:var(--panel2);border:1px solid var(--loss);color:var(--loss);line-height:1;
   }
   .teDel:disabled{opacity:0.3;cursor:not-allowed;}
-  .tVal{font-size:11px;font-weight:800;white-space:nowrap;padding:4px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--border-strong);margin-left:auto;}
+  .tVal{font-size:12.5px;font-weight:800;white-space:nowrap;padding:4px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--border-strong);margin-left:auto;}
   .tVal.tier-small{color:var(--blue);border-color:var(--blue);}
   .tVal.tier-medium{color:var(--purple);border-color:var(--purple);}
   .tVal.tier-large{color:var(--accent);border-color:var(--accent);}
@@ -416,7 +428,7 @@
   .taskEditIconBtn:hover{border-color:var(--accent);color:var(--accent);}
   .taskEditHeadRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .teCloseBtn{
-    flex-shrink:0;font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;
+    flex-shrink:0;font-size:12.5px;padding:6px 10px;border-radius:6px;cursor:pointer;
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);font-weight:800;
   }
   .teCloseBtn:hover{border-color:var(--accent);color:var(--accent);}
@@ -432,11 +444,11 @@
     display:flex;flex-direction:column;gap:8px;background:var(--panel2);
   }
   .adminMemberTop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:13px;flex-wrap:wrap;}
-  .adminDelBtn{font-size:10.5px;padding:5px 9px;border-color:var(--loss);color:var(--loss);}
+  .adminDelBtn{font-size:12px;padding:5px 9px;border-color:var(--loss);color:var(--loss);}
   .adminDelBtn:hover{background:var(--loss);color:#fff;}
   .adminMemberToggle{
     display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;
-    font-size:10.5px;color:var(--muted);font-weight:700;
+    font-size:12px;color:var(--muted);font-weight:700;
   }
   .adminMemberToggle input[type=checkbox]{width:18px;height:18px;flex-shrink:0;}
 
@@ -470,16 +482,16 @@
   .lbmain{flex:1;min-width:130px;}
   .lbtoprow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
   .lbname{font-weight:800;}
-  .lbdelta{font-size:10.5px;font-weight:800;white-space:nowrap;}
+  .lbdelta{font-size:12px;font-weight:800;white-space:nowrap;}
   .lbdelta.up{color:var(--gain);}
   .lbdelta.down{color:var(--loss);}
   .lbdelta.even{color:var(--muted);}
   .lbbar{height:5px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:6px 0;border:1px solid var(--border);}
   .lbbarfill{height:100%;background:linear-gradient(90deg,#fff,var(--accent));}
-  .lbstats{display:flex;gap:8px 10px;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;flex-wrap:wrap;}
+  .lbstats{display:flex;gap:8px 10px;font-size:12.5px;color:var(--muted);font-weight:700;white-space:nowrap;flex-wrap:wrap;}
   .lbstats .lbgain{color:var(--gain);}
   .lbstats .lbloss{color:var(--loss);}
-  .lbview{padding:5px 10px;font-size:10.5px;}
+  .lbview{padding:5px 10px;font-size:12px;}
   .addfriend{display:flex;gap:8px;margin-top:12px;}
   .addfriend input{
     flex:1;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
@@ -544,7 +556,7 @@
   .tabbtn{
     flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
     background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;
-    font-weight:800;font-size:10px;letter-spacing:0.3px;padding:7px 2px 5px;border-radius:12px;
+    font-weight:800;font-size:11.5px;letter-spacing:0.3px;padding:7px 2px 5px;border-radius:12px;
     cursor:pointer;position:relative;transition:color .15s ease,transform .12s ease;
   }
   .tabbtn:active{transform:scale(0.9);}
@@ -581,7 +593,7 @@
     font-size:120px;color:rgba(251,191,36,0.08);line-height:1;pointer-events:none;
   }
   .quoteEyebrow{
-    font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
+    font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
     font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px;position:relative;z-index:1;
   }
   .quoteText{
@@ -597,7 +609,7 @@
   .homeLBrank{font-weight:900;min-width:22px;text-align:center;color:var(--muted);font-size:13px;}
   .homeLBrow.me .homeLBrank, .homeLBrow.lead .homeLBrank{color:var(--accent);}
   .homeLBname{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .homeLBmeta{display:flex;gap:8px;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .homeLBmeta{display:flex;gap:8px;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;}
   .homeLBfoot{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;
     border-top:1px dashed var(--border);gap:8px;flex-wrap:wrap;
@@ -621,10 +633,10 @@
     50%{box-shadow:0 0 0 7px rgba(74,222,128,0.05);}
   }
   .rightNowBody{flex:1;min-width:0;}
-  .rightNowLbl{font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:3px;}
+  .rightNowLbl{font-size:11.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:3px;}
   .rightNowTask{font-size:13.5px;font-weight:800;color:var(--white);}
-  .rightNowTime{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;}
-  .rightNowGo{padding:8px 12px;font-size:11px;white-space:nowrap;flex-shrink:0;}
+  .rightNowTime{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .rightNowGo{padding:8px 12px;font-size:12.5px;white-space:nowrap;flex-shrink:0;}
 
   /* ===== Smart Time Guide (Today tab, below tasks) ===== */
   .guideBox{font-size:12.5px;}
@@ -645,11 +657,11 @@
   .guideRow.break .guideTaskName{color:var(--muted);}
   .guideRow.break .guideTag{color:var(--blue);}
   .guideTaskName{font-weight:800;font-size:12.5px;color:var(--text);}
-  .guideTaskMeta{display:flex;gap:8px;align-items:center;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .guideTaskMeta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;}
   .guideTag{font-weight:800;}
   .guideRow.tagnow .guideTag{color:var(--gain);}
   .guideRow.tagmiss .guideTag{color:var(--loss);}
-  .guideFoot{font-size:11.5px;color:var(--muted);font-weight:700;}
+  .guideFoot{font-size:12.5px;color:var(--muted);font-weight:700;}
   .guideFoot b{color:var(--accent);}
   .guideDone{
     font-size:13px;font-weight:700;color:var(--accent);background:rgba(251,191,36,0.08);
@@ -664,10 +676,10 @@
   }
   .tsHead{font-size:12px;letter-spacing:0.5px;text-transform:uppercase;color:var(--white);font-weight:800;margin-bottom:10px;}
   .tsRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-  .tsLabel{font-size:11.5px;color:var(--muted);font-weight:700;}
-  .tsBreaksLabel{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 6px;}
+  .tsLabel{font-size:12.5px;color:var(--muted);font-weight:700;}
+  .tsBreaksLabel{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 6px;}
   .tsBreakRow{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-  .tsBreakSep{color:var(--muted);font-weight:800;font-size:11px;}
+  .tsBreakSep{color:var(--muted);font-weight:800;font-size:12.5px;}
   input[type="time"]{
     background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
     color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;
@@ -706,20 +718,20 @@
   .onbCloseX:hover{color:var(--white);border-color:var(--white);}
   .onbTitle{font-family:'Oswald',sans-serif;font-size:21px;font-weight:800;color:var(--white);margin:0 0 6px;}
   .onbSub{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 14px;line-height:1.55;}
-  .onbLabel{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 6px;}
+  .onbLabel{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 6px;}
   .onbCard input[type="text"]{
     width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
     color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
     padding:11px 10px;
   }
   .onbCard input[type="text"]:focus{outline:none;border-color:var(--white);}
-  .onbDivider{display:flex;align-items:center;gap:8px;margin:16px 0 4px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+  .onbDivider{display:flex;align-items:center;gap:8px;margin:16px 0 4px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
   .onbDivider::before, .onbDivider::after{content:"";flex:1;height:1px;background:var(--border);}
   .onbBtnRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
   .onbBtnRow .nav-btn{flex:1;text-align:center;min-width:0;}
   .onbPrimary{background:var(--accent);border-color:var(--accent);color:#1a1404;}
   .onbPrimary:hover{background:#ffd75e;color:#1a1404;}
-  .onbStatus{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:12px;line-height:1.5;display:none;}
+  .onbStatus{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:12px;line-height:1.5;display:none;}
 
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
@@ -801,7 +813,7 @@
 
 <div class="onbOverlay" id="onboardModal">
   <div class="onbCard">
-    <div class="onbTitle">👋 Welcome to Operation CGL</div>
+    <div class="onbTitle">👋 Welcome to CGL Tracker</div>
     <div class="onbSub">Apna naam likho — dost isi naam se tumhara progress dekh payenge. Agar kisi dost ka Room Code hai to yahin daal ke seedha usi room mein judh jao — naya target ussi din se, aaj se, shuru ho jayega.</div>
 
     <div class="onbLabel">Tumhara Naam</div>
@@ -839,7 +851,8 @@
     <button class="onbCloseX" id="helpCloseBtn" aria-label="Band Karo">✕</button>
     <div class="onbTitle">❓ App Kaise Use Karein</div>
     <div class="onbSub">Neeche 6 tabs hain — har tab ka kaam ek line mein:</div>
-    <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi. 🧊 <b>Streak Freeze</b>: agar kabhi ek din 50% se kam ho jaaye, ek freeze apne aap streak bacha leta hai (max 2 jama ho sakte hain) — calendar mein wo din 🧊 se dikhta hai.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Revision aur Chapters tab ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🎯</div><div><b>Today</b> — Sabse zaroori tab. Roz yahan aake apne din ke tasks ✅ tick karo, aur mock/sectional test ka score bharo.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🔁</div><div><b>Revision</b> — Jo topic padhke revise karo, uske "✅ +1" daba do. Count hamesha save rehta hai, kabhi khud reset nahi hota. Sabse kam-revised topic top pe dikhta hai, taaki pata rahe kya karna hai.</div></div>
     <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Chapters</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
@@ -853,7 +866,7 @@
 </div>
 
 <div class="topbar">
-  <div class="topbar-left">🎯 <span>OPERATION CGL</span></div>
+  <div class="topbar-left">🎯 <span>CGL TRACKER</span></div>
   <div class="topbar-right">
     <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
     <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
@@ -883,7 +896,7 @@
   <div class="tabview active" id="tab-home" data-tabview="home">
     <button class="nav-btn onbPrimary" id="homeInstallBtn" style="width:100%;margin-bottom:14px;">📲 Add to Home Screen</button>
     <div class="eyebrow">🚀 Mission Countdown</div>
-    <h1 id="mainTitle">🎯 OPERATION CGL // 50 DAYS</h1>
+    <h1 id="mainTitle">🎯 CGL TRACKER // 50 DAYS</h1>
     <div class="sub" id="examLine">Loading dates…</div>
 
     <div class="quoteCard">
@@ -893,7 +906,7 @@
 
     <div class="statrow" style="margin-top:0;">
       <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">📅 Days Cleared</div></div>
-      <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">🔥 Streak</div></div>
+      <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">🔥 Streak</div><div class="freezeInfo" id="statFreezeInfo" title="Streak Freeze"></div></div>
       <div class="stat"><div class="num" id="statPct">0%</div><div class="lbl">📈 Progress</div></div>
     </div>
 
@@ -967,6 +980,7 @@
     </div>
     <div class="grid-label" style="margin-top:0;">🔁 Revision Counter — Math + English + GK</div>
     <div class="chapterQuickHint">Jo bhi topic revise karo, uske <b>✅ +1</b> daba do. Count kabhi khud reset nahi hota — poori preparation ke dauraan store rehta hai, chahe jitne din lag jaayein. Sabse pehle wahi chapters dikhte hain jo <b>sabse kam revise hue hain</b> — unhi ki zyada zaroorat hai.</div>
+    <div class="searchBox"><input type="text" id="revisionSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
 
     <div class="grid-label" style="margin-top:0;">📊 Overall Revision Summary</div>
     <div class="panel" id="revisionSummaryPanel"></div>
@@ -997,6 +1011,7 @@
     </div>
     <div class="grid-label" style="margin-top:0;">📚 Chapter-Wise Weak Area Tracker</div>
     <div class="chapterQuickHint">Har galat question ke chapter pe +1 karo — jitna zyada count, utna weak chapter. Sab time ke saath count hota rahega.</div>
+    <div class="searchBox"><input type="text" id="chapterSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
 
     <div class="grid-label" style="margin-top:0;">🔥 Weakest Right Now</div>
     <div class="panel" id="weakSummaryPanel"></div>
@@ -1397,9 +1412,9 @@ function renderTimeSettings(){
   }
   html += `
     <div class="btnrow">
-      <button class="nav-btn" id="tsAddBreakBtn" style="font-size:11px;">➕ Break Jodo</button>
-      <button class="nav-btn" id="tsSaveBtn" style="font-size:11px;">💾 Save Karo</button>
-      <button class="nav-btn" id="tsResetBtn" style="font-size:11px;">↩️ Default</button>
+      <button class="nav-btn" id="tsAddBreakBtn" style="font-size:12.5px;">➕ Break Jodo</button>
+      <button class="nav-btn" id="tsSaveBtn" style="font-size:12.5px;">💾 Save Karo</button>
+      <button class="nav-btn" id="tsResetBtn" style="font-size:12.5px;">↩️ Default</button>
     </div>
   `;
   el.innerHTML = html;
@@ -2666,7 +2681,7 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     ${rowsHtml}
     <div class="homeLBfoot">
       <span>${rankMsg}</span>
-      <button class="nav-btn" id="homeLBOpenBtn" style="font-size:11px;padding:6px 10px;">Poora Leaderboard ➜</button>
+      <button class="nav-btn" id="homeLBOpenBtn" style="font-size:12.5px;padding:6px 10px;">Poora Leaderboard ➜</button>
     </div>
   `;
   el.querySelectorAll('.homeLBViewBtn').forEach(btn=>{
@@ -3047,17 +3062,43 @@ function goToLongTermAnalysis(){
   }, 60);
 }
 
+// ===== Streak Freeze (Duolingo-style) =====
+// A missed day (below the 50% streak threshold, not a rest day) no longer
+// has to break the whole streak — up to MAX_STREAK_FREEZES misses get
+// auto-covered by a "freeze", so one bad day doesn't wipe out weeks of
+// consistency. Freezes regenerate on their own every FREEZE_EARN_EVERY
+// days of a live streak (capped at the max). This is a pure function of
+// the existing per-day task data, so nothing new needs to be saved or
+// synced — it recomputes correctly from state.days every time.
+const MAX_STREAK_FREEZES = 2;
+const FREEZE_EARN_EVERY = 7;
+function computeStreakInfo(){
+  const activeUpto = activeUptoDay();
+  let streak=0, longest=0, freezes=MAX_STREAK_FREEZES;
+  const frozenDays = [];
+  for(let i=1;i<=activeUpto;i++){
+    const d = getDay(i);
+    if(d.rest) continue; // neutral — doesn't touch streak or freezes
+    if(meetsStreakTarget(d)){
+      streak++;
+      if(streak>longest) longest=streak;
+      if(streak % FREEZE_EARN_EVERY === 0 && freezes < MAX_STREAK_FREEZES) freezes++;
+    } else if(freezes>0){
+      freezes--;
+      frozenDays.push(i); // a freeze absorbed this miss — streak survives untouched
+    } else {
+      streak = 0;
+    }
+  }
+  return { streak, longest, freezesLeft:freezes, frozenDays };
+}
+
 function computeStats(){
   let daysDone=0;
   for(let i=1;i<=TOTAL_DAYS;i++){ if(dayStatus(i)==='done') daysDone++; }
-  let streak=0;
   const activeUpto = activeUptoDay();
-  for(let i=activeUpto;i>=1;i--){
-    const d = getDay(i);
-    if(d.rest) continue;
-    if(meetsStreakTarget(d)) { streak++; continue; }
-    break;
-  }
+  const streakInfo = computeStreakInfo();
+  const streak = streakInfo.streak;
   let totalChecked=0, totalPossible=0;
   for(let i=1;i<=TOTAL_DAYS;i++){
     const d = getDay(i);
@@ -3079,6 +3120,11 @@ function computeStats(){
 
   document.getElementById('statDone').textContent = daysDone;
   document.getElementById('statStreak').innerHTML = streak + (streak>0 ? ' <span class="streakfire">🔥</span>' : '');
+  const freezeEl = document.getElementById('statFreezeInfo');
+  if(freezeEl){
+    freezeEl.innerHTML = '🧊'.repeat(streakInfo.freezesLeft) + (streakInfo.freezesLeft<MAX_STREAK_FREEZES ? '<span class="freezeEmpty">'+'🧊'.repeat(MAX_STREAK_FREEZES-streakInfo.freezesLeft)+'</span>' : '');
+    freezeEl.title = streakInfo.freezesLeft + '/' + MAX_STREAK_FREEZES + ' streak freeze bache hain — 1 din miss hone par bhi streak safe rahegi.';
+  }
   document.getElementById('statPct').textContent = pct+'%';
   document.getElementById('statEarn').textContent = '₹'+Math.round(earned).toLocaleString('en-IN');
   document.getElementById('statLoss').textContent = '₹'+Math.round(lost).toLocaleString('en-IN');
@@ -3088,18 +3134,10 @@ function computeStats(){
   netEl.style.color = net<0 ? 'var(--loss)' : '#000';
 }
 
-// Longest-ever run of fully "done" days, where rest days pass through
-// without breaking the run (mirrors the current-streak logic above).
+// Longest-ever run of "streak-alive" days (freezes included), where rest
+// days pass through without breaking the run (mirrors computeStats above).
 function longestStreak(){
-  const tn = activeUptoDay();
-  let longest=0, current=0;
-  for(let i=1;i<=tn;i++){
-    const d = getDay(i);
-    if(d.rest){ /* neutral, streak continues */ continue; }
-    if(meetsStreakTarget(d)){ current++; if(current>longest) longest=current; }
-    else { current=0; }
-  }
-  return longest;
+  return computeStreakInfo().longest;
 }
 
 function checkAndAwardBadges(){
@@ -3241,6 +3279,7 @@ function renderCalendarView(){
   if(!el) return;
   const dateMap = buildDateToDayMap();
   const tn = todayDayNum();
+  const frozenSet = new Set(computeStreakInfo().frozenDays);
   let html = '';
   monthsInPlanRange().forEach(({year,month})=>{
     const monthTitle = new Date(year,month,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
@@ -3255,14 +3294,17 @@ function renderCalendarView(){
         cells += `<div class="daycell outrange">${dnum}</div>`;
       } else {
         const status = dayStatus(planDay);
+        const frozen = frozenSet.has(planDay);
         let cls = 'daycell ' + status;
+        if(frozen) cls += ' frozen';
         if(planDay===tn) cls += ' today';
         if(planDay===selectedDay) cls += ' selected';
         let badge = '';
-        if(status==='done') badge = '✅';
+        if(frozen) badge = '🧊';
+        else if(status==='done') badge = '✅';
         else if(status==='rest') badge = '😴';
         else if(status==='partial') badge = '⏳';
-        cells += `<div class="${cls}" data-plan-day="${planDay}" title="Day ${planDay} — ${fmtDate(planDay)}">${dnum}${badge?`<span class="daybadge">${badge}</span>`:''}<span class="planDayBadge">D${planDay}</span></div>`;
+        cells += `<div class="${cls}" data-plan-day="${planDay}" title="Day ${planDay} — ${fmtDate(planDay)}${frozen?' — 🧊 Streak Freeze se bacha hua':''}">${dnum}${badge?`<span class="daybadge">${badge}</span>`:''}<span class="planDayBadge">D${planDay}</span></div>`;
       }
     }
     html += `
@@ -3773,6 +3815,69 @@ function renderChaptersTab(){
       await bumpChapter(type, name, delta);
     });
   });
+
+  applyChapterSearchFilter();
+}
+
+// ===== Search/filter for the Chapters + Revision lists =====
+// Pure DOM filtering (no re-render) — hides non-matching .chapterRow nodes
+// inside a panel and shows a small "no match" hint if everything is hidden.
+// Re-applied after every render, so the current search stays live across
+// count bumps, resets, and tab switches.
+function filterRowsIn(panel, query){
+  if(!panel) return false;
+  let anyVisible = false;
+  panel.querySelectorAll(':scope > .chapterRow').forEach(row=>{
+    const nameEl = row.querySelector('.chName');
+    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+    const match = !query || name.includes(query);
+    row.style.display = match ? '' : 'none';
+    if(match) anyVisible = true;
+  });
+  return anyVisible;
+}
+function toggleEmptyMsg(panel, anyVisible, query){
+  if(!panel) return;
+  let emptyMsg = panel.querySelector(':scope > .chapterEmptyMsg');
+  if(!anyVisible && query){
+    if(!emptyMsg){
+      emptyMsg = document.createElement('div');
+      emptyMsg.className = 'chapterEmptyMsg';
+      emptyMsg.textContent = '🔍 Koi chapter/topic match nahi mila.';
+      panel.appendChild(emptyMsg);
+    }
+  } else if(emptyMsg){
+    emptyMsg.remove();
+  }
+}
+function applyChapterSearchFilter(){
+  const input = document.getElementById('chapterSearchInput');
+  const q = input ? input.value.trim().toLowerCase() : '';
+  ['mathChapterList','englishChapterList'].forEach(id=>{
+    const panel = document.getElementById(id);
+    const anyVisible = filterRowsIn(panel, q);
+    toggleEmptyMsg(panel, anyVisible, q);
+  });
+}
+function applyRevisionSearchFilter(){
+  const input = document.getElementById('revisionSearchInput');
+  const q = input ? input.value.trim().toLowerCase() : '';
+  ['revMathList','revEngList'].forEach(id=>{
+    const panel = document.getElementById(id);
+    const anyVisible = filterRowsIn(panel, q);
+    toggleEmptyMsg(panel, anyVisible, q);
+  });
+  const gkEl = document.getElementById('revGkGroups');
+  if(gkEl){
+    let anyGkVisible = false;
+    gkEl.querySelectorAll('details.gkGroup').forEach(det=>{
+      const groupHasMatch = filterRowsIn(det.querySelector('.gkGroupPanel'), q);
+      det.style.display = groupHasMatch ? '' : 'none';
+      if(groupHasMatch) anyGkVisible = true;
+      if(q && groupHasMatch) det.open = true;
+    });
+    toggleEmptyMsg(gkEl, anyGkVisible, q);
+  }
 }
 
 // One row of the Revision Counter — a chapter/topic name, its all-time
@@ -3878,6 +3983,8 @@ function renderRevisionTab(){
       if(det.open) openGkSections.add(sec); else openGkSections.delete(sec);
     });
   });
+
+  applyRevisionSearchFilter();
 }
 
 function renderChart(){
@@ -4461,6 +4568,8 @@ document.getElementById('resetEngChBtn').addEventListener('click', ()=> resetCha
 document.getElementById('resetRevMathBtn').addEventListener('click', ()=> resetRevisionType('math'));
 document.getElementById('resetRevEngBtn').addEventListener('click', ()=> resetRevisionType('english'));
 document.getElementById('resetRevGkBtn').addEventListener('click', ()=> resetRevisionType('gk'));
+document.getElementById('chapterSearchInput').addEventListener('input', applyChapterSearchFilter);
+document.getElementById('revisionSearchInput').addEventListener('input', applyRevisionSearchFilter);
 
 // Opens the (now-in-Today-tab) task editor panel — used both by the header
 // toggle button and by each task row's ✏️ icon. When opened from a specific
@@ -4509,7 +4618,7 @@ function renderExamLine(){
   document.getElementById('examLine').textContent =
     `Day 1: ${START_DATE.toLocaleDateString('en-IN',opts)}  →  Day ${TOTAL_DAYS}: ${examDate.toLocaleDateString('en-IN',opts)}. 🟡 Bada task zyada ₹, 🔵 chhota task kam ₹ — roz ka total ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')}, ${TOTAL_DAYS} din ka poora ₹${totalRupees.toLocaleString('en-IN')} ka target.`;
   const titleEl = document.getElementById('mainTitle');
-  if(titleEl) titleEl.textContent = `🎯 OPERATION CGL // ${TOTAL_DAYS} DAYS`;
+  if(titleEl) titleEl.textContent = `🎯 CGL TRACKER // ${TOTAL_DAYS} DAYS`;
   const calLbl = document.getElementById('calDaysLabel');
   if(calLbl) calLbl.textContent = TOTAL_DAYS;
 }
@@ -4675,7 +4784,7 @@ function setupHomeScreenIcon(){
     ctx.fillText('CGL', size/2, size/2-18);
     ctx.font = "700 26px 'IBM Plex Mono', monospace";
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('50 DAYS', size/2, size/2+38);
+    ctx.fillText('TRACKER', size/2, size/2+38);
     const iconUrl = canvas.toDataURL('image/png');
 
     let touchIcon = document.querySelector("link[rel='apple-touch-icon']");
@@ -4687,8 +4796,8 @@ function setupHomeScreenIcon(){
     favicon.href = iconUrl;
 
     const manifest = {
-      name: "Operation CGL — 50 Day Tracker",
-      short_name: "CGL 50",
+      name: "CGL Tracker — 50 Day Plan",
+      short_name: "CGL Tracker",
       start_url: ".",
       display: "standalone",
       background_color: "#0a0a0a",
@@ -4751,7 +4860,7 @@ document.getElementById('notifBtn').addEventListener('click', async ()=>{
   } else {
     const ok = await ensureNotificationPermission();
     setNotifPref(ok);
-    if(ok) fireNotification('🎯 CGL 50 Tracker', 'Notifications on ho gaye — friends ke tracker update yahan dikhenge.');
+    if(ok) fireNotification('🎯 CGL Tracker', 'Notifications on ho gaye — friends ke tracker update yahan dikhenge.');
   }
   updateNotifBtnLabel();
 });
