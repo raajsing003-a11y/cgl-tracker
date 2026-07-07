@@ -1143,13 +1143,13 @@
     <span>Today</span>
     <span class="tabdot" id="todayDot"></span>
   </button>
-  <button class="tabbtn" data-tab="revision">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-    <span>Revision</span>
-  </button>
   <button class="tabbtn" data-tab="chapters">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span>Chapters</span>
+  </button>
+  <button class="tabbtn" data-tab="revision">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+    <span>Revision</span>
   </button>
   <button class="tabbtn" data-tab="compete">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4.5a2 2 0 0 0 0 4H7"/><path d="M17 5h2.5a2 2 0 0 1 0 4H17"/></svg>
@@ -2841,11 +2841,129 @@ async function renderRoomPanel(){
   }
 }
 
+// ===== Admin: Full Room Backup (all members' data) =====
+// The room Admin can export every member's tracker data — pulled fresh from
+// Firebase — into a single downloadable JSON file. Every successful backup
+// is also cached on this device (localStorage), so even with no internet
+// right now, the Admin can still redownload the last backup they took.
+function adminBackupCacheKey(room){ return 'cgl50-admin-backup:' + room; }
+function saveAdminBackupCache(room, bundle){
+  try{ localStorage.setItem(adminBackupCacheKey(room), JSON.stringify(bundle)); }catch(e){}
+}
+function loadAdminBackupCache(room){
+  try{
+    const raw = localStorage.getItem(adminBackupCacheKey(room));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function downloadJSONFile(filename, dataObj){
+  const blob = new Blob([JSON.stringify(dataObj, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function fmtBackupFileName(room){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  return `cgl50-backup-${room}-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+}
+// Pulls every registered member's saved state from Firebase (needs internet)
+// and bundles it into one object: { room, exportedAt, memberCount, members }
+async function buildFullRoomBackup(){
+  const room = getRoomCode();
+  if(!room) return null;
+  const names = await loadRoomRegistry();
+  const members = {};
+  for(const nm of names){
+    try{
+      const raw = await kvdbGet(playerKey(nm));
+      members[nm] = raw ? JSON.parse(raw) : null;
+    }catch(e){ members[nm] = null; }
+  }
+  return { room, exportedAt: Date.now(), memberCount: names.length, members };
+}
+// Pushes every member's state from a previously downloaded backup bundle
+// back into Firebase — used to recover a room after data loss. Destructive:
+// overwrites whatever is currently in Firebase for each listed member.
+async function restoreFullRoomBackup(bundle){
+  const room = getRoomCode();
+  if(!room || !bundle || !bundle.members) throw new Error('Backup file khali ya galat hai.');
+  const names = Object.keys(bundle.members);
+  for(const nm of names){
+    const val = bundle.members[nm];
+    if(val === null || val === undefined) continue;
+    await kvdbSet(playerKey(nm), JSON.stringify(val));
+  }
+  return names.length;
+}
+// Wires the three backup controls (take backup / redownload last / restore
+// from file). Called every time the admin section re-renders since the
+// buttons are recreated in the DOM each time.
+function wireAdminBackupButtons(){
+  const allBtn = document.getElementById('adminBackupAllBtn');
+  const lastBtn = document.getElementById('adminBackupLastBtn');
+  const fileInput = document.getElementById('adminRestoreFile');
+  const statusEl = document.getElementById('adminBackupStatus');
+
+  if(allBtn) allBtn.addEventListener('click', async ()=>{
+    const room = getRoomCode();
+    if(!room) return;
+    allBtn.disabled = true;
+    const oldText = allBtn.textContent;
+    allBtn.textContent = '⏳ Backup ban raha hai...';
+    try{
+      const bundle = await Promise.race([
+        buildFullRoomBackup(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('Internet slow hai ya nahi hai — timeout.')), 15000))
+      ]);
+      if(!bundle) throw new Error('Room data nahi mil paya.');
+      saveAdminBackupCache(room, bundle);
+      downloadJSONFile(fmtBackupFileName(room), bundle);
+      if(statusEl) statusEl.textContent = `Aakhri backup: ${new Date(bundle.exportedAt).toLocaleString('en-IN')} — ${bundle.memberCount} member(s).`;
+    }catch(e){
+      alert('Backup nahi ban paya.\n\nWajah: ' + ((e&&e.message)||String(e)) + '\n\nInternet check karo aur dobara try karo.');
+    }finally{
+      allBtn.disabled = false;
+      allBtn.textContent = oldText;
+    }
+  });
+
+  if(lastBtn) lastBtn.addEventListener('click', ()=>{
+    const room = getRoomCode();
+    const cached = room ? loadAdminBackupCache(room) : null;
+    if(!cached){ alert('Abhi tak is device pe koi backup save nahi hai. Pehle internet ke saath "⬇️ Sabka Backup Lo" try karo.'); return; }
+    downloadJSONFile(fmtBackupFileName(room), cached);
+  });
+
+  if(fileInput) fileInput.addEventListener('change', async (ev)=>{
+    const file = ev.target.files && ev.target.files[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const bundle = JSON.parse(text);
+      const names = Object.keys(bundle.members||{});
+      if(!names.length){ alert('Ye file khali hai ya galat format mein hai.'); return; }
+      if(!confirm(`Ye backup file ${names.length} member(s) ka data restore karegi aur unka current room data overwrite kar degi. Pakka karna chahte ho?`)) return;
+      await restoreFullRoomBackup(bundle);
+      alert('Restore ho gaya ✅');
+      roomRegistryCacheAt = 0; // force fresh registry/data reads after restore
+      await renderRoomPanel();
+      await renderCompetePanel();
+    }catch(e){
+      alert('Restore nahi ho paya.\n\nWajah: ' + ((e&&e.message)||String(e)));
+    }finally{
+      fileInput.value = '';
+    }
+  });
+}
+
 // Admin info + controls block inside the Room panel:
 // - No admin yet (older room, created before this feature existed) → shows
 //   a "Become Admin" button anyone in the room can claim.
 // - Admin exists, viewer IS the admin → member list with a "hide from
-//   others" toggle per member.
+//   others" toggle per member, plus a full-room backup/restore section.
 // - Admin exists, viewer is NOT the admin → just shows who the Admin is.
 async function renderAdminSection(){
   const infoEl = document.getElementById('adminInfoBar');
@@ -2882,12 +3000,32 @@ async function renderAdminSection(){
 
   const roomNames = await loadRoomRegistry();
   const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
+
+  const room = getRoomCode();
+  const cachedBackup = room ? loadAdminBackupCache(room) : null;
+  const lastBackupLine = cachedBackup
+    ? `Aakhri backup: ${new Date(cachedBackup.exportedAt).toLocaleString('en-IN')} — ${cachedBackup.memberCount || Object.keys(cachedBackup.members||{}).length} member(s).`
+    : 'Abhi tak koi backup nahi liya gaya.';
+  const backupHtml = `
+    <div class="grid-label" style="margin-top:14px;">📦 Sabka Data Backup</div>
+    <div class="losshint" style="padding-top:0;">Room ke sabhi members ka poora data ek file mein download karo — safe rakhne ke liye ya kisi doosre device pe restore karne ke liye. Internet na ho to "Aakhri Backup" wale button se pichli baar li gayi file dobara mil jayegi.</div>
+    <div class="btnrow" style="margin-top:8px;">
+      <button class="nav-btn" id="adminBackupAllBtn">⬇️ Sabka Backup Lo</button>
+      <button class="nav-btn" id="adminBackupLastBtn">📂 Aakhri Backup (Offline)</button>
+      <label class="nav-btn" style="display:inline-block;cursor:pointer;">📤 Backup Se Restore
+        <input type="file" id="adminRestoreFile" accept="application/json" style="display:none;">
+      </label>
+    </div>
+    <div class="losshint" id="adminBackupStatus" style="padding-top:6px;">${lastBackupLine}</div>
+  `;
+
   if(!others.length){
-    wrapEl.innerHTML = `<div class="losshint" style="padding-top:6px;">Abhi group mein koi aur member nahi joda.</div>`;
+    wrapEl.innerHTML = backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    wireAdminBackupButtons();
     return;
   }
-  wrapEl.innerHTML = `
-    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
+  wrapEl.innerHTML = backupHtml + `
+    <div class="losshint" style="padding-top:14px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
         const hidden = isHiddenFromOthers(nm);
@@ -2911,6 +3049,7 @@ async function renderAdminSection(){
       }).join('')}
     </div>
   `;
+  wireAdminBackupButtons();
   wrapEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
     chk.addEventListener('change', async ()=>{
       const nm = chk.getAttribute('data-hide-member');
