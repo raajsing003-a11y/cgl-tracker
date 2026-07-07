@@ -785,6 +785,22 @@
   </div>
 </div>
 
+<div class="onbOverlay" id="installPromptModal">
+  <div class="onbCard">
+    <div class="onbTitle">📲 App Ki Tarah Install Karo</div>
+    <div class="onbSub" id="installPromptBody">Ise apni home screen pe install kar lo — fast khulega, poori screen pe alag app jaisa dikhega, aur notifications bhi behtar kaam karenge.</div>
+    <div class="onbBtnRow">
+      <button class="nav-btn onbPrimary" id="installPromptActionBtn" style="display:none;">📲 Install Karo</button>
+    </div>
+    <div class="onbBtnRow">
+      <button class="nav-btn" id="installPromptLaterBtn">⏰ Baad Mein</button>
+    </div>
+    <div class="onbBtnRow">
+      <button class="nav-btn" id="installPromptNeverBtn" style="font-size:10.5px;">🚫 Dobara Mat Dikhao</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-left">🎯 <span>OPERATION CGL</span></div>
   <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
@@ -4824,6 +4840,8 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   if(btn) btn.style.display = 'inline-block';
   const onbBtn = document.getElementById('onbInstallBtn');
   if(onbBtn) onbBtn.style.display = 'inline-block';
+  const ipBtn = document.getElementById('installPromptActionBtn');
+  if(ipBtn) ipBtn.style.display = 'inline-block';
   // Chrome/Android decides on its own when this event fires (based on the
   // visit meeting its "installable" checks) — but once it does, we fire the
   // native install dialog immediately ourselves, once per device, instead
@@ -4838,22 +4856,71 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   }catch(err){ console.error('auto install prompt failed', err); }
 });
 
-// iOS Safari has NO API at all for installing a home-screen app — Apple
-// only allows the manual Share -> "Add to Home Screen" path, for every
-// website without exception. Since we can't automate that, show a
-// one-time, clear nudge instead so people at least know the two taps.
-function maybeShowIOSInstallHint(){
+// ===== Universal "Install as App" nudge =====
+// Chrome/Android gives us a real native install prompt (deferredInstallPrompt);
+// iOS Safari has no such API — Apple only allows the manual Share -> "Add to
+// Home Screen" path; other desktop browsers just get generic instructions.
+// Shown automatically every time someone opens the site NOT already running
+// in standalone/installed mode — i.e. keeps gently reminding until they
+// actually install it, or explicitly say "don't show again".
+function isRunningStandalone(){
   try{
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isStandalone = window.navigator.standalone === true ||
+    return window.navigator.standalone === true ||
       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-    if(isIOS && !isStandalone && localStorage.getItem('cgl50-ios-a2hs-shown') !== '1'){
-      localStorage.setItem('cgl50-ios-a2hs-shown', '1');
-      setTimeout(()=>{
-        alert('📱 iPhone par app install karne ke liye:\nNiche Share button 🔗 dabao → "Add to Home Screen" choose karo.\n\n(Ye step Apple sirf manually hi allow karta hai — koi bhi website ise automatic nahi kar sakti.)');
-      }, 800);
-    }
+  }catch(e){ return false; }
+}
+function installPromptDismissedForever(){
+  try{ return localStorage.getItem('cgl50-install-hint-dismissed') === '1'; }catch(e){ return false; }
+}
+function setInstallPromptDismissedForever(){
+  try{ localStorage.setItem('cgl50-install-hint-dismissed', '1'); }catch(e){}
+}
+function showInstallPromptModal(){
+  const modal = document.getElementById('installPromptModal');
+  const bodyEl = document.getElementById('installPromptBody');
+  const actionBtn = document.getElementById('installPromptActionBtn');
+  if(!modal || !bodyEl || !actionBtn) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(deferredInstallPrompt){
+    bodyEl.textContent = 'Ise apni home screen pe install kar lo — fast khulega, poori screen pe alag app jaisa dikhega, aur notifications bhi behtar kaam karenge.';
+    actionBtn.style.display = 'inline-block';
+  } else if(isIOS){
+    bodyEl.textContent = '📱 iPhone par install karne ke liye: niche Share button 🔗 dabao → "Add to Home Screen" choose karo. (Ye step Apple sirf manually hi allow karta hai.)';
+    actionBtn.style.display = 'none';
+  } else {
+    bodyEl.textContent = 'Ise app ki tarah install karne ke liye: browser ke menu (⋮ ya ...) mein "Add to Home Screen" ya "Install App" option dhoondo.';
+    actionBtn.style.display = 'none';
+  }
+  modal.style.display = 'flex';
+}
+function hideInstallPromptModal(){
+  const modal = document.getElementById('installPromptModal');
+  if(modal) modal.style.display = 'none';
+}
+function maybeShowInstallPrompt(){
+  try{
+    if(isRunningStandalone()) return;
+    if(installPromptDismissedForever()) return;
+    setTimeout(showInstallPromptModal, 700);
   }catch(e){}
+}
+{
+  const actionBtn = document.getElementById('installPromptActionBtn');
+  if(actionBtn) actionBtn.addEventListener('click', async ()=>{
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+    }
+    hideInstallPromptModal();
+  });
+  const laterBtn = document.getElementById('installPromptLaterBtn');
+  if(laterBtn) laterBtn.addEventListener('click', ()=>{ hideInstallPromptModal(); });
+  const neverBtn = document.getElementById('installPromptNeverBtn');
+  if(neverBtn) neverBtn.addEventListener('click', ()=>{
+    setInstallPromptDismissedForever();
+    hideInstallPromptModal();
+  });
 }
 document.getElementById('installBtn').addEventListener('click', async ()=>{
   if(deferredInstallPrompt){
@@ -4878,6 +4945,7 @@ function startLiveClockTicker(){
 
 (async function init(){
   myName = await getOrCreateMyNameAsync();
+  maybeShowInstallPrompt();
   // Returning device (name already saved, onboarding modal never showed)
   // that opens a friend's link and isn't in any room yet — join it
   // automatically. Never silently switches someone out of a room they're
@@ -4907,7 +4975,6 @@ function startLiveClockTicker(){
   startRoomAutoSync();
   startPresenceHeartbeat();
   startLiveClockTicker();
-  maybeShowIOSInstallHint();
 })();
 </script>
 </body>
