@@ -4973,43 +4973,34 @@ document.getElementById('restoreBtn').addEventListener('click', async ()=>{
 // both an apple-touch-icon and a data-URI web manifest, so "Add to Home
 // Screen" on iOS/Android shows a proper icon + standalone app window
 // instead of a generic browser bookmark, with no server required.
-function drawAppIcon(size){
-  const canvas = document.createElement('canvas');
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0a0a0a';
-  ctx.fillRect(0,0,size,size);
-  ctx.strokeStyle = '#fbbf24';
-  ctx.lineWidth = Math.max(4, size*0.0417);
-  ctx.strokeRect(size*0.0417,size*0.0417,size-size*0.0834,size-size*0.0834);
-  ctx.fillStyle = '#fbbf24';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `800 ${Math.round(size*0.281)}px 'Oswald', sans-serif`;
-  ctx.fillText('CGL', size/2, size/2-size*0.094);
-  ctx.font = `700 ${Math.round(size*0.135)}px 'IBM Plex Mono', monospace`;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('TRACKER', size/2, size/2+size*0.198);
-  return canvas.toDataURL('image/png');
-}
-// NOTE: deliberately no service worker here — this file stays a single,
-// self-contained HTML page (no companion sw.js to upload/keep in sync on
-// GitHub). Trade-off: Chrome's automatic beforeinstallprompt banner may not
-// fire as reliably without one, but the manual "Add to Home Screen" /
-// runInstallAction() flow below still works everywhere via e.prompt() when
-// the browser does offer it, and via the on-screen instructions otherwise.
-async function setupHomeScreenIcon(){
+function setupHomeScreenIcon(){
   try{
-    const icon192 = drawAppIcon(192);
-    const icon512 = drawAppIcon(512);
+    const size = 192;
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0,0,size,size);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(8,8,size-16,size-16);
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = "800 54px 'Oswald', sans-serif";
+    ctx.fillText('CGL', size/2, size/2-18);
+    ctx.font = "700 26px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('TRACKER', size/2, size/2+38);
+    const iconUrl = canvas.toDataURL('image/png');
 
     let touchIcon = document.querySelector("link[rel='apple-touch-icon']");
     if(!touchIcon){ touchIcon = document.createElement('link'); touchIcon.rel='apple-touch-icon'; document.head.appendChild(touchIcon); }
-    touchIcon.href = icon192;
+    touchIcon.href = iconUrl;
 
     let favicon = document.querySelector("link[rel='icon']");
     if(!favicon){ favicon = document.createElement('link'); favicon.rel='icon'; document.head.appendChild(favicon); }
-    favicon.href = icon192;
+    favicon.href = iconUrl;
 
     const manifest = {
       name: "CGL Tracker — 50 Day Plan",
@@ -5018,10 +5009,7 @@ async function setupHomeScreenIcon(){
       display: "standalone",
       background_color: "#0a0a0a",
       theme_color: "#0a0a0a",
-      icons: [
-        { src: icon192, sizes: "192x192", type: "image/png" },
-        { src: icon512, sizes: "512x512", type: "image/png" }
-      ]
+      icons: [{ src: iconUrl, sizes: "192x192", type: "image/png" }]
     };
     const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
     const manifestUrl = URL.createObjectURL(manifestBlob);
