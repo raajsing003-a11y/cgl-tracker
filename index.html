@@ -504,6 +504,17 @@
     display:flex;align-items:center;gap:8px;
     font-family:'Oswald',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.5px;color:var(--white);
   }
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .helpBtn{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--accent);
+    font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  }
+  .helpBtn:active{transform:scale(0.9);}
+  .helpStep{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:12.5px;line-height:1.55;color:var(--text);font-weight:700;}
+  .helpStepIcon{font-size:19px;flex-shrink:0;width:26px;text-align:center;}
+  .helpStep b{color:var(--white);}
   .miniring{
     --p:0;width:34px;height:34px;border-radius:50%;position:relative;flex-shrink:0;
     background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--panel2) 0);
@@ -823,9 +834,30 @@
   </div>
 </div>
 
+<div class="onbOverlay" id="helpModal">
+  <div class="onbCard" style="max-width:440px;">
+    <button class="onbCloseX" id="helpCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">❓ App Kaise Use Karein</div>
+    <div class="onbSub">Neeche 6 tabs hain — har tab ka kaam ek line mein:</div>
+    <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🎯</div><div><b>Today</b> — Sabse zaroori tab. Roz yahan aake apne din ke tasks ✅ tick karo, aur mock/sectional test ka score bharo.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Chapters</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🔁</div><div><b>Revision</b> — Jo topic padhke revise karo, uske "✅ +1" daba do. Count hamesha save rehta hai, kabhi khud reset nahi hota.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🤝</div><div><b>Compete</b> — Dost ka Room Code daal ke ek dusre ka progress compare kar sakte ho.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">📊</div><div><b>Analysis</b> — Charts, backup code, notifications aur data reset — sab settings yahan milengi.</div></div>
+    <div class="onbSub" style="margin-top:2px;">Ye "❓" button top mein hamesha rahega — jab bhi bhool jao, yahin se dobara dekh sakte ho.</div>
+    <div class="onbBtnRow">
+      <button class="nav-btn onbPrimary" id="helpGotItBtn">Samajh Gaya ✅</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-left">🎯 <span>OPERATION CGL</span></div>
-  <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
+  <div class="topbar-right">
+    <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
+    <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -4640,6 +4672,35 @@ document.getElementById('notifBtn').addEventListener('click', async ()=>{
   updateNotifBtnLabel();
 });
 
+// ===== "How to use" Help guide =====
+// A short always-accessible explainer for what each tab does. Auto-shown
+// once per device (covers both brand-new AND already-existing users who
+// never saw an explanation before this was added) via the seen-flag below;
+// the ❓ button in the topbar re-opens it anytime after that.
+function showHelpModal(){
+  const modal = document.getElementById('helpModal');
+  if(modal) modal.style.display = 'flex';
+}
+function hideHelpModal(){
+  const modal = document.getElementById('helpModal');
+  if(modal) modal.style.display = 'none';
+  try{ localStorage.setItem('cgl50-help-seen', '1'); }catch(e){}
+}
+function maybeShowHelpModalOnce(){
+  try{
+    if(localStorage.getItem('cgl50-help-seen') === '1') return;
+  }catch(e){}
+  setTimeout(showHelpModal, 1300);
+}
+{
+  const helpBtn = document.getElementById('helpBtn');
+  const helpCloseBtn = document.getElementById('helpCloseBtn');
+  const helpGotItBtn = document.getElementById('helpGotItBtn');
+  if(helpBtn) helpBtn.addEventListener('click', showHelpModal);
+  if(helpCloseBtn) helpCloseBtn.addEventListener('click', hideHelpModal);
+  if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
+}
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
@@ -4784,6 +4845,7 @@ function startLiveClockTicker(){
   startRoomAutoSync();
   startPresenceHeartbeat();
   startLiveClockTicker();
+  maybeShowHelpModalOnce();
 })();
 </script>
 </body>
