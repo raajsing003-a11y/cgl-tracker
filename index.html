@@ -865,6 +865,17 @@
   </div>
 </div>
 
+<div class="onbOverlay" id="targetReminderModal">
+  <div class="onbCard" style="max-width:400px;">
+    <button class="onbCloseX" id="targetReminderModalCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">🎯 Aaj Ka Target Baaki Hai</div>
+    <div class="onbSub" id="targetReminderModalMsg"></div>
+    <div class="onbBtnRow">
+      <button class="nav-btn onbPrimary" id="targetReminderModalOkBtn">Theek Hai ✅</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-left">🎯 <span>CGL TRACKER</span></div>
   <div class="topbar-right">
@@ -1128,6 +1139,14 @@
       <button class="nav-btn" id="notifBtn">🔕 Notifications Off</button>
     </div>
     <div class="losshint" style="margin-top:8px;">🔔 App khula/background mein ho tabhi notification aayega.</div>
+
+    <div class="grid-label" style="margin-top:18px;">🎯 Target Reminder — Automatic Motivational Ping</div>
+    <div class="btnrow" style="align-items:center;">
+      <input type="time" id="targetReminderTime" value="21:00"
+        style="background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;padding:8px 6px;">
+      <button class="nav-btn" id="targetReminderBtn">🔔 Target Reminder On</button>
+    </div>
+    <div class="losshint" style="margin-top:8px;">🎯 Ye sabhi ke liye by-default ON hai — kisi ko kuch on karne ki zarurat nahi. App open karte hi turant check hoga (aur roz iss time pe bhi) — agar aaj ka target abhi 50%+ pura nahi hua, to ek in-app popup dikhega, aur agar upar wala "Notifications" bhi On hai to phone ke notification tray mein bhi ek reminder aa jayega (din mein sirf ek baar). Band karna ho to yahan button dabao.</div>
     <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
   </div>
 
@@ -5004,6 +5023,144 @@ document.getElementById('notifBtn').addEventListener('click', async ()=>{
   updateNotifBtnLabel();
 });
 
+// ===== Automatic daily "Target Reminder" — motivational nudge =====
+// Every minute, checks whether the saved reminder clock-time has passed for
+// TODAY. If it has, today isn't a rest day, today's target is still under
+// 50%, and we haven't already pinged today — fires one notification with a
+// random line pulled from the app's existing motivation/quote pools.
+// Same background/foreground limitation as the notification system above:
+// this only fires while the tab/installed app is open (no push server).
+const TARGET_REMINDER_MESSAGES = [
+  "Abhi tak aaj ka target adhoora hai — thoda time nikaal ke kuch tasks nipta do.",
+  "Din dhal raha hai, target abhi baaki hai. Ek chhota push aur wallet fill ho sakta hai.",
+  "Reminder: aaj ka 50% bhi abhi complete nahi hua. Chalo, ab shuru karte hain.",
+  "Kal ka pachtava aaj ke 20 minute se bach sakta hai — ek task uthao aur laga do.",
+  "Streak zinda rakhni hai to abhi thoda kaam baaki hai — jaldi nipta do.",
+  "Tumhara future-self isi waqt ka faisla dekh raha hai — target poora karo.",
+  "Abhi bhi waqt hai aaj ka din bachane ka — bas ek task se shuru karo."
+];
+function targetReminderPref(){
+  // Default ON for every user (new or existing) — nobody has to find and tap
+  // the toggle themselves. Only an explicit tap on the button (which stores
+  // '0') turns it off; an unset/missing key always means "enabled".
+  try{
+    const v = localStorage.getItem('cgl50-target-reminder-enabled');
+    return v !== '0';
+  }catch(e){ return true; }
+}
+function setTargetReminderPref(v){
+  try{ localStorage.setItem('cgl50-target-reminder-enabled', v ? '1':'0'); }catch(e){}
+}
+function targetReminderTimeStr(){
+  try{ return localStorage.getItem('cgl50-target-reminder-time') || '21:00'; }catch(e){ return '21:00'; }
+}
+function setTargetReminderTimeStr(v){
+  try{ localStorage.setItem('cgl50-target-reminder-time', v); }catch(e){}
+}
+function targetReminderLastFiredDate(){
+  try{ return localStorage.getItem('cgl50-target-reminder-lastfired') || ''; }catch(e){ return ''; }
+}
+function setTargetReminderLastFiredDate(v){
+  try{ localStorage.setItem('cgl50-target-reminder-lastfired', v); }catch(e){}
+}
+function updateTargetReminderBtnLabel(){
+  const btn = document.getElementById('targetReminderBtn');
+  if(!btn) return;
+  // The in-app popup reminder works with or without browser notification
+  // permission (it's just a modal), so "On/Off" reflects the saved
+  // preference only — not whether the bonus phone-tray ping is also live.
+  btn.textContent = targetReminderPref() ? '🔔 Target Reminder On' : '🔕 Target Reminder Off';
+}
+function showTargetReminderModal(msg){
+  const modal = document.getElementById('targetReminderModal');
+  if(!modal) return;
+  const msgEl = document.getElementById('targetReminderModalMsg');
+  if(msgEl) msgEl.textContent = msg;
+  modal.style.display = 'flex';
+}
+function hideTargetReminderModal(){
+  const modal = document.getElementById('targetReminderModal');
+  if(modal) modal.style.display = 'none';
+}
+{
+  const trmCloseBtn = document.getElementById('targetReminderModalCloseBtn');
+  const trmOkBtn = document.getElementById('targetReminderModalOkBtn');
+  if(trmCloseBtn) trmCloseBtn.addEventListener('click', hideTargetReminderModal);
+  if(trmOkBtn) trmOkBtn.addEventListener('click', hideTargetReminderModal);
+}
+// Core "is a reminder due right now" check — shared by both the on-open
+// trigger and the scheduled (clock-time) trigger below. Returns a random
+// motivational message if due, or null if not.
+function targetReminderDueMessage(){
+  if(!targetReminderPref()) return null;
+  const todayKey = fmtISODate(new Date());
+  if(targetReminderLastFiredDate() === todayKey) return null; // already pinged today
+
+  const d = getDay(todayDayNum());
+  if(d.rest) return null; // rest day — no reminder needed
+  if(meetsStreakTarget(d)) return null; // already 50%+ done today, nothing to nudge
+
+  const pool = TARGET_REMINDER_MESSAGES;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+// Fires the reminder through both channels at once: an in-app modal popup
+// (works instantly, no permission needed) and, if the person has also
+// granted browser notification permission, a phone notification-tray ping.
+function fireTargetReminder(msg){
+  showTargetReminderModal(msg);
+  if(notifPref() && ('Notification' in window) && Notification.permission === 'granted'){
+    fireNotification('🎯 Aaj Ka Target Baaki Hai', msg);
+  }
+  setTargetReminderLastFiredDate(fmtISODate(new Date()));
+}
+// Runs once right when the app is opened — if today's target is still
+// incomplete and we haven't already reminded today, pop it immediately
+// instead of waiting for the scheduled clock-time below.
+function checkTargetReminderOnAppOpen(){
+  const msg = targetReminderDueMessage();
+  if(!msg) return;
+  fireTargetReminder(msg);
+}
+// Scheduled check (runs every minute via the live ticker) — only fires
+// once the saved reminder clock-time has passed today. Acts as a fallback
+// for cases where the target was still complete at app-open time but is
+// no longer met later, or the reminder time simply hasn't arrived yet.
+function checkTargetReminder(){
+  const [hh, mm] = (targetReminderTimeStr()||'21:00').split(':').map(Number);
+  if(isNaN(hh) || isNaN(mm)) return;
+  if(nowMinutes() < (hh*60+mm)) return; // reminder time hasn't arrived yet today
+
+  const msg = targetReminderDueMessage();
+  if(!msg) return;
+  fireTargetReminder(msg);
+}
+document.getElementById('targetReminderBtn').addEventListener('click', async ()=>{
+  const currentlyOn = targetReminderPref();
+  if(currentlyOn){
+    // Explicit opt-out — this is the only thing that ever turns it off.
+    setTargetReminderPref(false);
+  } else {
+    // Turning back on: the in-app popup works immediately, no permission
+    // needed. Also try for the bonus phone-tray ping on top of that.
+    setTargetReminderPref(true);
+    const ok = await ensureNotificationPermission();
+    if(ok){
+      setNotifPref(true); // target reminders route through the same fireNotification() gate
+      fireNotification('🎯 CGL Tracker', 'Target Reminder on ho gaya — set time pe agar target baaki hoga to yaad dilaunga.');
+    }
+  }
+  updateTargetReminderBtnLabel();
+});
+{
+  const trTimeInput = document.getElementById('targetReminderTime');
+  if(trTimeInput){
+    trTimeInput.value = targetReminderTimeStr();
+    trTimeInput.addEventListener('change', (e)=>{
+      if(e.target.value) setTargetReminderTimeStr(e.target.value);
+    });
+  }
+}
+
 // ===== "How to use" Help guide =====
 // A short always-accessible explainer for what each tab does. Auto-shown
 // once per device (covers both brand-new AND already-existing users who
@@ -5142,6 +5299,7 @@ function startLiveClockTicker(){
   setInterval(()=>{
     safeRun(renderRightNowCard, 'renderRightNowCard(tick)');
     safeRun(renderTimeGuide, 'renderTimeGuide(tick)');
+    safeRun(checkTargetReminder, 'checkTargetReminder(tick)');
   }, 60000);
 }
 
@@ -5177,6 +5335,8 @@ function startLiveClockTicker(){
   startRoomAutoSync();
   startPresenceHeartbeat();
   startLiveClockTicker();
+  updateTargetReminderBtnLabel();
+  checkTargetReminderOnAppOpen();
   maybeShowHelpModalOnce();
 })();
 </script>
