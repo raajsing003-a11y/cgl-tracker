@@ -788,15 +788,8 @@
 <div class="onbOverlay" id="installPromptModal">
   <div class="onbCard">
     <div class="onbTitle">📲 App Ki Tarah Install Karo</div>
-    <div class="onbSub" id="installPromptBody">Ise apni home screen pe install kar lo — fast khulega, poori screen pe alag app jaisa dikhega, aur notifications bhi behtar kaam karenge.</div>
     <div class="onbBtnRow">
-      <button class="nav-btn onbPrimary" id="installPromptActionBtn" style="display:none;">📲 Install Karo</button>
-    </div>
-    <div class="onbBtnRow">
-      <button class="nav-btn" id="installPromptLaterBtn">⏰ Baad Mein</button>
-    </div>
-    <div class="onbBtnRow">
-      <button class="nav-btn" id="installPromptNeverBtn" style="font-size:10.5px;">🚫 Dobara Mat Dikhao</button>
+      <button class="nav-btn onbPrimary" id="installPromptActionBtn">📲 Add to Home Screen</button>
     </div>
   </div>
 </div>
@@ -827,20 +820,15 @@
   </div>
 
   <div class="tabview active" id="tab-home" data-tabview="home">
+    <button class="nav-btn onbPrimary" id="homeInstallBtn" style="width:100%;margin-bottom:14px;">📲 Add to Home Screen</button>
     <div class="eyebrow">🚀 Mission Countdown</div>
     <h1 id="mainTitle">🎯 OPERATION CGL // 50 DAYS</h1>
     <div class="sub" id="examLine">Loading dates…</div>
-
-    <div class="profilebar" id="profileBar"></div>
 
     <div class="quoteCard">
       <div class="quoteEyebrow">🌅 Aaj Ka Motivation</div>
       <div class="quoteText" id="quoteText">Loading…</div>
     </div>
-
-    <div id="rightNowBox"></div>
-
-    <div class="levelCard" id="levelCard"></div>
 
     <div class="statrow" style="margin-top:0;">
       <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">📅 Days Cleared</div></div>
@@ -865,6 +853,10 @@
     <div class="panel" id="competePanelHome">
       <div class="loading">Loading leaderboard…</div>
     </div>
+
+    <div id="rightNowBox"></div>
+
+    <div class="levelCard" id="levelCard"></div>
 
     <div class="grid-label" style="margin-top:0;">🏅 Streak Badges</div>
     <div class="panel" id="badgesPanelHome"></div>
@@ -931,6 +923,8 @@
   </div>
 
   <div class="tabview" id="tab-more" data-tabview="more">
+    <div class="profilebar" id="profileBar"></div>
+
     <div class="grid-label" style="margin-top:0;">🗓️ Weekly Breakdown</div>
     <div class="weekwrap" id="weekWrap"></div>
 
@@ -4842,6 +4836,8 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   if(onbBtn) onbBtn.style.display = 'inline-block';
   const ipBtn = document.getElementById('installPromptActionBtn');
   if(ipBtn) ipBtn.style.display = 'inline-block';
+  const homeBtn = document.getElementById('homeInstallBtn');
+  if(homeBtn) homeBtn.style.display = 'inline-block';
   // Chrome/Android decides on its own when this event fires (based on the
   // visit meeting its "installable" checks) — but once it does, we fire the
   // native install dialog immediately ourselves, once per device, instead
@@ -4877,20 +4873,7 @@ function setInstallPromptDismissedForever(){
 }
 function showInstallPromptModal(){
   const modal = document.getElementById('installPromptModal');
-  const bodyEl = document.getElementById('installPromptBody');
-  const actionBtn = document.getElementById('installPromptActionBtn');
-  if(!modal || !bodyEl || !actionBtn) return;
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(deferredInstallPrompt){
-    bodyEl.textContent = 'Ise apni home screen pe install kar lo — fast khulega, poori screen pe alag app jaisa dikhega, aur notifications bhi behtar kaam karenge.';
-    actionBtn.style.display = 'inline-block';
-  } else if(isIOS){
-    bodyEl.textContent = '📱 iPhone par install karne ke liye: niche Share button 🔗 dabao → "Add to Home Screen" choose karo. (Ye step Apple sirf manually hi allow karta hai.)';
-    actionBtn.style.display = 'none';
-  } else {
-    bodyEl.textContent = 'Ise app ki tarah install karne ke liye: browser ke menu (⋮ ya ...) mein "Add to Home Screen" ya "Install App" option dhoondo.';
-    actionBtn.style.display = 'none';
-  }
+  if(!modal) return;
   modal.style.display = 'flex';
 }
 function hideInstallPromptModal(){
@@ -4904,25 +4887,11 @@ function maybeShowInstallPrompt(){
     setTimeout(showInstallPromptModal, 700);
   }catch(e){}
 }
-{
-  const actionBtn = document.getElementById('installPromptActionBtn');
-  if(actionBtn) actionBtn.addEventListener('click', async ()=>{
-    if(deferredInstallPrompt){
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-    }
-    hideInstallPromptModal();
-  });
-  const laterBtn = document.getElementById('installPromptLaterBtn');
-  if(laterBtn) laterBtn.addEventListener('click', ()=>{ hideInstallPromptModal(); });
-  const neverBtn = document.getElementById('installPromptNeverBtn');
-  if(neverBtn) neverBtn.addEventListener('click', ()=>{
-    setInstallPromptDismissedForever();
-    hideInstallPromptModal();
-  });
-}
-document.getElementById('installBtn').addEventListener('click', async ()=>{
+// Shared handler: every "Add to Home Screen" button (popup, Home tab, More tab)
+// calls this. On Chrome/Android (https, real beforeinstallprompt support) it
+// fires the native install dialog directly. Elsewhere (iOS Safari, desktop
+// browsers without the API) it falls back to plain manual instructions.
+async function runInstallAction(){
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
     await deferredInstallPrompt.userChoice;
@@ -4930,9 +4899,20 @@ document.getElementById('installBtn').addEventListener('click', async ()=>{
   } else {
     alert('iPhone: Share button 🔗 → "Add to Home Screen".\nAndroid Chrome: Menu (⋮) → "Add to Home Screen" / "Install App".');
   }
-});
+}
+{
+  const actionBtn = document.getElementById('installPromptActionBtn');
+  if(actionBtn) actionBtn.addEventListener('click', async ()=>{
+    await runInstallAction();
+    hideInstallPromptModal();
+  });
+}
+document.getElementById('installBtn').addEventListener('click', runInstallAction);
 // Always show the button as a manual fallback where the auto-prompt (Chrome-only) isn't available.
 document.getElementById('installBtn').style.display = 'inline-block';
+
+const homeInstallBtn = document.getElementById('homeInstallBtn');
+if(homeInstallBtn) homeInstallBtn.addEventListener('click', runInstallAction);
 
 // Keeps the clock-based widgets (Right Now card + Smart Time Guide) fresh
 // even if the person just leaves the app open without tapping anything.
