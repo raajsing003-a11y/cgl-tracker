@@ -710,6 +710,23 @@
   .onbPrimary:hover{background:#ffd75e;color:#1a1404;}
   .onbStatus{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:12px;line-height:1.5;display:none;}
 
+  /* ===== Revision Counter tab ===== */
+  .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
+  .chapterRow.neverRevised{background:linear-gradient(90deg,rgba(251,191,36,0.10),transparent);border-radius:6px;}
+  .chapterRow.neverRevised .chName{color:var(--accent);}
+  .gkGroup{
+    border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+  }
+  .gkGroup summary{
+    list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;
+    align-items:center;font-family:'Oswald',sans-serif;font-size:13.5px;color:var(--white);
+    font-weight:800;letter-spacing:0.3px;
+  }
+  .gkGroup summary::-webkit-details-marker{display:none;}
+  .gkGroup summary .gkGroupCount{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .gkGroup[open] summary{border-bottom:1px dashed var(--border);}
+  .gkGroupPanel{padding:2px 14px 4px;}
 </style>
 </head>
 <body>
@@ -755,12 +772,13 @@
   window.__fbNewId = function(){
     return (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : ('r'+Date.now()+Math.random().toString(36).slice(2))).slice(0,20);
   };
-  // Real-time listener for chat: resolves once signed in, then subscribes
-  // and returns an unsubscribe function. Used for the Doubt Chat feature.
+  // Generic real-time listener: resolves once signed in, then subscribes
+  // and returns an unsubscribe function. Used by presence tracking, room
+  // registry, and other live-synced data.
   window.__fbListenReady = async function(path, cb){
     await window.__fbReadyPromise;
     const r = ref(db, path);
-    return onValue(r, (snap)=> cb(snap.exists() ? snap.val() : null), (err)=>{ console.error('chat listen failed', err); cb(null); });
+    return onValue(r, (snap)=> cb(snap.exists() ? snap.val() : null), (err)=>{ console.error('listener failed', err); cb(null); });
   };
   window.__fbPush = async function(path, value){
     await window.__fbReadyPromise;
@@ -926,7 +944,35 @@
     </div>
   </div>
 
+  <div class="tabview" id="tab-revision" data-tabview="revision">
+    <div class="grid-label" style="margin-top:0;">🔁 Revision Counter — Math + English + GK</div>
+    <div class="chapterQuickHint">Jo bhi topic revise karo, uske <b>✅ +1</b> daba do. Count kabhi khud reset nahi hota — poori preparation ke dauraan store rehta hai, chahe jitne din lag jaayein.</div>
+
+    <div class="grid-label" style="margin-top:0;">📊 Overall Revision Summary</div>
+    <div class="panel" id="revisionSummaryPanel"></div>
+
+    <div class="grid-label" style="margin-top:0;">🧮 Math Chapters — <span id="revMathTotal">0</span> total</div>
+    <div class="panel" id="revMathList"></div>
+    <div class="btnrow">
+      <button class="nav-btn" id="resetRevMathBtn">↩️ Reset Math Revision Counts</button>
+    </div>
+
+    <div class="grid-label" style="margin-top:0;">🔤 English Topics — <span id="revEngTotal">0</span> total</div>
+    <div class="panel" id="revEngList"></div>
+    <div class="btnrow">
+      <button class="nav-btn" id="resetRevEngBtn">↩️ Reset English Revision Counts</button>
+    </div>
+
+    <div class="grid-label" style="margin-top:0;">🌍 GK Topics — <span id="revGkTotal">0</span> total</div>
+    <div id="revGkGroups"></div>
+    <div class="btnrow">
+      <button class="nav-btn" id="resetRevGkBtn">↩️ Reset GK Revision Counts</button>
+    </div>
+  </div>
+
   <div class="tabview" id="tab-compete" data-tabview="compete">
+    <div class="profilebar" id="profileBar"></div>
+
     <div class="grid-label" style="margin-top:0;">🤝 Compete With Friends</div>
     <div class="panel" id="competePanel">
       <div class="loading">Loading leaderboard…</div>
@@ -934,8 +980,6 @@
   </div>
 
   <div class="tabview" id="tab-more" data-tabview="more">
-    <div class="profilebar" id="profileBar"></div>
-
     <div class="grid-label" style="margin-top:0;">🗓️ Weekly Breakdown</div>
     <div class="weekwrap" id="weekWrap"></div>
 
@@ -1020,12 +1064,6 @@
     <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
   </div>
 
-  <div class="tabview" id="tab-chat" data-tabview="chat">
-    <div class="grid-label" style="margin-top:0;">💬 Private Chat (1-to-1)</div>
-    <div class="panel" id="chatPanel">
-      <div class="loading">Loading chat…</div>
-    </div>
-  </div>
 </div>
 
 <div class="tabbar" id="tabbar">
@@ -1042,18 +1080,17 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span>Chapters</span>
   </button>
+  <button class="tabbtn" data-tab="revision">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+    <span>Revision</span>
+  </button>
   <button class="tabbtn" data-tab="compete">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4.5a2 2 0 0 0 0 4H7"/><path d="M17 5h2.5a2 2 0 0 1 0 4H17"/></svg>
     <span>Compete</span>
   </button>
   <button class="tabbtn" data-tab="more">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
-    <span>More</span>
-  </button>
-  <button class="tabbtn" data-tab="chat">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-    <span>Chat</span>
-    <span class="tabdot" id="chatDot"></span>
+    <span>Analysis</span>
   </button>
 </div>
 
@@ -1126,6 +1163,55 @@ async function resetChapterType(type){
   await save();
   safeRun(renderChaptersTab, 'renderChaptersTab');
   safeRun(renderQuickChapterLog, 'renderQuickChapterLog');
+}
+
+// ===== Revision Counter (separate from the wrong-answer tracker above) =====
+// Tracks HOW MANY TIMES each Math/English/GK chapter has been revised —
+// pure "++" counter, stored globally in state.revisionCount so it never
+// resets on its own and keeps accumulating across the entire preparation
+// (not just these 50 days). Saved via the same save() as everything else,
+// so it persists in localStorage + window.storage + room sync automatically.
+const GK_SECTIONS = [
+  { section:"Geography", topics:["Solar System","Earth's Structure & Tectonics","Rocks, Continents & Oceans","Geomorphology & Topography","Atmosphere","Winds, Currents & Cyclones","India's Location","Himalayas","Peninsular Plateau","Plains & Islands","Peninsular Rivers","Dams, Lakes & Waterfalls","Monsoon","Forests & Grasslands","Soils & Agriculture","Minerals","World Map","National Parks","Transportation","Demographics"] },
+  { section:"Ancient History", topics:["Prehistoric & IVC","Vedic Culture","Mahajanapadas & Mauryan Empire","Gupta Empire","South India & Sangam Age","Buddhism & Jainism"] },
+  { section:"Medieval History", topics:["Early Medieval & Regional States","Delhi Sultanate","Mughal & Sur Dynasty","Vijayanagara & Bahmani","Maratha Empire","Bhakti & Sufi Movements","Sikhism"] },
+  { section:"Modern History", topics:["Decline of Mughals & New Powers","European Advent & British Expansion","British Admin & Economy","Revolt of 1857","Socio-Religious Reforms","Freedom Struggle","Tribal & Peasant Movements","Post-Independence India"] },
+  { section:"Polity", topics:["Making of Constitution","Features of Constitution","Preamble","UTs & Citizenship","Fundamental Rights","DPSP & Fundamental Duties","President & Vice President","PM & Council of Ministers","Parliament","State Legislature","Emergency & Amendments","Supreme & High Courts","Local Government","Constitutional Bodies","Important Acts & Laws","Sources of Constitution"] },
+  { section:"Economics", topics:["Economy Basics","Demand & Supply","National Income","Inflation & Unemployment","Budget & Taxation","Monetary Policy","Money & Banking","BOP, Poverty & Trade","Five Year Plans & Industry"] },
+  { section:"Environment", topics:["Environment Basics","Biodiversity Conservation","Govt Schemes & Global Initiatives"] },
+  { section:"Physics", topics:["Motion","Force & Laws of Motion","Gravitation, Work & Energy","Sound","Reflection & Refraction","Eye, Vision & Electricity"] },
+  { section:"Chemistry", topics:["Matter & Its States"] },
+  { section:"Biology", topics:["Cell","Plant & Animal Tissues","Plant & Animal Kingdom","Nervous System & Senses","Plant Growth & Reproduction","Nutrition & Digestion","Circulatory & Excretory System","Diseases & Nutrients","Genetics & Evolution"] },
+  { section:"Static General Knowledge", topics:["Classical & Folk Dance","Instruments & Gharanas","Festivals & Fairs","Temples & Monuments","Books & Authors","Sports","Awards & Honours","National & Global Orgs","Science & Tech","Important Days & Schemes"] }
+];
+// In-memory only (not saved) — remembers which GK section groups are
+// expanded so re-rendering after a click doesn't collapse them again.
+let openGkSections = new Set();
+function ensureRevisionState(){
+  if(!state.revisionCount) state.revisionCount = {math:{}, english:{}, gk:{}};
+  if(!state.revisionCount.math) state.revisionCount.math = {};
+  if(!state.revisionCount.english) state.revisionCount.english = {};
+  if(!state.revisionCount.gk) state.revisionCount.gk = {};
+  return state.revisionCount;
+}
+function revisionCount(type, name){
+  const rc = ensureRevisionState();
+  return rc[type][name] || 0;
+}
+async function bumpRevision(type, name, delta){
+  const rc = ensureRevisionState();
+  const next = (rc[type][name] || 0) + delta;
+  rc[type][name] = next < 0 ? 0 : next;
+  await save();
+  safeRun(renderRevisionTab, 'renderRevisionTab');
+}
+async function resetRevisionType(type){
+  const label = type==='math' ? 'Math' : type==='english' ? 'English' : 'GK';
+  if(!confirm('Ye sab ' + label + ' revision counts 0 pe reset kar dega. Pakka?')) return;
+  const rc = ensureRevisionState();
+  rc[type] = {};
+  await save();
+  safeRun(renderRevisionTab, 'renderRevisionTab');
 }
 const PER_TASK = DAILY_TARGET / DEFAULT_TASKS.length;
 // Minutes per task, in the same fixed order as DEFAULT_TASKS (renaming a task
@@ -1719,9 +1805,7 @@ async function loadRoomRegistry(){
 // Whoever creates a Sync Room is that room's Admin (stored once, at
 // creation, in rooms/{room}/_meta). The Admin can mark any member
 // "hidden" — a hidden member's name/progress disappears from the
-// leaderboard and chat-contact list for everyone except the Admin and
-// that member themselves. Everyone who is NOT the Admin can only open a
-// private chat with the Admin, never with each other.
+// leaderboard for everyone except the Admin and that member themselves.
 // Both admin + hidden-map live together under one `_meta` key (instead of
 // two separate keys) so refreshing them costs one network round-trip
 // instead of two — this matters because it's re-checked on every
@@ -1773,9 +1857,9 @@ async function setMemberHidden(name, hidden){
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
 // Admin-only "solitary view" lock: a restricted member's OWN view of the
-// app (leaderboard rows, chat contacts, everywhere visibleNamesFor() is
-// used) is limited to just themselves + the Admin — they can't see any
-// other member anywhere, even ones who aren't individually hidden.
+// app (leaderboard rows, everywhere visibleNamesFor() is used) is limited
+// to just themselves + the Admin — they can't see any other member
+// anywhere, even ones who aren't individually hidden.
 async function setMemberRestricted(name, restricted){
   const room = getRoomCode();
   if(!room) return;
@@ -1787,7 +1871,7 @@ async function setMemberRestricted(name, restricted){
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
 // Removes a member from the room entirely: drops them from the shared
-// member registry (so they vanish from everyone's leaderboard/chat lists),
+// member registry (so they vanish from everyone's leaderboard),
 // clears any hidden/restricted flags stored against their name, and wipes
 // their synced tracker data from this room. Admin-only action.
 async function deleteRoomMember(name){
@@ -2197,12 +2281,18 @@ function applyReadOnlyUI(){
   const resetBtn = document.getElementById('resetBtn');
   const resetMathChBtn = document.getElementById('resetMathChBtn');
   const resetEngChBtn = document.getElementById('resetEngChBtn');
+  const resetRevMathBtn = document.getElementById('resetRevMathBtn');
+  const resetRevEngBtn = document.getElementById('resetRevEngBtn');
+  const resetRevGkBtn = document.getElementById('resetRevGkBtn');
   if(editSection) editSection.style.display = ro ? 'none' : '';
   if(backupSection) backupSection.style.display = ro ? 'none' : '';
   if(targetSection) targetSection.style.display = ro ? 'none' : '';
   if(resetBtn) resetBtn.style.display = ro ? 'none' : '';
   if(resetMathChBtn) resetMathChBtn.style.display = ro ? 'none' : '';
   if(resetEngChBtn) resetEngChBtn.style.display = ro ? 'none' : '';
+  if(resetRevMathBtn) resetRevMathBtn.style.display = ro ? 'none' : '';
+  if(resetRevEngBtn) resetRevEngBtn.style.display = ro ? 'none' : '';
+  if(resetRevGkBtn) resetRevGkBtn.style.display = ro ? 'none' : '';
   if(!ro) renderTargetPanel();
 }
 
@@ -2243,86 +2333,10 @@ function renderProfileBar(){
   }
 }
 
-// ===== Private Chat (1-to-1 DMs, room-based, needs Firebase/internet) =====
-// Each pair of people gets their own private thread at
-// rooms/{room}/dm/{pairKey}/msgs — pairKey is built from both safe-names so
-// it's identical no matter who opens it first. Nobody else's screen ever
-// asks for this pairKey, so only the two people who pick each other as a
-// chat partner ever see these messages inside the app.
-let dmUnsub = null;
-let lastDmRoomInited = undefined; // undefined = never inited yet
-let lastNotifiedDmKey = null; // tracks newest DM (for the open partner) we've already notified about
-let dmTreeCache = null;        // latest full { pairKey: {msgs,seen} } tree for this room
-let chatContacts = [];         // known people (friends + room members), excluding myself
-let currentChatPartner = null; // who the Chat tab is currently open with
-
+// Sanitizes a name into a Firebase-safe key (also used by presence tracking
+// and room hide/restrict features below).
 function chatSeenKey(name){
   return (name||'').trim().toLowerCase().replace(/[.#$\[\]\/]/g,'_') || 'unknown';
-}
-// Same private key no matter who opens it first — smaller safe-name first,
-// joined with "::" (never produced by chatSeenKey) so it can't be confused
-// with a name that happens to contain "__".
-function dmPairKey(nameA, nameB){
-  const a = chatSeenKey(nameA), b = chatSeenKey(nameB);
-  return a < b ? (a+'::'+b) : (b+'::'+a);
-}
-function getSavedChatPartner(){
-  try{ return localStorage.getItem('cgl50-chat-partner:'+getRoomCode()) || null; }catch(e){ return null; }
-}
-function saveChatPartner(name){
-  try{ localStorage.setItem('cgl50-chat-partner:'+getRoomCode(), name||''); }catch(e){}
-}
-function isChatTabActive(){
-  const el = document.getElementById('tab-chat');
-  return !!(el && el.classList.contains('active'));
-}
-// Friends list + everyone who's joined this Sync Room, minus yourself — the
-// people you're allowed to pick as a private chat partner.
-// Inside a Sync Room with an Admin set: non-admins can ONLY message the
-// Admin (nobody else); the Admin can message anyone, including members
-// marked hidden from the rest of the group.
-async function loadChatContacts(){
-  const room = getRoomCode();
-  if(room){
-    await refreshRoomMeta();
-    if(currentRoomAdmin && !isMeAdmin()){
-      return currentRoomAdmin.toLowerCase()===myName.toLowerCase() ? [] : [currentRoomAdmin];
-    }
-  }
-  const friends = loadFriendsList();
-  const roomNames = await loadRoomRegistry();
-  const merged = [...friends, ...roomNames];
-  let names = merged.filter((n,i)=> n && n.toLowerCase()!==myName.toLowerCase() && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
-  if(room) names = visibleNamesFor(names); // no-op when I'm Admin — Admin sees/messages everyone
-  return names;
-}
-async function markMyChatSeen(){
-  const room = getRoomCode();
-  if(!room || !currentChatPartner) return;
-  try{
-    await waitForFirebase();
-    const pairKey = dmPairKey(myName, currentChatPartner);
-    await window.__fbSet(`rooms/${room}/dm/${pairKey}/seen/${chatSeenKey(myName)}`, Date.now());
-  }catch(e){ /* best-effort, no need to surface errors for read receipts */ }
-}
-// True if ANY private thread (with any contact) has a message from them that
-// I haven't seen yet — drives the small red dot on the Chat tab icon.
-function computeAnyUnseenDm(){
-  if(!dmTreeCache || !chatContacts.length) return false;
-  const myKey = chatSeenKey(myName);
-  const chatOpen = isChatTabActive();
-  return chatContacts.some(nm=>{
-    if(chatOpen && currentChatPartner && nm.toLowerCase()===currentChatPartner.toLowerCase()) return false; // that thread is on-screen right now
-    const pair = dmTreeCache[dmPairKey(myName, nm)];
-    if(!pair || !pair.msgs) return false;
-    const mySeen = (pair.seen && pair.seen[myKey]) || 0;
-    return Object.values(pair.msgs).some(m=> (m.sender||'').toLowerCase()!==myName.toLowerCase() && (m.ts||0) > mySeen);
-  });
-}
-function updateChatDot(){
-  const dot = document.getElementById('chatDot');
-  if(!dot) return;
-  dot.classList.toggle('show', computeAnyUnseenDm());
 }
 
 // ===== Presence: is the other person online right now? =====
@@ -2364,321 +2378,26 @@ function presenceLabel(name){
   const mins = Math.max(1, Math.round((Date.now()-ts)/60000));
   return { dot:'⚪', cls:'off', text: mins<60 ? `${mins}m pehle active` : 'Offline' };
 }
-async function renderChatPresenceBar(){
-  const el = document.getElementById('chatPresenceBar');
-  if(!el) return;
-  el.innerHTML = ''; // Online status bar removed
-}
-
-let chatMsgNodes = {}; // msg key -> {el, tickEl} — reused across renders
-const CHAT_KEEP_COUNT = 4; // only the newest N messages (per pair) are shown; rest auto-delete
-
-let chatTrimInFlight = false;
-async function enforceChatLimit(pairKey, allKeysSorted){
+// Live presence tracking (used for the 🟢/⚪ online dots on the leaderboard).
+// Every device with the app open writes its own heartbeat to
+// rooms/{room}/presence/{key} every ~15s (see startPresenceHeartbeat above);
+// this keeps a live listener on that same path so everyone else's status
+// stays fresh in real time. Cheap to call often — only (re)subscribes when
+// the room code actually changes.
+let lastPresenceRoomInited = undefined; // undefined = never inited yet
+async function ensurePresenceTracking(){
   const room = getRoomCode();
-  if(!room || chatTrimInFlight) return;
-  const toDelete = allKeysSorted.slice(0, allKeysSorted.length - CHAT_KEEP_COUNT);
-  if(toDelete.length===0) return;
-  chatTrimInFlight = true;
-  try{
-    await waitForFirebase();
-    // Deletes are for both people in this pair (not just my screen) so the
-    // thread stays capped at the last CHAT_KEEP_COUNT messages for both.
-    await Promise.all(toDelete.map(k => window.__fbSet(`rooms/${room}/dm/${pairKey}/msgs/${k}`, null)));
-  }catch(e){ console.error('chat auto-trim failed', e); }
-  finally{ chatTrimInFlight = false; }
-}
-
-// Renders the thread for whoever `currentChatPartner` currently is, reading
-// straight out of dmTreeCache (kept fresh by the single rooms/{room}/dm listener).
-function renderChatMessages(){
-  const wrap = document.getElementById('chatMessages');
-  if(!wrap || !currentChatPartner) return;
-  const pairKey = dmPairKey(myName, currentChatPartner);
-  const pair = (dmTreeCache && dmTreeCache[pairKey]) || {};
-  const msgsObj = pair.msgs || null;
-  const seenObj = pair.seen || {};
-  const allKeys = msgsObj ? Object.keys(msgsObj).sort() : [];
-  if(allKeys.length > CHAT_KEEP_COUNT){
-    enforceChatLimit(pairKey, allKeys); // fire-and-forget: deletes the older ones for both people
-  }
-  const keys = allKeys.slice(-CHAT_KEEP_COUNT);
-  if(keys.length===0){
-    wrap.innerHTML = `<div class="losshint" style="padding:0;">Abhi tak koi message nahi — ${escapeHtml(currentChatPartner)} ko pehla message bhejo!</div>`;
-    chatMsgNodes = {};
-  } else {
-    // Perf: previously this rebuilt EVERY message bubble (and re-decoded
-    // every embedded photo) from scratch on every single update — including
-    // just a "seen" tick changing. Now each bubble is built once and kept;
-    // only the small "Seen/Sent" tick gets patched.
-    if(Object.keys(chatMsgNodes).length===0 || wrap.querySelector('.losshint')){
-      wrap.innerHTML = '';
-      chatMsgNodes = {};
-    }
-    // Drop any bubbles for messages outside the visible window (deleted,
-    // pushed out by CHAT_KEEP_COUNT, or belonging to a partner we just left).
-    Object.keys(chatMsgNodes).forEach(k=>{
-      if(keys.indexOf(k)===-1){ chatMsgNodes[k].el.remove(); delete chatMsgNodes[k]; }
-    });
-
-    const wasNearBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60);
-
-    keys.forEach(k=>{
-      const m = msgsObj[k] || {};
-      const mine = (m.sender||'').toLowerCase() === myName.toLowerCase();
-      let entry = chatMsgNodes[k];
-      if(!entry){
-        const time = new Date(m.ts||0).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-        const textHtml = m.text ? `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.text)}</div>` : '';
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.flexDirection = 'column';
-        row.style.alignItems = mine ? 'flex-end' : 'flex-start';
-        row.innerHTML = `
-          <div style="max-width:82%;">
-            <div style="background:${mine?'var(--accent-dim)':'var(--panel2)'};color:${mine?'#1a1404':'var(--text)'};border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:13.5px;">
-              ${textHtml}
-              <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:3px;">
-                <div style="font-size:9.5px;color:${mine?'#4a3f22':'var(--muted)'};">${time}</div>
-              </div>
-            </div>
-          </div>`;
-        wrap.appendChild(row);
-        entry = { el: row };
-        chatMsgNodes[k] = entry;
-      }
-    });
-    if(wasNearBottom){ wrap.scrollTop = wrap.scrollHeight; }
-
-    // Notify on a genuinely new message from this partner, but only when the
-    // app isn't already the thing the person is actively looking at.
-    if(keys.length){
-      const lastKey = keys[keys.length-1];
-      if(lastNotifiedDmKey === null){
-        lastNotifiedDmKey = lastKey; // first load: don't notify for chat history
-      } else if(lastKey !== lastNotifiedDmKey){
-        lastNotifiedDmKey = lastKey;
-        const m = msgsObj[lastKey] || {};
-        const isMine = (m.sender||'').toLowerCase() === myName.toLowerCase();
-        if(!isMine && (document.hidden || !document.hasFocus() || !isChatTabActive())){
-          fireNotification('💬 ' + (m.sender || 'Someone'), m.text ? m.text.slice(0,100) : 'Naya message');
-        }
-      }
-    }
-  }
-
-  // Mark messages as seen by me only while this thread is actually open.
-  if(isChatTabActive()) markMyChatSeen();
-  updateChatDot();
-}
-
-// Tappable row of contacts at the top of the Chat tab — pick exactly who you
-// want to privately message. A small red dot marks anyone with an unseen
-// message waiting for you. Only you and the person you pick ever see that
-// thread — nobody else in the room sees it.
-function renderChatContactChips(){
-  const bar = document.getElementById('chatContactBar');
-  if(!bar) return;
-  if(chatContacts.length===0){
-    bar.innerHTML = `<div class="losshint" style="padding:0;">Abhi koi contact nahi — 🤝 Compete tab mein dost add karo ya Room join karo, fir unse yahan private chat kar sakte ho.</div>`;
-    return;
-  }
-  bar.innerHTML = chatContacts.map(nm=>{
-    const isActive = currentChatPartner && nm.toLowerCase()===currentChatPartner.toLowerCase();
-    const pair = dmTreeCache && dmTreeCache[dmPairKey(myName, nm)];
-    let hasUnread = false;
-    if(pair && pair.msgs){
-      const mySeen = (pair.seen && pair.seen[chatSeenKey(myName)]) || 0;
-      hasUnread = Object.values(pair.msgs).some(m=> (m.sender||'').toLowerCase()!==myName.toLowerCase() && (m.ts||0) > mySeen);
-    }
-    return `<button type="button" class="nav-btn" data-partner="${escapeHtml(nm)}" style="position:relative;white-space:nowrap;font-size:12px;padding:8px 12px;flex-shrink:0;${isActive?'background:var(--white);color:#000;border-color:var(--white);':''}">${escapeHtml(nm)}${hasUnread?'<span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--loss);border:1.5px solid var(--panel);"></span>':''}</button>`;
-  }).join('');
-  bar.querySelectorAll('[data-partner]').forEach(btn=>{
-    btn.addEventListener('click', ()=> openChatWithPartner(btn.getAttribute('data-partner')));
-  });
-}
-
-function updateChatHeaderAndInputState(){
-  const head = document.getElementById('chatThreadHead');
-  const inputRow = document.getElementById('chatInputRow');
-  const hint = document.getElementById('chatPrivacyHint');
-  const clearBtn = document.getElementById('chatClearBtn');
-  const restrictedToAdmin = !!(getRoomCode() && currentRoomAdmin && !isMeAdmin());
-  if(!currentChatPartner){
-    if(head){
-      if(chatContacts.length) head.innerHTML = 'Upar se ek contact chuno chat shuru karne ke liye 👆';
-      else if(restrictedToAdmin) head.innerHTML = '👑 Tum is group ke Admin ho — khud se chat nahi kar sakte.';
-      else head.innerHTML = '';
-    }
-    if(inputRow) inputRow.style.display = 'none';
-    if(hint) hint.style.display = 'none';
-    if(clearBtn) clearBtn.style.display = 'none';
-    return;
-  }
-  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b>${restrictedToAdmin ? ' <span style="color:var(--accent);font-size:10.5px;">👑 Admin</span>' : ''}`;
-  if(inputRow) inputRow.style.display = 'flex';
-  if(hint){
-    hint.style.display = '';
-    hint.textContent = restrictedToAdmin
-      ? `Tum sirf Admin (${currentChatPartner}) ko hi message kar sakte ho — group ke baaki members ko nahi.`
-      : `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi.`;
-  }
-  if(clearBtn) clearBtn.style.display = '';
-}
-
-function openChatWithPartner(name){
-  if(!name) return;
-  currentChatPartner = name;
-  saveChatPartner(name);
-  lastNotifiedDmKey = null;
-  chatMsgNodes = {};
-  const wrap = document.getElementById('chatMessages');
-  if(wrap) wrap.innerHTML = `<div class="loading">Chat load ho raha hai…</div>`;
-  renderChatContactChips();
-  updateChatHeaderAndInputState();
-  renderChatMessages();
-}
-
-async function renderChatPanel(){
-  const el = document.getElementById('chatPanel');
-  if(!el) return;
-  if(dmUnsub){ try{ dmUnsub(); }catch(e){} dmUnsub = null; }
-  lastNotifiedDmKey = null;
-  chatMsgNodes = {};
-  dmTreeCache = null;
-  const room = getRoomCode();
-  if(!room){
-    el.innerHTML = `<div class="losshint" style="padding:0;">Chat ke liye pehle neeche 🔗 Sync Room banao ya dost ka Room Code se Join karo (internet chahiye).</div>`;
-    return;
-  }
-  chatContacts = await loadChatContacts();
-  const saved = getSavedChatPartner();
-  if(saved && chatContacts.some(n=>n.toLowerCase()===saved.toLowerCase())){
-    currentChatPartner = chatContacts.find(n=>n.toLowerCase()===saved.toLowerCase());
-  } else if(chatContacts.length && (!currentChatPartner || !chatContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase()))){
-    currentChatPartner = chatContacts[0];
-  } else if(!chatContacts.length){
-    currentChatPartner = null;
-  }
-
-  el.innerHTML = `
-    <div id="chatPresenceBar" class="presenceBar"></div>
-    <div id="chatContactBar" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin:2px 0 10px;-webkit-overflow-scrolling:touch;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
-      <div id="chatThreadHead" style="font-size:12.5px;font-weight:800;color:var(--white);"></div>
-      <button class="nav-btn" id="chatClearBtn" style="font-size:10.5px;padding:6px 10px;flex-shrink:0;">🗑️ Clear</button>
-    </div>
-    <div id="chatMessages" style="max-height:300px;min-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 4px;"><div class="loading">Chat load ho raha hai…</div></div>
-    <div id="chatInputRow" class="btnrow" style="margin-top:10px;gap:6px;flex-wrap:nowrap;">
-      <input type="text" id="chatTextInput" placeholder="Apna doubt/message likho..." style="flex:1;min-width:0;background:var(--panel2);border:1.5px solid var(--border-strong);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14.5px;padding:12px 12px;">
-      <button class="nav-btn" id="chatSendBtn" style="padding:10px 16px;font-size:15px;">➤</button>
-    </div>
-    <div id="chatPrivacyHint" class="losshint" style="padding-top:6px;"></div>
-  `;
-  renderChatContactChips();
-  updateChatHeaderAndInputState();
-
-  const textInp = document.getElementById('chatTextInput');
-  const sendBtn = document.getElementById('chatSendBtn');
-  const clearChatBtn = document.getElementById('chatClearBtn');
-  if(clearChatBtn) clearChatBtn.addEventListener('click', async ()=>{
-    if(!currentChatPartner) return;
-    if(!confirm(`Ye sirf tumhare aur ${currentChatPartner} ke beech ka chat delete karega (kisi aur ka chat nahi chhuta). Pakka clear karna hai?`)) return;
-    clearChatBtn.disabled = true;
-    try{
-      await waitForFirebase();
-      await window.__fbSet(`rooms/${room}/dm/${dmPairKey(myName, currentChatPartner)}/msgs`, null);
-    }catch(e){
-      alert('Chat clear nahi ho paya.\n\nWajah: ' + ((e&&e.message)?e.message:String(e)));
-    }
-    clearChatBtn.disabled = false;
-  });
-
-  const doSend = async ()=>{
-    if(!currentChatPartner){ alert('Pehle upar se ek contact chuno.'); return; }
-    // Re-check permission right before sending — closes the gap where an
-    // Admin gets set (or a member gets hidden) while a thread was already open.
-    const freshContacts = await loadChatContacts();
-    if(!freshContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase())){
-      alert('Ye contact ab available nahi hai.');
-      chatContacts = freshContacts;
-      currentChatPartner = freshContacts.length ? freshContacts[0] : null;
-      saveChatPartner(currentChatPartner || '');
-      renderChatContactChips();
-      updateChatHeaderAndInputState();
-      renderChatMessages();
-      return;
-    }
-    const text = (textInp.value||'').trim();
-    if(!text) return;
-    sendBtn.disabled = true;
-    try{
-      const pairKey = dmPairKey(myName, currentChatPartner);
-      await Promise.race([
-        (async ()=>{ await waitForFirebase(); await window.__fbPush(`rooms/${room}/dm/${pairKey}/msgs`, { sender: myName, text, ts: Date.now() }); })(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet slow ya Firebase tak pahunch nahi paya.')), 8000))
-      ]);
-      textInp.value = '';
-    }catch(e){
-      alert('Message nahi bhej paya.\n\nWajah: ' + ((e&&e.message)?e.message:String(e)));
-    }
-    sendBtn.disabled = false;
-    textInp.focus();
-  };
-  sendBtn.addEventListener('click', doSend);
-  textInp.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); doSend(); } });
-
-  try{
-    await waitForFirebase();
-    dmUnsub = await window.__fbListenReady(`rooms/${room}/dm`, (val)=>{
-      dmTreeCache = val || {};
-      renderChatContactChips();
-      renderChatMessages();
-    });
-  }catch(e){
-    const msgEl = document.getElementById('chatMessages');
-    if(msgEl) msgEl.innerHTML = `<div class="losshint" style="padding:0;">Chat load nahi ho payi.\nWajah: ${escapeHtml((e&&e.message)?e.message:String(e))}</div>`;
-  }
-
-  renderChatPresenceBar();
-  startPresenceHeartbeat();
+  if(room === lastPresenceRoomInited) return;
+  lastPresenceRoomInited = room;
   if(presenceUnsub){ try{ presenceUnsub(); }catch(e){} presenceUnsub = null; }
+  if(!room) return;
+  startPresenceHeartbeat();
   try{
     await waitForFirebase();
     presenceUnsub = await window.__fbListenReady(`rooms/${room}/presence`, (val)=>{
       presenceMap = val || {};
-      renderChatPresenceBar();
-      renderChatContactChips();
     });
   }catch(e){ /* presence is best-effort, no need to surface errors */ }
-}
-
-// Cheap to call often (e.g. from the room auto-sync loop): only fully
-// rebuilds the chat panel/listener when the room code has changed. Otherwise
-// it just refreshes the contact list (in case a friend was just added), so
-// typing in the chat box never gets interrupted by unrelated refreshes.
-async function ensureChatPanel(){
-  const room = getRoomCode();
-  if(room === lastDmRoomInited){
-    if(room){
-      chatContacts = await loadChatContacts();
-      // If the currently-open thread is no longer an allowed contact (e.g.
-      // an Admin just got set, or a member just got hidden), fall back to
-      // the first allowed contact instead of leaving a stale thread open.
-      if(currentChatPartner && !chatContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase())){
-        currentChatPartner = chatContacts.length ? chatContacts[0] : null;
-        saveChatPartner(currentChatPartner || '');
-        chatMsgNodes = {};
-      }
-      renderChatContactChips();
-      updateChatHeaderAndInputState();
-      renderChatMessages();
-      updateChatDot();
-    }
-    return;
-  }
-  lastDmRoomInited = room;
-  await renderChatPanel();
 }
 
 let lastFriendStatsSnapshot = null; // null = not yet initialized (avoids a notification burst on first load)
@@ -2783,7 +2502,7 @@ async function renderCompetePanel(){
   el.querySelectorAll('.lbview').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await switchViewing(btn.getAttribute('data-view'));
-      await renderCompetePanel();
+      switchTab('today');
     });
   });
   el.querySelectorAll('.lbremove').forEach(btn=>{
@@ -2807,19 +2526,19 @@ async function renderCompetePanel(){
     inp.value='';
     renderCompetePanel();
   });
-  ensureChatPanel();
+  ensurePresenceTracking();
   renderOfflineCompeteSection();
   renderHomeLeaderboardCard(rows, myRank, myPct);
 }
 
 // Compact, read-only snapshot of the same leaderboard for the Home screen —
 // top 3 plus your own rank if you're outside it, with a shortcut into the
-// full Compete/Chat tab for the rest.
+// full Compete tab for the rest.
 function renderHomeLeaderboardCard(rows, myRank, myPct){
   const el = document.getElementById('competePanelHome');
   if(!el) return;
   if(!rows || rows.length===0){
-    el.innerHTML = `<div class="homeLBempty">Abhi koi dost jud nahi paya — 🔗 Sync Room banao ya dost ka Room Code se Join karo (More tab mein).</div>`;
+    el.innerHTML = `<div class="homeLBempty">Abhi koi dost jud nahi paya — 🔗 Sync Room banao ya dost ka Room Code se Join karo (Analysis tab mein).</div>`;
     return;
   }
   const shown = rows.slice(0,3);
@@ -2850,7 +2569,7 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     ${rowsHtml}
     <div class="homeLBfoot">
       <span>${rankMsg}</span>
-      <button class="nav-btn" id="homeLBOpenBtn" style="font-size:11px;padding:6px 10px;">Poora Leaderboard + Chat ➜</button>
+      <button class="nav-btn" id="homeLBOpenBtn" style="font-size:11px;padding:6px 10px;">Poora Leaderboard ➜</button>
     </div>
   `;
   el.querySelectorAll('.homeLBViewBtn').forEach(btn=>{
@@ -3056,7 +2775,7 @@ async function renderAdminSection(){
     return;
   }
   wrapEl.innerHTML = `
-    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, chat, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. Chat mein bhi baaki members sirf tumse hi baat kar payenge, ek-doosre se nahi. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
+    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
         const hidden = isHiddenFromOthers(nm);
@@ -3959,6 +3678,92 @@ function renderChaptersTab(){
   });
 }
 
+// One row of the Revision Counter — a chapter/topic name, its all-time
+// revision count, a small −1 (undo misclick) and a big ✅ +1 Revise button.
+function renderRevisionRow(type, name){
+  const isReadOnly = viewingName !== myName;
+  const dis = isReadOnly ? 'disabled' : '';
+  const count = revisionCount(type, name);
+  return `
+    <div class="chapterRow ${count===0?'neverRevised':''}">
+      <span class="chName">${count===0?'🆕 ':''}${escapeHtml(name)}</span>
+      <span class="chCount">${count}</span>
+      <button class="chBtn chMinus" data-rv-type="${type}" data-rv-name="${escapeHtml(name)}" data-rv-delta="-1" ${dis}>−1</button>
+      <button class="chBtn chRevisePlus" data-rv-type="${type}" data-rv-name="${escapeHtml(name)}" data-rv-delta="1" ${dis}>✅ +1</button>
+    </div>`;
+}
+
+// GK topics grouped under collapsible <details> sections (Geography, Ancient
+// History, Polity, etc.) — plain HTML accordion, no extra JS needed to
+// expand/collapse, since there are ~95 GK topics in total.
+function renderGkGroups(){
+  return GK_SECTIONS.map(sec=>{
+    const total = sec.topics.reduce((s,n)=>s+revisionCount('gk',n),0);
+    const rows = sec.topics.map(name=>renderRevisionRow('gk', name)).join('');
+    const isOpen = openGkSections.has(sec.section) ? 'open' : '';
+    return `<details class="gkGroup" data-gk-section="${escapeHtml(sec.section)}" ${isOpen}>
+      <summary><span>${escapeHtml(sec.section)}</span><span class="gkGroupCount">${total} revisions</span></summary>
+      <div class="gkGroupPanel">${rows}</div>
+    </details>`;
+  }).join('');
+}
+
+function renderRevisionTab(){
+  const mathEl = document.getElementById('revMathList');
+  const engEl = document.getElementById('revEngList');
+  const gkEl = document.getElementById('revGkGroups');
+  const summaryEl = document.getElementById('revisionSummaryPanel');
+  if(!mathEl || !engEl || !gkEl || !summaryEl) return;
+
+  mathEl.innerHTML = MATH_CHAPTERS.map(n=>renderRevisionRow('math', n)).join('');
+  engEl.innerHTML = ENGLISH_TOPICS.map(n=>renderRevisionRow('english', n)).join('');
+  gkEl.innerHTML = renderGkGroups();
+
+  const mathTotal = MATH_CHAPTERS.reduce((s,n)=>s+revisionCount('math',n),0);
+  const engTotal = ENGLISH_TOPICS.reduce((s,n)=>s+revisionCount('english',n),0);
+  const gkTotal = GK_SECTIONS.reduce((s,sec)=>s+sec.topics.reduce((s2,n)=>s2+revisionCount('gk',n),0),0);
+  const grandTotal = mathTotal + engTotal + gkTotal;
+
+  const mathTotalEl = document.getElementById('revMathTotal');
+  const engTotalEl = document.getElementById('revEngTotal');
+  const gkTotalEl = document.getElementById('revGkTotal');
+  if(mathTotalEl) mathTotalEl.textContent = mathTotal;
+  if(engTotalEl) engTotalEl.textContent = engTotal;
+  if(gkTotalEl) gkTotalEl.textContent = gkTotal;
+
+  const allChapters = [
+    ...MATH_CHAPTERS.map(n=>({type:'Math', n, c:revisionCount('math', n)})),
+    ...ENGLISH_TOPICS.map(n=>({type:'English', n, c:revisionCount('english', n)})),
+    ...GK_SECTIONS.flatMap(sec=>sec.topics.map(n=>({type:'GK', n, c:revisionCount('gk', n)})))
+  ];
+  const totalChapterCount = allChapters.length;
+  const neverRevisedCount = allChapters.filter(x=>x.c===0).length;
+  const mostRevised = allChapters.slice().sort((a,b)=>b.c-a.c)[0];
+
+  summaryEl.innerHTML = `
+    <div class="bwrow"><span>Total Revisions (All Time)</span><span class="amt gain">${grandTotal}</span></div>
+    <div class="bwrow"><span>Chapters Tracked</span><span>${totalChapterCount}</span></div>
+    <div class="bwrow"><span>Not Revised Even Once</span><span class="amt ${neverRevisedCount>0?'loss':''}">${neverRevisedCount}</span></div>
+    <div class="bwrow"><span>Most Revised</span><span>${mostRevised && mostRevised.c>0 ? escapeHtml(mostRevised.n)+' ('+mostRevised.type+', '+mostRevised.c+'x)' : '— abhi shuru karo'}</span></div>
+  `;
+
+  document.querySelectorAll('#revMathList .chBtn, #revEngList .chBtn, #revGkGroups .chBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const type = btn.getAttribute('data-rv-type');
+      const name = btn.getAttribute('data-rv-name');
+      const delta = parseInt(btn.getAttribute('data-rv-delta'));
+      await bumpRevision(type, name, delta);
+    });
+  });
+
+  document.querySelectorAll('#revGkGroups details.gkGroup').forEach(det=>{
+    det.addEventListener('toggle', ()=>{
+      const sec = det.getAttribute('data-gk-section');
+      if(det.open) openGkSections.add(sec); else openGkSections.delete(sec);
+    });
+  });
+}
+
 function renderChart(){
   const el = document.getElementById('walletChart');
   if(!el) return;
@@ -4537,6 +4342,9 @@ document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
 });
 document.getElementById('resetMathChBtn').addEventListener('click', ()=> resetChapterType('math'));
 document.getElementById('resetEngChBtn').addEventListener('click', ()=> resetChapterType('english'));
+document.getElementById('resetRevMathBtn').addEventListener('click', ()=> resetRevisionType('math'));
+document.getElementById('resetRevEngBtn').addEventListener('click', ()=> resetRevisionType('english'));
+document.getElementById('resetRevGkBtn').addEventListener('click', ()=> resetRevisionType('gk'));
 
 // Opens the (now-in-Today-tab) task editor panel — used both by the header
 // toggle button and by each task row's ✏️ icon. When opened from a specific
@@ -4608,6 +4416,7 @@ function renderAll(){
   safeRun(renderWeekly, 'renderWeekly');
   safeRun(renderStudyHours, 'renderStudyHours');
   safeRun(renderChaptersTab, 'renderChaptersTab');
+  safeRun(renderRevisionTab, 'renderRevisionTab');
   safeRun(computeStats, 'computeStats');
   safeRun(checkAndAwardBadges, 'checkAndAwardBadges');
   safeRun(renderBadges, 'renderBadges');
@@ -4650,12 +4459,6 @@ function switchTab(name){
   });
   try{ localStorage.setItem('cgl50-activetab', name); }catch(e){}
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
-  if(name==='chat'){
-    markMyChatSeen();
-    updateChatDot();
-    renderChatPresenceBar();
-    renderChatContactChips();
-  }
 }
 function initTabs(){
   document.querySelectorAll('.tabbtn').forEach(btn=>{
@@ -4663,16 +4466,16 @@ function initTabs(){
   });
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
-  if(!['home','today','chapters','chat','compete','more'].includes(saved)) saved = 'home';
+  if(!['home','today','chapters','compete','more'].includes(saved)) saved = 'home';
   switchTab(saved);
 }
 
 // ===== Swipe left/right to move between tabs =====
 // Attached to the main content wrapper so a left-swipe anywhere on a page
-// moves forward (Home -> Today -> Chapters -> Chat -> Compete -> More) and
+// moves forward (Home -> Today -> Chapters -> Compete -> Analysis) and
 // a right-swipe moves back — without hijacking normal vertical scrolling,
 // day-grid taps, or dragging inside horizontally-scrollable charts/inputs.
-const TAB_ORDER = ['home','today','chapters','compete','more','chat'];
+const TAB_ORDER = ['home','today','chapters','compete','more'];
 function initSwipeTabs(){
   const wrap = document.querySelector('.wrap');
   if(!wrap) return;
@@ -4832,7 +4635,7 @@ document.getElementById('notifBtn').addEventListener('click', async ()=>{
   } else {
     const ok = await ensureNotificationPermission();
     setNotifPref(ok);
-    if(ok) fireNotification('🎯 CGL 50 Tracker', 'Notifications on ho gaye — naye chat message aur friends ke tracker update yahan dikhenge.');
+    if(ok) fireNotification('🎯 CGL 50 Tracker', 'Notifications on ho gaye — friends ke tracker update yahan dikhenge.');
   }
   updateNotifBtnLabel();
 });
