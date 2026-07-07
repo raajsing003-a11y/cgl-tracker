@@ -1536,6 +1536,10 @@ async function kvdbCreateRoom(){
     await waitForFirebase();
     const id = window.__fbNewId();
     await window.__fbSet(`rooms/${id}/_created`, Date.now());
+    // Whoever creates the room is its Admin from the very first moment —
+    // set directly here (getRoomCode() isn't pointed at this new id yet,
+    // so kvdbSet can't be used for this one call).
+    await window.__fbSet(`rooms/${id}/_meta`, JSON.stringify({ admin: myName, hidden: {} }));
     return { ok:true, id };
   }catch(e){
     console.error('room create failed', e);
@@ -1597,6 +1601,79 @@ async function loadRoomRegistry(){
   roomRegistryCacheRoom = room;
   return list;
 }
+// ===== Group Admin + Per-Member Visibility =====
+// Whoever creates a Sync Room is that room's Admin (stored once, at
+// creation, in rooms/{room}/_meta). The Admin can mark any member
+// "hidden" — a hidden member's name/progress disappears from the
+// leaderboard and chat-contact list for everyone except the Admin and
+// that member themselves. Everyone who is NOT the Admin can only open a
+// private chat with the Admin, never with each other.
+// Both admin + hidden-map live together under one `_meta` key (instead of
+// two separate keys) so refreshing them costs one network round-trip
+// instead of two — this matters because it's re-checked on every
+// leaderboard render / auto-sync tick.
+let roomMetaCache = null;
+let roomMetaCacheAt = 0;
+let roomMetaCacheRoom = null;
+async function loadRoomMeta(){
+  const room = getRoomCode();
+  if(!room) return { admin:null, hidden:{} };
+  if(roomMetaCache && roomMetaCacheRoom===room && (Date.now()-roomMetaCacheAt) < 8000){
+    return roomMetaCache;
+  }
+  const raw = await kvdbGet('_meta');
+  let meta = { admin:null, hidden:{} };
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed==='object'){
+        meta = { admin: parsed.admin || null, hidden: (parsed.hidden && typeof parsed.hidden==='object') ? parsed.hidden : {} };
+      }
+    }catch(e){ /* keep default on bad/legacy data */ }
+  }
+  roomMetaCache = meta;
+  roomMetaCacheAt = Date.now();
+  roomMetaCacheRoom = room;
+  return meta;
+}
+async function setRoomAdmin(name){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  const updated = { admin: name, hidden: meta.hidden || {} };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+async function setMemberHidden(name, hidden){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  const key = chatSeenKey(name);
+  const updatedHidden = { ...(meta.hidden||{}), [key]: !!hidden };
+  const updated = { admin: meta.admin || null, hidden: updatedHidden };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// Kept in sync by refreshRoomMeta() and read synchronously everywhere else,
+// so render functions never have to be made async just to check admin status.
+let currentRoomAdmin = null;
+let currentRoomHidden = {};
+async function refreshRoomMeta(){
+  if(!getRoomCode()){ currentRoomAdmin = null; currentRoomHidden = {}; return; }
+  const meta = await loadRoomMeta();
+  currentRoomAdmin = meta.admin || null;
+  currentRoomHidden = meta.hidden || {};
+}
+function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
+function isHiddenFromOthers(name){ return !!currentRoomHidden[chatSeenKey(name)]; }
+// Filters a name list down to what the CURRENT viewer is allowed to see:
+// Admin sees everyone; anyone else sees everyone except members marked
+// hidden (they can still always see themselves).
+function visibleNamesFor(names){
+  if(isMeAdmin()) return names;
+  return names.filter(n=> n.toLowerCase()===myName.toLowerCase() || !isHiddenFromOthers(n));
+}
+
 let roomSyncInFlight = false;
 function startRoomAutoSync(){
   if(roomSyncTimer){ clearInterval(roomSyncTimer); roomSyncTimer = null; }
@@ -1963,11 +2040,23 @@ function isChatTabActive(){
 }
 // Friends list + everyone who's joined this Sync Room, minus yourself — the
 // people you're allowed to pick as a private chat partner.
+// Inside a Sync Room with an Admin set: non-admins can ONLY message the
+// Admin (nobody else); the Admin can message anyone, including members
+// marked hidden from the rest of the group.
 async function loadChatContacts(){
+  const room = getRoomCode();
+  if(room){
+    await refreshRoomMeta();
+    if(currentRoomAdmin && !isMeAdmin()){
+      return currentRoomAdmin.toLowerCase()===myName.toLowerCase() ? [] : [currentRoomAdmin];
+    }
+  }
   const friends = loadFriendsList();
   const roomNames = await loadRoomRegistry();
   const merged = [...friends, ...roomNames];
-  return merged.filter((n,i)=> n && n.toLowerCase()!==myName.toLowerCase() && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+  let names = merged.filter((n,i)=> n && n.toLowerCase()!==myName.toLowerCase() && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+  if(room) names = visibleNamesFor(names); // no-op when I'm Admin — Admin sees/messages everyone
+  return names;
 }
 async function markMyChatSeen(){
   const room = getRoomCode();
@@ -2176,16 +2265,26 @@ function updateChatHeaderAndInputState(){
   const inputRow = document.getElementById('chatInputRow');
   const hint = document.getElementById('chatPrivacyHint');
   const clearBtn = document.getElementById('chatClearBtn');
+  const restrictedToAdmin = !!(getRoomCode() && currentRoomAdmin && !isMeAdmin());
   if(!currentChatPartner){
-    if(head) head.innerHTML = chatContacts.length ? 'Upar se ek contact chuno chat shuru karne ke liye 👆' : '';
+    if(head){
+      if(chatContacts.length) head.innerHTML = 'Upar se ek contact chuno chat shuru karne ke liye 👆';
+      else if(restrictedToAdmin) head.innerHTML = '👑 Tum is group ke Admin ho — khud se chat nahi kar sakte.';
+      else head.innerHTML = '';
+    }
     if(inputRow) inputRow.style.display = 'none';
     if(hint) hint.style.display = 'none';
     if(clearBtn) clearBtn.style.display = 'none';
     return;
   }
-  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b>`;
+  if(head) head.innerHTML = `💬 <b>${escapeHtml(currentChatPartner)}</b>${restrictedToAdmin ? ' <span style="color:var(--accent);font-size:10.5px;">👑 Admin</span>' : ''}`;
   if(inputRow) inputRow.style.display = 'flex';
-  if(hint){ hint.style.display = ''; hint.textContent = `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi.`; }
+  if(hint){
+    hint.style.display = '';
+    hint.textContent = restrictedToAdmin
+      ? `Tum sirf Admin (${currentChatPartner}) ko hi message kar sakte ho — group ke baaki members ko nahi.`
+      : `Sirf tum aur ${currentChatPartner} ye chat dekh sakte ho — room ke baaki members nahi.`;
+  }
   if(clearBtn) clearBtn.style.display = '';
 }
 
@@ -2259,6 +2358,19 @@ async function renderChatPanel(){
 
   const doSend = async ()=>{
     if(!currentChatPartner){ alert('Pehle upar se ek contact chuno.'); return; }
+    // Re-check permission right before sending — closes the gap where an
+    // Admin gets set (or a member gets hidden) while a thread was already open.
+    const freshContacts = await loadChatContacts();
+    if(!freshContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase())){
+      alert('Ye contact ab available nahi hai.');
+      chatContacts = freshContacts;
+      currentChatPartner = freshContacts.length ? freshContacts[0] : null;
+      saveChatPartner(currentChatPartner || '');
+      renderChatContactChips();
+      updateChatHeaderAndInputState();
+      renderChatMessages();
+      return;
+    }
     const text = (textInp.value||'').trim();
     if(!text) return;
     sendBtn.disabled = true;
@@ -2312,8 +2424,17 @@ async function ensureChatPanel(){
   if(room === lastDmRoomInited){
     if(room){
       chatContacts = await loadChatContacts();
+      // If the currently-open thread is no longer an allowed contact (e.g.
+      // an Admin just got set, or a member just got hidden), fall back to
+      // the first allowed contact instead of leaving a stale thread open.
+      if(currentChatPartner && !chatContacts.some(n=>n.toLowerCase()===currentChatPartner.toLowerCase())){
+        currentChatPartner = chatContacts.length ? chatContacts[0] : null;
+        saveChatPartner(currentChatPartner || '');
+        chatMsgNodes = {};
+      }
       renderChatContactChips();
       updateChatHeaderAndInputState();
+      renderChatMessages();
       updateChatDot();
     }
     return;
@@ -2327,11 +2448,15 @@ async function renderCompetePanel(){
   const el = document.getElementById('competePanel');
   if(!el) return;
   const friends = loadFriendsList();
-  const roomNames = await loadRoomRegistry();
+  // Perf: registry + admin/hidden meta are two independent reads — fire them
+  // together instead of one-after-another so a slow tick doesn't stack up
+  // extra round-trip latency on top of the friend-state fetches below.
+  const [roomNames] = await Promise.all([ loadRoomRegistry(), refreshRoomMeta() ]);
   const offline = loadOfflineFriends();
   const offlineNames = Object.keys(offline);
   const merged = [myName, ...friends, ...roomNames, ...offlineNames];
-  const names = merged.filter((n,i)=> n && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+  let names = merged.filter((n,i)=> n && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
+  if(getRoomCode()) names = visibleNamesFor(names);
   // Perf: fetch every friend's state in parallel instead of one-by-one —
   // on a slow connection the old sequential loop could take many seconds
   // per tick, which is a big chunk of blocked/janky time every 25s.
@@ -2619,7 +2744,10 @@ async function renderRoomPanel(){
         <button class="nav-btn" id="copyRoomBtn">📋 Copy</button>
       </div>
       <div class="losshint" style="padding-top:0;">Ye code dost ko bhejo — "Join" karke wo isi room mein aa jayega.</div>
-      <div class="btnrow">
+      <div class="grid-label" style="margin-top:14px;">👑 Group Admin</div>
+      <div id="adminInfoBar" class="losshint" style="padding-top:0;">Loading…</div>
+      <div id="adminControlsWrap"></div>
+      <div class="btnrow" style="margin-top:14px;">
         <button class="nav-btn" id="leaveRoomBtn">🚪 Room Chodo</button>
       </div>
     `;
@@ -2640,7 +2768,80 @@ async function renderRoomPanel(){
       renderRoomPanel();
       await renderCompetePanel();
     });
+    renderAdminSection();
   }
+}
+
+// Admin info + controls block inside the Room panel:
+// - No admin yet (older room, created before this feature existed) → shows
+//   a "Become Admin" button anyone in the room can claim.
+// - Admin exists, viewer IS the admin → member list with a "hide from
+//   others" toggle per member.
+// - Admin exists, viewer is NOT the admin → just shows who the Admin is.
+async function renderAdminSection(){
+  const infoEl = document.getElementById('adminInfoBar');
+  const wrapEl = document.getElementById('adminControlsWrap');
+  if(!infoEl || !wrapEl) return;
+  await refreshRoomMeta();
+
+  if(!currentRoomAdmin){
+    infoEl.innerHTML = 'Is group ka abhi tak koi Admin nahi hai.';
+    wrapEl.innerHTML = `
+      <div class="btnrow">
+        <button class="nav-btn" id="becomeAdminBtn">👑 Admin Bano</button>
+      </div>
+      <div class="losshint" style="padding-top:6px;">Admin bankar tum decide kar sakte ho ki kaunsa member sabko dikhega aur kaunsa sirf tumhe — aur baaki sab sirf tumhe hi message kar payenge.</div>
+    `;
+    const becomeBtn = document.getElementById('becomeAdminBtn');
+    if(becomeBtn) becomeBtn.addEventListener('click', async ()=>{
+      becomeBtn.disabled = true;
+      becomeBtn.textContent = '⏳...';
+      await setRoomAdmin(myName);
+      await renderRoomPanel();
+      await renderCompetePanel();
+    });
+    return;
+  }
+
+  const iAmAdmin = isMeAdmin();
+  infoEl.innerHTML = `👑 Admin: <b style="color:var(--accent);">${escapeHtml(currentRoomAdmin)}</b>${iAmAdmin ? ' (Tum)' : ''}`;
+
+  if(!iAmAdmin){
+    wrapEl.innerHTML = '';
+    return;
+  }
+
+  const roomNames = await loadRoomRegistry();
+  const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
+  if(!others.length){
+    wrapEl.innerHTML = `<div class="losshint" style="padding-top:6px;">Abhi group mein koi aur member nahi joda.</div>`;
+    return;
+  }
+  wrapEl.innerHTML = `
+    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. Chat mein bhi baaki members sirf tumse hi baat kar payenge, ek-doosre se nahi.</div>
+    <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">
+      ${others.map(nm=>{
+        const hidden = isHiddenFromOthers(nm);
+        return `
+        <label style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer;">
+          <span>${hidden ? '🙈' : '👁️'} ${escapeHtml(nm)}</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);">
+            Sirf mujhe/khud ko dikhe
+            <input type="checkbox" data-hide-member="${escapeHtml(nm)}" ${hidden ? 'checked' : ''} style="width:18px;height:18px;">
+          </span>
+        </label>`;
+      }).join('')}
+    </div>
+  `;
+  wrapEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
+    chk.addEventListener('change', async ()=>{
+      const nm = chk.getAttribute('data-hide-member');
+      chk.disabled = true;
+      await setMemberHidden(nm, chk.checked);
+      chk.disabled = false;
+      await renderCompetePanel();
+    });
+  });
 }
 
 function applyLoadedExtras(){
