@@ -678,11 +678,21 @@
     padding:20px 14px;overflow-y:auto;
   }
   .onbCard{
+    position:relative;
     background:linear-gradient(165deg,var(--panel),#0d0c0f);
     border:1px solid var(--border-strong);border-radius:16px;
     padding:22px 18px 18px;max-width:380px;width:100%;
     box-shadow:0 10px 40px rgba(0,0,0,0.6);margin:auto;
   }
+  .onbCloseX{
+    position:absolute;top:10px;right:10px;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--panel2);border:1px solid var(--border-strong);
+    color:var(--muted);font-size:15px;font-weight:800;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;padding:0;
+  }
+  .onbCloseX:hover{color:var(--white);border-color:var(--white);}
   .onbTitle{font-family:'Oswald',sans-serif;font-size:21px;font-weight:800;color:var(--white);margin:0 0 6px;}
   .onbSub{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 14px;line-height:1.55;}
   .onbLabel{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 6px;}
@@ -787,6 +797,7 @@
 
 <div class="onbOverlay" id="installPromptModal">
   <div class="onbCard">
+    <button class="onbCloseX" id="installPromptCloseBtn" aria-label="Band Karo">✕</button>
     <div class="onbTitle">📲 App Ki Tarah Install Karo</div>
     <div class="onbBtnRow">
       <button class="nav-btn onbPrimary" id="installPromptActionBtn">📲 Add to Home Screen</button>
@@ -4897,13 +4908,28 @@ async function runInstallAction(){
     await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
   } else {
-    alert('iPhone: Share button 🔗 → "Add to Home Screen".\nAndroid Chrome: Menu (⋮) → "Add to Home Screen" / "Install App".');
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS){
+      alert('iPhone: Share button 🔗 → "Add to Home Screen".');
+    } else if(isMobile){
+      alert('Android Chrome: Menu (⋮) → "Add to Home Screen" / "Install App".');
+    } else {
+      alert('PC Chrome/Edge: address bar ke right side mein ⊕ ya install icon dabao, ya Menu (⋮) → "Cast, save, and share" → "Install page as app".');
+    }
   }
 }
 {
   const actionBtn = document.getElementById('installPromptActionBtn');
   if(actionBtn) actionBtn.addEventListener('click', async ()=>{
     await runInstallAction();
+    hideInstallPromptModal();
+  });
+  // Cross/close button — user explicitly dismissed it, so stop nagging them
+  // with this popup on every future visit.
+  const closeBtn = document.getElementById('installPromptCloseBtn');
+  if(closeBtn) closeBtn.addEventListener('click', ()=>{
+    setInstallPromptDismissedForever();
     hideInstallPromptModal();
   });
 }
