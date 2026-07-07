@@ -407,6 +407,39 @@
   .tVal.tier-medium{color:var(--purple);border-color:var(--purple);}
   .tVal.tier-large{color:var(--accent);border-color:var(--accent);}
 
+  /* ===== Per-task pencil icon (Today tab) + collapsible editor ===== */
+  .taskEditIconBtn{
+    flex-shrink:0;width:26px;height:26px;border-radius:6px;cursor:pointer;padding:0;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
+    font-size:12px;display:flex;align-items:center;justify-content:center;
+  }
+  .taskEditIconBtn:hover{border-color:var(--accent);color:var(--accent);}
+  .taskEditHeadRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .teCloseBtn{
+    flex-shrink:0;font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);font-weight:800;
+  }
+  .teCloseBtn:hover{border-color:var(--accent);color:var(--accent);}
+  @keyframes teFlash{
+    0%{background:rgba(251,191,36,0.35);}
+    100%{background:transparent;}
+  }
+  .taskEditRow.teFlash{animation:teFlash 1.4s ease;border-radius:8px;}
+
+  /* ===== Admin: per-member card (hide / restrict / delete) ===== */
+  .adminMemberCard{
+    border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;
+    display:flex;flex-direction:column;gap:8px;background:var(--panel2);
+  }
+  .adminMemberTop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:13px;flex-wrap:wrap;}
+  .adminDelBtn{font-size:10.5px;padding:5px 9px;border-color:var(--loss);color:var(--loss);}
+  .adminDelBtn:hover{background:var(--loss);color:#fff;}
+  .adminMemberToggle{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;
+    font-size:10.5px;color:var(--muted);font-weight:700;
+  }
+  .adminMemberToggle input[type=checkbox]{width:18px;height:18px;flex-shrink:0;}
+
   /* ===== Multiplayer: Profile Bar & Leaderboard ===== */
   .profilebar{
     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
@@ -834,6 +867,22 @@
       <div class="loading">Loading tracker…</div>
     </div>
 
+    <div id="taskEditSection">
+      <div class="grid-label taskEditHeadRow" style="margin-top:14px;">
+        <span>✏️ Customize Tasks</span>
+        <button class="teCloseBtn" id="teToggleBtn" type="button">Kholo ▾</button>
+      </div>
+      <div class="panel" id="taskEditPanel" style="display:none;">
+        <div class="taskEditIntro">Naam, time (start) aur duration — sab edit kar sakte ho. Niche naya task bhi add kar sakte ho. ₹5,000 hamesha sabhi tasks mein unke time ke hisaab se automatically baant diya jayega.</div>
+        <div id="taskEditForm"></div>
+        <div class="btnrow">
+          <button class="nav-btn" id="addTaskBtn">➕ Naya Task Add Karo</button>
+          <button class="nav-btn" id="saveTasksBtn">💾 Save Karo</button>
+          <button class="nav-btn" id="resetTasksBtn">↩️ Default Pe Reset</button>
+        </div>
+      </div>
+    </div>
+
     <div class="grid-label">📅 <span id="calDaysLabel">50</span> Din Ka Calendar (✅ done · ⏳ partial · 😴 rest · chhota no. = Plan Day)</div>
     <div class="calendarView" id="calendarView"></div>
   </div>
@@ -913,19 +962,6 @@
         <span>⬆️ <b style="color:var(--gain);">Earned</b></span>
         <span>⬇️ <b style="color:var(--loss);">Lost</b></span>
         <span style="margin-left:auto;">✦ Latest Day</span>
-      </div>
-    </div>
-
-    <div id="taskEditSection">
-      <div class="grid-label" style="margin-top:0;">✏️ Customize Tasks</div>
-      <div class="panel" id="taskEditPanel">
-        <div class="taskEditIntro">Naam, time (start) aur duration — sab edit kar sakte ho. Niche naya task bhi add kar sakte ho. ₹5,000 hamesha sabhi tasks mein unke time ke hisaab se automatically baant diya jayega.</div>
-        <div id="taskEditForm"></div>
-        <div class="btnrow">
-          <button class="nav-btn" id="addTaskBtn">➕ Naya Task Add Karo</button>
-          <button class="nav-btn" id="saveTasksBtn">💾 Save Karo</button>
-          <button class="nav-btn" id="resetTasksBtn">↩️ Default Pe Reset</button>
-        </div>
       </div>
     </div>
 
@@ -1596,7 +1632,7 @@ async function kvdbCreateRoom(){
     // Whoever creates the room is its Admin from the very first moment —
     // set directly here (getRoomCode() isn't pointed at this new id yet,
     // so kvdbSet can't be used for this one call).
-    await window.__fbSet(`rooms/${id}/_meta`, JSON.stringify({ admin: myName, hidden: {} }));
+    await window.__fbSet(`rooms/${id}/_meta`, JSON.stringify({ admin: myName, hidden: {}, restricted: {} }));
     return { ok:true, id };
   }catch(e){
     console.error('room create failed', e);
@@ -1674,17 +1710,21 @@ let roomMetaCacheAt = 0;
 let roomMetaCacheRoom = null;
 async function loadRoomMeta(){
   const room = getRoomCode();
-  if(!room) return { admin:null, hidden:{} };
+  if(!room) return { admin:null, hidden:{}, restricted:{} };
   if(roomMetaCache && roomMetaCacheRoom===room && (Date.now()-roomMetaCacheAt) < 8000){
     return roomMetaCache;
   }
   const raw = await kvdbGet('_meta');
-  let meta = { admin:null, hidden:{} };
+  let meta = { admin:null, hidden:{}, restricted:{} };
   if(raw){
     try{
       const parsed = JSON.parse(raw);
       if(parsed && typeof parsed==='object'){
-        meta = { admin: parsed.admin || null, hidden: (parsed.hidden && typeof parsed.hidden==='object') ? parsed.hidden : {} };
+        meta = {
+          admin: parsed.admin || null,
+          hidden: (parsed.hidden && typeof parsed.hidden==='object') ? parsed.hidden : {},
+          restricted: (parsed.restricted && typeof parsed.restricted==='object') ? parsed.restricted : {}
+        };
       }
     }catch(e){ /* keep default on bad/legacy data */ }
   }
@@ -1697,7 +1737,7 @@ async function setRoomAdmin(name){
   const room = getRoomCode();
   if(!room) return;
   const meta = await loadRoomMeta();
-  const updated = { admin: name, hidden: meta.hidden || {} };
+  const updated = { admin: name, hidden: meta.hidden || {}, restricted: meta.restricted || {} };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -1707,27 +1747,76 @@ async function setMemberHidden(name, hidden){
   const meta = await loadRoomMeta();
   const key = chatSeenKey(name);
   const updatedHidden = { ...(meta.hidden||{}), [key]: !!hidden };
-  const updated = { admin: meta.admin || null, hidden: updatedHidden };
+  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: meta.restricted || {} };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// Admin-only "solitary view" lock: a restricted member's OWN view of the
+// app (leaderboard rows, chat contacts, everywhere visibleNamesFor() is
+// used) is limited to just themselves + the Admin — they can't see any
+// other member anywhere, even ones who aren't individually hidden.
+async function setMemberRestricted(name, restricted){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  const key = chatSeenKey(name);
+  const updatedRestricted = { ...(meta.restricted||{}), [key]: !!restricted };
+  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: updatedRestricted };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// Removes a member from the room entirely: drops them from the shared
+// member registry (so they vanish from everyone's leaderboard/chat lists),
+// clears any hidden/restricted flags stored against their name, and wipes
+// their synced tracker data from this room. Admin-only action.
+async function deleteRoomMember(name){
+  const room = getRoomCode();
+  if(!room) return;
+  const raw = await kvdbGet('_registry');
+  let list = [];
+  if(raw){ try{ list = JSON.parse(raw); }catch(e){ list=[]; } }
+  if(!Array.isArray(list)) list = [];
+  list = list.filter(n=> n.toLowerCase()!==name.toLowerCase());
+  await kvdbSet('_registry', JSON.stringify(list));
+  roomRegistryCache = list; roomRegistryCacheAt = Date.now(); roomRegistryCacheRoom = room;
+
+  const meta = await loadRoomMeta();
+  const key = chatSeenKey(name);
+  const updatedHidden = { ...(meta.hidden||{}) }; delete updatedHidden[key];
+  const updatedRestricted = { ...(meta.restricted||{}) }; delete updatedRestricted[key];
+  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: updatedRestricted };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+
+  await kvdbSet(playerKey(name), null);
 }
 // Kept in sync by refreshRoomMeta() and read synchronously everywhere else,
 // so render functions never have to be made async just to check admin status.
 let currentRoomAdmin = null;
 let currentRoomHidden = {};
+let currentRoomRestricted = {};
 async function refreshRoomMeta(){
-  if(!getRoomCode()){ currentRoomAdmin = null; currentRoomHidden = {}; return; }
+  if(!getRoomCode()){ currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; return; }
   const meta = await loadRoomMeta();
   currentRoomAdmin = meta.admin || null;
   currentRoomHidden = meta.hidden || {};
+  currentRoomRestricted = meta.restricted || {};
 }
 function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
 function isHiddenFromOthers(name){ return !!currentRoomHidden[chatSeenKey(name)]; }
+function isRestrictedToSelf(name){ return !!currentRoomRestricted[chatSeenKey(name)]; }
+function amIRestrictedToSelf(){ return isRestrictedToSelf(myName); }
 // Filters a name list down to what the CURRENT viewer is allowed to see:
-// Admin sees everyone; anyone else sees everyone except members marked
-// hidden (they can still always see themselves).
+// - Admin sees everyone.
+// - A viewer the Admin has "restricted" sees ONLY themselves + the Admin,
+//   no matter who else is in the list.
+// - Everyone else sees everyone except members marked hidden (they can
+//   still always see themselves).
 function visibleNamesFor(names){
   if(isMeAdmin()) return names;
+  if(amIRestrictedToSelf()){
+    return names.filter(n=> n.toLowerCase()===myName.toLowerCase() || (currentRoomAdmin && n.toLowerCase()===currentRoomAdmin.toLowerCase()));
+  }
   return names.filter(n=> n.toLowerCase()===myName.toLowerCase() || !isHiddenFromOthers(n));
 }
 
@@ -2946,18 +3035,27 @@ async function renderAdminSection(){
     return;
   }
   wrapEl.innerHTML = `
-    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. Chat mein bhi baaki members sirf tumse hi baat kar payenge, ek-doosre se nahi.</div>
-    <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">
+    <div class="losshint" style="padding-top:6px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, chat, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. Chat mein bhi baaki members sirf tumse hi baat kar payenge, ek-doosre se nahi. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
+    <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
         const hidden = isHiddenFromOthers(nm);
+        const restricted = isRestrictedToSelf(nm);
+        const statusIcon = restricted ? '🔒' : (hidden ? '🙈' : '👁️');
         return `
-        <label style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer;">
-          <span>${hidden ? '🙈' : '👁️'} ${escapeHtml(nm)}</span>
-          <span style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);">
-            Sirf mujhe/khud ko dikhe
-            <input type="checkbox" data-hide-member="${escapeHtml(nm)}" ${hidden ? 'checked' : ''} style="width:18px;height:18px;">
-          </span>
-        </label>`;
+        <div class="adminMemberCard">
+          <div class="adminMemberTop">
+            <span>${statusIcon} ${escapeHtml(nm)}</span>
+            <button class="nav-btn adminDelBtn" type="button" data-delete-member="${escapeHtml(nm)}" title="Ye member hamesha ke liye hatao">🗑️ Hatao</button>
+          </div>
+          <label class="adminMemberToggle">
+            <span>Sirf mujhe/khud ko dikhe (baaki sabse hide)</span>
+            <input type="checkbox" data-hide-member="${escapeHtml(nm)}" ${hidden ? 'checked' : ''}>
+          </label>
+          <label class="adminMemberToggle">
+            <span>Isko sirf khud + mujhe (Admin) dikhaao — poore app mein</span>
+            <input type="checkbox" data-restrict-member="${escapeHtml(nm)}" ${restricted ? 'checked' : ''}>
+          </label>
+        </div>`;
       }).join('')}
     </div>
   `;
@@ -2966,7 +3064,27 @@ async function renderAdminSection(){
       const nm = chk.getAttribute('data-hide-member');
       chk.disabled = true;
       await setMemberHidden(nm, chk.checked);
-      chk.disabled = false;
+      await renderAdminSection();
+      await renderCompetePanel();
+    });
+  });
+  wrapEl.querySelectorAll('[data-restrict-member]').forEach(chk=>{
+    chk.addEventListener('change', async ()=>{
+      const nm = chk.getAttribute('data-restrict-member');
+      chk.disabled = true;
+      await setMemberRestricted(nm, chk.checked);
+      await renderAdminSection();
+      await renderCompetePanel();
+    });
+  });
+  wrapEl.querySelectorAll('[data-delete-member]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const nm = btn.getAttribute('data-delete-member');
+      if(!confirm(`"${nm}" ko group se hamesha ke liye hata du? Uska is room mein saved progress bhi delete ho jayega.`)) return;
+      btn.disabled = true;
+      btn.textContent = '⏳...';
+      await deleteRoomMember(nm);
+      await renderAdminSection();
       await renderCompetePanel();
     });
   });
@@ -3522,6 +3640,7 @@ function renderPanel(){
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
         <div class="taskinfo"><div class="name">${checked? '✅' : tier.emoji} ${t}</div></div>
         <div class="value ${tier.cls}">₹${Math.round(taskValue(idx))}</div>
+        ${isReadOnly ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
       </div>
     `;
   });
@@ -3623,6 +3742,15 @@ function renderPanel(){
       }
     });
   });
+  if(!isReadOnly){
+    panel.querySelectorAll('[data-edit-task-idx]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-edit-task-idx'),10);
+        openTaskEditor(idx);
+      });
+    });
+  }
   panel.querySelectorAll('input[data-mock]').forEach(inp=>{
     inp.addEventListener('input', (e)=>{
       if(isReadOnly) return;
@@ -4279,7 +4407,7 @@ function renderTaskEditForm(){
   form.innerHTML = taskEditDraft.map((t, idx)=>{
     const tier = tierForMins(t.duration||0);
     return `
-    <div class="taskEditRow">
+    <div class="taskEditRow" data-row-idx="${idx}">
       <div class="taskEditTop">
         <span class="tNum">${idx+1}.</span>
         <input type="text" class="teName" data-task-idx="${idx}" value="${String(t.name).replace(/"/g,'&quot;')}">
@@ -4388,6 +4516,45 @@ document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
 });
 document.getElementById('resetMathChBtn').addEventListener('click', ()=> resetChapterType('math'));
 document.getElementById('resetEngChBtn').addEventListener('click', ()=> resetChapterType('english'));
+
+// Opens the (now-in-Today-tab) task editor panel — used both by the header
+// toggle button and by each task row's ✏️ icon. When opened from a specific
+// task's pencil icon, scrolls to and briefly highlights that task's row so
+// it's obvious which one you tapped.
+function openTaskEditor(focusIdx){
+  const panelEl = document.getElementById('taskEditPanel');
+  const toggleBtn = document.getElementById('teToggleBtn');
+  if(!panelEl) return;
+  panelEl.style.display = '';
+  if(toggleBtn) toggleBtn.textContent = '✖ Band Karo';
+  safeRun(renderTaskEditForm, 'renderTaskEditForm');
+  requestAnimationFrame(()=>{
+    panelEl.scrollIntoView({behavior:'smooth', block:'start'});
+    if(typeof focusIdx === 'number' && !isNaN(focusIdx)){
+      const row = document.querySelector(`#taskEditForm .taskEditRow[data-row-idx="${focusIdx}"]`);
+      if(row){
+        row.classList.add('teFlash');
+        setTimeout(()=>row.classList.remove('teFlash'), 1400);
+        const nameInput = row.querySelector('.teName');
+        if(nameInput) nameInput.focus();
+      }
+    }
+  });
+}
+function closeTaskEditor(){
+  const panelEl = document.getElementById('taskEditPanel');
+  const toggleBtn = document.getElementById('teToggleBtn');
+  if(panelEl) panelEl.style.display = 'none';
+  if(toggleBtn) toggleBtn.textContent = 'Kholo ▾';
+}
+function isTaskEditorOpen(){
+  const panelEl = document.getElementById('taskEditPanel');
+  return !!panelEl && panelEl.style.display !== 'none';
+}
+const teToggleBtnEl = document.getElementById('teToggleBtn');
+if(teToggleBtnEl) teToggleBtnEl.addEventListener('click', ()=>{
+  if(isTaskEditorOpen()) closeTaskEditor(); else openTaskEditor();
+});
 
 function renderExamLine(){
   const examDate = new Date(START_DATE);
