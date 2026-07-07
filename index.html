@@ -1168,11 +1168,9 @@
 
     <div class="grid-label" style="margin-top:18px;">🎯 Target Reminder — Automatic Motivational Ping</div>
     <div class="btnrow" style="align-items:center;">
-      <input type="time" id="targetReminderTime" value="21:00"
-        style="background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;padding:8px 6px;">
       <button class="nav-btn" id="targetReminderBtn">🔔 Target Reminder On</button>
     </div>
-    <div class="losshint" style="margin-top:8px;">🎯 Ye sabhi ke liye by-default ON hai — kisi ko kuch on karne ki zarurat nahi. App open karte hi turant check hoga (aur roz iss time pe bhi) — agar aaj ka target abhi 50%+ pura nahi hua, to ek in-app popup dikhega, aur agar upar wala "Notifications" bhi On hai to phone ke notification tray mein bhi ek reminder aa jayega (din mein sirf ek baar). Band karna ho to yahan button dabao.</div>
+    <div class="losshint" style="margin-top:8px;">🎯 Ye sabhi ke liye by-default ON hai — kisi ko kuch on karne ki zarurat nahi. Din mein <b>do baar</b> check hoga — <b>12:00 PM</b> aur <b>6:00 PM</b> ko (aur app open karte hi bhi turant, agar us waqt tak ka slot miss ho gaya ho) — agar us waqt tak aaj ka target 50%+ pura nahi hua, to ek in-app popup dikhega, aur agar upar wala "Notifications" bhi On hai to phone ke notification tray mein bhi ek reminder aa jayega (har slot mein sirf ek baar — matlab din mein max 2 baar). Band karna ho to yahan button dabao.</div>
     <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
   </div>
 
@@ -5102,17 +5100,17 @@ function targetReminderPref(){
 function setTargetReminderPref(v){
   try{ localStorage.setItem('cgl50-target-reminder-enabled', v ? '1':'0'); }catch(e){}
 }
-function targetReminderTimeStr(){
-  try{ return localStorage.getItem('cgl50-target-reminder-time') || '21:00'; }catch(e){ return '21:00'; }
+// Fixed twice-daily slots — 12:00 PM (noon) and 6:00 PM (18:00). Each slot
+// fires independently, once per day, tracked by its own "last fired" key.
+const TARGET_REMINDER_SLOTS = [
+  { key: '12', hh: 12, mm: 0 },
+  { key: '18', hh: 18, mm: 0 }
+];
+function targetReminderLastFiredDate(slotKey){
+  try{ return localStorage.getItem('cgl50-target-reminder-lastfired-'+slotKey) || ''; }catch(e){ return ''; }
 }
-function setTargetReminderTimeStr(v){
-  try{ localStorage.setItem('cgl50-target-reminder-time', v); }catch(e){}
-}
-function targetReminderLastFiredDate(){
-  try{ return localStorage.getItem('cgl50-target-reminder-lastfired') || ''; }catch(e){ return ''; }
-}
-function setTargetReminderLastFiredDate(v){
-  try{ localStorage.setItem('cgl50-target-reminder-lastfired', v); }catch(e){}
+function setTargetReminderLastFiredDate(slotKey, v){
+  try{ localStorage.setItem('cgl50-target-reminder-lastfired-'+slotKey, v); }catch(e){}
 }
 function updateTargetReminderBtnLabel(){
   const btn = document.getElementById('targetReminderBtn');
@@ -5139,51 +5137,61 @@ function hideTargetReminderModal(){
   if(trmCloseBtn) trmCloseBtn.addEventListener('click', hideTargetReminderModal);
   if(trmOkBtn) trmOkBtn.addEventListener('click', hideTargetReminderModal);
 }
+// Finds the next slot (12:00 or 18:00) that is due to fire right now:
+// its clock-time has already passed today AND it hasn't fired yet today.
+// Returns the slot object, or null if none are currently due.
+function targetReminderDueSlot(){
+  const todayKey = fmtISODate(new Date());
+  const cur = nowMinutes();
+  for(const slot of TARGET_REMINDER_SLOTS){
+    if(cur < (slot.hh*60+slot.mm)) continue; // this slot's time hasn't arrived yet today
+    if(targetReminderLastFiredDate(slot.key) === todayKey) continue; // this slot already fired today
+    return slot;
+  }
+  return null;
+}
 // Core "is a reminder due right now" check — shared by both the on-open
-// trigger and the scheduled (clock-time) trigger below. Returns a random
-// motivational message if due, or null if not.
+// trigger and the scheduled (clock-time) trigger below. Returns the due
+// slot + a random motivational message, or null if nothing is due.
 function targetReminderDueMessage(){
   if(!targetReminderPref()) return null;
-  const todayKey = fmtISODate(new Date());
-  if(targetReminderLastFiredDate() === todayKey) return null; // already pinged today
+
+  const slot = targetReminderDueSlot();
+  if(!slot) return null; // no slot currently due (either not time yet, or already fired)
 
   const d = getDay(todayDayNum());
   if(d.rest) return null; // rest day — no reminder needed
   if(meetsStreakTarget(d)) return null; // already 50%+ done today, nothing to nudge
 
   const pool = TARGET_REMINDER_MESSAGES;
-  return pool[Math.floor(Math.random()*pool.length)];
+  return { slot, msg: pool[Math.floor(Math.random()*pool.length)] };
 }
 // Fires the reminder through both channels at once: an in-app modal popup
 // (works instantly, no permission needed) and, if the person has also
 // granted browser notification permission, a phone notification-tray ping.
-function fireTargetReminder(msg){
+function fireTargetReminder(slot, msg){
   showTargetReminderModal(msg);
   if(notifPref() && ('Notification' in window) && Notification.permission === 'granted'){
     fireNotification('🎯 Aaj Ka Target Baaki Hai', msg);
   }
-  setTargetReminderLastFiredDate(fmtISODate(new Date()));
+  setTargetReminderLastFiredDate(slot.key, fmtISODate(new Date()));
 }
-// Runs once right when the app is opened — if today's target is still
-// incomplete and we haven't already reminded today, pop it immediately
-// instead of waiting for the scheduled clock-time below.
+// Runs once right when the app is opened — if a slot (12 PM or 6 PM) is
+// currently due and we haven't already reminded for it today, pop it
+// immediately instead of waiting for the scheduled clock-time below.
 function checkTargetReminderOnAppOpen(){
-  const msg = targetReminderDueMessage();
-  if(!msg) return;
-  fireTargetReminder(msg);
+  const due = targetReminderDueMessage();
+  if(!due) return;
+  fireTargetReminder(due.slot, due.msg);
 }
-// Scheduled check (runs every minute via the live ticker) — only fires
-// once the saved reminder clock-time has passed today. Acts as a fallback
-// for cases where the target was still complete at app-open time but is
-// no longer met later, or the reminder time simply hasn't arrived yet.
+// Scheduled check (runs every minute via the live ticker) — fires once
+// per slot (12 PM, then 6 PM) per day, the moment each slot's time passes
+// and the target is still incomplete. Also acts as a fallback catch-up
+// for a slot that was still on-target at app-open time but slipped later.
 function checkTargetReminder(){
-  const [hh, mm] = (targetReminderTimeStr()||'21:00').split(':').map(Number);
-  if(isNaN(hh) || isNaN(mm)) return;
-  if(nowMinutes() < (hh*60+mm)) return; // reminder time hasn't arrived yet today
-
-  const msg = targetReminderDueMessage();
-  if(!msg) return;
-  fireTargetReminder(msg);
+  const due = targetReminderDueMessage();
+  if(!due) return;
+  fireTargetReminder(due.slot, due.msg);
 }
 document.getElementById('targetReminderBtn').addEventListener('click', async ()=>{
   const currentlyOn = targetReminderPref();
@@ -5202,15 +5210,6 @@ document.getElementById('targetReminderBtn').addEventListener('click', async ()=
   }
   updateTargetReminderBtnLabel();
 });
-{
-  const trTimeInput = document.getElementById('targetReminderTime');
-  if(trTimeInput){
-    trTimeInput.value = targetReminderTimeStr();
-    trTimeInput.addEventListener('change', (e)=>{
-      if(e.target.value) setTargetReminderTimeStr(e.target.value);
-    });
-  }
-}
 
 // ===== "How to use" Help guide =====
 // A short always-accessible explainer for what each tab does. Auto-shown
