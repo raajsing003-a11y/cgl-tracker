@@ -1027,19 +1027,13 @@
 <div class="onbOverlay" id="onboardModal">
   <div class="onbCard">
     <div class="onbTitle">👋 Welcome to CGL Tracker</div>
-    <div class="onbSub">Apna naam likho — dost isi naam se tumhara progress dekh payenge. Agar kisi dost ka Room Code hai to yahin daal ke seedha usi room mein judh jao — naya target ussi din se, aaj se, shuru ho jayega.</div>
+    <div class="onbSub">Apna naam likho — group ke baaki members isi naam se tumhara progress dekh payenge.</div>
 
     <div class="onbLabel">Tumhara Naam</div>
     <input type="text" id="onbName" placeholder="e.g. Rohit" autocomplete="off">
 
-    <div class="onbLabel">Dost Ka Room Code (optional)</div>
-    <input type="text" id="onbRoomCode" placeholder="Room Code paste karo..." autocomplete="off">
-
     <div class="onbBtnRow">
-      <button class="nav-btn onbPrimary" id="onbJoinBtn">🔑 Naam Save Karke Room Join Karo</button>
-    </div>
-    <div class="onbBtnRow">
-      <button class="nav-btn" id="onbSoloBtn">🚀 Room Ke Bina Solo Shuru Karo</button>
+      <button class="nav-btn onbPrimary" id="onbJoinBtn">🔑 Naam Save Karke Shuru Karo</button>
     </div>
     <div class="onbDivider">ya</div>
     <div class="onbBtnRow">
@@ -2155,10 +2149,15 @@ function activeUptoDay(){
 // A "Room Code" is basically a lightweight login: whoever has the code
 // can read/write the same shared room. This is what makes sync work
 // in Chrome (or any browser, any device) — not just inside Claude.
+// Only ONE group is allowed to exist for this app — everyone who opens
+// the app is placed into this same fixed room, always. There is no
+// "create room", no "join a different room", and no "solo / no room"
+// state anymore — getRoomCode() simply always returns this fixed code,
+// ignoring whatever (if anything) is in localStorage.
+const FIXED_ROOM_CODE = 'b0bb1ba85948456aa334';
 let roomSyncTimer = null;
 function getRoomCode(){
-  try{ return (localStorage.getItem('cgl50-room-code') || '').trim(); }
-  catch(e){ return ''; }
+  return FIXED_ROOM_CODE;
 }
 // Reads ?room=CODE (or ?code=CODE) from the URL — this is what lets a
 // shared link auto-join someone into a group instead of them having to
@@ -2690,23 +2689,10 @@ function showOnboardingModal(){
     if(!modal){ resolve('Player'+Math.floor(100+Math.random()*900)); return; }
     modal.style.display = 'flex';
     const nameInput = document.getElementById('onbName');
-    const roomInput = document.getElementById('onbRoomCode');
     const joinBtn = document.getElementById('onbJoinBtn');
-    const soloBtn = document.getElementById('onbSoloBtn');
     const installBtn = document.getElementById('onbInstallBtn');
     const statusEl = document.getElementById('onbStatus');
     const showStatus = (msg)=>{ if(statusEl){ statusEl.style.display='block'; statusEl.textContent = msg; } };
-
-    // If the link that opened this page carried a Room Code (?room=XXXX),
-    // pre-fill it so the person only has to type their name — the code
-    // itself "just appears", nothing to copy-paste.
-    const urlRoom = getUrlRoomCode();
-    if(urlRoom && roomInput){
-      roomInput.value = urlRoom;
-      const subEl = document.querySelector('#onboardModal .onbSub');
-      if(subEl) subEl.textContent = '🔗 Dost ke link se Room Code apne aap bhar diya gaya hai — bas apna naam likho aur "Join Karo" dabao.';
-      if(nameInput) nameInput.focus();
-    }
 
     if(deferredInstallPrompt && installBtn) installBtn.style.display = 'inline-block';
     if(installBtn) installBtn.addEventListener('click', async ()=>{
@@ -2730,14 +2716,8 @@ function showOnboardingModal(){
 
     if(joinBtn) joinBtn.addEventListener('click', ()=>{
       const name = nameInput.value.trim();
-      const code = roomInput.value.trim();
       if(!name){ showStatus('⚠️ Pehle apna naam likho.'); return; }
-      if(!code){ showStatus('⚠️ Room Code daalo, ya "Solo Shuru Karo" dabao agar abhi room nahi chahiye.'); return; }
-      setRoomCode(code);
       finish(name);
-    });
-    if(soloBtn) soloBtn.addEventListener('click', ()=>{
-      finish(nameInput.value.trim());
     });
   });
 }
@@ -3438,85 +3418,8 @@ async function renderRoomPanel(){
   const el = document.getElementById('roomPanel');
   if(!el) return;
   const room = getRoomCode();
-  if(!room){
-    el.innerHTML = `
-      <div class="losshint" style="padding-top:0;">Ek code se koi bhi device sync ho jaata hai — signup nahi chahiye.</div>
-      <div class="btnrow">
-        <button class="nav-btn" id="createRoomBtn">✨ Naya Room Banao</button>
-      </div>
-      <div class="addfriend">
-        <input type="text" id="joinRoomInput" placeholder="Ya dost ka Room Code paste karo...">
-        <button class="nav-btn" id="joinRoomBtn">🔑 Join</button>
-      </div>
-      <div class="losshint" id="roomStatusMsg" style="padding-top:8px;display:none;"></div>
-    `;
-    const createBtn = document.getElementById('createRoomBtn');
-    const statusEl = document.getElementById('roomStatusMsg');
-    const showStatus = (msg)=>{ if(statusEl){ statusEl.style.display='block'; statusEl.textContent = msg; } };
-    if(createBtn) createBtn.addEventListener('click', async ()=>{
-      createBtn.textContent = '⏳ Banaya ja raha hai...';
-      createBtn.disabled = true;
-      showStatus('Internet/Firebase se connect ho raha hai… (max 8 second)');
-      let result;
-      try{
-        // Hard cap so the button can NEVER get stuck forever, no matter
-        // what hangs inside kvdbCreateRoom (network, firebase, etc).
-        result = await Promise.race([
-          kvdbCreateRoom(),
-          new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet/Firebase tak pahunch nahi paya.')), 8000))
-        ]);
-      }catch(e){
-        result = { ok:false, error: (e && e.message) ? e.message : String(e) };
-      }
-      if(!result || !result.ok){
-        const errMsg = 'Room nahi ban paya.\n\nWajah: ' + (result ? result.error : 'unknown error') + '\n\nYe HTML file "content://" ke andar (kisi local viewer app) khuli hai — us app ko internet access nahi milta ya Google/Firebase ke scripts load nahi kar paata. Isse fix karne ke liye: is file ko Chrome browser mein kholo (file ko download karke ya Chrome se "Open with Chrome" karke), phir Naya Room Banao try karo.';
-        showStatus(errMsg);
-        try{ alert(errMsg); }catch(e2){}
-        createBtn.textContent = '✨ Naya Room Banao';
-        createBtn.disabled = false;
-        return;
-      }
-      showStatus('Room ban gaya ✅');
-      setRoomCode(result.id);
-      await save();
-      await addToRoomRegistry(myName);
-      startRoomAutoSync();
-      startPresenceHeartbeat();
-      renderRoomPanel();
-      await renderCompetePanel();
-    });
-    const joinBtn = document.getElementById('joinRoomBtn');
-    if(joinBtn) joinBtn.addEventListener('click', async ()=>{
-      const inp = document.getElementById('joinRoomInput');
-      const val = (inp.value||'').trim();
-      if(!val) return;
-      joinBtn.textContent = '⏳ Judh raha hai...';
-      joinBtn.disabled = true;
-      showStatus('Internet/Firebase se connect ho raha hai… (max 8 second)');
-      setRoomCode(val);
-      try{
-        await Promise.race([
-          (async ()=>{ await save(); await addToRoomRegistry(myName); })(),
-          new Promise((_,rej)=>setTimeout(()=>rej(new Error('8 second timeout — internet/Firebase tak pahunch nahi paya.')), 8000))
-        ]);
-      }catch(e){
-        clearRoomCode();
-        const errMsg = 'Room join nahi ho paya.\n\nWajah: ' + ((e && e.message) ? e.message : String(e)) + '\n\nYe HTML file "content://" ke andar (kisi local viewer app) khuli hai — us app ko internet access nahi milta. Is file ko Chrome browser mein kholo aur dobara try karo.';
-        showStatus(errMsg);
-        try{ alert(errMsg); }catch(e2){}
-        joinBtn.textContent = '🔑 Join';
-        joinBtn.disabled = false;
-        return;
-      }
-      startRoomAutoSync();
-      startPresenceHeartbeat();
-      renderRoomPanel();
-      await renderCompetePanel();
-    });
-  } else {
-    // Refresh first so isMeAdmin() below is accurate even right after
-    // just creating/joining this room (currentRoomAdmin can otherwise
-    // still be holding a stale value from before this render).
+  {
+    // Refresh first so isMeAdmin() below is accurate.
     await refreshRoomMeta();
     const iAmAdmin = isMeAdmin();
     const roomCodeBlockHtml = iAmAdmin
@@ -3538,9 +3441,6 @@ async function renderRoomPanel(){
       <div class="grid-label" style="margin-top:14px;">👑 Group Admin</div>
       <div id="adminInfoBar" class="losshint" style="padding-top:0;">Loading…</div>
       <div id="adminControlsWrap"></div>
-      <div class="btnrow" style="margin-top:14px;">
-        <button class="nav-btn" id="leaveRoomBtn">🚪 Room Chodo</button>
-      </div>
     `;
     if(iAmAdmin){
       const copyBtn = document.getElementById('copyRoomBtn');
@@ -3552,15 +3452,6 @@ async function renderRoomPanel(){
         }
       });
     }
-    const leaveBtn = document.getElementById('leaveRoomBtn');
-    if(leaveBtn) leaveBtn.addEventListener('click', async ()=>{
-      if(!confirm('Room chodne se ye device wapas sirf local/Claude storage pe chala jayega (data delete nahi hoga). Pakka?')) return;
-      clearRoomCode();
-      startRoomAutoSync();
-      startPresenceHeartbeat();
-      renderRoomPanel();
-      await renderCompetePanel();
-    });
     renderAdminSection();
   }
 }
@@ -7145,14 +7036,8 @@ window.addEventListener('pagehide', ()=>{ save(); });
 (async function init(){
   myName = await getOrCreateMyNameAsync();
   maybeShowInstallPrompt();
-  // Returning device (name already saved, onboarding modal never showed)
-  // that opens a friend's link and isn't in any room yet — join it
-  // automatically. Never silently switches someone out of a room they're
-  // already in, so re-clicking an old link later stays safe.
-  const urlRoomForReturningUser = getUrlRoomCode();
-  if(urlRoomForReturningUser && !getRoomCode()){
-    setRoomCode(urlRoomForReturningUser);
-  }
+  // Everyone is always in the single fixed group (see getRoomCode()) —
+  // no URL-based room joining needed anymore.
   viewingName = myName;
   await migrateOldDataIfNeeded(myName);
   await registerPlayer(myName);
