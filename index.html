@@ -597,6 +597,21 @@
   .miniring::before{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d0c10;}
   .miniring span{position:relative;font-size:9px;font-weight:800;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
 
+  /* ===== Header-only Admin Control Panel button — only ever shown to the
+     room Admin (toggled via JS, display:none by default) so it never
+     appears for regular members. Gold + gentle pulse to stand apart from
+     the plain helpBtn icons next to it. */
+  .adminPanelBtn{
+    background:linear-gradient(135deg, var(--accent), #c98f0a);
+    border:1px solid var(--accent); color:#1a1406;
+    animation:adminPanelPulse 2.6s ease-in-out infinite;
+  }
+  .adminPanelBtn:active{transform:scale(0.9);}
+  @keyframes adminPanelPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0.45);}
+    50%{box-shadow:0 0 0 5px rgba(251,191,36,0);}
+  }
+
   /* ===== Persistent "viewing someone else" strip — sits right under the
      fixed topbar so a one-tap way back to your own tracker is visible on
      EVERY tab, not just the Compete tab. Hidden entirely when viewingName
@@ -1073,6 +1088,16 @@
   </div>
 </div>
 
+<div class="onbOverlay" id="adminPanelModal">
+  <div class="onbCard" style="max-width:480px;max-height:82vh;overflow-y:auto;">
+    <button class="onbCloseX" id="adminPanelCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">👑 Admin Control Panel</div>
+    <div class="onbSub">Room ka pura control yahin se — sirf tumhe (Admin) dikhta hai.</div>
+    <div id="adminPanelRoomCodeWrap"></div>
+    <div id="adminPanelBody"></div>
+  </div>
+</div>
+
 <div class="onbOverlay" id="targetReminderModal">
   <div class="onbCard" style="max-width:400px;">
     <button class="onbCloseX" id="targetReminderModalCloseBtn" aria-label="Band Karo">✕</button>
@@ -1098,6 +1123,7 @@
 <div class="topbar">
   <div class="topbar-left">🎯 <span>EXAM TRACKER</span></div>
   <div class="topbar-right">
+    <button class="helpBtn adminPanelBtn" id="adminPanelBtn" aria-label="Admin Control Panel" style="display:none;">👑</button>
     <a class="helpBtn" id="chatBtn" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer" aria-label="Chat on Telegram">💬</a>
     <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
     <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
@@ -2028,6 +2054,23 @@ function renderDailyQuote(){
 }
 
 let state = {};
+// Guards save() from ever running before `state` genuinely holds the
+// owner's freshly-loaded data. Without this: on a slow/flaky connection,
+// `state` sits at its default {} for a moment while loadPlayerState() is
+// still awaiting Firebase — and if a save fires in that exact window
+// (e.g. the tab gets backgrounded, which triggers save() on its own),
+// it would silently overwrite the person's real saved progress with
+// nothing, on every storage layer including Firebase. Only ever set to
+// true right after a load has actually finished (see init()/switchViewing()).
+let stateReady = false;
+// Snapshot of the top-level keys `state` had immediately after the last
+// load/save. mergeWithRemoteBeforeSave() uses this to tell "I never
+// touched this key, so leave it alone even if I don't have it locally"
+// (e.g. a different device added a new day) apart from "I deliberately
+// removed this key since I last loaded" (e.g. archiving old days) —
+// without this distinction a safe merge isn't possible.
+let lastLoadedStateKeys = [];
+function snapshotLoadedStateKeys(){ lastLoadedStateKeys = Object.keys(state); }
 let selectedDay = 1;
 let notesTimer = null;
 let scoreTimer = null;
@@ -2200,24 +2243,50 @@ async function kvdbCreateRoom(){
     return { ok:false, error: (e && e.message) ? e.message : String(e) };
   }
 }
+// Both kvdbGet/kvdbSet retry a few times with a short backoff before
+// giving up. A thrown error here is always a genuine failure (offline,
+// timeout, permission) — Firebase's "key doesn't exist" case never
+// throws, it just resolves with an empty snapshot — so retrying only
+// ever helps with real transient blips, never masks a real "not found".
+// This matters a lot on patchy mobile data: without retries, a single
+// dropped request during app-open could look identical to "this player
+// has no data yet" and fall through to a blank/stale local copy.
 async function kvdbGet(key){
   const room = getRoomCode();
   if(!room) return null;
-  try{
-    await waitForFirebase();
-    const val = await window.__fbGet(`rooms/${room}/${encodeURIComponent(key)}`);
-    if(val === null || val === undefined) return null;
-    return typeof val === 'string' ? val : JSON.stringify(val);
-  }catch(e){ console.error('firebase get failed', e); return null; }
+  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  let lastErr = null;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      await waitForFirebase();
+      const val = await window.__fbGet(path);
+      if(val === null || val === undefined) return null;
+      return typeof val === 'string' ? val : JSON.stringify(val);
+    }catch(e){
+      lastErr = e;
+      if(attempt < 2) await new Promise(r=>setTimeout(r, 400*(attempt+1)));
+    }
+  }
+  console.error('firebase get failed after retries', lastErr);
+  return null;
 }
 async function kvdbSet(key, value){
   const room = getRoomCode();
   if(!room) return false;
-  try{
-    await waitForFirebase();
-    await window.__fbSet(`rooms/${room}/${encodeURIComponent(key)}`, value);
-    return true;
-  }catch(e){ console.error('firebase set failed', e); return false; }
+  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  let lastErr = null;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      await waitForFirebase();
+      await window.__fbSet(path, value);
+      return true;
+    }catch(e){
+      lastErr = e;
+      if(attempt < 2) await new Promise(r=>setTimeout(r, 400*(attempt+1)));
+    }
+  }
+  console.error('firebase set failed after retries', lastErr);
+  return false;
 }
 async function addToRoomRegistry(name){
   const room = getRoomCode();
@@ -2487,6 +2556,7 @@ async function refreshRoomMeta(){
   if(!getRoomCode()){
     currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; currentRoomTaskMode = 'individual';
     currentRoomAnnouncement = null; currentWeeklyReset = null; lastAppliedSharedTasksJSON = null;
+    updateAdminPanelBtnVisibility();
     return;
   }
   // Fired together — each is independently 8s-cached, so this stays one
@@ -2498,6 +2568,7 @@ async function refreshRoomMeta(){
   currentRoomTaskMode = meta.taskMode || 'individual';
   currentRoomAnnouncement = ann;
   currentWeeklyReset = wr;
+  updateAdminPanelBtnVisibility();
 }
 function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
 // True only when we're in a Sync Room AND the Admin has switched Task Mode
@@ -2536,6 +2607,19 @@ function startRoomAutoSync(){
         state = await loadPlayerState(viewingName);
         applyLoadedExtras();
         renderAll();
+      } else if(stateReady){
+        // Pull in whatever other devices have written for MY OWN profile
+        // since I last loaded, using the same safe merge save() uses —
+        // this is what makes multi-device use actually work: without it,
+        // a change made on phone A would only ever reach phone B once
+        // phone B happened to save something of its own.
+        const merged = await mergeWithRemoteBeforeSave(state);
+        if(JSON.stringify(merged) !== JSON.stringify(state)){
+          state = merged;
+          applyLoadedExtras();
+          snapshotLoadedStateKeys();
+          renderAll();
+        }
       }
     }catch(e){ console.error('auto sync tick failed', e); }
     finally{ roomSyncInFlight = false; }
@@ -2602,9 +2686,50 @@ async function loadPlayerState(name){
   return {};
 }
 
-async function save(){
+// Before writing this device's `state` to the shared Firebase copy,
+// pulls whatever's live there right now and folds this device's changes
+// into it, instead of blindly replacing the whole thing.
+//
+// Why: plain last-write-wins meant opening the tracker on two phones was
+// dangerous — this device's copy of `state` is a snapshot from whenever
+// IT was last loaded, missing any day/mock/field a different device
+// added since. A totally unrelated save on this device (e.g. renaming a
+// task) would then push that stale snapshot and silently erase all of
+// that newer data from Firebase. The merge:
+//  - keeps anything remote that this device never loaded or touched
+//  - applies every key this device currently has (its adds/edits win)
+//  - only deletes a key if this device HAD it at last load and has since
+//    deliberately removed it locally (e.g. archiving old days into
+//    history) — a key this device never even saw is left untouched,
+//    even though it's technically "missing" from the local copy
+async function mergeWithRemoteBeforeSave(localState){
+  try{
+    const raw = await kvdbGet(playerKey(myName));
+    if(!raw) return localState;
+    const remote = JSON.parse(raw);
+    if(!remote || typeof remote !== 'object' || Array.isArray(remote)) return localState;
+    const merged = Object.assign({}, remote, localState);
+    lastLoadedStateKeys.forEach(k=>{ if(!(k in localState)) delete merged[k]; });
+    return merged;
+  }catch(e){ console.error('pre-save merge failed', e); return localState; }
+}
+
+async function save(opts){
+  opts = opts || {};
   // Never write to anyone else's data — only the owner's own key.
   if(viewingName !== myName) return;
+  // Never write before a load has actually finished — see stateReady's
+  // declaration for why this matters (stops a blank/half-loaded state
+  // from ever being persisted anywhere, including Firebase).
+  if(!stateReady) return;
+  // opts.overwrite is only used by explicit, user-confirmed full-replace
+  // actions (Reset Progress, Restore Backup) where the local `state` is
+  // deliberately meant to become the complete truth — everything else
+  // merges so normal usage across multiple devices never loses data.
+  if(getRoomCode() && !opts.overwrite){
+    state = await mergeWithRemoteBeforeSave(state);
+  }
+  snapshotLoadedStateKeys();
   const json = JSON.stringify(state);
   const key = localPlayerKey(myName);
   try{ localStorage.setItem(key, json); }
@@ -2950,8 +3075,15 @@ function computeStatsFrom(st){
 
 async function switchViewing(name){
   viewingName = name;
+  // Block save() for the duration of the switch — until state actually
+  // reflects `name`'s data, saving would either write the previous
+  // profile's state under the new name, or (if the load fails) a blank
+  // state over real data.
+  stateReady = false;
   state = await loadPlayerState(name);
   applyLoadedExtras();
+  snapshotLoadedStateKeys();
+  stateReady = (viewingName === myName);
   if(getRoomCode()){
     await refreshRoomMeta();
     await applySharedTaskModeIfNeeded();
@@ -3353,7 +3485,6 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
 async function renderRoomPanel(){
   const el = document.getElementById('roomPanel');
   if(!el) return;
-  const room = getRoomCode();
   {
     // Refresh first so isMeAdmin() below is accurate.
     await refreshRoomMeta();
@@ -3361,10 +3492,8 @@ async function renderRoomPanel(){
     const roomCodeBlockHtml = iAmAdmin
       ? `
       <div class="pbrow" style="margin-bottom:8px;">
-        <span>🔗 Room Code: <b style="color:var(--accent);">${escapeHtml(room)}</b></span>
-        <button class="nav-btn" id="copyRoomBtn">📋 Copy</button>
+        <span>🔗 Room Code aur baaki sab controls ab 👑 Control Panel mein hain (top-right, header).</span>
       </div>
-      <div class="losshint" style="padding-top:0;">Ye code dost ko bhejo — "Join" karke wo isi room mein aa jayega.</div>
       `
       : `
       <div class="pbrow" style="margin-bottom:8px;">
@@ -3378,16 +3507,6 @@ async function renderRoomPanel(){
       <div id="adminInfoBar" class="losshint" style="padding-top:0;">Loading…</div>
       <div id="adminControlsWrap"></div>
     `;
-    if(iAmAdmin){
-      const copyBtn = document.getElementById('copyRoomBtn');
-      if(copyBtn) copyBtn.addEventListener('click', ()=>{
-        if(navigator.clipboard && navigator.clipboard.writeText){
-          navigator.clipboard.writeText(room).then(()=>alert('Room Code copy ho gaya ✅')).catch(()=>prompt('Manually copy karo:', room));
-        } else {
-          prompt('Manually copy karo:', room);
-        }
-      });
-    }
     renderAdminSection();
   }
 }
@@ -3580,6 +3699,7 @@ function wireAdminBackupButtons(){
       sharedTaskDefsCacheAt = 0;
       await refreshRoomMeta();
       await renderRoomPanel();
+      await renderAdminPanelBody();
       await renderCompetePanel();
     }catch(e){
       alert('Restore nahi ho paya.\n\nWajah: ' + ((e&&e.message)||String(e)));
@@ -3602,7 +3722,7 @@ function wireAdminAnnouncementAndWeeklyControls(){
     postAnnBtn.disabled = true;
     postAnnBtn.textContent = '⏳...';
     await setRoomAnnouncement(val);
-    await renderAdminSection();
+    await renderAdminPanelBody();
     safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
   });
   const clearAnnBtn = document.getElementById('clearAnnBtn');
@@ -3611,7 +3731,7 @@ function wireAdminAnnouncementAndWeeklyControls(){
     clearAnnBtn.disabled = true;
     clearAnnBtn.textContent = '⏳...';
     await setRoomAnnouncement('');
-    await renderAdminSection();
+    await renderAdminPanelBody();
     safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
   });
   const resetWeeklyBtn = document.getElementById('resetWeeklyBtn');
@@ -3621,7 +3741,7 @@ function wireAdminAnnouncementAndWeeklyControls(){
     resetWeeklyBtn.textContent = '⏳ Reset ho raha hai...';
     try{
       await resetWeeklyLeaderboard();
-      await renderAdminSection();
+      await renderAdminPanelBody();
       await renderCompetePanel();
     }catch(e){
       alert('Reset nahi ho paya.\n\nWajah: ' + ((e&&e.message)||String(e)));
@@ -3631,19 +3751,18 @@ function wireAdminAnnouncementAndWeeklyControls(){
   });
 }
 
-// Admin info + controls block inside the Room panel:
+// Admin info block inside the Room panel — kept deliberately compact.
 // - No admin yet (older room, created before this feature existed) → shows
 //   a "Become Admin" button anyone in the room can claim.
-// - Admin exists, viewer IS the admin → member list with a "hide from
-//   others" toggle per member, plus a full-room backup/restore section.
+// - Admin exists, viewer IS the admin → just shows a "Control Panel Kholo"
+//   button; every real control now lives in the header-only Admin Control
+//   Panel modal (see renderAdminPanelBody below), not here.
 // - Admin exists, viewer is NOT the admin → just shows who the Admin is.
 async function renderAdminSection(){
   const infoEl = document.getElementById('adminInfoBar');
   const wrapEl = document.getElementById('adminControlsWrap');
   if(!infoEl || !wrapEl) return;
-  await refreshRoomMeta();
-  await applySharedTaskModeIfNeeded();
-  renderTaskModeSelector();
+  await refreshRoomMeta(); // also syncs the header 👑 button's visibility
 
   if(!currentRoomAdmin){
     infoEl.innerHTML = 'Is group ka abhi tak koi Admin nahi hai.';
@@ -3672,10 +3791,56 @@ async function renderAdminSection(){
     return;
   }
 
-  const roomNames = await loadRoomRegistry();
-  const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
+  wrapEl.innerHTML = `
+    <div class="btnrow" style="margin-top:4px;">
+      <button class="nav-btn" id="openAdminPanelFromRoomBtn">⚙️ Control Panel Kholo</button>
+    </div>
+    <div class="losshint" style="padding-top:6px;">Room code, announcement, backup, member hide/restrict/delete, weekly reset — sab kuch ab isi Control Panel mein hai. Header mein 👑 button se bhi kabhi bhi khul jayega.</div>
+  `;
+  const openBtn = document.getElementById('openAdminPanelFromRoomBtn');
+  if(openBtn) openBtn.addEventListener('click', openAdminPanelModal);
+}
+
+// ===== Admin Control Panel (header-only, 👑 button) =====
+// This is where ALL real admin power lives: room code, pinned announcement,
+// weekly leaderboard reset, full backup/restore, and per-member
+// hide/restrict/delete. Only ever rendered while isMeAdmin() is true — the
+// header button that opens this modal is itself hidden for everyone else,
+// and this function double-checks admin status again before rendering
+// anything sensitive.
+async function renderAdminPanelBody(){
+  const roomCodeWrap = document.getElementById('adminPanelRoomCodeWrap');
+  const bodyEl = document.getElementById('adminPanelBody');
+  if(!roomCodeWrap || !bodyEl) return;
+  await refreshRoomMeta();
+  await applySharedTaskModeIfNeeded();
+  renderTaskModeSelector();
+
+  if(!isMeAdmin()){
+    roomCodeWrap.innerHTML = '';
+    bodyEl.innerHTML = `<div class="losshint" style="padding-top:8px;">Tum is room ke Admin nahi ho.</div>`;
+    return;
+  }
 
   const room = getRoomCode();
+  roomCodeWrap.innerHTML = `
+    <div class="pbrow" style="margin-top:12px;margin-bottom:8px;">
+      <span>🔗 Room Code: <b style="color:var(--accent);">${escapeHtml(room)}</b></span>
+      <button class="nav-btn" id="adminPanelCopyRoomBtn">📋 Copy</button>
+    </div>
+    <div class="losshint" style="padding-top:0;">Ye code dost ko bhejo — "Join" karke wo isi room mein aa jayega.</div>
+  `;
+  const copyBtn = document.getElementById('adminPanelCopyRoomBtn');
+  if(copyBtn) copyBtn.addEventListener('click', ()=>{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(room).then(()=>alert('Room Code copy ho gaya ✅')).catch(()=>prompt('Manually copy karo:', room));
+    } else {
+      prompt('Manually copy karo:', room);
+    }
+  });
+
+  const roomNames = await loadRoomRegistry();
+  const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
 
   const ann = currentRoomAnnouncement;
   const annStatusLine = ann
@@ -3724,12 +3889,12 @@ async function renderAdminSection(){
   `;
 
   if(!others.length){
-    wrapEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    bodyEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
     wireAdminBackupButtons();
     wireAdminAnnouncementAndWeeklyControls();
     return;
   }
-  wrapEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `
+  bodyEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `
     <div class="losshint" style="padding-top:14px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
@@ -3756,35 +3921,59 @@ async function renderAdminSection(){
   `;
   wireAdminBackupButtons();
   wireAdminAnnouncementAndWeeklyControls();
-  wrapEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
+  bodyEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
     chk.addEventListener('change', async ()=>{
       const nm = chk.getAttribute('data-hide-member');
       chk.disabled = true;
       await setMemberHidden(nm, chk.checked);
-      await renderAdminSection();
+      await renderAdminPanelBody();
       await renderCompetePanel();
     });
   });
-  wrapEl.querySelectorAll('[data-restrict-member]').forEach(chk=>{
+  bodyEl.querySelectorAll('[data-restrict-member]').forEach(chk=>{
     chk.addEventListener('change', async ()=>{
       const nm = chk.getAttribute('data-restrict-member');
       chk.disabled = true;
       await setMemberRestricted(nm, chk.checked);
-      await renderAdminSection();
+      await renderAdminPanelBody();
       await renderCompetePanel();
     });
   });
-  wrapEl.querySelectorAll('[data-delete-member]').forEach(btn=>{
+  bodyEl.querySelectorAll('[data-delete-member]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const nm = btn.getAttribute('data-delete-member');
       if(!confirm(`"${nm}" ko group se hamesha ke liye hata du? Uska is room mein saved progress bhi delete ho jayega.`)) return;
       btn.disabled = true;
       btn.textContent = '⏳...';
       await deleteRoomMember(nm);
-      await renderAdminSection();
+      await renderAdminPanelBody();
       await renderCompetePanel();
     });
   });
+}
+
+// Opens the header-only Admin Control Panel modal and (re)renders its
+// contents fresh. Safe to call even if isMeAdmin() somehow turns out false
+// by the time refreshRoomMeta() resolves — renderAdminPanelBody() itself
+// guards against that and shows a plain message instead of any controls.
+async function openAdminPanelModal(){
+  const modal = document.getElementById('adminPanelModal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+  await renderAdminPanelBody();
+}
+function hideAdminPanelModal(){
+  const modal = document.getElementById('adminPanelModal');
+  if(modal) modal.style.display = 'none';
+}
+// Shows/hides the header 👑 button — the ONLY entry point into the Admin
+// Control Panel — so it is visible exclusively to the room's current Admin.
+// Called every time refreshRoomMeta() resolves, so it always stays in sync
+// even if admin status changes on another device mid-session.
+function updateAdminPanelBtnVisibility(){
+  const btn = document.getElementById('adminPanelBtn');
+  if(!btn) return;
+  btn.style.display = isMeAdmin() ? 'flex' : 'none';
 }
 
 function applyLoadedExtras(){
@@ -6577,7 +6766,7 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
   if(confirm('Ye sab progress, marks aur earnings delete kar dega. Pakka reset karna hai?')){
     state = {};
     selectedDay = todayDayNum();
-    await save();
+    await save({overwrite:true});
     renderAll();
   }
 });
@@ -6591,7 +6780,7 @@ document.getElementById('restoreBtn').addEventListener('click', async ()=>{
   try{
     const parsed = JSON.parse(val);
     state = parsed;
-    await save();
+    await save({overwrite:true});
     renderAll();
     alert('Restore ho gaya.');
   }catch(e){
@@ -6893,6 +7082,15 @@ function maybeShowHelpModalOnce(){
   if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
 }
 {
+  // Header-only 👑 Admin Control Panel — button itself stays display:none
+  // (toggled by updateAdminPanelBtnVisibility) for anyone who isn't the
+  // room's current Admin, so only the Admin ever sees or can open this.
+  const adminPanelBtn = document.getElementById('adminPanelBtn');
+  const adminPanelCloseBtn = document.getElementById('adminPanelCloseBtn');
+  if(adminPanelBtn) adminPanelBtn.addEventListener('click', openAdminPanelModal);
+  if(adminPanelCloseBtn) adminPanelCloseBtn.addEventListener('click', hideAdminPanelModal);
+}
+{
   const announceCloseBtn = document.getElementById('announceCloseBtn');
   if(announceCloseBtn) announceCloseBtn.addEventListener('click', ()=>{
     dismissCurrentAnnouncement();
@@ -7031,6 +7229,8 @@ window.addEventListener('pagehide', ()=>{ save(); });
   await registerPlayer(myName);
   state = await loadPlayerState(myName);
   applyLoadedExtras();
+  snapshotLoadedStateKeys();
+  stateReady = true;
   if(getRoomCode()){
     await refreshRoomMeta();
     await applySharedTaskModeIfNeeded();
