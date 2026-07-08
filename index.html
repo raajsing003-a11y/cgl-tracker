@@ -28,6 +28,8 @@
     --blue:#60a5fa;
     --purple:#c084fc;
     --pink:#f472b6;
+    --orange:#fb923c;
+    --teal:#2dd4bf;
   }
   *{box-sizing:border-box;}
   body{
@@ -200,6 +202,53 @@
   .scoretotal b{color:var(--white);font-size:14px;}
 
   .chapterQuickHint{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 10px;line-height:1.4;}
+
+  /* ===== Sectional Math cards (Today tab) — Score + Right/Wrong/Skip + chapter tag ===== */
+  .sectCardGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  @media (max-width:380px){.sectCardGrid{grid-template-columns:1fr;}}
+  .sectCard{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:10px;padding:8px;
+  }
+  .sectCardHead{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .sectCardLbl{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}
+  .sectScoreInp{
+    flex:1;min-width:0;background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;
+    padding:6px 4px;text-align:center;
+  }
+  .sectScoreInp:focus{outline:none;border-color:var(--white);}
+  .sectRWS{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:6px;}
+  .sectRWS input{
+    width:100%;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;
+    padding:6px 2px;text-align:center;
+  }
+  .sectRWS input:nth-child(1){border-color:rgba(74,222,128,0.35);}
+  .sectRWS input:nth-child(2){border-color:rgba(248,113,113,0.35);}
+  .sectRWS input:nth-child(3){border-color:rgba(148,163,184,0.35);}
+  .sectRWS input:focus{outline:none;border-color:var(--white);}
+  .sectRWS input::placeholder{font-size:10px;}
+  .sectChapRow{display:flex;gap:5px;}
+  .sectChapSel{
+    flex:1;min-width:0;background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:10.5px;padding:6px 2px;
+  }
+  .sectChapSel:focus{outline:none;border-color:var(--white);}
+  .sectChapBtn{
+    background:var(--panel);border:1.5px solid var(--pink);color:var(--pink);
+    padding:6px 8px;border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;font-weight:800;white-space:nowrap;
+  }
+  .sectChapBtn:active{transform:scale(0.94);}
+  .sectChapTags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
+  .sectChapTag{
+    background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.4);color:var(--pink);
+    font-size:10px;font-weight:700;padding:3px 6px;border-radius:10px;white-space:nowrap;
+  }
+  .sectChapClear{
+    background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;
+    cursor:pointer;text-decoration:underline;padding:2px 0;
+  }
   .searchBox{margin-bottom:14px;}
   .searchBox input{
     width:100%;box-sizing:border-box;background:var(--panel2);border:1.5px solid var(--border-strong);
@@ -584,22 +633,31 @@
     box-shadow:0 -6px 22px rgba(0,0,0,0.35);
   }
   .tabbtn{
-    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    --tb-color:var(--accent);
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
     background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;
-    font-weight:800;font-size:11.5px;letter-spacing:0.3px;padding:7px 2px 5px;border-radius:12px;
+    font-weight:800;font-size:9.5px;letter-spacing:0.1px;padding:5px 1px 4px;border-radius:10px;
     cursor:pointer;position:relative;transition:color .15s ease,transform .12s ease;
+    min-width:0;
   }
+  .tabbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+  .tabbtn[data-tab="today"]{--tb-color:var(--blue);}
+  .tabbtn[data-tab="mock"]{--tb-color:var(--purple);}
+  .tabbtn[data-tab="chapters"]{--tb-color:var(--pink);}
+  .tabbtn[data-tab="revision"]{--tb-color:var(--teal);}
+  .tabbtn[data-tab="compete"]{--tb-color:var(--orange);}
+  .tabbtn[data-tab="more"]{--tb-color:var(--gain);}
   .tabbtn:active{transform:scale(0.9);}
-  .tabbtn svg{width:22px;height:22px;transition:transform .18s ease,filter .18s ease;}
-  .tabbtn.active{color:var(--accent);}
-  .tabbtn.active svg{transform:translateY(-2px);filter:drop-shadow(0 0 6px rgba(251,191,36,0.55));}
+  .tabbtn svg{width:18px;height:18px;transition:transform .18s ease,filter .18s ease;}
+  .tabbtn.active{color:var(--tb-color);}
+  .tabbtn.active svg{transform:translateY(-2px);filter:drop-shadow(0 0 6px var(--tb-color));}
   .tabbtn.active::before{
     content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);
-    width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--accent);
-    box-shadow:0 0 8px rgba(251,191,36,0.7);
+    width:18px;height:3px;border-radius:0 0 3px 3px;background:var(--tb-color);
+    box-shadow:0 0 8px var(--tb-color);
   }
   .tabdot{
-    position:absolute;top:3px;right:23%;width:8px;height:8px;border-radius:50%;
+    position:absolute;top:1px;right:23%;width:7px;height:7px;border-radius:50%;
     background:var(--loss);box-shadow:0 0 0 2px rgba(13,12,15,0.9);display:none;
     animation:dotPulse 1.6s ease-in-out infinite;
   }
@@ -834,11 +892,13 @@
     background:radial-gradient(circle at top right, var(--mc-color,var(--accent)), transparent 70%);
     opacity:0.2;pointer-events:none;
   }
-  .mockCatCard.cat-pre{--mc-color:var(--accent);border-color:rgba(251,191,36,0.35);}
+  .mockCatCard.cat-preMock{--mc-color:var(--accent);border-color:rgba(251,191,36,0.35);}
+  .mockCatCard.cat-mainsMock{--mc-color:var(--orange);border-color:rgba(251,146,60,0.35);}
   .mockCatCard.cat-mathSec{--mc-color:var(--blue);border-color:rgba(96,165,250,0.35);}
   .mockCatCard.cat-engSec{--mc-color:var(--purple);border-color:rgba(192,132,252,0.35);}
   .mockCatCard.cat-reasoningSec{--mc-color:var(--pink);border-color:rgba(244,114,182,0.35);}
   .mockCatCard.cat-analysis{--mc-color:var(--gain);border-color:rgba(74,222,128,0.35);}
+  .mockCatCard.cat-notesLog{--mc-color:var(--teal);border-color:rgba(45,212,191,0.35);}
 
   .mockBackRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .mockBackBtn{
@@ -1001,11 +1061,11 @@
     <div class="onbTitle">❓ App Kaise Use Karein</div>
     <div class="onbSub">Neeche 7 tabs hain — har tab ka kaam ek line mein:</div>
     <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi. 🧊 <b>Streak Freeze</b>: agar kabhi ek din 50% se kam ho jaaye, ek freeze apne aap streak bacha leta hai (max 2 jama ho sakte hain) — calendar mein wo din 🧊 se dikhta hai.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Revision aur Chapters tab ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Revision aur Weak tab ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🎯</div><div><b>Today</b> — Sabse zaroori tab. Roz yahan aake apne din ke tasks ✅ tick karo, aur mock/sectional test ka score bharo.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">🧪</div><div><b>Mock</b> — Pre Mocks, Math/English/Reasoning Sectional test log karo (naam, score, right-wrong, weak chapter, remarks ke saath), aur Overall Analysis mein sabka avg, percentile aur kisme sabse zyada improve karna hai — sab ek jagah.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🧪</div><div><b>Mock</b> — Pre Mock aur Mains Mock alag buttons se, plus Math/English/Reasoning Sectional test log karo (naam, score, right-wrong-skip, weak chapter, remarks ke saath), aur Overall Analysis mein sabka avg, percentile aur kisme sabse zyada improve karna hai — sab ek jagah.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🔁</div><div><b>Revision</b> — Jo topic padhke revise karo, uske "✅ +1" daba do. Count hamesha save rehta hai, kabhi khud reset nahi hota. Sabse kam-revised topic top pe dikhta hai, taaki pata rahe kya karna hai.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Chapters</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Weak</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🤝</div><div><b>Compete</b> — Dost ka Room Code daal ke ek dusre ka progress compare kar sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">📊</div><div><b>Analysis</b> — Charts, backup code, notifications aur data reset — sab settings yahan milengi.</div></div>
     <div class="onbSub" style="margin-top:2px;">Ye "❓" button top mein hamesha rahega — jab bhi bhool jao, yahin se dobara dekh sakte ho.</div>
@@ -1282,6 +1342,30 @@
       <div id="percentileStats"></div>
     </div>
 
+    <div class="grid-label" style="margin-top:0;">📊 Mock Score Trend (Total Marks)</div>
+    <div class="panel chartcard">
+      <div class="chartscroll" id="mockScoreChart"></div>
+      <div id="mockScoreStats"></div>
+    </div>
+
+    <div class="grid-label" style="margin-top:0;">📚 Subject-Wise Progress Chart</div>
+    <div class="panel chartcard">
+      <div class="chartscroll" id="subjectProgressChart"></div>
+      <div class="chartlegend" id="subjectProgressLegend"></div>
+    </div>
+
+    <div class="grid-label" style="margin-top:0;">⚖️ Sectional vs Full-Mock Comparison</div>
+    <div class="panel" id="sectVsFullCompare"></div>
+
+    <div class="grid-label" style="margin-top:0;">🎯 Weak-Chapter Breakdown</div>
+    <div class="panel" id="weakChapterInsight"></div>
+
+    <div class="grid-label" style="margin-top:0;">⏱️ Study-Time Utilization</div>
+    <div class="panel chartcard">
+      <div class="chartscroll" id="studyUtilChart"></div>
+      <div id="studyUtilStats"></div>
+    </div>
+
     <div class="grid-label" style="margin-top:0;">🏅 Streak Badges</div>
     <div class="panel" id="badgesPanel"></div>
 
@@ -1359,7 +1443,7 @@
   </button>
   <button class="tabbtn" data-tab="chapters">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span>Chapters</span>
+    <span>Weak</span>
   </button>
   <button class="tabbtn" data-tab="revision">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
@@ -1966,6 +2050,19 @@ function getDay(n){
   if(d.mock.wrongEnglish===undefined) d.mock.wrongEnglish = '';
   if(d.mock.wrongGk===undefined) d.mock.wrongGk = '';
   if(!d.sect) d.sect = {s1:'',s2:'',s3:'',s4:''};
+  // Migration: per-section Right/Wrong/Skip + tagged weak-chapters, added
+  // alongside the plain Sec score fields above (kept for backward compat).
+  if(!d.sectDetail || typeof d.sectDetail !== 'object' || Array.isArray(d.sectDetail)) d.sectDetail = {};
+  ['s1','s2','s3','s4'].forEach(k=>{
+    if(!d.sectDetail[k] || typeof d.sectDetail[k] !== 'object'){
+      d.sectDetail[k] = {right:'',wrong:'',skip:'',chapters:[]};
+    } else {
+      if(d.sectDetail[k].right===undefined) d.sectDetail[k].right='';
+      if(d.sectDetail[k].wrong===undefined) d.sectDetail[k].wrong='';
+      if(d.sectDetail[k].skip===undefined) d.sectDetail[k].skip='';
+      if(!Array.isArray(d.sectDetail[k].chapters)) d.sectDetail[k].chapters=[];
+    }
+  });
   if(typeof d.notes !== 'string') d.notes = '';
   if(typeof d.mistakes !== 'string') d.mistakes = '';
   if(typeof d.rest !== 'boolean') d.rest = false;
@@ -2006,6 +2103,7 @@ function isDayTouched(d){
   if(d.tasks.some(Boolean)) return true;
   if(hasVal(d.mock.math)||hasVal(d.mock.reasoning)||hasVal(d.mock.english)||hasVal(d.mock.gk)||hasVal(d.mock.percentile)||hasVal(d.mock.wrongMath)||hasVal(d.mock.wrongReasoning)||hasVal(d.mock.wrongEnglish)||hasVal(d.mock.wrongGk)) return true;
   if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)) return true;
+  if(d.sectDetail && ['s1','s2','s3','s4'].some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
   if(d.notes && d.notes.trim()) return true;
   if(d.mistakes && d.mistakes.trim()) return true;
   return false;
@@ -4215,6 +4313,36 @@ function renderRightNowCard(){
   if(btn) btn.addEventListener('click', ()=>{ selectedDay = tn; switchTab('today'); renderAll(); });
 }
 
+// Builds one compact card for a single Sectional Math slot (Sec 1-4) on the
+// Today tab: the existing Score field, plus new Right/Wrong/Skip counters
+// and a chapter picker so a wrong question's chapter can be tagged right
+// here (bumps the same global weak-chapter counter used on the Weak tab).
+function sectCardHtml(d, key, label, dis){
+  const sd = d.sectDetail[key];
+  const chapCounts = {};
+  (sd.chapters||[]).forEach(c=>{ chapCounts[c] = (chapCounts[c]||0)+1; });
+  const chapTags = Object.keys(chapCounts).length
+    ? `<div class="sectChapTags">${Object.entries(chapCounts).map(([name,cnt])=>`<span class="sectChapTag">${escapeHtml(name)}${cnt>1?' ×'+cnt:''}</span>`).join('')}${dis?'':`<button type="button" class="sectChapClear" data-sectchclear="${key}">✕ Clear</button>`}</div>`
+    : '';
+  return `
+    <div class="sectCard">
+      <div class="sectCardHead">
+        <span class="sectCardLbl">${label}</span>
+        <input type="number" step="any" inputmode="decimal" class="sectScoreInp" data-sect="${key}" value="${d.sect[key]}" placeholder="Score" ${dis}>
+      </div>
+      <div class="sectRWS">
+        <input type="number" step="1" min="0" inputmode="numeric" data-sectdetail="${key}" data-sdfield="right" value="${sd.right}" placeholder="Right" ${dis}>
+        <input type="number" step="1" min="0" inputmode="numeric" data-sectdetail="${key}" data-sdfield="wrong" value="${sd.wrong}" placeholder="Wrong" ${dis}>
+        <input type="number" step="1" min="0" inputmode="numeric" data-sectdetail="${key}" data-sdfield="skip" value="${sd.skip}" placeholder="Skip" ${dis}>
+      </div>
+      <div class="sectChapRow">
+        <select class="sectChapSel" data-sectchsel="${key}" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+        <button type="button" class="sectChapBtn" data-sectchbtn="${key}" ${dis}>➕ Wrong Ch.</button>
+      </div>
+      ${chapTags}
+    </div>`;
+}
+
 function renderPanel(){
   const panel = document.getElementById('panel');
   const d = getDay(selectedDay);
@@ -4286,7 +4414,7 @@ function renderPanel(){
 
   html += `
     <div class="subhead">🎯 CHAPTER MISTAKE QUICK-LOG</div>
-    <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Chapters" tab mein dikhegi.</div>
+    <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Weak" tab mein dikhegi.</div>
     <div class="chapterQuickRow">
       <select id="quickMathChSel" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
       <button class="chapterQuickBtn" id="quickMathChBtn" ${dis}>➕ Math Wrong</button>
@@ -4302,13 +4430,13 @@ function renderPanel(){
   const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
   html += `
     <div class="subhead">🧮 4 SECTIONAL MATH SCORES</div>
-    <div class="scoreform">
-      <div class="scorefield"><label>Sec 1</label><input type="number" step="any" inputmode="decimal" data-sect="s1" value="${d.sect.s1}" ${dis}></div>
-      <div class="scorefield"><label>Sec 2</label><input type="number" step="any" inputmode="decimal" data-sect="s2" value="${d.sect.s2}" ${dis}></div>
-      <div class="scorefield"><label>Sec 3</label><input type="number" step="any" inputmode="decimal" data-sect="s3" value="${d.sect.s3}" ${dis}></div>
-      <div class="scorefield"><label>Sec 4</label><input type="number" step="any" inputmode="decimal" data-sect="s4" value="${d.sect.s4}" ${dis}></div>
+    <div class="sectCardGrid">
+      ${sectCardHtml(d,'s1','Sec 1',dis)}
+      ${sectCardHtml(d,'s2','Sec 2',dis)}
+      ${sectCardHtml(d,'s3','Sec 3',dis)}
+      ${sectCardHtml(d,'s4','Sec 4',dis)}
     </div>
-    <div class="scoretotal">Total: <b id="sectTotalVal">${sectTotal}</b></div>
+    <div class="scoretotal">Total Score: <b id="sectTotalVal">${sectTotal}</b></div>
   `;
 
   html += `
@@ -4385,6 +4513,39 @@ function renderPanel(){
       if(totalEl) totalEl.textContent = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
       clearTimeout(scoreTimer);
       scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+    });
+  });
+  panel.querySelectorAll('input[data-sectdetail]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      if(isReadOnly) return;
+      const d = getDay(selectedDay);
+      const key = e.target.getAttribute('data-sectdetail');
+      const field = e.target.getAttribute('data-sdfield');
+      d.sectDetail[key][field] = e.target.value;
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+    });
+  });
+  panel.querySelectorAll('[data-sectchbtn]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(isReadOnly) return;
+      const key = btn.getAttribute('data-sectchbtn');
+      const sel = panel.querySelector(`select[data-sectchsel="${key}"]`);
+      if(!sel) return;
+      const d = getDay(selectedDay);
+      d.sectDetail[key].chapters.push(sel.value);
+      await bumpChapter('math', sel.value, 1);
+      renderPanel();
+    });
+  });
+  panel.querySelectorAll('[data-sectchclear]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(isReadOnly) return;
+      const key = btn.getAttribute('data-sectchclear');
+      const d = getDay(selectedDay);
+      d.sectDetail[key].chapters = [];
+      await save();
+      renderPanel();
     });
   });
   const quickMathBtn = document.getElementById('quickMathChBtn');
@@ -4502,14 +4663,21 @@ function ensureMockLogState(){
   return state.mockLog;
 }
 const MOCK_CATS = [
-  {id:'pre', label:'Pre Mocks', icon:'📘'},
+  {id:'preMock', label:'Pre Mock', icon:'📘'},
+  {id:'mainsMock', label:'Mains Mock', icon:'🎯'},
   {id:'mathSec', label:'Math Sectional', icon:'🔢'},
   {id:'engSec', label:'English Sectional', icon:'🔤'},
   {id:'reasoningSec', label:'Reasoning Sectional', icon:'🧠'},
+  {id:'notesLog', label:'Silly Mistakes & Notes', icon:'📝'},
   {id:'analysis', label:'Overall Analysis', icon:'📊'},
 ];
 let mockActiveCat = null; // null = category grid, else one of MOCK_CATS ids
 let mockEditId = null;    // id of the entry currently being edited, else null
+
+// 'preMock' and 'mainsMock' are two separate buttons/views but share the
+// SAME underlying storage bucket (state.mockLog.pre) — same as before this
+// split, just filtered by entry.examType. Keeps old saved data intact.
+function mockStorageKey(catId){ return (catId==='preMock'||catId==='mainsMock') ? 'pre' : catId; }
 
 function mockTotalOfPre(e){ return num(e.math)+num(e.reasoning)+num(e.english)+num(e.gk); }
 
@@ -4539,7 +4707,7 @@ function getAutoPreMockEntries(){
       wrong: hasWrong ? wrongTotal : '',
       percentile: m.percentile,
       chapter:'', remarks:'',
-      auto:true
+      auto:true, autoSrc:'Full Mock'
     });
   }
   for(let i=1;i<=TOTAL_DAYS;i++) pushFromDay(i, state[i], START_DATE, 'cur');
@@ -4551,11 +4719,61 @@ function getAutoPreMockEntries(){
   }
   return out;
 }
-// Merged (manual + auto for 'pre'), newest-first list for a category.
+// Builds read-only "auto" Math Sectional entries out of every day's 4
+// Sectional Math slots on the Today tab (Score + Right/Wrong/Skip + any
+// tagged weak chapters) — exactly the same auto-pull pattern as Pre Mocks
+// above, so nothing typed on the Today tab has to be re-typed here.
+function getAutoMathSecEntries(){
+  const out = [];
+  const secLabel = {s1:'Sectional Math #1', s2:'Sectional Math #2', s3:'Sectional Math #3', s4:'Sectional Math #4'};
+  function pushFromDay(dayNum, dayObj, cycleStartDate, cycleTag){
+    if(!dayObj || !dayObj.sect) return;
+    ['s1','s2','s3','s4'].forEach(k=>{
+      const score = dayObj.sect[k];
+      const sd = (dayObj.sectDetail && dayObj.sectDetail[k]) || {};
+      const chapters = Array.isArray(sd.chapters) ? sd.chapters : [];
+      if(!(hasVal(score)||hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||chapters.length)) return;
+      let dateStr = '';
+      try{
+        const dt = new Date(cycleStartDate);
+        dt.setDate(dt.getDate() + (dayNum-1));
+        dateStr = fmtISODate(dt);
+      }catch(e){ /* ignore bad date */ }
+      const chapCounts = {};
+      chapters.forEach(c=>{ chapCounts[c] = (chapCounts[c]||0)+1; });
+      const chapterStr = Object.entries(chapCounts).map(([n,c])=> c>1?`${n} ×${c}`:n).join(', ');
+      out.push({
+        id: 'autosec_'+cycleTag+'_'+dayNum+'_'+k,
+        name: `Day ${dayNum} ${secLabel[k]}`,
+        date: dateStr,
+        score: score,
+        right: sd.right, wrong: sd.wrong, skip: sd.skip,
+        chapter: chapterStr, remarks:'',
+        auto:true, autoSrc:'Sectional'
+      });
+    });
+  }
+  for(let i=1;i<=TOTAL_DAYS;i++) pushFromDay(i, state[i], START_DATE, 'cur');
+  if(Array.isArray(state.__history)){
+    state.__history.forEach((cyc, ci)=>{
+      const days = cyc.days || {};
+      Object.keys(days).forEach(k=> pushFromDay(parseInt(k,10), days[k], new Date(cyc.startDate), 'h'+ci));
+    });
+  }
+  return out;
+}
+// Merged (manual + auto), newest-first list for a category.
 function mockEntriesFor(catId){
   ensureMockLogState();
-  let list = (state.mockLog[catId] || []).slice();
-  if(catId==='pre') list = list.concat(getAutoPreMockEntries());
+  const storeKey = mockStorageKey(catId);
+  let list = (state.mockLog[storeKey] || []).slice();
+  if(catId==='preMock' || catId==='mainsMock'){
+    const wantType = catId==='mainsMock' ? 'mains' : 'pre';
+    list = list.filter(e=> (e.examType||'pre')===wantType);
+    if(wantType==='pre') list = list.concat(getAutoPreMockEntries());
+  } else if(catId==='mathSec'){
+    list = list.concat(getAutoMathSecEntries());
+  }
   list.sort((a,b)=>{
     const da = a.date||'', db = b.date||'';
     if(da!==db) return da<db ? 1 : -1;
@@ -4565,7 +4783,7 @@ function mockEntriesFor(catId){
 }
 function mockCatAvgStat(catId, entries){
   if(!entries.length) return 'Abhi koi mock nahi';
-  if(catId==='pre'){
+  if(catId==='preMock' || catId==='mainsMock'){
     const valid = entries.filter(e=>hasVal(e.math)||hasVal(e.reasoning)||hasVal(e.english)||hasVal(e.gk)).map(mockTotalOfPre);
     if(!valid.length) return `${entries.length} mocks`;
     return `${entries.length} mocks · avg ${(valid.reduce((a,b)=>a+b,0)/valid.length).toFixed(1)}`;
@@ -4584,6 +4802,14 @@ function renderMockTab(){
         <span class="mcIcon">📊</span>
         <div class="mcLabel">Overall Analysis</div>
         <div class="mcStat">Kaisa chal raha hai — sabhi mocks ka avg, percentile aur kisme sabse zyada improve karna hai</div>
+      </button>`;
+    }
+    if(c.id==='notesLog'){
+      const cnt = getNotesMistakesEntries().length;
+      return `<button type="button" class="mockCatCard cat-notesLog full" data-cat="notesLog">
+        <span class="mcIcon">📝</span>
+        <div class="mcLabel">Silly Mistakes & Notes</div>
+        <div class="mcStat">${cnt ? `${cnt} din ki Notes/Error Log + Silly Mistakes — sab ek sath yahan` : 'Abhi koi Note ya Silly Mistake nahi likha'}</div>
       </button>`;
     }
     const entries = mockEntriesFor(c.id);
@@ -4616,9 +4842,8 @@ function closeMockCategory(){
   renderMockTab();
 }
 function renderMockEntryCard(catId, e){
-  const isPre = catId==='pre';
+  const isPre = catId==='preMock' || catId==='mainsMock';
   const dateDisp = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-  const typeTag = isPre ? `<span class="mockETag">${e.examType==='mains'?'Mains':'Pre'}</span>` : '';
   const autoTag = e.auto ? `<span class="mockETag" style="color:var(--blue);border-color:var(--blue);">Today Tab</span>` : '';
   let statsRow;
   if(isPre){
@@ -4638,19 +4863,20 @@ function renderMockEntryCard(catId, e){
       ${hasVal(e.score)?`<span>Score: <b>${e.score}</b></span>`:''}
       ${hasVal(e.right)?`<span>Right: <b style="color:var(--gain);">${e.right}</b></span>`:''}
       ${hasVal(e.wrong)?`<span>Wrong: <b style="color:var(--loss);">${e.wrong}</b></span>`:''}
+      ${hasVal(e.skip)?`<span>Skip: <b style="color:var(--muted);">${e.skip}</b></span>`:''}
     </div>`;
   }
   const chapterNote = e.chapter ? `<div class="mockENote"><b>Chapter:</b> ${escapeHtml(e.chapter)}</div>` : '';
   const remarksNote = e.remarks ? `<div class="mockENote"><b>Remarks:</b> ${escapeHtml(e.remarks)}</div>` : '';
   const actions = e.auto
-    ? `<div class="mockENote" style="margin-top:8px;">🔗 Ye Today tab ke Full Mock se aaya hai — edit karne ke liye Today tab kholo.</div>`
+    ? `<div class="mockENote" style="margin-top:8px;">🔗 Ye Today tab ke ${e.autoSrc||'Full Mock'} se aaya hai — edit karne ke liye Today tab kholo.</div>`
     : `<div class="mockEActions">
         <button class="edit" type="button" data-id="${e.id}">✏️ Edit</button>
         <button class="del" type="button" data-id="${e.id}">🗑️ Delete</button>
       </div>`;
   return `<div class="mockEntryCard ${e.auto?'auto':''}">
     <div class="mockEHead">
-      <span class="mockEName">${escapeHtml(e.name||'Untitled Mock')}${typeTag}${autoTag}</span>
+      <span class="mockEName">${escapeHtml(e.name||'Untitled Mock')}${autoTag}</span>
       <span class="mockEDate">${dateDisp}</span>
     </div>
     ${statsRow}
@@ -4669,8 +4895,12 @@ function renderMockDetail(){
     bodyEl.innerHTML = renderMockAnalysisHtml();
     return;
   }
+  if(cat.id==='notesLog'){
+    bodyEl.innerHTML = renderMockNotesHtml();
+    return;
+  }
   const entries = mockEntriesFor(cat.id);
-  let html = `<div class="btnrow"><button class="nav-btn onbPrimary" id="mockAddEntryBtn" type="button">➕ Naya ${cat.label.replace(' Sectional','')} Mock Add Karo</button></div>`;
+  let html = `<div class="btnrow"><button class="nav-btn onbPrimary" id="mockAddEntryBtn" type="button">➕ Naya ${cat.label.replace(' Sectional','').replace(/ Mock$/,'')} Mock Add Karo</button></div>`;
   html += entries.length
     ? entries.map(e=>renderMockEntryCard(cat.id, e)).join('')
     : `<div class="mockEmptyState">Abhi koi mock add nahi hua. Upar wale button se pehla mock add karo!</div>`;
@@ -4691,17 +4921,18 @@ function openMockForm(catId, entryId){
   const bodyEl = document.getElementById('mockFormBody');
   if(!modal || !bodyEl) return;
   ensureMockLogState();
-  const entry = entryId ? (state.mockLog[catId]||[]).find(x=>x.id===entryId) : null;
+  const storeKey = mockStorageKey(catId);
+  const entry = entryId ? (state.mockLog[storeKey]||[]).find(x=>x.id===entryId) : null;
   const catLabel = (MOCK_CATS.find(c=>c.id===catId)||{}).label || 'Mock';
   titleEl.textContent = entry ? `✏️ ${catLabel} Edit Karo` : `➕ Naya ${catLabel} Add Karo`;
+  const isPre = catId==='preMock' || catId==='mainsMock';
   const v = {
     name: entry ? (entry.name||'') : '',
     date: entry ? (entry.date||fmtISODate(new Date())) : fmtISODate(new Date()),
-    examType: entry ? (entry.examType||'pre') : 'pre',
     math: entry ? (entry.math||'') : '', reasoning: entry ? (entry.reasoning||'') : '',
     english: entry ? (entry.english||'') : '', gk: entry ? (entry.gk||'') : '',
     score: entry ? (entry.score||'') : '',
-    right: entry ? (entry.right||'') : '', wrong: entry ? (entry.wrong||'') : '',
+    right: entry ? (entry.right||'') : '', wrong: entry ? (entry.wrong||'') : '', skip: entry ? (entry.skip||'') : '',
     percentile: entry ? (entry.percentile||'') : '',
     chapter: entry ? (entry.chapter||'') : '', remarks: entry ? (entry.remarks||'') : ''
   };
@@ -4711,13 +4942,8 @@ function openMockForm(catId, entryId){
     <div class="onbLabel">Date</div>
     <input type="date" id="mfDate" value="${v.date}">
   `;
-  if(catId==='pre'){
+  if(isPre){
     html += `
-      <div class="onbLabel">Type</div>
-      <div class="mockTypeToggle" id="mfTypeToggle">
-        <div class="mockTypeOpt ${v.examType==='pre'?'active':''}" data-val="pre">Pre</div>
-        <div class="mockTypeOpt ${v.examType==='mains'?'active':''}" data-val="mains">Mains</div>
-      </div>
       <div class="onbLabel">Subject-wise Marks</div>
       <div class="scoreform">
         <div class="scorefield"><label>Math</label><input type="number" step="any" id="mfMath" value="${v.math}"></div>
@@ -4734,33 +4960,82 @@ function openMockForm(catId, entryId){
     `;
   } else {
     html += `
-      <div class="onbLabel">Score / Right / Wrong</div>
-      <div class="scoreform" style="grid-template-columns:repeat(3,1fr);">
+      <div class="onbLabel">Score / Right / Wrong / Skip</div>
+      <div class="scoreform">
         <div class="scorefield"><label>Score</label><input type="number" step="any" id="mfScore" value="${v.score}"></div>
         <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRight" value="${v.right}"></div>
         <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrong" value="${v.wrong}"></div>
+        <div class="scorefield"><label>Skip</label><input type="number" step="1" min="0" id="mfSkip" value="${v.skip}"></div>
       </div>
     `;
   }
   html += `
     <div class="onbLabel">Weak Chapter(s)</div>
     <input type="text" id="mfChapter" placeholder="e.g. Time & Work, Profit-Loss" value="${escapeHtml(v.chapter)}">
+  `;
+  if(catId!=='reasoningSec'){
+    html += `
+      <div class="onbLabel">⚡ Chapter Mistake Quick-Log</div>
+      <div class="chapterQuickHint">Is mock mein jo chapter galat hue, unhe yahin se turant log karo — "Weak" tab ka count bhi turant update ho jayega.</div>
+      <div class="chapterQuickRow">
+        <select id="mfQuickMathChSel">${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+        <button type="button" class="chapterQuickBtn" id="mfQuickMathChBtn">➕ Math Wrong</button>
+        <span class="chapterQuickCount" id="mfQuickMathChCount">0</span>
+      </div>
+      <div class="chapterQuickRow">
+        <select id="mfQuickEngChSel">${ENGLISH_TOPICS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+        <button type="button" class="chapterQuickBtn" id="mfQuickEngChBtn">➕ English Wrong</button>
+        <span class="chapterQuickCount" id="mfQuickEngChCount">0</span>
+      </div>
+    `;
+  }
+  html += `
     <div class="onbLabel">Remarks</div>
     <textarea id="mfRemarks" placeholder="Kya galat hua, kya improve karna hai...">${escapeHtml(v.remarks)}</textarea>
   `;
   bodyEl.innerHTML = html;
-  const toggle = document.getElementById('mfTypeToggle');
-  if(toggle){
-    toggle.querySelectorAll('.mockTypeOpt').forEach(opt=>{
-      opt.addEventListener('click', ()=>{
-        toggle.querySelectorAll('.mockTypeOpt').forEach(o=>o.classList.remove('active'));
-        opt.classList.add('active');
-      });
-    });
-  }
+  wireMockQuickChapterLog();
   const saveBtn = document.getElementById('mockFormSaveBtn');
   if(saveBtn) saveBtn.onclick = ()=> saveMockForm(catId);
   modal.style.display = 'flex';
+}
+// Wires up the "Chapter Mistake Quick-Log" widget inside the mock add/edit
+// modal: tapping +1 bumps the SAME global weak-chapter counter used on the
+// Today tab and Weak tab, and appends the chapter name into this entry's
+// "Weak Chapter(s)" text field so it's saved on the mock itself too.
+function wireMockQuickChapterLog(){
+  const mSel = document.getElementById('mfQuickMathChSel');
+  const mBtn = document.getElementById('mfQuickMathChBtn');
+  const mCount = document.getElementById('mfQuickMathChCount');
+  const eSel = document.getElementById('mfQuickEngChSel');
+  const eBtn = document.getElementById('mfQuickEngChBtn');
+  const eCount = document.getElementById('mfQuickEngChCount');
+  const chapterInp = document.getElementById('mfChapter');
+  function refreshCounts(){
+    if(mSel && mCount) mCount.textContent = chapterCount('math', mSel.value) + ' wrong so far';
+    if(eSel && eCount) eCount.textContent = chapterCount('english', eSel.value) + ' wrong so far';
+  }
+  function appendChapter(name){
+    if(!chapterInp) return;
+    const cur = chapterInp.value.split(',').map(s=>s.trim()).filter(Boolean);
+    cur.push(name);
+    chapterInp.value = cur.join(', ');
+  }
+  if(mSel) mSel.addEventListener('change', refreshCounts);
+  if(eSel) eSel.addEventListener('change', refreshCounts);
+  if(mBtn) mBtn.addEventListener('click', async ()=>{
+    if(!mSel) return;
+    await bumpChapter('math', mSel.value, 1);
+    appendChapter(mSel.value);
+    refreshCounts();
+  });
+  if(eBtn) eBtn.addEventListener('click', async ()=>{
+    if(!eSel) return;
+    await bumpChapter('english', eSel.value, 1);
+    appendChapter(eSel.value);
+    refreshCounts();
+  });
+  refreshCounts();
 }
 function closeMockForm(){
   const modal = document.getElementById('mockFormModal');
@@ -4774,12 +5049,12 @@ async function saveMockForm(catId){
   if(!name){ alert('Mock ka naam daalo.'); return; }
   const dateEl = document.getElementById('mfDate');
   const date = (dateEl && dateEl.value) ? dateEl.value : fmtISODate(new Date());
+  const storeKey = mockStorageKey(catId);
   let entry;
-  if(catId==='pre'){
-    const typeOpt = document.querySelector('#mfTypeToggle .mockTypeOpt.active');
+  if(catId==='preMock' || catId==='mainsMock'){
     entry = {
       name, date,
-      examType: typeOpt ? typeOpt.getAttribute('data-val') : 'pre',
+      examType: catId==='mainsMock' ? 'mains' : 'pre',
       math: document.getElementById('mfMath').value,
       reasoning: document.getElementById('mfReasoning').value,
       english: document.getElementById('mfEnglish').value,
@@ -4791,16 +5066,18 @@ async function saveMockForm(catId){
       remarks: document.getElementById('mfRemarks').value,
     };
   } else {
+    const skipEl = document.getElementById('mfSkip');
     entry = {
       name, date,
       score: document.getElementById('mfScore').value,
       right: document.getElementById('mfRight').value,
       wrong: document.getElementById('mfWrong').value,
+      skip: skipEl ? skipEl.value : '',
       chapter: document.getElementById('mfChapter').value,
       remarks: document.getElementById('mfRemarks').value,
     };
   }
-  const list = state.mockLog[catId];
+  const list = state.mockLog[storeKey];
   if(mockEditId){
     const idx = list.findIndex(x=>x.id===mockEditId);
     if(idx>=0) list[idx] = Object.assign({}, list[idx], entry);
@@ -4816,15 +5093,76 @@ async function saveMockForm(catId){
 async function deleteMockEntry(catId, id){
   if(!confirm('Ye mock delete karna hai?')) return;
   ensureMockLogState();
-  state.mockLog[catId] = (state.mockLog[catId]||[]).filter(x=>x.id!==id);
+  const storeKey = mockStorageKey(catId);
+  state.mockLog[storeKey] = (state.mockLog[storeKey]||[]).filter(x=>x.id!==id);
   await save();
   renderMockDetail();
   renderMockTab();
 }
+// Builds a combined, newest-first list of every day (current target + every
+// archived one in state.__history) that has a Notes/Error Log and/or Silly
+// Mistakes entry on the Today tab — so both boxes can be reviewed together,
+// across the whole prep journey, from one dedicated Mock-tab button.
+function getNotesMistakesEntries(){
+  const out = [];
+  function pushFromDay(dayNum, dayObj, cycleStartDate, cycleLabel){
+    if(!dayObj) return;
+    const notes = (dayObj.notes||'').trim();
+    const mistakes = (dayObj.mistakes||'').trim();
+    if(!notes && !mistakes) return;
+    let dateStr = '';
+    try{
+      const dt = new Date(cycleStartDate);
+      dt.setDate(dt.getDate() + (dayNum-1));
+      dateStr = fmtISODate(dt);
+    }catch(e){ /* ignore bad date */ }
+    out.push({ day:dayNum, date:dateStr, notes, mistakes, cycleLabel });
+  }
+  for(let i=1;i<=TOTAL_DAYS;i++) pushFromDay(i, state[i], START_DATE, '');
+  if(Array.isArray(state.__history)){
+    state.__history.forEach((cyc, ci)=>{
+      const days = cyc.days || {};
+      Object.keys(days).forEach(k=> pushFromDay(parseInt(k,10), days[k], new Date(cyc.startDate), 'Purana Target '+(ci+1)));
+    });
+  }
+  out.sort((a,b)=>{
+    const da = a.date||'', db = b.date||'';
+    if(da!==db) return da<db ? 1 : -1;
+    return b.day-a.day;
+  });
+  return out;
+}
+function renderMockNotesHtml(){
+  const entries = getNotesMistakesEntries();
+  if(!entries.length){
+    return `<div class="mockEmptyState">Abhi koi Note ya Silly Mistake nahi likha. Today tab ke "📝 NOTES / ERROR LOG" aur "🤦 SILLY MISTAKES" boxes mein likhna shuru karo — sab yahan ek sath, sabhi din ka, ek jagah dikhega.</div>`;
+  }
+  const notesCount = entries.filter(e=>e.notes).length;
+  const mistakesCount = entries.filter(e=>e.mistakes).length;
+  let html = `<div class="mockInsight">
+    <span class="mi-icon">🗒️</span>
+    <div class="mi-text">Total <b>${entries.length}</b> din ki entries mili — <b>${notesCount}</b> Notes/Error Log aur <b>${mistakesCount}</b> Silly Mistakes, sabse recent din sabse upar.</div>
+  </div>`;
+  html += entries.map(e=>{
+    const dateDisp = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const tag = e.cycleLabel ? `<span class="mockETag" style="color:var(--teal);border-color:var(--teal);">${escapeHtml(e.cycleLabel)}</span>` : '';
+    const notesBlock = e.notes ? `<div class="mockENote" style="white-space:pre-wrap;"><b>📝 Notes / Error Log:</b> ${escapeHtml(e.notes)}</div>` : '';
+    const mistakesBlock = e.mistakes ? `<div class="mockENote" style="white-space:pre-wrap;"><b>🤦 Silly Mistakes:</b> ${escapeHtml(e.mistakes)}</div>` : '';
+    return `<div class="mockEntryCard">
+      <div class="mockEHead">
+        <span class="mockEName">Day ${e.day}${tag}</span>
+        <span class="mockEDate">${dateDisp}</span>
+      </div>
+      ${notesBlock}
+      ${mistakesBlock}
+    </div>`;
+  }).join('');
+  return html;
+}
 function renderMockAnalysisHtml(){
-  const preEntriesAll = mockEntriesFor('pre');
-  const preOnly = preEntriesAll.filter(e=>e.examType!=='mains');
-  const mainsOnly = preEntriesAll.filter(e=>e.examType==='mains');
+  const preOnly = mockEntriesFor('preMock');
+  const mainsOnly = mockEntriesFor('mainsMock');
+  const preEntriesAll = preOnly.concat(mainsOnly);
   const mathSec = mockEntriesFor('mathSec');
   const engSec = mockEntriesFor('engSec');
   const reasSec = mockEntriesFor('reasoningSec');
@@ -5289,6 +5627,204 @@ function renderPercentileTrend(){
     <div class="bwrow"><span>Latest Percentile</span><span>${latest}</span></div>
     <div class="bwrow"><span>Best Percentile</span><span>${best}</span></div>
     <div class="bwrow"><span>Trend (${points.length} mocks)</span><span>${trendTag}</span></div>
+  `;
+}
+
+// dayMockTotal() (Math+Reasoning+English+GK total for one day) is defined
+// in the Long-Term Analysis section further below — JS function hoisting
+// means it's available here too, so it isn't redefined.
+function renderMockScoreTrend(){
+  const el = document.getElementById('mockScoreChart');
+  const statsEl = document.getElementById('mockScoreStats');
+  if(!el) return;
+  const tn = activeUptoDay();
+  const points = [];
+  for(let i=1;i<=tn;i++){
+    const tot = dayMockTotal(getDay(i));
+    if(tot!==null) points.push({day:i, value:tot});
+  }
+  if(points.length===0){
+    el.innerHTML = `<div class="guideNote">🧪 Full Mock ke subject-wise marks daalo (Today tab) — yahan total marks ka trend line dikhegi.</div>`;
+    if(statsEl) statsEl.innerHTML = '';
+    return;
+  }
+  const maxV = Math.max(10, Math.ceil(Math.max(...points.map(p=>p.value))*1.15));
+  el.innerHTML = buildLineChartSVG(points, {color:'var(--orange)', min:0, max:maxV});
+  const latest = points[points.length-1].value;
+  const best = Math.max(...points.map(p=>p.value));
+  const avg = points.reduce((a,p)=>a+p.value,0)/points.length;
+  const first = points[0].value;
+  const diff = Math.round((latest-first)*10)/10;
+  const trendTag = diff>0 ? `🔺 +${diff} pehle mock se` : diff<0 ? `🔻 ${diff} pehle mock se` : `➡️ Pehle mock jitna hi`;
+  if(statsEl) statsEl.innerHTML = `
+    <div class="bwrow"><span>Latest Total</span><span>${latest}</span></div>
+    <div class="bwrow"><span>Best Total</span><span>${best}</span></div>
+    <div class="bwrow"><span>Avg Total (${points.length} mocks)</span><span>${avg.toFixed(1)}</span></div>
+    <div class="bwrow"><span>Trend</span><span>${trendTag}</span></div>
+  `;
+}
+// Reusable multi-series SVG line-chart builder (Subject-Wise Progress Chart)
+// — same visual language as buildLineChartSVG, but draws one path per
+// series over a shared set of x-axis day slots. A series simply skips
+// (breaks the line) on any day where its valueFor() returns null.
+function buildMultiLineChartSVG(daysList, series, opts){
+  opts = opts || {};
+  const h = opts.height || 140;
+  const padTop=10, padBottom=18, padLeft=8, padRight=10;
+  const plotH = h-padTop-padBottom;
+  const w = Math.max(240, daysList.length*30);
+  const minV = opts.min!==undefined ? opts.min : 0;
+  const maxV = opts.max!==undefined ? opts.max : 100;
+  const stepX = daysList.length>1 ? (w-padLeft-padRight)/(daysList.length-1) : 0;
+  const xAt = i => padLeft + stepX*i;
+  const yAt = v => padTop + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
+  const gridlines = [0.25,0.5,0.75].map(f=>{
+    const y=(padTop+plotH*(1-f)).toFixed(1);
+    return `<line x1="${padLeft}" y1="${y}" x2="${w-padRight}" y2="${y}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2,2"></line>`;
+  }).join('');
+  const labelEvery = Math.max(1, Math.ceil(daysList.length/9));
+  const labels = daysList.map((day,i)=>{
+    if(i%labelEvery!==0 && i!==daysList.length-1) return '';
+    return `<text x="${xAt(i).toFixed(1)}" y="${h-4}" font-size="8" fill="var(--muted)" text-anchor="middle">D${day}</text>`;
+  }).join('');
+  const seriesSvg = series.map(s=>{
+    let path='', started=false; const dots=[];
+    daysList.forEach((day,i)=>{
+      const v = s.valueFor(day);
+      if(v===null || v===undefined){ started=false; return; }
+      const x=xAt(i), y=yAt(v);
+      path += (!started?'M':'L') + x.toFixed(1)+','+y.toFixed(1)+' ';
+      started = true;
+      dots.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="${s.color}"></circle>`);
+    });
+    return `<path d="${path.trim()}" fill="none" stroke="${s.color}" stroke-width="2"></path>${dots.join('')}`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
+    ${gridlines}
+    ${seriesSvg}
+    ${labels}
+  </svg>`;
+}
+function renderSubjectProgressChart(){
+  const el = document.getElementById('subjectProgressChart');
+  const legendEl = document.getElementById('subjectProgressLegend');
+  if(!el) return;
+  const tn = activeUptoDay();
+  const daysList = [];
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(hasVal(d.mock.math)||hasVal(d.mock.reasoning)||hasVal(d.mock.english)||hasVal(d.mock.gk)) daysList.push(i);
+  }
+  if(daysList.length===0){
+    el.innerHTML = `<div class="guideNote">📚 Full Mock ke Math/Reasoning/English/GK marks daalo — yahan har subject ka alag progress line dikhegi.</div>`;
+    if(legendEl) legendEl.innerHTML = '';
+    return;
+  }
+  const series = [
+    {key:'math', label:'Math', color:'var(--blue)'},
+    {key:'reasoning', label:'Reasoning', color:'var(--pink)'},
+    {key:'english', label:'English', color:'var(--purple)'},
+    {key:'gk', label:'GK', color:'var(--accent)'},
+  ].map(s=> Object.assign({}, s, { valueFor: (day)=>{ const v = getDay(day).mock[s.key]; return hasVal(v) ? num(v) : null; } }));
+  let maxV = 10;
+  daysList.forEach(day=> series.forEach(s=>{ const v=s.valueFor(day); if(v!==null) maxV=Math.max(maxV,v); }));
+  maxV = Math.ceil(maxV*1.15);
+  el.innerHTML = buildMultiLineChartSVG(daysList, series, {min:0, max:maxV});
+  if(legendEl) legendEl.innerHTML = series.map(s=>
+    `<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:4px;"></span>${s.label}</span>`
+  ).join('');
+}
+function renderSectionalVsFullCompare(){
+  const el = document.getElementById('sectVsFullCompare');
+  if(!el) return;
+  const tn = activeUptoDay();
+  let fullRight=0, fullWrong=0, fullMarksSum=0, fullCount=0;
+  let sectRight=0, sectWrong=0, sectMarksSum=0, sectCount=0;
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(hasVal(d.mock.wrongMath)||hasVal(d.mock.wrongReasoning)||hasVal(d.mock.wrongEnglish)||hasVal(d.mock.wrongGk)){
+      const wrong = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
+      fullWrong += wrong;
+      fullRight += Math.max(0, MOCK_TOTAL_QUESTIONS-wrong);
+    }
+    const tot = dayMockTotal(d);
+    if(tot!==null){ fullMarksSum += tot; fullCount++; }
+    ['s1','s2','s3','s4'].forEach(k=>{
+      const sd = d.sectDetail && d.sectDetail[k];
+      if(sd && (hasVal(sd.right)||hasVal(sd.wrong))){
+        sectRight += num(sd.right);
+        sectWrong += num(sd.wrong);
+      }
+    });
+    if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)){
+      sectMarksSum += num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+      sectCount++;
+    }
+  }
+  const fullAcc = (fullRight+fullWrong)>0 ? (fullRight/(fullRight+fullWrong))*100 : null;
+  const sectAcc = (sectRight+sectWrong)>0 ? (sectRight/(sectRight+sectWrong))*100 : null;
+  if(fullAcc===null && sectAcc===null && fullCount===0 && sectCount===0){
+    el.innerHTML = `<div class="guideNote">⚖️ Full Mock aur Sectional dono mein Right/Wrong ya Score daalo — yahan side-by-side comparison dikhega.</div>`;
+    return;
+  }
+  function bar(label, val, color){
+    const pct = val===null ? 0 : Math.round(val);
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;"><span>${label}</span><span>${val===null?'—':pct+'%'}</span></div>
+      <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${color};"></div></div>
+    </div>`;
+  }
+  el.innerHTML = `
+    ${bar('🧪 Full Mock Accuracy', fullAcc, 'var(--gain)')}
+    ${bar('🔢 Sectional Accuracy', sectAcc, 'var(--blue)')}
+    <div class="bwrow"><span>Full Mock avg total marks (${fullCount})</span><span>${fullCount ? (fullMarksSum/fullCount).toFixed(1) : '—'}</span></div>
+    <div class="bwrow"><span>Sectional avg total marks (${sectCount})</span><span>${sectCount ? (sectMarksSum/sectCount).toFixed(1) : '—'}</span></div>
+  `;
+}
+function renderWeakChapterInsight(){
+  const el = document.getElementById('weakChapterInsight');
+  if(!el) return;
+  const mathRows = MATH_CHAPTERS.map(n=>({n,c:chapterCount('math',n)})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c).slice(0,3);
+  const engRows = ENGLISH_TOPICS.map(n=>({n,c:chapterCount('english',n)})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c).slice(0,3);
+  if(mathRows.length===0 && engRows.length===0){
+    el.innerHTML = `<div class="guideNote">🎯 Chapter Mistake Quick-Log (Today ya Mock tab) use karo — yahan sabse weak chapters/topics ranked dikhenge.</div>`;
+    return;
+  }
+  const mathHtml = mathRows.length ? `<div style="margin-bottom:8px;"><div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:2px;">🧮 Weakest Math Chapters</div>${mathRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
+  const engHtml = engRows.length ? `<div><div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:2px;">🔤 Weakest English Topics</div>${engRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
+  el.innerHTML = mathHtml + engHtml;
+}
+function renderStudyUtilization(){
+  const chartEl = document.getElementById('studyUtilChart');
+  const statsEl = document.getElementById('studyUtilStats');
+  if(!chartEl) return;
+  const tn = activeUptoDay();
+  const totalPossible = TASK_DURATIONS_MIN.reduce((a,b)=>a+b,0);
+  const points = [];
+  let sumMins=0, countedDays=0, bestDay=null;
+  for(let i=1;i<=tn;i++){
+    const d = getDay(i);
+    if(d.rest) continue;
+    if(!isDayTouched(d)) continue;
+    const mins = dayStudyMinutes(d);
+    points.push({day:i, value: mins/60});
+    sumMins += mins; countedDays++;
+    if(!bestDay || mins>bestDay.mins) bestDay = {day:i, mins};
+  }
+  if(points.length===0){
+    chartEl.innerHTML = `<div class="guideNote">⏱️ Tasks tick karo (Today tab) — yahan roz ka study-time aur utilization % dikhega.</div>`;
+    if(statsEl) statsEl.innerHTML = '';
+    return;
+  }
+  const maxHrs = Math.max(2, Math.ceil((totalPossible/60)*1.1));
+  chartEl.innerHTML = buildLineChartSVG(points, {color:'var(--purple)', min:0, max:maxHrs});
+  const avgMins = sumMins/countedDays;
+  const utilPct = totalPossible>0 ? Math.round((avgMins/totalPossible)*100) : 0;
+  if(statsEl) statsEl.innerHTML = `
+    <div class="bwrow"><span>Total Study Time (all-time)</span><span>${fmtHours(sumMins)}</span></div>
+    <div class="bwrow"><span>Daily Avg</span><span>${fmtHours(avgMins)}</span></div>
+    <div class="bwrow"><span>Utilization (avg vs full daily plan)</span><span class="amt ${utilPct>=70?'gain':'loss'}">${utilPct}%</span></div>
+    <div class="bwrow"><span>Most Productive Day</span><span>Day ${bestDay.day} (${fmtHours(bestDay.mins)})</span></div>
   `;
 }
 
@@ -5886,6 +6422,11 @@ function renderAll(){
   safeRun(renderChart, 'renderChart');
   safeRun(renderAccuracyTrend, 'renderAccuracyTrend');
   safeRun(renderPercentileTrend, 'renderPercentileTrend');
+  safeRun(renderMockScoreTrend, 'renderMockScoreTrend');
+  safeRun(renderSubjectProgressChart, 'renderSubjectProgressChart');
+  safeRun(renderSectionalVsFullCompare, 'renderSectionalVsFullCompare');
+  safeRun(renderWeakChapterInsight, 'renderWeakChapterInsight');
+  safeRun(renderStudyUtilization, 'renderStudyUtilization');
   safeRun(renderLongTermAnalysis, 'renderLongTermAnalysis');
   safeRun(renderLossLog, 'renderLossLog');
   safeRun(renderMistakesLog, 'renderMistakesLog');
