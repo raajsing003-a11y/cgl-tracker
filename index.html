@@ -143,6 +143,14 @@
   .restbtn.active{background:var(--white);color:#000;border-color:var(--white);}
   .restbtn input{width:16px;height:16px;}
 
+  .taskModeBox{
+    display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:10px 12px;
+    border:1px dashed var(--accent-dim);border-radius:8px;background:rgba(251,191,36,0.05);
+  }
+  .taskModeTitle{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:800;}
+  .taskModeOption{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;font-weight:700;}
+  .taskModeOption input{width:16px;height:16px;flex-shrink:0;}
+
   .task{
     display:flex;align-items:center;gap:10px;padding:10px 0;
     border-bottom:1px solid var(--border);flex-wrap:wrap;
@@ -638,6 +646,39 @@
   }
   .homeLBempty{font-size:12px;color:var(--muted);font-weight:700;padding:6px 0;}
 
+  /* ===== Pinned Admin Announcement (Home) ===== */
+  .announceCard{
+    display:none;position:relative;
+    background:linear-gradient(155deg,rgba(251,191,36,0.16),rgba(251,191,36,0.03));
+    border:1px solid var(--accent-dim);border-radius:14px;
+    padding:14px 34px 12px 14px;margin-bottom:18px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+  }
+  .announceCard.show{display:block;animation:tabIn .3s ease;}
+  .announceEyebrow{
+    font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
+    font-weight:800;margin-bottom:6px;
+  }
+  .announceText{font-size:13.5px;line-height:1.5;color:var(--text);font-weight:700;white-space:pre-wrap;word-break:break-word;}
+  .announceMeta{font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;}
+  .announceCloseBtn{
+    position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
+    font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .announceCloseBtn:active{transform:scale(0.9);}
+
+  /* ===== All-Time / This-Week leaderboard toggle ===== */
+  .lbModeToggle{display:flex;gap:6px;margin-bottom:10px;}
+  .lbModeBtn{
+    flex:1;padding:8px 6px;border-radius:8px;border:1px solid var(--border-strong);
+    background:var(--panel2);color:var(--muted);font-size:12px;font-weight:800;
+    cursor:pointer;text-align:center;font-family:'IBM Plex Mono',monospace;
+  }
+  .lbModeBtn.active{background:linear-gradient(160deg,#fff,#f1e0a8);color:#000;border-color:var(--accent);}
+  .lbWeekHint{font-size:11px;color:var(--muted);margin:-2px 0 12px;font-weight:700;}
+
   /* ===== "Right Now" live focus card on Home ===== */
   .rightNowCard{
     display:flex;align-items:center;gap:12px;padding:14px 14px;margin-bottom:18px;
@@ -772,6 +813,92 @@
   .gkGroup summary .gkGroupCount{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
   .gkGroup[open] summary{border-bottom:1px dashed var(--border);}
   .gkGroupPanel{padding:2px 14px 4px;}
+
+  /* ===== Mock Tests tab ===== */
+  .mockCatGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
+  .mockCatCard{
+    position:relative;overflow:hidden;text-align:left;cursor:pointer;
+    border:1.5px solid var(--border-strong);border-radius:14px;padding:16px 14px;
+    background:linear-gradient(155deg,var(--panel),#0d0c0f);
+    box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+    transition:transform .12s ease,border-color .15s ease;
+    font-family:'IBM Plex Mono',monospace;color:var(--text);
+  }
+  .mockCatCard:active{transform:scale(0.96);}
+  .mockCatCard.full{grid-column:1 / -1;}
+  .mockCatCard .mcIcon{font-size:26px;line-height:1;margin-bottom:8px;display:block;}
+  .mockCatCard .mcLabel{font-family:'Oswald',sans-serif;font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px;}
+  .mockCatCard .mcStat{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.4;}
+  .mockCatCard::after{
+    content:'';position:absolute;top:0;right:0;width:80px;height:80px;
+    background:radial-gradient(circle at top right, var(--mc-color,var(--accent)), transparent 70%);
+    opacity:0.2;pointer-events:none;
+  }
+  .mockCatCard.cat-pre{--mc-color:var(--accent);border-color:rgba(251,191,36,0.35);}
+  .mockCatCard.cat-mathSec{--mc-color:var(--blue);border-color:rgba(96,165,250,0.35);}
+  .mockCatCard.cat-engSec{--mc-color:var(--purple);border-color:rgba(192,132,252,0.35);}
+  .mockCatCard.cat-reasoningSec{--mc-color:var(--pink);border-color:rgba(244,114,182,0.35);}
+  .mockCatCard.cat-analysis{--mc-color:var(--gain);border-color:rgba(74,222,128,0.35);}
+
+  .mockBackRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .mockBackBtn{
+    background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
+    width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:16px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .mockBackBtn:active{transform:scale(0.92);}
+  .mockDetailTitle{font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;color:var(--white);flex:1;}
+
+  .mockEntryCard{
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);border:1px solid var(--border);border-radius:12px;
+    padding:12px 14px;margin-bottom:10px;
+  }
+  .mockEntryCard.auto{border-style:dashed;opacity:0.92;}
+  .mockEHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+  .mockEName{font-weight:800;color:var(--white);font-size:13.5px;}
+  .mockEDate{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .mockETag{display:inline-block;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;font-weight:800;
+    padding:2px 6px;border-radius:5px;margin-left:6px;background:var(--panel2);color:var(--accent);border:1px solid var(--accent-dim);vertical-align:middle;}
+  .mockEStats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .mockEStats b{color:var(--text);}
+  .mockENote{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:4px;}
+  .mockENote b{color:var(--text);}
+  .mockEActions{display:flex;gap:8px;margin-top:8px;}
+  .mockEActions button{
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
+    font-size:11px;font-weight:800;padding:5px 10px;border-radius:7px;cursor:pointer;
+  }
+  .mockEActions button:active{transform:scale(0.94);}
+  .mockEActions button.del{color:var(--loss);}
+
+  .mockEmptyState{text-align:center;padding:26px 10px;color:var(--muted);font-size:12.5px;font-weight:700;}
+
+  .mockTypeToggle{display:flex;gap:8px;margin:6px 0 4px;}
+  .mockTypeOpt{
+    flex:1;text-align:center;padding:9px 6px;border:1.5px solid var(--border-strong);border-radius:8px;
+    cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);
+  }
+  .mockTypeOpt.active{background:var(--accent);border-color:var(--accent);color:#1a1404;}
+
+  .mockForm .onbLabel:first-child{margin-top:0;}
+  .mockForm textarea{
+    width:100%;min-height:60px;background:var(--panel2);border:1px solid var(--border-strong);
+    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:700;
+    padding:9px;resize:vertical;margin-top:4px;
+  }
+  .mockForm textarea:focus{outline:none;border-color:var(--white);}
+  .mockForm input[type="date"]{
+    width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;padding:9px 10px;
+  }
+
+  .mockInsight{
+    display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;
+    background:rgba(251,191,36,0.08);border:1px dashed var(--accent-dim);margin-bottom:14px;
+  }
+  .mockInsight .mi-icon{font-size:20px;line-height:1;}
+  .mockInsight .mi-text{font-size:12.5px;color:var(--text);font-weight:700;line-height:1.5;}
+  .mockInsight .mi-text b{color:var(--accent);}
 </style>
 </head>
 <body>
@@ -872,10 +999,11 @@
   <div class="onbCard" style="max-width:440px;">
     <button class="onbCloseX" id="helpCloseBtn" aria-label="Band Karo">✕</button>
     <div class="onbTitle">❓ App Kaise Use Karein</div>
-    <div class="onbSub">Neeche 6 tabs hain — har tab ka kaam ek line mein:</div>
+    <div class="onbSub">Neeche 7 tabs hain — har tab ka kaam ek line mein:</div>
     <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi. 🧊 <b>Streak Freeze</b>: agar kabhi ek din 50% se kam ho jaaye, ek freeze apne aap streak bacha leta hai (max 2 jama ho sakte hain) — calendar mein wo din 🧊 se dikhta hai.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Revision aur Chapters tab ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🎯</div><div><b>Today</b> — Sabse zaroori tab. Roz yahan aake apne din ke tasks ✅ tick karo, aur mock/sectional test ka score bharo.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🧪</div><div><b>Mock</b> — Pre Mocks, Math/English/Reasoning Sectional test log karo (naam, score, right-wrong, weak chapter, remarks ke saath), aur Overall Analysis mein sabka avg, percentile aur kisme sabse zyada improve karna hai — sab ek jagah.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🔁</div><div><b>Revision</b> — Jo topic padhke revise karo, uske "✅ +1" daba do. Count hamesha save rehta hai, kabhi khud reset nahi hota. Sabse kam-revised topic top pe dikhta hai, taaki pata rahe kya karna hai.</div></div>
     <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Chapters</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🤝</div><div><b>Compete</b> — Dost ka Room Code daal ke ek dusre ka progress compare kar sakte ho.</div></div>
@@ -894,6 +1022,17 @@
     <div class="onbSub" id="targetReminderModalMsg"></div>
     <div class="onbBtnRow">
       <button class="nav-btn onbPrimary" id="targetReminderModalOkBtn">Theek Hai ✅</button>
+    </div>
+  </div>
+</div>
+
+<div class="onbOverlay" id="mockFormModal">
+  <div class="onbCard" style="max-width:420px;">
+    <button class="onbCloseX" id="mockFormCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle" id="mockFormTitle">➕ Naya Mock Add Karo</div>
+    <div class="mockForm" id="mockFormBody"></div>
+    <div class="onbBtnRow">
+      <button class="nav-btn onbPrimary" id="mockFormSaveBtn">💾 Save Karo</button>
     </div>
   </div>
 </div>
@@ -935,6 +1074,13 @@
     <div class="eyebrow">🚀 Mission Countdown</div>
     <h1 id="mainTitle">🎯 CGL TRACKER // 50 DAYS</h1>
     <div class="sub" id="examLine">Loading dates…</div>
+
+    <div class="announceCard" id="announceCard">
+      <button class="announceCloseBtn" id="announceCloseBtn" title="Dismiss">✕</button>
+      <div class="announceEyebrow">📌 Pinned by Admin</div>
+      <div class="announceText" id="announceText"></div>
+      <div class="announceMeta" id="announceMeta"></div>
+    </div>
 
     <div class="quoteCard">
       <div class="quoteEyebrow">🌅 Aaj Ka Motivation</div>
@@ -996,9 +1142,10 @@
         <button class="teCloseBtn" id="teToggleBtn" type="button">Kholo ▾</button>
       </div>
       <div class="panel" id="taskEditPanel" style="display:none;">
+        <div id="taskModeSelector"></div>
         <div class="taskEditIntro">Naam, time (start) aur duration — sab edit kar sakte ho. Niche naya task bhi add kar sakte ho. ₹5,000 hamesha sabhi tasks mein unke time ke hisaab se automatically baant diya jayega.</div>
         <div id="taskEditForm"></div>
-        <div class="btnrow">
+        <div class="btnrow" id="taskEditActionsRow">
           <button class="nav-btn" id="addTaskBtn">➕ Naya Task Add Karo</button>
           <button class="nav-btn" id="saveTasksBtn">💾 Save Karo</button>
           <button class="nav-btn" id="resetTasksBtn">↩️ Default Pe Reset</button>
@@ -1008,6 +1155,26 @@
 
     <div class="grid-label">📅 <span id="calDaysLabel">50</span> Din Ka Calendar (✅ done · ⏳ partial · 😴 rest · chhota no. = Plan Day)</div>
     <div class="calendarView" id="calendarView"></div>
+  </div>
+
+  <div class="tabview" id="tab-mock" data-tabview="mock">
+    <div class="quoteCard">
+      <div class="quoteEyebrow">🧪 Motivation</div>
+      <div class="quoteText" id="quoteText-mock">Loading…</div>
+    </div>
+
+    <div id="mockCatSection">
+      <div class="grid-label" style="margin-top:0;">🧪 Mock Tests</div>
+      <div class="mockCatGrid" id="mockCatGrid"></div>
+    </div>
+
+    <div id="mockDetailSection" style="display:none;">
+      <div class="mockBackRow">
+        <button class="mockBackBtn" id="mockBackBtn" type="button">←</button>
+        <div class="mockDetailTitle" id="mockDetailTitle">—</div>
+      </div>
+      <div id="mockDetailBody"></div>
+    </div>
   </div>
 
   <div class="tabview" id="tab-revision" data-tabview="revision">
@@ -1185,6 +1352,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
     <span>Today</span>
     <span class="tabdot" id="todayDot"></span>
+  </button>
+  <button class="tabbtn" data-tab="mock">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6v4H9z"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M8.5 12l2 2 4.5-4.5"/></svg>
+    <span>Mock</span>
   </button>
   <button class="tabbtn" data-tab="chapters">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -1733,7 +1904,7 @@ const EXTRA_MOTIVATION_QUOTES = [
 const ALL_TAB_QUOTES = DAILY_QUOTES.concat(EXTRA_MOTIVATION_QUOTES);
 
 // One quote element per tab — each gets its OWN line (not the same repeated).
-const TAB_QUOTE_IDS = ['quoteText-home','quoteText-today','quoteText-revision','quoteText-chapters','quoteText-compete','quoteText-more'];
+const TAB_QUOTE_IDS = ['quoteText-home','quoteText-today','quoteText-mock','quoteText-revision','quoteText-chapters','quoteText-compete','quoteText-more'];
 
 function shuffledCopy(arr){
   const a = arr.slice();
@@ -1763,6 +1934,7 @@ let scoreTimer = null;
 let mistakesTimer = null;
 let myName = null;       // this device's chosen player name
 let viewingName = null;  // whose tracker is currently on screen (me or a friend)
+let leaderboardMode = 'all'; // 'all' = all-time leaderboard, 'week' = since last weekly reset
 const REGISTRY_KEY = 'cgl50-players-registry';
 
 function fmtDate(dayNum){
@@ -1894,7 +2066,7 @@ async function kvdbCreateRoom(){
     // Whoever creates the room is its Admin from the very first moment —
     // set directly here (getRoomCode() isn't pointed at this new id yet,
     // so kvdbSet can't be used for this one call).
-    await window.__fbSet(`rooms/${id}/_meta`, JSON.stringify({ admin: myName, hidden: {}, restricted: {} }));
+    await window.__fbSet(`rooms/${id}/_meta`, JSON.stringify({ admin: myName, hidden: {}, restricted: {}, taskMode: 'individual' }));
     return { ok:true, id };
   }catch(e){
     console.error('room create failed', e);
@@ -1970,12 +2142,12 @@ let roomMetaCacheAt = 0;
 let roomMetaCacheRoom = null;
 async function loadRoomMeta(){
   const room = getRoomCode();
-  if(!room) return { admin:null, hidden:{}, restricted:{} };
+  if(!room) return { admin:null, hidden:{}, restricted:{}, taskMode:'individual' };
   if(roomMetaCache && roomMetaCacheRoom===room && (Date.now()-roomMetaCacheAt) < 8000){
     return roomMetaCache;
   }
   const raw = await kvdbGet('_meta');
-  let meta = { admin:null, hidden:{}, restricted:{} };
+  let meta = { admin:null, hidden:{}, restricted:{}, taskMode:'individual' };
   if(raw){
     try{
       const parsed = JSON.parse(raw);
@@ -1983,7 +2155,8 @@ async function loadRoomMeta(){
         meta = {
           admin: parsed.admin || null,
           hidden: (parsed.hidden && typeof parsed.hidden==='object') ? parsed.hidden : {},
-          restricted: (parsed.restricted && typeof parsed.restricted==='object') ? parsed.restricted : {}
+          restricted: (parsed.restricted && typeof parsed.restricted==='object') ? parsed.restricted : {},
+          taskMode: (parsed.taskMode==='shared') ? 'shared' : 'individual'
         };
       }
     }catch(e){ /* keep default on bad/legacy data */ }
@@ -1997,7 +2170,7 @@ async function setRoomAdmin(name){
   const room = getRoomCode();
   if(!room) return;
   const meta = await loadRoomMeta();
-  const updated = { admin: name, hidden: meta.hidden || {}, restricted: meta.restricted || {} };
+  const updated = { admin: name, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -2007,7 +2180,7 @@ async function setMemberHidden(name, hidden){
   const meta = await loadRoomMeta();
   const key = chatSeenKey(name);
   const updatedHidden = { ...(meta.hidden||{}), [key]: !!hidden };
-  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: meta.restricted || {} };
+  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -2021,10 +2194,135 @@ async function setMemberRestricted(name, restricted){
   const meta = await loadRoomMeta();
   const key = chatSeenKey(name);
   const updatedRestricted = { ...(meta.restricted||{}), [key]: !!restricted };
-  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: updatedRestricted };
+  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
+// Admin-only toggle: 'individual' (default) = every member customizes their
+// own task list, exactly like before. 'shared' = the Admin's task list
+// (name/start/duration) is pushed to rooms/{room}/_sharedTasks and every
+// member's app automatically applies it — nobody else can edit tasks while
+// this mode is on, and it self-refreshes every auto-sync tick (~25s) so an
+// Admin edit shows up for everyone without anyone reloading the page.
+async function setRoomTaskMode(mode){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: (mode==='shared') ? 'shared' : 'individual' };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// ===== Pinned Admin Announcement (shown to everyone on the Home tab) =====
+// Stored at its own key (rooms/{room}/_announcement) instead of inside
+// _meta, so posting/clearing it can never collide with or accidentally
+// clobber the admin/hidden/restricted/taskMode writes above.
+// { text, at, by } — null/no key means "nothing pinned right now".
+let roomAnnouncementCache = undefined;
+let roomAnnouncementCacheAt = 0;
+let roomAnnouncementCacheRoom = null;
+async function loadRoomAnnouncement(){
+  const room = getRoomCode();
+  if(!room) return null;
+  if(roomAnnouncementCache !== undefined && roomAnnouncementCacheRoom===room && (Date.now()-roomAnnouncementCacheAt) < 8000){
+    return roomAnnouncementCache;
+  }
+  const raw = await kvdbGet('_announcement');
+  let ann = null;
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed==='object' && parsed.text) ann = { text: String(parsed.text), at: parsed.at || Date.now(), by: parsed.by || '' };
+    }catch(e){ /* keep null on bad/legacy data */ }
+  }
+  roomAnnouncementCache = ann;
+  roomAnnouncementCacheAt = Date.now();
+  roomAnnouncementCacheRoom = room;
+  return ann;
+}
+// Admin-only. Passing an empty/blank string clears the pinned announcement.
+async function setRoomAnnouncement(text){
+  const room = getRoomCode();
+  if(!room) return;
+  const trimmed = (text||'').trim();
+  const payload = trimmed ? { text: trimmed, at: Date.now(), by: myName } : null;
+  await kvdbSet('_announcement', payload ? JSON.stringify(payload) : null);
+  roomAnnouncementCache = payload;
+  roomAnnouncementCacheAt = Date.now();
+  roomAnnouncementCacheRoom = room;
+}
+
+// ===== Weekly Leaderboard Reset =====
+// Admin-only "🔄 Reset Weekly Leaderboard" snapshots every registered
+// member's CURRENT cumulative stats (computed the same way the leaderboard
+// already does) as a baseline, timestamped now, at rooms/{room}/_weeklyReset.
+// The "This Week" leaderboard view then shows current-minus-baseline for
+// each member — nobody's real tracker data (days, tasks, streak, wallet)
+// is touched or deleted, only the *displayed* weekly scoreboard restarts.
+// A member with no baseline yet (joined after the last reset) simply shows
+// their full cumulative progress in "This Week" too, instead of being
+// unfairly zeroed out.
+let weeklyResetCache = undefined;
+let weeklyResetCacheAt = 0;
+let weeklyResetCacheRoom = null;
+async function loadWeeklyReset(){
+  const room = getRoomCode();
+  if(!room) return null;
+  if(weeklyResetCache !== undefined && weeklyResetCacheRoom===room && (Date.now()-weeklyResetCacheAt) < 8000){
+    return weeklyResetCache;
+  }
+  const raw = await kvdbGet('_weeklyReset');
+  let wr = null;
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed==='object' && parsed.snapshot && typeof parsed.snapshot==='object'){
+        wr = { at: parsed.at || Date.now(), by: parsed.by || '', snapshot: parsed.snapshot };
+      }
+    }catch(e){ /* keep null on bad/legacy data */ }
+  }
+  weeklyResetCache = wr;
+  weeklyResetCacheAt = Date.now();
+  weeklyResetCacheRoom = room;
+  return wr;
+}
+async function resetWeeklyLeaderboard(){
+  const room = getRoomCode();
+  if(!room) return null;
+  const names = await loadRoomRegistry();
+  const snapshot = {};
+  for(const nm of names){
+    try{
+      const raw = await kvdbGet(playerKey(nm));
+      const st = raw ? JSON.parse(raw) : {};
+      snapshot[nm.toLowerCase()] = computeStatsFrom(st);
+    }catch(e){ /* one member's data failing to load shouldn't abort the whole reset */ }
+  }
+  const payload = { at: Date.now(), by: myName, snapshot };
+  await kvdbSet('_weeklyReset', JSON.stringify(payload));
+  weeklyResetCache = payload;
+  weeklyResetCacheAt = Date.now();
+  weeklyResetCacheRoom = room;
+  currentWeeklyReset = payload;
+  return payload;
+}
+// Turns a row's all-time cumulative stats into "since the last weekly
+// reset" stats. Falls back to the full cumulative numbers whenever there's
+// no reset yet, or no baseline for this specific member.
+function weeklyStatsFor(row){
+  const wr = currentWeeklyReset;
+  if(!wr || !wr.snapshot) return row;
+  const base = wr.snapshot[row.name.toLowerCase()];
+  if(!base) return row;
+  return {
+    ...row,
+    pct: Math.max(0, row.pct - (base.pct||0)),
+    earned: Math.max(0, row.earned - (base.earned||0)),
+    lost: Math.max(0, row.lost - (base.lost||0)),
+    studyMins: Math.max(0, row.studyMins - (base.studyMins||0)),
+    daysDone: Math.max(0, row.daysDone - (base.daysDone||0)),
+  };
+}
+
 // Removes a member from the room entirely: drops them from the shared
 // member registry (so they vanish from everyone's leaderboard),
 // clears any hidden/restricted flags stored against their name, and wipes
@@ -2044,7 +2342,7 @@ async function deleteRoomMember(name){
   const key = chatSeenKey(name);
   const updatedHidden = { ...(meta.hidden||{}) }; delete updatedHidden[key];
   const updatedRestricted = { ...(meta.restricted||{}) }; delete updatedRestricted[key];
-  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: updatedRestricted };
+  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 
@@ -2055,14 +2353,29 @@ async function deleteRoomMember(name){
 let currentRoomAdmin = null;
 let currentRoomHidden = {};
 let currentRoomRestricted = {};
+let currentRoomTaskMode = 'individual';
+let currentRoomAnnouncement = null;
+let currentWeeklyReset = null;
 async function refreshRoomMeta(){
-  if(!getRoomCode()){ currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; return; }
-  const meta = await loadRoomMeta();
+  if(!getRoomCode()){
+    currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; currentRoomTaskMode = 'individual';
+    currentRoomAnnouncement = null; currentWeeklyReset = null; lastAppliedSharedTasksJSON = null;
+    return;
+  }
+  // Fired together — each is independently 8s-cached, so this stays one
+  // effective round-trip per tick instead of stacking up latency.
+  const [meta, ann, wr] = await Promise.all([ loadRoomMeta(), loadRoomAnnouncement(), loadWeeklyReset() ]);
   currentRoomAdmin = meta.admin || null;
   currentRoomHidden = meta.hidden || {};
   currentRoomRestricted = meta.restricted || {};
+  currentRoomTaskMode = meta.taskMode || 'individual';
+  currentRoomAnnouncement = ann;
+  currentWeeklyReset = wr;
 }
 function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
+// True only when we're in a Sync Room AND the Admin has switched Task Mode
+// to "shared" — i.e. one task list applies to every member automatically.
+function isSharedTaskMode(){ return !!(getRoomCode() && currentRoomTaskMode === 'shared'); }
 function isHiddenFromOthers(name){ return !!currentRoomHidden[chatSeenKey(name)]; }
 function isRestrictedToSelf(name){ return !!currentRoomRestricted[chatSeenKey(name)]; }
 function amIRestrictedToSelf(){ return isRestrictedToSelf(myName); }
@@ -2343,6 +2656,77 @@ function taskValuesFrom(st){
   const defs = getTaskDefsFromState(st);
   return computeTaskValues(defs.map(d=>d.duration));
 }
+
+// ===== Shared (Admin-broadcast) task list =====
+// Lives at rooms/{room}/_sharedTasks — completely separate from any one
+// member's own state.taskDefs, so switching Task Mode off later hands
+// everyone back their own previous individual list untouched.
+let sharedTaskDefsCache = null;
+let sharedTaskDefsCacheAt = 0;
+let sharedTaskDefsCacheRoom = null;
+async function loadSharedTaskDefs(){
+  const room = getRoomCode();
+  if(!room) return null;
+  if(sharedTaskDefsCache && sharedTaskDefsCacheRoom===room && (Date.now()-sharedTaskDefsCacheAt) < 8000){
+    return sharedTaskDefsCache;
+  }
+  const raw = await kvdbGet('_sharedTasks');
+  let defs = null;
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length>0) defs = parsed;
+    }catch(e){ /* keep null on bad data */ }
+  }
+  sharedTaskDefsCache = defs;
+  sharedTaskDefsCacheAt = Date.now();
+  sharedTaskDefsCacheRoom = room;
+  return defs;
+}
+async function saveSharedTaskDefs(defs){
+  const room = getRoomCode();
+  if(!room) return;
+  await kvdbSet('_sharedTasks', JSON.stringify(defs));
+  sharedTaskDefsCache = defs;
+  sharedTaskDefsCacheAt = Date.now();
+  sharedTaskDefsCacheRoom = room;
+}
+// Tracks the last shared-task JSON we actually applied to TASKS/etc, so we
+// only re-render when the Admin's list genuinely changed (own-tracker view
+// otherwise deliberately avoids re-rendering every auto-sync tick, so it
+// doesn't yank focus out of a notes/mistakes textarea mid-type).
+let lastAppliedSharedTasksJSON = null;
+// Called after every refreshRoomMeta() — applies (or reverts) the shared
+// task list so it takes effect for EVERY member automatically, without
+// anyone needing to open/edit anything themselves.
+async function applySharedTaskModeIfNeeded(){
+  if(!getRoomCode()) return;
+  if(!isSharedTaskMode()){
+    if(lastAppliedSharedTasksJSON !== null){
+      // Mode was just switched back to individual — hand this state's own
+      // tasks back control.
+      lastAppliedSharedTasksJSON = null;
+      applyLoadedExtras();
+      renderAll();
+      renderTaskEditForm();
+    }
+    return;
+  }
+  const defs = await loadSharedTaskDefs();
+  if(!defs || !defs.length) return; // Admin hasn't saved a shared list yet
+  const json = JSON.stringify(defs);
+  if(json === lastAppliedSharedTasksJSON) return; // no change since last apply
+  lastAppliedSharedTasksJSON = json;
+  TASKS = defs.map(d=>d.name);
+  TASK_START_MIN = defs.map(d=>d.start);
+  TASK_DURATIONS_MIN = defs.map(d=>d.duration);
+  TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
+  resizeAllDaysTasks();
+  taskEditDraft = null;
+  renderAll();
+  renderTaskEditForm();
+}
+
 function dayEarnLossFrom(st, d){
   if(d.rest) return {earned:0, lost:0};
   const values = taskValuesFrom(st);
@@ -2421,11 +2805,16 @@ async function switchViewing(name){
   viewingName = name;
   state = await loadPlayerState(name);
   applyLoadedExtras();
+  if(getRoomCode()){
+    await refreshRoomMeta();
+    await applySharedTaskModeIfNeeded();
+  }
   selectedDay = todayDayNum();
   renderAll();
   renderProfileBar();
   applyReadOnlyUI();
   safeRun(renderTaskEditForm, 'renderTaskEditForm');
+  safeRun(renderTaskModeSelector, 'renderTaskModeSelector');
 }
 
 function applyReadOnlyUI(){
@@ -2581,6 +2970,35 @@ async function ensurePresenceTracking(){
 }
 
 let lastFriendStatsSnapshot = null; // null = not yet initialized (avoids a notification burst on first load)
+// A member can dismiss a pinned announcement locally (per device) — it
+// stays dismissed until the Admin posts a NEW one (compared by timestamp),
+// at which point it resurfaces automatically even for someone who closed
+// an earlier one.
+function announceDismissKey(room){ return 'cgl50-ann-dismissed:' + room; }
+function isAnnouncementDismissed(room, at){
+  try{ return localStorage.getItem(announceDismissKey(room)) === String(at); }catch(e){ return false; }
+}
+function dismissCurrentAnnouncement(){
+  const room = getRoomCode();
+  if(!room || !currentRoomAnnouncement) return;
+  try{ localStorage.setItem(announceDismissKey(room), String(currentRoomAnnouncement.at)); }catch(e){}
+}
+function renderAnnouncementCard(){
+  const card = document.getElementById('announceCard');
+  if(!card) return;
+  const room = getRoomCode();
+  const ann = currentRoomAnnouncement;
+  if(!room || !ann || !ann.text || isAnnouncementDismissed(room, ann.at)){
+    card.classList.remove('show');
+    return;
+  }
+  document.getElementById('announceText').textContent = ann.text;
+  const byLine = ann.by ? ` · ${ann.by}` : '';
+  document.getElementById('announceMeta').textContent =
+    new Date(ann.at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) + byLine;
+  card.classList.add('show');
+}
+
 async function renderCompetePanel(){
   const el = document.getElementById('competePanel');
   if(!el) return;
@@ -2589,6 +3007,8 @@ async function renderCompetePanel(){
   // together instead of one-after-another so a slow tick doesn't stack up
   // extra round-trip latency on top of the friend-state fetches below.
   const [roomNames] = await Promise.all([ loadRoomRegistry(), refreshRoomMeta() ]);
+  await applySharedTaskModeIfNeeded();
+  renderTaskModeSelector();
   const offline = loadOfflineFriends();
   const offlineNames = Object.keys(offline);
   const merged = [myName, ...friends, ...roomNames, ...offlineNames];
@@ -2628,15 +3048,34 @@ async function renderCompetePanel(){
   const myPct = myRowIdx>=0 ? rows[myRowIdx].pct : 0;
   const myRank = myRowIdx>=0 ? myRowIdx+1 : null;
 
+  // "This Week" view re-derives each row as current-minus-last-reset and
+  // re-sorts/re-ranks on that — kept entirely separate from `rows` above so
+  // the notification logic and the all-time Home card snapshot never see
+  // anything but true all-time numbers.
+  const weekRows = rows.map(weeklyStatsFor).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
+  const displayRows = leaderboardMode==='week' ? weekRows : rows;
+  const displayMyRowIdx = displayRows.findIndex(r=>r.name.toLowerCase()===myName.toLowerCase());
+  const displayMyPct = displayMyRowIdx>=0 ? displayRows[displayMyRowIdx].pct : 0;
+  const displayMyRank = displayMyRowIdx>=0 ? displayMyRowIdx+1 : null;
+
   let html = '';
-  if(rows.length>1 && myRank){
-    const rankMsg = myRank===1
-      ? `🏆 Tum <b>#1</b> par ho, ${rows.length-1} dost${rows.length-1>1?'o':''} se aage! Lead banaye rakho 🔥`
-      : `📍 Tumhari Rank: <b>#${myRank}</b> / ${rows.length} — leader se <b>${rows[0].pct - myPct}%</b> peeche ho`;
+  html += `<div class="lbModeToggle">
+    <button class="lbModeBtn ${leaderboardMode==='all'?'active':''}" type="button" data-lbmode="all">🏆 All-Time</button>
+    <button class="lbModeBtn ${leaderboardMode==='week'?'active':''}" type="button" data-lbmode="week">🗓️ This Week</button>
+  </div>`;
+  if(leaderboardMode==='week'){
+    html += `<div class="lbWeekHint">${currentWeeklyReset
+      ? `📌 Reset: ${new Date(currentWeeklyReset.at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} se ab tak ka progress${currentWeeklyReset.by?` (by ${escapeHtml(currentWeeklyReset.by)})`:''}`
+      : 'Is room mein abhi tak kabhi weekly reset nahi hua — isliye "This Week" abhi All-Time jaisa hi dikh raha hai. Admin "Room" tab se reset kar sakta hai.'}</div>`;
+  }
+  if(displayRows.length>1 && displayMyRank){
+    const rankMsg = displayMyRank===1
+      ? `🏆 Tum <b>#1</b> par ho, ${displayRows.length-1} dost${displayRows.length-1>1?'o':''} se aage! Lead banaye rakho 🔥`
+      : `📍 Tumhari Rank: <b>#${displayMyRank}</b> / ${displayRows.length} — leader se <b>${displayRows[0].pct - displayMyPct}%</b> peeche ho`;
     html += `<div class="lbsummary">${rankMsg}</div>`;
   }
 
-  html += `<div class="lbwrap">` + rows.map((r,idx)=>{
+  html += `<div class="lbwrap">` + displayRows.map((r,idx)=>{
     const rank = idx+1;
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
@@ -2648,13 +3087,14 @@ async function renderCompetePanel(){
     else if(r.snapshotAt){ actionBtn = `<button class="nav-btn lbremove" data-remove-offline="${escapeHtml(r.name)}">🗑️ Hatao</button>`; }
     else { actionBtn = `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`; }
     let deltaHtml = '';
-    if(!isMe && rows.length>1){
-      const delta = r.pct - myPct;
+    if(!isMe && displayRows.length>1){
+      const delta = r.pct - displayMyPct;
       if(delta>0) deltaHtml = `<span class="lbdelta up">🔺${delta}% aage tumse</span>`;
       else if(delta<0) deltaHtml = `<span class="lbdelta down">🔻${Math.abs(delta)}% peeche tumse</span>`;
       else deltaHtml = `<span class="lbdelta even">🤝 barabar tumse</span>`;
     }
     const dotHtml = isMe ? '🟢' : (r.snapshotAt ? '📌' : presenceLabel(r.name).dot);
+    const daysStat = leaderboardMode==='week' ? `<span>📅${r.daysDone} din (week)</span>` : `<span>📅${r.daysDone}/${TOTAL_DAYS} din</span>`;
     return `
       <div class="lbrow ${isViewing?'active':''} ${isMe?'me':''} ${isLead?'lead':''}">
         <div class="lbrank">${medal}</div>
@@ -2664,7 +3104,7 @@ async function renderCompetePanel(){
             ${deltaHtml}
           </div>
           <div class="lbbar"><div class="lbbarfill" style="width:${r.pct}%;"></div></div>
-          <div class="lbstats"><span>⭐Lvl ${r.level}</span><span>🔥${r.streak} streak</span><span>📈${r.pct}%</span><span>📅${r.daysDone}/${TOTAL_DAYS} din</span><span>⏱️${fmtHours(r.studyMins)}</span><span class="lbgain">💰+₹${Math.round(r.earned).toLocaleString('en-IN')}</span>${r.lost>0?`<span class="lbloss">📉-₹${Math.round(r.lost).toLocaleString('en-IN')}</span>`:''}</div>
+          <div class="lbstats"><span>⭐Lvl ${r.level}</span><span>🔥${r.streak} streak</span><span>📈${r.pct}%</span>${daysStat}<span>⏱️${fmtHours(r.studyMins)}</span><span class="lbgain">💰+₹${Math.round(r.earned).toLocaleString('en-IN')}</span>${r.lost>0?`<span class="lbloss">📉-₹${Math.round(r.lost).toLocaleString('en-IN')}</span>`:''}</div>
         </div>
         ${actionBtn}
       </div>`;
@@ -2679,6 +3119,14 @@ async function renderCompetePanel(){
   `;
   el.innerHTML = html;
 
+  el.querySelectorAll('[data-lbmode]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const mode = btn.getAttribute('data-lbmode');
+      if(mode===leaderboardMode) return;
+      leaderboardMode = mode;
+      renderCompetePanel();
+    });
+  });
   el.querySelectorAll('.lbview').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       await switchViewing(btn.getAttribute('data-view'));
@@ -2709,6 +3157,7 @@ async function renderCompetePanel(){
   ensurePresenceTracking();
   renderOfflineCompeteSection();
   renderHomeLeaderboardCard(rows, myRank, myPct);
+  safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
 }
 
 // Compact, read-only snapshot of the same leaderboard for the Home screen —
@@ -3027,6 +3476,48 @@ function wireAdminBackupButtons(){
   });
 }
 
+// Wires the pinned-announcement editor and the weekly-leaderboard-reset
+// button. Called every time the admin section re-renders, same pattern as
+// wireAdminBackupButtons(), since these controls are recreated in the DOM
+// on each render.
+function wireAdminAnnouncementAndWeeklyControls(){
+  const postAnnBtn = document.getElementById('postAnnBtn');
+  if(postAnnBtn) postAnnBtn.addEventListener('click', async ()=>{
+    const inp = document.getElementById('annInput');
+    const val = (inp ? inp.value : '').trim();
+    if(!val){ alert('Pehle kuch likho, fir Post karo.'); return; }
+    postAnnBtn.disabled = true;
+    postAnnBtn.textContent = '⏳...';
+    await setRoomAnnouncement(val);
+    await renderAdminSection();
+    safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
+  });
+  const clearAnnBtn = document.getElementById('clearAnnBtn');
+  if(clearAnnBtn) clearAnnBtn.addEventListener('click', async ()=>{
+    if(!confirm('Pinned announcement hatana hai?')) return;
+    clearAnnBtn.disabled = true;
+    clearAnnBtn.textContent = '⏳...';
+    await setRoomAnnouncement('');
+    await renderAdminSection();
+    safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
+  });
+  const resetWeeklyBtn = document.getElementById('resetWeeklyBtn');
+  if(resetWeeklyBtn) resetWeeklyBtn.addEventListener('click', async ()=>{
+    if(!confirm('Pakka? Isse "This Week" leaderboard sabke liye abhi se fresh (0%) ho jayega. Kisi ka bhi asli data delete nahi hoga.')) return;
+    resetWeeklyBtn.disabled = true;
+    resetWeeklyBtn.textContent = '⏳ Reset ho raha hai...';
+    try{
+      await resetWeeklyLeaderboard();
+      await renderAdminSection();
+      await renderCompetePanel();
+    }catch(e){
+      alert('Reset nahi ho paya.\n\nWajah: ' + ((e&&e.message)||String(e)));
+      resetWeeklyBtn.disabled = false;
+      resetWeeklyBtn.textContent = '🔄 Weekly Leaderboard Reset Karo';
+    }
+  });
+}
+
 // Admin info + controls block inside the Room panel:
 // - No admin yet (older room, created before this feature existed) → shows
 //   a "Become Admin" button anyone in the room can claim.
@@ -3038,6 +3529,8 @@ async function renderAdminSection(){
   const wrapEl = document.getElementById('adminControlsWrap');
   if(!infoEl || !wrapEl) return;
   await refreshRoomMeta();
+  await applySharedTaskModeIfNeeded();
+  renderTaskModeSelector();
 
   if(!currentRoomAdmin){
     infoEl.innerHTML = 'Is group ka abhi tak koi Admin nahi hai.';
@@ -3070,6 +3563,35 @@ async function renderAdminSection(){
   const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
 
   const room = getRoomCode();
+
+  const ann = currentRoomAnnouncement;
+  const annStatusLine = ann
+    ? `Aakhri post: ${new Date(ann.at).toLocaleString('en-IN')}${ann.by ? ` by ${escapeHtml(ann.by)}` : ''}.`
+    : 'Abhi koi announcement pinned nahi hai.';
+  const announceHtml = `
+    <div class="grid-label" style="margin-top:14px;">📌 Pinned Announcement (Home Tab)</div>
+    <div class="losshint" style="padding-top:0;">Yaha jo bhi likhoge, wo turant sabke Home tab pe pinned dikhega — jab tak tum khud ise hatao ya naya na likho.</div>
+    <textarea id="annInput" placeholder="Jaise: Kal shaam 6 baje group study session hai..." style="width:100%;box-sizing:border-box;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">${ann ? escapeHtml(ann.text) : ''}</textarea>
+    <div class="btnrow" style="margin-top:8px;">
+      <button class="nav-btn" id="postAnnBtn">📌 Post Karo</button>
+      ${ann ? `<button class="nav-btn" id="clearAnnBtn">🗑️ Hatao</button>` : ''}
+    </div>
+    <div class="losshint" style="padding-top:6px;">${annStatusLine}</div>
+  `;
+
+  const wr = currentWeeklyReset;
+  const wrStatusLine = wr
+    ? `Pichla reset: ${new Date(wr.at).toLocaleString('en-IN')}${wr.by ? ` by ${escapeHtml(wr.by)}` : ''}.`
+    : 'Abhi tak kabhi weekly reset nahi hua hai.';
+  const weeklyHtml = `
+    <div class="grid-label" style="margin-top:14px;">🏆 Weekly Leaderboard</div>
+    <div class="losshint" style="padding-top:0;">Reset karne se "🗓️ This Week" leaderboard (Compete tab) sabke liye abhi se fresh (0%) shuru ho jayega — kisi ka bhi asli progress, streak, ya wallet delete nahi hota, sirf weekly scoreboard restart hota hai.</div>
+    <div class="losshint" style="padding-top:6px;">${wrStatusLine}</div>
+    <div class="btnrow" style="margin-top:8px;">
+      <button class="nav-btn" id="resetWeeklyBtn">🔄 Weekly Leaderboard Reset Karo</button>
+    </div>
+  `;
+
   const cachedBackup = room ? loadAdminBackupCache(room) : null;
   const lastBackupLine = cachedBackup
     ? `Aakhri backup: ${new Date(cachedBackup.exportedAt).toLocaleString('en-IN')} — ${cachedBackup.memberCount || Object.keys(cachedBackup.members||{}).length} member(s).`
@@ -3088,11 +3610,12 @@ async function renderAdminSection(){
   `;
 
   if(!others.length){
-    wrapEl.innerHTML = backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    wrapEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
     wireAdminBackupButtons();
+    wireAdminAnnouncementAndWeeklyControls();
     return;
   }
-  wrapEl.innerHTML = backupHtml + `
+  wrapEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `
     <div class="losshint" style="padding-top:14px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
@@ -3118,6 +3641,7 @@ async function renderAdminSection(){
     </div>
   `;
   wireAdminBackupButtons();
+  wireAdminAnnouncementAndWeeklyControls();
   wrapEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
     chk.addEventListener('change', async ()=>{
       const nm = chk.getAttribute('data-hide-member');
@@ -3961,6 +4485,432 @@ function renderPerformance(){
   `;
 }
 
+// ===== Mock Tests tab =====
+// A separate, dedicated mock-log system with its own 5-category home screen
+// (Pre Mocks / Math Sectional / English Sectional / Reasoning Sectional /
+// Overall Analysis). Manually-added entries live in state.mockLog (a NEW
+// top-level key, so it is never touched by the per-target archive/reset
+// logic — every mock ever logged stays visible forever, across targets).
+// The "Pre Mocks" category additionally auto-pulls in every Full Mock score
+// already entered on the Today tab (current target + every archived one),
+// so nothing has to be typed twice.
+function ensureMockLogState(){
+  if(!state.mockLog || typeof state.mockLog !== 'object' || Array.isArray(state.mockLog)) state.mockLog = {};
+  ['pre','mathSec','engSec','reasoningSec'].forEach(k=>{
+    if(!Array.isArray(state.mockLog[k])) state.mockLog[k] = [];
+  });
+  return state.mockLog;
+}
+const MOCK_CATS = [
+  {id:'pre', label:'Pre Mocks', icon:'📘'},
+  {id:'mathSec', label:'Math Sectional', icon:'🔢'},
+  {id:'engSec', label:'English Sectional', icon:'🔤'},
+  {id:'reasoningSec', label:'Reasoning Sectional', icon:'🧠'},
+  {id:'analysis', label:'Overall Analysis', icon:'📊'},
+];
+let mockActiveCat = null; // null = category grid, else one of MOCK_CATS ids
+let mockEditId = null;    // id of the entry currently being edited, else null
+
+function mockTotalOfPre(e){ return num(e.math)+num(e.reasoning)+num(e.english)+num(e.gk); }
+
+// Builds read-only "auto" Pre Mock entries out of every day (current target
+// + all archived ones) that has any Full Mock data on the Today tab.
+function getAutoPreMockEntries(){
+  const out = [];
+  function pushFromDay(dayNum, dayObj, cycleStartDate, cycleTag){
+    if(!dayObj || !dayObj.mock) return;
+    const m = dayObj.mock;
+    if(!(hasVal(m.math)||hasVal(m.reasoning)||hasVal(m.english)||hasVal(m.gk)||hasVal(m.percentile)||hasVal(m.wrongMath)||hasVal(m.wrongReasoning)||hasVal(m.wrongEnglish)||hasVal(m.wrongGk))) return;
+    const hasWrong = hasVal(m.wrongMath)||hasVal(m.wrongReasoning)||hasVal(m.wrongEnglish)||hasVal(m.wrongGk);
+    const wrongTotal = num(m.wrongMath)+num(m.wrongReasoning)+num(m.wrongEnglish)+num(m.wrongGk);
+    let dateStr = '';
+    try{
+      const dt = new Date(cycleStartDate);
+      dt.setDate(dt.getDate() + (dayNum-1));
+      dateStr = fmtISODate(dt);
+    }catch(e){ /* ignore bad date */ }
+    out.push({
+      id: 'auto_'+cycleTag+'_'+dayNum,
+      name: `Day ${dayNum} Full Mock`,
+      date: dateStr,
+      examType: 'pre',
+      math:m.math, reasoning:m.reasoning, english:m.english, gk:m.gk,
+      right: hasWrong ? Math.max(0, MOCK_TOTAL_QUESTIONS - wrongTotal) : '',
+      wrong: hasWrong ? wrongTotal : '',
+      percentile: m.percentile,
+      chapter:'', remarks:'',
+      auto:true
+    });
+  }
+  for(let i=1;i<=TOTAL_DAYS;i++) pushFromDay(i, state[i], START_DATE, 'cur');
+  if(Array.isArray(state.__history)){
+    state.__history.forEach((cyc, ci)=>{
+      const days = cyc.days || {};
+      Object.keys(days).forEach(k=> pushFromDay(parseInt(k,10), days[k], new Date(cyc.startDate), 'h'+ci));
+    });
+  }
+  return out;
+}
+// Merged (manual + auto for 'pre'), newest-first list for a category.
+function mockEntriesFor(catId){
+  ensureMockLogState();
+  let list = (state.mockLog[catId] || []).slice();
+  if(catId==='pre') list = list.concat(getAutoPreMockEntries());
+  list.sort((a,b)=>{
+    const da = a.date||'', db = b.date||'';
+    if(da!==db) return da<db ? 1 : -1;
+    return (b.id||'').localeCompare(a.id||'');
+  });
+  return list;
+}
+function mockCatAvgStat(catId, entries){
+  if(!entries.length) return 'Abhi koi mock nahi';
+  if(catId==='pre'){
+    const valid = entries.filter(e=>hasVal(e.math)||hasVal(e.reasoning)||hasVal(e.english)||hasVal(e.gk)).map(mockTotalOfPre);
+    if(!valid.length) return `${entries.length} mocks`;
+    return `${entries.length} mocks · avg ${(valid.reduce((a,b)=>a+b,0)/valid.length).toFixed(1)}`;
+  }
+  const valid = entries.filter(e=>hasVal(e.score)).map(e=>num(e.score));
+  if(!valid.length) return `${entries.length} mocks`;
+  return `${entries.length} mocks · avg ${(valid.reduce((a,b)=>a+b,0)/valid.length).toFixed(1)}`;
+}
+function renderMockTab(){
+  ensureMockLogState();
+  const gridEl = document.getElementById('mockCatGrid');
+  if(!gridEl) return;
+  gridEl.innerHTML = MOCK_CATS.map(c=>{
+    if(c.id==='analysis'){
+      return `<button type="button" class="mockCatCard cat-analysis full" data-cat="analysis">
+        <span class="mcIcon">📊</span>
+        <div class="mcLabel">Overall Analysis</div>
+        <div class="mcStat">Kaisa chal raha hai — sabhi mocks ka avg, percentile aur kisme sabse zyada improve karna hai</div>
+      </button>`;
+    }
+    const entries = mockEntriesFor(c.id);
+    return `<button type="button" class="mockCatCard cat-${c.id}" data-cat="${c.id}">
+      <span class="mcIcon">${c.icon}</span>
+      <div class="mcLabel">${c.label}</div>
+      <div class="mcStat">${mockCatAvgStat(c.id, entries)}</div>
+    </button>`;
+  }).join('');
+  gridEl.querySelectorAll('.mockCatCard').forEach(btn=>{
+    btn.addEventListener('click', ()=> openMockCategory(btn.getAttribute('data-cat')));
+  });
+  if(mockActiveCat) renderMockDetail();
+}
+function openMockCategory(catId){
+  mockActiveCat = catId;
+  const catSec = document.getElementById('mockCatSection');
+  const detailSec = document.getElementById('mockDetailSection');
+  if(catSec) catSec.style.display = 'none';
+  if(detailSec) detailSec.style.display = 'block';
+  renderMockDetail();
+  window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
+}
+function closeMockCategory(){
+  mockActiveCat = null;
+  const catSec = document.getElementById('mockCatSection');
+  const detailSec = document.getElementById('mockDetailSection');
+  if(detailSec) detailSec.style.display = 'none';
+  if(catSec) catSec.style.display = 'block';
+  renderMockTab();
+}
+function renderMockEntryCard(catId, e){
+  const isPre = catId==='pre';
+  const dateDisp = e.date ? new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const typeTag = isPre ? `<span class="mockETag">${e.examType==='mains'?'Mains':'Pre'}</span>` : '';
+  const autoTag = e.auto ? `<span class="mockETag" style="color:var(--blue);border-color:var(--blue);">Today Tab</span>` : '';
+  let statsRow;
+  if(isPre){
+    const total = mockTotalOfPre(e);
+    statsRow = `<div class="mockEStats">
+      <span>Total: <b>${total||hasVal(e.math)||hasVal(e.reasoning)||hasVal(e.english)||hasVal(e.gk) ? total : '—'}</b></span>
+      ${hasVal(e.math)?`<span>Math: <b>${e.math}</b></span>`:''}
+      ${hasVal(e.reasoning)?`<span>Reas: <b>${e.reasoning}</b></span>`:''}
+      ${hasVal(e.english)?`<span>Eng: <b>${e.english}</b></span>`:''}
+      ${hasVal(e.gk)?`<span>GK: <b>${e.gk}</b></span>`:''}
+      ${hasVal(e.right)?`<span>Right: <b style="color:var(--gain);">${e.right}</b></span>`:''}
+      ${hasVal(e.wrong)?`<span>Wrong: <b style="color:var(--loss);">${e.wrong}</b></span>`:''}
+      ${hasVal(e.percentile)?`<span>Percentile: <b>${e.percentile}</b></span>`:''}
+    </div>`;
+  } else {
+    statsRow = `<div class="mockEStats">
+      ${hasVal(e.score)?`<span>Score: <b>${e.score}</b></span>`:''}
+      ${hasVal(e.right)?`<span>Right: <b style="color:var(--gain);">${e.right}</b></span>`:''}
+      ${hasVal(e.wrong)?`<span>Wrong: <b style="color:var(--loss);">${e.wrong}</b></span>`:''}
+    </div>`;
+  }
+  const chapterNote = e.chapter ? `<div class="mockENote"><b>Chapter:</b> ${escapeHtml(e.chapter)}</div>` : '';
+  const remarksNote = e.remarks ? `<div class="mockENote"><b>Remarks:</b> ${escapeHtml(e.remarks)}</div>` : '';
+  const actions = e.auto
+    ? `<div class="mockENote" style="margin-top:8px;">🔗 Ye Today tab ke Full Mock se aaya hai — edit karne ke liye Today tab kholo.</div>`
+    : `<div class="mockEActions">
+        <button class="edit" type="button" data-id="${e.id}">✏️ Edit</button>
+        <button class="del" type="button" data-id="${e.id}">🗑️ Delete</button>
+      </div>`;
+  return `<div class="mockEntryCard ${e.auto?'auto':''}">
+    <div class="mockEHead">
+      <span class="mockEName">${escapeHtml(e.name||'Untitled Mock')}${typeTag}${autoTag}</span>
+      <span class="mockEDate">${dateDisp}</span>
+    </div>
+    ${statsRow}
+    ${chapterNote}
+    ${remarksNote}
+    ${actions}
+  </div>`;
+}
+function renderMockDetail(){
+  const cat = MOCK_CATS.find(c=>c.id===mockActiveCat);
+  const titleEl = document.getElementById('mockDetailTitle');
+  const bodyEl = document.getElementById('mockDetailBody');
+  if(!cat || !titleEl || !bodyEl) return;
+  titleEl.textContent = `${cat.icon} ${cat.label}`;
+  if(cat.id==='analysis'){
+    bodyEl.innerHTML = renderMockAnalysisHtml();
+    return;
+  }
+  const entries = mockEntriesFor(cat.id);
+  let html = `<div class="btnrow"><button class="nav-btn onbPrimary" id="mockAddEntryBtn" type="button">➕ Naya ${cat.label.replace(' Sectional','')} Mock Add Karo</button></div>`;
+  html += entries.length
+    ? entries.map(e=>renderMockEntryCard(cat.id, e)).join('')
+    : `<div class="mockEmptyState">Abhi koi mock add nahi hua. Upar wale button se pehla mock add karo!</div>`;
+  bodyEl.innerHTML = html;
+  const addBtn = document.getElementById('mockAddEntryBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=> openMockForm(cat.id, null));
+  bodyEl.querySelectorAll('.mockEActions .edit').forEach(b=>{
+    b.addEventListener('click', ()=> openMockForm(cat.id, b.getAttribute('data-id')));
+  });
+  bodyEl.querySelectorAll('.mockEActions .del').forEach(b=>{
+    b.addEventListener('click', ()=> deleteMockEntry(cat.id, b.getAttribute('data-id')));
+  });
+}
+function openMockForm(catId, entryId){
+  mockEditId = entryId;
+  const modal = document.getElementById('mockFormModal');
+  const titleEl = document.getElementById('mockFormTitle');
+  const bodyEl = document.getElementById('mockFormBody');
+  if(!modal || !bodyEl) return;
+  ensureMockLogState();
+  const entry = entryId ? (state.mockLog[catId]||[]).find(x=>x.id===entryId) : null;
+  const catLabel = (MOCK_CATS.find(c=>c.id===catId)||{}).label || 'Mock';
+  titleEl.textContent = entry ? `✏️ ${catLabel} Edit Karo` : `➕ Naya ${catLabel} Add Karo`;
+  const v = {
+    name: entry ? (entry.name||'') : '',
+    date: entry ? (entry.date||fmtISODate(new Date())) : fmtISODate(new Date()),
+    examType: entry ? (entry.examType||'pre') : 'pre',
+    math: entry ? (entry.math||'') : '', reasoning: entry ? (entry.reasoning||'') : '',
+    english: entry ? (entry.english||'') : '', gk: entry ? (entry.gk||'') : '',
+    score: entry ? (entry.score||'') : '',
+    right: entry ? (entry.right||'') : '', wrong: entry ? (entry.wrong||'') : '',
+    percentile: entry ? (entry.percentile||'') : '',
+    chapter: entry ? (entry.chapter||'') : '', remarks: entry ? (entry.remarks||'') : ''
+  };
+  let html = `
+    <div class="onbLabel">Mock Ka Naam</div>
+    <input type="text" id="mfName" placeholder="e.g. Adda247 Mock 12" value="${escapeHtml(v.name)}">
+    <div class="onbLabel">Date</div>
+    <input type="date" id="mfDate" value="${v.date}">
+  `;
+  if(catId==='pre'){
+    html += `
+      <div class="onbLabel">Type</div>
+      <div class="mockTypeToggle" id="mfTypeToggle">
+        <div class="mockTypeOpt ${v.examType==='pre'?'active':''}" data-val="pre">Pre</div>
+        <div class="mockTypeOpt ${v.examType==='mains'?'active':''}" data-val="mains">Mains</div>
+      </div>
+      <div class="onbLabel">Subject-wise Marks</div>
+      <div class="scoreform">
+        <div class="scorefield"><label>Math</label><input type="number" step="any" id="mfMath" value="${v.math}"></div>
+        <div class="scorefield"><label>Reasoning</label><input type="number" step="any" id="mfReasoning" value="${v.reasoning}"></div>
+        <div class="scorefield"><label>English</label><input type="number" step="any" id="mfEnglish" value="${v.english}"></div>
+        <div class="scorefield"><label>GK</label><input type="number" step="any" id="mfGk" value="${v.gk}"></div>
+      </div>
+      <div class="onbLabel">Right / Wrong / Percentile</div>
+      <div class="scoreform" style="grid-template-columns:repeat(3,1fr);">
+        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRight" value="${v.right}"></div>
+        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrong" value="${v.wrong}"></div>
+        <div class="scorefield"><label>%ile</label><input type="number" step="any" min="0" max="100" id="mfPercentile" value="${v.percentile}"></div>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="onbLabel">Score / Right / Wrong</div>
+      <div class="scoreform" style="grid-template-columns:repeat(3,1fr);">
+        <div class="scorefield"><label>Score</label><input type="number" step="any" id="mfScore" value="${v.score}"></div>
+        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRight" value="${v.right}"></div>
+        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrong" value="${v.wrong}"></div>
+      </div>
+    `;
+  }
+  html += `
+    <div class="onbLabel">Weak Chapter(s)</div>
+    <input type="text" id="mfChapter" placeholder="e.g. Time & Work, Profit-Loss" value="${escapeHtml(v.chapter)}">
+    <div class="onbLabel">Remarks</div>
+    <textarea id="mfRemarks" placeholder="Kya galat hua, kya improve karna hai...">${escapeHtml(v.remarks)}</textarea>
+  `;
+  bodyEl.innerHTML = html;
+  const toggle = document.getElementById('mfTypeToggle');
+  if(toggle){
+    toggle.querySelectorAll('.mockTypeOpt').forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        toggle.querySelectorAll('.mockTypeOpt').forEach(o=>o.classList.remove('active'));
+        opt.classList.add('active');
+      });
+    });
+  }
+  const saveBtn = document.getElementById('mockFormSaveBtn');
+  if(saveBtn) saveBtn.onclick = ()=> saveMockForm(catId);
+  modal.style.display = 'flex';
+}
+function closeMockForm(){
+  const modal = document.getElementById('mockFormModal');
+  if(modal) modal.style.display = 'none';
+  mockEditId = null;
+}
+async function saveMockForm(catId){
+  ensureMockLogState();
+  const nameEl = document.getElementById('mfName');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if(!name){ alert('Mock ka naam daalo.'); return; }
+  const dateEl = document.getElementById('mfDate');
+  const date = (dateEl && dateEl.value) ? dateEl.value : fmtISODate(new Date());
+  let entry;
+  if(catId==='pre'){
+    const typeOpt = document.querySelector('#mfTypeToggle .mockTypeOpt.active');
+    entry = {
+      name, date,
+      examType: typeOpt ? typeOpt.getAttribute('data-val') : 'pre',
+      math: document.getElementById('mfMath').value,
+      reasoning: document.getElementById('mfReasoning').value,
+      english: document.getElementById('mfEnglish').value,
+      gk: document.getElementById('mfGk').value,
+      right: document.getElementById('mfRight').value,
+      wrong: document.getElementById('mfWrong').value,
+      percentile: document.getElementById('mfPercentile').value,
+      chapter: document.getElementById('mfChapter').value,
+      remarks: document.getElementById('mfRemarks').value,
+    };
+  } else {
+    entry = {
+      name, date,
+      score: document.getElementById('mfScore').value,
+      right: document.getElementById('mfRight').value,
+      wrong: document.getElementById('mfWrong').value,
+      chapter: document.getElementById('mfChapter').value,
+      remarks: document.getElementById('mfRemarks').value,
+    };
+  }
+  const list = state.mockLog[catId];
+  if(mockEditId){
+    const idx = list.findIndex(x=>x.id===mockEditId);
+    if(idx>=0) list[idx] = Object.assign({}, list[idx], entry);
+  } else {
+    entry.id = 'm_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    list.push(entry);
+  }
+  await save();
+  closeMockForm();
+  renderMockDetail();
+  renderMockTab();
+}
+async function deleteMockEntry(catId, id){
+  if(!confirm('Ye mock delete karna hai?')) return;
+  ensureMockLogState();
+  state.mockLog[catId] = (state.mockLog[catId]||[]).filter(x=>x.id!==id);
+  await save();
+  renderMockDetail();
+  renderMockTab();
+}
+function renderMockAnalysisHtml(){
+  const preEntriesAll = mockEntriesFor('pre');
+  const preOnly = preEntriesAll.filter(e=>e.examType!=='mains');
+  const mainsOnly = preEntriesAll.filter(e=>e.examType==='mains');
+  const mathSec = mockEntriesFor('mathSec');
+  const engSec = mockEntriesFor('engSec');
+  const reasSec = mockEntriesFor('reasoningSec');
+
+  function avgTotal(list){
+    const valid = list.filter(e=>hasVal(e.math)||hasVal(e.reasoning)||hasVal(e.english)||hasVal(e.gk));
+    return valid.length ? valid.reduce((a,e)=>a+mockTotalOfPre(e),0)/valid.length : null;
+  }
+  function avgField(list, field){
+    const valid = list.filter(e=>hasVal(e[field]));
+    return valid.length ? valid.reduce((a,e)=>a+num(e[field]),0)/valid.length : null;
+  }
+  function avgScore(list){
+    const valid = list.filter(e=>hasVal(e.score));
+    return valid.length ? valid.reduce((a,e)=>a+num(e.score),0)/valid.length : null;
+  }
+  const fmt = v => v===null ? '—' : v.toFixed(1);
+
+  const overallAvgTotal = avgTotal(preEntriesAll);
+  const preAvgTotal = avgTotal(preOnly);
+  const mainsAvgTotal = avgTotal(mainsOnly);
+  const mathAvg = avgField(preEntriesAll,'math');
+  const reasAvg = avgField(preEntriesAll,'reasoning');
+  const engAvg = avgField(preEntriesAll,'english');
+  const gkAvg = avgField(preEntriesAll,'gk');
+  const percAvg = avgField(preEntriesAll,'percentile');
+  const mathSecAvg = avgScore(mathSec);
+  const engSecAvg = avgScore(engSec);
+  const reasSecAvg = avgScore(reasSec);
+
+  const subjectAvgs = [
+    {label:'Math', val:mathAvg},
+    {label:'Reasoning', val:reasAvg},
+    {label:'English', val:engAvg},
+    {label:'GK', val:gkAvg},
+  ].filter(s=>s.val!==null);
+  let insightHtml;
+  if(subjectAvgs.length){
+    subjectAvgs.sort((a,b)=>a.val-b.val);
+    const weakest = subjectAvgs[0];
+    insightHtml = `<div class="mockInsight">
+      <span class="mi-icon">🎯</span>
+      <div class="mi-text">Sabse zyada dhyan do: <b>${weakest.label}</b> — avg sirf <b>${weakest.val.toFixed(1)}</b> hai, baaki subjects se sabse kam. Yahan roz thoda extra time do.</div>
+    </div>`;
+  } else {
+    insightHtml = `<div class="mockInsight"><span class="mi-icon">🎯</span><div class="mi-text">Jaise hi Pre Mocks add karoge, yahan pata chalega kis subject mein sabse zyada improve karna hai.</div></div>`;
+  }
+  const totalMockCount = preEntriesAll.length + mathSec.length + engSec.length + reasSec.length;
+
+  return `
+    ${insightHtml}
+    <div class="perfwrap">
+      <div class="perfcard">
+        <h3>🧪 FULL MOCKS</h3>
+        <div class="perfrow"><span>Pre Mocks avg (${preOnly.length})</span><span>${fmt(preAvgTotal)}</span></div>
+        <div class="perfrow"><span>Mains Mocks avg (${mainsOnly.length})</span><span>${fmt(mainsAvgTotal)}</span></div>
+        <div class="perfrow total"><span>Overall avg total (${preEntriesAll.length})</span><span>${fmt(overallAvgTotal)}</span></div>
+        <div class="perfrow"><span>Percentile avg</span><span>${fmt(percAvg)}</span></div>
+      </div>
+      <div class="perfcard">
+        <h3>📚 SUBJECT-WISE AVG (FULL MOCKS)</h3>
+        <div class="perfrow"><span>Math avg</span><span>${fmt(mathAvg)}</span></div>
+        <div class="perfrow"><span>Reasoning avg</span><span>${fmt(reasAvg)}</span></div>
+        <div class="perfrow"><span>English avg</span><span>${fmt(engAvg)}</span></div>
+        <div class="perfrow"><span>GK avg</span><span>${fmt(gkAvg)}</span></div>
+      </div>
+    </div>
+    <div class="perfwrap">
+      <div class="perfcard">
+        <h3>🔢 SECTIONAL AVERAGES</h3>
+        <div class="perfrow"><span>Math Sectional avg (${mathSec.length})</span><span>${fmt(mathSecAvg)}</span></div>
+        <div class="perfrow"><span>English Sectional avg (${engSec.length})</span><span>${fmt(engSecAvg)}</span></div>
+        <div class="perfrow"><span>Reasoning Sectional avg (${reasSec.length})</span><span>${fmt(reasSecAvg)}</span></div>
+      </div>
+      <div class="perfcard">
+        <h3>📈 TOTALS</h3>
+        <div class="perfrow total"><span>Total mocks logged (all-time)</span><span>${totalMockCount}</span></div>
+        <div class="perfrow"><span>Full mocks</span><span>${preEntriesAll.length}</span></div>
+        <div class="perfrow"><span>Sectional mocks</span><span>${mathSec.length+engSec.length+reasSec.length}</span></div>
+      </div>
+    </div>
+  `;
+}
+document.getElementById('mockBackBtn').addEventListener('click', closeMockCategory);
+document.getElementById('mockFormCloseBtn').addEventListener('click', closeMockForm);
+
 // Quick chapter-mistake log widget (shown right under the mock score panel
 // on the Today tab) — shows the running wrong-count for whichever chapter
 // is currently selected in the dropdown, so tapping "+1 Wrong" gives
@@ -4651,9 +5601,89 @@ function tierForMins(mins){
   if(mins <= 35) return { emoji:'🔵', cls:'tier-small' };
   return { emoji:'🟣', cls:'tier-medium' };
 }
+// ===== Task Mode: Individual vs Admin-Shared =====
+// Two-option control, visible in the Today tab's "Customize Tasks" section:
+//  1) "Har member apna task khud kare" — unchanged, existing behaviour.
+//  2) "Mera (Admin) task list sabke liye automatic apply ho" — Admin's list
+//     is broadcast to the whole room and kept in sync automatically.
+// Only shown (with controls) to the room's Admin; everyone else in a room
+// sees a one-line status instead. Solo (no room) users see nothing — the
+// concept only applies once there's more than one member to sync.
+function renderTaskModeSelector(){
+  const el = document.getElementById('taskModeSelector');
+  if(!el) return;
+  if(!getRoomCode()){
+    el.innerHTML = '';
+    return;
+  }
+  const mode = currentRoomTaskMode;
+  if(!isMeAdmin()){
+    el.innerHTML = mode==='shared'
+      ? `<div class="losshint" style="padding-top:0;">🔒 Admin (<b>${escapeHtml(currentRoomAdmin||'')}</b>) ne sabke liye same tasks set kiye hain — automatically sync hote rehte hain.</div>`
+      : `<div class="losshint" style="padding-top:0;">✏️ Abhi har member (tum bhi) apne tasks khud customize kar sakte ho.</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="taskModeBox">
+      <div class="taskModeTitle">👑 Task Mode</div>
+      <label class="taskModeOption">
+        <input type="radio" name="taskModeRadio" value="individual" ${mode==='individual'?'checked':''}>
+        <span>Har member apna task khud kare (individual)</span>
+      </label>
+      <label class="taskModeOption">
+        <input type="radio" name="taskModeRadio" value="shared" ${mode==='shared'?'checked':''}>
+        <span>Mera (Admin) task list sabke liye automatic apply ho</span>
+      </label>
+    </div>
+  `;
+  el.querySelectorAll('input[name="taskModeRadio"]').forEach(r=>{
+    r.addEventListener('change', async ()=>{
+      const newMode = r.value;
+      el.querySelectorAll('input[name="taskModeRadio"]').forEach(x=> x.disabled = true);
+      await setRoomTaskMode(newMode);
+      currentRoomTaskMode = newMode;
+      if(newMode==='shared'){
+        // Admin's current task list becomes the shared baseline immediately,
+        // so every other member picks it up on their very next sync tick.
+        const defs = TASKS.map((name,i)=>({ name, start: TASK_START_MIN[i], duration: TASK_DURATIONS_MIN[i] }));
+        await saveSharedTaskDefs(defs);
+        lastAppliedSharedTasksJSON = JSON.stringify(defs);
+      } else {
+        lastAppliedSharedTasksJSON = null;
+      }
+      renderTaskModeSelector();
+      renderTaskEditForm();
+    });
+  });
+}
 function renderTaskEditForm(){
   const form = document.getElementById('taskEditForm');
   if(!form) return;
+  const actionsRow = document.getElementById('taskEditActionsRow');
+  // Shared Task Mode + not the Admin: tasks come from the Admin automatically,
+  // so this member's own edit form is replaced by a read-only list and the
+  // add/save/reset buttons are hidden — there's nothing here for them to save.
+  if(isSharedTaskMode() && !isMeAdmin()){
+    if(actionsRow) actionsRow.style.display = 'none';
+    form.innerHTML = `<div class="losshint" style="padding-top:0;margin-bottom:10px;">🔒 Admin (<b>${escapeHtml(currentRoomAdmin||'')}</b>) ne sabke liye same tasks set kiye hain — yahan edit lock hai. Jab bhi Admin tasks badlega, tumhare tab mein automatically update ho jayega.</div>` +
+      TASKS.map((name,idx)=>{
+        const tier = tierForMins(TASK_DURATIONS_MIN[idx]||0);
+        return `
+        <div class="taskEditRow" data-row-idx="${idx}">
+          <div class="taskEditTop">
+            <span class="tNum">${idx+1}.</span>
+            <span style="flex:1;font-size:13.5px;font-weight:700;">${escapeHtml(name)}</span>
+          </div>
+          <div class="taskEditBottom">
+            <span style="font-size:12px;color:var(--muted);">⏰ ${minToTimeInputStr(TASK_START_MIN[idx])}</span>
+            <span style="font-size:12px;color:var(--muted);">⏱️ ${TASK_DURATIONS_MIN[idx]} min</span>
+            <span class="tVal ${tier.cls}">${tier.emoji} ₹${Math.round(TASK_VALUES[idx]||0)}</span>
+          </div>
+        </div>`;
+      }).join('');
+    return;
+  }
+  if(actionsRow) actionsRow.style.display = '';
   if(!taskEditDraft){
     taskEditDraft = TASKS.map((name,i)=>({
       name, start: TASK_START_MIN[i], duration: TASK_DURATIONS_MIN[i]
@@ -4752,9 +5782,17 @@ document.getElementById('saveTasksBtn').addEventListener('click', async ()=>{
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
+  // Admin, Shared Task Mode ON: push this same list to the room so every
+  // member's tab picks it up automatically on their next auto-sync tick.
+  if(isSharedTaskMode() && isMeAdmin()){
+    await saveSharedTaskDefs(cleaned);
+    lastAppliedSharedTasksJSON = JSON.stringify(cleaned);
+  }
   renderAll();
   renderTaskEditForm();
-  alert('Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.');
+  alert(isSharedTaskMode() && isMeAdmin()
+    ? 'Tasks save ho gaye ✅ — sabke tab mein automatically update ho jayenge.'
+    : 'Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.');
 });
 document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
   if(!confirm('Sab tasks (naam, time, duration) default pe reset kar du?')) return;
@@ -4767,6 +5805,11 @@ document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
+  if(isSharedTaskMode() && isMeAdmin()){
+    const defaultDefs = DEFAULT_TASKS.map((name,i)=>({ name, start: DEFAULT_TASK_START_MIN[i], duration: DEFAULT_TASK_DURATIONS_MIN[i] }));
+    await saveSharedTaskDefs(defaultDefs);
+    lastAppliedSharedTasksJSON = JSON.stringify(defaultDefs);
+  }
   renderAll();
   renderTaskEditForm();
 });
@@ -4838,6 +5881,7 @@ function renderAll(){
   safeRun(renderCalendarView, 'renderCalendarView');
   safeRun(renderPanel, 'renderPanel');
   safeRun(renderPerformance, 'renderPerformance');
+  safeRun(renderMockTab, 'renderMockTab');
   safeRun(renderBestWorst, 'renderBestWorst');
   safeRun(renderChart, 'renderChart');
   safeRun(renderAccuracyTrend, 'renderAccuracyTrend');
@@ -4858,6 +5902,7 @@ function renderAll(){
   safeRun(updateTodayDot, 'updateTodayDot');
   safeRun(renderDailyQuote, 'renderDailyQuote');
   safeRun(renderRightNowCard, 'renderRightNowCard');
+  safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
 }
 
 // Small always-visible circular progress ring in the topbar showing overall
@@ -4898,7 +5943,7 @@ function initTabs(){
   });
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
-  if(!['home','today','revision','chapters','compete','more'].includes(saved)) saved = 'home';
+  if(!['home','today','mock','revision','chapters','compete','more'].includes(saved)) saved = 'home';
   switchTab(saved);
 }
 
@@ -4907,7 +5952,7 @@ function initTabs(){
 // moves forward (Home -> Today -> Revision -> Chapters -> Compete -> Analysis)
 // and a right-swipe moves back — without hijacking normal vertical scrolling,
 // day-grid taps, or dragging inside horizontally-scrollable charts/inputs.
-const TAB_ORDER = ['home','today','revision','chapters','compete','more'];
+const TAB_ORDER = ['home','today','mock','revision','chapters','compete','more'];
 function initSwipeTabs(){
   const wrap = document.querySelector('.wrap');
   if(!wrap) return;
@@ -5251,6 +6296,13 @@ function maybeShowHelpModalOnce(){
   if(helpCloseBtn) helpCloseBtn.addEventListener('click', hideHelpModal);
   if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
 }
+{
+  const announceCloseBtn = document.getElementById('announceCloseBtn');
+  if(announceCloseBtn) announceCloseBtn.addEventListener('click', ()=>{
+    dismissCurrentAnnouncement();
+    renderAnnouncementCard();
+  });
+}
 
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
@@ -5381,12 +6433,17 @@ function startLiveClockTicker(){
   await registerPlayer(myName);
   state = await loadPlayerState(myName);
   applyLoadedExtras();
+  if(getRoomCode()){
+    await refreshRoomMeta();
+    await applySharedTaskModeIfNeeded();
+  }
   selectedDay = todayDayNum();
   setupHomeScreenIcon();
   initSwipeTabs();
   updateNotifBtnLabel();
   renderExamLine();
   renderTaskEditForm();
+  renderTaskModeSelector();
   initTabs();
   renderAll();
   renderProfileBar();
