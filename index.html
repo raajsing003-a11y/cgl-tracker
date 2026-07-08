@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CGL Tracker — 50 Day Plan</title>
+<title>Exam Tracker</title>
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CGL Tracker">
+<meta name="apple-mobile-web-app-title" content="Exam Tracker">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1026,7 +1026,7 @@
 
 <div class="onbOverlay" id="onboardModal">
   <div class="onbCard">
-    <div class="onbTitle">👋 Welcome to CGL Tracker</div>
+    <div class="onbTitle">👋 Welcome to Exam Tracker</div>
     <div class="onbSub">Apna naam likho — group ke baaki members isi naam se tumhara progress dekh payenge.</div>
 
     <div class="onbLabel">Tumhara Naam</div>
@@ -1096,7 +1096,7 @@
 </div>
 
 <div class="topbar">
-  <div class="topbar-left">🎯 <span>CGL TRACKER</span></div>
+  <div class="topbar-left">🎯 <span>EXAM TRACKER</span></div>
   <div class="topbar-right">
     <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
     <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
@@ -1130,7 +1130,7 @@
   <div class="tabview active" id="tab-home" data-tabview="home">
     <button class="nav-btn onbPrimary" id="homeInstallBtn" style="width:100%;margin-bottom:14px;">📲 Add to Home Screen</button>
     <div class="eyebrow">🚀 Mission Countdown</div>
-    <h1 id="mainTitle">🎯 CGL TRACKER // 50 DAYS</h1>
+    <h1 id="mainTitle">🎯 EXAM TRACKER</h1>
     <div class="sub" id="examLine">Loading dates…</div>
 
     <div class="announceCard" id="announceCard">
@@ -1413,7 +1413,6 @@
         <button class="nav-btn" id="exportBtn">⬇️ Export Data (CSV)</button>
       </div>
       <textarea id="backupArea" placeholder="Backup code yaha dikhega / paste karke restore karo…"></textarea>
-      <div id="offlineCompeteSection"></div>
     </div>
 
     <div class="btnrow" style="margin-top:6px;">
@@ -2761,29 +2760,6 @@ function saveFriendsList(list){
   try{ localStorage.setItem('cgl50-my-friends', JSON.stringify(list)); }catch(e){}
 }
 
-// ===== Offline compete: friend's data via pasted backup code =====
-// No internet/Firebase needed — friend shares their "Show Backup Code"
-// text (WhatsApp/manual), we store it locally as a frozen snapshot and
-// compute their stats from it, right alongside your own live stats.
-function loadOfflineFriends(){
-  try{ const raw = localStorage.getItem('cgl50-offline-friends'); return raw ? JSON.parse(raw) : {}; }
-  catch(e){ return {}; }
-}
-function saveOfflineFriends(obj){
-  try{ localStorage.setItem('cgl50-offline-friends', JSON.stringify(obj)); }catch(e){}
-}
-function addOfflineFriendSnapshot(name, code){
-  const parsed = JSON.parse(code); // throws if not valid JSON backup code
-  const all = loadOfflineFriends();
-  all[name] = { state: parsed, updatedAt: Date.now() };
-  saveOfflineFriends(all);
-}
-function removeOfflineFriend(name){
-  const all = loadOfflineFriends();
-  delete all[name];
-  saveOfflineFriends(all);
-}
-
 // ===== Per-player task definitions =====
 // Each player can have their own custom task list (names, start times,
 // durations) — stored in state.taskDefs. These helpers read a task
@@ -3025,11 +3001,20 @@ function renderProfileBar(){
     const btn = document.getElementById('changeNameBtn');
     if(btn) btn.addEventListener('click', async ()=>{
       const newName = (prompt('Naya naam:', myName) || '').trim();
-      if(!newName) return;
+      if(!newName || newName.toLowerCase()===myName.toLowerCase()) return;
+      const oldName = myName;
+      // Grab a fresh copy of the OLD name's saved progress before anything
+      // else changes — this is what would otherwise get orphaned.
+      const oldState = await loadPlayerState(oldName);
       myName = newName;
       try{ localStorage.setItem('cgl50-myname', myName); }catch(e){}
+      // Copy the old name's state onto the new name's key (local +
+      // window.storage + Firebase, via save()) so renaming carries the
+      // progress over instead of starting the new name from empty state.
+      state = oldState;
+      viewingName = myName;
+      await save();
       await registerPlayer(myName);
-      await migrateOldDataIfNeeded(myName);
       if(getRoomCode()) await addToRoomRegistry(myName);
       await switchViewing(myName);
       await renderCompetePanel();
@@ -3179,27 +3164,20 @@ async function renderCompetePanel(){
   const [roomNames] = await Promise.all([ loadRoomRegistry(), refreshRoomMeta() ]);
   await applySharedTaskModeIfNeeded();
   renderTaskModeSelector();
-  const offline = loadOfflineFriends();
-  const offlineNames = Object.keys(offline);
-  const merged = [myName, ...friends, ...roomNames, ...offlineNames];
+  const merged = [myName, ...friends, ...roomNames];
   let names = merged.filter((n,i)=> n && merged.findIndex(x=>x.toLowerCase()===n.toLowerCase())===i);
   if(getRoomCode()) names = visibleNamesFor(names);
   // Perf: fetch every friend's state in parallel instead of one-by-one —
   // on a slow connection the old sequential loop could take many seconds
   // per tick, which is a big chunk of blocked/janky time every 25s.
   const rows = await Promise.all(names.map(async (nm)=>{
-    const offKey = offlineNames.find(o=>o.toLowerCase()===nm.toLowerCase());
-    if(offKey){
-      return { name: nm, ...computeStatsFrom(offline[offKey].state), snapshotAt: offline[offKey].updatedAt, isLive: false };
-    } else {
-      const st = await loadPlayerState(nm);
-      return { name: nm, ...computeStatsFrom(st), isLive: true };
-    }
+    const st = await loadPlayerState(nm);
+    return { name: nm, ...computeStatsFrom(st), isLive: true };
   }));
   rows.sort((a,b)=> b.pct-a.pct || b.streak-a.streak);
 
   // Notify when a live room-member's progress moved forward since the last
-  // check (offline/snapshot friends are manual pastes, so skip those).
+  // check.
   const newSnapshot = {};
   rows.forEach(r=>{ newSnapshot[r.name.toLowerCase()] = { pct:r.pct, streak:r.streak }; });
   if(lastFriendStatsSnapshot){
@@ -3251,10 +3229,8 @@ async function renderCompetePanel(){
     const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
     const isLead = rank===1;
     const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
-    const snapTag = r.snapshotAt ? ` <span style="color:var(--muted);font-weight:700;">(📌 snapshot ${new Date(r.snapshotAt).toLocaleString('en-IN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})</span>` : '';
     let actionBtn = '';
     if(isMe){ actionBtn=''; }
-    else if(r.snapshotAt){ actionBtn = `<button class="nav-btn lbremove" data-remove-offline="${escapeHtml(r.name)}">🗑️ Hatao</button>`; }
     else { actionBtn = `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`; }
     let deltaHtml = '';
     if(!isMe && displayRows.length>1){
@@ -3263,14 +3239,14 @@ async function renderCompetePanel(){
       else if(delta<0) deltaHtml = `<span class="lbdelta down">🔻${Math.abs(delta)}% peeche tumse</span>`;
       else deltaHtml = `<span class="lbdelta even">🤝 barabar tumse</span>`;
     }
-    const dotHtml = isMe ? '🟢' : (r.snapshotAt ? '📌' : presenceLabel(r.name).dot);
+    const dotHtml = isMe ? '🟢' : presenceLabel(r.name).dot;
     const daysStat = leaderboardMode==='week' ? `<span>📅${r.daysDone} din (week)</span>` : `<span>📅${r.daysDone}/${TOTAL_DAYS} din</span>`;
     return `
       <div class="lbrow ${isViewing?'active':''} ${isMe?'me':''} ${isLead?'lead':''}">
         <div class="lbrank">${medal}</div>
         <div class="lbmain">
           <div class="lbtoprow">
-            <div class="lbname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}${snapTag}</div>
+            <div class="lbname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}</div>
             ${deltaHtml}
           </div>
           <div class="lbbar"><div class="lbbarfill" style="width:${r.pct}%;"></div></div>
@@ -3285,7 +3261,7 @@ async function renderCompetePanel(){
       <input type="text" id="friendNameInput" placeholder="Dost ka exact naam likho (same room)...">
       <button class="nav-btn" id="addFriendBtn">➕ Add</button>
     </div>
-    <div class="losshint">Kaam tabhi karega jab dono same 🔗 Sync Room code se joined ho. Bina internet dost add karne ke liye niche "💾 Backup / Restore" section dekho.</div>
+    <div class="losshint">Kaam tabhi karega jab dono same 🔗 Sync Room code se joined ho.</div>
   `;
   el.innerHTML = html;
 
@@ -3303,14 +3279,6 @@ async function renderCompetePanel(){
       switchTab('today');
     });
   });
-  el.querySelectorAll('.lbremove').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const nm = btn.getAttribute('data-remove-offline');
-      if(!confirm(`"${nm}" ka snapshot hatana hai?`)) return;
-      removeOfflineFriend(nm);
-      renderCompetePanel();
-    });
-  });
   const addBtn = document.getElementById('addFriendBtn');
   if(addBtn) addBtn.addEventListener('click', ()=>{
     const inp = document.getElementById('friendNameInput');
@@ -3325,7 +3293,6 @@ async function renderCompetePanel(){
     renderCompetePanel();
   });
   ensurePresenceTracking();
-  renderOfflineCompeteSection();
   renderHomeLeaderboardCard(rows, myRank, myPct);
   safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
 }
@@ -3348,7 +3315,7 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     const rank = rows.findIndex(x=>x.name.toLowerCase()===r.name.toLowerCase())+1;
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
-    const dotHtml = isMe ? '🟢' : (r.snapshotAt ? '📌' : presenceLabel(r.name).dot);
+    const dotHtml = isMe ? '🟢' : presenceLabel(r.name).dot;
     // One-click shortcut straight into an opponent's full tracker (Today tab:
     // tasks, mock/sectional scores, notes, mistakes, day grid) — no need to
     // go via the Compete tab and tap "View" separately.
@@ -3380,38 +3347,6 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
   });
   const btn = document.getElementById('homeLBOpenBtn');
   if(btn) btn.addEventListener('click', ()=> switchTab('compete'));
-}
-
-// The "compete without internet via pasted backup code" form lives at the
-// bottom of the page, right inside the Backup/Restore section, since that's
-// where the backup code itself is shown/generated.
-function renderOfflineCompeteSection(){
-  const el = document.getElementById('offlineCompeteSection');
-  if(!el) return;
-  el.innerHTML = `
-    <div class="grid-label" style="margin-top:14px;border-top:1px dashed var(--border);padding-top:14px;">📌 Bina Internet — Backup Code Se Compete</div>
-    <div class="losshint" style="padding-top:0;">Dost apna "📋 Show Backup Code" (upar wale button se) nikaal ke tumhe bheje, fir uska naam aur code yaha paste karo. Ye sirf ek snapshot hai — naya progress dekhne ke liye dobara paste karo. Ye 🤝 Compete With Friends leaderboard mein dikhega.</div>
-    <input type="text" id="offlineFriendName" placeholder="Dost ka naam..." style="width:100%;box-sizing:border-box;margin-bottom:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">
-    <textarea id="offlineFriendCode" placeholder="Dost ka backup code yaha paste karo..." style="width:100%;box-sizing:border-box;min-height:70px;"></textarea>
-    <div class="btnrow" style="margin-top:8px;">
-      <button class="nav-btn" id="addOfflineFriendBtn">➕ Snapshot Add/Update Karo</button>
-    </div>
-  `;
-  const addOfflineBtn = document.getElementById('addOfflineFriendBtn');
-  if(addOfflineBtn) addOfflineBtn.addEventListener('click', ()=>{
-    const nameInp = document.getElementById('offlineFriendName');
-    const codeInp = document.getElementById('offlineFriendCode');
-    const nm = (nameInp.value||'').trim();
-    const code = (codeInp.value||'').trim();
-    if(!nm || !code){ alert('Naam aur backup code dono chahiye.'); return; }
-    if(nm.toLowerCase()===myName.toLowerCase()){ alert('Ye tumhara apna naam hai — dost ka alag naam likho.'); return; }
-    try{
-      addOfflineFriendSnapshot(nm, code);
-      renderCompetePanel();
-    }catch(e){
-      alert('Ye backup code valid nahi hai. Dost se poora code copy karke (bina kaate-chhaate) paste karo.');
-    }
-  });
 }
 
 async function renderRoomPanel(){
@@ -3507,7 +3442,14 @@ function fmtBackupFileName(room){
   return `cgl50-backup-${room}-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
 }
 // Pulls every registered member's saved state from Firebase (needs internet)
-// and bundles it into one object: { room, exportedAt, memberCount, members }
+// PLUS all room-level settings that live outside any one member's data:
+// _registry (member name list), _meta (Admin, hidden/restricted members,
+// task mode), _announcement (pinned Home-tab message), _weeklyReset
+// (this-week leaderboard baseline), _sharedTasks (Admin's shared task
+// list). Without these, a restore would bring every member's own tracker
+// data back fine but silently reset the room itself — no Admin, nobody
+// hidden/restricted, individual task mode, no announcement, no weekly
+// baseline — even though nothing about the room actually "reset".
 async function buildFullRoomBackup(){
   const room = getRoomCode();
   if(!room) return null;
@@ -3519,11 +3461,28 @@ async function buildFullRoomBackup(){
       members[nm] = raw ? JSON.parse(raw) : null;
     }catch(e){ members[nm] = null; }
   }
-  return { room, exportedAt: Date.now(), memberCount: names.length, members };
+  const safeParse = (raw)=>{ if(!raw) return null; try{ return JSON.parse(raw); }catch(e){ return null; } };
+  const [metaRaw, annRaw, wrRaw, sharedRaw] = await Promise.all([
+    kvdbGet('_meta'), kvdbGet('_announcement'), kvdbGet('_weeklyReset'), kvdbGet('_sharedTasks')
+  ]);
+  return {
+    room,
+    exportedAt: Date.now(),
+    memberCount: names.length,
+    members,
+    registry: names,
+    meta: safeParse(metaRaw),
+    announcement: safeParse(annRaw),
+    weeklyReset: safeParse(wrRaw),
+    sharedTasks: safeParse(sharedRaw)
+  };
 }
-// Pushes every member's state from a previously downloaded backup bundle
-// back into Firebase — used to recover a room after data loss. Destructive:
-// overwrites whatever is currently in Firebase for each listed member.
+// Pushes every member's state, plus all room-level settings, from a
+// previously downloaded backup bundle back into Firebase — used to
+// recover a room after data loss. Destructive: overwrites whatever is
+// currently in Firebase for each piece. Backups taken before this fix
+// (no meta/announcement/weeklyReset/sharedTasks fields) simply restore
+// members only, same as before — nothing new is forced onto old files.
 async function restoreFullRoomBackup(bundle){
   const room = getRoomCode();
   if(!room || !bundle || !bundle.members) throw new Error('Backup file khali ya galat hai.');
@@ -3532,6 +3491,26 @@ async function restoreFullRoomBackup(bundle){
     const val = bundle.members[nm];
     if(val === null || val === undefined) continue;
     await kvdbSet(playerKey(nm), JSON.stringify(val));
+  }
+  if(Array.isArray(bundle.registry) && bundle.registry.length){
+    await kvdbSet('_registry', JSON.stringify(bundle.registry));
+    roomRegistryCacheAt = 0;
+  }
+  if(bundle.meta && typeof bundle.meta==='object'){
+    await kvdbSet('_meta', JSON.stringify(bundle.meta));
+    roomMetaCacheAt = 0;
+  }
+  if(bundle.announcement && typeof bundle.announcement==='object'){
+    await kvdbSet('_announcement', JSON.stringify(bundle.announcement));
+    roomAnnouncementCacheAt = 0;
+  }
+  if(bundle.weeklyReset && typeof bundle.weeklyReset==='object'){
+    await kvdbSet('_weeklyReset', JSON.stringify(bundle.weeklyReset));
+    weeklyResetCacheAt = 0;
+  }
+  if(Array.isArray(bundle.sharedTasks) && bundle.sharedTasks.length){
+    await kvdbSet('_sharedTasks', JSON.stringify(bundle.sharedTasks));
+    sharedTaskDefsCacheAt = 0;
   }
   return names.length;
 }
@@ -3587,10 +3566,18 @@ function wireAdminBackupButtons(){
       const bundle = JSON.parse(text);
       const names = Object.keys(bundle.members||{});
       if(!names.length){ alert('Ye file khali hai ya galat format mein hai.'); return; }
-      if(!confirm(`Ye backup file ${names.length} member(s) ka data restore karegi aur unka current room data overwrite kar degi. Pakka karna chahte ho?`)) return;
+      const hasRoomSettings = !!(bundle.meta || bundle.announcement || bundle.weeklyReset || (bundle.sharedTasks && bundle.sharedTasks.length));
+      const settingsNote = hasRoomSettings ? ' Isme room settings (Admin, hidden/restricted members, task mode, shared tasks, pinned announcement, weekly baseline) bhi restore hongi.' : ' (Ye purani backup file hai — sirf member data restore hoga, room settings nahi.)';
+      if(!confirm(`Ye backup file ${names.length} member(s) ka data restore karegi aur unka current room data overwrite kar degi.${settingsNote} Pakka karna chahte ho?`)) return;
       await restoreFullRoomBackup(bundle);
       alert('Restore ho gaya ✅');
-      roomRegistryCacheAt = 0; // force fresh registry/data reads after restore
+      // Force fresh reads of every cached room-level piece after restore.
+      roomRegistryCacheAt = 0;
+      roomMetaCacheAt = 0;
+      roomAnnouncementCacheAt = 0;
+      weeklyResetCacheAt = 0;
+      sharedTaskDefsCacheAt = 0;
+      await refreshRoomMeta();
       await renderRoomPanel();
       await renderCompetePanel();
     }catch(e){
@@ -6460,7 +6447,7 @@ function renderExamLine(){
   document.getElementById('examLine').textContent =
     `Day 1: ${START_DATE.toLocaleDateString('en-IN',opts)}  →  Day ${TOTAL_DAYS}: ${examDate.toLocaleDateString('en-IN',opts)}. 🟡 Bada task zyada ₹, 🔵 chhota task kam ₹ — roz ka total ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')}, ${TOTAL_DAYS} din ka poora ₹${totalRupees.toLocaleString('en-IN')} ka target.`;
   const titleEl = document.getElementById('mainTitle');
-  if(titleEl) titleEl.textContent = `🎯 CGL TRACKER // ${TOTAL_DAYS} DAYS`;
+  if(titleEl) titleEl.textContent = `🎯 EXAM TRACKER`;
   const calLbl = document.getElementById('calDaysLabel');
   if(calLbl) calLbl.textContent = TOTAL_DAYS;
 }
@@ -6629,7 +6616,7 @@ function drawAppIcon(size){
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `800 ${Math.round(size*0.281)}px 'Oswald', sans-serif`;
-  ctx.fillText('CGL', size/2, size/2-size*0.094);
+  ctx.fillText('EXAM', size/2, size/2-size*0.094);
   ctx.font = `700 ${Math.round(size*0.135)}px 'IBM Plex Mono', monospace`;
   ctx.fillStyle = '#ffffff';
   ctx.fillText('TRACKER', size/2, size/2+size*0.198);
@@ -6665,8 +6652,8 @@ async function setupHomeScreenIcon(){
     favicon.href = icon192;
 
     const manifest = {
-      name: "CGL Tracker — 50 Day Plan",
-      short_name: "CGL Tracker",
+      name: "Exam Tracker",
+      short_name: "Exam Tracker",
       start_url: ".",
       display: "standalone",
       background_color: "#0a0a0a",
@@ -6732,7 +6719,7 @@ document.getElementById('notifBtn').addEventListener('click', async ()=>{
   } else {
     const ok = await ensureNotificationPermission();
     setNotifPref(ok);
-    if(ok) fireNotification('🎯 CGL Tracker', 'Notifications on ho gaye — friends ke tracker update yahan dikhenge.');
+    if(ok) fireNotification('🎯 Exam Tracker', 'Notifications on ho gaye — friends ke tracker update yahan dikhenge.');
   }
   updateNotifBtnLabel();
 });
@@ -6870,7 +6857,7 @@ document.getElementById('targetReminderBtn').addEventListener('click', async ()=
     const ok = await ensureNotificationPermission();
     if(ok){
       setNotifPref(true); // target reminders route through the same fireNotification() gate
-      fireNotification('🎯 CGL Tracker', 'Target Reminder on ho gaya — set time pe agar target baaki hoga to yaad dilaunga.');
+      fireNotification('🎯 Exam Tracker', 'Target Reminder on ho gaya — set time pe agar target baaki hoga to yaad dilaunga.');
     }
   }
   updateTargetReminderBtnLabel();
