@@ -1157,6 +1157,14 @@
       <div class="stat"><div class="num" id="statPct">0%</div><div class="lbl">📈 Progress</div></div>
     </div>
 
+    <div class="grid-label" style="margin-top:0;">💰 Aaj Ki Kamai (Live)</div>
+    <div class="wallet" id="walletToday">
+      <div class="stat stat-gain"><div class="num" id="statEarnToday">₹0</div><div class="lbl">✅ Kamaya</div></div>
+      <div class="stat stat-loss"><div class="num" id="statLossToday">₹0</div><div class="lbl">❌ Chuka</div></div>
+      <div class="stat"><div class="num" id="statPendingToday">₹0</div><div class="lbl">⏳ Baaki</div></div>
+    </div>
+
+    <div class="grid-label">🏦 Total Kamai (Ab Tak)</div>
     <div class="wallet">
       <div class="stat stat-gain"><div class="num" id="statEarn">₹0</div><div class="lbl">💰 Earned</div></div>
       <div class="stat stat-loss"><div class="num" id="statLoss">₹0</div><div class="lbl">💸 Lost</div></div>
@@ -1605,6 +1613,17 @@ function taskSlot(idx){
   const start = TASK_START_MIN[idx];
   const end = start + (TASK_DURATIONS_MIN[idx]||0);
   return { start, end };
+}
+// A task only counts as truly "missed" (lost ₹) after a fixed daily
+// cutoff — 9 PM — not the moment its own slot ends. Before 9 PM every
+// unchecked task on today just sits in "pending", however small; only
+// once it's 9 PM or later does whatever's still unticked flip to "lost".
+// For any day other than today the whole day is already behind us, so
+// everything in it is due by definition.
+const LOSS_CUTOFF_MIN = 21*60; // 9:00 PM
+function isTaskDue(dayIndex, startMin, durMin){
+  if(dayIndex !== todayDayNum()) return true;
+  return nowMinutes() >= LOSS_CUTOFF_MIN;
 }
 // Fixed daily break windows (minutes since midnight) that sit BETWEEN the
 // study blocks above. The Smart Time Guide below must never schedule a
@@ -2087,14 +2106,22 @@ function escapeHtml(s){
 
 // Single source of truth for a day's earned/lost amounts.
 // A rest day never contributes to either earned or lost.
-function dayEarnLoss(d){
-  if(d.rest) return {earned:0, lost:0};
-  let earned=0, lost=0;
+// dayIndex is optional: pass it (the Day N this data belongs to) to get
+// today's not-yet-due tasks correctly bucketed as "pending" instead of an
+// instant loss the moment the day starts. Omit it for old strict behaviour.
+function dayEarnLoss(d, dayIndex){
+  if(d.rest) return {earned:0, lost:0, pending:0};
+  let earned=0, lost=0, pending=0;
   d.tasks.forEach((checked, idx)=>{
     const v = taskValue(idx);
-    if(checked) earned += v; else lost += v;
+    if(checked){ earned += v; return; }
+    if(dayIndex===undefined || isTaskDue(dayIndex, TASK_START_MIN[idx], TASK_DURATIONS_MIN[idx])){
+      lost += v;
+    } else {
+      pending += v;
+    }
   });
-  return { earned, lost };
+  return { earned, lost, pending };
 }
 
 // A day counts as "touched" if the user has actually interacted with it —
@@ -2828,15 +2855,22 @@ async function applySharedTaskModeIfNeeded(){
   renderTaskEditForm();
 }
 
-function dayEarnLossFrom(st, d){
-  if(d.rest) return {earned:0, lost:0};
+function dayEarnLossFrom(st, d, dayIndex){
+  if(d.rest) return {earned:0, lost:0, pending:0};
   const values = taskValuesFrom(st);
-  let earned=0, lost=0;
+  const defs = getTaskDefsFromState(st);
+  let earned=0, lost=0, pending=0;
   d.tasks.forEach((checked, idx)=>{
     const v = (values[idx]!==undefined) ? values[idx] : (DAILY_TARGET/(values.length||1));
-    if(checked) earned += v; else lost += v;
+    if(checked){ earned += v; return; }
+    const def = defs[idx];
+    if(dayIndex===undefined || !def || isTaskDue(dayIndex, def.start, def.duration)){
+      lost += v;
+    } else {
+      pending += v;
+    }
   });
-  return { earned, lost };
+  return { earned, lost, pending };
 }
 function dayStudyMinutesFrom(st, d){
   const defs = getTaskDefsFromState(st);
@@ -2883,7 +2917,7 @@ function computeStatsFrom(st){
     if(done===taskCount) daysDone++;
     if(i<=activeUpto){
       studyMins += dayStudyMinutesFrom(st, d);
-      const r = dayEarnLossFrom(st, d);
+      const r = dayEarnLossFrom(st, d, i);
       earned += r.earned;
       lost += r.lost;
     }
@@ -3945,7 +3979,7 @@ function computeStats(){
   let earned=0, lost=0;
   for(let i=1;i<=activeUpto;i++){
     const d = getDay(i);
-    const r = dayEarnLoss(d);
+    const r = dayEarnLoss(d, i);
     earned += r.earned;
     lost += r.lost;
   }
@@ -3964,6 +3998,29 @@ function computeStats(){
   const netEl = document.getElementById('statNet');
   netEl.textContent = (net<0?'-':'')+'₹'+Math.abs(net).toLocaleString('en-IN');
   netEl.style.color = net<0 ? 'var(--loss)' : '#000';
+}
+
+// Today's live wallet: what's already banked, what's truly missed (slot
+// already over and still unticked), and what's still pending (either
+// running right now or scheduled later today) — so nothing shows as a
+// "loss" before its own time slot has actually passed.
+function renderTodayWallet(){
+  const earnEl = document.getElementById('statEarnToday');
+  if(!earnEl) return;
+  const tn = todayDayNum();
+  const d = getDay(tn);
+  const lossEl = document.getElementById('statLossToday');
+  const pendEl = document.getElementById('statPendingToday');
+  if(d.rest){
+    earnEl.textContent = '😴';
+    lossEl.textContent = 'Rest';
+    pendEl.textContent = 'Day';
+    return;
+  }
+  const r = dayEarnLoss(d, tn);
+  earnEl.textContent = '₹'+Math.round(r.earned).toLocaleString('en-IN');
+  lossEl.textContent = '₹'+Math.round(r.lost).toLocaleString('en-IN');
+  pendEl.textContent = '₹'+Math.round(r.pending||0).toLocaleString('en-IN');
 }
 
 // Longest-ever run of "streak-alive" days (freezes included), where rest
@@ -5497,18 +5554,23 @@ function renderChart(){
     const x = (i-1)*(barW+gap);
     const d = getDay(i);
     const isFuture = i>tn;
-    let earnedAmt=0, lostAmt=0;
+    let earnedAmt=0, lostAmt=0, pendingAmt=0;
     if(!isFuture){
-      const r = dayEarnLoss(d);
+      const r = dayEarnLoss(d, i);
       earnedAmt = r.earned;
       lostAmt = r.lost;
+      pendingAmt = r.pending||0;
     }
     const earnH = Math.max(0,(earnedAmt/maxVal)*half);
     const lostH = Math.max(0,(lostAmt/maxVal)*half);
+    const pendH = Math.max(0,(pendingAmt/maxVal)*half);
     const gainColor = isFuture ? '#2a2a2a' : (d.rest ? '#555' : 'var(--gain)');
     const lossColor = isFuture ? '#2a2a2a' : (d.rest ? '#555' : 'var(--loss)');
     bars += `<rect x="${x}" y="${half-earnH}" width="${barW}" height="${earnH}" fill="${gainColor}" rx="2"></rect>`;
     bars += `<rect x="${x}" y="${half}" width="${barW}" height="${lostH}" fill="${lossColor}" rx="2"></rect>`;
+    if(pendH>0){
+      bars += `<rect x="${x}" y="${half+lostH}" width="${barW}" height="${pendH}" fill="#3a3a3a" rx="2"></rect>`;
+    }
     if(i===tn){
       bars += `<rect x="${x-1.5}" y="1" width="${barW+3}" height="${chartH-2}" fill="none" stroke="var(--white)" stroke-width="1" stroke-dasharray="2,2" rx="3"></rect>`;
     }
@@ -5972,9 +6034,9 @@ function renderLossLog(){
     const done = d.tasks.filter(Boolean).length;
     const missed = TASKS.length-done;
     if(missed<=0) continue;
-    let lostAmt = 0;
-    d.tasks.forEach((chk, idx)=>{ if(!chk) lostAmt += taskValue(idx); });
-    rows.push({ day:i, missed, lostAmt });
+    const r = dayEarnLoss(d, i);
+    if(r.lost<=0) continue;
+    rows.push({ day:i, missed, lostAmt:r.lost });
   }
   if(rows.length===0){
     el.innerHTML = `<div class="losshint">🎉 Abhi tak koi loss nahi — sab tasks poore ho rahe hain!</div>`;
@@ -6024,7 +6086,7 @@ function renderBestWorst(){
     if(d.rest) continue;
     const done = d.tasks.filter(Boolean).length;
     if(done===0 && i===tn) continue;
-    const r = dayEarnLoss(d);
+    const r = dayEarnLoss(d, i);
     const net = r.earned - r.lost;
     if(!best || net>best.net) best = {day:i, net, done};
     if(!worst || net<worst.net) worst = {day:i, net, done};
@@ -6040,7 +6102,7 @@ function renderBestWorst(){
 }
 
 function exportCSV(){
-  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Percentile','Mock Total','Wrong Math','Wrong Reasoning','Wrong English','Wrong GK','Wrong Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Notes','Silly Mistakes'];
+  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Percentile','Mock Total','Wrong Math','Wrong Reasoning','Wrong English','Wrong GK','Wrong Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Pending (₹)','Notes','Silly Mistakes'];
   const rows = [header];
   for(let i=1;i<=TOTAL_DAYS;i++){
     const d = getDay(i);
@@ -6048,8 +6110,8 @@ function exportCSV(){
     const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
     const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
     const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
-    const r = dayEarnLoss(d);
-    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, d.mock.percentile, mockTotal, d.mock.wrongMath, d.mock.wrongReasoning, d.mock.wrongEnglish, d.mock.wrongGk, wrongTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), (d.notes||''), (d.mistakes||'')]);
+    const r = dayEarnLoss(d, i);
+    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, d.mock.percentile, mockTotal, d.mock.wrongMath, d.mock.wrongReasoning, d.mock.wrongEnglish, d.mock.wrongGk, wrongTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), Math.round(r.pending||0), (d.notes||''), (d.mistakes||'')]);
   }
   rows.push([]);
   rows.push(['Math Chapter','Wrong Count']);
@@ -6438,6 +6500,7 @@ function renderAll(){
   safeRun(renderChaptersTab, 'renderChaptersTab');
   safeRun(renderRevisionTab, 'renderRevisionTab');
   safeRun(computeStats, 'computeStats');
+  safeRun(renderTodayWallet, 'renderTodayWallet');
   safeRun(checkAndAwardBadges, 'checkAndAwardBadges');
   safeRun(renderBadges, 'renderBadges');
   safeRun(checkLevelUp, 'checkLevelUp');
