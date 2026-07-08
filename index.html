@@ -2547,16 +2547,49 @@ function startRoomAutoSync(){
 // Every player's tracker lives under its own key, but marked "shared" so
 // a friend who knows your exact name can load and view (read-only) the
 // same data. Nobody but the owner ever writes to their own key.
+// NOTE: this plain name-only key is what Firebase (kvdbGet/kvdbSet) uses —
+// that's already safe because kvdbGet/kvdbSet nest it under a
+// rooms/{room}/... path. Do NOT use this key directly for window.storage
+// or localStorage — use localPlayerKey() below instead, which is what
+// actually scopes those two shared/local fallbacks so two different
+// people with the same name never collide.
 function playerKey(name){ return 'cgl50-state:' + name.trim().toLowerCase(); }
 
+// Stable per-device ID, generated once and cached in localStorage. Used to
+// scope the window.storage/localStorage key for solo players (no Sync
+// Room joined) so that two different solo users who happen to type the
+// same name don't overwrite each other's data in the shared bucket.
+function getOrCreateDeviceId(){
+  let id = null;
+  try{ id = localStorage.getItem('cgl50-device-id'); }catch(e){}
+  if(!id){
+    id = 'dev-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    try{ localStorage.setItem('cgl50-device-id', id); }catch(e){}
+  }
+  return id;
+}
+
+// Key used ONLY for window.storage (shared:true) and the localStorage
+// fallback. Scoped by the Sync Room code when in a room, or by a stable
+// per-device ID when solo — this is the actual collision fix, since the
+// old plain playerKey(name) put every same-named player from every room
+// (and every solo device) on the exact same shared window.storage key.
+// Firebase stays untouched: kvdbGet/kvdbSet keep using playerKey(name)
+// directly, since that path is already namespaced under rooms/{room}/...
+function localPlayerKey(name){
+  const room = getRoomCode();
+  if(room) return 'cgl50-state:' + room + ':' + name.trim().toLowerCase();
+  return 'cgl50-state:' + getOrCreateDeviceId() + ':' + name.trim().toLowerCase();
+}
+
 async function loadPlayerState(name){
-  const key = playerKey(name);
   if(getRoomCode()){
-    const raw = await kvdbGet(key);
+    const raw = await kvdbGet(playerKey(name));
     if(raw){
       try{ return JSON.parse(raw); }catch(e){ /* fall through */ }
     }
   }
+  const key = localPlayerKey(name);
   if(window.storage && typeof window.storage.get === 'function'){
     try{
       const res = await window.storage.get(key, true);
@@ -2574,7 +2607,7 @@ async function save(){
   // Never write to anyone else's data — only the owner's own key.
   if(viewingName !== myName) return;
   const json = JSON.stringify(state);
-  const key = playerKey(myName);
+  const key = localPlayerKey(myName);
   try{ localStorage.setItem(key, json); }
   catch(e){ console.error('localStorage save failed', e); }
   if(window.storage && typeof window.storage.set === 'function'){
@@ -2582,28 +2615,50 @@ async function save(){
     catch(e){ console.error('window.storage save failed', e); }
   }
   if(getRoomCode()){
-    await kvdbSet(key, json);
+    await kvdbSet(playerKey(myName), json);
   }
 }
 
-// One-time migration: older single-player versions of this tracker stored
-// everything under a private, non-shared key. If that old data exists and
-// this player's new shared key is still empty, copy it over so nobody's
-// progress gets lost when upgrading to the multiplayer version.
+// One-time migration, forward through every storage-key format this
+// tracker has ever used, so nobody's progress gets lost when upgrading:
+//   v0  'cgl-tracker-state-v2'   oldest, single-player, private key
+//   v1  playerKey(name)          i.e. 'cgl50-state:name' — shared, but
+//                                 collision-prone: two different Sync
+//                                 Rooms (or two solo devices) using the
+//                                 same name could overwrite each other on
+//                                 the shared window.storage bucket
+//   v2  localPlayerKey(name)     room-code-scoped (in a Sync Room) or
+//                                 per-device-ID-scoped (solo) — current,
+//                                 collision-safe key
+// Only the window.storage/localStorage fallback needs this; Firebase was
+// never affected since it's already namespaced under rooms/{room}/...
 async function migrateOldDataIfNeeded(name){
-  const oldKey = 'cgl-tracker-state-v2';
-  const newKey = playerKey(name);
+  const newKey = localPlayerKey(name);
   let hasNew = false;
   try{ if(localStorage.getItem(newKey)) hasNew = true; }catch(e){}
   if(!hasNew && window.storage && typeof window.storage.get === 'function'){
     try{ const r = await window.storage.get(newKey, true); if(r && r.value) hasNew = true; }catch(e){}
   }
   if(hasNew) return;
+
+  // Try the v1 (pre-fix, collision-prone) shared key first — it's the
+  // most recent old format, so most likely to hold someone's real data.
+  const v1Key = playerKey(name);
   let oldRaw = null;
-  try{ oldRaw = localStorage.getItem(oldKey); }catch(e){}
+  try{ oldRaw = localStorage.getItem(v1Key); }catch(e){}
   if(!oldRaw && window.storage && typeof window.storage.get === 'function'){
-    try{ const r = await window.storage.get(oldKey, false); if(r && r.value) oldRaw = r.value; }catch(e){}
+    try{ const r = await window.storage.get(v1Key, true); if(r && r.value) oldRaw = r.value; }catch(e){}
   }
+
+  // Fall back to the oldest v0 private, non-shared key.
+  if(!oldRaw){
+    const v0Key = 'cgl-tracker-state-v2';
+    try{ oldRaw = localStorage.getItem(v0Key); }catch(e){}
+    if(!oldRaw && window.storage && typeof window.storage.get === 'function'){
+      try{ const r = await window.storage.get(v0Key, false); if(r && r.value) oldRaw = r.value; }catch(e){}
+    }
+  }
+
   if(!oldRaw) return;
   try{ localStorage.setItem(newKey, oldRaw); }catch(e){}
   if(window.storage && typeof window.storage.set === 'function'){
@@ -3459,12 +3514,27 @@ async function renderRoomPanel(){
       await renderCompetePanel();
     });
   } else {
-    el.innerHTML = `
+    // Refresh first so isMeAdmin() below is accurate even right after
+    // just creating/joining this room (currentRoomAdmin can otherwise
+    // still be holding a stale value from before this render).
+    await refreshRoomMeta();
+    const iAmAdmin = isMeAdmin();
+    const roomCodeBlockHtml = iAmAdmin
+      ? `
       <div class="pbrow" style="margin-bottom:8px;">
         <span>🔗 Room Code: <b style="color:var(--accent);">${escapeHtml(room)}</b></span>
         <button class="nav-btn" id="copyRoomBtn">📋 Copy</button>
       </div>
       <div class="losshint" style="padding-top:0;">Ye code dost ko bhejo — "Join" karke wo isi room mein aa jayega.</div>
+      `
+      : `
+      <div class="pbrow" style="margin-bottom:8px;">
+        <span>🔒 Room Code sirf Admin ke paas hai — naye member ko judwana ho to Admin se bolo.</span>
+      </div>
+      ${currentRoomAdmin ? `<div class="losshint" style="padding-top:0;">👑 Admin: <b style="color:var(--accent);">${escapeHtml(currentRoomAdmin)}</b></div>` : ''}
+      `;
+    el.innerHTML = `
+      ${roomCodeBlockHtml}
       <div class="grid-label" style="margin-top:14px;">👑 Group Admin</div>
       <div id="adminInfoBar" class="losshint" style="padding-top:0;">Loading…</div>
       <div id="adminControlsWrap"></div>
@@ -3472,14 +3542,16 @@ async function renderRoomPanel(){
         <button class="nav-btn" id="leaveRoomBtn">🚪 Room Chodo</button>
       </div>
     `;
-    const copyBtn = document.getElementById('copyRoomBtn');
-    if(copyBtn) copyBtn.addEventListener('click', ()=>{
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(room).then(()=>alert('Room Code copy ho gaya ✅')).catch(()=>prompt('Manually copy karo:', room));
-      } else {
-        prompt('Manually copy karo:', room);
-      }
-    });
+    if(iAmAdmin){
+      const copyBtn = document.getElementById('copyRoomBtn');
+      if(copyBtn) copyBtn.addEventListener('click', ()=>{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(room).then(()=>alert('Room Code copy ho gaya ✅')).catch(()=>prompt('Manually copy karo:', room));
+        } else {
+          prompt('Manually copy karo:', room);
+        }
+      });
+    }
     const leaveBtn = document.getElementById('leaveRoomBtn');
     if(leaveBtn) leaveBtn.addEventListener('click', async ()=>{
       if(!confirm('Room chodne se ye device wapas sirf local/Claude storage pe chala jayega (data delete nahi hoga). Pakka?')) return;
@@ -3507,6 +3579,28 @@ function loadAdminBackupCache(room){
     const raw = localStorage.getItem(adminBackupCacheKey(room));
     return raw ? JSON.parse(raw) : null;
   }catch(e){ return null; }
+}
+// Reminder nudge shown only to the Admin, near the backup buttons: warns
+// when the last full-room backup is 7+ days old (or was never taken at
+// all), since backups here are purely manual/on-demand with nothing else
+// prompting the Admin to keep them fresh.
+function formatBackupNudge(cachedBackup){
+  const daysSince = cachedBackup ? Math.floor((Date.now() - cachedBackup.exportedAt) / 86400000) : null;
+  const stale = (daysSince === null) || daysSince >= 7;
+  let text;
+  if(daysSince === null) text = '⚠️ Kabhi backup nahi liya — abhi le lo.';
+  else if(daysSince === 0) text = '📅 Aakhri backup: aaj liya gaya.';
+  else if(daysSince === 1) text = '📅 Aakhri backup: 1 din pehle' + (stale ? ' — naya le lo.' : '.');
+  else text = `📅 Aakhri backup: ${daysSince} din pehle` + (stale ? ' — naya le lo.' : '.');
+  return { text, stale };
+}
+function renderBackupNudgeInto(el, cachedBackup){
+  if(!el) return;
+  const { text, stale } = formatBackupNudge(cachedBackup);
+  el.textContent = text;
+  el.style.cssText = 'padding-top:0;margin-top:8px;' + (stale
+    ? 'border:1px solid var(--loss);background:rgba(248,113,113,0.08);border-radius:6px;padding:8px 10px;color:var(--loss);font-weight:700;'
+    : '');
 }
 function downloadJSONFile(filename, dataObj){
   const blob = new Blob([JSON.stringify(dataObj, null, 2)], {type:'application/json'});
@@ -3558,6 +3652,10 @@ function wireAdminBackupButtons(){
   const lastBtn = document.getElementById('adminBackupLastBtn');
   const fileInput = document.getElementById('adminRestoreFile');
   const statusEl = document.getElementById('adminBackupStatus');
+  const nudgeEl = document.getElementById('adminBackupNudge');
+
+  const room0 = getRoomCode();
+  renderBackupNudgeInto(nudgeEl, room0 ? loadAdminBackupCache(room0) : null);
 
   if(allBtn) allBtn.addEventListener('click', async ()=>{
     const room = getRoomCode();
@@ -3574,6 +3672,7 @@ function wireAdminBackupButtons(){
       saveAdminBackupCache(room, bundle);
       downloadJSONFile(fmtBackupFileName(room), bundle);
       if(statusEl) statusEl.textContent = `Aakhri backup: ${new Date(bundle.exportedAt).toLocaleString('en-IN')} — ${bundle.memberCount} member(s).`;
+      renderBackupNudgeInto(document.getElementById('adminBackupNudge'), bundle);
     }catch(e){
       alert('Backup nahi ban paya.\n\nWajah: ' + ((e&&e.message)||String(e)) + '\n\nInternet check karo aur dobara try karo.');
     }finally{
@@ -3734,6 +3833,7 @@ async function renderAdminSection(){
   const backupHtml = `
     <div class="grid-label" style="margin-top:14px;">📦 Sabka Data Backup</div>
     <div class="losshint" style="padding-top:0;">Room ke sabhi members ka poora data ek file mein download karo — safe rakhne ke liye ya kisi doosre device pe restore karne ke liye. Internet na ho to "Aakhri Backup" wale button se pichli baar li gayi file dobara mil jayegi.</div>
+    <div class="losshint" id="adminBackupNudge"></div>
     <div class="btnrow" style="margin-top:8px;">
       <button class="nav-btn" id="adminBackupAllBtn">⬇️ Sabka Backup Lo</button>
       <button class="nav-btn" id="adminBackupLastBtn">📂 Aakhri Backup (Offline)</button>
@@ -7033,6 +7133,14 @@ function startLiveClockTicker(){
     safeRun(checkTargetReminder, 'checkTargetReminder(tick)');
   }, 60000);
 }
+
+// Debounced fields (notes, mistakes, mock/sectional scores) wait 400-600ms
+// before actually saving — fine while the app stays open, but risky if the
+// person closes the tab or switches apps right after typing. Flushing a
+// save the moment the page goes to background/closes means that last
+// keystroke never gets silently dropped.
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+window.addEventListener('pagehide', ()=>{ save(); });
 
 (async function init(){
   myName = await getOrCreateMyNameAsync();
