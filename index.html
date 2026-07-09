@@ -714,6 +714,204 @@
     to{opacity:1;transform:translateY(0);}
   }
 
+  /* ===== Calc tab — colourful operation buttons ===== */
+  .calcGrid{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;
+  }
+  .calcCard{
+    display:flex;align-items:center;gap:12px;text-align:left;
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    border:1px solid var(--border);border-radius:16px;
+    padding:16px 12px;cursor:pointer;position:relative;
+    font-family:'IBM Plex Mono',monospace;color:var(--text);
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    transition:transform .12s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .calcCard:active{transform:scale(0.95);}
+  .calcIcon{
+    width:46px;height:46px;min-width:46px;border-radius:50%;
+    background:var(--panel2);display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .calcIcon svg{width:22px;height:22px;}
+  .calcLabel{flex:1;font-weight:800;font-size:15.5px;line-height:1.25;color:var(--white);}
+  .calcArrow{font-size:20px;font-weight:800;flex-shrink:0;}
+  .calcCard[data-calc="addition"] .calcIcon{color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,0.25) inset;}
+  .calcCard[data-calc="addition"]{border-color:rgba(96,165,250,0.3);}
+  .calcCard[data-calc="addition"] .calcArrow{color:var(--blue);}
+  .calcCard[data-calc="subtraction"] .calcIcon{color:var(--loss);box-shadow:0 0 0 1px rgba(248,113,113,0.25) inset;}
+  .calcCard[data-calc="subtraction"]{border-color:rgba(248,113,113,0.3);}
+  .calcCard[data-calc="subtraction"] .calcArrow{color:var(--loss);}
+  .calcCard[data-calc="multiplication"] .calcIcon{color:var(--purple);box-shadow:0 0 0 1px rgba(192,132,252,0.25) inset;}
+  .calcCard[data-calc="multiplication"]{border-color:rgba(192,132,252,0.3);}
+  .calcCard[data-calc="multiplication"] .calcArrow{color:var(--purple);}
+  .calcCard[data-calc="division"] .calcIcon{color:var(--teal);box-shadow:0 0 0 1px rgba(45,212,191,0.25) inset;}
+  .calcCard[data-calc="division"]{border-color:rgba(45,212,191,0.3);}
+  .calcCard[data-calc="division"] .calcArrow{color:var(--teal);}
+  @media (max-width:380px){
+    .calcLabel{font-size:14px;}
+    .calcCard{padding:14px 10px;gap:9px;}
+  }
+  .calcPage{display:none;}
+  .calcPage.active{display:block;animation:tabIn .28s ease;}
+  .calcGrid.calcGrid-1col{grid-template-columns:1fr;}
+  .calcSubHead{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .calcBackBtn{
+    width:38px;height:38px;min-width:38px;border-radius:50%;
+    background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);font-size:21px;font-weight:800;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .calcBackBtn:active{transform:scale(0.9);}
+  .calcSubTitle{font-family:'Oswald',sans-serif;font-size:19px;font-weight:800;color:var(--white);}
+
+  /* ===== Calc bottom sheet (Practice Setup) ===== */
+  .calcSheetOverlay{
+    position:fixed;inset:0;z-index:520;
+    background:rgba(4,3,6,0.72);
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .calcSheetOverlay.show{display:flex;}
+  .calcSheetCard{
+    position:relative;width:100%;max-width:520px;
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    border:1px solid var(--border-strong);border-bottom:none;
+    border-radius:22px 22px 0 0;
+    padding:10px 18px calc(20px + env(safe-area-inset-bottom,0px));
+    max-height:88vh;overflow-y:auto;
+    box-shadow:0 -10px 40px rgba(0,0,0,0.6);
+    animation:calcSheetUp .22s ease;
+  }
+  @keyframes calcSheetUp{from{transform:translateY(24px);opacity:0.4;}to{transform:translateY(0);opacity:1;}}
+  .calcSheetHandle{width:40px;height:4px;border-radius:3px;background:var(--border-strong);margin:6px auto 14px;}
+  .calcFieldRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
+  .calcFieldLabel{font-size:14.5px;font-weight:800;color:var(--white);}
+  .calcHint{font-size:11.5px;color:var(--muted);font-weight:700;margin:4px 0 10px;line-height:1.4;}
+  .calcSelect{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:14px;
+    padding:8px 10px;
+  }
+  .calcSelect:focus{outline:none;border-color:var(--white);}
+  .calcChipRow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .calcChipRow-col{flex-direction:column;align-items:flex-start;}
+  .calcChip{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:9px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    padding:9px 14px;cursor:pointer;
+  }
+  .calcChip.active{background:var(--white);color:#000;border-color:var(--white);}
+  .calcChip.active::before{content:"\2713\00a0\00a0";}
+  .calcSheetDivider{border-top:1px dashed var(--border);margin:16px 0;}
+  .calcCountBadge{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:50%;
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13.5px;color:var(--white);
+  }
+  .calcSlider{width:100%;margin-top:10px;accent-color:var(--teal);}
+  .calcRangeRow{display:flex;gap:10px;margin-top:8px;}
+  .calcRangeField{flex:1;display:flex;flex-direction:column;gap:4px;}
+  .calcRangeField label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;}
+  .calcRangeField input{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
+    padding:9px 10px;width:100%;
+  }
+  .calcRangeField input:focus{outline:none;border-color:var(--white);}
+  .calcSheetFooter{display:flex;gap:10px;margin-top:20px;}
+  .calcSheetBtn{
+    flex:1;padding:13px 10px;border-radius:11px;font-weight:800;font-size:14.5px;
+    font-family:'IBM Plex Mono',monospace;cursor:pointer;text-align:center;border:1px solid transparent;
+  }
+  .calcSheetCancel{background:transparent;border-color:var(--border-strong);color:var(--teal);}
+  .calcSheetStart{background:var(--teal);border-color:var(--teal);color:#04211d;}
+  .calcSheetStart:active, .calcSheetCancel:active{transform:scale(0.97);}
+
+  /* ===== Calc practice session ===== */
+  .calcStatsRow{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+  .calcStatPill{
+    display:flex;align-items:center;gap:6px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:10px;padding:8px 12px;
+    font-weight:800;font-size:14px;
+  }
+  .calcStatPill-correct{color:var(--gain);border-color:rgba(74,222,128,0.35);}
+  .calcStatPill-wrong{color:var(--loss);border-color:rgba(248,113,113,0.35);}
+  .calcStatPill-timer{color:var(--blue);border-color:rgba(96,165,250,0.35);margin-left:auto;}
+  .calcQuestionWrap{padding:26px 6px 34px;text-align:center;}
+  .calcQuestion{
+    font-family:'Oswald',sans-serif;font-size:clamp(24px,7.5vw,34px);font-weight:700;color:var(--white);
+    letter-spacing:0.3px;
+  }
+  .calcQuestion .calcQMark{color:var(--accent);}
+  .calcCtrlRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .calcCtrlBtn{
+    font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    border-radius:10px;cursor:pointer;border:1px solid transparent;
+  }
+  .calcSkipBtn{
+    background:var(--panel2);border-color:var(--border-strong);color:var(--text);
+    padding:12px 18px;
+  }
+  .calcSkipBtn:active{transform:scale(0.95);}
+  .calcAutoBtn{
+    display:flex;align-items:center;gap:8px;background:rgba(45,212,191,0.1);
+    border-color:var(--teal);color:var(--teal);padding:10px 12px;flex:1;justify-content:center;
+  }
+  .calcAutoSwitch{width:34px;height:19px;border-radius:20px;background:var(--border-strong);position:relative;transition:background .15s ease;}
+  .calcAutoDot{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--muted);transition:transform .15s ease,background .15s ease;}
+  .calcAutoBtn.active .calcAutoSwitch{background:var(--teal);}
+  .calcAutoBtn.active .calcAutoDot{transform:translateX(15px);background:#04211d;}
+  .calcFlagBtn{
+    width:44px;height:44px;min-width:44px;background:var(--panel2);
+    border-color:var(--border-strong);color:var(--accent);font-size:17px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .calcFlagBtn.active{background:var(--accent);color:#1a1404;border-color:var(--accent);}
+  .calcFlagBtn:active{transform:scale(0.9);}
+  .calcModeRow{display:flex;gap:8px;margin-bottom:14px;}
+  .calcModeBtn{
+    width:42px;height:42px;border-radius:10px;background:var(--panel2);
+    border:1px solid var(--border-strong);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .calcModeBtn svg{width:19px;height:19px;}
+  .calcModeBtn.active{background:var(--teal);border-color:var(--teal);color:#04211d;}
+  .calcModeBtn:active{transform:scale(0.92);}
+  .calcAnsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .calcAnsBtn{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:13px;
+    color:var(--white);font-family:'Oswald',sans-serif;font-weight:700;font-size:clamp(19px,5.5vw,25px);
+    padding:22px 10px;cursor:pointer;text-align:center;
+    transition:transform .1s ease,border-color .15s ease,background .15s ease;
+  }
+  .calcAnsBtn:active{transform:scale(0.95);}
+  .calcAnsBtn.correct{background:linear-gradient(160deg,rgba(74,222,128,0.3),rgba(74,222,128,0.08));border-color:var(--gain);color:var(--gain);}
+  .calcAnsBtn.wrong{background:linear-gradient(160deg,rgba(248,113,113,0.3),rgba(248,113,113,0.08));border-color:var(--loss);color:var(--loss);}
+  .calcAnsBtn.disabled{pointer-events:none;opacity:0.85;}
+  .calcTypedWrap{display:flex;flex-direction:column;gap:14px;}
+  .calcTypedDisplay{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:12px;
+    padding:16px;text-align:center;font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;
+    color:var(--white);min-height:60px;display:flex;align-items:center;justify-content:center;
+  }
+  .calcTypedDisplay.correct{border-color:var(--gain);color:var(--gain);}
+  .calcTypedDisplay.wrong{border-color:var(--loss);color:var(--loss);}
+  .calcKeypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .calcKeyBtn{
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:11px;
+    color:var(--white);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:19px;
+    padding:16px 0;cursor:pointer;text-align:center;
+  }
+  .calcKeyBtn:active{transform:scale(0.93);}
+  .calcKeyBtn.calcKeySubmit{background:var(--teal);border-color:var(--teal);color:#04211d;}
+  .calcKeyBtn.calcKeyClear{color:var(--loss);}
+  .calcResultCard{text-align:center;padding:30px 10px 10px;}
+  .calcResultTitle{font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:var(--white);margin-bottom:14px;}
+  .calcResultStats{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;font-size:14px;color:var(--muted);font-weight:700;}
+  .calcResultStats b{color:var(--white);}
+  .calcResultBtnRow{display:flex;gap:10px;}
+  .calcResultBtnRow .nav-btn{flex:1;}
+
   /* ===== Bottom app tab bar ===== */
   .tabbar{
     position:fixed;bottom:0;left:0;right:0;z-index:60;
@@ -737,6 +935,7 @@
   .tabbtn[data-tab="chapters"]{--tb-color:var(--pink);}
   .tabbtn[data-tab="compete"]{--tb-color:var(--orange);}
   .tabbtn[data-tab="more"]{--tb-color:var(--gain);}
+  .tabbtn[data-tab="calc"]{--tb-color:var(--teal);}
   .tabbtn:active{transform:scale(0.9);}
   .tabbtn svg{width:18px;height:18px;transition:transform .18s ease,filter .18s ease;}
   .tabbtn.active{color:var(--tb-color);}
@@ -1205,6 +1404,69 @@
   </div>
 </div>
 
+<div class="calcSheetOverlay" id="calcSetupSheet">
+  <div class="calcSheetCard">
+    <div class="calcSheetHandle"></div>
+    <div class="onbTitle">Practice Setup</div>
+    <div class="onbSub">Select range and start.</div>
+
+    <div class="calcFieldRow">
+      <div class="calcFieldLabel">Numbers In Question:</div>
+      <select class="calcSelect" id="calcNumCount">
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+      </select>
+    </div>
+
+    <div class="calcFieldLabel" style="margin-top:16px;">Difficulty</div>
+    <div class="calcHint">Easy uses smaller numbers, Hard prefers larger or trickier ones.</div>
+    <div class="calcChipRow" id="calcDifficultyRow">
+      <button class="calcChip active" data-value="easy">Easy</button>
+      <button class="calcChip" data-value="medium">Medium</button>
+      <button class="calcChip" data-value="hard">Hard</button>
+    </div>
+
+    <div class="calcSheetDivider"></div>
+
+    <div class="calcFieldRow">
+      <div class="calcFieldLabel">Number of Questions</div>
+      <div class="calcCountBadge" id="calcQCountLbl">20</div>
+    </div>
+    <input type="range" class="calcSlider" id="calcQCount" min="5" max="50" step="5" value="20">
+
+    <div class="calcSheetDivider"></div>
+
+    <div class="calcFieldLabel">Question mode</div>
+    <div class="calcHint">Choose Random or Number range for this practice set.</div>
+    <div class="calcChipRow calcChipRow-col" id="calcQModeRow">
+      <button class="calcChip active" data-value="range">Number range</button>
+      <button class="calcChip" data-value="random">Random</button>
+    </div>
+
+    <div id="calcRangeWrap">
+      <div class="calcFieldLabel" style="margin-top:14px;">⌨️ Number Range</div>
+      <div class="calcRangeRow">
+        <div class="calcRangeField">
+          <label>From</label>
+          <input type="number" id="calcRangeFrom" value="1">
+        </div>
+        <div class="calcRangeField">
+          <label>To</label>
+          <input type="number" id="calcRangeTo" value="99">
+        </div>
+      </div>
+    </div>
+
+    <div class="calcSheetFooter">
+      <button class="calcSheetBtn calcSheetCancel" id="calcSetupCancelBtn">Cancel</button>
+      <button class="calcSheetBtn calcSheetStart" id="calcSetupStartBtn">Start &#8594;</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-left">🎯 <span>EXAM TRACKER</span></div>
   <div class="topbar-right">
@@ -1555,6 +1817,100 @@
     <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
   </div>
 
+  <div class="tabview" id="tab-calc" data-tabview="calc">
+
+    <div class="calcPage active" id="calcPage-menu">
+      <div class="quoteCard">
+        <div class="quoteEyebrow">🧮 Calc</div>
+        <div class="quoteText" id="quoteText-calc">Speed calculation daily practice.</div>
+      </div>
+
+      <div class="grid-label" style="margin-top:0;">🧮 Calculation Practice</div>
+      <div class="calcGrid">
+        <button class="calcCard" id="calcAddBtn" data-calc="addition">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          </span>
+          <span class="calcLabel">Addition</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcSubBtn" data-calc="subtraction">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+          </span>
+          <span class="calcLabel">Subtraction</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcMulBtn" data-calc="multiplication">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+          </span>
+          <span class="calcLabel">Multiplication</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcDivBtn" data-calc="division">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6.5" r="1.4" fill="currentColor" stroke="none"/><path d="M5 12h14"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span class="calcLabel">Division</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-session">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="calcSessionBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="calcSessionTitle">Addition</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="calcStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="calcStatWrong">0</span></div>
+        <div class="calcStatPill calcStatPill-timer">⏳ <span id="calcStatTimer">00:00.00</span></div>
+      </div>
+
+      <div class="calcQuestionWrap" id="calcQuestionWrap">
+        <div class="calcQuestion" id="calcQuestionText">—</div>
+      </div>
+
+      <div class="calcCtrlRow" id="calcCtrlRow">
+        <button class="calcCtrlBtn calcSkipBtn" id="calcSkipBtn">SKIP</button>
+        <button class="calcCtrlBtn calcAutoBtn active" id="calcAutoBtn">
+          <span>Auto</span>
+          <span class="calcAutoSwitch"><span class="calcAutoDot"></span></span>
+        </button>
+        <button class="calcCtrlBtn calcFlagBtn" id="calcFlagBtn" aria-label="Flag question">⚡</button>
+      </div>
+
+      <div class="calcModeRow" id="calcModeRow">
+        <button class="calcModeBtn" id="calcModeKeyboardBtn" aria-label="Typed input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01"/><path d="M10 10h.01"/><path d="M14 10h.01"/><path d="M18 10h.01"/><path d="M7 14h10"/></svg>
+        </button>
+        <button class="calcModeBtn active" id="calcModeGridBtn" aria-label="Multiple choice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+      </div>
+
+      <div class="calcAnsGrid" id="calcAnsGrid"></div>
+
+      <div class="calcTypedWrap" id="calcTypedWrap" style="display:none;">
+        <div class="calcTypedDisplay" id="calcTypedDisplay">&nbsp;</div>
+        <div class="calcKeypad" id="calcKeypad"></div>
+      </div>
+
+      <div class="calcResultCard" id="calcResultCard" style="display:none;">
+        <div class="calcResultTitle">🎉 Practice Complete!</div>
+        <div class="calcResultStats" id="calcResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="calcResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="calcResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div>
 
 <div class="tabbar" id="tabbar">
@@ -1582,6 +1938,11 @@
   <button class="tabbtn" data-tab="more">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
     <span>Stats</span>
+  </button>
+  <button class="tabbtn" data-tab="calc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8"/><path d="M8.5 11h.01"/><path d="M12 11h.01"/><path d="M15.5 11h.01"/><path d="M8.5 15h.01"/><path d="M12 15h.01"/><path d="M15.5 15h.01"/><path d="M8.5 19h.01"/><path d="M12 19h.01"/><path d="M15.5 19h.01"/></svg>
+    <span>Calc</span>
+  </button>
 </div>
 
 
@@ -6968,8 +7329,443 @@ function initTabs(){
   });
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
-  if(!['home','today','mock','chapters','compete','more'].includes(saved)) saved = 'home';
+  if(!['home','today','mock','chapters','compete','more','calc'].includes(saved)) saved = 'home';
   switchTab(saved);
+}
+
+// ===== Calc tab — sub-page navigation (menu <-> operation pages) =====
+function showCalcPage(name){
+  document.querySelectorAll('.calcPage').forEach(el=>{
+    el.classList.toggle('active', el.id === 'calcPage-' + name);
+  });
+}
+
+// ===== Calc practice engine =====
+const calcSession = {
+  op:'addition', numCount:2, difficulty:'easy', qMode:'range',
+  rangeFrom:1, rangeTo:99, totalQuestions:20,
+  index:0, correct:0, wrong:0, auto:true, answerMode:'mcq',
+  questions:[], flagged:{}, timerStart:0, timerInterval:null,
+  answered:false, typedValue:''
+};
+
+function openCalcSetup(op){
+  calcSession.op = op;
+  const sheet = document.getElementById('calcSetupSheet');
+  if(sheet) sheet.classList.add('show');
+}
+function closeCalcSetup(){
+  const sheet = document.getElementById('calcSetupSheet');
+  if(sheet) sheet.classList.remove('show');
+}
+
+function calcRandInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function calcDifficultyRange(difficulty){
+  if(difficulty==='medium') return [50, 500];
+  if(difficulty==='hard') return [100, 999];
+  return [10, 50];
+}
+// Picks one number honoring the setup sheet's "Number range" / "Random" (difficulty) mode.
+// Same source used by every operation (addition, subtraction, multiplication, division)
+// so all four share identical Numbers/Difficulty/Range/Question-Count behaviour.
+function calcPickNumber(dMin, dMax){
+  return calcSession.qMode==='range'
+    ? calcRandInt(calcSession.rangeFrom, calcSession.rangeTo)
+    : calcRandInt(dMin, dMax);
+}
+function generateOneCalcQuestion(dMin, dMax){
+  const op = calcSession.op;
+  const n = Math.max(2, calcSession.numCount);
+
+  if(op==='subtraction'){
+    // Chain subtraction: base − v2 − v3 ... Base is bumped up if needed so the
+    // running result (and the final answer) never goes negative.
+    const subs = [];
+    for(let k=1;k<n;k++) subs.push(calcPickNumber(dMin,dMax));
+    const subTotal = subs.reduce((a,b)=>a+b, 0);
+    let base = calcPickNumber(dMin,dMax);
+    if(base <= subTotal) base += subTotal + calcRandInt(1, Math.max(5, dMax-dMin));
+    const operands = [base, ...subs];
+    const answer = operands.reduce((a,b,idx)=> idx===0 ? b : a-b);
+    return {operands, answer, opSymbol:'\u2212'};
+  }
+
+  if(op==='multiplication'){
+    // First two factors follow the chosen difficulty/range; any extra factors
+    // (Numbers In Question > 2) use a small 2-12 multiplier so products stay
+    // sane for mental-math practice instead of exploding in size.
+    const operands = [calcPickNumber(dMin,dMax)];
+    for(let k=1;k<n;k++) operands.push(k===1 ? calcPickNumber(dMin,dMax) : calcRandInt(2,12));
+    const answer = operands.reduce((a,b)=>a*b, 1);
+    return {operands, answer, opSymbol:'\u00d7'};
+  }
+
+  if(op==='division'){
+    // Built backwards from a clean quotient so the division always comes out
+    // exact (no decimals). Extra divisors beyond the first use small 2-12 values.
+    const divisors = [];
+    for(let k=1;k<n;k++) divisors.push(k===1 ? Math.max(2, calcPickNumber(dMin,dMax)) : calcRandInt(2,12));
+    const quotient = Math.max(1, calcPickNumber(dMin,dMax));
+    let dividend = quotient;
+    divisors.forEach(d=> dividend *= d);
+    return {operands:[dividend, ...divisors], answer: quotient, opSymbol:'\u00f7'};
+  }
+
+  // addition (default) — also used by DI Addition
+  const operands = [];
+  for(let k=0;k<n;k++) operands.push(calcPickNumber(dMin,dMax));
+  const answer = operands.reduce((a,b)=>a+b, 0);
+  return {operands, answer, opSymbol:'+'};
+}
+function generateCalcQuestions(){
+  const qs = [];
+  const [dMin,dMax] = calcDifficultyRange(calcSession.difficulty);
+  for(let i=0;i<calcSession.totalQuestions;i++){
+    qs.push(generateOneCalcQuestion(dMin, dMax));
+  }
+  return qs;
+}
+function buildCalcMcqOptions(answer){
+  const opts = new Set([answer]);
+  let guard = 0;
+  while(opts.size < 4 && guard < 60){
+    guard++;
+    const delta = calcRandInt(1, Math.max(5, Math.round(answer*0.15)+3));
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    let candidate = answer + sign*delta;
+    if(candidate < 0) candidate = answer + delta;
+    if(candidate !== answer) opts.add(candidate);
+  }
+  const arr = Array.from(opts);
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+  }
+  return arr;
+}
+
+function readCalcSetupValues(){
+  const numEl = document.getElementById('calcNumCount');
+  calcSession.numCount = parseInt(numEl ? numEl.value : '2', 10) || 2;
+  const diffBtn = document.querySelector('#calcDifficultyRow .calcChip.active');
+  calcSession.difficulty = diffBtn ? diffBtn.getAttribute('data-value') : 'easy';
+  const qCountEl = document.getElementById('calcQCount');
+  calcSession.totalQuestions = parseInt(qCountEl ? qCountEl.value : '20', 10) || 20;
+  const modeBtn = document.querySelector('#calcQModeRow .calcChip.active');
+  calcSession.qMode = modeBtn ? modeBtn.getAttribute('data-value') : 'range';
+  let from = parseInt((document.getElementById('calcRangeFrom')||{}).value, 10);
+  let to = parseInt((document.getElementById('calcRangeTo')||{}).value, 10);
+  if(isNaN(from)) from = 1;
+  if(isNaN(to)) to = 99;
+  if(from > to){ const t=from; from=to; to=t; }
+  calcSession.rangeFrom = from;
+  calcSession.rangeTo = to;
+}
+
+function initCalcSetupSheet(){
+  document.querySelectorAll('#calcDifficultyRow .calcChip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#calcDifficultyRow .calcChip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('#calcQModeRow .calcChip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#calcQModeRow .calcChip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const wrap = document.getElementById('calcRangeWrap');
+      if(wrap) wrap.style.display = btn.getAttribute('data-value')==='range' ? '' : 'none';
+    });
+  });
+  const qSlider = document.getElementById('calcQCount');
+  const qLbl = document.getElementById('calcQCountLbl');
+  if(qSlider && qLbl){
+    qSlider.addEventListener('input', ()=>{ qLbl.textContent = qSlider.value; });
+  }
+  const cancelBtn = document.getElementById('calcSetupCancelBtn');
+  if(cancelBtn) cancelBtn.addEventListener('click', closeCalcSetup);
+  const startBtn = document.getElementById('calcSetupStartBtn');
+  if(startBtn) startBtn.addEventListener('click', ()=>{
+    readCalcSetupValues();
+    closeCalcSetup();
+    startCalcSession();
+  });
+  const overlay = document.getElementById('calcSetupSheet');
+  if(overlay) overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeCalcSetup(); });
+}
+
+function currentCalcQuestion(){ return calcSession.questions[calcSession.index]; }
+
+function startCalcSession(){
+  calcSession.index = 0;
+  calcSession.correct = 0;
+  calcSession.wrong = 0;
+  calcSession.flagged = {};
+  calcSession.questions = generateCalcQuestions();
+  calcSession.answerMode = 'mcq';
+  const titleEl = document.getElementById('calcSessionTitle');
+  if(titleEl) titleEl.textContent = calcSession.op.charAt(0).toUpperCase() + calcSession.op.slice(1);
+  updateCalcModeButtons();
+  updateCalcStatsDisplay();
+  const resultCard = document.getElementById('calcResultCard');
+  if(resultCard) resultCard.style.display = 'none';
+  const qWrap = document.getElementById('calcQuestionWrap');
+  if(qWrap) qWrap.style.display = '';
+  const ctrlRow = document.getElementById('calcCtrlRow');
+  if(ctrlRow) ctrlRow.style.display = '';
+  const modeRow = document.getElementById('calcModeRow');
+  if(modeRow) modeRow.style.display = '';
+  showCalcPage('session');
+  renderCalcQuestion();
+}
+
+function renderCalcQuestion(){
+  calcSession.answered = false;
+  calcSession.typedValue = '';
+  const q = currentCalcQuestion();
+  if(!q){ finishCalcSession(); return; }
+  const qText = document.getElementById('calcQuestionText');
+  if(qText) qText.innerHTML = q.operands.join(' ' + q.opSymbol + ' ') + ' = <span class="calcQMark">?</span>';
+  const flagBtn = document.getElementById('calcFlagBtn');
+  if(flagBtn) flagBtn.classList.toggle('active', !!calcSession.flagged[calcSession.index]);
+  startCalcTimer();
+  if(calcSession.answerMode==='mcq') renderCalcMcq(q); else renderCalcTyped();
+}
+
+function startCalcTimer(){
+  stopCalcTimer();
+  calcSession.timerStart = Date.now();
+  calcSession.timerInterval = setInterval(updateCalcTimerDisplay, 40);
+  updateCalcTimerDisplay();
+}
+function stopCalcTimer(){
+  if(calcSession.timerInterval){ clearInterval(calcSession.timerInterval); calcSession.timerInterval = null; }
+}
+function updateCalcTimerDisplay(){
+  const el = document.getElementById('calcStatTimer');
+  if(!el) return;
+  const elapsed = Date.now() - calcSession.timerStart;
+  const totalCenti = Math.floor(elapsed/10);
+  const mins = Math.floor(totalCenti/6000);
+  const secs = Math.floor((totalCenti%6000)/100);
+  const centi = totalCenti%100;
+  el.textContent = String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0')+'.'+String(centi).padStart(2,'0');
+}
+function updateCalcStatsDisplay(){
+  const c = document.getElementById('calcStatCorrect');
+  const w = document.getElementById('calcStatWrong');
+  if(c) c.textContent = calcSession.correct;
+  if(w) w.textContent = calcSession.wrong;
+}
+
+function renderCalcMcq(q){
+  const ansGrid = document.getElementById('calcAnsGrid');
+  const typedWrap = document.getElementById('calcTypedWrap');
+  if(ansGrid) ansGrid.style.display = 'grid';
+  if(typedWrap) typedWrap.style.display = 'none';
+  if(!ansGrid) return;
+  ansGrid.innerHTML = '';
+  const options = buildCalcMcqOptions(q.answer);
+  options.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = 'calcAnsBtn';
+    btn.textContent = opt;
+    btn.addEventListener('click', ()=> handleCalcAnswer(opt, btn));
+    ansGrid.appendChild(btn);
+  });
+}
+function renderCalcTyped(){
+  const ansGrid = document.getElementById('calcAnsGrid');
+  const typedWrap = document.getElementById('calcTypedWrap');
+  if(ansGrid) ansGrid.style.display = 'none';
+  if(typedWrap) typedWrap.style.display = 'flex';
+  const disp = document.getElementById('calcTypedDisplay');
+  if(disp){ disp.innerHTML = '&nbsp;'; disp.classList.remove('correct','wrong'); }
+  buildCalcKeypad();
+}
+function buildCalcKeypad(){
+  const pad = document.getElementById('calcKeypad');
+  if(!pad) return;
+  pad.innerHTML = '';
+  const keys = ['1','2','3','4','5','6','7','8','9','C','0','\u2713'];
+  keys.forEach(k=>{
+    const btn = document.createElement('button');
+    btn.className = 'calcKeyBtn' + (k==='\u2713' ? ' calcKeySubmit' : '') + (k==='C' ? ' calcKeyClear' : '');
+    btn.textContent = k;
+    btn.addEventListener('click', ()=> handleCalcKeypad(k));
+    pad.appendChild(btn);
+  });
+}
+function handleCalcKeypad(k){
+  if(calcSession.answered) return;
+  const disp = document.getElementById('calcTypedDisplay');
+  if(k==='C'){
+    calcSession.typedValue = '';
+  } else if(k==='\u2713'){
+    if(calcSession.typedValue==='') return;
+    submitCalcTypedAnswer();
+    return;
+  } else if(calcSession.typedValue.length < 8){
+    calcSession.typedValue += k;
+  }
+  if(disp) disp.textContent = calcSession.typedValue===''? '\u00A0' : calcSession.typedValue;
+}
+function submitCalcTypedAnswer(){
+  const q = currentCalcQuestion();
+  const val = parseInt(calcSession.typedValue, 10);
+  const disp = document.getElementById('calcTypedDisplay');
+  const isCorrect = val === q.answer;
+  markCalcAnswered(isCorrect);
+  if(disp){
+    disp.classList.add(isCorrect ? 'correct' : 'wrong');
+    if(!isCorrect) disp.textContent = calcSession.typedValue + ' (Ans: ' + q.answer + ')';
+  }
+  scheduleCalcAdvance();
+}
+function handleCalcAnswer(selected, btnEl){
+  if(calcSession.answered) return;
+  const q = currentCalcQuestion();
+  const isCorrect = selected === q.answer;
+  markCalcAnswered(isCorrect);
+  document.querySelectorAll('#calcAnsGrid .calcAnsBtn').forEach(b=>{
+    b.classList.add('disabled');
+    const val = parseInt(b.textContent, 10);
+    if(val === q.answer) b.classList.add('correct');
+    else if(b === btnEl) b.classList.add('wrong');
+  });
+  scheduleCalcAdvance();
+}
+function markCalcAnswered(isCorrect){
+  calcSession.answered = true;
+  stopCalcTimer();
+  if(isCorrect) calcSession.correct++; else calcSession.wrong++;
+  updateCalcStatsDisplay();
+}
+function scheduleCalcAdvance(){
+  if(calcSession.auto){
+    setTimeout(advanceCalcQuestion, 20);
+  } else {
+    showCalcNextButton();
+  }
+}
+function showCalcNextButton(){
+  let btn = document.getElementById('calcNextBtn');
+  if(!btn){
+    btn = document.createElement('button');
+    btn.id = 'calcNextBtn';
+    btn.className = 'calcSheetBtn calcSheetStart';
+    btn.style.marginTop = '14px';
+    btn.style.width = '100%';
+    btn.textContent = 'Next \u2192';
+    btn.addEventListener('click', ()=>{
+      btn.remove();
+      advanceCalcQuestion();
+    });
+    const page = document.getElementById('calcPage-session');
+    if(page) page.appendChild(btn);
+  }
+}
+function advanceCalcQuestion(){
+  const existingNext = document.getElementById('calcNextBtn');
+  if(existingNext) existingNext.remove();
+  calcSession.index++;
+  if(calcSession.index >= calcSession.questions.length) finishCalcSession();
+  else renderCalcQuestion();
+}
+function skipCalcQuestion(){
+  if(calcSession.answered) return;
+  stopCalcTimer();
+  advanceCalcQuestion();
+}
+function toggleCalcFlag(){
+  calcSession.flagged[calcSession.index] = !calcSession.flagged[calcSession.index];
+  const flagBtn = document.getElementById('calcFlagBtn');
+  if(flagBtn) flagBtn.classList.toggle('active', !!calcSession.flagged[calcSession.index]);
+}
+function toggleCalcAuto(){
+  calcSession.auto = !calcSession.auto;
+  const btn = document.getElementById('calcAutoBtn');
+  if(btn) btn.classList.toggle('active', calcSession.auto);
+}
+function setCalcAnswerMode(mode){
+  if(calcSession.answerMode === mode) return;
+  calcSession.answerMode = mode;
+  updateCalcModeButtons();
+  if(!calcSession.answered){
+    const q = currentCalcQuestion();
+    if(mode==='mcq') renderCalcMcq(q); else renderCalcTyped();
+  }
+}
+function updateCalcModeButtons(){
+  const kb = document.getElementById('calcModeKeyboardBtn');
+  const gr = document.getElementById('calcModeGridBtn');
+  if(kb) kb.classList.toggle('active', calcSession.answerMode==='typed');
+  if(gr) gr.classList.toggle('active', calcSession.answerMode==='mcq');
+}
+function finishCalcSession(){
+  stopCalcTimer();
+  const qWrap = document.getElementById('calcQuestionWrap');
+  const ctrlRow = document.getElementById('calcCtrlRow');
+  const modeRow = document.getElementById('calcModeRow');
+  const ansGrid = document.getElementById('calcAnsGrid');
+  const typedWrap = document.getElementById('calcTypedWrap');
+  if(qWrap) qWrap.style.display = 'none';
+  if(ctrlRow) ctrlRow.style.display = 'none';
+  if(modeRow) modeRow.style.display = 'none';
+  if(ansGrid) ansGrid.style.display = 'none';
+  if(typedWrap) typedWrap.style.display = 'none';
+  const nextBtn = document.getElementById('calcNextBtn');
+  if(nextBtn) nextBtn.remove();
+  const total = calcSession.correct + calcSession.wrong;
+  const acc = total > 0 ? Math.round((calcSession.correct/total)*100) : 0;
+  const statsEl = document.getElementById('calcResultStats');
+  if(statsEl){
+    statsEl.innerHTML =
+      '<div>✅ Correct: <b>' + calcSession.correct + '</b></div>' +
+      '<div>❌ Wrong: <b>' + calcSession.wrong + '</b></div>' +
+      '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
+  }
+  const resultCard = document.getElementById('calcResultCard');
+  if(resultCard) resultCard.style.display = 'block';
+}
+
+// Every operation (addition, subtraction, multiplication, division) is now
+// launched directly from the main Calc menu, so sessions always return there.
+function calcSessionOriginPage(){
+  return 'menu';
+}
+function initCalcSession(){
+  const backBtn = document.getElementById('calcSessionBackBtn');
+  if(backBtn) backBtn.addEventListener('click', ()=>{ stopCalcTimer(); showCalcPage(calcSessionOriginPage()); });
+  const skipBtn = document.getElementById('calcSkipBtn');
+  if(skipBtn) skipBtn.addEventListener('click', skipCalcQuestion);
+  const autoBtn = document.getElementById('calcAutoBtn');
+  if(autoBtn) autoBtn.addEventListener('click', toggleCalcAuto);
+  const flagBtn = document.getElementById('calcFlagBtn');
+  if(flagBtn) flagBtn.addEventListener('click', toggleCalcFlag);
+  const kbBtn = document.getElementById('calcModeKeyboardBtn');
+  if(kbBtn) kbBtn.addEventListener('click', ()=> setCalcAnswerMode('typed'));
+  const grBtn = document.getElementById('calcModeGridBtn');
+  if(grBtn) grBtn.addEventListener('click', ()=> setCalcAnswerMode('mcq'));
+  const againBtn = document.getElementById('calcResultAgainBtn');
+  if(againBtn) againBtn.addEventListener('click', ()=> openCalcSetup(calcSession.op));
+  const resBackBtn = document.getElementById('calcResultBackBtn');
+  if(resBackBtn) resBackBtn.addEventListener('click', ()=> showCalcPage(calcSessionOriginPage()));
+}
+
+function initCalcNav(){
+  // All four operations now launch practice directly from the Calc menu —
+  // one tap straight into the setup sheet (no intermediate sub-page).
+  const addBtn = document.getElementById('calcAddBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=> openCalcSetup('addition'));
+  const subBtn = document.getElementById('calcSubBtn');
+  if(subBtn) subBtn.addEventListener('click', ()=> openCalcSetup('subtraction'));
+  const mulBtn = document.getElementById('calcMulBtn');
+  if(mulBtn) mulBtn.addEventListener('click', ()=> openCalcSetup('multiplication'));
+  const divBtn = document.getElementById('calcDivBtn');
+  if(divBtn) divBtn.addEventListener('click', ()=> openCalcSetup('division'));
+  initCalcSetupSheet();
+  initCalcSession();
 }
 
 // ===== Weak / Revise sub-tab switcher (lives inside the "Weak" tab) =====
@@ -7514,6 +8310,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
   renderTaskEditForm();
   renderTaskModeSelector();
   initTabs();
+  initCalcNav();
   initWeakReviseSubtabs();
   renderAll();
   renderProfileBar();
