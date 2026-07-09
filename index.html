@@ -564,6 +564,10 @@
     border:1px dashed var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:14px;
     font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
   }
+  .admin-edit-banner{border-style:solid;}
+  .admin-edit-banner.on{
+    background:linear-gradient(135deg,#0a1a0d,#0a0a0a);color:#7CFC9C;border-color:#3fae5c;
+  }
 
   /* ===== App-style topbar ===== */
   .topbar{
@@ -596,6 +600,46 @@
   }
   .miniring::before{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d0c10;}
   .miniring span{position:relative;font-size:9px;font-weight:800;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
+
+  /* ===== "Exam Countdown" ring widget — same conic-gradient ring trick as
+     .miniring above, just scaled up and styled to match a black-card +
+     thick amber-ring countdown look. --p (0-100) is set from JS in
+     updateExamCountdownRing() and represents % of the plan's total days
+     still remaining, so the ring visually drains as the exam gets closer.
+     Used in two places: a small version inline next to the Home motivation
+     quote (.examRingSmall), and a bigger version inside the once-a-day
+     popup (default size, no extra class needed). */
+  .examCountdownRing{
+    --p:100;
+    width:150px;height:150px;max-width:42vw;max-height:42vw;
+    border-radius:50%;margin:14px auto 16px;position:relative;flex-shrink:0;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--panel2) 0);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 0 22px rgba(251,191,36,0.16);
+    transition:background 0.4s ease;
+  }
+  .examCountdownRing::before{
+    content:'';position:absolute;inset:13px;border-radius:50%;background:var(--bg);
+  }
+  .examRingNum{
+    position:relative;font-family:'Oswald',sans-serif;font-weight:800;
+    font-size:clamp(30px,10vw,46px);line-height:1;color:var(--white);
+  }
+  .examRingLbl{
+    position:relative;font-size:12px;font-weight:800;letter-spacing:1px;
+    text-transform:uppercase;color:var(--white);margin-top:5px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  /* Small inline variant, sits next to the Home quote text */
+  .examCountdownRing.examRingSmall{
+    width:68px;height:68px;margin:0;box-shadow:0 0 10px rgba(251,191,36,0.14);
+  }
+  .examCountdownRing.examRingSmall::before{inset:6px;}
+  .examCountdownRing.examRingSmall .examRingNum{font-size:20px;}
+  .examCountdownRing.examRingSmall .examRingLbl{font-size:6px;margin-top:1px;letter-spacing:0.3px;}
+  /* Home quote card grows a flex row to sit the small ring beside the text */
+  .quoteCard.quoteCardWithRing{display:flex;align-items:center;gap:14px;}
+  .quoteCard.quoteCardWithRing .quoteCardBody{flex:1;min-width:0;}
 
   /* ===== Header-only Admin Control Panel button — only ever shown to the
      room Admin (toggled via JS, display:none by default) so it never
@@ -637,6 +681,34 @@
   /* ===== Tab views ===== */
   .tabview{display:none;}
   .tabview.active{display:block;animation:tabIn .28s ease;}
+
+  /* ===== Weak / Revise sub-tab switcher (inside the Weak tab) ===== */
+  .subtabbar{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 18px;
+  }
+  .subtabbtn{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    padding:14px 10px;border-radius:13px;border:1.5px solid var(--border);
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13.5px;
+    cursor:pointer;letter-spacing:0.3px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.35);
+    transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .subtabbtn .subtabIcon{font-size:16px;line-height:1;}
+  .subtabbtn:active{transform:scale(0.95);}
+  .subtabbtn[data-subtab="weak"].active{
+    background:linear-gradient(155deg,rgba(248,113,113,0.24),rgba(248,113,113,0.05));
+    border-color:var(--loss);color:var(--loss);
+    box-shadow:0 5px 16px rgba(248,113,113,0.28);
+  }
+  .subtabbtn[data-subtab="revise"].active{
+    background:linear-gradient(155deg,rgba(45,212,191,0.24),rgba(45,212,191,0.05));
+    border-color:var(--teal);color:var(--teal);
+    box-shadow:0 5px 16px rgba(45,212,191,0.28);
+  }
+  .subtabview{display:none;}
+  .subtabview.active{display:block;animation:tabIn .28s ease;}
   @keyframes tabIn{
     from{opacity:0;transform:translateY(8px);}
     to{opacity:1;transform:translateY(0);}
@@ -663,7 +735,6 @@
   .tabbtn[data-tab="today"]{--tb-color:var(--blue);}
   .tabbtn[data-tab="mock"]{--tb-color:var(--purple);}
   .tabbtn[data-tab="chapters"]{--tb-color:var(--pink);}
-  .tabbtn[data-tab="revision"]{--tb-color:var(--teal);}
   .tabbtn[data-tab="compete"]{--tb-color:var(--orange);}
   .tabbtn[data-tab="more"]{--tb-color:var(--gain);}
   .tabbtn:active{transform:scale(0.9);}
@@ -746,11 +817,11 @@
   }
   .announceCloseBtn:active{transform:scale(0.9);}
 
-  /* ===== All-Time / This-Week leaderboard toggle ===== */
+  /* ===== Today / This-Week / All-Time leaderboard toggle ===== */
   .lbModeToggle{display:flex;gap:6px;margin-bottom:10px;}
   .lbModeBtn{
-    flex:1;padding:8px 6px;border-radius:8px;border:1px solid var(--border-strong);
-    background:var(--panel2);color:var(--muted);font-size:12px;font-weight:800;
+    flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--border-strong);
+    background:var(--panel2);color:var(--muted);font-size:11.5px;font-weight:800;
     cursor:pointer;text-align:center;font-family:'IBM Plex Mono',monospace;
   }
   .lbModeBtn.active{background:linear-gradient(160deg,#fff,#f1e0a8);color:#000;border-color:var(--accent);}
@@ -1072,13 +1143,12 @@
   <div class="onbCard" style="max-width:440px;">
     <button class="onbCloseX" id="helpCloseBtn" aria-label="Band Karo">✕</button>
     <div class="onbTitle">❓ App Kaise Use Karein</div>
-    <div class="onbSub">Neeche 7 tabs hain — har tab ka kaam ek line mein:</div>
+    <div class="onbSub">Neeche 6 tabs hain — har tab ka kaam ek line mein:</div>
     <div class="helpStep"><div class="helpStepIcon">🏠</div><div><b>Home</b> — Streak, paisa (earned/lost) aur overall progress yahan dikhta hai. Sirf dekhne ke liye, kuch karna nahi. 🧊 <b>Streak Freeze</b>: agar kabhi ek din 50% se kam ho jaaye, ek freeze apne aap streak bacha leta hai (max 2 jama ho sakte hain) — calendar mein wo din 🧊 se dikhta hai.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Revise aur Weak tab ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">🔍</div><div><b>Search</b> — Weak tab ke andar dono (📚 Weak / 🔁 Revise) sub-tabs ke top pe search box se list mein turant apna chapter/topic dhoondh sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🎯</div><div><b>Today</b> — Sabse zaroori tab. Roz yahan aake apne din ke tasks ✅ tick karo, aur mock/sectional test ka score bharo.</div></div>
     <div class="helpStep"><div class="helpStepIcon">🧪</div><div><b>Mock</b> — Pre Mock aur Mains Mock alag buttons se, plus Math/English/Reasoning Sectional test log karo (naam, score, right-wrong-skip, weak chapter, remarks ke saath), aur Overall Analysis mein sabka avg, percentile aur kisme sabse zyada improve karna hai — sab ek jagah.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">🔁</div><div><b>Revise</b> — Jo topic padhke revise karo, uske "✅ +1" daba do. Count hamesha save rehta hai, kabhi khud reset nahi hota. Sabse kam-revised topic top pe dikhta hai, taaki pata rahe kya karna hai.</div></div>
-    <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Weak</b> — Test mein jo question galat ho, uske chapter pe +1 daba do. Weakest chapter apne aap pata chal jayega.</div></div>
+    <div class="helpStep"><div class="helpStepIcon">📚</div><div><b>Weak</b> — Ab is ek hi tab ke top pe do colourful buttons hain: <b>📚 Weak</b> (test mein jo question galat ho, uske chapter pe +1 daba do — weakest chapter apne aap pata chal jayega) aur <b>🔁 Revise</b> (jo topic padhke revise karo, uske "✅ +1" daba do — count kabhi khud reset nahi hota, sabse kam-revised topic top pe dikhta hai).</div></div>
     <div class="helpStep"><div class="helpStepIcon">🤝</div><div><b>Rank</b> — Dost ka Room Code daal ke ek dusre ka progress compare kar sakte ho.</div></div>
     <div class="helpStep"><div class="helpStepIcon">📊</div><div><b>Stats</b> — Charts, backup code, notifications aur data reset — sab settings yahan milengi.</div></div>
     <div class="onbSub" style="margin-top:2px;">Ye "❓" button top mein hamesha rahega — jab bhi bhool jao, yahin se dobara dekh sakte ho.</div>
@@ -1105,6 +1175,21 @@
     <div class="onbSub" id="targetReminderModalMsg"></div>
     <div class="onbBtnRow">
       <button class="nav-btn onbPrimary" id="targetReminderModalOkBtn">Theek Hai ✅</button>
+    </div>
+  </div>
+</div>
+
+<div class="onbOverlay" id="dailyCountdownModal">
+  <div class="onbCard" style="max-width:360px;text-align:center;">
+    <button class="onbCloseX" id="dailyCountdownCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">🚀 Mission Countdown</div>
+    <div class="examCountdownRing" style="margin:14px auto 16px;">
+      <span class="examRingNum">--</span>
+      <span class="examRingLbl">Days Left</span>
+    </div>
+    <div class="onbSub" id="dailyCountdownQuote" style="text-align:center;"></div>
+    <div class="onbBtnRow">
+      <button class="nav-btn onbPrimary" id="dailyCountdownOkBtn">Chalo Shuru Karein 🔥</button>
     </div>
   </div>
 </div>
@@ -1167,9 +1252,15 @@
       <div class="announceMeta" id="announceMeta"></div>
     </div>
 
-    <div class="quoteCard">
-      <div class="quoteEyebrow">🌅 Aaj Ka Motivation</div>
-      <div class="quoteText" id="quoteText-home">Loading…</div>
+    <div class="quoteCard quoteCardWithRing">
+      <div class="examCountdownRing examRingSmall">
+        <span class="examRingNum">--</span>
+        <span class="examRingLbl">Days Left</span>
+      </div>
+      <div class="quoteCardBody">
+        <div class="quoteEyebrow">🌅 Aaj Ka Motivation</div>
+        <div class="quoteText" id="quoteText-home">Loading…</div>
+      </div>
     </div>
 
     <div class="statrow" style="margin-top:0;">
@@ -1270,59 +1361,66 @@
     </div>
   </div>
 
-  <div class="tabview" id="tab-revision" data-tabview="revision">
-    <div class="quoteCard">
-      <div class="quoteEyebrow">🔁 Motivation</div>
-      <div class="quoteText" id="quoteText-revision">Loading…</div>
-    </div>
-    <div class="grid-label" style="margin-top:0;">🔁 Revision Counter — Math + English + GK</div>
-    <div class="chapterQuickHint">Jo bhi topic revise karo, uske <b>✅ +1</b> daba do. Count kabhi khud reset nahi hota — poori preparation ke dauraan store rehta hai, chahe jitne din lag jaayein. Sabse pehle wahi chapters dikhte hain jo <b>sabse kam revise hue hain</b> — unhi ki zyada zaroorat hai.</div>
-    <div class="searchBox"><input type="text" id="revisionSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
-
-    <div class="grid-label" style="margin-top:0;">📊 Overall Revision Summary</div>
-    <div class="panel" id="revisionSummaryPanel"></div>
-
-    <div class="grid-label" style="margin-top:0;">🧮 Math Chapters — <span id="revMathTotal">0</span> total</div>
-    <div class="panel" id="revMathList"></div>
-    <div class="btnrow">
-      <button class="nav-btn" id="resetRevMathBtn">↩️ Reset Math Revision Counts</button>
-    </div>
-
-    <div class="grid-label" style="margin-top:0;">🔤 English Topics — <span id="revEngTotal">0</span> total</div>
-    <div class="panel" id="revEngList"></div>
-    <div class="btnrow">
-      <button class="nav-btn" id="resetRevEngBtn">↩️ Reset English Revision Counts</button>
-    </div>
-
-    <div class="grid-label" style="margin-top:0;">🌍 GK Topics — <span id="revGkTotal">0</span> total</div>
-    <div id="revGkGroups"></div>
-    <div class="btnrow">
-      <button class="nav-btn" id="resetRevGkBtn">↩️ Reset GK Revision Counts</button>
-    </div>
-  </div>
-
   <div class="tabview" id="tab-chapters" data-tabview="chapters">
-    <div class="quoteCard">
-      <div class="quoteEyebrow">📚 Motivation</div>
-      <div class="quoteText" id="quoteText-chapters">Loading…</div>
-    </div>
-    <div class="grid-label" style="margin-top:0;">📚 Chapter-Wise Weak Area Tracker</div>
-    <div class="chapterQuickHint">Har galat question ke chapter pe +1 karo — jitna zyada count, utna weak chapter. Sab time ke saath count hota rahega.</div>
-    <div class="searchBox"><input type="text" id="chapterSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
-
-    <div class="grid-label" style="margin-top:0;">🔥 Weakest Right Now</div>
-    <div class="panel" id="weakSummaryPanel"></div>
-
-    <div class="grid-label" style="margin-top:0;">🧮 Math Chapters</div>
-    <div class="panel" id="mathChapterList"></div>
-    <div class="btnrow">
-      <button class="nav-btn" id="resetMathChBtn">↩️ Reset Math Counts</button>
+    <div class="subtabbar" id="weakReviseSubtabbar">
+      <button class="subtabbtn active" data-subtab="weak"><span class="subtabIcon">📚</span><span>Weak</span></button>
+      <button class="subtabbtn" data-subtab="revise"><span class="subtabIcon">🔁</span><span>Revise</span></button>
     </div>
 
-    <div class="grid-label" style="margin-top:0;">🔤 English Topics</div>
-    <div class="panel" id="englishChapterList"></div>
-    <div class="btnrow">
-      <button class="nav-btn" id="resetEngChBtn">↩️ Reset English Counts</button>
+    <div class="subtabview active" id="subtab-weak" data-subtab="weak">
+      <div class="quoteCard">
+        <div class="quoteEyebrow">📚 Motivation</div>
+        <div class="quoteText" id="quoteText-chapters">Loading…</div>
+      </div>
+      <div class="grid-label" style="margin-top:0;">📚 Chapter-Wise Weak Area Tracker</div>
+      <div class="chapterQuickHint">Har galat question ke chapter pe +1 karo — jitna zyada count, utna weak chapter. Sab time ke saath count hota rahega.</div>
+      <div class="searchBox"><input type="text" id="chapterSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
+
+      <div class="grid-label" style="margin-top:0;">🔥 Weakest Right Now</div>
+      <div class="panel" id="weakSummaryPanel"></div>
+
+      <div class="grid-label" style="margin-top:0;">🧮 Math Chapters</div>
+      <div class="panel" id="mathChapterList"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="resetMathChBtn">↩️ Reset Math Counts</button>
+      </div>
+
+      <div class="grid-label" style="margin-top:0;">🔤 English Topics</div>
+      <div class="panel" id="englishChapterList"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="resetEngChBtn">↩️ Reset English Counts</button>
+      </div>
+    </div>
+
+    <div class="subtabview" id="subtab-revise" data-subtab="revise">
+      <div class="quoteCard">
+        <div class="quoteEyebrow">🔁 Motivation</div>
+        <div class="quoteText" id="quoteText-revision">Loading…</div>
+      </div>
+      <div class="grid-label" style="margin-top:0;">🔁 Revision Counter — Math + English + GK</div>
+      <div class="chapterQuickHint">Jo bhi topic revise karo, uske <b>✅ +1</b> daba do. Count kabhi khud reset nahi hota — poori preparation ke dauraan store rehta hai, chahe jitne din lag jaayein. Sabse pehle wahi chapters dikhte hain jo <b>sabse kam revise hue hain</b> — unhi ki zyada zaroorat hai.</div>
+      <div class="searchBox"><input type="text" id="revisionSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
+
+      <div class="grid-label" style="margin-top:0;">📊 Overall Revision Summary</div>
+      <div class="panel" id="revisionSummaryPanel"></div>
+
+      <div class="grid-label" style="margin-top:0;">🧮 Math Chapters — <span id="revMathTotal">0</span> total</div>
+      <div class="panel" id="revMathList"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="resetRevMathBtn">↩️ Reset Math Revision Counts</button>
+      </div>
+
+      <div class="grid-label" style="margin-top:0;">🔤 English Topics — <span id="revEngTotal">0</span> total</div>
+      <div class="panel" id="revEngList"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="resetRevEngBtn">↩️ Reset English Revision Counts</button>
+      </div>
+
+      <div class="grid-label" style="margin-top:0;">🌍 GK Topics — <span id="revGkTotal">0</span> total</div>
+      <div id="revGkGroups"></div>
+      <div class="btnrow">
+        <button class="nav-btn" id="resetRevGkBtn">↩️ Reset GK Revision Counts</button>
+      </div>
     </div>
   </div>
 
@@ -1476,10 +1574,6 @@
   <button class="tabbtn" data-tab="chapters">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span>Weak</span>
-  </button>
-  <button class="tabbtn" data-tab="revision">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-    <span>Revise</span>
   </button>
   <button class="tabbtn" data-tab="compete">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4.5a2 2 0 0 0 0 4H7"/><path d="M17 5h2.5a2 2 0 0 1 0 4H17"/></svg>
@@ -2026,8 +2120,85 @@ const EXTRA_MOTIVATION_QUOTES = [
   "है जो सही वो करना नहीं, ग़लत होने की यही तो शुरुआत है.."
 ];
 
+// A second, bigger batch of pure-Hindi (Devanagari) motivational lines added
+// later. These go into the SAME rotation as everything above, but the old
+// pools (DAILY_QUOTES + EXTRA_MOTIVATION_QUOTES) are still given priority —
+// see the weighting note on ALL_TAB_QUOTES just below.
+const HINDI_MOTIVATION_QUOTES_2 = [
+  "अभ्यास में जितना ज्यादा पसीना बहाओगे, युद्ध में उतना ही कम खून बहेगा।",
+  "खुद को आगे बढ़ाएं, क्योंकि कोई और आपके लिए ऐसा नहीं करने वाला है।",
+  "सफलता उससे नहीं मिलती जो आप कभी-कभी करते हैं, बल्कि उससे मिलती है जो आप लगातार करते हैं।",
+  "आज आप जो दर्द महसूस कर रहे हैं, कल वही आपकी ताकत बनेगा।",
+  "नदी चट्टान को अपनी ताकत से नहीं, बल्कि अपनी लगातार कोशिश से काटती है।",
+  "बड़े सपने देखें, ध्यान केंद्रित रखें और उन्हें सच कर दिखाएं।",
+  "तब तक न रुकें जब तक आपको खुद पर गर्व न हो।",
+  "आपके सपनों और हकीकत के बीच की दूरी को 'कर्म' कहते हैं।",
+  "हर सुबह आपके पास दो विकल्प होते हैं: अपने सपनों के साथ सोते रहें, या उठें और उनका पीछा करें।",
+  "महान बनने के लिए शुरुआत करने की जरूरत नहीं है, बल्कि महान बनने के लिए शुरुआत करना जरूरी है।",
+  "या तो अनुशासन का दर्द सह लें, या फिर पछतावे का दर्द सहें।",
+  "बहाने हमेशा आपके पास रहेंगे, लेकिन अवसर नहीं।",
+  "खामोशी से कड़ी मेहनत करें, अपनी सफलता को शोर मचाने दें।",
+  "सबसे खराब अभ्यास (वर्कआउट) वही है जो आपने किया ही नहीं।",
+  "बिना किसी समय-सीमा वाले लक्ष्य सिर्फ एक सपना होते हैं।",
+  "अगर कोई चीज आपको चुनौती नहीं देती, तो वह आपको बदल भी नहीं सकती।",
+  "अपने सामने वाली सीढ़ी पर ध्यान दें, पूरी सीढ़ियों पर नहीं।",
+  "आपकी एकमात्र सीमा आप खुद हैं।",
+  "परिणाम समय के साथ आते हैं, रातों-रात नहीं। कड़ी मेहनत करें, लगातार लगे रहें, और धैर्य रखें।",
+  "अपने सबसे बड़े बहाने से ज्यादा मजबूत बनें।",
+  "दिमाग सबसे जरूरी मांसपेशी है। इसे हर स्थिति में अच्छा देखने के लिए प्रशिक्षित करें।",
+  "अवसर का इंतज़ार न करें। इसे खुद बनाएं।",
+  "थोड़ा-थोड़ा करके, इंसान बहुत दूर तक का सफर तय कर लेता है।",
+  "मुश्किल वक्त कभी टिकता नहीं, लेकिन मजबूत लोग टिकते हैं।",
+  "विश्वास करें कि आप कर सकते हैं, और आपने आधा रास्ता तय कर लिया।",
+  "जो व्यक्ति कभी हार नहीं मानता, उसे हराना बहुत मुश्किल होता है।",
+  "शरीर वही हासिल करता है जिस पर दिमाग विश्वास करता है।",
+  "अपने जीवन को एक मास्टरपीस बनाएं; यह कल्पना करें कि आप जो बन सकते हैं, पा सकते हैं या कर सकते हैं, उसकी कोई सीमा नहीं है।",
+  "सफलता उन छोटे-छोटे प्रयासों का जोड़ है, जिन्हें रोजाना लगातार किया जाता है।",
+  "आपकी आखिरी गलती ही आपकी सबसे अच्छी शिक्षक होती है।",
+  "जो आज की रात किताबों पर झुकता है, वही कल दुनिया पर राज करता है।",
+  "थकान से मत रुको, मंजिल के करीब पहुँचकर हार मानना सबसे बड़ी गलती है।",
+  "सफलता का कोई शॉर्टकट नहीं होता, हर पन्ना पढ़ना पड़ता है और हर कदम दौड़ना पड़ता है।",
+  "पसीने की स्याही से जो अपने इरादे लिखते हैं, उनके मुकद्दर के पन्ने कभी कोरे नहीं होते।",
+  "आज की मेहनत कल का सुकून है, इसलिए आज खुद को तपाने से पीछे मत हटो।",
+  "समय का हर एक सेकंड कीमती है, इसे गँवाने का मतलब है अपनी मंजिल को दूर करना।",
+  "जब दुनिया सो रही हो, तब तुम्हारी जागकर की गई मेहनत ही तुम्हें सबसे अलग बनाएगी।",
+  "दर्द और थकान सिर्फ दिमाग का वहम हैं, तुम्हारा संकल्प इनसे कहीं ज्यादा मजबूत है।",
+  "लक्ष्य जितना बड़ा होगा, सफर उतना ही कठिन होगा, और जीत उतनी ही शानदार होगी।",
+  "खुद को साबित करने का मौका बार-बार नहीं मिलता, जो समय हाथ में है उसे अपना सबसे बड़ा हथियार बनाओ।",
+  "मैदान में हारा हुआ इंसान फिर से जीत सकता है, लेकिन मन से हारा हुआ इंसान कभी नहीं जीत सकता।",
+  "हर दिन खुद से एक वादा करो कि आज का दिन कल से बेहतर और ज्यादा प्रोडक्टिव होगा।",
+  "किस्मत के भरोसे बैठने वालों को सिर्फ उतना मिलता है, जितना कोशिश करने वाले छोड़ देते हैं।",
+  "जब भी हार मानने का ख्याल आए, तो याद करना कि तुमने इतनी दूर तक का सफर क्यों तय किया था।",
+  "सफलता एक दिन में नहीं मिलती, लेकिन एक-एक दिन की गई निरंतर मेहनत से जरूर मिलती है।",
+  "तुम्हारी सबसे बड़ी प्रतियोगिता खुद से है, हर दिन अपने पिछले रिकॉर्ड को तोड़ने का प्रयास करो।",
+  "जो बहाने बनाते हैं वो इतिहास नहीं बनाते, और जो इतिहास बनाते हैं वो बहाने नहीं बनाते।",
+  "डर को अपने ऊपर हावी मत होने दो, अपने हौसले को इतना बड़ा कर लो कि डर खुद छोटा हो जाए।",
+  "जिस दिन तुमने सोच लिया कि तुम कर सकते हो, समझो तुमने आधी बाज़ी वहीं जीत ली।",
+  "अगर रास्ता मुश्किल लग रहा है, तो समझ लो कि तुम सही दिशा में आगे बढ़ रहे हो।",
+  "कोई भी लक्ष्य इंसान के साहस से बड़ा नहीं होता, हारता वही है जो दिल से लड़ता नहीं।",
+  "अपनी कमजोरियों को अपनी ताकत बनाओ, क्योंकि यही तुम्हें सबसे अलग पहचान दिलाएंगी।",
+  "हर सुबह एक नया अवसर है, या तो इसे सोकर गुजार दो, या उठकर अपने सपनों के पीछे दौड़ो।",
+  "जब तक तुम्हारा लक्ष्य पूरा न हो जाए, तब तक न रुको, न थको और न ही मुड़कर देखो।",
+  "तुम्हारी सफलता का शोर उसी दिन मचेगा, जिस दिन तुम्हारी खामोशी की मेहनत पूरी होगी।",
+  "सिर्फ सोचने से कुछ नहीं होता, सफलता पाने के लिए उस सोच को कर्म में बदलना पड़ता है।",
+  "अनुशासन वो पुल है जो तुम्हारे सपनों और तुम्हारी उपलब्धियों को जोड़ता है।",
+  "जो पानी से नहाता है वो सिर्फ लिबास बदलता है, पर जो पसीने से नहाता है वो इतिहास बदलता है।",
+  "हारना कोई बुरी बात नहीं है, लेकिन हार मान लेना सबसे बुरी बात है।",
+  "अगर सूरज की तरह चमकना चाहते हो, तो पहले सूरज की तरह जलना और तपना सीखो।"
+];
+
 // Combined pool used for the per-tab motivation cards.
-const ALL_TAB_QUOTES = DAILY_QUOTES.concat(EXTRA_MOTIVATION_QUOTES);
+// PRIORITY NOTE: the original two pools (DAILY_QUOTES + EXTRA_MOTIVATION_QUOTES)
+// are deliberately listed TWICE below, while the new HINDI_MOTIVATION_QUOTES_2
+// batch is listed once. Since sessionTabQuotes is a full random shuffle of this
+// combined array, doubling the old pool roughly doubles its odds of being
+// picked for a tab card vs. the new batch — so the old lines stay the "main"
+// ones shown most often, and the new Hindi lines now show up too, just less
+// frequently. (If you ever want all of them equally likely, just remove one
+// of the two DAILY_QUOTES.concat(EXTRA_MOTIVATION_QUOTES) copies below.)
+const ALL_TAB_QUOTES = DAILY_QUOTES.concat(EXTRA_MOTIVATION_QUOTES)
+  .concat(DAILY_QUOTES).concat(EXTRA_MOTIVATION_QUOTES)
+  .concat(HINDI_MOTIVATION_QUOTES_2);
 
 // One quote element per tab — each gets its OWN line (not the same repeated).
 const TAB_QUOTE_IDS = ['quoteText-home','quoteText-today','quoteText-mock','quoteText-revision','quoteText-chapters','quoteText-compete','quoteText-more'];
@@ -2077,7 +2248,7 @@ let scoreTimer = null;
 let mistakesTimer = null;
 let myName = null;       // this device's chosen player name
 let viewingName = null;  // whose tracker is currently on screen (me or a friend)
-let leaderboardMode = 'all'; // 'all' = all-time leaderboard, 'week' = since last weekly reset
+let leaderboardMode = 'today'; // 'today' = just today (default), 'week' = current Mon-Sun week so far, 'all' = all-time
 const REGISTRY_KEY = 'cgl50-players-registry';
 
 function fmtDate(dayNum){
@@ -2447,76 +2618,58 @@ async function setRoomAnnouncement(text){
   roomAnnouncementCacheRoom = room;
 }
 
-// ===== Weekly Leaderboard Reset =====
-// Admin-only "🔄 Reset Weekly Leaderboard" snapshots every registered
-// member's CURRENT cumulative stats (computed the same way the leaderboard
-// already does) as a baseline, timestamped now, at rooms/{room}/_weeklyReset.
-// The "This Week" leaderboard view then shows current-minus-baseline for
-// each member — nobody's real tracker data (days, tasks, streak, wallet)
-// is touched or deleted, only the *displayed* weekly scoreboard restarts.
-// A member with no baseline yet (joined after the last reset) simply shows
-// their full cumulative progress in "This Week" too, instead of being
-// unfairly zeroed out.
+// ===== Auto-Resetting "Today" & "This Week" Leaderboards =====
+// No admin action needed and nothing is stored for these two views. Every
+// member's per-day data (tasks/rest/notes, keyed by day number 1..50) maps
+// 1:1 to a real calendar date via START_DATE — see fmtDate()/todayDayNum()
+// above — so we simply recompute stats over whichever day-range the clock
+// currently points at:
+//   "Today"      → just today's single day-number.
+//   "This Week"  → the current Mon–Sun calendar week, so far.
+// Both naturally "reset" the instant the date rolls over, because the
+// range itself shifts — there's no snapshot to take or button to click.
+// Kept only for backwards-compatible cache-busting of old backup restores;
+// the room-level `_weeklyReset` key itself is legacy and no longer read.
 let weeklyResetCache = undefined;
 let weeklyResetCacheAt = 0;
 let weeklyResetCacheRoom = null;
-async function loadWeeklyReset(){
-  const room = getRoomCode();
-  if(!room) return null;
-  if(weeklyResetCache !== undefined && weeklyResetCacheRoom===room && (Date.now()-weeklyResetCacheAt) < 8000){
-    return weeklyResetCache;
-  }
-  const raw = await kvdbGet('_weeklyReset');
-  let wr = null;
-  if(raw){
-    try{
-      const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed==='object' && parsed.snapshot && typeof parsed.snapshot==='object'){
-        wr = { at: parsed.at || Date.now(), by: parsed.by || '', snapshot: parsed.snapshot };
-      }
-    }catch(e){ /* keep null on bad/legacy data */ }
-  }
-  weeklyResetCache = wr;
-  weeklyResetCacheAt = Date.now();
-  weeklyResetCacheRoom = room;
-  return wr;
+// Maps a real Date to its plan day-number (inverse of fmtDate()).
+function dayIndexForDate(date){
+  const d0 = new Date(date.toDateString());
+  const start0 = new Date(START_DATE.toDateString());
+  return Math.floor((d0-start0)/86400000)+1;
 }
-async function resetWeeklyLeaderboard(){
-  const room = getRoomCode();
-  if(!room) return null;
-  const names = await loadRoomRegistry();
-  const snapshot = {};
-  for(const nm of names){
-    try{
-      const raw = await kvdbGet(playerKey(nm));
-      const st = raw ? JSON.parse(raw) : {};
-      snapshot[nm.toLowerCase()] = computeStatsFrom(st);
-    }catch(e){ /* one member's data failing to load shouldn't abort the whole reset */ }
-  }
-  const payload = { at: Date.now(), by: myName, snapshot };
-  await kvdbSet('_weeklyReset', JSON.stringify(payload));
-  weeklyResetCache = payload;
-  weeklyResetCacheAt = Date.now();
-  weeklyResetCacheRoom = room;
-  currentWeeklyReset = payload;
-  return payload;
+// [from,to] day-number range (inclusive) for the current Mon–Sun calendar
+// week, clamped so it never reaches into "future" days beyond today.
+function thisWeekDayRange(){
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun..6=Sat
+  const sinceMonday = dow===0 ? 6 : dow-1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate()-sinceMonday);
+  const from = dayIndexForDate(monday);
+  const to = todayDayNum();
+  return { from: Math.max(1, Math.min(from,to)), to: Math.min(TOTAL_DAYS, to) };
 }
-// Turns a row's all-time cumulative stats into "since the last weekly
-// reset" stats. Falls back to the full cumulative numbers whenever there's
-// no reset yet, or no baseline for this specific member.
-function weeklyStatsFor(row){
-  const wr = currentWeeklyReset;
-  if(!wr || !wr.snapshot) return row;
-  const base = wr.snapshot[row.name.toLowerCase()];
-  if(!base) return row;
-  return {
-    ...row,
-    pct: Math.max(0, row.pct - (base.pct||0)),
-    earned: Math.max(0, row.earned - (base.earned||0)),
-    lost: Math.max(0, row.lost - (base.lost||0)),
-    studyMins: Math.max(0, row.studyMins - (base.studyMins||0)),
-    daysDone: Math.max(0, row.daysDone - (base.daysDone||0)),
-  };
+// Same pure per-day math as computeStatsFrom(), but summed only over
+// [fromIdx,toIdx] instead of the whole 50-day plan. Powers both "Today"
+// (fromIdx===toIdx===todayDayNum()) and "This Week" leaderboard rows.
+function computeRangeStatsFrom(st, fromIdx, toIdx){
+  const taskCount = taskCountFrom(st);
+  let totalChecked=0, totalPossible=0, studyMins=0, earned=0, lost=0, daysDone=0;
+  const lo = Math.max(1, fromIdx), hi = Math.min(TOTAL_DAYS, toIdx);
+  for(let i=lo;i<=hi;i++){
+    const d = getDayFrom(st,i);
+    if(d.rest) continue;
+    const done = d.tasks.filter(Boolean).length;
+    totalChecked += done; totalPossible += taskCount;
+    if(done===taskCount) daysDone++;
+    const r = dayEarnLossFrom(st, d, i);
+    earned += r.earned; lost += r.lost;
+    studyMins += dayStudyMinutesFrom(st, d);
+  }
+  const pct = totalPossible ? Math.round((totalChecked/totalPossible)*100) : 0;
+  return { daysDone, pct, studyMins, earned, lost };
 }
 
 // Removes a member from the room entirely: drops them from the shared
@@ -2551,26 +2704,40 @@ let currentRoomHidden = {};
 let currentRoomRestricted = {};
 let currentRoomTaskMode = 'individual';
 let currentRoomAnnouncement = null;
-let currentWeeklyReset = null;
 async function refreshRoomMeta(){
   if(!getRoomCode()){
     currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; currentRoomTaskMode = 'individual';
-    currentRoomAnnouncement = null; currentWeeklyReset = null; lastAppliedSharedTasksJSON = null;
+    currentRoomAnnouncement = null; lastAppliedSharedTasksJSON = null;
     updateAdminPanelBtnVisibility();
     return;
   }
   // Fired together — each is independently 8s-cached, so this stays one
   // effective round-trip per tick instead of stacking up latency.
-  const [meta, ann, wr] = await Promise.all([ loadRoomMeta(), loadRoomAnnouncement(), loadWeeklyReset() ]);
+  const [meta, ann] = await Promise.all([ loadRoomMeta(), loadRoomAnnouncement() ]);
   currentRoomAdmin = meta.admin || null;
   currentRoomHidden = meta.hidden || {};
   currentRoomRestricted = meta.restricted || {};
   currentRoomTaskMode = meta.taskMode || 'individual';
   currentRoomAnnouncement = ann;
-  currentWeeklyReset = wr;
   updateAdminPanelBtnVisibility();
 }
 function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
+// True only when the Admin is looking at a DIFFERENT member's tracker in a
+// Sync Room — this is what unlocks the "edit someone else's tasks" powers
+// below. Being admin alone isn't enough (still read-only on your own
+// tracker view trivially, since that's always "yours"), and being in a
+// room alone isn't enough either — has to be both admin AND viewing someone
+// else's data.
+function canAdminEditViewed(){
+  return !!(getRoomCode() && isMeAdmin() && viewingName && myName && viewingName.toLowerCase()!==myName.toLowerCase());
+}
+// Explicit per-view safety switch: even when canAdminEditViewed() is true,
+// inputs stay disabled until the Admin deliberately flips this on for the
+// member they're currently looking at (see the banner/button in
+// renderPanel()). Reset to off on every switchViewing() call so accidentally
+// tapping "👀 View" on the leaderboard never silently leaves edit mode on
+// for the next member browsed.
+let adminEditModeOn = false;
 // True only when we're in a Sync Room AND the Admin has switched Task Mode
 // to "shared" — i.e. one task list applies to every member automatically.
 function isSharedTaskMode(){ return !!(getRoomCode() && currentRoomTaskMode === 'shared'); }
@@ -2702,9 +2869,10 @@ async function loadPlayerState(name){
 //    deliberately removed it locally (e.g. archiving old days into
 //    history) — a key this device never even saw is left untouched,
 //    even though it's technically "missing" from the local copy
-async function mergeWithRemoteBeforeSave(localState){
+async function mergeWithRemoteBeforeSave(localState, name){
+  const targetName = name || myName;
   try{
-    const raw = await kvdbGet(playerKey(myName));
+    const raw = await kvdbGet(playerKey(targetName));
     if(!raw) return localState;
     const remote = JSON.parse(raw);
     if(!remote || typeof remote !== 'object' || Array.isArray(remote)) return localState;
@@ -2716,22 +2884,27 @@ async function mergeWithRemoteBeforeSave(localState){
 
 async function save(opts){
   opts = opts || {};
-  // Never write to anyone else's data — only the owner's own key.
-  if(viewingName !== myName) return;
+  // Normally only the owner's own key is ever written. The one exception:
+  // the Admin has explicitly flipped Edit Mode on while looking at another
+  // member's tracker — in that case `state` holds THAT member's data (see
+  // switchViewing) and every write below targets THEIR key, never myName's.
+  const editingOther = canAdminEditViewed() && adminEditModeOn;
+  if(viewingName !== myName && !editingOther) return;
   // Never write before a load has actually finished — see stateReady's
   // declaration for why this matters (stops a blank/half-loaded state
   // from ever being persisted anywhere, including Firebase).
   if(!stateReady) return;
+  const targetName = editingOther ? viewingName : myName;
   // opts.overwrite is only used by explicit, user-confirmed full-replace
   // actions (Reset Progress, Restore Backup) where the local `state` is
   // deliberately meant to become the complete truth — everything else
   // merges so normal usage across multiple devices never loses data.
   if(getRoomCode() && !opts.overwrite){
-    state = await mergeWithRemoteBeforeSave(state);
+    state = await mergeWithRemoteBeforeSave(state, targetName);
   }
   snapshotLoadedStateKeys();
   const json = JSON.stringify(state);
-  const key = localPlayerKey(myName);
+  const key = localPlayerKey(targetName);
   try{ localStorage.setItem(key, json); }
   catch(e){ console.error('localStorage save failed', e); }
   if(window.storage && typeof window.storage.set === 'function'){
@@ -2739,7 +2912,7 @@ async function save(opts){
     catch(e){ console.error('window.storage save failed', e); }
   }
   if(getRoomCode()){
-    await kvdbSet(playerKey(myName), json);
+    await kvdbSet(playerKey(targetName), json);
   }
 }
 
@@ -3075,6 +3248,9 @@ function computeStatsFrom(st){
 
 async function switchViewing(name){
   viewingName = name;
+  // Fresh safety default every time the viewed member changes — Admin must
+  // deliberately re-enable Edit Mode for each member, see adminEditModeOn.
+  adminEditModeOn = false;
   // Block save() for the duration of the switch — until state actually
   // reflects `name`'s data, saving would either write the previous
   // profile's state under the new name, or (if the load fails) a blank
@@ -3083,11 +3259,14 @@ async function switchViewing(name){
   state = await loadPlayerState(name);
   applyLoadedExtras();
   snapshotLoadedStateKeys();
-  stateReady = (viewingName === myName);
   if(getRoomCode()){
     await refreshRoomMeta();
     await applySharedTaskModeIfNeeded();
   }
+  // Also ready when the Admin is viewing someone else specifically to edit
+  // their tracker — canAdminEditViewed() needs the just-refreshed admin
+  // status above, so this is computed after refreshRoomMeta(), not before.
+  stateReady = (viewingName === myName) || canAdminEditViewed();
   selectedDay = todayDayNum();
   renderAll();
   renderProfileBar();
@@ -3153,9 +3332,10 @@ function renderProfileBar(){
       await renderCompetePanel();
     });
   } else {
+    const editNote = canAdminEditViewed() ? (adminEditModeOn ? ' (✏️ editing)' : ' (👑 edit available)') : ' (read-only)';
     el.innerHTML = `
       <div class="pbrow">
-        <span>👀 Viewing <b>${escapeHtml(viewingName)}</b>'s tracker (read-only)</span>
+        <span>👀 Viewing <b>${escapeHtml(viewingName)}</b>'s tracker${editNote}</span>
         <button class="nav-btn" id="backToMineBtn">⬅️ Meri Tracker</button>
       </div>`;
     const btn = document.getElementById('backToMineBtn');
@@ -3178,7 +3358,8 @@ function updateViewBar(){
   document.body.classList.toggle('viewing-other', ro);
   if(ro){
     const label = document.getElementById('viewBarLabel');
-    if(label) label.innerHTML = `👀 Viewing <b>${escapeHtml(viewingName)}</b>'s tracker`;
+    const editNote = canAdminEditViewed() ? (adminEditModeOn ? ' (✏️ editing)' : ' (👑 edit available)') : '';
+    if(label) label.innerHTML = `👀 Viewing <b>${escapeHtml(viewingName)}</b>'s tracker${editNote}`;
   }
 }
 {
@@ -3303,9 +3484,17 @@ async function renderCompetePanel(){
   // Perf: fetch every friend's state in parallel instead of one-by-one —
   // on a slow connection the old sequential loop could take many seconds
   // per tick, which is a big chunk of blocked/janky time every 25s.
+  const todayIdx = todayDayNum();
+  const weekRange = thisWeekDayRange();
   const rows = await Promise.all(names.map(async (nm)=>{
     const st = await loadPlayerState(nm);
-    return { name: nm, ...computeStatsFrom(st), isLive: true };
+    return {
+      name: nm,
+      ...computeStatsFrom(st),
+      todayStats: computeRangeStatsFrom(st, todayIdx, todayIdx),
+      weekStats: computeRangeStatsFrom(st, weekRange.from, weekRange.to),
+      isLive: true
+    };
   }));
   rows.sort((a,b)=> b.pct-a.pct || b.streak-a.streak);
 
@@ -3329,25 +3518,28 @@ async function renderCompetePanel(){
   const myPct = myRowIdx>=0 ? rows[myRowIdx].pct : 0;
   const myRank = myRowIdx>=0 ? myRowIdx+1 : null;
 
-  // "This Week" view re-derives each row as current-minus-last-reset and
-  // re-sorts/re-ranks on that — kept entirely separate from `rows` above so
-  // the notification logic and the all-time Home card snapshot never see
-  // anything but true all-time numbers.
-  const weekRows = rows.map(weeklyStatsFor).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
-  const displayRows = leaderboardMode==='week' ? weekRows : rows;
+  // "Today" and "This Week" views re-derive each row from its own
+  // pre-computed range stats and re-sort/re-rank on that — kept entirely
+  // separate from `rows` above so the notification logic and the all-time
+  // Home card snapshot never see anything but true all-time numbers.
+  const todayRows = rows.map(r=>({ ...r, ...r.todayStats })).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
+  const weekRows = rows.map(r=>({ ...r, ...r.weekStats })).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
+  const displayRows = leaderboardMode==='today' ? todayRows : leaderboardMode==='week' ? weekRows : rows;
   const displayMyRowIdx = displayRows.findIndex(r=>r.name.toLowerCase()===myName.toLowerCase());
   const displayMyPct = displayMyRowIdx>=0 ? displayRows[displayMyRowIdx].pct : 0;
   const displayMyRank = displayMyRowIdx>=0 ? displayMyRowIdx+1 : null;
 
   let html = '';
   html += `<div class="lbModeToggle">
-    <button class="lbModeBtn ${leaderboardMode==='all'?'active':''}" type="button" data-lbmode="all">🏆 All-Time</button>
+    <button class="lbModeBtn ${leaderboardMode==='today'?'active':''}" type="button" data-lbmode="today">📅 Today</button>
     <button class="lbModeBtn ${leaderboardMode==='week'?'active':''}" type="button" data-lbmode="week">🗓️ This Week</button>
+    <button class="lbModeBtn ${leaderboardMode==='all'?'active':''}" type="button" data-lbmode="all">🏆 All-Time</button>
   </div>`;
-  if(leaderboardMode==='week'){
-    html += `<div class="lbWeekHint">${currentWeeklyReset
-      ? `📌 Reset: ${new Date(currentWeeklyReset.at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})} se ab tak ka progress${currentWeeklyReset.by?` (by ${escapeHtml(currentWeeklyReset.by)})`:''}`
-      : 'Is room mein abhi tak kabhi weekly reset nahi hua — isliye "This Week" abhi All-Time jaisa hi dikh raha hai. Admin "Room" tab se reset kar sakta hai.'}</div>`;
+  if(leaderboardMode==='today'){
+    html += `<div class="lbWeekHint">📅 Aaj (${new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})}) ka scoreboard — roz raat 12 baje khud-ba-khud fresh ho jata hai.</div>`;
+  } else if(leaderboardMode==='week'){
+    const wr = thisWeekDayRange();
+    html += `<div class="lbWeekHint">🗓️ Is hafte (${fmtDate(wr.from)} – ${fmtDate(wr.to)}) ka scoreboard — har Somvar khud-ba-khud fresh ho jata hai.</div>`;
   }
   if(displayRows.length>1 && displayMyRank){
     const rankMsg = displayMyRank===1
@@ -3373,7 +3565,9 @@ async function renderCompetePanel(){
       else deltaHtml = `<span class="lbdelta even">🤝 barabar tumse</span>`;
     }
     const dotHtml = isMe ? '🟢' : presenceLabel(r.name).dot;
-    const daysStat = leaderboardMode==='week' ? `<span>📅${r.daysDone} din (week)</span>` : `<span>📅${r.daysDone}/${TOTAL_DAYS} din</span>`;
+    const daysStat = leaderboardMode==='today' ? `<span>${r.daysDone ? '✅ Aaj poora' : '⏳ Aaj baaki'}</span>`
+      : leaderboardMode==='week' ? `<span>📅${r.daysDone} din (week)</span>`
+      : `<span>📅${r.daysDone}/${TOTAL_DAYS} din</span>`;
     return `
       <div class="lbrow ${isViewing?'active':''} ${isMe?'me':''} ${isLead?'lead':''}">
         <div class="lbrank">${medal}</div>
@@ -3709,8 +3903,7 @@ function wireAdminBackupButtons(){
   });
 }
 
-// Wires the pinned-announcement editor and the weekly-leaderboard-reset
-// button. Called every time the admin section re-renders, same pattern as
+// Wires the pinned-announcement editor. Called every time the admin
 // wireAdminBackupButtons(), since these controls are recreated in the DOM
 // on each render.
 function wireAdminAnnouncementAndWeeklyControls(){
@@ -3733,21 +3926,6 @@ function wireAdminAnnouncementAndWeeklyControls(){
     await setRoomAnnouncement('');
     await renderAdminPanelBody();
     safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
-  });
-  const resetWeeklyBtn = document.getElementById('resetWeeklyBtn');
-  if(resetWeeklyBtn) resetWeeklyBtn.addEventListener('click', async ()=>{
-    if(!confirm('Pakka? Isse "This Week" leaderboard sabke liye abhi se fresh (0%) ho jayega. Kisi ka bhi asli data delete nahi hoga.')) return;
-    resetWeeklyBtn.disabled = true;
-    resetWeeklyBtn.textContent = '⏳ Reset ho raha hai...';
-    try{
-      await resetWeeklyLeaderboard();
-      await renderAdminPanelBody();
-      await renderCompetePanel();
-    }catch(e){
-      alert('Reset nahi ho paya.\n\nWajah: ' + ((e&&e.message)||String(e)));
-      resetWeeklyBtn.disabled = false;
-      resetWeeklyBtn.textContent = '🔄 Weekly Leaderboard Reset Karo';
-    }
   });
 }
 
@@ -3803,11 +3981,10 @@ async function renderAdminSection(){
 
 // ===== Admin Control Panel (header-only, 👑 button) =====
 // This is where ALL real admin power lives: room code, pinned announcement,
-// weekly leaderboard reset, full backup/restore, and per-member
-// hide/restrict/delete. Only ever rendered while isMeAdmin() is true — the
-// header button that opens this modal is itself hidden for everyone else,
-// and this function double-checks admin status again before rendering
-// anything sensitive.
+// full backup/restore, and per-member hide/restrict/delete. Only ever
+// rendered while isMeAdmin() is true — the header button that opens this
+// modal is itself hidden for everyone else, and this function
+// double-checks admin status again before rendering anything sensitive.
 async function renderAdminPanelBody(){
   const roomCodeWrap = document.getElementById('adminPanelRoomCodeWrap');
   const bodyEl = document.getElementById('adminPanelBody');
@@ -3857,17 +4034,9 @@ async function renderAdminPanelBody(){
     <div class="losshint" style="padding-top:6px;">${annStatusLine}</div>
   `;
 
-  const wr = currentWeeklyReset;
-  const wrStatusLine = wr
-    ? `Pichla reset: ${new Date(wr.at).toLocaleString('en-IN')}${wr.by ? ` by ${escapeHtml(wr.by)}` : ''}.`
-    : 'Abhi tak kabhi weekly reset nahi hua hai.';
   const weeklyHtml = `
-    <div class="grid-label" style="margin-top:14px;">🏆 Weekly Leaderboard</div>
-    <div class="losshint" style="padding-top:0;">Reset karne se "🗓️ This Week" leaderboard (Rank tab) sabke liye abhi se fresh (0%) shuru ho jayega — kisi ka bhi asli progress, streak, ya wallet delete nahi hota, sirf weekly scoreboard restart hota hai.</div>
-    <div class="losshint" style="padding-top:6px;">${wrStatusLine}</div>
-    <div class="btnrow" style="margin-top:8px;">
-      <button class="nav-btn" id="resetWeeklyBtn">🔄 Weekly Leaderboard Reset Karo</button>
-    </div>
+    <div class="grid-label" style="margin-top:14px;">🏆 Leaderboard</div>
+    <div class="losshint" style="padding-top:0;">Rank tab mein ab "📅 Today", "🗓️ This Week" aur "🏆 All-Time" — teeno khud-ba-khud chalte hain. "Today" roz raat 12 baje aur "This Week" har Somvar apne aap fresh ho jata hai — kisi ke bhi asli progress, streak, ya wallet mein kuch delete nahi hota, sirf scoreboard restart hota hai. Admin ko kuch bhi click karne ki zarurat nahi.</div>
   `;
 
   const cachedBackup = room ? loadAdminBackupCache(room) : null;
@@ -4576,11 +4745,17 @@ function renderPanel(){
   const d = getDay(selectedDay);
   const done = d.tasks.filter(Boolean).length;
   const pct = Math.round((done/TASKS.length)*100);
-  const isReadOnly = viewingName !== myName;
+  const isReadOnly = viewingName !== myName && !(canAdminEditViewed() && adminEditModeOn);
   const dis = isReadOnly ? 'disabled' : '';
 
   let html = '';
-  if(isReadOnly){
+  if(canAdminEditViewed()){
+    html += `
+      <div class="readonly-banner admin-edit-banner ${adminEditModeOn?'on':''}">
+        <span>${adminEditModeOn ? `✏️ Edit Mode ON — <b>${escapeHtml(viewingName)}</b> ka data edit ho raha hai` : `👑 ${escapeHtml(viewingName)}'s tracker — Admin edit kar sakta hai`}</span>
+        <button class="nav-btn" id="adminEditModeToggleBtn" type="button">${adminEditModeOn ? '🔒 Edit Band Karo' : '✏️ Edit Mode ON Karo'}</button>
+      </div>`;
+  } else if(isReadOnly){
     html += `
       <div class="readonly-banner">
         <span>👀 ${escapeHtml(viewingName)}'s tracker — sirf dekh sakte ho, edit nahi</span>
@@ -4606,7 +4781,7 @@ function renderPanel(){
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
         <div class="taskinfo"><div class="name">${checked? '✅' : tier.emoji} ${t}</div></div>
         <div class="value ${tier.cls}">₹${Math.round(taskValue(idx))}</div>
-        ${isReadOnly ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
+        ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
       </div>
     `;
   });
@@ -4686,6 +4861,13 @@ function renderPanel(){
   panel.innerHTML = html;
   renderTimeSettings();
   renderTimeGuide();
+
+  const editModeBtn = document.getElementById('adminEditModeToggleBtn');
+  if(editModeBtn) editModeBtn.addEventListener('click', ()=>{
+    adminEditModeOn = !adminEditModeOn;
+    renderAll();
+    applyReadOnlyUI();
+  });
 
   document.getElementById('restCheck').addEventListener('change', async (e)=>{
     if(isReadOnly) return;
@@ -5493,7 +5675,7 @@ function renderQuickChapterLog(){
 // Builds one sorted (weakest-first) chapter list panel, for either
 // MATH_CHAPTERS or ENGLISH_TOPICS.
 function renderChapterList(type, chapters){
-  const isReadOnly = viewingName !== myName;
+  const isReadOnly = viewingName !== myName && !(canAdminEditViewed() && adminEditModeOn);
   const dis = isReadOnly ? 'disabled' : '';
   const rows = chapters.map(name => ({ name, count: chapterCount(type, name) }));
   rows.sort((a,b)=> b.count-a.count || chapters.indexOf(a.name)-chapters.indexOf(b.name));
@@ -5606,7 +5788,7 @@ function applyRevisionSearchFilter(){
 // One row of the Revision Counter — a chapter/topic name, its all-time
 // revision count, a small −1 (undo misclick) and a big ✅ +1 Revise button.
 function renderRevisionRow(type, name){
-  const isReadOnly = viewingName !== myName;
+  const isReadOnly = viewingName !== myName && !(canAdminEditViewed() && adminEditModeOn);
   const dis = isReadOnly ? 'disabled' : '';
   const count = revisionCount(type, name);
   return `
@@ -6629,6 +6811,32 @@ if(teToggleBtnEl) teToggleBtnEl.addEventListener('click', ()=>{
   if(isTaskEditorOpen()) closeTaskEditor(); else openTaskEditor();
 });
 
+// Real (unclamped) days-remaining count for the big ring widget — separate
+// from todayDayNum() above, which clamps to [1, TOTAL_DAYS] for indexing
+// into the day-by-day plan. Here we want the true countdown:
+//  - before the plan's Day 1 has arrived yet → show the full TOTAL_DAYS
+//  - during the plan → TOTAL_DAYS - (day number so far) + 1
+//  - after the plan's last day has passed → 0 (ring shows "exam done")
+function examDaysLeft(){
+  const now = new Date();
+  const diff = Math.floor((new Date(now.toDateString()) - new Date(START_DATE.toDateString()))/86400000) + 1;
+  if(diff < 1) return TOTAL_DAYS;
+  return Math.max(0, TOTAL_DAYS - diff + 1);
+}
+function updateExamCountdownRing(){
+  const left = examDaysLeft();
+  const pct = Math.max(0, Math.min(100, Math.round((left/TOTAL_DAYS)*100)));
+  // Class-based (not a single id) — there can be more than one ring on the
+  // page at once (the small one inline on Home + the bigger one inside the
+  // once-a-day popup), and both should always show the same number.
+  document.querySelectorAll('.examCountdownRing').forEach(ring=>{
+    ring.style.setProperty('--p', pct);
+    const numEl = ring.querySelector('.examRingNum');
+    const lblEl = ring.querySelector('.examRingLbl');
+    if(numEl) numEl.textContent = left > 0 ? left : '🎉';
+    if(lblEl) lblEl.textContent = left > 1 ? 'Days Left' : (left === 1 ? 'Day Left' : 'All The Best!');
+  });
+}
 function renderExamLine(){
   const examDate = new Date(START_DATE);
   examDate.setDate(examDate.getDate() + TOTAL_DAYS - 1);
@@ -6640,6 +6848,48 @@ function renderExamLine(){
   if(titleEl) titleEl.textContent = `🎯 EXAM TRACKER`;
   const calLbl = document.getElementById('calDaysLabel');
   if(calLbl) calLbl.textContent = TOTAL_DAYS;
+  updateExamCountdownRing();
+}
+
+// ===== Once-a-day "Mission Countdown" popup — shows the big ring + a
+// random motivation line, once per calendar day, right when the app opens.
+// Gated by its own localStorage date-stamp (separate key from everything
+// else) so it fires exactly once per day no matter how many times the app
+// is opened that same day, and fires again fresh the next day.
+function dailyCountdownPopupShownToday(){
+  try{ return localStorage.getItem('cgl50-daily-countdown-lastshown') === fmtISODate(new Date()); }
+  catch(e){ return false; }
+}
+function markDailyCountdownPopupShown(){
+  try{ localStorage.setItem('cgl50-daily-countdown-lastshown', fmtISODate(new Date())); }catch(e){}
+}
+function showDailyCountdownModal(){
+  const modal = document.getElementById('dailyCountdownModal');
+  if(!modal) return;
+  const quoteEl = document.getElementById('dailyCountdownQuote');
+  if(quoteEl){
+    const pool = (typeof ALL_TAB_QUOTES !== 'undefined' && ALL_TAB_QUOTES.length) ? ALL_TAB_QUOTES : DAILY_QUOTES;
+    quoteEl.textContent = pool[Math.floor(Math.random()*pool.length)];
+  }
+  updateExamCountdownRing();
+  modal.style.display = 'flex';
+  markDailyCountdownPopupShown();
+}
+function hideDailyCountdownModal(){
+  const modal = document.getElementById('dailyCountdownModal');
+  if(modal) modal.style.display = 'none';
+}
+// Called once from init() — small delay so it doesn't fight with the
+// welcome/help popups for the same instant on screen.
+function maybeShowDailyCountdownPopup(){
+  if(dailyCountdownPopupShownToday()) return;
+  setTimeout(showDailyCountdownModal, 1800);
+}
+{
+  const dcCloseBtn = document.getElementById('dailyCountdownCloseBtn');
+  const dcOkBtn = document.getElementById('dailyCountdownOkBtn');
+  if(dcCloseBtn) dcCloseBtn.addEventListener('click', hideDailyCountdownModal);
+  if(dcOkBtn) dcOkBtn.addEventListener('click', hideDailyCountdownModal);
 }
 
 function safeRun(fn, label){
@@ -6718,16 +6968,37 @@ function initTabs(){
   });
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
-  if(!['home','today','mock','revision','chapters','compete','more'].includes(saved)) saved = 'home';
+  if(!['home','today','mock','chapters','compete','more'].includes(saved)) saved = 'home';
   switchTab(saved);
+}
+
+// ===== Weak / Revise sub-tab switcher (lives inside the "Weak" tab) =====
+function switchSubtab(name){
+  document.querySelectorAll('.subtabview').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-subtab')===name);
+  });
+  document.querySelectorAll('.subtabbtn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-subtab')===name);
+  });
+  try{ localStorage.setItem('cgl50-active-weak-subtab', name); }catch(e){}
+}
+function initWeakReviseSubtabs(){
+  document.querySelectorAll('.subtabbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchSubtab(btn.getAttribute('data-subtab')));
+  });
+  let saved = 'weak';
+  try{ saved = localStorage.getItem('cgl50-active-weak-subtab') || 'weak'; }catch(e){}
+  if(!['weak','revise'].includes(saved)) saved = 'weak';
+  switchSubtab(saved);
 }
 
 // ===== Swipe left/right to move between tabs =====
 // Attached to the main content wrapper so a left-swipe anywhere on a page
-// moves forward (Home -> Today -> Revision -> Chapters -> Compete -> Analysis)
+// moves forward (Home -> Today -> Mock -> Weak -> Compete -> Analysis)
 // and a right-swipe moves back — without hijacking normal vertical scrolling,
 // day-grid taps, or dragging inside horizontally-scrollable charts/inputs.
-const TAB_ORDER = ['home','today','mock','revision','chapters','compete','more'];
+// (Weak tab now holds both "Weak" and "Revise" as an internal sub-tab switcher.)
+const TAB_ORDER = ['home','today','mock','chapters','compete','more'];
 function initSwipeTabs(){
   const wrap = document.querySelector('.wrap');
   if(!wrap) return;
@@ -7243,6 +7514,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
   renderTaskEditForm();
   renderTaskModeSelector();
   initTabs();
+  initWeakReviseSubtabs();
   renderAll();
   renderProfileBar();
   applyReadOnlyUI();
@@ -7255,6 +7527,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
   updateTargetReminderBtnLabel();
   checkTargetReminderOnAppOpen();
   maybeShowHelpModalOnce();
+  maybeShowDailyCountdownPopup();
 })();
 </script>
 </body>
