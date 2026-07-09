@@ -615,6 +615,19 @@
   .lbstats .lbgain{color:var(--gain);}
   .lbstats .lbloss{color:var(--loss);}
   .lbview{padding:5px 10px;font-size:12px;}
+  .lbpin{
+    width:32px;height:32px;border-radius:8px;flex-shrink:0;padding:0;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
+    font-size:14px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  }
+  .lbpin:active{transform:scale(0.9);}
+  .lbpin.active{background:rgba(251,191,36,0.18);border-color:var(--accent);color:var(--accent);}
+  .lbrow.pinned{
+    border:1.5px dashed var(--accent-dim);border-radius:8px;padding:10px 8px;
+    background:rgba(251,191,36,0.04);
+  }
+  .lbrow.pinned.me{border-style:solid;}
   .addfriend{display:flex;gap:8px;margin-top:12px;}
   .addfriend input{
     flex:1;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
@@ -3874,6 +3887,28 @@ function saveFriendsList(list){
   try{ localStorage.setItem('cgl50-my-friends', JSON.stringify(list)); }catch(e){}
 }
 
+// ===== Leaderboard "pin to top" (per-device, personal preference — not
+// synced to the room, so pinning someone only changes YOUR view, not
+// theirs). Anyone visible on the leaderboard — including yourself — can
+// be pinned; pinned rows float to the top but keep showing their true
+// rank number, so pinning never changes anyone's actual standing. =====
+function loadPinnedList(){
+  try{ const raw = localStorage.getItem('cgl50-pinned-lb'); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function savePinnedList(list){
+  try{ localStorage.setItem('cgl50-pinned-lb', JSON.stringify(list)); }catch(e){}
+}
+function isPinned(name, list){
+  return (list || loadPinnedList()).some(n=>n.toLowerCase()===name.toLowerCase());
+}
+function togglePinned(name){
+  const list = loadPinnedList();
+  const idx = list.findIndex(n=>n.toLowerCase()===name.toLowerCase());
+  if(idx>=0) list.splice(idx,1); else list.push(name);
+  savePinnedList(list);
+}
+
 // ===== Per-player task definitions =====
 // Each player can have their own custom task list (names, start times,
 // durations) — stored in state.taskDefs. These helpers read a task
@@ -4370,6 +4405,18 @@ async function renderCompetePanel(){
   const displayMyPct = displayMyRowIdx>=0 ? displayRows[displayMyRowIdx].pct : 0;
   const displayMyRank = displayMyRowIdx>=0 ? displayMyRowIdx+1 : null;
 
+  // Pinning is purely a local display reorder — it never touches `rows`/
+  // `displayRows` (real ranks, deltas, the Home-card snapshot etc. all stay
+  // computed off the true sorted order above). We just tag each row with
+  // its true rank + pinned flag, then float pinned rows to the top while
+  // keeping unpinned rows in their original relative order.
+  const pinnedList = loadPinnedList();
+  const rankedDisplayRows = displayRows.map((r,i)=>({ ...r, _trueRank:i+1, _pinned:isPinned(r.name, pinnedList) }));
+  const orderedDisplayRows = [
+    ...rankedDisplayRows.filter(r=>r._pinned),
+    ...rankedDisplayRows.filter(r=>!r._pinned)
+  ];
+
   let html = '';
   html += `<div class="lbModeToggle">
     <button class="lbModeBtn ${leaderboardMode==='today'?'active':''}" type="button" data-lbmode="today">📅 Today</button>
@@ -4389,8 +4436,8 @@ async function renderCompetePanel(){
     html += `<div class="lbsummary">${rankMsg}</div>`;
   }
 
-  html += `<div class="lbwrap">` + displayRows.map((r,idx)=>{
-    const rank = idx+1;
+  html += `<div class="lbwrap">` + orderedDisplayRows.map((r)=>{
+    const rank = r._trueRank;
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
     const isLead = rank===1;
@@ -4398,6 +4445,7 @@ async function renderCompetePanel(){
     let actionBtn = '';
     if(isMe){ actionBtn=''; }
     else { actionBtn = `<button class="nav-btn lbview" data-view="${escapeHtml(r.name)}">👀 View</button>`; }
+    const pinBtn = `<button class="lbpin ${r._pinned?'active':''}" type="button" data-pin="${escapeHtml(r.name)}" title="${r._pinned?'Unpin karo':'Top pe pin karo'}">${r._pinned?'📌':'📍'}</button>`;
     let deltaHtml = '';
     if(!isMe && displayRows.length>1){
       const delta = r.pct - displayMyPct;
@@ -4410,7 +4458,7 @@ async function renderCompetePanel(){
       : leaderboardMode==='week' ? `<span>📅${r.daysDone} din (week)</span>`
       : `<span>📅${r.daysDone}/${TOTAL_DAYS} din</span>`;
     return `
-      <div class="lbrow ${isViewing?'active':''} ${isMe?'me':''} ${isLead?'lead':''}">
+      <div class="lbrow ${isViewing?'active':''} ${isMe?'me':''} ${isLead?'lead':''} ${r._pinned?'pinned':''}">
         <div class="lbrank">${medal}</div>
         <div class="lbmain">
           <div class="lbtoprow">
@@ -4420,7 +4468,7 @@ async function renderCompetePanel(){
           <div class="lbbar"><div class="lbbarfill" style="width:${r.pct}%;"></div></div>
           <div class="lbstats"><span>⭐Lvl ${r.level}</span><span>🔥${r.streak} streak</span><span>📈${r.pct}%</span>${daysStat}<span>⏱️${fmtHours(r.studyMins)}</span><span class="lbgain">💰+₹${Math.round(r.earned).toLocaleString('en-IN')}</span>${r.lost>0?`<span class="lbloss">📉-₹${Math.round(r.lost).toLocaleString('en-IN')}</span>`:''}</div>
         </div>
-        ${actionBtn}
+        ${pinBtn}${actionBtn}
       </div>`;
   }).join('') + `</div>`;
 
@@ -4430,6 +4478,7 @@ async function renderCompetePanel(){
       <button class="nav-btn" id="addFriendBtn">➕ Add</button>
     </div>
     <div class="losshint">Kaam tabhi karega jab dono same 🔗 Sync Room code se joined ho.</div>
+    <div class="losshint">📍 Kisi ke bhi naam ke paas wale pin button se use top pe pin kar sakte ho — sirf tumhari screen pe, rank sabki asli hi rehti hai.</div>
   `;
   el.innerHTML = html;
 
@@ -4445,6 +4494,12 @@ async function renderCompetePanel(){
     btn.addEventListener('click', async ()=>{
       await switchViewing(btn.getAttribute('data-view'));
       switchTab('today');
+    });
+  });
+  el.querySelectorAll('.lbpin').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      togglePinned(btn.getAttribute('data-pin'));
+      renderCompetePanel();
     });
   });
   const addBtn = document.getElementById('addFriendBtn');
@@ -5832,6 +5887,16 @@ function renderPanel(){
       if(isReadOnly) return;
       const idx = parseInt(e.target.getAttribute('data-idx'));
       const dayObj = getDay(selectedDay);
+
+      // Once a task is ticked, it's locked in — no un-ticking, ever (own
+      // days, backfilled days, or admin-edit-mode on someone else's day).
+      // A tick can only move undone -> done, never the other way.
+      if(!e.target.checked && dayObj.tasks[idx]){
+        e.target.checked = true;
+        showAntiCheatToast('🔒 Ek baar tick kiya hua task wapas hata nahi sakte.');
+        return;
+      }
+
       // Anti-instant-complete guard only applies to your OWN today's list —
       // admin fixing someone else's data, and backfilling old days, stay
       // frictionless.
@@ -5856,11 +5921,6 @@ function renderPanel(){
 
       const doneBefore = dayObj.tasks.filter(Boolean).length;
       dayObj.tasks[idx] = e.target.checked;
-      if(!e.target.checked){
-        // Un-ticking clears its proof — re-ticking later needs a fresh note.
-        if(dayObj.taskNotes) dayObj.taskNotes[idx] = '';
-        if(dayObj.taskCheckedAt) dayObj.taskCheckedAt[idx] = null;
-      }
       const doneAfter = dayObj.tasks.filter(Boolean).length;
       if(e.target.checked && taskTimers[idx]) clearTaskTimer(idx);
       renderAll();
@@ -9324,7 +9384,7 @@ function handleMidnightRollover(){
 function getOrInitTaskTimer(idx){
   if(!taskTimers[idx]){
     taskTimers[idx] = {
-      mode:'pomodoro', running:false, isBreak:false,
+      mode:'stopwatch', running:false, isBreak:false,
       workAccumSec:0, sessionWorkSec:0, breakElapsedSec:0,
       subjectPendingSec:0, // work seconds not yet flushed into Focus subject stats
       targetSec: ttTargetSecFor(idx), lastTs:null
