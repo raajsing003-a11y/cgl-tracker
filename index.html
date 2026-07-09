@@ -748,6 +748,30 @@
   .calcCard[data-calc="division"] .calcIcon{color:var(--teal);box-shadow:0 0 0 1px rgba(45,212,191,0.25) inset;}
   .calcCard[data-calc="division"]{border-color:rgba(45,212,191,0.3);}
   .calcCard[data-calc="division"] .calcArrow{color:var(--teal);}
+  .calcCard[data-calc="square"] .calcIcon{color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,0.25) inset;}
+  .calcCard[data-calc="square"]{border-color:rgba(96,165,250,0.3);}
+  .calcCard[data-calc="square"] .calcArrow{color:var(--blue);}
+  .calcCard[data-calc="cube"] .calcIcon{color:var(--purple);box-shadow:0 0 0 1px rgba(192,132,252,0.25) inset;}
+  .calcCard[data-calc="cube"]{border-color:rgba(192,132,252,0.3);}
+  .calcCard[data-calc="cube"] .calcArrow{color:var(--purple);}
+  .calcCard[data-calc="sqrt"] .calcIcon{color:var(--teal);box-shadow:0 0 0 1px rgba(45,212,191,0.25) inset;}
+  .calcCard[data-calc="sqrt"]{border-color:rgba(45,212,191,0.3);}
+  .calcCard[data-calc="sqrt"] .calcArrow{color:var(--teal);}
+  .calcCard[data-calc="cbrt"] .calcIcon{color:var(--pink);box-shadow:0 0 0 1px rgba(244,114,182,0.25) inset;}
+  .calcCard[data-calc="cbrt"]{border-color:rgba(244,114,182,0.3);}
+  .calcCard[data-calc="cbrt"] .calcArrow{color:var(--pink);}
+  .calcCard[data-calc="table"] .calcIcon{color:var(--orange);box-shadow:0 0 0 1px rgba(251,146,60,0.25) inset;}
+  .calcCard[data-calc="table"]{border-color:rgba(251,146,60,0.3);}
+  .calcCard[data-calc="table"] .calcArrow{color:var(--orange);}
+  .calcCard[data-calc="trig"] .calcIcon{color:var(--accent);box-shadow:0 0 0 1px rgba(251,191,36,0.25) inset;}
+  .calcCard[data-calc="trig"]{border-color:rgba(251,191,36,0.3);}
+  .calcCard[data-calc="trig"] .calcArrow{color:var(--accent);}
+  .calcCard[data-calc="percentage"] .calcIcon{color:var(--gain);box-shadow:0 0 0 1px rgba(74,222,128,0.25) inset;}
+  .calcCard[data-calc="percentage"]{border-color:rgba(74,222,128,0.3);}
+  .calcCard[data-calc="percentage"] .calcArrow{color:var(--gain);}
+  .calcCard[data-calc="fraction"] .calcIcon{color:var(--loss);box-shadow:0 0 0 1px rgba(248,113,113,0.25) inset;}
+  .calcCard[data-calc="fraction"]{border-color:rgba(248,113,113,0.3);}
+  .calcCard[data-calc="fraction"] .calcArrow{color:var(--loss);}
   @media (max-width:380px){
     .calcLabel{font-size:14px;}
     .calcCard{padding:14px 10px;gap:9px;}
@@ -1407,22 +1431,24 @@
 <div class="calcSheetOverlay" id="calcSetupSheet">
   <div class="calcSheetCard">
     <div class="calcSheetHandle"></div>
-    <div class="onbTitle">Practice Setup</div>
-    <div class="onbSub">Select range and start.</div>
+    <div class="onbTitle" id="calcSetupTitle">Practice Setup</div>
+    <div class="onbSub" id="calcSetupSub">Select range and start.</div>
 
-    <div class="calcFieldRow">
-      <div class="calcFieldLabel">Numbers In Question:</div>
-      <select class="calcSelect" id="calcNumCount">
-        <option value="2" selected>2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-        <option value="6">6</option>
-      </select>
+    <div id="calcNumCountWrap">
+      <div class="calcFieldRow">
+        <div class="calcFieldLabel">Numbers In Question:</div>
+        <select class="calcSelect" id="calcNumCount">
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
     </div>
 
     <div class="calcFieldLabel" style="margin-top:16px;">Difficulty</div>
-    <div class="calcHint">Easy uses smaller numbers, Hard prefers larger or trickier ones.</div>
+    <div class="calcHint" id="calcDifficultyHint">Easy uses smaller numbers, Hard prefers larger or trickier ones.</div>
     <div class="calcChipRow" id="calcDifficultyRow">
       <button class="calcChip active" data-value="easy">Easy</button>
       <button class="calcChip" data-value="medium">Medium</button>
@@ -1437,25 +1463,27 @@
     </div>
     <input type="range" class="calcSlider" id="calcQCount" min="5" max="50" step="5" value="20">
 
-    <div class="calcSheetDivider"></div>
+    <div id="calcQModeWrap">
+      <div class="calcSheetDivider"></div>
 
-    <div class="calcFieldLabel">Question mode</div>
-    <div class="calcHint">Choose Random or Number range for this practice set.</div>
-    <div class="calcChipRow calcChipRow-col" id="calcQModeRow">
-      <button class="calcChip active" data-value="range">Number range</button>
-      <button class="calcChip" data-value="random">Random</button>
-    </div>
+      <div class="calcFieldLabel">Question mode</div>
+      <div class="calcHint">Choose Random or Number range for this practice set.</div>
+      <div class="calcChipRow calcChipRow-col" id="calcQModeRow">
+        <button class="calcChip active" data-value="range">Number range</button>
+        <button class="calcChip" data-value="random">Random</button>
+      </div>
 
-    <div id="calcRangeWrap">
-      <div class="calcFieldLabel" style="margin-top:14px;">⌨️ Number Range</div>
-      <div class="calcRangeRow">
-        <div class="calcRangeField">
-          <label>From</label>
-          <input type="number" id="calcRangeFrom" value="1">
-        </div>
-        <div class="calcRangeField">
-          <label>To</label>
-          <input type="number" id="calcRangeTo" value="99">
+      <div id="calcRangeWrap">
+        <div class="calcFieldLabel" style="margin-top:14px;">⌨️ Number Range</div>
+        <div class="calcRangeRow">
+          <div class="calcRangeField">
+            <label>From</label>
+            <input type="number" id="calcRangeFrom" value="1">
+          </div>
+          <div class="calcRangeField">
+            <label>To</label>
+            <input type="number" id="calcRangeTo" value="99">
+          </div>
         </div>
       </div>
     </div>
@@ -1826,7 +1854,7 @@
       </div>
 
       <div class="grid-label" style="margin-top:0;">🧮 Calculation Practice</div>
-      <div class="calcGrid">
+      <div class="calcGrid calcGrid-1col">
         <button class="calcCard" id="calcAddBtn" data-calc="addition">
           <span class="calcIcon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
@@ -1853,6 +1881,66 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6.5" r="1.4" fill="currentColor" stroke="none"/><path d="M5 12h14"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor" stroke="none"/></svg>
           </span>
           <span class="calcLabel">Division</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+
+      <div class="grid-label">🔢 Quick Practice</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard" id="calcSquareBtn" data-calc="square">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24"><text x="1" y="17" font-size="15" font-weight="800" fill="currentColor">x</text><text x="13" y="9" font-size="9" font-weight="800" fill="currentColor">2</text></svg>
+          </span>
+          <span class="calcLabel">Square</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcCubeBtn" data-calc="cube">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24"><text x="1" y="17" font-size="15" font-weight="800" fill="currentColor">x</text><text x="13" y="9" font-size="9" font-weight="800" fill="currentColor">3</text></svg>
+          </span>
+          <span class="calcLabel">Cube</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcSqrtBtn" data-calc="sqrt">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3 6 4-15h11"/></svg>
+          </span>
+          <span class="calcLabel">Square Root</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcCbrtBtn" data-calc="cbrt">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3 6 4-15h11"/><text x="3" y="6" font-size="7" font-weight="800" fill="currentColor" stroke="none">3</text></svg>
+          </span>
+          <span class="calcLabel">Cube Root</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcTableBtn" data-calc="table">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 10.2h17"/><path d="M9.2 4v16"/></svg>
+          </span>
+          <span class="calcLabel">Table</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcTrigBtn" data-calc="trig">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16L4 4z"/><path d="M8.2 20a4.2 4.2 0 0 0-4.2-4.2"/></svg>
+          </span>
+          <span class="calcLabel">Trigonometry</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcPctBtn" data-calc="percentage">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><circle cx="7.2" cy="7.2" r="2.2"/><circle cx="16.8" cy="16.8" r="2.2"/></svg>
+          </span>
+          <span class="calcLabel">Percentage</span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcFracBtn" data-calc="fraction">
+          <span class="calcIcon">
+            <svg viewBox="0 0 24 24"><text x="3" y="10" font-size="9" font-weight="800" fill="currentColor">2</text><line x1="3" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2"/><text x="3" y="22" font-size="9" font-weight="800" fill="currentColor">3</text></svg>
+          </span>
+          <span class="calcLabel">Fraction</span>
           <span class="calcArrow">&#8250;</span>
         </button>
       </div>
@@ -7349,8 +7437,93 @@ const calcSession = {
   answered:false, typedValue:''
 };
 
+// Operations that don't use the chain-style "Numbers In Question" / "Number range"
+// fields — they generate their own range internally from Difficulty alone.
+const CALC_ADVANCED_OPS = ['square','cube','sqrt','cbrt','table','trig','percentage','fraction'];
+function calcIsAdvancedOp(op){ return CALC_ADVANCED_OPS.indexOf(op) !== -1; }
+
+const CALC_OP_LABELS = {
+  addition:'Addition', subtraction:'Subtraction', multiplication:'Multiplication', division:'Division',
+  square:'Square', cube:'Cube', sqrt:'Square Root', cbrt:'Cube Root', table:'Table',
+  trig:'Trigonometry', percentage:'Percentage', fraction:'Fraction'
+};
+function calcOpLabel(op){ return CALC_OP_LABELS[op] || op; }
+
+const CALC_DIFFICULTY_HINTS = {
+  square:'Easy: 11\u201330\u00b2 \u00b7 Medium: 11\u201360\u00b2 \u00b7 Hard: 25\u201399\u00b2',
+  cube:'Easy: 2\u201315\u00b3 \u00b7 Medium: 2\u201325\u00b3 \u00b7 Hard: 15\u201335\u00b3',
+  sqrt:'Easy: \u221A4\u2013\u221A225 \u00b7 Medium: \u221A4\u2013\u221A625 \u00b7 Hard: \u221A400\u2013\u221A1600',
+  cbrt:'Easy: \u221B8\u2013\u221B512 \u00b7 Medium: \u221B8\u2013\u221B2744 \u00b7 Hard: \u221B1000\u2013\u221B8000',
+  table:'Easy: tables 2\u201310 \u00b7 Medium: 2\u201320 \u00b7 Hard: 11\u201330',
+  trig:'Easy: sin & cos \u00b7 Medium: + tan \u00b7 Hard: all six ratios',
+  percentage:'Easy: clean percents \u00b7 Medium & Hard: trickier fractions',
+  fraction:'Easy: small denominators \u00b7 Medium & Hard: bigger denominators & values'
+};
+function calcDifficultyHintText(op){
+  return CALC_DIFFICULTY_HINTS[op] || 'Easy uses smaller numbers, Hard prefers larger or trickier ones.';
+}
+
+// Standard trig ratio table. null = undefined (not asked).
+const CALC_TRIG_TABLE = {
+  sin:  {0:'0',        30:'1/2',    45:'1/\u221A2', 60:'\u221A3/2', 90:'1'},
+  cos:  {0:'1',        30:'\u221A3/2', 45:'1/\u221A2', 60:'1/2',    90:'0'},
+  tan:  {0:'0',        30:'1/\u221A3', 45:'1',      60:'\u221A3',   90:null},
+  cosec:{0:null,       30:'2',      45:'\u221A2',   60:'2/\u221A3', 90:'1'},
+  sec:  {0:'1',        30:'2/\u221A3', 45:'\u221A2', 60:'2',       90:null},
+  cot:  {0:null,       30:'\u221A3',  45:'1',      60:'1/\u221A3', 90:'0'}
+};
+
+function calcGcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ const t=b; b=a%b; a=t; } return a||1; }
+
+// Unicode vulgar-fraction glyphs used to format percentages like "12\u00bd%".
+const CALC_UNICODE_FRACS = {
+  '1/2':'\u00BD','1/3':'\u2153','2/3':'\u2154','1/4':'\u00BC','3/4':'\u00BE',
+  '1/5':'\u2155','2/5':'\u2156','3/5':'\u2157','4/5':'\u2158',
+  '1/6':'\u2159','5/6':'\u215A','1/8':'\u215B','3/8':'\u215C','5/8':'\u215D','7/8':'\u215E'
+};
+function calcFormatPercent(num, den){
+  const whole = Math.floor(num*100/den);
+  let remNum = num*100 - whole*den;
+  let remDen = den;
+  const g = calcGcd(remNum, remDen);
+  if(g>1){ remNum/=g; remDen/=g; }
+  if(remNum===0) return String(whole);
+  const glyph = CALC_UNICODE_FRACS[remNum+'/'+remDen];
+  return whole + (glyph ? glyph : (' ' + remNum + '\u2044' + remDen));
+}
+function calcPercentPool(difficulty){
+  if(difficulty==='hard') return [[1,7],[2,7],[3,7],[1,9],[1,11],[1,12],[1,13],[1,16],[3,16],[1,3],[2,3]];
+  if(difficulty==='medium') return [[1,3],[2,3],[1,6],[5,6],[1,8],[3,8],[5,8],[7,8],[1,9],[1,12]];
+  return [[1,2],[1,4],[3,4],[1,5],[2,5],[3,5],[4,5],[1,10],[3,10],[1,20]];
+}
+// Base-number ranges for every "advanced" (non-chain) operation, per difficulty.
+function calcAdvancedRange(op, difficulty){
+  const R = {
+    square:    {easy:[11,30], medium:[11,60], hard:[25,99]},
+    cube:      {easy:[2,15],  medium:[2,25],  hard:[15,35]},
+    sqrt:      {easy:[2,15],  medium:[2,25],  hard:[20,40]},
+    cbrt:      {easy:[2,8],   medium:[2,14],  hard:[10,20]},
+    table:     {easy:[2,10],  medium:[2,20],  hard:[11,30]},
+    fraction:  {easy:[2,5],   medium:[3,8],   hard:[4,12]},
+    percentage:{easy:[20,200],medium:[200,2000],hard:[1000,9999]}
+  };
+  const cfg = R[op] || {easy:[1,50], medium:[1,100], hard:[1,500]};
+  return cfg[difficulty] || cfg.easy;
+}
+
 function openCalcSetup(op){
   calcSession.op = op;
+  const advanced = calcIsAdvancedOp(op);
+  const numWrap = document.getElementById('calcNumCountWrap');
+  const modeWrap = document.getElementById('calcQModeWrap');
+  if(numWrap) numWrap.style.display = advanced ? 'none' : '';
+  if(modeWrap) modeWrap.style.display = advanced ? 'none' : '';
+  const hintEl = document.getElementById('calcDifficultyHint');
+  if(hintEl) hintEl.textContent = calcDifficultyHintText(op);
+  const titleEl = document.getElementById('calcSetupTitle');
+  if(titleEl) titleEl.textContent = calcOpLabel(op) + ' \u2014 Practice Setup';
+  const subEl = document.getElementById('calcSetupSub');
+  if(subEl) subEl.textContent = advanced ? 'Choose difficulty and start.' : 'Select range and start.';
   const sheet = document.getElementById('calcSetupSheet');
   if(sheet) sheet.classList.add('show');
 }
@@ -7411,6 +7584,74 @@ function generateOneCalcQuestion(dMin, dMax){
     return {operands:[dividend, ...divisors], answer: quotient, opSymbol:'\u00f7'};
   }
 
+  if(op==='square'){
+    const [mn,mx] = calcAdvancedRange('square', calcSession.difficulty);
+    const num = calcRandInt(mn,mx);
+    return {answer:num*num, html:num+'<sup>2</sup>'};
+  }
+
+  if(op==='cube'){
+    const [mn,mx] = calcAdvancedRange('cube', calcSession.difficulty);
+    const num = calcRandInt(mn,mx);
+    return {answer:num*num*num, html:num+'<sup>3</sup>'};
+  }
+
+  if(op==='sqrt'){
+    // Built backwards from a clean root k so \u221An always comes out exact.
+    const [mn,mx] = calcAdvancedRange('sqrt', calcSession.difficulty);
+    const k = calcRandInt(mn,mx);
+    return {answer:k, html:'\u221A' + (k*k)};
+  }
+
+  if(op==='cbrt'){
+    const [mn,mx] = calcAdvancedRange('cbrt', calcSession.difficulty);
+    const k = calcRandInt(mn,mx);
+    return {answer:k, html:'\u221B' + (k*k*k)};
+  }
+
+  if(op==='table'){
+    const [mn,mx] = calcAdvancedRange('table', calcSession.difficulty);
+    const base = calcRandInt(mn,mx);
+    const multMax = calcSession.difficulty==='hard' ? 20 : (calcSession.difficulty==='medium' ? 15 : 10);
+    const mult = calcRandInt(1, multMax);
+    return {operands:[base, mult], answer: base*mult, opSymbol:'\u00d7'};
+  }
+
+  if(op==='trig'){
+    const funcs = calcSession.difficulty==='hard' ? ['sin','cos','tan','cosec','sec','cot']
+                : calcSession.difficulty==='medium' ? ['sin','cos','tan'] : ['sin','cos'];
+    const angles = [0,30,45,60,90];
+    let func, angle, val, guard = 0;
+    do{
+      func = funcs[calcRandInt(0, funcs.length-1)];
+      angle = angles[calcRandInt(0,4)];
+      val = CALC_TRIG_TABLE[func][angle];
+      guard++;
+    } while(val===null && guard<40);
+    if(val===null){ func='sin'; angle=90; val='1'; }
+    return {answer:val, html:func+'('+angle+'\u00b0)', isTrig:true, trigFunc:func, trigAngle:angle};
+  }
+
+  if(op==='percentage'){
+    const pool = calcPercentPool(calcSession.difficulty);
+    const [num,den] = pool[calcRandInt(0, pool.length-1)];
+    const [ymin,ymax] = calcAdvancedRange('percentage', calcSession.difficulty);
+    const y = calcRandInt(ymin,ymax);
+    const answer = Math.round((num*y)/den);
+    return {answer, html: calcFormatPercent(num,den)+'% of '+y, approx:true};
+  }
+
+  if(op==='fraction'){
+    // Built backwards so (a/b) \u00d7 c always comes out a clean whole number.
+    const [bmin,bmax] = calcAdvancedRange('fraction', calcSession.difficulty);
+    const b = calcRandInt(bmin,bmax);
+    const a = calcRandInt(1, b-1);
+    const multMax = calcSession.difficulty==='hard' ? 25 : (calcSession.difficulty==='medium' ? 15 : 10);
+    const mult = calcRandInt(2, multMax);
+    const c = b*mult;
+    return {answer:a*mult, html:a+'\u2044'+b+' \u00d7 '+c};
+  }
+
   // addition (default) — also used by DI Addition
   const operands = [];
   for(let k=0;k<n;k++) operands.push(calcPickNumber(dMin,dMax));
@@ -7425,12 +7666,27 @@ function generateCalcQuestions(){
   }
   return qs;
 }
-function buildCalcMcqOptions(answer){
+function buildCalcMcqOptions(q){
+  if(q.isTrig){
+    const table = CALC_TRIG_TABLE[q.trigFunc];
+    const otherAngles = [0,30,45,60,90].filter(a=> a!==q.trigAngle && table[a]!==null);
+    for(let i=otherAngles.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      const t = otherAngles[i]; otherAngles[i]=otherAngles[j]; otherAngles[j]=t;
+    }
+    const values = [q.answer].concat(otherAngles.slice(0,3).map(a=> table[a]));
+    for(let i=values.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      const t = values[i]; values[i]=values[j]; values[j]=t;
+    }
+    return values.map(v=>({value:v, label:v}));
+  }
+  const answer = q.answer;
   const opts = new Set([answer]);
   let guard = 0;
   while(opts.size < 4 && guard < 60){
     guard++;
-    const delta = calcRandInt(1, Math.max(5, Math.round(answer*0.15)+3));
+    const delta = calcRandInt(1, Math.max(5, Math.round(Math.abs(answer)*0.15)+3));
     const sign = Math.random() < 0.5 ? -1 : 1;
     let candidate = answer + sign*delta;
     if(candidate < 0) candidate = answer + delta;
@@ -7441,7 +7697,7 @@ function buildCalcMcqOptions(answer){
     const j = Math.floor(Math.random()*(i+1));
     const tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
   }
-  return arr;
+  return arr.map(v=>({value:v, label:String(v)}));
 }
 
 function readCalcSetupValues(){
@@ -7504,7 +7760,7 @@ function startCalcSession(){
   calcSession.questions = generateCalcQuestions();
   calcSession.answerMode = 'mcq';
   const titleEl = document.getElementById('calcSessionTitle');
-  if(titleEl) titleEl.textContent = calcSession.op.charAt(0).toUpperCase() + calcSession.op.slice(1);
+  if(titleEl) titleEl.textContent = calcOpLabel(calcSession.op);
   updateCalcModeButtons();
   updateCalcStatsDisplay();
   const resultCard = document.getElementById('calcResultCard');
@@ -7514,7 +7770,8 @@ function startCalcSession(){
   const ctrlRow = document.getElementById('calcCtrlRow');
   if(ctrlRow) ctrlRow.style.display = '';
   const modeRow = document.getElementById('calcModeRow');
-  if(modeRow) modeRow.style.display = '';
+  // Trig answers (\u221A3/2, 1/\u221A2 ...) can't be typed on a numeric keypad — MCQ only.
+  if(modeRow) modeRow.style.display = (calcSession.op === 'trig') ? 'none' : '';
   showCalcPage('session');
   renderCalcQuestion();
 }
@@ -7525,7 +7782,11 @@ function renderCalcQuestion(){
   const q = currentCalcQuestion();
   if(!q){ finishCalcSession(); return; }
   const qText = document.getElementById('calcQuestionText');
-  if(qText) qText.innerHTML = q.operands.join(' ' + q.opSymbol + ' ') + ' = <span class="calcQMark">?</span>';
+  if(qText){
+    const left = q.html ? q.html : q.operands.join(' ' + q.opSymbol + ' ');
+    const eq = q.approx ? '\u2248' : '=';
+    qText.innerHTML = left + ' ' + eq + ' <span class="calcQMark">?</span>';
+  }
   const flagBtn = document.getElementById('calcFlagBtn');
   if(flagBtn) flagBtn.classList.toggle('active', !!calcSession.flagged[calcSession.index]);
   startCalcTimer();
@@ -7565,12 +7826,13 @@ function renderCalcMcq(q){
   if(typedWrap) typedWrap.style.display = 'none';
   if(!ansGrid) return;
   ansGrid.innerHTML = '';
-  const options = buildCalcMcqOptions(q.answer);
+  const options = buildCalcMcqOptions(q);
   options.forEach(opt=>{
     const btn = document.createElement('button');
     btn.className = 'calcAnsBtn';
-    btn.textContent = opt;
-    btn.addEventListener('click', ()=> handleCalcAnswer(opt, btn));
+    btn.textContent = opt.label;
+    btn.dataset.value = String(opt.value);
+    btn.addEventListener('click', ()=> handleCalcAnswer(opt.value, btn));
     ansGrid.appendChild(btn);
   });
 }
@@ -7614,7 +7876,7 @@ function submitCalcTypedAnswer(){
   const q = currentCalcQuestion();
   const val = parseInt(calcSession.typedValue, 10);
   const disp = document.getElementById('calcTypedDisplay');
-  const isCorrect = val === q.answer;
+  const isCorrect = String(val) === String(q.answer);
   markCalcAnswered(isCorrect);
   if(disp){
     disp.classList.add(isCorrect ? 'correct' : 'wrong');
@@ -7625,12 +7887,11 @@ function submitCalcTypedAnswer(){
 function handleCalcAnswer(selected, btnEl){
   if(calcSession.answered) return;
   const q = currentCalcQuestion();
-  const isCorrect = selected === q.answer;
+  const isCorrect = String(selected) === String(q.answer);
   markCalcAnswered(isCorrect);
   document.querySelectorAll('#calcAnsGrid .calcAnsBtn').forEach(b=>{
     b.classList.add('disabled');
-    const val = parseInt(b.textContent, 10);
-    if(val === q.answer) b.classList.add('correct');
+    if(String(b.dataset.value) === String(q.answer)) b.classList.add('correct');
     else if(b === btnEl) b.classList.add('wrong');
   });
   scheduleCalcAdvance();
@@ -7764,6 +8025,22 @@ function initCalcNav(){
   if(mulBtn) mulBtn.addEventListener('click', ()=> openCalcSetup('multiplication'));
   const divBtn = document.getElementById('calcDivBtn');
   if(divBtn) divBtn.addEventListener('click', ()=> openCalcSetup('division'));
+  const squareBtn = document.getElementById('calcSquareBtn');
+  if(squareBtn) squareBtn.addEventListener('click', ()=> openCalcSetup('square'));
+  const cubeBtn = document.getElementById('calcCubeBtn');
+  if(cubeBtn) cubeBtn.addEventListener('click', ()=> openCalcSetup('cube'));
+  const sqrtBtn = document.getElementById('calcSqrtBtn');
+  if(sqrtBtn) sqrtBtn.addEventListener('click', ()=> openCalcSetup('sqrt'));
+  const cbrtBtn = document.getElementById('calcCbrtBtn');
+  if(cbrtBtn) cbrtBtn.addEventListener('click', ()=> openCalcSetup('cbrt'));
+  const tableBtn = document.getElementById('calcTableBtn');
+  if(tableBtn) tableBtn.addEventListener('click', ()=> openCalcSetup('table'));
+  const trigBtn = document.getElementById('calcTrigBtn');
+  if(trigBtn) trigBtn.addEventListener('click', ()=> openCalcSetup('trig'));
+  const pctBtn = document.getElementById('calcPctBtn');
+  if(pctBtn) pctBtn.addEventListener('click', ()=> openCalcSetup('percentage'));
+  const fracBtn = document.getElementById('calcFracBtn');
+  if(fracBtn) fracBtn.addEventListener('click', ()=> openCalcSetup('fraction'));
   initCalcSetupSheet();
   initCalcSession();
 }
