@@ -42,7 +42,7 @@
     color:var(--text);
     font-family:'IBM Plex Mono', monospace;
     font-weight:800;
-    padding:70px 12px calc(84px + env(safe-area-inset-bottom,0px));
+    padding:82px 12px calc(84px + env(safe-area-inset-bottom,0px));
   }
   .wrap{max-width:900px;margin:0 auto;}
   .eyebrow{
@@ -573,13 +573,18 @@
   .topbar{
     position:fixed;top:0;left:0;right:0;z-index:60;
     display:flex;align-items:center;justify-content:space-between;
-    height:52px;padding:0 16px;
+    height:64px;padding:0 16px;
     background:rgba(8,7,10,0.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--border);
   }
   .topbar-left{
     display:flex;align-items:center;gap:8px;
     font-family:'Oswald',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.5px;color:var(--white);
+  }
+  .topbar-title-col{display:flex;flex-direction:column;line-height:1.25;}
+  .topbar-credit{
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9.5px;letter-spacing:0.6px;
+    color:var(--accent);text-decoration:none;margin-top:1px;
   }
   .topbar-right{display:flex;align-items:center;gap:10px;}
   .helpBtn{
@@ -661,7 +666,7 @@
      EVERY tab, not just the Compete tab. Hidden entirely when viewingName
      === myName. body.viewing-other adds the extra top padding it needs. */
   .viewbar{
-    position:fixed;top:52px;left:0;right:0;z-index:59;
+    position:fixed;top:64px;left:0;right:0;z-index:59;
     display:none;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
     padding:8px 14px;
     background:linear-gradient(135deg,#1a1404,#0a0a0a);
@@ -1496,7 +1501,7 @@
 </div>
 
 <div class="topbar">
-  <div class="topbar-left">🎯 <span>EXAM TRACKER</span></div>
+  <div class="topbar-left">🎯 <div class="topbar-title-col"><span>EXAM TRACKER</span><a class="topbar-credit" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer">BY YUVRAJ SISODIYA</a></div></div>
   <div class="topbar-right">
     <button class="helpBtn adminPanelBtn" id="adminPanelBtn" aria-label="Admin Control Panel" style="display:none;">👑</button>
     <a class="helpBtn" id="chatBtn" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer" aria-label="Chat on Telegram">💬</a>
@@ -7345,27 +7350,76 @@ function safeRun(fn, label){
   try{ fn(); }
   catch(err){ console.error('Tracker render error in '+label+':', err); }
 }
+
+// ===== Perf: lazy per-tab rendering =====
+// renderAll() used to unconditionally rebuild every chart/list on EVERY
+// state change (a single task tick, a note autosave, the 25s background
+// sync) — including tabs that aren't even visible right now. Most of the
+// expensive analytics functions live under the "more" tab alone. Instead
+// of running all of them every time, we only render a function immediately
+// if its owning tab is the one currently on screen; otherwise we mark it
+// "pending" and actually render it the moment the user opens that tab —
+// so nothing is ever stale, it's just not wastefully computed early.
+const TAB_OWNER = {
+  renderCalendarView:'home',
+  renderPanel:'today',
+  renderMockTab:'mock',
+  renderChaptersTab:'chapters', renderRevisionTab:'chapters',
+  renderPerformance:'more', renderBestWorst:'more', renderChart:'more',
+  renderAccuracyTrend:'more', renderPercentileTrend:'more', renderMockScoreTrend:'more',
+  renderSubjectProgressChart:'more', renderSectionalVsFullCompare:'more',
+  renderWeakChapterInsight:'more', renderStudyUtilization:'more',
+  renderLongTermAnalysis:'more', renderLossLog:'more', renderMistakesLog:'more',
+  renderWeekly:'more'
+};
+const RENDER_FN_BY_NAME = {
+  renderCalendarView, renderPanel, renderMockTab, renderChaptersTab, renderRevisionTab,
+  renderPerformance, renderBestWorst, renderChart, renderAccuracyTrend, renderPercentileTrend,
+  renderMockScoreTrend, renderSubjectProgressChart, renderSectionalVsFullCompare,
+  renderWeakChapterInsight, renderStudyUtilization, renderLongTermAnalysis,
+  renderLossLog, renderMistakesLog, renderWeekly
+};
+const pendingRenderFns = new Set();
+function activeTabName(){
+  const el = document.querySelector('.tabview.active');
+  return el ? el.getAttribute('data-tabview') : 'home';
+}
+function flushPendingRendersForTab(tabName){
+  if(pendingRenderFns.size===0) return;
+  pendingRenderFns.forEach(name=>{
+    if(TAB_OWNER[name]===tabName){
+      safeRun(RENDER_FN_BY_NAME[name], name);
+      pendingRenderFns.delete(name);
+    }
+  });
+}
+
 function renderAll(){
-  safeRun(renderCalendarView, 'renderCalendarView');
-  safeRun(renderPanel, 'renderPanel');
-  safeRun(renderPerformance, 'renderPerformance');
-  safeRun(renderMockTab, 'renderMockTab');
-  safeRun(renderBestWorst, 'renderBestWorst');
-  safeRun(renderChart, 'renderChart');
-  safeRun(renderAccuracyTrend, 'renderAccuracyTrend');
-  safeRun(renderPercentileTrend, 'renderPercentileTrend');
-  safeRun(renderMockScoreTrend, 'renderMockScoreTrend');
-  safeRun(renderSubjectProgressChart, 'renderSubjectProgressChart');
-  safeRun(renderSectionalVsFullCompare, 'renderSectionalVsFullCompare');
-  safeRun(renderWeakChapterInsight, 'renderWeakChapterInsight');
-  safeRun(renderStudyUtilization, 'renderStudyUtilization');
-  safeRun(renderLongTermAnalysis, 'renderLongTermAnalysis');
-  safeRun(renderLossLog, 'renderLossLog');
-  safeRun(renderMistakesLog, 'renderMistakesLog');
-  safeRun(renderWeekly, 'renderWeekly');
+  const active = activeTabName();
+  const maybe = (fn, name)=>{
+    if(TAB_OWNER[name] && TAB_OWNER[name]!==active){ pendingRenderFns.add(name); return; }
+    safeRun(fn, name);
+  };
+  maybe(renderCalendarView, 'renderCalendarView');
+  maybe(renderPanel, 'renderPanel');
+  maybe(renderPerformance, 'renderPerformance');
+  maybe(renderMockTab, 'renderMockTab');
+  maybe(renderBestWorst, 'renderBestWorst');
+  maybe(renderChart, 'renderChart');
+  maybe(renderAccuracyTrend, 'renderAccuracyTrend');
+  maybe(renderPercentileTrend, 'renderPercentileTrend');
+  maybe(renderMockScoreTrend, 'renderMockScoreTrend');
+  maybe(renderSubjectProgressChart, 'renderSubjectProgressChart');
+  maybe(renderSectionalVsFullCompare, 'renderSectionalVsFullCompare');
+  maybe(renderWeakChapterInsight, 'renderWeakChapterInsight');
+  maybe(renderStudyUtilization, 'renderStudyUtilization');
+  maybe(renderLongTermAnalysis, 'renderLongTermAnalysis');
+  maybe(renderLossLog, 'renderLossLog');
+  maybe(renderMistakesLog, 'renderMistakesLog');
+  maybe(renderWeekly, 'renderWeekly');
   safeRun(renderStudyHours, 'renderStudyHours');
-  safeRun(renderChaptersTab, 'renderChaptersTab');
-  safeRun(renderRevisionTab, 'renderRevisionTab');
+  maybe(renderChaptersTab, 'renderChaptersTab');
+  maybe(renderRevisionTab, 'renderRevisionTab');
   safeRun(computeStats, 'computeStats');
   safeRun(renderTodayWallet, 'renderTodayWallet');
   safeRun(checkAndAwardBadges, 'checkAndAwardBadges');
@@ -7408,6 +7462,7 @@ function switchTab(name){
   document.querySelectorAll('.tabbtn').forEach(btn=>{
     btn.classList.toggle('active', btn.getAttribute('data-tab')===name);
   });
+  flushPendingRendersForTab(name);
   try{ localStorage.setItem('cgl50-activetab', name); }catch(e){}
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
 }
