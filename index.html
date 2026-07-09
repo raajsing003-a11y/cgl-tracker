@@ -894,6 +894,27 @@
   .calcChip.active{background:var(--white);color:#000;border-color:var(--white);}
   .calcChip.active::before{content:"\2713\00a0\00a0";}
   .calcSheetDivider{border-top:1px dashed var(--border);margin:16px 0;}
+  /* ===== Task-note proof sheet (anti-instant-complete) ===== */
+  .taskNoteSheetInput{
+    width:100%;box-sizing:border-box;margin-top:10px;
+    background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13.5px;
+    padding:10px;resize:vertical;
+  }
+  .taskNoteSheetInput:focus{outline:none;border-color:var(--white);}
+  .taskNoteSheetErr{
+    display:none;color:#ff6b6b;font-size:12px;font-weight:700;margin-top:6px;
+  }
+  .taskNoteSheetErr.show{display:block;}
+  /* ===== Anti-cheat toast ===== */
+  .antiCheatToast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:#1a1404;color:var(--accent,#fbbf24);border:1px solid var(--accent,#fbbf24);
+    border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:700;
+    max-width:88vw;text-align:center;z-index:900;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  }
+  .antiCheatToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .calcCountBadge{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:50%;
     width:34px;height:34px;display:flex;align-items:center;justify-content:center;
@@ -1607,6 +1628,23 @@
   </div>
 </div>
 
+<div class="calcSheetOverlay" id="taskNoteSheetOverlay">
+  <div class="calcSheetCard">
+    <div class="calcSheetHandle"></div>
+    <div class="onbTitle">✅ Task Complete Karne Se Pehle...</div>
+    <div class="onbSub" id="taskNoteSheetTaskName"></div>
+    <div class="calcHint" id="taskNoteSheetHint">Kya kiya, kitna time laga likho — isse fake/instant tick rukta hai.</div>
+    <textarea id="taskNoteSheetInput" class="taskNoteSheetInput" placeholder="Jaise: 25 vocab words yaad kiye, 20 min laga..." rows="3"></textarea>
+    <div class="taskNoteSheetErr" id="taskNoteSheetErr">Thoda aur likho.</div>
+    <div class="onbBtnRow" style="display:flex;gap:10px;margin-top:12px;">
+      <button class="nav-btn" id="taskNoteSheetCancel" style="flex:1;">❌ Cancel</button>
+      <button class="nav-btn onbPrimary" id="taskNoteSheetSave" style="flex:1;">✅ Complete Karo</button>
+    </div>
+  </div>
+</div>
+
+<div class="antiCheatToast" id="antiCheatToast"></div>
+
 <div class="calcSheetOverlay" id="calcSetupSheet">
   <div class="calcSheetCard">
     <div class="calcSheetHandle"></div>
@@ -2247,6 +2285,15 @@ const DEFAULT_TASKS = [
   "Backup + Reading / GK"
 ];
 let TASKS = DEFAULT_TASKS.slice();
+
+// ===== Anti-instant-complete guard =====
+// Some members were ticking every single task box in one second flat to
+// fake a "full day done" — this makes that impossible for TODAY's own
+// list: (1) a minimum real-world gap must pass between two ticks, and
+// (2) every tick needs a short proof-of-work note before it counts.
+// Past days and admin-edited (other member's) days are left frictionless.
+const MIN_TASK_CHECK_GAP_SEC = 30;
+const TASK_NOTE_MIN_LEN = 8;
 
 // ===== Chapter-wise weak-area tracker =====
 // Fixed chapter/topic lists for Math and English. Wrong-question counts
@@ -2910,6 +2957,20 @@ function getDay(n){
     const resized = new Array(TASKS.length).fill(false);
     for(let i=0;i<Math.min(TASKS.length, d.tasks.length); i++) resized[i] = !!d.tasks[i];
     d.tasks = resized;
+  }
+  // Proof-of-work note + real tick timestamp per task (anti-instant-complete
+  // guard). Resized the same way as d.tasks above whenever TASKS changes.
+  if(!Array.isArray(d.taskNotes)) d.taskNotes = new Array(TASKS.length).fill('');
+  else if(d.taskNotes.length !== TASKS.length){
+    const resized = new Array(TASKS.length).fill('');
+    for(let i=0;i<Math.min(TASKS.length, d.taskNotes.length); i++) resized[i] = d.taskNotes[i] || '';
+    d.taskNotes = resized;
+  }
+  if(!Array.isArray(d.taskCheckedAt)) d.taskCheckedAt = new Array(TASKS.length).fill(null);
+  else if(d.taskCheckedAt.length !== TASKS.length){
+    const resized = new Array(TASKS.length).fill(null);
+    for(let i=0;i<Math.min(TASKS.length, d.taskCheckedAt.length); i++) resized[i] = d.taskCheckedAt[i] || null;
+    d.taskCheckedAt = resized;
   }
   if(!d.mock) d.mock = {math:'',reasoning:'',english:'',gk:'',percentile:'',wrongMath:'',wrongReasoning:'',wrongEnglish:'',wrongGk:''};
   // Migration: older saved days may have a mock object without the newer fields.
@@ -5117,6 +5178,67 @@ document.getElementById('rewardClose').addEventListener('click', ()=>{
   document.getElementById('rewardBanner').classList.remove('show');
 });
 
+// ===== Anti-instant-complete: proof-of-work note sheet + toast =====
+// A checkbox tick on today's own list never lands directly — the change
+// handler above holds it back and opens this sheet instead. Only Save
+// (with a long-enough note) actually flips dayObj.tasks[idx] to true.
+let pendingTaskNoteIdx = null;
+let antiCheatToastTimer = null;
+function showAntiCheatToast(msg){
+  const el = document.getElementById('antiCheatToast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(antiCheatToastTimer);
+  antiCheatToastTimer = setTimeout(()=>el.classList.remove('show'), 3200);
+}
+function openTaskNoteSheet(idx){
+  pendingTaskNoteIdx = idx;
+  const overlay = document.getElementById('taskNoteSheetOverlay');
+  const nameEl = document.getElementById('taskNoteSheetTaskName');
+  const input = document.getElementById('taskNoteSheetInput');
+  const err = document.getElementById('taskNoteSheetErr');
+  if(!overlay) return;
+  if(nameEl) nameEl.textContent = TASKS[idx] || '';
+  if(input) input.value = '';
+  if(err) err.classList.remove('show');
+  overlay.classList.add('show');
+  requestAnimationFrame(()=>{ if(input) input.focus(); });
+}
+function hideTaskNoteSheet(){
+  const overlay = document.getElementById('taskNoteSheetOverlay');
+  if(overlay) overlay.classList.remove('show');
+  pendingTaskNoteIdx = null;
+}
+document.getElementById('taskNoteSheetCancel').addEventListener('click', ()=>{
+  hideTaskNoteSheet();
+  renderAll(); // checkbox never actually got ticked — re-render shows it unticked
+});
+document.getElementById('taskNoteSheetSave').addEventListener('click', async ()=>{
+  const idx = pendingTaskNoteIdx;
+  if(idx===null || idx===undefined) return;
+  const input = document.getElementById('taskNoteSheetInput');
+  const err = document.getElementById('taskNoteSheetErr');
+  const note = (input && input.value ? input.value : '').trim();
+  if(note.length < TASK_NOTE_MIN_LEN){
+    if(err) err.classList.add('show');
+    return;
+  }
+  const dayObj = getDay(selectedDay);
+  const doneBefore = dayObj.tasks.filter(Boolean).length;
+  dayObj.tasks[idx] = true;
+  dayObj.taskNotes[idx] = note;
+  dayObj.taskCheckedAt[idx] = Date.now();
+  const doneAfter = dayObj.tasks.filter(Boolean).length;
+  if(taskTimers[idx]) clearTaskTimer(idx);
+  hideTaskNoteSheet();
+  renderAll();
+  await save();
+  if(doneBefore < TASKS.length && doneAfter === TASKS.length){
+    showReward(selectedDay);
+  }
+});
+
 // ===== Merged Calendar+Grid View =====
 // Instead of toggling between a plain 1-50 number grid and a separate real
 // wall-calendar, this single view shows the real weekday-aligned calendar
@@ -5574,8 +5696,35 @@ function renderPanel(){
       if(isReadOnly) return;
       const idx = parseInt(e.target.getAttribute('data-idx'));
       const dayObj = getDay(selectedDay);
+      // Anti-instant-complete guard only applies to your OWN today's list —
+      // admin fixing someone else's data, and backfilling old days, stay
+      // frictionless.
+      const enforceAntiCheat = e.target.checked && viewingName===myName && selectedDay===todayDayNum();
+
+      if(enforceAntiCheat){
+        e.target.checked = false; // hold off; only actually ticks via the note sheet below
+        const now = Date.now();
+        let lastTick = 0;
+        dayObj.tasks.forEach((done,i)=>{
+          const ts = dayObj.taskCheckedAt && dayObj.taskCheckedAt[i];
+          if(done && ts && ts > lastTick) lastTick = ts;
+        });
+        if(lastTick > 0 && (now - lastTick) < MIN_TASK_CHECK_GAP_SEC*1000){
+          const waitSec = Math.ceil((MIN_TASK_CHECK_GAP_SEC*1000 - (now-lastTick))/1000);
+          showAntiCheatToast(`⏳ Itni jaldi nahi — agla task ${waitSec}s baad tick karo.`);
+          return;
+        }
+        openTaskNoteSheet(idx);
+        return;
+      }
+
       const doneBefore = dayObj.tasks.filter(Boolean).length;
       dayObj.tasks[idx] = e.target.checked;
+      if(!e.target.checked){
+        // Un-ticking clears its proof — re-ticking later needs a fresh note.
+        if(dayObj.taskNotes) dayObj.taskNotes[idx] = '';
+        if(dayObj.taskCheckedAt) dayObj.taskCheckedAt[idx] = null;
+      }
       const doneAfter = dayObj.tasks.filter(Boolean).length;
       if(e.target.checked && taskTimers[idx]) clearTaskTimer(idx);
       renderAll();
