@@ -487,12 +487,74 @@
     font-size:12px;display:flex;align-items:center;justify-content:center;
   }
   .taskEditIconBtn:hover{border-color:var(--accent);color:var(--accent);}
-  .taskEditHeadRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .teCloseBtn{
-    flex-shrink:0;font-size:12.5px;padding:6px 10px;border-radius:6px;cursor:pointer;
-    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);font-weight:800;
+
+  /* ===== Per-task ⏱️ Pomodoro/Stopwatch timer (Today tab) =====
+     Target = that task's own duration; auto-ticks the checkbox when the
+     target is reached. Keeps counting via real timestamps so it stays
+     correct even if the interval was throttled/suspended in the background. */
+  .taskTimerBtn{
+    flex-shrink:0;width:26px;height:26px;border-radius:6px;cursor:pointer;padding:0;
+    background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
+    font-size:12px;display:flex;align-items:center;justify-content:center;
   }
-  .teCloseBtn:hover{border-color:var(--accent);color:var(--accent);}
+  .taskTimerBtn:hover{border-color:var(--blue);color:var(--blue);}
+  .taskTimerBtn.active{border-color:var(--gain);color:var(--gain);}
+  .taskTimerBox{
+    flex-basis:100%;margin-top:8px;padding:12px;border-radius:10px;
+    background:var(--panel2);border:1px solid var(--border-strong);
+  }
+  .taskTimerModeTabs{display:flex;gap:6px;margin-bottom:10px;}
+  .taskTimerModeTab{
+    flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:11.5px;font-weight:800;
+    background:var(--panel);border:1px solid var(--border);color:var(--muted);cursor:pointer;
+  }
+  .taskTimerModeTab.active{background:var(--white);color:#000;border-color:var(--white);}
+  .taskTimerModeTab.disabled{opacity:0.4;pointer-events:none;}
+  /* Progress ring — same conic-gradient trick as the subject Focus Timer's
+     .focusRing, just scaled down to sit inside a single task row. Fill
+     reflects overall progress toward this task's target (amber); during a
+     pomodoro break it switches to showing break-time progress (purple) so
+     the ring always feels "alive" instead of freezing mid-break. */
+  .ttRing{
+    --p:0;width:92px;height:92px;margin:0 auto 8px;border-radius:50%;position:relative;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--border) 0);
+    display:flex;align-items:center;justify-content:center;transition:background 0.3s linear;
+  }
+  .ttRing.break{background:conic-gradient(var(--purple) calc(var(--p)*1%), var(--border) 0);}
+  .ttRing.done{background:conic-gradient(var(--gain) calc(var(--p)*1%), var(--border) 0);}
+  .ttRing::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--panel2);}
+  .taskTimerDisplay{position:relative;text-align:center;font-family:'Oswald',sans-serif;font-weight:800;font-size:20px;color:var(--white);}
+  .taskTimerSub{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .taskTimerSub b{color:var(--accent);}
+  .taskTimerStatus{text-align:center;font-size:11.5px;font-weight:800;color:var(--purple);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+  .taskTimerStatus.done{color:var(--gain);}
+  .taskTimerControls{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;}
+  .taskTimerPlayBtn{
+    width:46px;height:46px;border-radius:50%;background:var(--white);color:#000;border:none;
+    font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .taskTimerResetBtn{
+    width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--border-strong);
+    color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .taskEditHeadRow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  /* ===== Colorful "sub-tab" style button that opens/closes the task
+     editor — same pink→purple gradient language as the Focus Timer's play
+     button, so it reads as a distinct, tappable action rather than a plain
+     grey toggle blending into the grid-label rows around it. */
+  .teTabBtn{
+    width:100%;display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;
+    padding:13px 16px;border-radius:12px;border:1.5px solid rgba(244,114,182,0.4);
+    background:linear-gradient(135deg,#f472b6,#7c3aed);color:#fff;
+    font-family:'Oswald',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.3px;
+    box-shadow:0 6px 16px rgba(124,58,237,0.35);transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .teTabBtn:active{transform:scale(0.98);}
+  .teTabBtn.open{background:linear-gradient(135deg,#7c3aed,#f472b6);box-shadow:0 6px 20px rgba(244,114,182,0.42);}
+  .teTabIcon{font-size:17px;flex-shrink:0;}
+  .teTabLabel{flex:1;text-align:left;}
+  .teTabChevron{flex-shrink:0;font-size:13px;transition:transform 0.2s ease;}
+  .teTabBtn.open .teTabChevron{transform:rotate(180deg);}
   @keyframes teFlash{
     0%{background:rgba(251,191,36,0.35);}
     100%{background:transparent;}
@@ -1077,6 +1139,22 @@
   .rightNowTime{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px;}
   .rightNowGo{padding:8px 12px;font-size:12.5px;white-space:nowrap;flex-shrink:0;}
 
+  /* ===== Home tab mini banner for an actively-running per-task timer —
+     mirrors .rightNowCard's look but stays a tappable pill; tapping jumps
+     straight to Today tab with that task's timer box already open. */
+  .homeTimerBanner{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:14px;
+    border-radius:12px;border:1px solid var(--gain);cursor:pointer;
+    background:linear-gradient(160deg,var(--panel),#0d0c0f);
+    box-shadow:0 0 16px rgba(74,222,128,0.15);
+  }
+  .homeTimerBanner:active{transform:scale(0.98);}
+  .homeTimerDot{width:10px;height:10px;border-radius:50%;background:var(--gain);box-shadow:0 0 0 4px rgba(74,222,128,0.18);animation:dotPulse2 1.6s ease-in-out infinite;flex-shrink:0;}
+  .homeTimerBody{flex:1;min-width:0;}
+  .homeTimerLbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--gain);font-weight:800;}
+  .homeTimerTask{font-size:13px;font-weight:800;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .homeTimerClock{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:17px;color:var(--white);flex-shrink:0;}
+
   /* ===== Smart Time Guide (Today tab, below tasks) ===== */
   .guideBox{font-size:12.5px;}
   .guideHead{
@@ -1277,6 +1355,75 @@
   .mockInsight .mi-icon{font-size:20px;line-height:1;}
   .mockInsight .mi-text{font-size:12.5px;color:var(--text);font-weight:700;line-height:1.5;}
   .mockInsight .mi-text b{color:var(--accent);}
+
+  /* ===== Start Studying / Focus Timer ===== */
+  .studyModeRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;}
+  .studyModeBtn{
+    position:relative;overflow:hidden;text-align:center;cursor:pointer;
+    border:1.5px solid var(--border-strong);border-radius:14px;padding:16px 8px;
+    background:linear-gradient(155deg, var(--sm-color2,var(--panel)), #0d0c0f);
+    box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+    transition:transform .12s ease;font-family:'IBM Plex Mono',monospace;color:var(--white);
+  }
+  .studyModeBtn:active{transform:scale(0.95);}
+  .studyModeBtn .smIcon{font-size:24px;line-height:1;margin-bottom:6px;display:block;}
+  .studyModeBtn .smLabel{font-family:'Oswald',sans-serif;font-size:13px;font-weight:800;}
+  .studyModeBtn::after{
+    content:'';position:absolute;top:0;right:0;width:70px;height:70px;
+    background:radial-gradient(circle at top right, var(--sm-color,var(--accent)), transparent 70%);
+    opacity:0.35;pointer-events:none;
+  }
+  .studyModeBtn.smPomodoro{--sm-color:var(--loss);--sm-color2:#2a1414;border-color:rgba(248,113,113,0.35);}
+  .studyModeBtn.smStopwatch{--sm-color:var(--blue);--sm-color2:#12203a;border-color:rgba(96,165,250,0.35);}
+  .studyModeBtn.smTimed{--sm-color:var(--purple);--sm-color2:#241a38;border-color:rgba(192,132,252,0.35);}
+  .studyTodayLine{font-size:11.5px;color:var(--muted);font-weight:700;margin:8px 2px 20px;text-align:center;}
+  .studyTodayLine b{color:var(--accent);}
+
+  .focusModeTabs{display:flex;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;}
+  .focusModeTab{
+    flex:1;text-align:center;padding:8px 4px;border-radius:8px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:800;color:var(--muted);
+  }
+  .focusModeTab.active{background:var(--white);color:#000;}
+  .focusPrompt{text-align:center;font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:14px;}
+  .focusSubjectGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+  .focusSubjectBtn{
+    text-align:center;padding:10px 6px;border-radius:10px;cursor:pointer;
+    border:1.5px solid var(--border-strong);background:var(--panel2);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:800;color:var(--text);
+  }
+  .focusSubjectBtn .fsIcon{margin-right:4px;}
+  .focusSubjectBtn.active{background:var(--accent);color:#1a1404;border-color:var(--accent);}
+  .focusDurationRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;font-size:13px;color:var(--muted);font-weight:700;}
+  .focusDurationRow input{
+    width:60px;text-align:center;background:var(--panel2);border:1.5px solid var(--border-strong);
+    border-radius:8px;color:var(--white);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:15px;padding:6px 4px;
+  }
+  .focusDurationRow input:focus{outline:none;border-color:var(--accent);}
+  .focusRing{
+    --p:0;width:190px;height:190px;max-width:60vw;max-height:60vw;margin:0 auto 18px;
+    border-radius:50%;position:relative;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--panel2) 0);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 0 22px rgba(251,191,36,0.14);transition:background 0.3s linear;
+  }
+  .focusRing::before{content:'';position:absolute;inset:12px;border-radius:50%;background:var(--bg);}
+  .focusTimeText{position:relative;font-family:'Oswald',sans-serif;font-weight:800;font-size:clamp(30px,9vw,40px);color:var(--white);}
+  .focusStatusText{position:relative;font-size:12px;font-weight:800;letter-spacing:0.5px;color:var(--purple);margin-top:4px;text-transform:uppercase;}
+  .focusControlRow{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
+  .focusPlayBtn{
+    width:62px;height:62px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(155deg,#f472b6,#7c3aed);color:#fff;font-size:22px;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(124,58,237,0.4);
+  }
+  .focusPlayBtn:active{transform:scale(0.94);}
+  .focusResetBtn{
+    width:44px;height:44px;border-radius:50%;border:1.5px solid var(--border-strong);cursor:pointer;
+    background:var(--panel2);color:var(--text);font-size:17px;display:flex;align-items:center;justify-content:center;
+  }
+  .focusResetBtn:active{transform:scale(0.92);}
+  .focusTodayText{text-align:center;font-size:12.5px;color:var(--muted);font-weight:700;}
+  .focusTodayText b{color:var(--accent);}
 </style>
 </head>
 <body>
@@ -1383,6 +1530,33 @@
     <div class="onbBtnRow">
       <button class="nav-btn onbPrimary" id="helpGotItBtn">Samajh Gaya ✅</button>
     </div>
+  </div>
+</div>
+
+<div class="onbOverlay" id="focusModal">
+  <div class="onbCard" style="max-width:420px;">
+    <button class="onbCloseX" id="focusCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="focusModeTabs" id="focusModeTabs">
+      <button type="button" class="focusModeTab" data-mode="pomodoro">🍅 Pomodoro</button>
+      <button type="button" class="focusModeTab" data-mode="stopwatch">⏱️ Stopwatch</button>
+      <button type="button" class="focusModeTab" data-mode="timed">⏳ Timed</button>
+    </div>
+    <div class="focusPrompt" id="focusPrompt">Select a subject to start your focus session</div>
+    <div class="focusSubjectGrid" id="focusSubjectGrid"></div>
+    <div class="focusDurationRow" id="focusDurationRow">
+      <span>Duration:</span>
+      <input type="number" id="focusDurationInput" value="25" min="1" max="180" inputmode="numeric">
+      <span>min</span>
+    </div>
+    <div class="focusRing" id="focusRing">
+      <div class="focusTimeText" id="focusTimeText">25:00</div>
+      <div class="focusStatusText" id="focusStatusText">Ready</div>
+    </div>
+    <div class="focusControlRow">
+      <button type="button" class="focusPlayBtn" id="focusPlayBtn" aria-label="Start">▶</button>
+      <button type="button" class="focusResetBtn" id="focusResetBtn" aria-label="Reset">↺</button>
+    </div>
+    <div class="focusTodayText" id="focusTodayText">🔥 Today: <b>0m</b> studied</div>
   </div>
 </div>
 
@@ -1558,6 +1732,14 @@
       </div>
     </div>
 
+    <div class="grid-label" style="margin-top:0;">📖 Start Studying</div>
+    <div class="studyModeRow" id="studyModeRow">
+      <button type="button" class="studyModeBtn smPomodoro" data-mode="pomodoro"><span class="smIcon">🍅</span><span class="smLabel">Pomodoro</span></button>
+      <button type="button" class="studyModeBtn smStopwatch" data-mode="stopwatch"><span class="smIcon">⏱️</span><span class="smLabel">Stopwatch</span></button>
+      <button type="button" class="studyModeBtn smTimed" data-mode="timed"><span class="smIcon">⏳</span><span class="smLabel">Timed</span></button>
+    </div>
+    <div class="studyTodayLine" id="studyTodayLine">🔥 Today: <b>0m</b> studied</div>
+
     <div class="statrow" style="margin-top:0;">
       <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">📅 Days Cleared</div></div>
       <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">🔥 Streak</div><div class="freezeInfo" id="statFreezeInfo" title="Streak Freeze"></div></div>
@@ -1590,6 +1772,7 @@
       <div class="loading">Loading leaderboard…</div>
     </div>
 
+    <div id="homeTimerBanner"></div>
     <div id="rightNowBox"></div>
 
     <div class="levelCard" id="levelCard"></div>
@@ -1616,11 +1799,12 @@
     </div>
 
     <div id="taskEditSection">
-      <div class="grid-label taskEditHeadRow" style="margin-top:14px;">
-        <span>✏️ Customize Tasks</span>
-        <button class="teCloseBtn" id="teToggleBtn" type="button">Kholo ▾</button>
-      </div>
-      <div class="panel" id="taskEditPanel" style="display:none;">
+      <button class="teTabBtn" id="teToggleBtn" type="button">
+        <span class="teTabIcon">✏️</span>
+        <span class="teTabLabel" id="teTabLabelText">Customize Tasks</span>
+        <span class="teTabChevron">▾</span>
+      </button>
+      <div class="panel" id="taskEditPanel" style="display:none;margin-top:10px;">
         <div id="taskModeSelector"></div>
         <div class="taskEditIntro">Naam, time (start) aur duration — sab edit kar sakte ho. Niche naya task bhi add kar sakte ho. ₹5,000 hamesha sabhi tasks mein unke time ke hisaab se automatically baant diya jayega.</div>
         <div id="taskEditForm"></div>
@@ -2750,6 +2934,13 @@ function getDay(n){
   if(typeof d.notes !== 'string') d.notes = '';
   if(typeof d.mistakes !== 'string') d.mistakes = '';
   if(typeof d.rest !== 'boolean') d.rest = false;
+  // Focus Timer minutes studied per SSC subject (Pomodoro/Stopwatch/Timed) —
+  // independent of the task checklist above, purely a free-running study log.
+  if(!d.studyMin || typeof d.studyMin !== 'object' || Array.isArray(d.studyMin)){
+    d.studyMin = {math:0, reasoning:0, english:0, gk:0};
+  } else {
+    ['math','reasoning','english','gk'].forEach(k=>{ if(typeof d.studyMin[k] !== 'number' || isNaN(d.studyMin[k])) d.studyMin[k] = 0; });
+  }
   return d;
 }
 function dayStatus(n){
@@ -5164,6 +5355,46 @@ function renderRightNowCard(){
   if(btn) btn.addEventListener('click', ()=>{ selectedDay = tn; switchTab('today'); renderAll(); });
 }
 
+// ===== Home tab mini banner for a per-task ⏱️ timer that's actively
+// running — previously this state was only visible if you happened to be
+// on the Today tab with that task's box expanded. Tapping it jumps to
+// Today with that box pre-opened.
+function ttHomeBannerTime(t){
+  if(t.mode === 'stopwatch') return formatMMSSApprox(t.workAccumSec);
+  const segTotal = t.isBreak ? POMODORO_BREAK_MIN*60 : POMODORO_WORK_MIN*60;
+  const segLeft = segTotal - (t.isBreak ? t.breakElapsedSec : t.sessionWorkSec);
+  return formatMMSSApprox(segLeft);
+}
+function renderHomeTimerBanner(){
+  const el = document.getElementById('homeTimerBanner');
+  if(!el) return;
+  if(viewingName !== myName){ el.className=''; el.innerHTML=''; return; }
+  ensureTaskTimerDayFresh();
+  const idxStr = findRunningTaskIdx();
+  if(idxStr === undefined){ el.className=''; el.innerHTML=''; return; }
+  const idx = parseInt(idxStr,10);
+  const t = taskTimers[idx];
+  el.className = 'homeTimerBanner';
+  el.innerHTML = `
+    <div class="homeTimerDot"></div>
+    <div class="homeTimerBody">
+      <div class="homeTimerLbl">⏱️ Running${t.isBreak?' · Break':''}</div>
+      <div class="homeTimerTask">${escapeHtml(TASKS[idx]||'Task')}</div>
+    </div>
+    <div class="homeTimerClock" id="homeTimerClock">${ttHomeBannerTime(t)}</div>
+  `;
+  el.onclick = ()=>{ selectedDay = todayDayNum(); taskTimerExpandedIdx = idx; switchTab('today'); renderAll(); };
+}
+// Cheap per-second update for the banner's clock text, called from the same
+// global tick that drives the Today-tab timer box — avoids rebuilding the
+// whole banner (and losing its click handler needlessly) every second.
+function updateHomeTimerBannerLiveDisplay(idx){
+  const clockEl = document.getElementById('homeTimerClock');
+  const t = taskTimers[idx];
+  if(!clockEl || !t) return;
+  clockEl.textContent = ttHomeBannerTime(t);
+}
+
 // Builds one compact card for a single Sectional Math slot (Sec 1-4) on the
 // Today tab: the existing Score field, plus new Right/Wrong/Skip counters
 // and a chapter picker so a wrong question's chapter can be tagged right
@@ -5226,16 +5457,24 @@ function renderPanel(){
     </div>
     <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
   `;
+  // The per-task ⏱️ timer only makes sense on TODAY's own (non-read-only)
+  // list — past/future days and other people's trackers don't get it.
+  const canUseTaskTimer = !isReadOnly && viewingName===myName && selectedDay===todayDayNum();
+  if(canUseTaskTimer) ensureTaskTimerDayFresh();
   TASKS.forEach((t, idx)=>{
     const checked = d.tasks[idx] ? 'checked' : '';
     const cls = d.tasks[idx] ? 'task checked' : 'task';
     const tier = taskTier(idx);
+    const showTimerBtn = canUseTaskTimer && !d.tasks[idx];
+    const tt = taskTimers[idx];
     html += `
       <div class="${cls} ${tier.cls}">
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
         <div class="taskinfo"><div class="name">${checked? '✅' : tier.emoji} ${t}</div></div>
         <div class="value ${tier.cls}">₹${Math.round(taskValue(idx))}</div>
         ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
+        ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch">⏱️</button>` : ''}
+        ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
       </div>
     `;
   });
@@ -5337,6 +5576,7 @@ function renderPanel(){
       const doneBefore = dayObj.tasks.filter(Boolean).length;
       dayObj.tasks[idx] = e.target.checked;
       const doneAfter = dayObj.tasks.filter(Boolean).length;
+      if(e.target.checked && taskTimers[idx]) clearTaskTimer(idx);
       renderAll();
       await save();
       if(doneBefore < TASKS.length && doneAfter === TASKS.length){
@@ -5350,6 +5590,32 @@ function renderPanel(){
         e.stopPropagation();
         const idx = parseInt(btn.getAttribute('data-edit-task-idx'),10);
         openTaskEditor(idx);
+      });
+    });
+  }
+  if(canUseTaskTimer){
+    panel.querySelectorAll('[data-timer-btn-idx]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        toggleTaskTimerBox(parseInt(btn.getAttribute('data-timer-btn-idx'),10));
+      });
+    });
+    panel.querySelectorAll('[data-tt-mode]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        setTaskTimerMode(parseInt(btn.getAttribute('data-tt-idx'),10), btn.getAttribute('data-tt-mode'));
+      });
+    });
+    panel.querySelectorAll('[data-tt-play]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        playPauseTaskTimer(parseInt(btn.getAttribute('data-tt-play'),10));
+      });
+    });
+    panel.querySelectorAll('[data-tt-reset]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        resetTaskTimer(parseInt(btn.getAttribute('data-tt-reset'),10));
       });
     });
   }
@@ -7233,9 +7499,11 @@ document.getElementById('revisionSearchInput').addEventListener('input', applyRe
 function openTaskEditor(focusIdx){
   const panelEl = document.getElementById('taskEditPanel');
   const toggleBtn = document.getElementById('teToggleBtn');
+  const labelEl = document.getElementById('teTabLabelText');
   if(!panelEl) return;
   panelEl.style.display = '';
-  if(toggleBtn) toggleBtn.textContent = '✖ Band Karo';
+  if(toggleBtn) toggleBtn.classList.add('open');
+  if(labelEl) labelEl.textContent = 'Band Karo';
   safeRun(renderTaskEditForm, 'renderTaskEditForm');
   requestAnimationFrame(()=>{
     panelEl.scrollIntoView({behavior:'smooth', block:'start'});
@@ -7253,8 +7521,10 @@ function openTaskEditor(focusIdx){
 function closeTaskEditor(){
   const panelEl = document.getElementById('taskEditPanel');
   const toggleBtn = document.getElementById('teToggleBtn');
+  const labelEl = document.getElementById('teTabLabelText');
   if(panelEl) panelEl.style.display = 'none';
-  if(toggleBtn) toggleBtn.textContent = 'Kholo ▾';
+  if(toggleBtn) toggleBtn.classList.remove('open');
+  if(labelEl) labelEl.textContent = 'Customize Tasks';
 }
 function isTaskEditorOpen(){
   const panelEl = document.getElementById('taskEditPanel');
@@ -7430,7 +7700,9 @@ function renderAll(){
   safeRun(updateTodayDot, 'updateTodayDot');
   safeRun(renderDailyQuote, 'renderDailyQuote');
   safeRun(renderRightNowCard, 'renderRightNowCard');
+  safeRun(renderHomeTimerBanner, 'renderHomeTimerBanner');
   safeRun(renderAnnouncementCard, 'renderAnnouncementCard');
+  safeRun(renderFocusTodayText, 'renderFocusTodayText');
 }
 
 // Small always-visible circular progress ring in the topbar showing overall
@@ -8480,6 +8752,614 @@ function maybeShowHelpModalOnce(){
   if(helpCloseBtn) helpCloseBtn.addEventListener('click', hideHelpModal);
   if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
 }
+
+// ===== Start Studying: Focus Timer (Pomodoro / Stopwatch / Timed) =====
+// A free-running study-time logger, separate from the daily task checklist —
+// tracks minutes studied per SSC subject (Math/Reasoning/English/GK) so the
+// user can just hit play and study without needing a task tied to it.
+const FOCUS_SUBJECTS = [
+  {id:'math', label:'Math', icon:'🔢'},
+  {id:'reasoning', label:'Reasoning', icon:'🧠'},
+  {id:'english', label:'English', icon:'🔤'},
+  {id:'gk', label:'GK', icon:'🌍'},
+];
+const POMODORO_WORK_MIN = 25;
+const POMODORO_BREAK_MIN = 5;
+
+let focusSession = {
+  mode:'pomodoro',      // 'pomodoro' | 'stopwatch' | 'timed'
+  subject:null,
+  durationMin:25,
+  running:false,
+  isBreak:false,
+  remainingSec:25*60,   // pomodoro/timed countdown
+  elapsedSec:0,          // stopwatch count-up
+  pendingSec:0,           // studied seconds not yet persisted (flushed periodically)
+  tickHandle:null,
+};
+
+function todayStudyTotalMin(){
+  const d = getDay(todayDayNum());
+  return Math.round(d.studyMin.math + d.studyMin.reasoning + d.studyMin.english + d.studyMin.gk);
+}
+function renderFocusTodayText(){
+  const total = todayStudyTotalMin();
+  const line1 = document.getElementById('studyTodayLine');
+  if(line1) line1.innerHTML = '🔥 Today: <b>'+total+'m</b> studied';
+  const line2 = document.getElementById('focusTodayText');
+  if(line2) line2.innerHTML = '🔥 Today: <b>'+total+'m</b> studied';
+}
+function addStudySeconds(subjectId, seconds){
+  if(!subjectId || seconds<=0) return;
+  const d = getDay(todayDayNum());
+  d.studyMin[subjectId] = Math.round(((d.studyMin[subjectId]||0) + seconds/60) * 100) / 100;
+  save();
+  renderFocusTodayText();
+}
+function flushFocusPending(){
+  const inBreak = focusSession.mode==='pomodoro' && focusSession.isBreak;
+  if(focusSession.pendingSec>0 && focusSession.subject && !inBreak){
+    addStudySeconds(focusSession.subject, focusSession.pendingSec);
+  }
+  focusSession.pendingSec = 0;
+}
+function focusSecondsForMode(){
+  if(focusSession.mode==='pomodoro') return (focusSession.isBreak ? POMODORO_BREAK_MIN : focusSession.durationMin) * 60;
+  if(focusSession.mode==='timed') return focusSession.durationMin * 60;
+  return 0;
+}
+function resetFocusTimerValues(){
+  focusSession.isBreak = false;
+  focusSession.elapsedSec = 0;
+  focusSession.pendingSec = 0;
+  focusSession.remainingSec = focusSecondsForMode();
+}
+function formatMMSS(totalSec){
+  totalSec = Math.max(0, Math.round(totalSec));
+  const m = Math.floor(totalSec/60), s = totalSec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function focusStatusText(){
+  if(!focusSession.subject) return 'Select Subject';
+  if(!focusSession.running){
+    const fresh = focusSession.mode==='stopwatch' ? focusSession.elapsedSec===0 : focusSession.remainingSec===focusSecondsForMode();
+    return fresh ? 'Ready' : 'Paused';
+  }
+  if(focusSession.mode==='pomodoro' && focusSession.isBreak) return 'Break Time ☕';
+  return 'Studying…';
+}
+function updateFocusDisplay(){
+  const timeEl = document.getElementById('focusTimeText');
+  const statusEl = document.getElementById('focusStatusText');
+  const ring = document.getElementById('focusRing');
+  if(!timeEl) return;
+  let pct = 0, display;
+  if(focusSession.mode==='stopwatch'){
+    display = formatMMSS(focusSession.elapsedSec);
+    pct = focusSession.running ? ((focusSession.elapsedSec % 3600) / 3600 * 100) : 0;
+  } else {
+    display = formatMMSS(focusSession.remainingSec);
+    const total = focusSecondsForMode();
+    pct = total>0 ? (1 - focusSession.remainingSec/total) * 100 : 0;
+  }
+  timeEl.textContent = display;
+  if(ring) ring.style.setProperty('--p', Math.min(100, Math.max(0, pct)));
+  if(statusEl) statusEl.textContent = focusStatusText();
+}
+function updateFocusPlayBtn(){
+  const btn = document.getElementById('focusPlayBtn');
+  if(!btn) return;
+  btn.textContent = focusSession.running ? '⏸' : '▶';
+  btn.style.opacity = focusSession.subject ? '1' : '0.4';
+  btn.style.pointerEvents = focusSession.subject ? 'auto' : 'none';
+}
+function renderFocusSubjectGrid(){
+  const grid = document.getElementById('focusSubjectGrid');
+  if(!grid) return;
+  grid.innerHTML = FOCUS_SUBJECTS.map(s=>
+    `<button type="button" class="focusSubjectBtn${focusSession.subject===s.id?' active':''}" data-subject="${s.id}"><span class="fsIcon">${s.icon}</span>${s.label}</button>`
+  ).join('');
+  grid.querySelectorAll('.focusSubjectBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(focusSession.running) return;
+      focusSession.subject = btn.getAttribute('data-subject');
+      renderFocusSubjectGrid();
+      updateFocusPlayBtn();
+      updateFocusDisplay();
+    });
+  });
+}
+function focusTick(){
+  if(!focusSession.running) return;
+  const inBreak = focusSession.mode==='pomodoro' && focusSession.isBreak;
+  if(focusSession.mode==='stopwatch'){
+    focusSession.elapsedSec += 1;
+    focusSession.pendingSec += 1;
+  } else {
+    focusSession.remainingSec -= 1;
+    if(!inBreak) focusSession.pendingSec += 1;
+    if(focusSession.remainingSec <= 0){
+      flushFocusPending();
+      if(focusSession.mode==='pomodoro'){
+        focusSession.isBreak = !focusSession.isBreak;
+        focusSession.remainingSec = focusSecondsForMode();
+      } else {
+        focusSession.running = false;
+        if(focusSession.tickHandle){ clearInterval(focusSession.tickHandle); focusSession.tickHandle=null; }
+        focusSession.remainingSec = focusSecondsForMode();
+        updateFocusPlayBtn();
+      }
+    }
+  }
+  if(!inBreak && focusSession.pendingSec>0 && focusSession.pendingSec % 30 === 0) flushFocusPending();
+  updateFocusDisplay();
+}
+function focusPlayPause(){
+  if(!focusSession.subject) return;
+  if(focusSession.running){
+    focusSession.running = false;
+    if(focusSession.tickHandle){ clearInterval(focusSession.tickHandle); focusSession.tickHandle=null; }
+    flushFocusPending();
+  } else {
+    focusSession.running = true;
+    focusSession.tickHandle = setInterval(focusTick, 1000);
+  }
+  updateFocusPlayBtn();
+  updateFocusDisplay();
+}
+function focusReset(){
+  if(focusSession.running){
+    focusSession.running = false;
+    if(focusSession.tickHandle){ clearInterval(focusSession.tickHandle); focusSession.tickHandle=null; }
+  }
+  flushFocusPending();
+  resetFocusTimerValues();
+  updateFocusPlayBtn();
+  updateFocusDisplay();
+}
+function switchFocusMode(mode){
+  if(focusSession.running){
+    focusSession.running = false;
+    if(focusSession.tickHandle){ clearInterval(focusSession.tickHandle); focusSession.tickHandle=null; }
+    flushFocusPending();
+  }
+  focusSession.mode = mode;
+  resetFocusTimerValues();
+  document.querySelectorAll('.focusModeTab').forEach(t=> t.classList.toggle('active', t.getAttribute('data-mode')===mode));
+  const durRow = document.getElementById('focusDurationRow');
+  if(durRow) durRow.style.display = (mode==='stopwatch') ? 'none' : 'flex';
+  updateFocusPlayBtn();
+  updateFocusDisplay();
+}
+function openFocusModal(mode){
+  focusSession.subject = null;
+  switchFocusMode(mode || 'pomodoro');
+  renderFocusSubjectGrid();
+  renderFocusTodayText();
+  updateFocusPlayBtn();
+  updateFocusDisplay();
+  const modal = document.getElementById('focusModal');
+  if(modal) modal.style.display = 'flex';
+}
+function closeFocusModal(){
+  if(focusSession.running){
+    focusSession.running = false;
+    if(focusSession.tickHandle){ clearInterval(focusSession.tickHandle); focusSession.tickHandle=null; }
+    flushFocusPending();
+  }
+  const modal = document.getElementById('focusModal');
+  if(modal) modal.style.display = 'none';
+  renderFocusTodayText();
+}
+{
+  document.querySelectorAll('#studyModeRow .studyModeBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openFocusModal(btn.getAttribute('data-mode')));
+  });
+  document.querySelectorAll('#focusModeTabs .focusModeTab').forEach(tab=>{
+    tab.addEventListener('click', ()=> switchFocusMode(tab.getAttribute('data-mode')));
+  });
+  const focusCloseBtn = document.getElementById('focusCloseBtn');
+  if(focusCloseBtn) focusCloseBtn.addEventListener('click', closeFocusModal);
+  const focusPlayBtn = document.getElementById('focusPlayBtn');
+  if(focusPlayBtn) focusPlayBtn.addEventListener('click', focusPlayPause);
+  const focusResetBtn = document.getElementById('focusResetBtn');
+  if(focusResetBtn) focusResetBtn.addEventListener('click', focusReset);
+  const focusDurationInput = document.getElementById('focusDurationInput');
+  if(focusDurationInput) focusDurationInput.addEventListener('change', ()=>{
+    let v = parseInt(focusDurationInput.value);
+    if(isNaN(v) || v<1) v = 1;
+    if(v>180) v = 180;
+    focusDurationInput.value = v;
+    focusSession.durationMin = v;
+    if(!focusSession.running) resetFocusTimerValues();
+    updateFocusDisplay();
+  });
+}
+
+// ===== Per-task ⏱️ Pomodoro/Stopwatch timer (Today tab) =====
+// Different from the generic subject Focus Timer above: this one lives
+// inside a single task row, its target is fixed to that task's own
+// duration (TASK_DURATIONS_MIN[idx]), and reaching the target auto-ticks
+// that task's checkbox — no manual tap needed.
+//
+// "Runs in background": every running/paused segment is stored with a
+// real wall-clock timestamp (lastTs), not just an interval counter. So
+// even if the browser fully suspends our JS (screen locked, app switched,
+// tab backgrounded — which is normal mobile behaviour and can't be
+// prevented from a plain webpage), the moment this page is looked at
+// again — a tick fires, the tab regains visibility, or the app is
+// reopened — we recompute elapsed time from Date.now()-lastTs and catch
+// up correctly, including auto-completing a target that was crossed
+// while we were away.
+const TT_STORE_KEY = 'cgl50-tasktimer-v1';
+let taskTimers = {};           // { [taskIdx]: {mode,running,isBreak,workAccumSec,sessionWorkSec,breakElapsedSec,targetSec,lastTs} }
+let taskTimerDay = null;       // which plan-day these belong to (stale day = discard)
+let taskTimerEngineHandle = null;
+let taskTimerExpandedIdx = null; // UI-only: which task's box is open right now
+
+function ttTargetSecFor(idx){ return (TASK_DURATIONS_MIN[idx]||0) * 60; }
+
+function ensureTaskTimerDayFresh(){
+  const tn = todayDayNum();
+  if(taskTimerDay === null){
+    // first touch this session — try to resume from storage instead of
+    // starting blank (handles a full page reload mid-timer).
+    loadTaskTimersFromStorage();
+  }
+  if(taskTimerDay !== tn){
+    // a new day has started since these were saved — yesterday's partial
+    // timer no longer applies to any task on today's fresh list.
+    wipeTaskTimersForNewDay(tn);
+  }
+}
+// Shared "day rolled over" reset: drops all timer state (running or not)
+// and stops the background engine. Used both when the user re-opens the
+// app on a new day (ensureTaskTimerDayFresh) and when midnight ticks past
+// WHILE a timer is actively running in the background (handleMidnightRollover).
+function wipeTaskTimersForNewDay(newDayNum){
+  taskTimers = {};
+  taskTimerDay = newDayNum;
+  taskTimerExpandedIdx = null;
+  saveTaskTimersToStorage();
+}
+// Midnight edge case: a task timer that's running when the clock crosses
+// into a new calendar day no longer belongs to `taskTimerDay` — today's
+// task list has effectively reset. Rather than silently keep crediting
+// those seconds to the wrong day (or worse, ticking today's checkbox off
+// a timer that never actually ran today), we stop the engine and clear
+// the stale timer the moment the rollover is noticed — on the next
+// engine tick if the app stayed open, or immediately on resume/visibility
+// if the phone was locked/backgrounded overnight.
+function handleMidnightRollover(){
+  if(taskTimerEngineHandle){ clearInterval(taskTimerEngineHandle); taskTimerEngineHandle=null; }
+  wipeTaskTimersForNewDay(todayDayNum());
+  renderAll();
+}
+function getOrInitTaskTimer(idx){
+  if(!taskTimers[idx]){
+    taskTimers[idx] = {
+      mode:'pomodoro', running:false, isBreak:false,
+      workAccumSec:0, sessionWorkSec:0, breakElapsedSec:0,
+      subjectPendingSec:0, // work seconds not yet flushed into Focus subject stats
+      targetSec: ttTargetSecFor(idx), lastTs:null
+    };
+  }
+  return taskTimers[idx];
+}
+function saveTaskTimersToStorage(){
+  try{ localStorage.setItem(TT_STORE_KEY, JSON.stringify({day:taskTimerDay, timers:taskTimers})); }
+  catch(e){}
+}
+function loadTaskTimersFromStorage(){
+  try{
+    const raw = localStorage.getItem(TT_STORE_KEY);
+    if(!raw){ taskTimerDay = todayDayNum(); return; }
+    const parsed = JSON.parse(raw);
+    if(parsed && parsed.day === todayDayNum()){
+      taskTimerDay = parsed.day;
+      taskTimers = parsed.timers || {};
+    } else {
+      taskTimerDay = todayDayNum();
+      taskTimers = {};
+    }
+  }catch(e){ taskTimerDay = todayDayNum(); taskTimers = {}; }
+}
+function findRunningTaskIdx(){
+  return Object.keys(taskTimers).find(k=>taskTimers[k].running);
+}
+// Maps a task to one of the Focus Timer's subjects (Math/Reasoning/
+// English/GK) purely by matching keywords in its CURRENT name — not a
+// fixed index table — because tasks can be renamed/reordered/added via
+// Customize Task Names, and a position-based map would silently go stale.
+// Tasks with no confident single-subject match (e.g. "Full Mock", "Mock
+// Analysis") return null and simply don't contribute — they're already
+// tracked elsewhere (Mock tab) rather than needing double-counting here.
+function ttSubjectFor(idx){
+  const name = (TASKS[idx]||'').toLowerCase();
+  if(/reasoning/.test(name)) return 'reasoning';
+  if(/math|calculat/.test(name)) return 'math';
+  if(/english|vocab|\brc\b|pqrs/.test(name)) return 'english';
+  if(/\bgk\b|general knowledge/.test(name)) return 'gk';
+  return null;
+}
+// Flushes a task timer's not-yet-credited work seconds into that subject's
+// Focus stats bucket (same store the Home/Focus-modal "Today: Xm studied"
+// numbers read from). Batched rather than called every single tick, to
+// avoid hammering save()/Firebase once a second while a timer runs.
+function ttFlushSubjectPending(idx){
+  const t = taskTimers[idx];
+  if(!t || !t.subjectPendingSec) return;
+  const subj = ttSubjectFor(idx);
+  const sec = t.subjectPendingSec;
+  t.subjectPendingSec = 0;
+  if(subj) addStudySeconds(subj, sec);
+}
+// Advances one task's timer by `sec` real seconds, cycling pomodoro
+// work/break segments as needed, and completing the task the moment
+// accumulated WORK time reaches its target — whether that happens live
+// (foregrounded) or all at once while catching up after an absence.
+function ttAdvance(idx, sec){
+  const t = taskTimers[idx];
+  if(!t || sec<=0) return;
+  let remaining = sec;
+  let guard = 0; // safety valve against any accidental infinite loop
+  while(remaining > 0 && guard < 100000){
+    guard++;
+    if(t.mode === 'stopwatch'){
+      const need = t.targetSec - t.workAccumSec;
+      if(need <= 0){ completeTaskTimer(idx); return; }
+      const add = Math.min(remaining, need);
+      t.workAccumSec += add;
+      t.subjectPendingSec = (t.subjectPendingSec||0) + add;
+      remaining -= add;
+      if(t.workAccumSec >= t.targetSec){ completeTaskTimer(idx); return; }
+    } else {
+      // pomodoro
+      if(!t.isBreak){
+        const remainInSession = (POMODORO_WORK_MIN*60) - t.sessionWorkSec;
+        const remainToTarget = t.targetSec - t.workAccumSec;
+        if(remainToTarget <= 0){ completeTaskTimer(idx); return; }
+        const cap = Math.min(remainInSession, remainToTarget);
+        const add = Math.min(remaining, cap);
+        t.workAccumSec += add;
+        t.sessionWorkSec += add;
+        t.subjectPendingSec = (t.subjectPendingSec||0) + add;
+        remaining -= add;
+        if(t.workAccumSec >= t.targetSec){ completeTaskTimer(idx); return; }
+        if(t.sessionWorkSec >= (POMODORO_WORK_MIN*60) - 0.001){
+          t.isBreak = true; t.sessionWorkSec = 0; t.breakElapsedSec = 0;
+        }
+      } else {
+        const remainInBreak = (POMODORO_BREAK_MIN*60) - t.breakElapsedSec;
+        const add = Math.min(remaining, remainInBreak);
+        t.breakElapsedSec += add;
+        remaining -= add;
+        if(t.breakElapsedSec >= (POMODORO_BREAK_MIN*60) - 0.001){
+          t.isBreak = false; t.breakElapsedSec = 0;
+        }
+      }
+    }
+  }
+}
+// Short synthesized "ding-dong" beep via Web Audio — no external audio file
+// needed, and works even if the device is on silent-vibrate-only for
+// notifications since it's regular media audio, not a system alert.
+function playTaskTimerDoneSound(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.setValueAtTime(1174.66, now+0.14);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.35, now+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+0.4);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now+0.45);
+    osc.onended = ()=>{ try{ ctx.close(); }catch(e){} };
+  }catch(e){}
+}
+function completeTaskTimer(idx){
+  const wasRunning = taskTimers[idx] && taskTimers[idx].running;
+  ttFlushSubjectPending(idx);
+  delete taskTimers[idx];
+  if(taskTimerEngineHandle && !findRunningTaskIdx()){ clearInterval(taskTimerEngineHandle); taskTimerEngineHandle=null; }
+  saveTaskTimersToStorage();
+  if(taskTimerExpandedIdx === idx) taskTimerExpandedIdx = null;
+  if(selectedDay === todayDayNum()){
+    const dayObj = getDay(selectedDay);
+    if(!dayObj.tasks[idx]){
+      const doneBefore = dayObj.tasks.filter(Boolean).length;
+      dayObj.tasks[idx] = true;
+      const doneAfter = dayObj.tasks.filter(Boolean).length;
+      save();
+      if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(selectedDay);
+    }
+  }
+  try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(e){}
+  playTaskTimerDoneSound();
+  renderAll();
+}
+function clearTaskTimer(idx){
+  ttFlushSubjectPending(idx);
+  delete taskTimers[idx];
+  if(taskTimerExpandedIdx === idx) taskTimerExpandedIdx = null;
+  saveTaskTimersToStorage();
+  if(taskTimerEngineHandle && !findRunningTaskIdx()){ clearInterval(taskTimerEngineHandle); taskTimerEngineHandle=null; }
+}
+function startTaskTimerEngine(){
+  if(taskTimerEngineHandle) return;
+  taskTimerEngineHandle = setInterval(taskTimerGlobalTick, 1000);
+}
+function taskTimerGlobalTick(){
+  if(taskTimerDay !== null && todayDayNum() !== taskTimerDay){ handleMidnightRollover(); return; }
+  const idx = findRunningTaskIdx();
+  if(idx === undefined){ clearInterval(taskTimerEngineHandle); taskTimerEngineHandle=null; return; }
+  const t = taskTimers[idx];
+  const now = Date.now();
+  const delta = Math.max(0, (now - (t.lastTs||now)) / 1000);
+  t.lastTs = now;
+  ttAdvance(idx, delta);
+  if(taskTimers[idx]){
+    saveTaskTimersToStorage();
+    updateTaskTimerLiveDisplay(parseInt(idx,10));
+    updateHomeTimerBannerLiveDisplay(parseInt(idx,10));
+    if(taskTimers[idx].subjectPendingSec >= 30) ttFlushSubjectPending(parseInt(idx,10));
+  }
+}
+function playPauseTaskTimer(idx){
+  ensureTaskTimerDayFresh();
+  const t = getOrInitTaskTimer(idx);
+  if(t.running){
+    t.running = false;
+    ttFlushSubjectPending(idx);
+    saveTaskTimersToStorage();
+  } else {
+    const other = findRunningTaskIdx();
+    if(other !== undefined && parseInt(other,10) !== idx){
+      taskTimers[other].running = false;
+      ttFlushSubjectPending(parseInt(other,10));
+    }
+    t.running = true;
+    t.lastTs = Date.now();
+    saveTaskTimersToStorage();
+    startTaskTimerEngine();
+  }
+  renderPanel();
+  renderHomeTimerBanner();
+}
+function resetTaskTimer(idx){
+  clearTaskTimer(idx);
+  taskTimerExpandedIdx = idx; // keep the box open, just zeroed out
+  renderPanel();
+  renderHomeTimerBanner();
+}
+function setTaskTimerMode(idx, mode){
+  const t = getOrInitTaskTimer(idx);
+  if(t.running) return; // pause first to switch modes, keeps things predictable
+  t.mode = mode; t.isBreak=false; t.sessionWorkSec=0; t.breakElapsedSec=0; t.workAccumSec=0;
+  saveTaskTimersToStorage();
+  renderPanel();
+}
+function toggleTaskTimerBox(idx){
+  ensureTaskTimerDayFresh();
+  taskTimerExpandedIdx = (taskTimerExpandedIdx === idx) ? null : idx;
+  renderPanel();
+}
+function formatMMSSApprox(totalSec){
+  totalSec = Math.max(0, Math.round(totalSec));
+  const m = Math.floor(totalSec/60), s = totalSec%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+// Ring fill %: normally overall progress toward the task's target; during
+// a pomodoro break it switches to break-segment progress instead, so the
+// ring keeps moving rather than sitting frozen while workAccumSec is paused.
+function ttRingPct(t){
+  if(t.mode==='pomodoro' && t.isBreak){
+    return Math.min(100, Math.max(0, (t.breakElapsedSec/(POMODORO_BREAK_MIN*60))*100));
+  }
+  return t.targetSec>0 ? Math.min(100, Math.max(0, (t.workAccumSec/t.targetSec)*100)) : 0;
+}
+function ttRingClass(t){
+  if(t.mode==='pomodoro' && t.isBreak) return 'break';
+  if(t.targetSec>0 && t.workAccumSec>=t.targetSec) return 'done';
+  return '';
+}
+// Builds the inner HTML for one task's expanded timer box.
+function taskTimerBoxHtml(idx){
+  const t = getOrInitTaskTimer(idx);
+  const targetMin = Math.round(t.targetSec/60);
+  let display, sub, status = '';
+  if(t.mode === 'stopwatch'){
+    display = formatMMSSApprox(t.workAccumSec);
+    sub = `Target: <b>${targetMin}m</b>`;
+  } else {
+    const segTotal = t.isBreak ? POMODORO_BREAK_MIN*60 : POMODORO_WORK_MIN*60;
+    const segLeft = segTotal - (t.isBreak ? t.breakElapsedSec : t.sessionWorkSec);
+    display = formatMMSSApprox(segLeft);
+    sub = `${t.isBreak?'☕ Break':'📖 Work'} · Total <b>${formatMMSSApprox(t.workAccumSec)}</b> / ${targetMin}m`;
+  }
+  if(t.running) status = t.isBreak ? 'Break chal raha hai' : 'Chalu hai — background mein bhi chalega';
+  else status = (t.workAccumSec>0) ? 'Paused' : 'Ready';
+  const modeDisabled = t.running ? 'disabled' : '';
+  return `
+    <div class="taskTimerModeTabs">
+      <button type="button" class="taskTimerModeTab${t.mode==='pomodoro'?' active':''}${modeDisabled?' disabled':''}" data-tt-mode="pomodoro" data-tt-idx="${idx}">🍅 Pomodoro</button>
+      <button type="button" class="taskTimerModeTab${t.mode==='stopwatch'?' active':''}${modeDisabled?' disabled':''}" data-tt-mode="stopwatch" data-tt-idx="${idx}">⏱️ Stopwatch</button>
+    </div>
+    <div class="ttRing ${ttRingClass(t)}" id="ttRing-${idx}" style="--p:${ttRingPct(t)}">
+      <div class="taskTimerDisplay" id="ttDisplay-${idx}">${display}</div>
+    </div>
+    <div class="taskTimerSub" id="ttSub-${idx}">${sub}</div>
+    <div class="taskTimerStatus" id="ttStatus-${idx}">${status}</div>
+    <div class="taskTimerControls">
+      <button type="button" class="taskTimerResetBtn" data-tt-reset="${idx}" title="Reset">↺</button>
+      <button type="button" class="taskTimerPlayBtn" data-tt-play="${idx}" title="${t.running?'Pause':'Start'}">${t.running?'⏸':'▶'}</button>
+    </div>
+  `;
+}
+// Cheap per-second DOM update for the currently-open box only — avoids
+// rebuilding the whole panel (and losing notes/textarea focus) every tick.
+function updateTaskTimerLiveDisplay(idx){
+  if(taskTimerExpandedIdx !== idx) return;
+  const t = taskTimers[idx];
+  const dEl = document.getElementById('ttDisplay-'+idx);
+  const sEl = document.getElementById('ttSub-'+idx);
+  const stEl = document.getElementById('ttStatus-'+idx);
+  const rEl = document.getElementById('ttRing-'+idx);
+  if(!t || !dEl) return;
+  const targetMin = Math.round(t.targetSec/60);
+  if(t.mode === 'stopwatch'){
+    dEl.textContent = formatMMSSApprox(t.workAccumSec);
+    if(sEl) sEl.innerHTML = `Target: <b>${targetMin}m</b>`;
+  } else {
+    const segTotal = t.isBreak ? POMODORO_BREAK_MIN*60 : POMODORO_WORK_MIN*60;
+    const segLeft = segTotal - (t.isBreak ? t.breakElapsedSec : t.sessionWorkSec);
+    dEl.textContent = formatMMSSApprox(segLeft);
+    if(sEl) sEl.innerHTML = `${t.isBreak?'☕ Break':'📖 Work'} · Total <b>${formatMMSSApprox(t.workAccumSec)}</b> / ${targetMin}m`;
+  }
+  if(stEl) stEl.textContent = t.running ? (t.isBreak?'Break chal raha hai':'Chalu hai — background mein bhi chalega') : 'Paused';
+  if(rEl){
+    rEl.style.setProperty('--p', ttRingPct(t));
+    rEl.className = 'ttRing ' + ttRingClass(t);
+  }
+}
+// On resume (page just loaded), catch up any timer that was left running,
+// covering however long we were actually away — then keep going live.
+function resumeTaskTimersOnLoad(){
+  loadTaskTimersFromStorage();
+  if(taskTimerDay !== null && todayDayNum() !== taskTimerDay){ wipeTaskTimersForNewDay(todayDayNum()); return; }
+  const idx = findRunningTaskIdx();
+  if(idx === undefined) return;
+  const t = taskTimers[idx];
+  const now = Date.now();
+  const delta = Math.max(0, (now - (t.lastTs||now)) / 1000);
+  t.lastTs = now;
+  ttAdvance(parseInt(idx,10), delta);
+  if(taskTimers[idx]){
+    taskTimerExpandedIdx = parseInt(idx,10);
+    saveTaskTimersToStorage();
+    startTaskTimerEngine();
+  }
+}
+// Whenever the tab/app comes back into view, snap the running timer's
+// numbers to the correct real-time value right away instead of waiting
+// for the next 1s tick (the interval itself may have been throttled while
+// hidden, but the moment we're visible again this forces an instant catch-up).
+// Also the first place a backgrounded/locked phone notices a midnight
+// rollover happened while it was away — checked before touching any timer.
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden){
+    if(taskTimerDay !== null && todayDayNum() !== taskTimerDay){ handleMidnightRollover(); return; }
+    const idx = findRunningTaskIdx();
+    if(idx !== undefined) taskTimerGlobalTick();
+  }
+});
 {
   // Header-only 👑 Admin Control Panel — button itself stays display:none
   // (toggled by updateAdminPanelBtnVisibility) for anyone who isn't the
@@ -8635,6 +9515,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
     await applySharedTaskModeIfNeeded();
   }
   selectedDay = todayDayNum();
+  resumeTaskTimersOnLoad();
   setupHomeScreenIcon();
   initSwipeTabs();
   updateNotifBtnLabel();
