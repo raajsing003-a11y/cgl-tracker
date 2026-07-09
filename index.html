@@ -906,6 +906,11 @@
     display:none;color:#ff6b6b;font-size:12px;font-weight:700;margin-top:6px;
   }
   .taskNoteSheetErr.show{display:block;}
+  .taskNoteView{
+    font-size:12px;color:var(--muted);font-style:italic;
+    padding:2px 14px 10px 46px;margin-top:-6px;line-height:1.4;
+    word-break:break-word;
+  }
   /* ===== Anti-cheat toast ===== */
   .antiCheatToast{
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
@@ -915,6 +920,14 @@
     opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
   }
   .antiCheatToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* ===== Offline sync-pending badge ===== */
+  .syncPendingBadge{
+    position:fixed;top:10px;right:10px;z-index:901;
+    background:#1a1404;color:var(--accent,#fbbf24);border:1px solid var(--accent,#fbbf24);
+    border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:700;
+    display:none;box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  }
+  .syncPendingBadge.show{display:block;}
   .calcCountBadge{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:50%;
     width:34px;height:34px;display:flex;align-items:center;justify-content:center;
@@ -1644,6 +1657,7 @@
 </div>
 
 <div class="antiCheatToast" id="antiCheatToast"></div>
+<div class="syncPendingBadge" id="syncPendingBadge">⏳ Sync pending</div>
 
 <div class="calcSheetOverlay" id="calcSetupSheet">
   <div class="calcSheetCard">
@@ -3166,6 +3180,97 @@ async function kvdbSet(key, value){
   console.error('firebase set failed after retries', lastErr);
   return false;
 }
+
+// ===== Offline write queue =====
+// save() always writes to localStorage FIRST (below), so a task-tick on a
+// dead connection (metro, elevator, patchy data) is never lost on THIS
+// device — but if the Firebase push in save() fails, nobody else's phone
+// (and no other device of this same person) sees that update until it's
+// retried. This queue remembers "this player's room-key still needs a
+// push", persists across app close/reopen (localStorage), and keeps
+// retrying in the background — on the browser's 'online' event AND on a
+// plain timer (mobile 'online' events are unreliable — a phone can report
+// "online" while still having no real signal) — until every entry syncs.
+const PENDING_SYNC_KEY = 'cgl50-pending-sync-keys';
+function getPendingSyncKeys(){
+  try{
+    const raw = localStorage.getItem(PENDING_SYNC_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function setPendingSyncKeys(arr){
+  try{ localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function markPendingSync(room, targetName){
+  const entry = room + '::' + targetName.trim().toLowerCase();
+  const cur = getPendingSyncKeys();
+  const wasEmpty = cur.length===0;
+  if(!cur.includes(entry)){ cur.push(entry); setPendingSyncKeys(cur); }
+  updateSyncStatusIndicator();
+  if(wasEmpty){
+    showAntiCheatToast('📡 Network weak — data safe hai is phone par, connection wapas aate hi sync ho jayega.');
+  }
+}
+function clearPendingSync(room, targetName){
+  const entry = room + '::' + targetName.trim().toLowerCase();
+  const cur = getPendingSyncKeys();
+  if(!cur.includes(entry)) return;
+  setPendingSyncKeys(cur.filter(e=>e!==entry));
+  updateSyncStatusIndicator();
+}
+function updateSyncStatusIndicator(){
+  const badge = document.getElementById('syncPendingBadge');
+  if(!badge) return;
+  const count = getPendingSyncKeys().length;
+  if(count>0){
+    badge.textContent = count===1 ? '⏳ Sync pending' : `⏳ ${count} syncs pending`;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+let pendingSyncFlushInFlight = false;
+async function flushPendingSyncQueue(){
+  if(pendingSyncFlushInFlight) return;
+  const queue = getPendingSyncKeys();
+  if(!queue.length) return;
+  pendingSyncFlushInFlight = true;
+  try{
+    const room = getRoomCode();
+    let anySynced = false;
+    for(const entry of queue){
+      const sepIdx = entry.indexOf('::');
+      const entryRoom = entry.slice(0, sepIdx);
+      const targetName = entry.slice(sepIdx+2);
+      if(!targetName || entryRoom !== room){
+        // Stale entry from a room this device isn't in anymore — nothing
+        // sane to retry it against, drop it rather than retry forever.
+        clearPendingSync(entryRoom, targetName || '');
+        continue;
+      }
+      // Always push whatever's freshest in localStorage right now (not a
+      // stale snapshot from the moment it failed) — if more ticks happened
+      // on this device while offline, this picks up every one of them.
+      const key = localPlayerKey(targetName);
+      let json = null;
+      try{ json = localStorage.getItem(key); }catch(e){}
+      if(!json){ clearPendingSync(room, targetName); continue; }
+      const ok = await kvdbSet(playerKey(targetName), json);
+      if(ok){ clearPendingSync(room, targetName); anySynced = true; }
+    }
+    if(anySynced && getPendingSyncKeys().length===0){
+      showAntiCheatToast('✅ Connection wapas aa gaya — sab kuch sync ho gaya.');
+    }
+  } finally { pendingSyncFlushInFlight = false; }
+}
+function startPendingSyncWatcher(){
+  updateSyncStatusIndicator();
+  window.addEventListener('online', ()=>{ flushPendingSyncQueue(); });
+  // Backstop for mobile browsers where 'online' fires unreliably (or not
+  // at all) — a plain timer eventually catches every case regardless.
+  setInterval(()=>{ flushPendingSyncQueue(); }, 20000);
+}
 async function addToRoomRegistry(name){
   const room = getRoomCode();
   if(!room) return;
@@ -3619,7 +3724,10 @@ async function save(opts){
     catch(e){ console.error('window.storage save failed', e); }
   }
   if(getRoomCode()){
-    await kvdbSet(playerKey(targetName), json);
+    const room = getRoomCode();
+    const ok = await kvdbSet(playerKey(targetName), json);
+    if(ok) clearPendingSync(room, targetName);
+    else markPendingSync(room, targetName); // offline/flaky — localStorage above already has it; retried in the background
   }
 }
 
@@ -3916,7 +4024,19 @@ function getDayFrom(st, n){
 function isDayTouchedFrom(d){
   if(d.rest) return true;
   if(d.tasks.some(Boolean)) return true;
+  // Mirrors isDayTouched() exactly — a friend's day that only has mock/
+  // sectional scores filled in (no task ticked, no note) was previously
+  // NOT counted as touched here, unlike the live version. Only matters for
+  // days filled in ahead of today, but kept consistent regardless. Guarded
+  // with `|| {}` since getDayFrom() (unlike getDay()) doesn't pre-populate
+  // these sub-objects on every synced day.
+  const mock = d.mock || {};
+  if(hasVal(mock.math)||hasVal(mock.reasoning)||hasVal(mock.english)||hasVal(mock.gk)||hasVal(mock.percentile)||hasVal(mock.wrongMath)||hasVal(mock.wrongReasoning)||hasVal(mock.wrongEnglish)||hasVal(mock.wrongGk)) return true;
+  const sect = d.sect || {};
+  if(hasVal(sect.s1)||hasVal(sect.s2)||hasVal(sect.s3)||hasVal(sect.s4)) return true;
+  if(d.sectDetail && ['s1','s2','s3','s4'].some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
   if(d.notes && d.notes.trim()) return true;
+  if(d.mistakes && d.mistakes.trim()) return true;
   return false;
 }
 function computeStatsFrom(st){
@@ -3939,13 +4059,27 @@ function computeStatsFrom(st){
       lost += r.lost;
     }
   }
-  let streak=0;
-  for(let i=activeUpto;i>=1;i--){
+  // Streak: must mirror computeStreakInfo()'s forward, freeze-aware walk
+  // exactly (day 1 → activeUpto, freezes absorb a miss instead of
+  // resetting to 0). The old version here walked BACKWARDS from today and
+  // broke on the very first miss with no freeze support at all — so a
+  // friend who used a streak-freeze to survive a missed day would show a
+  // correct streak on their own "My Stats" (via computeStreakInfo) but a
+  // wrong/lower one on the Leaderboard (via this function). Freezes
+  // regenerate every FREEZE_EARN_EVERY days, same as the live version.
+  let streak=0, freezes=MAX_STREAK_FREEZES;
+  for(let i=1;i<=activeUpto;i++){
     const d = getDayFrom(st,i);
     if(d.rest) continue;
     const done = d.tasks.filter(Boolean).length;
-    if((done/taskCount)>=0.5){ streak++; continue; }
-    break;
+    if((done/taskCount)>=0.5){
+      streak++;
+      if(streak % FREEZE_EARN_EVERY === 0 && freezes < MAX_STREAK_FREEZES) freezes++;
+    } else if(freezes>0){
+      freezes--;
+    } else {
+      streak = 0;
+    }
   }
   const pct = totalPossible ? Math.round((totalChecked/totalPossible)*100) : 0;
   const xp = computeXPFrom(st);
@@ -5590,6 +5724,7 @@ function renderPanel(){
     const tier = taskTier(idx);
     const showTimerBtn = canUseTaskTimer && !d.tasks[idx];
     const tt = taskTimers[idx];
+    const note = (d.taskNotes && d.taskNotes[idx]) ? d.taskNotes[idx].trim() : '';
     html += `
       <div class="${cls} ${tier.cls}">
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
@@ -5599,6 +5734,7 @@ function renderPanel(){
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch">⏱️</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
       </div>
+      ${note ? `<div class="taskNoteView">📝 ${escapeHtml(note)}</div>` : ''}
     `;
   });
 
@@ -9683,6 +9819,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
   await renderCompetePanel();
   startRoomAutoSync();
   startPresenceHeartbeat();
+  startPendingSyncWatcher();
   startLiveClockTicker();
   updateTargetReminderBtnLabel();
   checkTargetReminderOnAppOpen();
