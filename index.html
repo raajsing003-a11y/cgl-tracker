@@ -3259,6 +3259,29 @@ let myName = null;       // this device's chosen player name
 let viewingName = null;  // whose tracker is currently on screen (me or a friend)
 let leaderboardMode = 'today'; // 'today' = just today (default), 'week' = current Mon-Sun week so far, 'all' = all-time
 const REGISTRY_KEY = 'cgl50-players-registry';
+// ===== "Today Rank" 24-hour auto-refresh =====
+// todayDayNum() itself is always live (re-derived from the real clock on
+// every call), so the numbers are never stale IF something re-renders the
+// Compete panel after midnight. Normally that happens anyway via the 25s
+// room-sync tick — but if the phone was locked/backgrounded overnight,
+// mobile browsers freeze timers, so nothing fires until the app is opened
+// again. This tracks the last day-number we actually rendered for, and
+// forces one fresh renderCompetePanel()+renderAll() the moment we notice
+// the date has moved on — whether that's a live tick or the app just
+// waking back up — so "Today" rank/scoreboard is guaranteed correct within
+// moments of the day changing, not just next time the room-sync happens to run.
+let lastRenderedDayNum = null;
+function checkDayRolloverAndRefresh(){
+  const tn = todayDayNum();
+  if(lastRenderedDayNum !== null && tn !== lastRenderedDayNum){
+    lastRenderedDayNum = tn;
+    selectedDay = tn;
+    safeRun(renderAll, 'renderAll(dayRollover)');
+    renderCompetePanel();
+  } else {
+    lastRenderedDayNum = tn;
+  }
+}
 
 function fmtDate(dayNum){
   const d = new Date(START_DATE);
@@ -11124,8 +11147,29 @@ function startLiveClockTicker(){
     safeRun(renderTimeGuide, 'renderTimeGuide(tick)');
     safeRun(checkTargetReminder, 'checkTargetReminder(tick)');
     safeRun(checkStrictManagerPopup, 'checkStrictManagerPopup(tick)');
+    // Belt-and-suspenders 24hr refresh for "Today" rank/scoreboard — see
+    // checkDayRolloverAndRefresh() above. renderAll() above already covers
+    // most of this, but this also force-refreshes the Compete panel itself.
+    safeRun(checkDayRolloverAndRefresh, 'checkDayRolloverAndRefresh(tick)');
   }, 60000);
 }
+// Mobile browsers/PWAs freeze all JS timers (including the 60s ticker and
+// the 25s room-sync) while the screen is locked or the app is backgrounded
+// — so if someone leaves the app open overnight without force-closing it,
+// nothing actually ticks past midnight until they come back. The moment
+// the app becomes visible/focused again, immediately check whether the
+// calendar date has moved on and force a fresh render if so — this is what
+// guarantees "Today Rank" is correct within moments of reopening, not
+// whenever the person happens to tap into the Compete tab.
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) safeRun(checkDayRolloverAndRefresh, 'checkDayRolloverAndRefresh(visible)');
+});
+window.addEventListener('focus', ()=>{
+  safeRun(checkDayRolloverAndRefresh, 'checkDayRolloverAndRefresh(focus)');
+});
+window.addEventListener('pageshow', ()=>{
+  safeRun(checkDayRolloverAndRefresh, 'checkDayRolloverAndRefresh(pageshow)');
+});
 
 // Debounced fields (notes, mistakes, mock/sectional scores) wait 400-600ms
 // before actually saving — fine while the app stays open, but risky if the
@@ -11152,6 +11196,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
     await applySharedTaskModeIfNeeded();
   }
   selectedDay = todayDayNum();
+  lastRenderedDayNum = todayDayNum(); // baseline for the 24hr Today-Rank rollover check
   resumeTaskTimersOnLoad();
   setupHomeScreenIcon();
   initSwipeTabs();
