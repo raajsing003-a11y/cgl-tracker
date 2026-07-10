@@ -1284,6 +1284,13 @@
     border:1px dashed var(--accent-dim);border-radius:8px;padding:12px;text-align:center;
   }
   .guideNote{font-size:12px;color:var(--muted);font-weight:700;padding:10px;text-align:center;}
+  .guideAiBox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-strong);}
+  .guideAiTip{
+    font-size:12.5px;color:var(--text);line-height:1.65;font-weight:600;
+    white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);
+    border-radius:10px;padding:10px 12px;margin:0 0 10px;
+  }
+  .guideAiSourceTag{display:block;font-size:10.5px;color:var(--accent);font-weight:800;letter-spacing:1px;margin:0 0 6px;}
 
   /* ===== Smart Time Settings — user picks their own end-time + breaks ===== */
   .timeSettingsBox{
@@ -6078,12 +6085,156 @@ function buildTimeGuideHtml(){
     <div class="guideHead">${head}</div>
     <div class="guideRows">${rows}</div>
     <div class="guideFoot">Sabhi bache tasks poore karke aaj <b>+₹${potentialEarn.toLocaleString('en-IN')}</b> aur kama sakte ho — breaks lekar bhi <b>${fmtClock(dayEnd)}</b> tak target hit ho sakta hai.</div>
+    <div class="guideAiBox" id="guideAiBox">${buildGuideAiBoxHtml(loadTimeGuideAiCache())}</div>
   `;
+}
+// ===== Smart Time Guide — AI Tip =====
+// The schedule/rows above are pure deterministic arithmetic (exact clock
+// times), which must stay 100% reliable — so the AI is only used for the
+// qualitative layer on top: which pending task to prioritise right now, and
+// a concrete trick if the day is running late. Same call/cache/fallback
+// pattern as the AI Strict Manager, but on-demand (button-triggered) rather
+// than a fixed daily popup, since the plan changes every time a task is
+// ticked off through the day.
+function collectTimeGuideData(){
+  const tn = todayDayNum();
+  const d = getDay(tn);
+  const cur = nowMinutes();
+  const ts = getTimeSettings();
+  const dayEnd = ts.dayEnd;
+  const myBreaks = ts.breaks;
+  const pending = [];
+  TASKS.forEach((t, idx)=>{
+    if(d.tasks[idx]) return;
+    const {start,end} = taskSlot(idx);
+    let status;
+    if(cur>=end) status='missed';
+    else if(cur>=start && cur<end) status='live';
+    else status='upcoming';
+    pending.push({ idx, name:t, minutesNeeded: TASK_DURATIONS_MIN[idx]||0, status, originalSlot: fmtClock(start)+'–'+fmtClock(end) });
+  });
+  let cursor = cur;
+  pending.forEach(p=>{
+    const placedStart = placeAfterBreaks(cursor, p.minutesNeeded, myBreaks);
+    p.suggestedSlot = fmtClock(placedStart)+'–'+fmtClock(placedStart+p.minutesNeeded);
+    cursor = placedStart + p.minutesNeeded;
+  });
+  const finishTime = cursor;
+  const potentialEarn = Math.round(pending.reduce((a,p)=>a+taskValue(p.idx), 0));
+  return {
+    dayNumber: tn,
+    totalDays: TOTAL_DAYS,
+    currentTime: fmtClock(cur),
+    dayEndTarget: fmtClock(dayEnd),
+    pendingTasks: pending.map(p=>({ name:p.name, minutesNeeded:p.minutesNeeded, status:p.status, originalSlot:p.originalSlot, suggestedSlot:p.suggestedSlot })),
+    projectedFinishTime: fmtClock(finishTime),
+    onTrackForTarget: finishTime<=dayEnd,
+    minutesOverTarget: Math.max(0, finishTime-dayEnd),
+    minutesSpareBeforeTarget: Math.max(0, dayEnd-finishTime),
+    potentialEarningsIfAllDoneToday: potentialEarn,
+    breaksPlannedCount: myBreaks.length,
+    underperformanceStreakDays: computeUnderperformanceStreak(),
+    notesToday: (d.notes||'').trim()
+  };
+}
+async function callTimeGuideAI(data){
+  const system = "Tum ek practical \"Smart Time Coach\" ho jo SSC CGL ki taiyari kar rahe student ko bache hue din ka time sabse achhe se use karne ke liye seedha, practical Hinglish (Roman script Hindi+English mix) advice dete ho — kabhi shuddh English paragraph mat likho. Tumhe student ka abhi ka time-status JSON milega: kitna time bacha hai, kaunse tasks pending hain (naam, kitne minute chahiye, status missed/live/upcoming, naya suggested slot), projected finish time, target time. Kaam: 1) Agar priority/order mein sudhaar ki gunjaish hai (jaise koi missed task abhi turant nipta lena chahiye, ya koi lamba task pehle shuru karna chahiye), specific task ka naam lekar bolo. 2) Agar projectedFinishTime target se aage hai, ek practical trick do — jaise sabse chhota ya kam-zaroori pending task kal ke liye push karo, ya specific kitne minute kaate ja sakte hain bolo — number/task-name specific ho, generic mat ho. 3) Agar sab on-track hai to ek chhota confidence-boost ke saath ek focus-tip do taaki aakhri ghante mein dhyan na bhatke. Kabhi generic 'time manage karo' jaisi baatein mat likho — hamesha diye gaye JSON se grounded advice do. Response 60-110 words, ek plain paragraph (zaroorat ho to ek blank line se break), koi markdown/bullet/heading/asterisk use mat karo kyunki ye seedha ek chhoti card mein dikhaya jayega.";
+
+  const userMsg = "Mera abhi ka time-status (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko dekhkar ek practical \"Smart Time Coach\" jaisa chhota Hinglish tip do.";
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 500,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
+    })
+  });
+  if(!resp.ok) throw new Error('Time Guide AI request failed: ' + resp.status);
+  const json = await resp.json();
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+  if(!text) throw new Error('Time Guide AI: empty response');
+  return text;
+}
+// Rule-based fallback if the API isn't reachable (e.g. this file opened
+// outside claude.ai as a plain PWA) — grounded in the same numbers, so the
+// feature never just breaks/does nothing.
+function buildTimeGuideAiFallback(data){
+  const first = data.pendingTasks[0];
+  if(!first) return "Aaj ke saare tasks clear ho chuke hain — badhiya chal raha hai!";
+  if(data.onTrackForTarget){
+    const spareBit = data.minutesSpareBeforeTarget>0 ? ` Target se karib ${data.minutesSpareBeforeTarget} min pehle hi khatam ho jayega, chaho to extra revision nikal sakte ho.` : '';
+    return `Abhi ${data.currentTime} hai aur plan on-track hai — "${first.name}" se seedha shuru karo, phir list ke order mein ek-ek karke nipta do.${spareBit} Aakhri stretch mein phone side rakho, focus mat bhatakne do.`;
+  }
+  return `Abhi ${data.currentTime} hai aur bache hue tasks target se karib ${data.minutesOverTarget} min aage nikal rahe hain. "${first.name}" abhi shuru karo — agar time tight lage to sabse chhota ya kam-zaroori pending task kal ke liye push kar do, poora din force mat karo.`;
+}
+function timeGuideAiCacheKey(){
+  return 'cgl50-timeguide-ai-' + (myName||'me').toLowerCase() + '-' + fmtISODate(new Date());
+}
+function loadTimeGuideAiCache(){
+  try{
+    const raw = localStorage.getItem(timeGuideAiCacheKey());
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveTimeGuideAiCache(obj){
+  try{ localStorage.setItem(timeGuideAiCacheKey(), JSON.stringify(obj)); }catch(e){}
+}
+async function getTimeGuideAiMessage(forceRefresh){
+  if(!forceRefresh){
+    const cached = loadTimeGuideAiCache();
+    if(cached) return cached;
+  }
+  const data = collectTimeGuideData();
+  let text, source;
+  try{
+    text = await callTimeGuideAI(data);
+    source = 'ai';
+  }catch(e){
+    console.error('Time Guide AI call failed, offline fallback use ho raha hai:', e);
+    text = buildTimeGuideAiFallback(data);
+    source = 'offline';
+  }
+  const result = { text, source, ts: Date.now() };
+  saveTimeGuideAiCache(result);
+  return result;
+}
+function buildGuideAiBoxHtml(cached){
+  if(!cached){
+    return `<div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="0">🤖 AI Se Smart Tip Lo</button></div>`;
+  }
+  return `
+    <div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI TIP' : '📐 OFFLINE TIP'}</span>${escapeHtml(cached.text)}</div>
+    <div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="1">🔄 Phir Se AI Tip Lo</button></div>
+  `;
+}
+function wireGuideAiBox(){
+  const btn = document.getElementById('tgAiBtn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    const forceRefresh = btn.getAttribute('data-tg-refresh')==='1';
+    const box = document.getElementById('guideAiBox');
+    if(box) box.innerHTML = `<div class="guideAiTip">🧠 AI tumhara abhi ka time-plan dekh raha hai…</div>`;
+    try{
+      const result = await getTimeGuideAiMessage(forceRefresh);
+      if(box){ box.innerHTML = buildGuideAiBoxHtml(result); wireGuideAiBox(); }
+    }catch(e){
+      if(box) box.innerHTML = `<div class="guideAiTip">Tip abhi nahi ban paayi — thodi der mein phir try karo.</div>`;
+      console.error('Time Guide AI box error:', e);
+    }
+  });
 }
 function renderTimeGuide(){
   const el = document.getElementById('timeGuideBox');
   if(!el) return;
   el.innerHTML = buildTimeGuideHtml();
+  wireGuideAiBox();
 }
 
 // ===== "Right Now" mini card on Home: a one-glance summary of what's
@@ -6254,6 +6405,35 @@ function sectCardHtml(d, key, label, dis, removable){
 // Questions + Chapter Quick-Log for the analysis task. Same underlying
 // d.mock fields as before (no data migration needed), just surfaced right
 // on the task that actually needs them instead of a fixed block for everyone.
+// Shared "Wrong Questions — Subject-wise (Mock)" + "Chapter Mistake Quick-Log"
+// block. Lives in one place so the SAME markup can be shown inside the
+// "Full Mock (Attempt Only)" task's own box (mockScore) as well as (for
+// anyone who still has a separate "Mock Analysis" task) the mockAnalysis box.
+function wrongQuestionsBlockHtml(d, dis){
+  const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
+  return `
+    <div class="subhead">❌ Wrong Questions — Subject-wise (Mock)</div>
+    <div class="scoreform">
+      <div class="scorefield"><label>Math</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongMath" value="${d.mock.wrongMath}" ${dis}></div>
+      <div class="scorefield"><label>Reasoning</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongReasoning" value="${d.mock.wrongReasoning}" ${dis}></div>
+      <div class="scorefield"><label>English</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongEnglish" value="${d.mock.wrongEnglish}" ${dis}></div>
+      <div class="scorefield"><label>GK</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongGk" value="${d.mock.wrongGk}" ${dis}></div>
+    </div>
+    <div class="scoretotal">Total Wrong: <b data-total-wrong>${wrongTotal}</b></div>
+    <div class="subhead">🎯 Chapter Mistake Quick-Log</div>
+    <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Weak" tab mein dikhegi.</div>
+    <div class="chapterQuickRow">
+      <select data-qc-sel="math" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+      <button type="button" class="chapterQuickBtn" data-qc-btn="math" ${dis}>➕ Math Wrong</button>
+      <span class="chapterQuickCount" data-qc-count="math">${chapterCount('math', MATH_CHAPTERS[0])} wrong so far</span>
+    </div>
+    <div class="chapterQuickRow">
+      <select data-qc-sel="english" ${dis}>${ENGLISH_TOPICS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+      <button type="button" class="chapterQuickBtn" data-qc-btn="english" ${dis}>➕ English Wrong</button>
+      <span class="chapterQuickCount" data-qc-count="english">${chapterCount('english', ENGLISH_TOPICS[0])} wrong so far</span>
+    </div>
+  `;
+}
 function taskScoreBoxHtml(d, type, dis){
   if(type === 'mockScore'){
     const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
@@ -6267,32 +6447,11 @@ function taskScoreBoxHtml(d, type, dis){
         <div class="scorefield"><label>Percentile</label><input type="number" step="any" inputmode="decimal" min="0" max="100" data-mock="percentile" value="${d.mock.percentile}" ${dis}></div>
       </div>
       <div class="scoretotal">Total: <b data-total-mock>${mockTotal}</b></div>
+      ${wrongQuestionsBlockHtml(d, dis)}
     `;
   }
   if(type === 'mockAnalysis'){
-    const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
-    return `
-      <div class="subhead" style="margin-top:0;padding-top:0;border-top:none;">❌ Wrong Questions — Subject-wise (Mock)</div>
-      <div class="scoreform">
-        <div class="scorefield"><label>Math</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongMath" value="${d.mock.wrongMath}" ${dis}></div>
-        <div class="scorefield"><label>Reasoning</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongReasoning" value="${d.mock.wrongReasoning}" ${dis}></div>
-        <div class="scorefield"><label>English</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongEnglish" value="${d.mock.wrongEnglish}" ${dis}></div>
-        <div class="scorefield"><label>GK</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongGk" value="${d.mock.wrongGk}" ${dis}></div>
-      </div>
-      <div class="scoretotal">Total Wrong: <b data-total-wrong>${wrongTotal}</b></div>
-      <div class="subhead">🎯 Chapter Mistake Quick-Log</div>
-      <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Weak" tab mein dikhegi.</div>
-      <div class="chapterQuickRow">
-        <select data-qc-sel="math" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
-        <button type="button" class="chapterQuickBtn" data-qc-btn="math" ${dis}>➕ Math Wrong</button>
-        <span class="chapterQuickCount" data-qc-count="math">${chapterCount('math', MATH_CHAPTERS[0])} wrong so far</span>
-      </div>
-      <div class="chapterQuickRow">
-        <select data-qc-sel="english" ${dis}>${ENGLISH_TOPICS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
-        <button type="button" class="chapterQuickBtn" data-qc-btn="english" ${dis}>➕ English Wrong</button>
-        <span class="chapterQuickCount" data-qc-count="english">${chapterCount('english', ENGLISH_TOPICS[0])} wrong so far</span>
-      </div>
-    `;
+    return wrongQuestionsBlockHtml(d, dis);
   }
   if(type === 'sectional'){
     const keys = Object.keys(d.sect);
@@ -7024,8 +7183,8 @@ function openMockForm(catId, entryId){
       </div>
       <div class="onbLabel">Right / Wrong / Percentile</div>
       <div class="scoreform" style="grid-template-columns:repeat(3,1fr);">
-        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRight" value="${v.right}"></div>
-        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrong" value="${v.wrong}"></div>
+        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRightPre" value="${v.right}"></div>
+        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrongPre" value="${v.wrong}"></div>
         <div class="scorefield"><label>%ile</label><input type="number" step="any" min="0" max="100" id="mfPercentile" value="${v.percentile}"></div>
       </div>
     `;
@@ -7034,8 +7193,8 @@ function openMockForm(catId, entryId){
       <div class="onbLabel">Score / Right / Wrong / Skip</div>
       <div class="scoreform">
         <div class="scorefield"><label>Score</label><input type="number" step="any" id="mfScore" value="${v.score}"></div>
-        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRight" value="${v.right}"></div>
-        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrong" value="${v.wrong}"></div>
+        <div class="scorefield"><label>Right</label><input type="number" step="1" min="0" id="mfRightSec" value="${v.right}"></div>
+        <div class="scorefield"><label>Wrong</label><input type="number" step="1" min="0" id="mfWrongSec" value="${v.wrong}"></div>
         <div class="scorefield"><label>Skip</label><input type="number" step="1" min="0" id="mfSkip" value="${v.skip}"></div>
       </div>
     `;
@@ -7133,8 +7292,8 @@ async function saveMockForm(catId){
       reasoning: document.getElementById('mfReasoning').value,
       english: document.getElementById('mfEnglish').value,
       gk: document.getElementById('mfGk').value,
-      right: document.getElementById('mfRight').value,
-      wrong: document.getElementById('mfWrong').value,
+      right: document.getElementById('mfRightPre').value,
+      wrong: document.getElementById('mfWrongPre').value,
       percentile: document.getElementById('mfPercentile').value,
       chapter: document.getElementById('mfChapter').value,
       remarks: document.getElementById('mfRemarks').value,
@@ -7144,8 +7303,8 @@ async function saveMockForm(catId){
     entry = {
       name, date,
       score: document.getElementById('mfScore').value,
-      right: document.getElementById('mfRight').value,
-      wrong: document.getElementById('mfWrong').value,
+      right: document.getElementById('mfRightSec').value,
+      wrong: document.getElementById('mfWrongSec').value,
       skip: skipEl ? skipEl.value : '',
       chapter: document.getElementById('mfChapter').value,
       remarks: document.getElementById('mfRemarks').value,
@@ -9871,6 +10030,17 @@ async function getStrictManagerMessage(forceRefresh){
 function renderStrictManagerPanel(){
   const el = document.getElementById('strictManagerPanel');
   if(!el) return;
+  // AI Strict Manager always analyses whatever tracker is CURRENTLY loaded
+  // (getDay()/state), not necessarily the device owner's own data. When an
+  // Admin is viewing a friend's tracker (with or without Edit Mode ON), that
+  // loaded data belongs to the friend — so this feature must be completely
+  // hidden here, otherwise it silently analyses the friend's day and shows
+  // it back as "tumhara" (yours), and could even auto-popup at 6 PM while
+  // Admin is just browsing a friend's tracker.
+  if(viewingName !== myName){
+    el.innerHTML = `<div class="losshint" style="padding-top:0;">🤖 AI Strict Manager sirf apne tracker par available hai — ${escapeHtml(viewingName||'is member')} ka nahi.</div>`;
+    return;
+  }
   const bad = computeUnderperformanceStreak();
   const cached = loadStrictManagerCache();
   el.innerHTML = `
@@ -9900,6 +10070,7 @@ function hideStrictManagerModal(){
   if(modal) modal.style.display = 'none';
 }
 async function openStrictManagerModal(forceRefresh){
+  if(viewingName !== myName) return; // never analyse/show a friend's tracker as "yours"
   const msgEl = document.getElementById('strictManagerModalMsg');
   const badgeEl = document.getElementById('strictManagerModalBadge');
   showStrictManagerModalEl();
@@ -9933,6 +10104,10 @@ function setStrictManagerLastFiredDate(v){
 }
 function strictManagerDue(){
   if(!stateReady) return false;
+  // stateReady is also true when Admin is viewing/edit-moding a FRIEND's
+  // tracker (canAdminEditViewed()), but this feature must only ever fire on
+  // the device owner's own loaded data — never a friend's.
+  if(viewingName !== myName) return false;
   if(!strictManagerPref()) return false;
   if(nowMinutes() < (STRICT_MANAGER_SLOT.hh*60 + STRICT_MANAGER_SLOT.mm)) return false;
   if(strictManagerLastFiredDate() === fmtISODate(new Date())) return false;
