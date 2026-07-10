@@ -1098,19 +1098,27 @@
     padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
     box-shadow:0 -6px 22px rgba(0,0,0,0.35);
   }
-  /* ===== Small "Start Studying" quick-access button — sits near the top
-     of the Home tab (not floating), opens the same focus timer modal. */
+  /* ===== "Start Studying" floating action button — floats fixed over the
+     Home tab content (only visible while Home tab is active, since it's
+     shown/hidden within Home's tabview), opens the same focus timer modal. */
   .quickStudyBtn{
-    display:inline-flex;align-items:center;justify-content:center;gap:7px;
-    margin:0 0 18px;padding:9px 16px;
-    background:linear-gradient(160deg,#fff,var(--accent));
-    border:1px solid var(--accent);border-radius:22px;
-    color:#1a1404;font-family:'Oswald',sans-serif;font-size:13.5px;font-weight:800;
-    letter-spacing:0.3px;cursor:pointer;
-    box-shadow:0 4px 12px rgba(251,191,36,0.3);
+    position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom,0px));
+    z-index:58;width:74px;height:74px;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:radial-gradient(circle at 35% 25%, #fff, var(--accent) 72%);
+    border:2px solid rgba(255,255,255,0.55);
+    color:#1a1404;font-family:'Oswald',sans-serif;font-weight:800;
+    letter-spacing:0.4px;cursor:pointer;
+    box-shadow:0 0 0 6px rgba(251,191,36,0.16),0 6px 18px rgba(251,191,36,0.45);
+    animation:quickStudyPulse 2.6s ease-in-out infinite;
   }
-  .quickStudyBtn:active{transform:scale(0.95);}
-  .quickStudyBtn .qsIcon{font-size:16px;line-height:1;}
+  .quickStudyBtn:active{transform:scale(0.93);}
+  .quickStudyBtn .qsIcon{font-size:22px;line-height:1;}
+  .quickStudyBtn .qsLabel{font-size:11px;line-height:1;text-transform:uppercase;}
+  @keyframes quickStudyPulse{
+    0%,100%{box-shadow:0 0 0 6px rgba(251,191,36,0.16),0 6px 18px rgba(251,191,36,0.45);}
+    50%{box-shadow:0 0 0 10px rgba(251,191,36,0.05),0 6px 22px rgba(251,191,36,0.55);}
+  }
   .tabbtn{
     --tb-color:var(--accent);
     flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
@@ -1927,7 +1935,7 @@
       </div>
     </div>
 
-    <button type="button" class="quickStudyBtn" id="quickStudyBtn"><span class="qsIcon">⏱️</span> Study Shuru Karo</button>
+    <button type="button" class="quickStudyBtn" id="quickStudyBtn"><span class="qsIcon">⏱️</span><span class="qsLabel">Start</span></button>
 
     <div class="grid-label" style="margin-top:0;">🔥 Last 4 Din Ka Heatmap (₹5,000 Target)</div>
     <div class="last4Heatmap" id="last4Heatmap"></div>
@@ -2230,11 +2238,6 @@
     </div>
     <div class="losshint" style="margin-top:8px;">🔔 App khula/background mein ho tabhi notification aayega.</div>
 
-    <div class="grid-label" style="margin-top:18px;">🎯 Target Reminder — Automatic Motivational Ping</div>
-    <div class="btnrow" style="align-items:center;">
-      <button class="nav-btn" id="targetReminderBtn">🔔 Target Reminder On</button>
-    </div>
-    <div class="losshint" style="margin-top:8px;">🎯 Sabke liye by-default ON hai. <b>12:00 PM</b> aur <b>6:00 PM</b> ko check hoga — target 50%+ na hua to popup dikhega (max 2 baar/din). Band karne ke liye yahan button dabao.</div>
     <button class="reset" id="resetBtn">🗑️ Reset all tracker data</button>
   </div>
 
@@ -9829,24 +9832,6 @@ function checkTargetReminder(){
   if(!due) return;
   fireTargetReminder(due.slot, due.msg);
 }
-document.getElementById('targetReminderBtn').addEventListener('click', async ()=>{
-  const currentlyOn = targetReminderPref();
-  if(currentlyOn){
-    // Explicit opt-out — this is the only thing that ever turns it off.
-    setTargetReminderPref(false);
-  } else {
-    // Turning back on: the in-app popup works immediately, no permission
-    // needed. Also try for the bonus phone-tray ping on top of that.
-    setTargetReminderPref(true);
-    const ok = await ensureNotificationPermission();
-    if(ok){
-      setNotifPref(true); // target reminders route through the same fireNotification() gate
-      fireNotification('🎯 Exam Tracker', 'Target Reminder on ho gaya — set time pe agar target baaki hoga to yaad dilaunga.');
-    }
-  }
-  updateTargetReminderBtnLabel();
-});
-
 // ===== AI Strict Manager =====
 // Deeply analyses today's own data (tasks ticked, notes, mistakes, study
 // time) plus the recent day-by-day trend, and asks the Anthropic API to
@@ -10050,16 +10035,10 @@ function renderStrictManagerPanel(){
       : `<div class="smBadge smBadgeOk">✅ Abhi koi bad-streak nahi</div>`}
     <div class="btnrow">
       <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>
-      <button class="nav-btn" id="smToggleBtn">${strictManagerPref() ? '🔔 6 PM Popup: ON' : '🔕 6 PM Popup: OFF'}</button>
     </div>
   `;
   const openBtn = document.getElementById('smOpenBtn');
   if(openBtn) openBtn.addEventListener('click', ()=> openStrictManagerModal(false));
-  const toggleBtn = document.getElementById('smToggleBtn');
-  if(toggleBtn) toggleBtn.addEventListener('click', ()=>{
-    setStrictManagerPref(!strictManagerPref());
-    renderStrictManagerPanel();
-  });
 }
 function showStrictManagerModalEl(){
   const modal = document.getElementById('strictManagerModal');
