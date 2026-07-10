@@ -94,28 +94,61 @@
     .statrow, .wallet{grid-template-columns:repeat(3,1fr);}
   }
   .daycell{
-    aspect-ratio:1;border-radius:4px;border:1px solid var(--border);
+    aspect-ratio:1;border-radius:6px;border:1px solid var(--border);
     background:var(--panel);color:var(--muted);
-    font-size:12px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;position:relative;font-weight:700;
+    font-size:17px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;font-weight:800;
   }
   .daycell{transition:transform .1s ease,box-shadow .15s ease;}
   .daycell:active{transform:scale(0.92);}
-  .daycell.today{border:2px double var(--accent);color:var(--accent);}
+  .daycell.today{border:3px double var(--accent);color:var(--accent);}
   .daycell.partial{border:1px dashed var(--border-strong);color:var(--text);}
   .daycell.done{background:linear-gradient(160deg,#fff,#f1e0a8);color:#000;font-weight:800;border-color:var(--accent);}
   .daycell.rest{background:repeating-linear-gradient(45deg, var(--panel2), var(--panel2) 4px, #211f24 4px, #211f24 8px);color:var(--muted);}
   .daycell.frozen{background:linear-gradient(160deg,rgba(96,165,250,0.28),rgba(96,165,250,0.06));border-color:var(--blue);color:var(--blue);}
   .daycell.selected{box-shadow:0 0 0 2px var(--accent);}
+  /* ===== ₹5,000 target % heatmap — dark green (75%+), light green (50%+),
+     dark red (20% ya usse kam) — numbers se zyada strong visual signal,
+     taaki streak tootne se pehle hi dikh jaye. Applies to today/past days
+     only (rest/frozen days keep their own look). ===== */
+  .daycell.pct-high{background:linear-gradient(160deg,#22c55e,#14532d);color:#fff;border-color:#0f3d21;box-shadow:0 0 0 1px rgba(34,197,94,0.4), 0 3px 10px rgba(20,83,45,0.5);}
+  .daycell.pct-high .planDayBadge{color:#dcfce7;background:rgba(0,0,0,0.5);}
+  .daycell.pct-mid{background:linear-gradient(160deg,#86efac,#4ade80);color:#063814;border-color:#4ade80;}
+  .daycell.pct-mid .planDayBadge{color:#063814;background:rgba(255,255,255,0.6);}
+  .daycell.pct-low{background:linear-gradient(160deg,#ef4444,#7f1d1d);color:#fff;border-color:#5c1616;box-shadow:0 0 0 1px rgba(239,68,68,0.45), 0 3px 10px rgba(127,29,29,0.55);}
+  .daycell.pct-low .planDayBadge{color:#fee2e2;background:rgba(0,0,0,0.5);}
+
+  /* ===== Home tab: Last 4 Days Heatmap strip ===== */
+  .last4Heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 22px;}
+  .last4Cell{
+    border-radius:12px;border:1px solid var(--border);background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    color:var(--muted);padding:12px 4px 10px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  }
+  .last4Cell.today{border:2px double var(--accent);}
+  .last4Cell.rest{background:repeating-linear-gradient(45deg, var(--panel2), var(--panel2) 4px, #211f24 4px, #211f24 8px);color:var(--muted);}
+  .last4Cell.frozen{background:linear-gradient(160deg,rgba(96,165,250,0.28),rgba(96,165,250,0.06));border-color:var(--blue);color:var(--blue);}
+  .last4Cell.pct-high{background:linear-gradient(160deg,#22c55e,#14532d);color:#fff;border-color:#0f3d21;box-shadow:0 0 0 1px rgba(34,197,94,0.4), 0 3px 10px rgba(20,83,45,0.5);}
+  .last4Cell.pct-mid{background:linear-gradient(160deg,#86efac,#4ade80);color:#063814;border-color:#4ade80;}
+  .last4Cell.pct-low{background:linear-gradient(160deg,#ef4444,#7f1d1d);color:#fff;border-color:#5c1616;box-shadow:0 0 0 1px rgba(239,68,68,0.45), 0 3px 10px rgba(127,29,29,0.55);}
+  .last4Day{font-size:12px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;opacity:0.92;}
+  .last4Icon{font-size:22px;line-height:1;}
+  .last4Pct{font-family:'Oswald',sans-serif;font-size:17px;font-weight:800;}
+  @media (max-width:380px){
+    .last4Day{font-size:10.5px;}
+    .last4Icon{font-size:19px;}
+    .last4Pct{font-size:15px;}
+  }
 
   /* ===== Merged Calendar+Grid View ===== */
   .calWrap{margin-bottom:18px;}
   .calMonthTitle{
-    font-family:'Oswald',sans-serif;font-size:15px;color:var(--white);font-weight:800;
+    font-family:'Oswald',sans-serif;font-size:19px;color:var(--white);font-weight:800;
     margin:0 0 8px;letter-spacing:0.3px;
   }
   .calWeekHead{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
-  .calWeekHead span{font-size:11.5px;color:var(--muted);text-align:center;font-weight:800;text-transform:uppercase;}
+  .calWeekHead span{font-size:13.5px;color:var(--text);text-align:center;font-weight:800;text-transform:uppercase;}
   .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .daycell.outrange{opacity:0.28;cursor:default;background:var(--panel2);}
   .daycell.outrange:active{transform:none;}
@@ -343,10 +376,10 @@
     font-size:12px;color:var(--muted);font-weight:700;flex-wrap:wrap;
   }
 
-  .daybadge{position:absolute;top:-6px;right:-5px;font-size:9px;line-height:1;filter:drop-shadow(0 0 1px #000);}
+  .daybadge{position:absolute;top:-8px;right:-6px;font-size:13px;line-height:1;filter:drop-shadow(0 0 1px #000);}
   .planDayBadge{
-    position:absolute;bottom:1px;left:1px;font-size:7px;line-height:1;font-weight:800;
-    color:var(--accent);background:rgba(0,0,0,0.55);padding:1px 3px;border-radius:4px;
+    position:absolute;bottom:2px;left:2px;font-size:10px;line-height:1;font-weight:800;
+    color:var(--accent);background:rgba(0,0,0,0.6);padding:2px 4px;border-radius:4px;
     letter-spacing:0.2px;
   }
   .daycell.done .planDayBadge{color:#7a5f14;background:rgba(255,255,255,0.5);}
@@ -1059,6 +1092,19 @@
     padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
     box-shadow:0 -6px 22px rgba(0,0,0,0.35);
   }
+  /* ===== Small "Start Studying" quick-access button — sits near the top
+     of the Home tab (not floating), opens the same focus timer modal. */
+  .quickStudyBtn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    margin:0 0 18px;padding:9px 16px;
+    background:linear-gradient(160deg,#fff,var(--accent));
+    border:1px solid var(--accent);border-radius:22px;
+    color:#1a1404;font-family:'Oswald',sans-serif;font-size:13.5px;font-weight:800;
+    letter-spacing:0.3px;cursor:pointer;
+    box-shadow:0 4px 12px rgba(251,191,36,0.3);
+  }
+  .quickStudyBtn:active{transform:scale(0.95);}
+  .quickStudyBtn .qsIcon{font-size:16px;line-height:1;}
   .tabbtn{
     --tb-color:var(--accent);
     flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
@@ -1297,6 +1343,22 @@
   .onbPrimary:hover{background:#ffd75e;color:#1a1404;}
   .onbStatus{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:12px;line-height:1.5;display:none;}
 
+  /* ===== AI Strict Manager ===== */
+  .smBadge{
+    display:inline-block;font-size:12px;font-weight:800;letter-spacing:0.3px;
+    padding:6px 10px;border-radius:8px;margin:2px 0 10px;
+  }
+  .smBadgeWarn{background:rgba(248,113,113,0.16);border:1px solid rgba(248,113,113,0.45);color:var(--loss);}
+  .smBadgeOk{background:rgba(74,222,128,0.14);border:1px solid rgba(74,222,128,0.4);color:var(--gain);}
+  .strictMgrCard{max-width:420px;border-color:var(--loss);}
+  .strictMgrCard .onbTitle{color:var(--loss);}
+  .strictMgrBody{
+    font-size:13.5px;color:var(--text);line-height:1.7;font-weight:600;
+    white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);
+    border-radius:10px;padding:12px 12px;margin:4px 0 4px;max-height:48vh;overflow-y:auto;
+  }
+  .strictMgrSourceTag{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0 0 6px;text-align:right;}
+
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
   .chapterRow.neverRevised{background:linear-gradient(90deg,rgba(251,191,36,0.10),transparent);border-radius:6px;}
@@ -1433,14 +1495,23 @@
   }
   .focusModeTab.active{background:var(--white);color:#000;}
   .focusPrompt{text-align:center;font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:14px;}
-  .focusSubjectGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+  .focusSubjectGrid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:240px;overflow-y:auto;}
   .focusSubjectBtn{
-    text-align:center;padding:10px 6px;border-radius:10px;cursor:pointer;
+    text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;
     border:1.5px solid var(--border-strong);background:var(--panel2);
     font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:800;color:var(--text);
+    line-height:1.4;
   }
   .focusSubjectBtn .fsIcon{margin-right:4px;}
   .focusSubjectBtn.active{background:var(--accent);color:#1a1404;border-color:var(--accent);}
+  .focusSelectedRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .focusBackBtn{
+    flex-shrink:0;width:32px;height:32px;border-radius:8px;cursor:pointer;
+    border:1.5px solid var(--border-strong);background:var(--panel2);color:var(--text);
+    font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  }
+  .focusBackBtn:disabled{opacity:0.3;cursor:default;}
+  .focusSelectedName{flex:1;font-size:13.5px;font-weight:800;color:var(--white);text-align:center;line-height:1.35;}
   .focusDurationRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;font-size:13px;color:var(--muted);font-weight:700;}
   .focusDurationRow input{
     width:60px;text-align:center;background:var(--panel2);border:1.5px solid var(--border-strong);
@@ -1471,6 +1542,27 @@
   .focusResetBtn:active{transform:scale(0.92);}
   .focusTodayText{text-align:center;font-size:12.5px;color:var(--muted);font-weight:700;}
   .focusTodayText b{color:var(--accent);}
+
+  /* ===== Voice-to-text (Web Speech API) mic buttons ===== */
+  .voiceField{position:relative;}
+  .voiceField textarea,
+  .voiceField input[type="text"]{padding-right:42px !important;box-sizing:border-box;}
+  .micBtn{
+    position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;
+    border:1px solid var(--border-strong);background:var(--panel2);color:var(--text);
+    display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+    padding:0;cursor:pointer;z-index:2;transition:background .15s,transform .15s,border-color .15s;
+  }
+  .micBtn:active{transform:scale(0.92);}
+  .micBtn.listening{
+    background:var(--loss);border-color:var(--loss);color:#fff;
+    animation:micPulse 1.2s ease-in-out infinite;
+  }
+  .micBtn[disabled]{opacity:.35;cursor:not-allowed;}
+  @keyframes micPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.55);}
+    50%{box-shadow:0 0 0 7px rgba(239,68,68,0);}
+  }
 </style>
 </head>
 <body>
@@ -1588,8 +1680,13 @@
       <button type="button" class="focusModeTab" data-mode="stopwatch">⏱️ Stopwatch</button>
       <button type="button" class="focusModeTab" data-mode="timed">⏳ Timed</button>
     </div>
-    <div class="focusPrompt" id="focusPrompt">Select a subject to start your focus session</div>
+    <div class="focusPrompt" id="focusPrompt">Aaj ka target select karo, study shuru karne ke liye</div>
     <div class="focusSubjectGrid" id="focusSubjectGrid"></div>
+    <div class="losshint" id="focusPickerHint" style="margin:-8px 0 12px;text-align:center;">Target ka poora time complete hote hi wo Today tab mein apne aap ✅ tick ho jayega.</div>
+    <div class="focusSelectedRow" id="focusSelectedRow" style="display:none;">
+      <button type="button" class="focusBackBtn" id="focusBackBtn" aria-label="Target Badlo">←</button>
+      <div class="focusSelectedName" id="focusSelectedName"></div>
+    </div>
     <div class="focusDurationRow" id="focusDurationRow">
       <span>Duration:</span>
       <input type="number" id="focusDurationInput" value="25" min="1" max="180" inputmode="numeric">
@@ -1643,6 +1740,19 @@
   </div>
 </div>
 
+<div class="onbOverlay" id="strictManagerModal">
+  <div class="onbCard strictMgrCard">
+    <button class="onbCloseX" id="strictManagerCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">🤖 AI Strict Manager</div>
+    <div class="strictMgrSourceTag" id="strictManagerModalBadge"></div>
+    <div class="strictMgrBody" id="strictManagerModalMsg">Loading…</div>
+    <div class="onbBtnRow">
+      <button class="nav-btn" id="strictManagerRefreshBtn">🔄 Phir Se Analyse</button>
+      <button class="nav-btn onbPrimary" id="strictManagerOkBtn">Samajh Gaya ✅</button>
+    </div>
+  </div>
+</div>
+
 <div class="onbOverlay" id="mockFormModal">
   <div class="onbCard" style="max-width:420px;">
     <button class="onbCloseX" id="mockFormCloseBtn" aria-label="Band Karo">✕</button>
@@ -1660,7 +1770,10 @@
     <div class="onbTitle">✅ Task Complete Karne Se Pehle...</div>
     <div class="onbSub" id="taskNoteSheetTaskName"></div>
     <div class="calcHint" id="taskNoteSheetHint">Kya kiya, kitna time laga likho — isse fake/instant tick rukta hai.</div>
-    <textarea id="taskNoteSheetInput" class="taskNoteSheetInput" placeholder="Jaise: 25 vocab words yaad kiye, 20 min laga..." rows="3"></textarea>
+    <div class="voiceField">
+      <textarea id="taskNoteSheetInput" class="taskNoteSheetInput" placeholder="Jaise: 25 vocab words yaad kiye, 20 min laga..." rows="3"></textarea>
+      <button type="button" class="micBtn" data-mic-target="taskNoteSheetInput" aria-label="Bol kar likho" title="Bol kar likho">🎤</button>
+    </div>
     <div class="taskNoteSheetErr" id="taskNoteSheetErr">Thoda aur likho.</div>
     <div class="onbBtnRow" style="display:flex;gap:10px;margin-top:12px;">
       <button class="nav-btn" id="taskNoteSheetCancel" style="flex:1;">❌ Cancel</button>
@@ -1775,9 +1888,6 @@
 
   <div class="tabview active" id="tab-home" data-tabview="home">
     <button class="nav-btn onbPrimary" id="homeInstallBtn" style="width:100%;margin-bottom:14px;">📲 Add to Home Screen</button>
-    <div class="eyebrow">🚀 Mission Countdown</div>
-    <h1 id="mainTitle">🎯 EXAM TRACKER</h1>
-    <div class="sub" id="examLine">Loading dates…</div>
 
     <div class="announceCard" id="announceCard">
       <button class="announceCloseBtn" id="announceCloseBtn" title="Dismiss">✕</button>
@@ -1797,13 +1907,10 @@
       </div>
     </div>
 
-    <div class="grid-label" style="margin-top:0;">📖 Start Studying</div>
-    <div class="studyModeRow" id="studyModeRow">
-      <button type="button" class="studyModeBtn smPomodoro" data-mode="pomodoro"><span class="smIcon">🍅</span><span class="smLabel">Pomodoro</span></button>
-      <button type="button" class="studyModeBtn smStopwatch" data-mode="stopwatch"><span class="smIcon">⏱️</span><span class="smLabel">Stopwatch</span></button>
-      <button type="button" class="studyModeBtn smTimed" data-mode="timed"><span class="smIcon">⏳</span><span class="smLabel">Timed</span></button>
-    </div>
-    <div class="studyTodayLine" id="studyTodayLine">🔥 Today: <b>0m</b> studied</div>
+    <button type="button" class="quickStudyBtn" id="quickStudyBtn"><span class="qsIcon">⏱️</span> Study Shuru Karo</button>
+
+    <div class="grid-label" style="margin-top:0;">🔥 Last 4 Din Ka Heatmap (₹5,000 Target)</div>
+    <div class="last4Heatmap" id="last4Heatmap"></div>
 
     <div class="statrow" style="margin-top:0;">
       <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">📅 Days Cleared</div></div>
@@ -1860,6 +1967,11 @@
     </div>
 
     <div class="grid-label" style="margin-top:0;">🎯 Aaj Ka Target — Tick Karo</div>
+
+    <div class="panel" id="strictManagerPanel">
+      <div class="loading">Loading AI Strict Manager…</div>
+    </div>
+
     <div id="taskEditSection">
       <button class="teTabBtn" id="teToggleBtn" type="button">
         <span class="teTabIcon">✏️</span>
@@ -1919,7 +2031,10 @@
       </div>
       <div class="grid-label" style="margin-top:0;">📚 Chapter-Wise Weak Area Tracker</div>
       <div class="chapterQuickHint">Har galat question ke chapter pe +1 karo — jitna zyada count, utna weak chapter. Sab time ke saath count hota rahega.</div>
-      <div class="searchBox"><input type="text" id="chapterSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
+      <div class="searchBox voiceField">
+        <input type="text" id="chapterSearchInput" placeholder="🔍 Chapter/topic search karo...">
+        <button type="button" class="micBtn" data-mic-target="chapterSearchInput" aria-label="Bol kar search karo" title="Bol kar search karo">🎤</button>
+      </div>
 
       <div class="grid-label" style="margin-top:0;">🔥 Weakest Right Now</div>
       <div class="panel" id="weakSummaryPanel"></div>
@@ -1944,7 +2059,10 @@
       </div>
       <div class="grid-label" style="margin-top:0;">🔁 Revision Counter — Math + English + GK</div>
       <div class="chapterQuickHint">Jo bhi topic revise karo, uske <b>✅ +1</b> daba do. Count kabhi khud reset nahi hota — poori preparation ke dauraan store rehta hai, chahe jitne din lag jaayein. Sabse pehle wahi chapters dikhte hain jo <b>sabse kam revise hue hain</b> — unhi ki zyada zaroorat hai.</div>
-      <div class="searchBox"><input type="text" id="revisionSearchInput" placeholder="🔍 Chapter/topic search karo..."></div>
+      <div class="searchBox voiceField">
+        <input type="text" id="revisionSearchInput" placeholder="🔍 Chapter/topic search karo...">
+        <button type="button" class="micBtn" data-mic-target="revisionSearchInput" aria-label="Bol kar search karo" title="Bol kar search karo">🎤</button>
+      </div>
 
       <div class="grid-label" style="margin-top:0;">📊 Overall Revision Summary</div>
       <div class="panel" id="revisionSummaryPanel"></div>
@@ -2672,6 +2790,114 @@ function meetsStreakTarget(d){
   const done = d.tasks.filter(Boolean).length;
   return (done/TASKS.length) >= 0.5;
 }
+
+// ===== Voice-to-text (Web Speech API) =====
+// One shared SpeechRecognition instance, wired via event delegation so it
+// keeps working across re-renders without needing to re-attach listeners
+// to every 🎤 button individually (this app re-renders its tab bodies
+// constantly). Tap 🎤 next to any text field to start dictating into it —
+// tap again (or just stop talking) to finish. Recognized speech is
+// appended to whatever's already in the field, not replaced, so multiple
+// dictation passes (or typing + dictation mixed) don't wipe each other out.
+//
+// Language note: lang is set to 'en-IN' rather than 'hi-IN' because that
+// gives the best Roman-script transliteration for Hinglish speech (e.g.
+// "Maths mein jaldbaazi mein radius ko diameter padh liya" comes out
+// readable, not in Devanagari script).
+//
+// Browser support note: this only works where the browser actually ships
+// SpeechRecognition — Chrome on Android is solid; iOS Safari support is
+// inconsistent/absent, especially inside an installed PWA. On unsupported
+// browsers the mic button still shows (so the UI doesn't shift) but taps
+// show a one-time explanation instead of silently doing nothing.
+const VoiceInput = (function(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const supported = !!SR;
+  let recognition = null;
+  let activeBtn = null;
+  let baseText = ''; // text already in the field before this dictation session started
+
+  function buildRecognition(){
+    const rec = new SR();
+    rec.lang = 'en-IN';
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    return rec;
+  }
+
+  function setListeningUI(on){
+    if(!activeBtn) return;
+    activeBtn.classList.toggle('listening', on);
+    activeBtn.textContent = on ? '⏹️' : '🎤';
+  }
+
+  function stop(){
+    if(recognition){ try{ recognition.stop(); }catch(e){} }
+  }
+
+  function joinWithSpace(a, b){
+    if(!a) return b;
+    if(!b) return a;
+    return a + (/\s$/.test(a) ? '' : ' ') + b;
+  }
+
+  function start(btn){
+    const targetId = btn.getAttribute('data-mic-target');
+    const el = document.getElementById(targetId);
+    if(!el) return;
+
+    // Tapping the mic that's already listening = stop early.
+    if(activeBtn === btn){ stop(); return; }
+    // Switching mics mid-dictation: cleanly stop the previous one first.
+    if(recognition) stop();
+
+    activeBtn = btn;
+    baseText = el.value || '';
+    recognition = buildRecognition();
+    setListeningUI(true);
+
+    recognition.onresult = (ev)=>{
+      let finalChunk = '', interimChunk = '';
+      for(let i=ev.resultIndex; i<ev.results.length; i++){
+        const r = ev.results[i];
+        if(r.isFinal) finalChunk += r[0].transcript;
+        else interimChunk += r[0].transcript;
+      }
+      if(finalChunk) baseText = joinWithSpace(baseText, finalChunk.trim());
+      el.value = interimChunk ? joinWithSpace(baseText, interimChunk) : baseText;
+      el.dispatchEvent(new Event('input', { bubbles:true }));
+    };
+    recognition.onerror = (ev)=>{
+      if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
+        alert('🎤 Mic permission nahi mili. Browser settings mein is site ko mic access do.');
+      }
+      // 'no-speech' / 'aborted' etc. are routine — onend cleans up silently.
+    };
+    recognition.onend = ()=>{
+      setListeningUI(false);
+      activeBtn = null; recognition = null;
+      el.dispatchEvent(new Event('change', { bubbles:true }));
+    };
+
+    try{ recognition.start(); }
+    catch(e){ setListeningUI(false); activeBtn = null; recognition = null; }
+  }
+
+  document.addEventListener('click', (ev)=>{
+    const btn = ev.target.closest('.micBtn');
+    if(!btn || btn.disabled) return;
+    ev.preventDefault();
+    if(!supported){
+      alert('🎤 Is browser mein voice typing support nahi hai. Chrome (Android) try karo.');
+      return;
+    }
+    start(btn);
+  });
+
+  return { supported };
+})();
+
 const STORAGE_KEY = 'cgl-tracker-state-v2';
 const BADGES = [
   {days:7,  emoji:'🥉', label:'7-Day Streak'},
@@ -3023,12 +3249,17 @@ function getDay(n){
   if(typeof d.notes !== 'string') d.notes = '';
   if(typeof d.mistakes !== 'string') d.mistakes = '';
   if(typeof d.rest !== 'boolean') d.rest = false;
-  // Focus Timer minutes studied per SSC subject (Pomodoro/Stopwatch/Timed) —
-  // independent of the task checklist above, purely a free-running study log.
+  // Focus Timer minutes studied per daily target/task (Pomodoro/Stopwatch/Timed) —
+  // independent of the task checklist ticks above, purely a free-running study
+  // log. Keyed dynamically (task0, task1, ...) instead of fixed subject names,
+  // since the "Study Shuru Karo" picker now lists whatever daily targets the
+  // user has added, not a fixed Math/Reasoning/English/GK set. Old saves may
+  // still carry legacy math/reasoning/english/gk keys — harmless, just summed
+  // in along with everything else.
   if(!d.studyMin || typeof d.studyMin !== 'object' || Array.isArray(d.studyMin)){
-    d.studyMin = {math:0, reasoning:0, english:0, gk:0};
+    d.studyMin = {};
   } else {
-    ['math','reasoning','english','gk'].forEach(k=>{ if(typeof d.studyMin[k] !== 'number' || isNaN(d.studyMin[k])) d.studyMin[k] = 0; });
+    Object.keys(d.studyMin).forEach(k=>{ if(typeof d.studyMin[k] !== 'number' || isNaN(d.studyMin[k])) d.studyMin[k] = 0; });
   }
   return d;
 }
@@ -3334,18 +3565,19 @@ let roomMetaCacheAt = 0;
 let roomMetaCacheRoom = null;
 async function loadRoomMeta(){
   const room = getRoomCode();
-  if(!room) return { admin:null, hidden:{}, restricted:{}, taskMode:'individual' };
+  if(!room) return { admin:null, subAdmin:null, hidden:{}, restricted:{}, taskMode:'individual' };
   if(roomMetaCache && roomMetaCacheRoom===room && (Date.now()-roomMetaCacheAt) < 8000){
     return roomMetaCache;
   }
   const raw = await kvdbGet('_meta');
-  let meta = { admin:null, hidden:{}, restricted:{}, taskMode:'individual' };
+  let meta = { admin:null, subAdmin:null, hidden:{}, restricted:{}, taskMode:'individual' };
   if(raw){
     try{
       const parsed = JSON.parse(raw);
       if(parsed && typeof parsed==='object'){
         meta = {
           admin: parsed.admin || null,
+          subAdmin: parsed.subAdmin || null,
           hidden: (parsed.hidden && typeof parsed.hidden==='object') ? parsed.hidden : {},
           restricted: (parsed.restricted && typeof parsed.restricted==='object') ? parsed.restricted : {},
           taskMode: (parsed.taskMode==='shared') ? 'shared' : 'individual'
@@ -3362,7 +3594,36 @@ async function setRoomAdmin(name){
   const room = getRoomCode();
   if(!room) return;
   const meta = await loadRoomMeta();
-  const updated = { admin: name, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
+  const updated = { admin: name, subAdmin: meta.subAdmin || null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// ===== Sub-Admin (backup Admin) =====
+// The Admin can name exactly one other member as Sub-Admin. This app has no
+// login system, so there's no way to automatically detect "the Admin's
+// account/phone stopped working" — instead, the Admin sets this up in
+// advance as a deliberate trust handoff: the Sub-Admin gets a "Take Over as
+// Admin" button (see promoteSubAdminToAdmin) they can use themselves,
+// whenever they judge it's needed, without the original Admin's help.
+// Admin-only action. Passing null/'' clears the Sub-Admin.
+async function setRoomSubAdmin(name){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  const updated = { admin: meta.admin || null, subAdmin: name || null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
+  await kvdbSet('_meta', JSON.stringify(updated));
+  roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
+}
+// Self-service takeover: only works for whoever is currently named
+// Sub-Admin, and only for themselves (checked against myName, not passed
+// in). Promotes them straight to full Admin and clears the Sub-Admin slot —
+// the new Admin can name a fresh Sub-Admin afterwards if they want one.
+async function promoteSubAdminToAdmin(){
+  const room = getRoomCode();
+  if(!room) return;
+  const meta = await loadRoomMeta();
+  if(!meta.subAdmin || !myName || meta.subAdmin.toLowerCase()!==myName.toLowerCase()) return;
+  const updated = { admin: myName, subAdmin: null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -3372,7 +3633,7 @@ async function setMemberHidden(name, hidden){
   const meta = await loadRoomMeta();
   const key = chatSeenKey(name);
   const updatedHidden = { ...(meta.hidden||{}), [key]: !!hidden };
-  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
+  const updated = { admin: meta.admin || null, subAdmin: meta.subAdmin || null, hidden: updatedHidden, restricted: meta.restricted || {}, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -3386,7 +3647,7 @@ async function setMemberRestricted(name, restricted){
   const meta = await loadRoomMeta();
   const key = chatSeenKey(name);
   const updatedRestricted = { ...(meta.restricted||{}), [key]: !!restricted };
-  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
+  const updated = { admin: meta.admin || null, subAdmin: meta.subAdmin || null, hidden: meta.hidden || {}, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -3400,7 +3661,7 @@ async function setRoomTaskMode(mode){
   const room = getRoomCode();
   if(!room) return;
   const meta = await loadRoomMeta();
-  const updated = { admin: meta.admin || null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: (mode==='shared') ? 'shared' : 'individual' };
+  const updated = { admin: meta.admin || null, subAdmin: meta.subAdmin || null, hidden: meta.hidden || {}, restricted: meta.restricted || {}, taskMode: (mode==='shared') ? 'shared' : 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 }
@@ -3516,7 +3777,11 @@ async function deleteRoomMember(name){
   const key = chatSeenKey(name);
   const updatedHidden = { ...(meta.hidden||{}) }; delete updatedHidden[key];
   const updatedRestricted = { ...(meta.restricted||{}) }; delete updatedRestricted[key];
-  const updated = { admin: meta.admin || null, hidden: updatedHidden, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
+  // If the removed member was the Sub-Admin, that slot has to go too —
+  // otherwise a deleted member's name would still sit there as a "backup
+  // Admin" that can never actually log in to claim it.
+  const stillValidSubAdmin = (meta.subAdmin && meta.subAdmin.toLowerCase()!==name.toLowerCase()) ? meta.subAdmin : null;
+  const updated = { admin: meta.admin || null, subAdmin: stillValidSubAdmin, hidden: updatedHidden, restricted: updatedRestricted, taskMode: meta.taskMode || 'individual' };
   await kvdbSet('_meta', JSON.stringify(updated));
   roomMetaCache = updated; roomMetaCacheAt = Date.now(); roomMetaCacheRoom = room;
 
@@ -3525,13 +3790,14 @@ async function deleteRoomMember(name){
 // Kept in sync by refreshRoomMeta() and read synchronously everywhere else,
 // so render functions never have to be made async just to check admin status.
 let currentRoomAdmin = null;
+let currentRoomSubAdmin = null;
 let currentRoomHidden = {};
 let currentRoomRestricted = {};
 let currentRoomTaskMode = 'individual';
 let currentRoomAnnouncement = null;
 async function refreshRoomMeta(){
   if(!getRoomCode()){
-    currentRoomAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; currentRoomTaskMode = 'individual';
+    currentRoomAdmin = null; currentRoomSubAdmin = null; currentRoomHidden = {}; currentRoomRestricted = {}; currentRoomTaskMode = 'individual';
     currentRoomAnnouncement = null; lastAppliedSharedTasksJSON = null;
     updateAdminPanelBtnVisibility();
     return;
@@ -3540,6 +3806,7 @@ async function refreshRoomMeta(){
   // effective round-trip per tick instead of stacking up latency.
   const [meta, ann] = await Promise.all([ loadRoomMeta(), loadRoomAnnouncement() ]);
   currentRoomAdmin = meta.admin || null;
+  currentRoomSubAdmin = meta.subAdmin || null;
   currentRoomHidden = meta.hidden || {};
   currentRoomRestricted = meta.restricted || {};
   currentRoomTaskMode = meta.taskMode || 'individual';
@@ -3547,6 +3814,9 @@ async function refreshRoomMeta(){
   updateAdminPanelBtnVisibility();
 }
 function isMeAdmin(){ return !!(currentRoomAdmin && myName && currentRoomAdmin.toLowerCase()===myName.toLowerCase()); }
+// True only for the one member the Admin has designated as Sub-Admin —
+// powers the "Take Over as Admin" button in the Room panel below.
+function isMeSubAdmin(){ return !!(currentRoomSubAdmin && myName && currentRoomSubAdmin.toLowerCase()===myName.toLowerCase()); }
 // True only when the Admin is looking at a DIFFERENT member's tracker in a
 // Sync Room — this is what unlocks the "edit someone else's tasks" powers
 // below. Being admin alone isn't enough (still read-only on your own
@@ -3840,10 +4110,21 @@ function showOnboardingModal(){
       resolve(name);
     }
 
-    if(joinBtn) joinBtn.addEventListener('click', ()=>{
+    if(joinBtn) joinBtn.addEventListener('click', async ()=>{
       const name = nameInput.value.trim();
       if(!name){ showStatus('⚠️ Pehle apna naam likho.'); return; }
-      finish(name);
+      joinBtn.disabled = true;
+      try{
+        const registry = await loadRegistry();
+        const taken = registry.some(n=>n.toLowerCase()===name.toLowerCase());
+        if(taken){
+          showStatus('⚠️ Yeh naam already kisi aur ne le rakha hai. Dusra naam try karo.');
+          return;
+        }
+        finish(name);
+      } finally {
+        joinBtn.disabled = false;
+      }
     });
   });
 }
@@ -4187,9 +4468,45 @@ function renderProfileBar(){
         <button class="nav-btn" id="changeNameBtn">✏️ Naam Badlo</button>
       </div>`;
     const btn = document.getElementById('changeNameBtn');
+    // 🔑 Admin recovery code: type this exact phrase into the "Naya naam"
+    // prompt (instead of an actual name) to instantly switch this device
+    // back to whoever is currently the room's Admin — e.g. after a
+    // reinstall, a cleared browser, or a new device where the normal
+    // "naam already liya" check would otherwise block you from re-using
+    // your own admin name. CHANGE THIS to a private phrase only you know —
+    // anyone who has it can log in as the Admin.
+    const ADMIN_RECOVERY_CODE = 'wapas-admin-avnee';
     if(btn) btn.addEventListener('click', async ()=>{
-      const newName = (prompt('Naya naam:', myName) || '').trim();
-      if(!newName || newName.toLowerCase()===myName.toLowerCase()) return;
+      const raw = (prompt('Naya naam:', myName) || '').trim();
+      if(!raw) return;
+
+      if(raw.toLowerCase() === ADMIN_RECOVERY_CODE.toLowerCase()){
+        const meta = await loadRoomMeta();
+        if(!meta.admin){ alert('⚠️ Abhi room mein koi Admin set nahi hai.'); return; }
+        if(meta.admin.toLowerCase() === myName.toLowerCase()){
+          alert('✅ Tum already Admin (' + myName + ') ho.');
+          return;
+        }
+        // IMPORTANT: unlike a normal rename below, we do NOT copy this
+        // device's current state onto the admin name — that would clobber
+        // the real admin's progress. switchViewing() safely fetches the
+        // admin's own already-saved data instead, so nothing is lost.
+        myName = meta.admin;
+        try{ localStorage.setItem('cgl50-myname', myName); }catch(e){}
+        await registerPlayer(myName);
+        if(getRoomCode()) await addToRoomRegistry(myName);
+        await switchViewing(myName);
+        await renderCompetePanel();
+        return;
+      }
+
+      const newName = raw;
+      if(newName.toLowerCase()===myName.toLowerCase()) return;
+      const registry = await loadRegistry();
+      if(registry.some(n=>n.toLowerCase()===newName.toLowerCase())){
+        alert('⚠️ Yeh naam already kisi aur ne le rakha hai. Dusra naam try karo.');
+        return;
+      }
       const oldName = myName;
       // Grab a fresh copy of the OLD name's saved progress before anything
       // else changes — this is what would otherwise get orphaned.
@@ -4858,10 +5175,33 @@ async function renderAdminSection(){
   }
 
   const iAmAdmin = isMeAdmin();
-  infoEl.innerHTML = `👑 Admin: <b style="color:var(--accent);">${escapeHtml(currentRoomAdmin)}</b>${iAmAdmin ? ' (Tum)' : ''}`;
+  infoEl.innerHTML = `👑 Admin: <b style="color:var(--accent);">${escapeHtml(currentRoomAdmin)}</b>${iAmAdmin ? ' (Tum)' : ''}`
+    + (currentRoomSubAdmin ? `<br>🛡️ Sub-Admin: <b style="color:var(--blue);">${escapeHtml(currentRoomSubAdmin)}</b>${isMeSubAdmin() ? ' (Tum)' : ''}` : '');
 
   if(!iAmAdmin){
-    wrapEl.innerHTML = '';
+    if(isMeSubAdmin()){
+      // Deliberate self-service handoff — no way for the app to verify the
+      // Admin's account/phone is actually gone, so this is trust-based: the
+      // Admin chose this person in advance, and it's on the Sub-Admin to use
+      // this only when it's genuinely needed.
+      wrapEl.innerHTML = `
+        <div class="losshint" style="padding-top:2px;">🛡️ Tumhe Sub-Admin banaya gaya hai. Agar Admin (<b style="color:var(--accent);">${escapeHtml(currentRoomAdmin)}</b>) ka account/phone kabhi kho jaye ya wo group chhod de, tum khud niche button se Admin ban sakte ho.</div>
+        <div class="btnrow" style="margin-top:8px;">
+          <button class="nav-btn" id="claimAdminBtn">👑 Admin Bano (Takeover)</button>
+        </div>
+      `;
+      const claimBtn = document.getElementById('claimAdminBtn');
+      if(claimBtn) claimBtn.addEventListener('click', async ()=>{
+        if(!confirm(`Pakka? Tum ab is room ke naye Admin ban jaoge, aur "${currentRoomAdmin}" ke paas Admin powers nahi rahenge.`)) return;
+        claimBtn.disabled = true;
+        claimBtn.textContent = '⏳...';
+        await promoteSubAdminToAdmin();
+        await renderRoomPanel();
+        await renderCompetePanel();
+      });
+    } else {
+      wrapEl.innerHTML = '';
+    }
     return;
   }
 
@@ -4915,6 +5255,28 @@ async function renderAdminPanelBody(){
   const roomNames = await loadRoomRegistry();
   const others = roomNames.filter(n=> n.toLowerCase()!==myName.toLowerCase());
 
+  // ===== Sub-Admin (backup Admin) picker =====
+  // Lets the Admin name exactly one other member who can take over Admin
+  // powers themselves later — the intended use is "agar mere account/phone
+  // ko kuch ho jaye". There's no login system here, so this app can't detect
+  // that automatically; instead the Sub-Admin gets their own takeover
+  // button (Room panel) whenever they judge it's actually needed.
+  const subAdminHtml = others.length ? `
+    <div class="grid-label" style="margin-top:14px;">🛡️ Sub-Admin (Backup Admin)</div>
+    <div class="losshint" style="padding-top:0;">Kisi ek member ko Sub-Admin bana do — agar tumhare (Admin) account/phone ko kabhi kuch ho jaye ya tum group chhod do, sirf wahi member khud Admin ban sakta hai. Jab chaho badal ya hata sakte ho.</div>
+    <div class="btnrow" style="margin-top:8px;flex-wrap:wrap;">
+      <select id="subAdminSelect" style="background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">
+        <option value="">— Koi nahi —</option>
+        ${others.map(nm=>`<option value="${escapeHtml(nm)}" ${(currentRoomSubAdmin && currentRoomSubAdmin.toLowerCase()===nm.toLowerCase()) ? 'selected' : ''}>${escapeHtml(nm)}</option>`).join('')}
+      </select>
+      <button class="nav-btn" id="setSubAdminBtn">✅ Set Karo</button>
+    </div>
+    <div class="losshint" style="padding-top:6px;">${currentRoomSubAdmin ? `Abhi Sub-Admin: <b style="color:var(--blue);">${escapeHtml(currentRoomSubAdmin)}</b>` : 'Abhi koi Sub-Admin set nahi hai.'}</div>
+  ` : `
+    <div class="grid-label" style="margin-top:14px;">🛡️ Sub-Admin (Backup Admin)</div>
+    <div class="losshint" style="padding-top:0;">Abhi group mein koi aur member nahi hai, isliye Sub-Admin set nahi kar sakte.</div>
+  `;
+
   const ann = currentRoomAnnouncement;
   const annStatusLine = ann
     ? `Aakhri post: ${new Date(ann.at).toLocaleString('en-IN')}${ann.by ? ` by ${escapeHtml(ann.by)}` : ''}.`
@@ -4922,7 +5284,10 @@ async function renderAdminPanelBody(){
   const announceHtml = `
     <div class="grid-label" style="margin-top:14px;">📌 Pinned Announcement (Home Tab)</div>
     <div class="losshint" style="padding-top:0;">Yaha jo bhi likhoge, wo turant sabke Home tab pe pinned dikhega — jab tak tum khud ise hatao ya naya na likho.</div>
-    <textarea id="annInput" placeholder="Jaise: Kal shaam 6 baje group study session hai..." style="width:100%;box-sizing:border-box;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">${ann ? escapeHtml(ann.text) : ''}</textarea>
+    <div class="voiceField">
+      <textarea id="annInput" placeholder="Jaise: Kal shaam 6 baje group study session hai..." style="width:100%;box-sizing:border-box;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">${ann ? escapeHtml(ann.text) : ''}</textarea>
+      <button type="button" class="micBtn" data-mic-target="annInput" aria-label="Bol kar likho" title="Bol kar likho">🎤</button>
+    </div>
     <div class="btnrow" style="margin-top:8px;">
       <button class="nav-btn" id="postAnnBtn">📌 Post Karo</button>
       ${ann ? `<button class="nav-btn" id="clearAnnBtn">🗑️ Hatao</button>` : ''}
@@ -4954,12 +5319,12 @@ async function renderAdminPanelBody(){
   `;
 
   if(!others.length){
-    bodyEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
     wireAdminBackupButtons();
     wireAdminAnnouncementAndWeeklyControls();
     return;
   }
-  bodyEl.innerHTML = announceHtml + weeklyHtml + backupHtml + `
+  bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `
     <div class="losshint" style="padding-top:14px;">Kisi member ko "hide" karne se uska naam/progress sirf tumhe (Admin) aur khud usko dikhega — baaki sabse chhup jayega. "Sirf khud + mujhe dikhaao" wale toggle se us member ko poore app mein (leaderboard, sab jagah) sirf apna naam aur tumhara (Admin) naam dikhega — koi aur member usko kahi nahi dikhega. 🗑️ Hatao se member group se hamesha ke liye hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
@@ -4986,6 +5351,15 @@ async function renderAdminPanelBody(){
   `;
   wireAdminBackupButtons();
   wireAdminAnnouncementAndWeeklyControls();
+  const setSubAdminBtn = document.getElementById('setSubAdminBtn');
+  if(setSubAdminBtn) setSubAdminBtn.addEventListener('click', async ()=>{
+    const sel = document.getElementById('subAdminSelect');
+    const val = sel ? sel.value : '';
+    setSubAdminBtn.disabled = true;
+    setSubAdminBtn.textContent = '⏳...';
+    await setRoomSubAdmin(val || null);
+    await renderAdminPanelBody();
+  });
   bodyEl.querySelectorAll('[data-hide-member]').forEach(chk=>{
     chk.addEventListener('change', async ()=>{
       const nm = chk.getAttribute('data-hide-member');
@@ -5482,6 +5856,18 @@ function renderCalendarView(){
         if(frozen) cls += ' frozen';
         if(planDay===tn) cls += ' today';
         if(planDay===selectedDay) cls += ' selected';
+        // ₹5,000 daily target heatmap: only for today/past days that aren't
+        // a rest day or already streak-frozen (those keep their own look) —
+        // gives a strong colour signal (instead of just numbers) so a
+        // slipping day is obvious before the streak actually breaks.
+        if(!frozen && status!=='rest' && planDay<=tn){
+          const dObj = getDay(planDay);
+          const el2 = dayEarnLoss(dObj, planDay);
+          const pct = DAILY_TARGET>0 ? (el2.earned / DAILY_TARGET) * 100 : 0;
+          if(pct >= 75) cls += ' pct-high';
+          else if(pct >= 50) cls += ' pct-mid';
+          else if(pct <= 20) cls += ' pct-low';
+        }
         let badge = '';
         if(frozen) badge = '🧊';
         else if(status==='done') badge = '✅';
@@ -5509,7 +5895,50 @@ function renderCalendarView(){
   }
 }
 
-// ===== Smart Time Guide: "abhi ye time ho gaya hai, bache time mein kaise
+// ===== Home tab: Last 4 Days Heatmap =====
+// A compact, always-visible strip (today + last 3 days) using the same
+// ₹5,000-target colour logic as the full calendar — dark green (75%+),
+// light green (50%+), dark red (20% ya kam) — so the streak-risk signal
+// is visible the instant Home tab opens, without scrolling to Today tab's
+// full calendar.
+function renderLast4DaysHeatmap(){
+  const el = document.getElementById('last4Heatmap');
+  if(!el) return;
+  const tn = todayDayNum();
+  const frozenSet = new Set(computeStreakInfo().frozenDays);
+  const planDays = [];
+  for(let i=3;i>=0;i--){
+    const pd = tn - i;
+    if(pd>=1) planDays.push(pd);
+  }
+  let html = '';
+  planDays.forEach(pd=>{
+    const d = getDay(pd);
+    const status = dayStatus(pd);
+    const frozen = frozenSet.has(pd);
+    const el2 = dayEarnLoss(d, pd);
+    const pct = DAILY_TARGET>0 ? Math.round((el2.earned / DAILY_TARGET) * 100) : 0;
+    let cls = 'last4Cell';
+    let icon = '❌';
+    if(d.rest){ cls += ' rest'; icon = '😴'; }
+    else if(frozen){ cls += ' frozen'; icon = '🧊'; }
+    else {
+      if(pct>=75) cls += ' pct-high';
+      else if(pct>=50) cls += ' pct-mid';
+      else if(pct<=20) cls += ' pct-low';
+      icon = status==='done' ? '✅' : status==='partial' ? '⏳' : '❌';
+    }
+    if(pd===tn) cls += ' today';
+    const dayLbl = pd===tn ? 'Aaj' : fmtDate(pd).split(',')[0];
+    const pctLbl = d.rest ? 'Rest' : (pct+'%');
+    html += `<div class="${cls}" title="Day ${pd} — ${fmtDate(pd)} — ₹${Math.round(el2.earned).toLocaleString('en-IN')} / ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')} (${pct}%)">
+        <div class="last4Day">${dayLbl}</div>
+        <div class="last4Icon">${icon}</div>
+        <div class="last4Pct">${pctLbl}</div>
+      </div>`;
+  });
+  el.innerHTML = html;
+}
 // baaki tasks complete karo" — only meaningful for TODAY, on your own
 // tracker (schedule doesn't apply to past days or a friend's read-only view).
 function buildTimeGuideHtml(){
@@ -5851,12 +6280,12 @@ function renderPanel(){
 
   html += `
     <div class="subhead">📝 NOTES / ERROR LOG</div>
-    <div class="notes"><textarea id="notesArea" placeholder="Aaj kya galat hua, kya seekha..." ${isReadOnly?'readonly':''}>${d.notes}</textarea></div>
+    <div class="notes voiceField"><textarea id="notesArea" placeholder="Aaj kya galat hua, kya seekha..." ${isReadOnly?'readonly':''}>${d.notes}</textarea>${isReadOnly?'':'<button type="button" class="micBtn" data-mic-target="notesArea" aria-label="Bol kar likho" title="Bol kar likho">🎤</button>'}</div>
   `;
 
   html += `
     <div class="subhead">🤦 SILLY MISTAKES — aaj ki chhoti galtiyan</div>
-    <div class="notes"><textarea id="mistakesArea" placeholder="Jaise: sign galat likha, question dobara nahi padha, time waste hua..." ${isReadOnly?'readonly':''}>${d.mistakes}</textarea></div>
+    <div class="notes voiceField"><textarea id="mistakesArea" placeholder="Jaise: sign galat likha, question dobara nahi padha, time waste hua..." ${isReadOnly?'readonly':''}>${d.mistakes}</textarea>${isReadOnly?'':'<button type="button" class="micBtn" data-mic-target="mistakesArea" aria-label="Bol kar likho" title="Bol kar likho">🎤</button>'}</div>
   `;
 
   html += `
@@ -6467,7 +6896,10 @@ function openMockForm(catId, entryId){
   }
   html += `
     <div class="onbLabel">Remarks</div>
-    <textarea id="mfRemarks" placeholder="Kya galat hua, kya improve karna hai...">${escapeHtml(v.remarks)}</textarea>
+    <div class="voiceField">
+      <textarea id="mfRemarks" placeholder="Kya galat hua, kya improve karna hai...">${escapeHtml(v.remarks)}</textarea>
+      <button type="button" class="micBtn" data-mic-target="mfRemarks" aria-label="Bol kar likho" title="Bol kar likho">🎤</button>
+    </div>
   `;
   bodyEl.innerHTML = html;
   wireMockQuickChapterLog();
@@ -7912,7 +8344,8 @@ function renderExamLine(){
   examDate.setDate(examDate.getDate() + TOTAL_DAYS - 1);
   const opts = {day:'2-digit',month:'long',year:'numeric'};
   const totalRupees = Math.round(DAILY_TARGET*TOTAL_DAYS);
-  document.getElementById('examLine').textContent =
+  const lineEl = document.getElementById('examLine');
+  if(lineEl) lineEl.textContent =
     `Day 1: ${START_DATE.toLocaleDateString('en-IN',opts)}  →  Day ${TOTAL_DAYS}: ${examDate.toLocaleDateString('en-IN',opts)}. 🟡 Bada task zyada ₹, 🔵 chhota task kam ₹ — roz ka total ₹${Math.round(DAILY_TARGET).toLocaleString('en-IN')}, ${TOTAL_DAYS} din ka poora ₹${totalRupees.toLocaleString('en-IN')} ka target.`;
   const titleEl = document.getElementById('mainTitle');
   if(titleEl) titleEl.textContent = `🎯 EXAM TRACKER`;
@@ -7978,7 +8411,9 @@ function safeRun(fn, label){
 // so nothing is ever stale, it's just not wastefully computed early.
 const TAB_OWNER = {
   renderCalendarView:'home',
+  renderLast4DaysHeatmap:'home',
   renderPanel:'today',
+  renderStrictManagerPanel:'today',
   renderMockTab:'mock',
   renderChaptersTab:'chapters', renderRevisionTab:'chapters',
   renderPerformance:'more', renderBestWorst:'more', renderChart:'more',
@@ -7989,7 +8424,7 @@ const TAB_OWNER = {
   renderWeekly:'more'
 };
 const RENDER_FN_BY_NAME = {
-  renderCalendarView, renderPanel, renderMockTab, renderChaptersTab, renderRevisionTab,
+  renderCalendarView, renderLast4DaysHeatmap, renderPanel, renderStrictManagerPanel, renderMockTab, renderChaptersTab, renderRevisionTab,
   renderPerformance, renderBestWorst, renderChart, renderAccuracyTrend, renderPercentileTrend,
   renderMockScoreTrend, renderSubjectProgressChart, renderSectionalVsFullCompare,
   renderWeakChapterInsight, renderStudyUtilization, renderLongTermAnalysis,
@@ -8017,7 +8452,9 @@ function renderAll(){
     safeRun(fn, name);
   };
   maybe(renderCalendarView, 'renderCalendarView');
+  maybe(renderLast4DaysHeatmap, 'renderLast4DaysHeatmap');
   maybe(renderPanel, 'renderPanel');
+  maybe(renderStrictManagerPanel, 'renderStrictManagerPanel');
   maybe(renderPerformance, 'renderPerformance');
   maybe(renderMockTab, 'renderMockTab');
   maybe(renderBestWorst, 'renderBestWorst');
@@ -9070,6 +9507,272 @@ document.getElementById('targetReminderBtn').addEventListener('click', async ()=
   updateTargetReminderBtnLabel();
 });
 
+// ===== AI Strict Manager =====
+// Deeply analyses today's own data (tasks ticked, notes, mistakes, study
+// time) plus the recent day-by-day trend, and asks the Anthropic API to
+// respond as a strict-but-caring Hindi (Hinglish) mentor. If the API call
+// isn't reachable — e.g. this file opened as a plain installed PWA outside
+// claude.ai, where the API proxy this artifact code relies on isn't
+// present — it silently falls back to a rule-based Hinglish message built
+// from the same numbers, so the feature never just breaks/does nothing.
+const STRICT_MANAGER_GOOD_PCT = 70; // stricter bar than the 50% streak-freeze target
+const STRICT_MANAGER_SLOT = { hh:18, mm:0 }; // fires once daily at/after 6:00 PM
+
+// Aaj se pehle, kitne LAGATAAR (consecutive) din target
+// STRICT_MANAGER_GOOD_PCT% se neeche rahe — rest days beech mein aane par
+// streak todte nahi (skip ho jaate hain), bilkul khaali/untouched din pe
+// ruk jaate hain (tracker abhi wahan tak start hi nahi hua tha).
+function dayCompletionPct(n){
+  const d = getDay(n);
+  if(d.rest) return null;
+  return TASKS.length ? Math.round((d.tasks.filter(Boolean).length/TASKS.length)*100) : 0;
+}
+function computeUnderperformanceStreak(){
+  const tn = todayDayNum();
+  let bad = 0;
+  for(let i=tn-1; i>=1; i--){
+    const d = getDay(i);
+    if(!isDayTouched(d)) break;
+    if(d.rest) continue;
+    const pct = dayCompletionPct(i);
+    if(pct !== null && pct < STRICT_MANAGER_GOOD_PCT) bad++;
+    else break;
+  }
+  return bad;
+}
+// Gathers everything the AI (or the offline fallback) needs to give
+// specific, grounded feedback instead of generic lines.
+function collectStrictManagerData(){
+  const tn = todayDayNum();
+  const d = getDay(tn);
+  const todayPct = dayCompletionPct(tn);
+  const streakInfo = computeStreakInfo();
+  const badStreak = computeUnderperformanceStreak();
+
+  const tasksToday = TASKS.map((t, idx)=>({
+    name: t,
+    done: !!d.tasks[idx],
+    note: (d.taskNotes && d.taskNotes[idx]) ? d.taskNotes[idx].trim() : ''
+  }));
+
+  let totalStudyMin = 0;
+  Object.keys(d.studyMin||{}).forEach(k=>{ totalStudyMin += (d.studyMin[k]||0); });
+
+  const trend = [];
+  for(let i=Math.max(1, tn-6); i<=tn; i++){
+    const dd = getDay(i);
+    trend.push({ day:i, rest: !!dd.rest, pct: dd.rest ? null : dayCompletionPct(i) });
+  }
+
+  const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
+  const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
+
+  return {
+    dayNumber: tn,
+    totalDays: TOTAL_DAYS,
+    isRestDay: !!d.rest,
+    todayCompletionPct: todayPct===null ? 0 : todayPct,
+    tasksToday,
+    totalStudyMinutesToday: totalStudyMin,
+    currentStreak: streakInfo.streak,
+    underperformanceStreakDays: badStreak,
+    last7DaysTrend: trend,
+    notesToday: (d.notes||'').trim(),
+    mistakesToday: (d.mistakes||'').trim(),
+    mockAttemptedToday: mockTotal>0 || wrongTotal>0,
+    mockTotalScore: mockTotal,
+    mockWrongTotal: wrongTotal
+  };
+}
+// Actual AI call — persona + strict rules live in `system`, the real
+// numbers go in the user turn as JSON so the model has to ground its
+// scolding/praise in what actually happened today, not generic filler.
+async function callStrictManagerAI(data){
+  const system = "Tum ek \"AI Strict Manager\" ho — student ka ek strict par caring exam-prep coach, jo SSC CGL ki taiyari karwa raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein jawab do, kabhi shuddh English paragraph mat likho. Tumhe niche student ke aaj (aur pichhle kuch din) ka JSON data diya jayega. Kaam: 1) Data ka deeply analyse karo — kitna % target complete hua, kitne din se performance neeche hai, notes/mistakes mein kya likha hai. 2) Agar performance kharab hai ya kai din se gir rahi hai, seedhi aur strict daant do — jaise ek sacha mentor dosti se lekin bina lag-lapet ke daantay, kabhi insult ya gaali nahi. 3) Agar performance achhi hai to thodi tareef do par turant agla, thoda tougher target bhi do — kabhi mat kaho 'sab perfect hai, ab aaram karo'. 4) Hamesha 2-3 concrete, specific next steps do jo diye gaye data (jaise missed tasks ke naam, weak notes) se related hon — generic advice mat do. 5) Response 110-180 words ka ho, plain paragraphs mein (blank line se break kar sakte ho), koi markdown heading/bullet/asterisk use mat karo, kyunki ye seedha ek popup message mein dikhaya jayega.";
+
+  const userMsg = "Mera aaj (Day " + data.dayNumber + "/" + data.totalDays + ") ka data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek \"AI Strict Manager\" jaisa Hinglish message do.";
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
+    })
+  });
+  if(!resp.ok) throw new Error('Strict Manager API request failed: ' + resp.status);
+  const json = await resp.json();
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+  if(!text) throw new Error('Strict Manager API: empty response');
+  return text;
+}
+// Offline, rule-based fallback — used whenever the AI call isn't reachable
+// (e.g. this page opened as a standalone installed PWA outside claude.ai).
+// Built from the exact same numbers, so the feature always works, not
+// just when it happens to be running inside an artifact preview.
+function buildStrictManagerLocalMessage(data){
+  const lines = [];
+  const pct = data.todayCompletionPct;
+  const bad = data.underperformanceStreakDays;
+
+  if(data.isRestDay){
+    lines.push("Aaj rest day hai — thik hai, break zaroori hota hai. Par kal se full force wapas aana hai, rest ko habit mat bana lena.");
+  } else if(bad >= 3){
+    lines.push("Seedhi baat sun — pichhle " + bad + " din se tera target " + STRICT_MANAGER_GOOD_PCT + "% bhi cross nahi hua. Ye ab ek din ki galti nahi, pattern ban chuka hai. Isi raftaar se CGL nahi niklega — abhi rukh badalni padegi.");
+  } else if(bad >= 1){
+    lines.push("Pichhle " + bad + " din se tu apne hi target se peeche chal raha hai. Aaj " + pct + "% hua hai — abhi bhi waqt hai isko rokne ka, warna ye chhoti dheelai bahut mehengi padegi.");
+  } else if(pct < 50){
+    lines.push("Aaj abhi tak sirf " + pct + "% target hua hai. Din khatam nahi hua — uth aur bacha hua kaam nipta do, kal ka bhaar aaj mat chhodo.");
+  } else if(pct < 100){
+    lines.push("Aaj " + pct + "% ho gaya hai — thik chal raha hai, par 'thik' se CGL nahi nikalta, 'poora' se nikalta hai. Bacha hua kaam abhi khatam karo.");
+  } else {
+    lines.push("Aaj ka poora target — 100% — clear kiya hai. Accha kaam. Lekin kal fir se yahi discipline chahiye, ek accha din kaafi nahi hota — streak banani hai.");
+  }
+
+  if(data.mistakesToday){
+    lines.push("Aaj ki mistakes note ki hain — kal wahi galti dobara hui to woh sirf carelessness maani jayegi, seekha hua nahi.");
+  }
+
+  lines.push("Abhi ka streak: " + data.currentStreak + " din. Kal subah utho aur sabse pehla task sabse pehle nipta do — din ki disha wahin se tay hoti hai.");
+
+  return lines.join("\n\n");
+}
+function strictManagerPref(){
+  // Default ON for everyone — same convention as Target Reminder above.
+  try{
+    const v = localStorage.getItem('cgl50-strictmgr-enabled');
+    return v !== '0';
+  }catch(e){ return true; }
+}
+function setStrictManagerPref(v){
+  try{ localStorage.setItem('cgl50-strictmgr-enabled', v ? '1':'0'); }catch(e){}
+}
+function strictManagerCacheKey(){
+  return 'cgl50-strictmgr-cache-' + (myName||'me').toLowerCase() + '-' + fmtISODate(new Date());
+}
+function loadStrictManagerCache(){
+  try{
+    const raw = localStorage.getItem(strictManagerCacheKey());
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveStrictManagerCache(obj){
+  try{ localStorage.setItem(strictManagerCacheKey(), JSON.stringify(obj)); }catch(e){}
+}
+// One analysis per day is cached (and reused by both the manual button and
+// the 6 PM auto-popup) so we don't re-hit the API repeatedly — pass
+// forceRefresh=true (the modal's "Phir Se Analyse" button) to bypass it.
+async function getStrictManagerMessage(forceRefresh){
+  if(!forceRefresh){
+    const cached = loadStrictManagerCache();
+    if(cached && cached.text) return cached;
+  }
+  const data = collectStrictManagerData();
+  let text, source;
+  try{
+    text = await callStrictManagerAI(data);
+    source = 'ai';
+  }catch(e){
+    console.error('Strict Manager AI call failed, offline fallback use ho raha hai:', e);
+    text = buildStrictManagerLocalMessage(data);
+    source = 'local';
+  }
+  const result = { text: text, source: source, badStreak: data.underperformanceStreakDays, ts: Date.now() };
+  saveStrictManagerCache(result);
+  return result;
+}
+function renderStrictManagerPanel(){
+  const el = document.getElementById('strictManagerPanel');
+  if(!el) return;
+  const bad = computeUnderperformanceStreak();
+  const cached = loadStrictManagerCache();
+  el.innerHTML = `
+    <div class="losshint" style="padding-top:0;">Ye tumhare aaj ke tasks, notes aur streak ko deeply analyse karke Hinglish mein seedha, strict feedback deta hai — daantne wale mentor jaisa, taane maarne wale jaisa nahi. Shaam 6 baje ye khud bhi popup ho jaata hai.</div>
+    ${bad>0
+      ? `<div class="smBadge smBadgeWarn">⚠️ ${bad} din se target ${STRICT_MANAGER_GOOD_PCT}% se neeche</div>`
+      : `<div class="smBadge smBadgeOk">✅ Abhi koi bad-streak nahi</div>`}
+    <div class="btnrow">
+      <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>
+      <button class="nav-btn" id="smToggleBtn">${strictManagerPref() ? '🔔 6 PM Popup: ON' : '🔕 6 PM Popup: OFF'}</button>
+    </div>
+  `;
+  const openBtn = document.getElementById('smOpenBtn');
+  if(openBtn) openBtn.addEventListener('click', ()=> openStrictManagerModal(false));
+  const toggleBtn = document.getElementById('smToggleBtn');
+  if(toggleBtn) toggleBtn.addEventListener('click', ()=>{
+    setStrictManagerPref(!strictManagerPref());
+    renderStrictManagerPanel();
+  });
+}
+function showStrictManagerModalEl(){
+  const modal = document.getElementById('strictManagerModal');
+  if(modal) modal.style.display = 'flex';
+}
+function hideStrictManagerModal(){
+  const modal = document.getElementById('strictManagerModal');
+  if(modal) modal.style.display = 'none';
+}
+async function openStrictManagerModal(forceRefresh){
+  const msgEl = document.getElementById('strictManagerModalMsg');
+  const badgeEl = document.getElementById('strictManagerModalBadge');
+  showStrictManagerModalEl();
+  if(msgEl) msgEl.textContent = '🧠 AI tumhara aaj ka data deeply analyse kar raha hai…';
+  if(badgeEl) badgeEl.textContent = '';
+  try{
+    const result = await getStrictManagerMessage(forceRefresh);
+    if(msgEl) msgEl.textContent = result.text;
+    if(badgeEl) badgeEl.textContent = result.source==='ai' ? '🤖 AI Analysis' : '📐 Offline Analysis';
+    renderStrictManagerPanel();
+  }catch(e){
+    if(msgEl) msgEl.textContent = 'Analysis abhi nahi ban paaya — thodi der mein phir try karo.';
+    console.error('openStrictManagerModal error:', e);
+  }
+}
+{
+  const smCloseBtn = document.getElementById('strictManagerCloseBtn');
+  const smOkBtn = document.getElementById('strictManagerOkBtn');
+  const smRefreshBtn = document.getElementById('strictManagerRefreshBtn');
+  if(smCloseBtn) smCloseBtn.addEventListener('click', hideStrictManagerModal);
+  if(smOkBtn) smOkBtn.addEventListener('click', hideStrictManagerModal);
+  if(smRefreshBtn) smRefreshBtn.addEventListener('click', ()=> openStrictManagerModal(true));
+}
+
+// ----- 6 PM daily auto-popup -----
+function strictManagerLastFiredDate(){
+  try{ return localStorage.getItem('cgl50-strictmgr-lastfired-' + (myName||'me').toLowerCase()) || ''; }catch(e){ return ''; }
+}
+function setStrictManagerLastFiredDate(v){
+  try{ localStorage.setItem('cgl50-strictmgr-lastfired-' + (myName||'me').toLowerCase(), v); }catch(e){}
+}
+function strictManagerDue(){
+  if(!stateReady) return false;
+  if(!strictManagerPref()) return false;
+  if(nowMinutes() < (STRICT_MANAGER_SLOT.hh*60 + STRICT_MANAGER_SLOT.mm)) return false;
+  if(strictManagerLastFiredDate() === fmtISODate(new Date())) return false;
+  return true;
+}
+// Shared by both the on-open check and the once-a-minute ticker below.
+// Marks "fired" BEFORE the (async) analysis finishes, so two overlapping
+// checks can never both pop the modal for the same day.
+async function fireStrictManagerPopupIfDue(){
+  if(!strictManagerDue()) return;
+  setStrictManagerLastFiredDate(fmtISODate(new Date()));
+  await openStrictManagerModal(false);
+  const cached = loadStrictManagerCache();
+  if(cached && notifPref() && ('Notification' in window) && Notification.permission === 'granted'){
+    const preview = cached.text.length > 120 ? cached.text.slice(0,120) + '…' : cached.text;
+    fireNotification('🤖 AI Strict Manager — Shaam Ka Check', preview);
+  }
+}
+function checkStrictManagerPopupOnAppOpen(){ fireStrictManagerPopupIfDue(); }
+function checkStrictManagerPopup(){ fireStrictManagerPopupIfDue(); }
+
 // ===== "How to use" Help guide =====
 // A short always-accessible explainer for what each tab does. Auto-shown
 // once per device (covers both brand-new AND already-existing users who
@@ -9103,17 +9806,11 @@ function maybeShowHelpModalOnce(){
 // A free-running study-time logger, separate from the daily task checklist —
 // tracks minutes studied per SSC subject (Math/Reasoning/English/GK) so the
 // user can just hit play and study without needing a task tied to it.
-const FOCUS_SUBJECTS = [
-  {id:'math', label:'Math', icon:'🔢'},
-  {id:'reasoning', label:'Reasoning', icon:'🧠'},
-  {id:'english', label:'English', icon:'🔤'},
-  {id:'gk', label:'GK', icon:'🌍'},
-];
 const POMODORO_WORK_MIN = 25;
 const POMODORO_BREAK_MIN = 5;
 
 let focusSession = {
-  mode:'pomodoro',      // 'pomodoro' | 'stopwatch' | 'timed'
+  mode:'stopwatch',      // 'pomodoro' | 'stopwatch' | 'timed'
   subject:null,
   durationMin:25,
   running:false,
@@ -9126,7 +9823,8 @@ let focusSession = {
 
 function todayStudyTotalMin(){
   const d = getDay(todayDayNum());
-  return Math.round(d.studyMin.math + d.studyMin.reasoning + d.studyMin.english + d.studyMin.gk);
+  const vals = Object.values(d.studyMin||{});
+  return Math.round(vals.reduce((a,b)=>a+(Number(b)||0),0));
 }
 function renderFocusTodayText(){
   const total = todayStudyTotalMin();
@@ -9141,6 +9839,28 @@ function addStudySeconds(subjectId, seconds){
   d.studyMin[subjectId] = Math.round(((d.studyMin[subjectId]||0) + seconds/60) * 100) / 100;
   save();
   renderFocusTodayText();
+  autoTickTaskIfTargetMet(subjectId, d);
+}
+// If the "Study Shuru Karo" picker's chosen item is one of today's actual
+// daily-target tasks (key "task<idx>") and total studied minutes logged for
+// it has now reached that task's own assigned duration, tick it done
+// automatically — same auto-complete behaviour the per-task ⏱️ timer
+// (Today tab) already has, so both ways of studying a target behave the
+// same way. Legacy math/reasoning/english/gk keys (from that per-task
+// timer) don't match and are left untouched — it already ticks itself.
+function autoTickTaskIfTargetMet(subjectId, d){
+  const m = /^task(\d+)$/.exec(subjectId);
+  if(!m) return;
+  const idx = parseInt(m[1],10);
+  if(!TASKS[idx] || d.tasks[idx]) return;
+  const targetMin = TASK_DURATIONS_MIN[idx] || 0;
+  if(targetMin<=0 || d.studyMin[subjectId] < targetMin) return;
+  const doneBefore = d.tasks.filter(Boolean).length;
+  d.tasks[idx] = true;
+  const doneAfter = d.tasks.filter(Boolean).length;
+  save();
+  if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(todayDayNum());
+  renderAll();
 }
 function flushFocusPending(){
   const inBreak = focusSession.mode==='pomodoro' && focusSession.isBreak;
@@ -9166,7 +9886,7 @@ function formatMMSS(totalSec){
   return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
 function focusStatusText(){
-  if(!focusSession.subject) return 'Select Subject';
+  if(!focusSession.subject) return 'Target Select Karo';
   if(!focusSession.running){
     const fresh = focusSession.mode==='stopwatch' ? focusSession.elapsedSec===0 : focusSession.remainingSec===focusSecondsForMode();
     return fresh ? 'Ready' : 'Paused';
@@ -9194,22 +9914,64 @@ function updateFocusDisplay(){
 }
 function updateFocusPlayBtn(){
   const btn = document.getElementById('focusPlayBtn');
-  if(!btn) return;
-  btn.textContent = focusSession.running ? '⏸' : '▶';
-  btn.style.opacity = focusSession.subject ? '1' : '0.4';
-  btn.style.pointerEvents = focusSession.subject ? 'auto' : 'none';
+  if(btn){
+    btn.textContent = focusSession.running ? '⏸' : '▶';
+    btn.style.opacity = focusSession.subject ? '1' : '0.4';
+    btn.style.pointerEvents = focusSession.subject ? 'auto' : 'none';
+  }
+  const backBtn = document.getElementById('focusBackBtn');
+  if(backBtn) backBtn.disabled = focusSession.running;
 }
+// Toggles between the "pick a target" view and the "timer running" view —
+// once a target is selected, the full list hides and only that target's
+// timer shows, so the screen isn't cluttered. Tapping ← (disabled while
+// running) brings the list back to change the target.
+function updateFocusPickerVisibility(){
+  const hasSubject = !!focusSession.subject;
+  const prompt = document.getElementById('focusPrompt');
+  const grid = document.getElementById('focusSubjectGrid');
+  const hint = document.getElementById('focusPickerHint');
+  const selRow = document.getElementById('focusSelectedRow');
+  const durRow = document.getElementById('focusDurationRow');
+  const ring = document.getElementById('focusRing');
+  const ctrlRow = document.querySelector('.focusControlRow');
+  const todayText = document.getElementById('focusTodayText');
+  if(prompt) prompt.style.display = hasSubject ? 'none' : '';
+  if(grid) grid.style.display = hasSubject ? 'none' : '';
+  if(hint) hint.style.display = hasSubject ? 'none' : '';
+  if(selRow) selRow.style.display = hasSubject ? 'flex' : 'none';
+  if(ring) ring.style.display = hasSubject ? '' : 'none';
+  if(ctrlRow) ctrlRow.style.display = hasSubject ? '' : 'none';
+  if(todayText) todayText.style.display = hasSubject ? '' : 'none';
+  if(durRow) durRow.style.display = (hasSubject && focusSession.mode!=='stopwatch') ? 'flex' : 'none';
+  const nameEl = document.getElementById('focusSelectedName');
+  if(nameEl){
+    const m = /^task(\d+)$/.exec(focusSession.subject||'');
+    nameEl.textContent = (m && TASKS[parseInt(m[1],10)]) ? TASKS[parseInt(m[1],10)] : '';
+  }
+  const backBtn = document.getElementById('focusBackBtn');
+  if(backBtn) backBtn.disabled = focusSession.running;
+}
+// Picker now lists the user's own daily targets (TASKS — same list edited
+// via "Naya Task Add Karo" on the Today tab) instead of a fixed
+// Math/Reasoning/English/GK set. Keyed by index ("task0","task1",...) so a
+// task rename doesn't lose already-logged minutes for that slot.
 function renderFocusSubjectGrid(){
   const grid = document.getElementById('focusSubjectGrid');
   if(!grid) return;
-  grid.innerHTML = FOCUS_SUBJECTS.map(s=>
-    `<button type="button" class="focusSubjectBtn${focusSession.subject===s.id?' active':''}" data-subject="${s.id}"><span class="fsIcon">${s.icon}</span>${s.label}</button>`
-  ).join('');
+  if(!TASKS.length){
+    grid.innerHTML = `<div class="guideNote">Pehle "Aaj Ka Target" mein tasks add karo, phir yahan se select karke study shuru karo.</div>`;
+    return;
+  }
+  grid.innerHTML = TASKS.map((name,idx)=>{
+    const key = 'task'+idx;
+    return `<button type="button" class="focusSubjectBtn${focusSession.subject===key?' active':''}" data-subject="${key}"><span class="fsIcon">🎯</span>${escapeHtml(name)}</button>`;
+  }).join('');
   grid.querySelectorAll('.focusSubjectBtn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(focusSession.running) return;
       focusSession.subject = btn.getAttribute('data-subject');
-      renderFocusSubjectGrid();
+      updateFocusPickerVisibility();
       updateFocusPlayBtn();
       updateFocusDisplay();
     });
@@ -9272,16 +10034,16 @@ function switchFocusMode(mode){
   focusSession.mode = mode;
   resetFocusTimerValues();
   document.querySelectorAll('.focusModeTab').forEach(t=> t.classList.toggle('active', t.getAttribute('data-mode')===mode));
-  const durRow = document.getElementById('focusDurationRow');
-  if(durRow) durRow.style.display = (mode==='stopwatch') ? 'none' : 'flex';
+  updateFocusPickerVisibility();
   updateFocusPlayBtn();
   updateFocusDisplay();
 }
 function openFocusModal(mode){
   focusSession.subject = null;
-  switchFocusMode(mode || 'pomodoro');
+  switchFocusMode(mode || 'stopwatch');
   renderFocusSubjectGrid();
   renderFocusTodayText();
+  updateFocusPickerVisibility();
   updateFocusPlayBtn();
   updateFocusDisplay();
   const modal = document.getElementById('focusModal');
@@ -9301,6 +10063,8 @@ function closeFocusModal(){
   document.querySelectorAll('#studyModeRow .studyModeBtn').forEach(btn=>{
     btn.addEventListener('click', ()=> openFocusModal(btn.getAttribute('data-mode')));
   });
+  const quickStudyBtn = document.getElementById('quickStudyBtn');
+  if(quickStudyBtn) quickStudyBtn.addEventListener('click', ()=> openFocusModal());
   document.querySelectorAll('#focusModeTabs .focusModeTab').forEach(tab=>{
     tab.addEventListener('click', ()=> switchFocusMode(tab.getAttribute('data-mode')));
   });
@@ -9310,6 +10074,17 @@ function closeFocusModal(){
   if(focusPlayBtn) focusPlayBtn.addEventListener('click', focusPlayPause);
   const focusResetBtn = document.getElementById('focusResetBtn');
   if(focusResetBtn) focusResetBtn.addEventListener('click', focusReset);
+  const focusBackBtn = document.getElementById('focusBackBtn');
+  if(focusBackBtn) focusBackBtn.addEventListener('click', ()=>{
+    if(focusSession.running) return;
+    flushFocusPending();
+    focusSession.subject = null;
+    resetFocusTimerValues();
+    renderFocusSubjectGrid();
+    updateFocusPickerVisibility();
+    updateFocusPlayBtn();
+    updateFocusDisplay();
+  });
   const focusDurationInput = document.getElementById('focusDurationInput');
   if(focusDurationInput) focusDurationInput.addEventListener('change', ()=>{
     let v = parseInt(focusDurationInput.value);
@@ -9833,6 +10608,7 @@ function startLiveClockTicker(){
     safeRun(renderRightNowCard, 'renderRightNowCard(tick)');
     safeRun(renderTimeGuide, 'renderTimeGuide(tick)');
     safeRun(checkTargetReminder, 'checkTargetReminder(tick)');
+    safeRun(checkStrictManagerPopup, 'checkStrictManagerPopup(tick)');
   }, 60000);
 }
 
@@ -9883,10 +10659,10 @@ window.addEventListener('pagehide', ()=>{ save(); });
   startLiveClockTicker();
   updateTargetReminderBtnLabel();
   checkTargetReminderOnAppOpen();
+  checkStrictManagerPopupOnAppOpen();
   maybeShowHelpModalOnce();
   maybeShowDailyCountdownPopup();
 })();
 </script>
 </body>
 </html>
- 
