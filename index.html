@@ -1384,6 +1384,26 @@
   }
   .strictMgrSourceTag{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0 0 6px;text-align:right;}
 
+  /* ===== AI Strict Manager — live chat ===== */
+  .smChatModalCard{max-width:440px;display:flex;flex-direction:column;max-height:86vh;}
+  .smChatMessages{
+    flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:12px;margin:4px 0 10px;min-height:220px;max-height:50vh;
+  }
+  .smChatMsg{max-width:82%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.55;font-weight:600;white-space:pre-wrap;}
+  .smChatMsg.ai{align-self:flex-start;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);color:var(--text);border-bottom-left-radius:3px;}
+  .smChatMsg.user{align-self:flex-end;background:var(--accent);color:#1a1404;border-bottom-right-radius:3px;font-weight:700;}
+  .smChatMsg.typing{align-self:flex-start;color:var(--muted);font-style:italic;background:transparent;border:none;padding:0 4px;}
+  .smChatInputRow{display:flex;gap:8px;align-items:flex-end;}
+  .smChatInputRow textarea{
+    flex:1;resize:none;min-height:40px;max-height:96px;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--border-strong);background:var(--panel);color:var(--white);font-size:13.5px;
+    font-family:inherit;font-weight:600;
+  }
+  .smChatInputRow textarea:focus{outline:none;border-color:var(--accent);}
+  .smChatSendBtn{flex-shrink:0;}
+
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
   .chapterRow.neverRevised{background:linear-gradient(90deg,rgba(251,191,36,0.10),transparent);border-radius:6px;}
@@ -1786,7 +1806,21 @@
     <div class="strictMgrBody" id="strictManagerModalMsg">Loading…</div>
     <div class="onbBtnRow">
       <button class="nav-btn" id="strictManagerRefreshBtn">🔄 Phir Se Analyse</button>
+      <button class="nav-btn" id="strictManagerChatBtn">💬 Baat Karo</button>
       <button class="nav-btn onbPrimary" id="strictManagerOkBtn">Samajh Gaya ✅</button>
+    </div>
+  </div>
+</div>
+
+<div class="onbOverlay" id="strictManagerChatModal">
+  <div class="onbCard smChatModalCard">
+    <button class="onbCloseX" id="strictManagerChatCloseBtn" aria-label="Band Karo">✕</button>
+    <div class="onbTitle">💬 AI Strict Manager</div>
+    <div class="strictMgrSourceTag">Tumhara personal study guide — Hinglish mein</div>
+    <div class="smChatMessages" id="smChatMessages"></div>
+    <div class="smChatInputRow">
+      <textarea id="smChatInput" placeholder="Kuch pucho ya batao... (jaise: aaj mann nahi lag raha)" rows="1"></textarea>
+      <button class="nav-btn onbPrimary smChatSendBtn" id="smChatSendBtn" aria-label="Bhejo">➤</button>
     </div>
   </div>
 </div>
@@ -10180,10 +10214,13 @@ function renderStrictManagerPanel(){
     ${focusPick ? `<div class="smBadge smBadgeWarn">🎯 Focus: ${escapeHtml(focusPick.name)} (${focusPick.wrongCount} galtiyan)</div>` : ''}
     <div class="btnrow">
       <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>
+      <button class="nav-btn" id="smChatOpenBtn">💬 Guide Se Baat Karo</button>
     </div>
   `;
   const openBtn = document.getElementById('smOpenBtn');
   if(openBtn) openBtn.addEventListener('click', ()=> openStrictManagerModal(false));
+  const chatOpenBtn = document.getElementById('smChatOpenBtn');
+  if(chatOpenBtn) chatOpenBtn.addEventListener('click', ()=> openStrictManagerChatModal());
 }
 function showStrictManagerModalEl(){
   const modal = document.getElementById('strictManagerModal');
@@ -10214,9 +10251,185 @@ async function openStrictManagerModal(forceRefresh){
   const smCloseBtn = document.getElementById('strictManagerCloseBtn');
   const smOkBtn = document.getElementById('strictManagerOkBtn');
   const smRefreshBtn = document.getElementById('strictManagerRefreshBtn');
+  const smChatBtn = document.getElementById('strictManagerChatBtn');
   if(smCloseBtn) smCloseBtn.addEventListener('click', hideStrictManagerModal);
   if(smOkBtn) smOkBtn.addEventListener('click', hideStrictManagerModal);
   if(smRefreshBtn) smRefreshBtn.addEventListener('click', ()=> openStrictManagerModal(true));
+  if(smChatBtn) smChatBtn.addEventListener('click', ()=> openStrictManagerChatModal());
+}
+
+// ===== AI Strict Manager — live chat =====
+// A turn-based Hinglish chat with the same strict-but-caring mentor
+// persona as the daily popup, so the student can actually talk to it —
+// ask for motivation, explain why a day slipped, ask what to focus on —
+// instead of only ever receiving a one-way report. History is kept per
+// student (not per-day) and capped, so the "relationship" carries across
+// days like a real mentor would, without growing forever.
+function strictManagerChatKey(){
+  return 'cgl50-strictmgr-chat-' + (myName||'me').toLowerCase();
+}
+const STRICT_MANAGER_CHAT_MAX_TURNS = 24; // ~12 exchanges kept; older ones age out
+function loadStrictManagerChatHistory(){
+  try{
+    const raw = localStorage.getItem(strictManagerChatKey());
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function saveStrictManagerChatHistory(arr){
+  const trimmed = arr.slice(-STRICT_MANAGER_CHAT_MAX_TURNS);
+  try{ localStorage.setItem(strictManagerChatKey(), JSON.stringify(trimmed)); }catch(e){}
+  return trimmed;
+}
+let smChatHistory = [];
+let smChatSending = false;
+
+function renderStrictManagerChatMessages(showTyping){
+  const box = document.getElementById('smChatMessages');
+  if(!box) return;
+  const wasNearBottom = (box.scrollTop + box.clientHeight) >= (box.scrollHeight - 24);
+  box.innerHTML = smChatHistory.map(m=>
+    `<div class="smChatMsg ${m.role==='user'?'user':'ai'}">${escapeHtml(m.content)}</div>`
+  ).join('') + (showTyping ? `<div class="smChatMsg typing">🤖 likh raha hai…</div>` : '');
+  if(wasNearBottom || showTyping) box.scrollTop = box.scrollHeight;
+}
+
+// Cheap, no-API-call opening line grounded in today's real numbers — so
+// the chat never needs a network round-trip just to say hello, and still
+// feels aware of exactly where the student is right now.
+function strictManagerChatGreeting(data){
+  if(data.isRestDay) return "Aaj rest day hai — accha hai, thoda break bhi zaroori hai. Bata, kal ke plan pe baat karni hai ya kuch aur poochna hai?";
+  const pct = data.todayCompletionPct;
+  const focus = data.weakestMathChapters[0] || data.weakestEnglishTopics[0];
+  if(pct >= STRICT_MANAGER_GOOD_PCT){
+    return "Aaj ka " + pct + "% dekha — badhiya chal raha hai. Bol, kya baat karni hai — kal ka plan tight karna hai ya koi doubt hai?";
+  }
+  if(pct === 0){
+    return "Abhi tak aaj ka koi task tick nahi hua. Kya atka hua hai — time nahi mil raha ya mann nahi lag raha? Seedha bata, saath mein raasta nikalte hain" + (focus ? ", aur haan " + focus.name + " pe bhi nazar rakhni hai." : ".");
+  }
+  return "Aaj abhi " + pct + "% hi hua hai — thoda aur push chahiye. Bata kya chal raha hai, kaam mein atak gaye ho ya focus nahi ban raha?";
+}
+
+async function openStrictManagerChatModal(){
+  if(viewingName !== myName) return; // never chat "as" a friend's data
+  const modal = document.getElementById('strictManagerChatModal');
+  if(!modal) return;
+  hideStrictManagerModal();
+  modal.style.display = 'flex';
+  smChatHistory = loadStrictManagerChatHistory();
+  if(smChatHistory.length === 0){
+    const data = collectStrictManagerData();
+    smChatHistory.push({ role:'assistant', content: strictManagerChatGreeting(data) });
+    smChatHistory = saveStrictManagerChatHistory(smChatHistory);
+  }
+  renderStrictManagerChatMessages(false);
+  const input = document.getElementById('smChatInput');
+  if(input) setTimeout(()=> input.focus(), 50);
+}
+function hideStrictManagerChatModal(){
+  const modal = document.getElementById('strictManagerChatModal');
+  if(modal) modal.style.display = 'none';
+}
+
+// Same persona as the daily popup, adapted for short back-and-forth turns
+// and now given the actual conversation so far, not just a fresh data dump
+// every time.
+async function callStrictManagerChatAI(history, data){
+  const system = "Tum ek \"AI Strict Manager\" ho — ek strict par caring exam-prep mentor jo ek student ko SSC CGL ki taiyari mein live chat par guide kar raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein, chhoti, natural chat jaisi replies do — 2 se 5 sentences, kabhi lamba lecture ya markdown/bullets mat likho. Tumhe student ke aaj aur pichhle 14 din ka real data JSON mein diya gaya hai (tasksToday, todayCompletionPct, currentStreak, last14DaysAvgCompletionPct, weakestMathChapters, weakestEnglishTopics, notesToday, mistakesToday) — hamesha isi real data ke hawale se baat karo, generic baatein mat karo. Agar student excuse de raha hai ya avoid kar raha hai to pyar se lekin seedha daant do — bina gaali/insult ke. Agar wo motivation maange ya stuck feel kare to ek chhota practical step do, agar relevant ho to weakestMathChapters/weakestEnglishTopics mein se koi naam lekar. Agar achha kar raha hai to genuine tareef do phir turant thoda aage ka push do. Tum hamesha inka mentor ho — dost jaisa, but strict — aur hamesha unhe aage badhne ke liye guide karte ho.";
+  const userData = "Student ka aaj + pichhle 14 din ka data (JSON, sirf context ke liye, isse directly quote mat karo):\n" + JSON.stringify(data, null, 2);
+  const messages = [
+    { role:'user', content: userData + "\n\nAb neeche jo chat chal rahi hai usko continue karo — mera pehla message samjho tumhara already-bheja hua greeting hai." },
+    { role:'assistant', content: "Theek hai, main is data ko dhyan mein rakhkar tumse baat karunga." },
+    ...history.map(m=>({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }))
+  ];
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      system: system,
+      messages: messages
+    })
+  });
+  if(!resp.ok) throw new Error('Strict Manager chat API request failed: ' + resp.status);
+  const json = await resp.json();
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+  if(!text) throw new Error('Strict Manager chat API: empty response');
+  return text;
+}
+
+// Offline fallback reply — used when the AI call fails (e.g. running as a
+// standalone install with no API access). Not truly conversational, but
+// still grounded in today's real numbers so the chat never dead-ends into
+// a raw error, matching the same graceful-degradation pattern as
+// buildStrictManagerLocalMessage() above.
+function buildStrictManagerChatLocalReply(data){
+  const pct = data.todayCompletionPct;
+  const focus = data.weakestMathChapters[0] || data.weakestEnglishTopics[0];
+  const lines = [];
+  if(data.isRestDay){
+    lines.push("Abhi AI se live connect nahi ho paaya, par itna pakka bol sakta hoon — aaj rest day hai to kal poori taiyari se shuru karna, halka mat lena.");
+  } else if(pct >= STRICT_MANAGER_GOOD_PCT){
+    lines.push("Abhi AI se live connect nahi ho paaya, par tumhara aaj ka " + pct + "% dekhkar itna keh sakta hoon — solid chal raha hai, isi raftaar ko kal bhi maintain karo.");
+  } else {
+    lines.push("Abhi AI se live connect nahi ho paaya, par tumhara aaj ka " + pct + "% dekhkar seedha bolunga — thodi aur mehnat chahiye, khud ko excuse mat do.");
+  }
+  if(focus) lines.push("Jab bhi time mile, " + focus.name + " zaroor revise kar lena — wahi sabse zyada atka raha hai tumhe.");
+  lines.push("Internet/AI wapas connect hote hi baat aur detail mein hogi.");
+  return lines.join(' ');
+}
+
+async function sendStrictManagerChatMessage(){
+  if(smChatSending) return;
+  const input = document.getElementById('smChatInput');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  smChatHistory.push({ role:'user', content:text });
+  smChatHistory = saveStrictManagerChatHistory(smChatHistory);
+  renderStrictManagerChatMessages(true);
+  smChatSending = true;
+  const data = collectStrictManagerData();
+  let reply;
+  try{
+    reply = await callStrictManagerChatAI(smChatHistory, data);
+  }catch(e1){
+    console.error('Strict Manager chat AI call failed, retrying once:', e1);
+    try{
+      reply = await callStrictManagerChatAI(smChatHistory, data);
+    }catch(e2){
+      console.error('Strict Manager chat AI retry also failed, offline fallback use ho raha hai:', e2);
+      reply = buildStrictManagerChatLocalReply(data);
+    }
+  }
+  smChatHistory.push({ role:'assistant', content: reply });
+  smChatHistory = saveStrictManagerChatHistory(smChatHistory);
+  smChatSending = false;
+  renderStrictManagerChatMessages(false);
+}
+
+{
+  const chatCloseBtn = document.getElementById('strictManagerChatCloseBtn');
+  const chatSendBtn = document.getElementById('smChatSendBtn');
+  const chatInput = document.getElementById('smChatInput');
+  if(chatCloseBtn) chatCloseBtn.addEventListener('click', hideStrictManagerChatModal);
+  if(chatSendBtn) chatSendBtn.addEventListener('click', sendStrictManagerChatMessage);
+  if(chatInput){
+    chatInput.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendStrictManagerChatMessage(); }
+    });
+    chatInput.addEventListener('input', ()=>{
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(96, chatInput.scrollHeight) + 'px';
+    });
+  }
 }
 
 // ----- 6 PM daily auto-popup -----
