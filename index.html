@@ -4820,7 +4820,14 @@ async function renderCompetePanel(){
       isLive: true
     };
   }));
-  rows.sort((a,b)=> b.pct-a.pct || b.streak-a.streak);
+  // Rank primarily by overall completion %, but that number is rounded and
+  // measured against the *whole* plan length — so early on, lots of people
+  // sit tied at the same (often 0%) pct even though their real effort
+  // clearly differs. Break ties with finer-grained, unrounded signals in
+  // order: days fully completed, money earned, then streak — so someone
+  // who's actually doing tasks and earning outranks someone who isn't,
+  // instead of the leaderboard looking frozen until pct itself moves.
+  rows.sort((a,b)=> b.pct-a.pct || b.daysDone-a.daysDone || b.earned-a.earned || b.streak-a.streak);
 
   // Notify when a live room-member's progress moved forward since the last
   // check.
@@ -11462,4 +11469,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
- 
