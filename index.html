@@ -9181,9 +9181,14 @@ function buildCalcMcqOptions(q){
   const answer = q.answer;
   const opts = new Set([answer]);
   let guard = 0;
+  // Distractors are generated as answer +/- (multiple of 10) so every option
+  // ends in the SAME last digit as the correct answer — this removes the
+  // "just check the last digit" shortcut and forces a full calculation.
+  const maxUnitDelta = Math.max(1, Math.round((Math.max(5, Math.round(Math.abs(answer)*0.15)+3))/10));
   while(opts.size < 4 && guard < 60){
     guard++;
-    const delta = calcRandInt(1, Math.max(5, Math.round(Math.abs(answer)*0.15)+3));
+    const deltaUnits = calcRandInt(1, maxUnitDelta);
+    const delta = deltaUnits * 10;
     const sign = Math.random() < 0.5 ? -1 : 1;
     let candidate = answer + sign*delta;
     if(candidate < 0) candidate = answer + delta;
@@ -11110,6 +11115,11 @@ if(homeInstallBtn) homeInstallBtn.addEventListener('click', runInstallAction);
 // even if the person just leaves the app open without tapping anything.
 function startLiveClockTicker(){
   setInterval(()=>{
+    // Full scorecard refresh (stats, wallet, streak, last-4-days heatmap,
+    // progress ring, etc.) so it keeps updating on its own all day long,
+    // not just when the person taps/ticks something. Also picks up the day
+    // rolling over at midnight automatically while the app stays open.
+    safeRun(renderAll, 'renderAll(tick)');
     safeRun(renderRightNowCard, 'renderRightNowCard(tick)');
     safeRun(renderTimeGuide, 'renderTimeGuide(tick)');
     safeRun(checkTargetReminder, 'checkTargetReminder(tick)');
