@@ -10337,9 +10337,19 @@ function hideStrictManagerChatModal(){
 async function callStrictManagerChatAI(history, data){
   const system = "Tum ek \"AI Strict Manager\" ho — ek strict par caring exam-prep mentor jo ek student ko SSC CGL ki taiyari mein live chat par guide kar raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein, chhoti, natural chat jaisi replies do — 2 se 5 sentences, kabhi lamba lecture ya markdown/bullets mat likho. Tumhe student ke aaj aur pichhle 14 din ka real data JSON mein diya gaya hai (tasksToday, todayCompletionPct, currentStreak, last14DaysAvgCompletionPct, weakestMathChapters, weakestEnglishTopics, notesToday, mistakesToday) — hamesha isi real data ke hawale se baat karo, generic baatein mat karo. Agar student excuse de raha hai ya avoid kar raha hai to pyar se lekin seedha daant do — bina gaali/insult ke. Agar wo motivation maange ya stuck feel kare to ek chhota practical step do, agar relevant ho to weakestMathChapters/weakestEnglishTopics mein se koi naam lekar. Agar achha kar raha hai to genuine tareef do phir turant thoda aage ka push do. Tum hamesha inka mentor ho — dost jaisa, but strict — aur hamesha unhe aage badhne ke liye guide karte ho.";
   const userData = "Student ka aaj + pichhle 14 din ka data (JSON, sirf context ke liye, isse directly quote mat karo):\n" + JSON.stringify(data, null, 2);
+  // IMPORTANT: the Anthropic API requires messages[] to start with role
+  // 'user' and strictly alternate user/assistant/user/assistant — no two
+  // same-role turns back to back. `history` always starts with an
+  // assistant turn (the locally-generated greeting from
+  // strictManagerChatGreeting(), pushed before any AI call ever happens),
+  // so the data context has to be its own single leading 'user' turn with
+  // NO injected assistant reply after it — otherwise messages would go
+  // user → assistant(filler) → assistant(greeting), which the API rejects
+  // with a 400 every single time (this was the actual bug, not a
+  // connectivity issue — it failed identically online or offline, inside
+  // claude.ai or out).
   const messages = [
-    { role:'user', content: userData + "\n\nAb neeche jo chat chal rahi hai usko continue karo — mera pehla message samjho tumhara already-bheja hua greeting hai." },
-    { role:'assistant', content: "Theek hai, main is data ko dhyan mein rakhkar tumse baat karunga." },
+    { role:'user', content: userData + "\n\nMera pehla message (jo tumhare turant baad aa raha hai) tumhara khud ka bheja hua greeting hai — usi se conversation continue karo." },
     ...history.map(m=>({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }))
   ];
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
