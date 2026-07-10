@@ -1669,6 +1669,9 @@
     <div class="onbBtnRow">
       <button class="nav-btn" id="onbInstallBtn" style="display:none;">📱 Add to Home Screen</button>
     </div>
+    <div class="onbBtnRow">
+      <a class="nav-btn" href="./exam-tracker.apk" download style="text-decoration:none;display:inline-block;text-align:center;">⬇️ Install APK (Android)</a>
+    </div>
     <div class="onbStatus" id="onbStatus"></div>
   </div>
 </div>
@@ -1679,6 +1682,10 @@
     <div class="onbTitle">📲 App Ki Tarah Install Karo</div>
     <div class="onbBtnRow">
       <button class="nav-btn onbPrimary" id="installPromptActionBtn">📲 Add to Home Screen</button>
+    </div>
+    <div class="onbDivider">ya</div>
+    <div class="onbBtnRow">
+      <a class="nav-btn" href="./exam-tracker.apk" download style="text-decoration:none;display:inline-block;text-align:center;">⬇️ Install APK (Android)</a>
     </div>
   </div>
 </div>
@@ -1920,6 +1927,7 @@
 
   <div class="tabview active" id="tab-home" data-tabview="home">
     <button class="nav-btn onbPrimary" id="homeInstallBtn" style="width:100%;margin-bottom:14px;">📲 Add to Home Screen</button>
+    <a class="nav-btn" href="./exam-tracker.apk" download style="width:100%;box-sizing:border-box;margin-bottom:14px;text-decoration:none;display:block;text-align:center;">⬇️ Install APK (Android)</a>
 
     <div class="announceCard" id="announceCard">
       <button class="announceCloseBtn" id="announceCloseBtn" title="Dismiss">✕</button>
@@ -2251,7 +2259,7 @@
     <div class="btnrow" style="margin-top:6px;">
       <button class="nav-btn" id="refreshBtn">🔄 Refresh Numbers</button>
       <button class="nav-btn" id="installBtn" style="display:none;">📱 Add to Home Screen</button>
-      <a class="nav-btn" href="./exam-tracker.apk" download style="text-decoration:none;display:inline-block;">⬇️ Download Android App (APK)</a>
+      <a class="nav-btn" href="./exam-tracker.apk" download style="text-decoration:none;display:inline-block;">⬇️ Install APK (Android)</a>
       <button class="nav-btn" id="notifBtn">🔕 Notifications Off</button>
     </div>
     <div class="losshint" style="margin-top:8px;">🔔 App khula/background mein ho tabhi notification aayega.</div>
@@ -8871,7 +8879,12 @@ function updateTodayDot(){
 }
 
 // ===== Tab bar navigation =====
-function switchTab(name){
+// _fromPopState=true means we're reacting to the Android/browser back button
+// (via popstate below) — in that case we must NOT push a new history entry,
+// or every back-press would just re-push itself and the app could never exit.
+function switchTab(name, _fromPopState){
+  const prevBtn = document.querySelector('.tabbtn.active');
+  const prevName = prevBtn ? prevBtn.getAttribute('data-tab') : null;
   document.querySelectorAll('.tabview').forEach(el=>{
     el.classList.toggle('active', el.getAttribute('data-tabview')===name);
   });
@@ -8881,6 +8894,9 @@ function switchTab(name){
   flushPendingRendersForTab(name);
   try{ localStorage.setItem('cgl50-activetab', name); }catch(e){}
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
+  if(!_fromPopState && name !== prevName){
+    try{ history.pushState({cgl50Tab:name}, '', location.href); }catch(e){}
+  }
 }
 function initTabs(){
   document.querySelectorAll('.tabbtn').forEach(btn=>{
@@ -8889,8 +8905,18 @@ function initTabs(){
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
   if(!['home','today','mock','chapters','compete','more','calc'].includes(saved)) saved = 'home';
-  switchTab(saved);
+  // This becomes the "floor" state — pressing back while on this tab will
+  // exit the app (correct native behaviour) instead of looping forever.
+  try{ history.replaceState({cgl50Tab:saved}, '', location.href); }catch(e){}
+  switchTab(saved, true);
 }
+// Android/back-gesture support: instead of closing the installed app the
+// instant back is pressed, step back through previously visited tabs first.
+window.addEventListener('popstate', (e)=>{
+  if(e.state && e.state.cgl50Tab){
+    switchTab(e.state.cgl50Tab, true);
+  }
+});
 
 // ===== Calc tab — sub-page navigation (menu <-> operation pages) =====
 function showCalcPage(name){
