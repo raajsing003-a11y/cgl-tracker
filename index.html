@@ -1100,24 +1100,27 @@
   }
   /* ===== "Start Studying" floating action button — floats fixed over the
      Home tab content (only visible while Home tab is active, since it's
-     shown/hidden within Home's tabview), opens the same focus timer modal. */
+     shown/hidden within Home's tabview), opens the same focus timer modal.
+     Ring style: black-filled circle with a thick yellow ring border (like
+     the app's countdown-ring widget), icon + "Start" label stacked inside. */
   .quickStudyBtn{
-    position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom,0px));
-    z-index:58;width:74px;height:74px;border-radius:50%;
+    position:fixed;right:18px;bottom:calc(92px + env(safe-area-inset-bottom,0px));
+    z-index:58;width:78px;height:78px;border-radius:50%;padding:0;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    background:radial-gradient(circle at 35% 25%, #fff, var(--accent) 72%);
-    border:2px solid rgba(255,255,255,0.55);
-    color:#1a1404;font-family:'Oswald',sans-serif;font-weight:800;
-    letter-spacing:0.4px;cursor:pointer;
-    box-shadow:0 0 0 6px rgba(251,191,36,0.16),0 6px 18px rgba(251,191,36,0.45);
-    animation:quickStudyPulse 2.6s ease-in-out infinite;
+    background:#0d0c10;
+    border:7px solid var(--accent);cursor:pointer;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45),0 0 18px rgba(251,191,36,0.35);
+    animation:quickStudyGlow 2.8s ease-in-out infinite;
   }
-  .quickStudyBtn:active{transform:scale(0.93);}
-  .quickStudyBtn .qsIcon{font-size:22px;line-height:1;}
-  .quickStudyBtn .qsLabel{font-size:11px;line-height:1;text-transform:uppercase;}
-  @keyframes quickStudyPulse{
-    0%,100%{box-shadow:0 0 0 6px rgba(251,191,36,0.16),0 6px 18px rgba(251,191,36,0.45);}
-    50%{box-shadow:0 0 0 10px rgba(251,191,36,0.05),0 6px 22px rgba(251,191,36,0.55);}
+  .quickStudyBtn:active{transform:scale(0.92);}
+  @keyframes quickStudyGlow{
+    0%,100%{box-shadow:0 8px 20px rgba(0,0,0,0.45),0 0 18px rgba(251,191,36,0.35);}
+    50%{box-shadow:0 8px 24px rgba(0,0,0,0.5),0 0 28px rgba(251,191,36,0.6);}
+  }
+  .quickStudyBtn .qsIcon{width:26px;height:26px;position:relative;z-index:2;}
+  .quickStudyBtn .qsLabel{
+    position:relative;z-index:2;color:#fff;font-family:'Oswald',sans-serif;font-weight:800;
+    font-size:10px;letter-spacing:0.8px;text-transform:uppercase;
   }
   .tabbtn{
     --tb-color:var(--accent);
@@ -1935,7 +1938,20 @@
       </div>
     </div>
 
-    <button type="button" class="quickStudyBtn" id="quickStudyBtn"><span class="qsIcon">⏱️</span><span class="qsLabel">Start</span></button>
+    <button type="button" class="quickStudyBtn" id="quickStudyBtn">
+      <svg class="qsIcon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 15c-4.2-2.6-9.4-3.4-14-2.2v20c4.6-1.2 9.8-.4 14 2.2V15Z" fill="#ffffff" stroke="#fff" stroke-width="0.6" stroke-linejoin="round"/>
+        <path d="M24 15c4.2-2.6 9.4-3.4 14-2.2v20c-4.6-1.2-9.8-.4-14 2.2V15Z" fill="#ffe27a" stroke="#ffe27a" stroke-width="0.6" stroke-linejoin="round"/>
+        <path d="M24 15v20" stroke="#0d0c10" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M13.2 17c2.9-.7 5.9-.5 8 .6M13.2 21.2c2.9-.7 5.9-.5 8 .6M13.2 25.4c2.9-.7 5.9-.5 8 .6" stroke="#c9b25a" stroke-width="1.1" stroke-linecap="round"/>
+        <g transform="rotate(38 32 19)">
+          <rect x="29.5" y="9" width="5" height="17" rx="1.4" fill="#ffcf4d" stroke="#0d0c10" stroke-width="0.8"/>
+          <rect x="29.5" y="9" width="5" height="4" rx="1.2" fill="#ffffff" stroke="#0d0c10" stroke-width="0.8"/>
+          <path d="M30 26h4l-2 4.2L30 26Z" fill="#0d0c10"/>
+        </g>
+      </svg>
+      <span class="qsLabel">Start</span>
+    </button>
 
     <div class="grid-label" style="margin-top:0;">🔥 Last 4 Din Ka Heatmap (₹5,000 Target)</div>
     <div class="last4Heatmap" id="last4Heatmap"></div>
@@ -9834,12 +9850,14 @@ function checkTargetReminder(){
 }
 // ===== AI Strict Manager =====
 // Deeply analyses today's own data (tasks ticked, notes, mistakes, study
-// time) plus the recent day-by-day trend, and asks the Anthropic API to
-// respond as a strict-but-caring Hindi (Hinglish) mentor. If the API call
-// isn't reachable — e.g. this file opened as a plain installed PWA outside
-// claude.ai, where the API proxy this artifact code relies on isn't
-// present — it silently falls back to a rule-based Hinglish message built
-// from the same numbers, so the feature never just breaks/does nothing.
+// time) plus a 14-day trend, mistake-reflection frequency, and the actual
+// weakest chapters/topics from the Chapter Mistake Log — then asks the
+// Anthropic API to respond as a strict-but-caring Hinglish mentor, grounded
+// in real weak spots by name instead of generic advice. If the first API
+// call fails, it retries once (transient network blips shouldn't skip the
+// AI); only if that also fails does it fall back to a rule-based Hinglish
+// message built from the same numbers (still name-checks the weakest
+// chapter), so the feature never just breaks/does nothing.
 const STRICT_MANAGER_GOOD_PCT = 70; // stricter bar than the 50% streak-freeze target
 const STRICT_MANAGER_SLOT = { hh:18, mm:0 }; // fires once daily at/after 6:00 PM
 
@@ -9866,7 +9884,10 @@ function computeUnderperformanceStreak(){
   return bad;
 }
 // Gathers everything the AI (or the offline fallback) needs to give
-// specific, grounded feedback instead of generic lines.
+// specific, grounded feedback instead of generic lines. Includes the
+// weakest chapters/topics (from the Chapter Mistake Log) and a longer
+// 14-day trend + mistake-reflection frequency, so the AI can point at
+// real weak spots by name instead of speaking generically.
 function collectStrictManagerData(){
   const tn = todayDayNum();
   const d = getDay(tn);
@@ -9882,15 +9903,41 @@ function collectStrictManagerData(){
 
   let totalStudyMin = 0;
   Object.keys(d.studyMin||{}).forEach(k=>{ totalStudyMin += (d.studyMin[k]||0); });
+  const plannedStudyMin = TASK_DURATIONS_MIN.reduce((a,b)=>a+b,0);
 
+  // 14-day trend (was 7) — gives the AI a much clearer signal of whether
+  // things are actually improving/declining vs just one bad day.
   const trend = [];
-  for(let i=Math.max(1, tn-6); i<=tn; i++){
+  for(let i=Math.max(1, tn-13); i<=tn; i++){
     const dd = getDay(i);
     trend.push({ day:i, rest: !!dd.rest, pct: dd.rest ? null : dayCompletionPct(i) });
   }
+  const touchedPcts = trend.filter(t=>!t.rest && t.pct!==null).map(t=>t.pct);
+  const trendAvgPct = touchedPcts.length ? Math.round(touchedPcts.reduce((a,b)=>a+b,0)/touchedPcts.length) : null;
 
   const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
   const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
+
+  // Real weak spots by name (top 3 each), pulled straight from the Chapter
+  // Mistake Log — so the AI's advice is grounded in this student's actual
+  // data, not a generic "practice more" line.
+  const weakestMathChapters = MATH_CHAPTERS
+    .map(n=>({ name:n, wrongCount: chapterCount('math', n) }))
+    .filter(r=>r.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount).slice(0,3);
+  const weakestEnglishTopics = ENGLISH_TOPICS
+    .map(n=>({ name:n, wrongCount: chapterCount('english', n) }))
+    .filter(r=>r.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount).slice(0,3);
+
+  // Of the last 7 touched (non-rest) days, how many actually had a
+  // mistakes-note written — shows if the student is reflecting or just
+  // ticking boxes.
+  let touchedDays7 = 0, mistakeNoteDays7 = 0;
+  for(let i=Math.max(1, tn-6); i<=tn; i++){
+    const dd = getDay(i);
+    if(dd.rest || !isDayTouched(dd)) continue;
+    touchedDays7++;
+    if((dd.mistakes||'').trim()) mistakeNoteDays7++;
+  }
 
   return {
     dayNumber: tn,
@@ -9899,23 +9946,28 @@ function collectStrictManagerData(){
     todayCompletionPct: todayPct===null ? 0 : todayPct,
     tasksToday,
     totalStudyMinutesToday: totalStudyMin,
+    plannedStudyMinutesToday: plannedStudyMin,
     currentStreak: streakInfo.streak,
     underperformanceStreakDays: badStreak,
-    last7DaysTrend: trend,
+    last14DaysTrend: trend,
+    last14DaysAvgCompletionPct: trendAvgPct,
+    mistakeReflectionFrequency: touchedDays7 ? (mistakeNoteDays7 + '/' + touchedDays7 + ' touched days had a mistakes-note') : 'not enough data yet',
     notesToday: (d.notes||'').trim(),
     mistakesToday: (d.mistakes||'').trim(),
     mockAttemptedToday: mockTotal>0 || wrongTotal>0,
     mockTotalScore: mockTotal,
-    mockWrongTotal: wrongTotal
+    mockWrongTotal: wrongTotal,
+    weakestMathChapters,
+    weakestEnglishTopics
   };
 }
 // Actual AI call — persona + strict rules live in `system`, the real
 // numbers go in the user turn as JSON so the model has to ground its
 // scolding/praise in what actually happened today, not generic filler.
 async function callStrictManagerAI(data){
-  const system = "Tum ek \"AI Strict Manager\" ho — student ka ek strict par caring exam-prep coach, jo SSC CGL ki taiyari karwa raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein jawab do, kabhi shuddh English paragraph mat likho. Tumhe niche student ke aaj (aur pichhle kuch din) ka JSON data diya jayega. Kaam: 1) Data ka deeply analyse karo — kitna % target complete hua, kitne din se performance neeche hai, notes/mistakes mein kya likha hai. 2) Agar performance kharab hai ya kai din se gir rahi hai, seedhi aur strict daant do — jaise ek sacha mentor dosti se lekin bina lag-lapet ke daantay, kabhi insult ya gaali nahi. 3) Agar performance achhi hai to thodi tareef do par turant agla, thoda tougher target bhi do — kabhi mat kaho 'sab perfect hai, ab aaram karo'. 4) Hamesha 2-3 concrete, specific next steps do jo diye gaye data (jaise missed tasks ke naam, weak notes) se related hon — generic advice mat do. 5) Response 110-180 words ka ho, plain paragraphs mein (blank line se break kar sakte ho), koi markdown heading/bullet/asterisk use mat karo, kyunki ye seedha ek popup message mein dikhaya jayega.";
+  const system = "Tum ek \"AI Strict Manager\" ho — student ka ek strict par caring exam-prep coach, jo SSC CGL ki taiyari karwa raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein jawab do, kabhi shuddh English paragraph mat likho. Tumhe niche student ke aaj aur pichhle 14 din ka poora JSON data diya jayega — jismein last14DaysAvgCompletionPct (trend), mistakeReflectionFrequency (mistakes note kitni baar likhi), aur weakestMathChapters / weakestEnglishTopics (jahan sabse zyada galtiyan hui hain) bhi hain. Kaam: 1) Data ko deeply analyse karo — aaj ka % complete, 14-din ka trend gir raha hai ya sudhar raha hai, aur mistakes sirf tick ho rahi hain ya sach mein reflect ho rahi hain. 2) Agar performance kharab hai ya kai din se gir rahi hai, seedhi aur strict daant do — jaise ek sacha mentor dosti se lekin bina lag-lapet ke daantay, kabhi insult ya gaali nahi. 3) Agar performance achhi hai to thodi tareef do par turant agla, thoda tougher target bhi do — kabhi mat kaho 'sab perfect hai, ab aaram karo'. 4) Agar weakestMathChapters ya weakestEnglishTopics mein koi entry hai, un mein se kam se kam EK chapter/topic ka naam lekar seedha bolo ki wahi revise karo — kabhi generic 'practice more' mat bolo jab specific naam maujood ho. 5) Hamesha jawab ek clear, measurable 'kal ka target' line par khatam karo — ek specific task/chapter/time-limit ke saath, vague na ho ('kal accha karna' jaisa kuch mat likho). 6) Response 130-190 words ka ho, plain paragraphs mein (blank line se break kar sakte ho), koi markdown heading/bullet/asterisk use mat karo, kyunki ye seedha ek popup message mein dikhaya jayega.";
 
-  const userMsg = "Mera aaj (Day " + data.dayNumber + "/" + data.totalDays + ") ka data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek \"AI Strict Manager\" jaisa Hinglish message do.";
+  const userMsg = "Mera aaj (Day " + data.dayNumber + "/" + data.totalDays + ") aur pichhle 14 din ka poora data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek \"AI Strict Manager\" jaisa Hinglish message do — mere asli weak chapters/topics aur trend ka hawala dete hue, generic advice mat do.";
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -9958,6 +10010,24 @@ function buildStrictManagerLocalMessage(data){
     lines.push("Aaj " + pct + "% ho gaya hai — thik chal raha hai, par 'thik' se CGL nahi nikalta, 'poora' se nikalta hai. Bacha hua kaam abhi khatam karo.");
   } else {
     lines.push("Aaj ka poora target — 100% — clear kiya hai. Accha kaam. Lekin kal fir se yahi discipline chahiye, ek accha din kaafi nahi hota — streak banani hai.");
+  }
+
+  // 14-day trend line, if there's enough touched data to say something
+  // meaningful about direction (not just today's single number).
+  if(!data.isRestDay && data.last14DaysAvgCompletionPct !== null){
+    const avg = data.last14DaysAvgCompletionPct;
+    if(pct < avg - 10){
+      lines.push("14-din ka average " + avg + "% hai, par aaj usse kaafi neeche hai — ye ek off-day hai ya naya trend, ye kal ke performance se tay hoga.");
+    } else if(pct > avg + 10){
+      lines.push("14-din ke " + avg + "% average se aaj kaafi upar hai — is momentum ko kal bhi carry karo.");
+    }
+  }
+
+  // Name an actual weak chapter/topic when we have one — same rule the AI
+  // prompt follows, so the offline fallback isn't generic either.
+  const weakPick = (data.weakestMathChapters && data.weakestMathChapters[0]) || (data.weakestEnglishTopics && data.weakestEnglishTopics[0]);
+  if(weakPick){
+    lines.push("Sabse zyada mistakes \"" + weakPick.name + "\" mein ho rahi hain (" + weakPick.wrongCount + " galtiyan log hui hain) — kal isi chapter/topic ka revision sabse pehle karo.");
   }
 
   if(data.mistakesToday){
@@ -10003,10 +10073,17 @@ async function getStrictManagerMessage(forceRefresh){
   try{
     text = await callStrictManagerAI(data);
     source = 'ai';
-  }catch(e){
-    console.error('Strict Manager AI call failed, offline fallback use ho raha hai:', e);
-    text = buildStrictManagerLocalMessage(data);
-    source = 'local';
+  }catch(e1){
+    console.error('Strict Manager AI call failed, retrying once:', e1);
+    try{
+      await new Promise(r=>setTimeout(r, 1000)); // brief pause before retry
+      text = await callStrictManagerAI(data);
+      source = 'ai';
+    }catch(e2){
+      console.error('Strict Manager AI retry also failed, offline fallback use ho raha hai:', e2);
+      text = buildStrictManagerLocalMessage(data);
+      source = 'local';
+    }
   }
   const result = { text: text, source: source, badStreak: data.underperformanceStreakDays, ts: Date.now() };
   saveStrictManagerCache(result);
@@ -10028,11 +10105,15 @@ function renderStrictManagerPanel(){
   }
   const bad = computeUnderperformanceStreak();
   const cached = loadStrictManagerCache();
+  const weakMath = MATH_CHAPTERS.map(n=>({name:n, wrongCount:chapterCount('math', n)})).filter(r=>r.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount)[0];
+  const weakEng = ENGLISH_TOPICS.map(n=>({name:n, wrongCount:chapterCount('english', n)})).filter(r=>r.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount)[0];
+  const focusPick = weakMath || weakEng;
   el.innerHTML = `
     <div class="losshint" style="padding-top:0;">Tasks, notes aur streak dekhkar seedha, strict feedback deta hai — mentor jaisa. Shaam 6 baje khud popup bhi ho jaata hai.</div>
     ${bad>0
       ? `<div class="smBadge smBadgeWarn">⚠️ ${bad} din se target ${STRICT_MANAGER_GOOD_PCT}% se neeche</div>`
       : `<div class="smBadge smBadgeOk">✅ Abhi koi bad-streak nahi</div>`}
+    ${focusPick ? `<div class="smBadge smBadgeWarn">🎯 Focus: ${escapeHtml(focusPick.name)} (${focusPick.wrongCount} galtiyan)</div>` : ''}
     <div class="btnrow">
       <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>
     </div>
