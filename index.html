@@ -8920,6 +8920,14 @@ function switchTab(name, _fromPopState){
   if(!_fromPopState && name !== prevName){
     try{ history.pushState({cgl50Tab:name}, '', location.href); }catch(e){}
   }
+  // Rank tab isn't part of the lazy TAB_OWNER render system above, and its
+  // only other refresh trigger is the 25s background auto-sync timer — so
+  // opening it could show numbers up to 25s (or more, if the timer was
+  // throttled while backgrounded) out of date, e.g. a friend's just-synced
+  // rank/kamai not showing yet. Force one fresh fetch the moment it opens.
+  if(name === 'compete' && name !== prevName){
+    safeRun(()=>{ renderCompetePanel(); }, 'renderCompetePanel');
+  }
 }
 function initTabs(){
   document.querySelectorAll('.tabbtn').forEach(btn=>{
