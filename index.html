@@ -2502,15 +2502,16 @@
 let START_DATE = new Date('2026-07-06T00:00:00');
 let TOTAL_DAYS = 50;
 // ===== AI proxy endpoint =====
-// The 3 AI features below (Time Coach, Strict Manager popup, Strict Manager
-// chat) all call this single Cloudflare Worker URL — the browser never talks
-// to Google directly and never sees the Gemini API key. The Worker holds the
-// real GEMINI_API_KEY as a server-side secret, forwards the request body to
-// Gemini's generateContent endpoint, and returns Gemini's JSON straight
-// back. Deploy/update the included cloudflare-worker.js (Gemini version) at
-// this same *.workers.dev URL — everything else in the app keeps working
-// unchanged either way (inside a Claude.ai Artifact preview or hosted
-// standalone, e.g. GitHub Pages).
+// The 5 AI features below (Time Coach, Strict Manager popup, Strict Manager
+// chat, AI Study Guide, AI Mock Analysis) all call this single Cloudflare
+// Worker URL — the browser never talks to Anthropic or Google directly and
+// never sees either API key. The Worker looks at each request's "model"
+// field and routes it: everything except the live chat goes to Claude
+// (Anthropic), the live chat alone goes to Gemini. Both real keys live on
+// the Worker as server-side secrets. Deploy/update the included
+// cloudflare-worker.js (hybrid version) at this same *.workers.dev URL —
+// everything else in the app keeps working unchanged either way (inside a
+// Claude.ai Artifact preview or hosted standalone, e.g. GitHub Pages).
 const AI_PROXY_URL = "https://white-fire-2957.crickrttop10.workers.dev/v1/messages";
 const DAILY_TARGET = 5000;
 const DEFAULT_TASKS = [
@@ -6253,17 +6254,17 @@ async function callTimeGuideAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gemini-3.5-flash",
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: userMsg }] }],
-      generationConfig: { maxOutputTokens: 500 }
+      model: "claude-sonnet-4-6",
+      max_tokens: 500,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
     })
   });
   if(!resp.ok) throw new Error('Time Guide AI request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
-    .filter(p => p && p.text)
-    .map(p => p.text)
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Time Guide AI: empty response');
@@ -7663,17 +7664,17 @@ async function callMockAnalysisAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gemini-3.5-flash",
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: userMsg }] }],
-      generationConfig: { maxOutputTokens: 700 }
+      model: "claude-sonnet-4-6",
+      max_tokens: 700,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
     })
   });
   if(!resp.ok) throw new Error('Mock Analysis AI request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
-    .filter(p => p && p.text)
-    .map(p => p.text)
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Mock Analysis AI: empty response');
@@ -7857,17 +7858,17 @@ async function callStudyGuideAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gemini-3.5-flash",
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: userMsg }] }],
-      generationConfig: { maxOutputTokens: 700 }
+      model: "claude-sonnet-4-6",
+      max_tokens: 700,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
     })
   });
   if(!resp.ok) throw new Error('Study Guide AI request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
-    .filter(p => p && p.text)
-    .map(p => p.text)
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Study Guide AI: empty response');
@@ -10396,17 +10397,17 @@ async function callStrictManagerAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gemini-3.5-flash",
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: userMsg }] }],
-      generationConfig: { maxOutputTokens: 1000 }
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: system,
+      messages: [{ role: "user", content: userMsg }]
     })
   });
   if(!resp.ok) throw new Error('Strict Manager API request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
-    .filter(p => p && p.text)
-    .map(p => p.text)
+  const text = (json.content || [])
+    .filter(b => b && b.type === 'text' && b.text)
+    .map(b => b.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Strict Manager API: empty response');
