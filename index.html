@@ -2498,6 +2498,16 @@
 // values below for pre-existing users who never set a custom target).
 let START_DATE = new Date('2026-07-06T00:00:00');
 let TOTAL_DAYS = 50;
+// ===== AI proxy endpoint =====
+// The 3 AI features below (Time Coach, Strict Manager popup, Strict Manager
+// chat) call this URL instead of api.anthropic.com directly. Inside a
+// Claude.ai Artifact, calls straight to api.anthropic.com are auto-proxied
+// with no key needed — but once this file is hosted standalone (GitHub
+// Pages, etc.) that no longer applies, so those calls need a real backend
+// that holds an actual Anthropic API key server-side. Deploy the included
+// Cloudflare Worker (see cloudflare-worker.js) and paste its *.workers.dev
+// URL here — everything else in the app keeps working unchanged either way.
+const AI_PROXY_URL = "https://white-fire-2957.crickrttop10.workers.dev/v1/messages";
 const DAILY_TARGET = 5000;
 const DEFAULT_TASKS = [
   "Math Formula + GK Revise",
@@ -6235,7 +6245,7 @@ async function callTimeGuideAI(data){
 
   const userMsg = "Mera abhi ka time-status (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko dekhkar ek practical \"Smart Time Coach\" jaisa chhota Hinglish tip do.";
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch(AI_PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -10074,7 +10084,7 @@ async function callStrictManagerAI(data){
 
   const userMsg = "Mera aaj (Day " + data.dayNumber + "/" + data.totalDays + ") aur pichhle 14 din ka poora data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek \"AI Strict Manager\" jaisa Hinglish message do — mere asli weak chapters/topics aur trend ka hawala dete hue, generic advice mat do.";
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch(AI_PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -10359,7 +10369,7 @@ async function callStrictManagerChatAI(history, data){
     { role:'user', content: userData + "\n\nMera pehla message (jo tumhare turant baad aa raha hai) tumhara khud ka bheja hua greeting hai — usi se conversation continue karo." },
     ...history.map(m=>({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }))
   ];
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch(AI_PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
