@@ -2126,6 +2126,9 @@
       <div class="grid-label" style="margin-top:0;">🔥 Weakest Right Now</div>
       <div class="panel" id="weakSummaryPanel"></div>
 
+      <div class="grid-label" style="margin-top:0;">🤖 AI Deep Study Guide</div>
+      <div class="panel" id="aiStudyGuidePanel"></div>
+
       <div class="grid-label" style="margin-top:0;">🧮 Math Chapters</div>
       <div class="panel" id="mathChapterList"></div>
       <div class="btnrow">
@@ -2500,13 +2503,14 @@ let START_DATE = new Date('2026-07-06T00:00:00');
 let TOTAL_DAYS = 50;
 // ===== AI proxy endpoint =====
 // The 3 AI features below (Time Coach, Strict Manager popup, Strict Manager
-// chat) call this URL instead of api.anthropic.com directly. Inside a
-// Claude.ai Artifact, calls straight to api.anthropic.com are auto-proxied
-// with no key needed — but once this file is hosted standalone (GitHub
-// Pages, etc.) that no longer applies, so those calls need a real backend
-// that holds an actual Anthropic API key server-side. Deploy the included
-// Cloudflare Worker (see cloudflare-worker.js) and paste its *.workers.dev
-// URL here — everything else in the app keeps working unchanged either way.
+// chat) all call this single Cloudflare Worker URL — the browser never talks
+// to Google directly and never sees the Gemini API key. The Worker holds the
+// real GEMINI_API_KEY as a server-side secret, forwards the request body to
+// Gemini's generateContent endpoint, and returns Gemini's JSON straight
+// back. Deploy/update the included cloudflare-worker.js (Gemini version) at
+// this same *.workers.dev URL — everything else in the app keeps working
+// unchanged either way (inside a Claude.ai Artifact preview or hosted
+// standalone, e.g. GitHub Pages).
 const AI_PROXY_URL = "https://white-fire-2957.crickrttop10.workers.dev/v1/messages";
 const DAILY_TARGET = 5000;
 const DEFAULT_TASKS = [
@@ -6249,17 +6253,17 @@ async function callTimeGuideAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
+      model: "gemini-3.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: 500 }
     })
   });
   if(!resp.ok) throw new Error('Time Guide AI request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
+  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
+    .filter(p => p && p.text)
+    .map(p => p.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Time Guide AI: empty response');
@@ -7226,6 +7230,7 @@ function renderMockDetail(){
   titleEl.textContent = `${cat.icon} ${cat.label}`;
   if(cat.id==='analysis'){
     bodyEl.innerHTML = renderMockAnalysisHtml();
+    wireMockAnalysisAiBox();
     return;
   }
   if(cat.id==='notesLog'){
@@ -7580,10 +7585,179 @@ function renderMockAnalysisHtml(){
         <div class="perfrow"><span>Sectional mocks</span><span>${mathSec.length+engSec.length+reasSec.length}</span></div>
       </div>
     </div>
+    <div class="grid-label" style="margin-top:22px;">🤖 AI Deep Analysis</div>
+    <div class="panel" id="aiMockAnalysisPanel"></div>
   `;
 }
 document.getElementById('mockBackBtn').addEventListener('click', closeMockCategory);
 document.getElementById('mockFormCloseBtn').addEventListener('click', closeMockForm);
+
+// ===== 🤖 AI Deep Analysis (Mock tab → Overall Analysis) =====
+// Takes all the same aggregate numbers already shown in the Overall
+// Analysis panel above (subject/sectional averages, recent full-mock
+// trend, top weak chapters/topics) and asks Gemini to actually reason
+// about them — which subject/section is weakest, whether the trend is
+// improving, which specific chapters keep recurring, and a concrete
+// 7-day focus. Cached per user (not per-day) since it's meant to reflect
+// all-time performance; a manual "Phir Se Analysis Karo" button refreshes
+// it once new mocks have been logged.
+function buildMockAnalysisAiData(){
+  const preOnly = mockEntriesFor('preMock');
+  const mainsOnly = mockEntriesFor('mainsMock');
+  const preEntriesAll = preOnly.concat(mainsOnly);
+  const mathSec = mockEntriesFor('mathSec');
+  const engSec = mockEntriesFor('engSec');
+  const reasSec = mockEntriesFor('reasoningSec');
+
+  function avgField(list, field){
+    const valid = list.filter(e=>hasVal(e[field]));
+    return valid.length ? +(valid.reduce((a,e)=>a+num(e[field]),0)/valid.length).toFixed(1) : null;
+  }
+  function avgTotal(list){
+    const valid = list.filter(e=>hasVal(e.math)||hasVal(e.reasoning)||hasVal(e.english)||hasVal(e.gk));
+    return valid.length ? +(valid.reduce((a,e)=>a+mockTotalOfPre(e),0)/valid.length).toFixed(1) : null;
+  }
+  function avgScore(list){
+    const valid = list.filter(e=>hasVal(e.score));
+    return valid.length ? +(valid.reduce((a,e)=>a+num(e.score),0)/valid.length).toFixed(1) : null;
+  }
+
+  const mathChapterCounts = MATH_CHAPTERS.map(n=>({name:n, wrongCount:chapterCount('math',n)}))
+    .filter(c=>c.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount).slice(0,5);
+  const engTopicCounts = ENGLISH_TOPICS.map(n=>({name:n, wrongCount:chapterCount('english',n)}))
+    .filter(c=>c.wrongCount>0).sort((a,b)=>b.wrongCount-a.wrongCount).slice(0,5);
+
+  // Oldest→newest totals of the 5 most recent full mocks, for a simple trend.
+  const recentTotals = preEntriesAll.slice(0,5).map(mockTotalOfPre).reverse();
+
+  return {
+    totalMocksLogged: preEntriesAll.length + mathSec.length + engSec.length + reasSec.length,
+    fullMocks: {
+      count: preEntriesAll.length,
+      preAvgTotal: avgTotal(preOnly),
+      mainsAvgTotal: avgTotal(mainsOnly),
+      overallAvgTotal: avgTotal(preEntriesAll),
+      percentileAvg: avgField(preEntriesAll,'percentile')
+    },
+    subjectAvgsInFullMocks: {
+      math: avgField(preEntriesAll,'math'),
+      reasoning: avgField(preEntriesAll,'reasoning'),
+      english: avgField(preEntriesAll,'english'),
+      gk: avgField(preEntriesAll,'gk')
+    },
+    sectionalAvgs: {
+      math: avgScore(mathSec), english: avgScore(engSec), reasoning: avgScore(reasSec),
+      mathCount: mathSec.length, engCount: engSec.length, reasoningCount: reasSec.length
+    },
+    recentFullMockTotalsOldestToNewest: recentTotals,
+    top5WeakestMathChapters: mathChapterCounts,
+    top5WeakestEnglishTopics: engTopicCounts
+  };
+}
+async function callMockAnalysisAI(data){
+  const system = "Tum ek SSC CGL exam-prep data analyst ho. Tumhe student ka mock/sectional test performance JSON diya jayega (subject-wise averages, sectional averages, recent full-mock totals ka trend, aur top weak chapters/topics unke wrong-counts ke saath). Hamesha Hinglish (Roman script Hindi+English mix) mein jawab do, kabhi shuddh English paragraph mat likho, aur kabhi markdown heading/bullet/asterisk use mat karo — sirf plain paragraphs (zaroorat ho to blank line se break karo), kyunki ye seedha ek panel mein dikhaya jayega. Kaam: 1) Data ko deeply analyse karo — kaunsa subject/section sabse kamzor hai, recent trend upar ja raha hai ya neeche, aur kaunse specific chapters/topics sabse zyada dohrai galtiyan de rahe hain. 2) Kam se kam 2 specific chapter/topic ka naam lekar bolo ki inhe priority se revise karo (agar data mein maujood hain) — generic 'practice more' mat bolo jab specific naam maujood ho. 3) Ek chhota, concrete 7-din ka improvement focus do (jaise 'is hafte roz X ke 10 questions solve karo'). Response 150-220 words ka ho.";
+
+  const userMsg = "Mera poora mock/sectional performance data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek Hinglish performance-analysis report do, mere real weak chapters/topics aur trend ka hawala dete hue.";
+
+  const resp = await fetch(AI_PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gemini-3.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: 700 }
+    })
+  });
+  if(!resp.ok) throw new Error('Mock Analysis AI request failed: ' + resp.status);
+  const json = await resp.json();
+  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
+    .filter(p => p && p.text)
+    .map(p => p.text)
+    .join('\n')
+    .trim();
+  if(!text) throw new Error('Mock Analysis AI: empty response');
+  return text;
+}
+// Rule-based fallback if the API isn't reachable — same numbers already on
+// screen, just written out as a sentence, so the panel never breaks.
+function buildMockAnalysisAiFallback(data){
+  if(!data.totalMocksLogged){
+    return "Abhi tak koi mock/sectional logged nahi hai — pehle kuch mocks add karo, phir yahan deep analysis dikhega.";
+  }
+  const subs = [
+    {label:'Math', val:data.subjectAvgsInFullMocks.math},
+    {label:'Reasoning', val:data.subjectAvgsInFullMocks.reasoning},
+    {label:'English', val:data.subjectAvgsInFullMocks.english},
+    {label:'GK', val:data.subjectAvgsInFullMocks.gk},
+  ].filter(s=>s.val!==null).sort((a,b)=>a.val-b.val);
+  const weakest = subs[0];
+  const topChapter = data.top5WeakestMathChapters[0] || data.top5WeakestEnglishTopics[0];
+  let msg = `Abhi tak ${data.totalMocksLogged} mocks/sectionals logged hain.`;
+  if(weakest) msg += ` Sabse kamzor subject: ${weakest.label} (avg ${weakest.val}).`;
+  if(topChapter) msg += ` Sabse zyada galtiyan: ${topChapter.name} (${topChapter.wrongCount} wrong) — isse priority pe revise karo.`;
+  msg += ' AI analysis abhi nahi ban paayi, thodi der mein phir try karo.';
+  return msg;
+}
+function mockAnalysisAiCacheKey(){
+  return 'cgl50-mockanalysis-ai-' + (myName||'me').toLowerCase();
+}
+function loadMockAnalysisAiCache(){
+  try{
+    const raw = localStorage.getItem(mockAnalysisAiCacheKey());
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveMockAnalysisAiCache(obj){
+  try{ localStorage.setItem(mockAnalysisAiCacheKey(), JSON.stringify(obj)); }catch(e){}
+}
+async function getMockAnalysisAiResult(forceRefresh){
+  if(!forceRefresh){
+    const cached = loadMockAnalysisAiCache();
+    if(cached) return cached;
+  }
+  const data = buildMockAnalysisAiData();
+  let text, source;
+  try{
+    text = await callMockAnalysisAI(data);
+    source = 'ai';
+  }catch(e){
+    console.error('Mock Analysis AI call failed, offline fallback use ho raha hai:', e);
+    text = buildMockAnalysisAiFallback(data);
+    source = 'offline';
+  }
+  const result = { text, source, ts: Date.now() };
+  saveMockAnalysisAiCache(result);
+  return result;
+}
+function buildMockAnalysisAiBoxHtml(cached){
+  if(!cached){
+    return `<div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="0">🤖 AI Se Deep Analysis Karo</button></div>`;
+  }
+  return `
+    <div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI ANALYSIS' : '📐 OFFLINE ANALYSIS'}</span>${escapeHtml(cached.text)}</div>
+    <div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="1">🔄 Phir Se Analysis Karo</button></div>
+  `;
+}
+function wireMockAnalysisAiBox(){
+  const box = document.getElementById('aiMockAnalysisPanel');
+  if(!box) return;
+  box.innerHTML = buildMockAnalysisAiBoxHtml(loadMockAnalysisAiCache());
+  const btn = document.getElementById('mockAiBtn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    const forceRefresh = btn.getAttribute('data-ma-refresh')==='1';
+    box.innerHTML = `<div class="guideAiTip">🧠 AI tumhara mock/sectional data analyse kar raha hai…</div>`;
+    try{
+      const result = await getMockAnalysisAiResult(forceRefresh);
+      box.innerHTML = buildMockAnalysisAiBoxHtml(result);
+      wireMockAnalysisAiBox();
+    }catch(e){
+      box.innerHTML = `<div class="guideAiTip">Analysis abhi nahi ban paaya — thodi der mein phir try karo.</div>`;
+      console.error('Mock Analysis AI box error:', e);
+    }
+  });
+}
 
 // Quick chapter-mistake log widget (shown right under the mock score panel
 // on the Today tab) — shows the running wrong-count for whichever chapter
@@ -7624,6 +7798,8 @@ function renderChaptersTab(){
   const summaryEl = document.getElementById('weakSummaryPanel');
   if(!mathEl || !engEl || !summaryEl) return;
 
+  renderStudyGuidePanel();
+
   mathEl.innerHTML = renderChapterList('math', MATH_CHAPTERS);
   engEl.innerHTML = renderChapterList('english', ENGLISH_TOPICS);
 
@@ -7648,6 +7824,138 @@ function renderChaptersTab(){
   });
 
   applyChapterSearchFilter();
+}
+
+// ===== 🤖 AI Deep Study Guide (Chapters tab) =====
+// Lets the student pick a subject + chapter/topic (defaults to their
+// current weakest) and get a focused, Gemini-generated deep-dive: core
+// concept, key formulas/rules, common SSC CGL trap patterns, and a small
+// practice plan. Cached per user+subject+chapter (content for a given
+// chapter doesn't change day to day, so no need to regenerate on every
+// visit) — a manual "Naya Guide Banao" button forces a fresh one.
+let studyGuideType = 'math';       // 'math' | 'english'
+let studyGuideChapter = null;      // chosen chapter/topic name; null = pick default below
+function studyGuideDefaultChapter(type){
+  const list = type==='math' ? MATH_CHAPTERS : ENGLISH_TOPICS;
+  const top = list.map(n=>({n,c:chapterCount(type,n)})).sort((a,b)=>b.c-a.c)[0];
+  return top ? top.n : list[0];
+}
+function buildStudyGuideData(type, name){
+  return {
+    subject: type==='math' ? 'Math' : 'English',
+    chapterOrTopic: name,
+    wrongCountSoFar: chapterCount(type, name),
+    examContext: 'SSC CGL Tier 1 aur Tier 2'
+  };
+}
+async function callStudyGuideAI(data){
+  const system = "Tum ek SSC CGL exam-prep subject expert ho jo ek student ke liye ek chhota par gehra (deep) study guide banate ho, ek specific chapter/topic ke upar. Hamesha Hinglish (Roman script Hindi+English mix) mein likho, kabhi shuddh English paragraph mat likho, aur kabhi markdown heading/bullet/asterisk use mat karo — sirf plain paragraphs (zaroorat ho to blank line se break karo), kyunki ye ek plain-text panel mein dikhaya jayega. Tumhe subject, exact chapter/topic ka naam, aur student ne ab tak is topic mein kitni baar galti ki hai (wrongCountSoFar), diya jayega. Content mein zaroor cover karo: 1) topic ka core concept/rule 2-3 lines mein, 2) SSC CGL mein sabse zyada kaam aane wale 2-3 formula/shortcut/trick (Math ho to) ya grammar rule (English ho to) specific naam ke saath, 3) is topic mein students aksar kaunsi 1-2 galtiyan karte hain (trap patterns), 4) ek chhota practical practice-plan (kitne din, kitne questions roz). Response 180-260 words ka ho.";
+
+  const userMsg = "Subject: " + data.subject + "\nChapter/Topic: " + data.chapterOrTopic + "\nAb tak wrong count: " + data.wrongCountSoFar + "\nExam: " + data.examContext + "\n\nIs topic ke liye ek deep, practical Hinglish study guide banao.";
+
+  const resp = await fetch(AI_PROXY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gemini-3.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: 700 }
+    })
+  });
+  if(!resp.ok) throw new Error('Study Guide AI request failed: ' + resp.status);
+  const json = await resp.json();
+  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
+    .filter(p => p && p.text)
+    .map(p => p.text)
+    .join('\n')
+    .trim();
+  if(!text) throw new Error('Study Guide AI: empty response');
+  return text;
+}
+// Rule-based fallback if the API isn't reachable — never leaves the panel
+// blank/broken even offline.
+function buildStudyGuideFallback(data){
+  return `"${data.chapterOrTopic}" (${data.subject}) abhi ${data.wrongCountSoFar} baar wrong mark ho chuka hai. AI guide abhi nahi ban paayi — standard SSC CGL notes/playlist se is topic ke core formulas/rules revise karo, aur roz kam se kam 10-15 questions isi topic se practice karo jab tak wrong count kam na ho jaye.`;
+}
+function studyGuideCacheKey(type, name){
+  return 'cgl50-studyguide-ai-' + (myName||'me').toLowerCase() + '-' + type + '-' + name;
+}
+function loadStudyGuideCache(type, name){
+  try{
+    const raw = localStorage.getItem(studyGuideCacheKey(type, name));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveStudyGuideCache(type, name, obj){
+  try{ localStorage.setItem(studyGuideCacheKey(type, name), JSON.stringify(obj)); }catch(e){}
+}
+async function getStudyGuideResult(type, name, forceRefresh){
+  if(!forceRefresh){
+    const cached = loadStudyGuideCache(type, name);
+    if(cached) return cached;
+  }
+  const data = buildStudyGuideData(type, name);
+  let text, source;
+  try{
+    text = await callStudyGuideAI(data);
+    source = 'ai';
+  }catch(e){
+    console.error('Study Guide AI call failed, offline fallback use ho raha hai:', e);
+    text = buildStudyGuideFallback(data);
+    source = 'offline';
+  }
+  const result = { text, source, ts: Date.now() };
+  saveStudyGuideCache(type, name, result);
+  return result;
+}
+function renderStudyGuidePanel(){
+  const panel = document.getElementById('aiStudyGuidePanel');
+  if(!panel) return;
+  if(!studyGuideChapter) studyGuideChapter = studyGuideDefaultChapter(studyGuideType);
+  const list = studyGuideType==='math' ? MATH_CHAPTERS : ENGLISH_TOPICS;
+  const cached = loadStudyGuideCache(studyGuideType, studyGuideChapter);
+  const optionsHtml = list.map(n=>`<option value="${escapeHtml(n)}" ${n===studyGuideChapter?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  panel.innerHTML = `
+    <div class="mockTypeToggle">
+      <button type="button" class="mockTypeOpt ${studyGuideType==='math'?'active':''}" data-sg-type="math">🧮 Math</button>
+      <button type="button" class="mockTypeOpt ${studyGuideType==='english'?'active':''}" data-sg-type="english">🔤 English</button>
+    </div>
+    <div class="chapterQuickRow"><select id="sgChapterSelect">${optionsHtml}</select></div>
+    ${cached ? `<div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI GUIDE' : '📐 OFFLINE GUIDE'}</span>${escapeHtml(cached.text)}</div>` : ''}
+    <div class="btnrow"><button class="nav-btn" type="button" id="sgGenBtn" data-sg-refresh="${cached?'1':'0'}">${cached ? '🔄 Naya Guide Banao' : '✨ Study Guide Banao'}</button></div>
+  `;
+  wireStudyGuidePanel();
+}
+function wireStudyGuidePanel(){
+  document.querySelectorAll('#aiStudyGuidePanel [data-sg-type]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const type = btn.getAttribute('data-sg-type');
+      if(type===studyGuideType) return;
+      studyGuideType = type;
+      studyGuideChapter = studyGuideDefaultChapter(studyGuideType);
+      renderStudyGuidePanel();
+    });
+  });
+  const sel = document.getElementById('sgChapterSelect');
+  if(sel) sel.addEventListener('change', ()=>{
+    studyGuideChapter = sel.value;
+    renderStudyGuidePanel();
+  });
+  const genBtn = document.getElementById('sgGenBtn');
+  if(genBtn) genBtn.addEventListener('click', async ()=>{
+    const forceRefresh = genBtn.getAttribute('data-sg-refresh')==='1';
+    genBtn.textContent = '🧠 Ban raha hai…';
+    genBtn.disabled = true;
+    try{
+      await getStudyGuideResult(studyGuideType, studyGuideChapter, forceRefresh);
+      renderStudyGuidePanel();
+    }catch(e){
+      genBtn.textContent = '⚠️ Phir se try karo';
+      genBtn.disabled = false;
+      console.error('Study Guide box error:', e);
+    }
+  });
 }
 
 // ===== Search/filter for the Chapters + Revision lists =====
@@ -10088,17 +10396,17 @@ async function callStrictManagerAI(data){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
+      model: "gemini-3.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: 1000 }
     })
   });
   if(!resp.ok) throw new Error('Strict Manager API request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
+  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
+    .filter(p => p && p.text)
+    .map(p => p.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Strict Manager API: empty response');
@@ -10354,36 +10662,31 @@ function hideStrictManagerChatModal(){
 async function callStrictManagerChatAI(history, data){
   const system = "Tum ek \"AI Strict Manager\" ho — ek strict par caring exam-prep mentor jo ek student ko SSC CGL ki taiyari mein live chat par guide kar raha hai. Hamesha Hinglish (Roman script Hindi+English mix) mein, chhoti, natural chat jaisi replies do — 2 se 5 sentences, kabhi lamba lecture ya markdown/bullets mat likho. Tumhe student ke aaj aur pichhle 14 din ka real data JSON mein diya gaya hai (tasksToday, todayCompletionPct, currentStreak, last14DaysAvgCompletionPct, weakestMathChapters, weakestEnglishTopics, notesToday, mistakesToday) — hamesha isi real data ke hawale se baat karo, generic baatein mat karo. Agar student excuse de raha hai ya avoid kar raha hai to pyar se lekin seedha daant do — bina gaali/insult ke. Agar wo motivation maange ya stuck feel kare to ek chhota practical step do, agar relevant ho to weakestMathChapters/weakestEnglishTopics mein se koi naam lekar. Agar achha kar raha hai to genuine tareef do phir turant thoda aage ka push do. Tum hamesha inka mentor ho — dost jaisa, but strict — aur hamesha unhe aage badhne ke liye guide karte ho.";
   const userData = "Student ka aaj + pichhle 14 din ka data (JSON, sirf context ke liye, isse directly quote mat karo):\n" + JSON.stringify(data, null, 2);
-  // IMPORTANT: the Anthropic API requires messages[] to start with role
-  // 'user' and strictly alternate user/assistant/user/assistant — no two
-  // same-role turns back to back. `history` always starts with an
-  // assistant turn (the locally-generated greeting from
-  // strictManagerChatGreeting(), pushed before any AI call ever happens),
-  // so the data context has to be its own single leading 'user' turn with
-  // NO injected assistant reply after it — otherwise messages would go
-  // user → assistant(filler) → assistant(greeting), which the API rejects
-  // with a 400 every single time (this was the actual bug, not a
-  // connectivity issue — it failed identically online or offline, inside
-  // claude.ai or out).
-  const messages = [
-    { role:'user', content: userData + "\n\nMera pehla message (jo tumhare turant baad aa raha hai) tumhara khud ka bheja hua greeting hai — usi se conversation continue karo." },
-    ...history.map(m=>({ role: m.role==='user' ? 'user' : 'assistant', content: m.content }))
+  // Gemini's roles are 'user' and 'model' (not 'assistant'), and unlike the
+  // old Anthropic setup it doesn't hard-require strict alternation — but we
+  // keep the same shape anyway: a leading 'user' turn carrying the data
+  // context, followed by the real conversation (`history` always starts
+  // with a 'model' turn — the locally-generated greeting from
+  // strictManagerChatGreeting(), pushed before any AI call ever happens).
+  const contents = [
+    { role:'user', parts:[{ text: userData + "\n\nMera pehla message (jo tumhare turant baad aa raha hai) tumhara khud ka bheja hua greeting hai — usi se conversation continue karo." }] },
+    ...history.map(m=>({ role: m.role==='user' ? 'user' : 'model', parts:[{ text: m.content }] }))
   ];
   const resp = await fetch(AI_PROXY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 400,
-      system: system,
-      messages: messages
+      model: "gemini-3.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: contents,
+      generationConfig: { maxOutputTokens: 400 }
     })
   });
   if(!resp.ok) throw new Error('Strict Manager chat API request failed: ' + resp.status);
   const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
+  const text = (((json.candidates || [])[0] || {}).content?.parts || [])
+    .filter(p => p && p.text)
+    .map(p => p.text)
     .join('\n')
     .trim();
   if(!text) throw new Error('Strict Manager chat API: empty response');
