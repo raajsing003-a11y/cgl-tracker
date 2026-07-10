@@ -244,7 +244,13 @@
   @media (min-width:640px){.sectCardGrid{grid-template-columns:1fr 1fr;}}
   .sectCard{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:10px;padding:9px 10px;
+    position:relative;
   }
+  .sectCardRemoveBtn{
+    position:absolute;top:6px;right:6px;background:none;border:none;color:var(--muted);
+    font-size:13px;font-weight:800;cursor:pointer;padding:2px 6px;line-height:1;
+  }
+  .sectCardRemoveBtn:active{transform:scale(0.9);}
   .sectCardHead{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
   .sectCardLbl{font-size:11.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;flex:0 0 auto;}
   .sectScoreInp{
@@ -952,6 +958,8 @@
     display:none;color:#ff6b6b;font-size:12px;font-weight:700;margin-top:6px;
   }
   .taskNoteSheetErr.show{display:block;}
+  #taskNoteSheetExtra{margin-top:8px;}
+  #taskNoteSheetExtra .subhead:first-child{margin-top:14px;}
   .taskNoteView{
     font-size:12px;color:var(--muted);font-style:italic;
     padding:2px 14px 10px 46px;margin-top:-6px;line-height:1.4;
@@ -1781,6 +1789,7 @@
       <button type="button" class="micBtn" data-mic-target="taskNoteSheetInput" aria-label="Bol kar likho" title="Bol kar likho"><svg viewBox="0 0 24 24" class="micIcon"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>
     </div>
     <div class="taskNoteSheetErr" id="taskNoteSheetErr">Thoda aur likho.</div>
+    <div id="taskNoteSheetExtra" style="display:none;"></div>
     <div class="onbBtnRow" style="display:flex;gap:10px;margin-top:12px;">
       <button class="nav-btn" id="taskNoteSheetCancel" style="flex:1;">❌ Cancel</button>
       <button class="nav-btn onbPrimary" id="taskNoteSheetSave" style="flex:1;">✅ Complete Karo</button>
@@ -2436,6 +2445,24 @@ const DEFAULT_TASKS = [
   "Backup + Reading / GK"
 ];
 let TASKS = DEFAULT_TASKS.slice();
+
+// ===== Auto task-type detection (Today tab) =====
+// Looks at a task's own name and decides whether it's a "Full Mock" attempt,
+// a "Mock Analysis", or (Part 2) a "Sectional" task — so the right score/
+// wrong-question box can attach itself to THAT task automatically, instead
+// of sitting as a separate fixed block lower down the page.
+//   'mockScore'    -> task name has "mock" but not "analysis"  (e.g. "Full Mock (Attempt Only)")
+//   'mockAnalysis' -> task name has "mock" AND "analysis"      (e.g. "Mock Analysis")
+//   'sectional'    -> task name has "sectional"                (wired up in Part 2)
+function taskAutoType(name){
+  const n = (name||'').toLowerCase();
+  if(n.includes('mock')){
+    if(n.includes('analysis') || n.includes('analy')) return 'mockAnalysis';
+    return 'mockScore';
+  }
+  if(n.includes('sectional')) return 'sectional';
+  return null;
+}
 
 // ===== Anti-instant-complete guard =====
 // Some members were ticking every single task box in one second flat to
@@ -3241,11 +3268,15 @@ function getDay(n){
   if(d.mock.wrongReasoning===undefined) d.mock.wrongReasoning = '';
   if(d.mock.wrongEnglish===undefined) d.mock.wrongEnglish = '';
   if(d.mock.wrongGk===undefined) d.mock.wrongGk = '';
-  if(!d.sect) d.sect = {s1:'',s2:'',s3:'',s4:''};
+  if(!d.sect || typeof d.sect !== 'object' || Array.isArray(d.sect)) d.sect = {s1:'',s2:'',s3:'',s4:''};
   // Migration: per-section Right/Wrong/Skip + tagged weak-chapters, added
   // alongside the plain Sec score fields above (kept for backward compat).
+  // Sections are now DYNAMIC ("Add More" in Part 2) — d.sect's own keys ARE
+  // the live list of sections for this day (default s1-s4, more appended on
+  // demand via addSectSlot()/removed via removeSectSlot()) — so just walk
+  // whatever keys actually exist here instead of a fixed s1-s4 array.
   if(!d.sectDetail || typeof d.sectDetail !== 'object' || Array.isArray(d.sectDetail)) d.sectDetail = {};
-  ['s1','s2','s3','s4'].forEach(k=>{
+  Object.keys(d.sect).forEach(k=>{
     if(!d.sectDetail[k] || typeof d.sectDetail[k] !== 'object'){
       d.sectDetail[k] = {right:'',wrong:'',skip:'',chapters:[]};
     } else {
@@ -3314,8 +3345,8 @@ function isDayTouched(d){
   if(d.rest) return true;
   if(d.tasks.some(Boolean)) return true;
   if(hasVal(d.mock.math)||hasVal(d.mock.reasoning)||hasVal(d.mock.english)||hasVal(d.mock.gk)||hasVal(d.mock.percentile)||hasVal(d.mock.wrongMath)||hasVal(d.mock.wrongReasoning)||hasVal(d.mock.wrongEnglish)||hasVal(d.mock.wrongGk)) return true;
-  if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)) return true;
-  if(d.sectDetail && ['s1','s2','s3','s4'].some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
+  if(Object.keys(d.sect).some(k=>hasVal(d.sect[k]))) return true;
+  if(d.sectDetail && Object.keys(d.sectDetail).some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
   if(d.notes && d.notes.trim()) return true;
   if(d.mistakes && d.mistakes.trim()) return true;
   return false;
@@ -4358,8 +4389,8 @@ function isDayTouchedFrom(d){
   const mock = d.mock || {};
   if(hasVal(mock.math)||hasVal(mock.reasoning)||hasVal(mock.english)||hasVal(mock.gk)||hasVal(mock.percentile)||hasVal(mock.wrongMath)||hasVal(mock.wrongReasoning)||hasVal(mock.wrongEnglish)||hasVal(mock.wrongGk)) return true;
   const sect = d.sect || {};
-  if(hasVal(sect.s1)||hasVal(sect.s2)||hasVal(sect.s3)||hasVal(sect.s4)) return true;
-  if(d.sectDetail && ['s1','s2','s3','s4'].some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
+  if(Object.keys(sect).some(k=>hasVal(sect[k]))) return true;
+  if(d.sectDetail && Object.keys(d.sectDetail).some(k=>{ const sd=d.sectDetail[k]; return sd && (hasVal(sd.right)||hasVal(sd.wrong)||hasVal(sd.skip)||(Array.isArray(sd.chapters)&&sd.chapters.length)); })) return true;
   if(d.notes && d.notes.trim()) return true;
   if(d.mistakes && d.mistakes.trim()) return true;
   return false;
@@ -5770,10 +5801,24 @@ function openTaskNoteSheet(idx){
   const nameEl = document.getElementById('taskNoteSheetTaskName');
   const input = document.getElementById('taskNoteSheetInput');
   const err = document.getElementById('taskNoteSheetErr');
+  const extra = document.getElementById('taskNoteSheetExtra');
   if(!overlay) return;
   if(nameEl) nameEl.textContent = TASKS[idx] || '';
   if(input) input.value = '';
   if(err) err.classList.remove('show');
+  // Task submit karte hi — agar iss task ka naam "mock" bata raha hai, iske
+  // sahi score/wrong-log fields yahin sheet ke andar apne aap aa jaate hain.
+  const autoType = taskAutoType(TASKS[idx]);
+  if(extra){
+    if(autoType){
+      extra.innerHTML = taskScoreBoxHtml(getDay(selectedDay), autoType, '');
+      bindScoreBoxEvents(extra);
+      extra.style.display = '';
+    } else {
+      extra.innerHTML = '';
+      extra.style.display = 'none';
+    }
+  }
   overlay.classList.add('show');
   requestAnimationFrame(()=>{ if(input) input.focus(); });
 }
@@ -6145,11 +6190,40 @@ function updateHomeTimerBannerLiveDisplay(idx){
   clockEl.textContent = ttHomeBannerTime(t);
 }
 
-// Builds one compact card for a single Sectional Math slot (Sec 1-4) on the
-// Today tab: the existing Score field, plus new Right/Wrong/Skip counters
-// and a chapter picker so a wrong question's chapter can be tagged right
-// here (bumps the same global weak-chapter counter used on the Weak tab).
-function sectCardHtml(d, key, label, dis){
+// ===== Dynamic sectional slots (Part 2: "Add More") =====
+// d.sect's own keys (s1, s2, s3, ...) ARE the live list of sections for that
+// day — no separate count/array to keep in sync. addSectSlot() appends the
+// next free "sN" key (so old data's s1-s4 keeps working untouched); a day
+// can now have as many sectional slots as were actually attempted, instead
+// of being stuck at a fixed 4. removeSectSlot() deletes one, keeping at
+// least 1 slot always present.
+function nextSectKey(d){
+  let maxN = 0;
+  Object.keys(d.sect).forEach(k=>{
+    const m = /^s(\d+)$/.exec(k);
+    if(m) maxN = Math.max(maxN, parseInt(m[1],10));
+  });
+  return 's'+(maxN+1);
+}
+function addSectSlot(d){
+  const key = nextSectKey(d);
+  d.sect[key] = '';
+  d.sectDetail[key] = {right:'',wrong:'',skip:'',chapters:[]};
+  return key;
+}
+function removeSectSlot(d, key){
+  if(Object.keys(d.sect).length<=1) return false; // always keep at least 1 slot
+  delete d.sect[key];
+  delete d.sectDetail[key];
+  return true;
+}
+// Builds one compact card for a single Sectional Math slot on the Today
+// tab: the existing Score field, plus Right/Wrong/Skip counters and a
+// chapter picker so a wrong question's chapter can be tagged right here
+// (bumps the same global weak-chapter counter used on the Weak tab).
+// `removable` shows a small ✕ to drop this slot (hidden when read-only or
+// when it's the last remaining slot for the day).
+function sectCardHtml(d, key, label, dis, removable){
   const sd = d.sectDetail[key];
   const chapCounts = {};
   (sd.chapters||[]).forEach(c=>{ chapCounts[c] = (chapCounts[c]||0)+1; });
@@ -6158,6 +6232,7 @@ function sectCardHtml(d, key, label, dis){
     : '';
   return `
     <div class="sectCard">
+      ${(removable && !dis) ? `<button type="button" class="sectCardRemoveBtn" data-sect-remove="${key}" title="Ye section hatao">✕</button>` : ''}
       <div class="sectCardHead">
         <span class="sectCardLbl">${label}</span>
         <input type="number" step="any" inputmode="decimal" class="sectScoreInp" data-sect="${key}" value="${d.sect[key]}" placeholder="Score" ${dis}>
@@ -6175,6 +6250,177 @@ function sectCardHtml(d, key, label, dis){
     </div>`;
 }
 
+// ===== Auto score/wrong-log box (Today tab) =====
+// Builds the little inline card that attaches itself to a "mock"-type task
+// automatically — Full Mock Score fields for the attempt task, Wrong
+// Questions + Chapter Quick-Log for the analysis task. Same underlying
+// d.mock fields as before (no data migration needed), just surfaced right
+// on the task that actually needs them instead of a fixed block for everyone.
+function taskScoreBoxHtml(d, type, dis){
+  if(type === 'mockScore'){
+    const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
+    return `
+      <div class="subhead" style="margin-top:0;padding-top:0;border-top:none;">🧪 Full Mock Score</div>
+      <div class="scoreform">
+        <div class="scorefield"><label>Math</label><input type="number" step="any" inputmode="decimal" data-mock="math" value="${d.mock.math}" ${dis}></div>
+        <div class="scorefield"><label>Reasoning</label><input type="number" step="any" inputmode="decimal" data-mock="reasoning" value="${d.mock.reasoning}" ${dis}></div>
+        <div class="scorefield"><label>English</label><input type="number" step="any" inputmode="decimal" data-mock="english" value="${d.mock.english}" ${dis}></div>
+        <div class="scorefield"><label>GK</label><input type="number" step="any" inputmode="decimal" data-mock="gk" value="${d.mock.gk}" ${dis}></div>
+        <div class="scorefield"><label>Percentile</label><input type="number" step="any" inputmode="decimal" min="0" max="100" data-mock="percentile" value="${d.mock.percentile}" ${dis}></div>
+      </div>
+      <div class="scoretotal">Total: <b data-total-mock>${mockTotal}</b></div>
+    `;
+  }
+  if(type === 'mockAnalysis'){
+    const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
+    return `
+      <div class="subhead" style="margin-top:0;padding-top:0;border-top:none;">❌ Wrong Questions — Subject-wise (Mock)</div>
+      <div class="scoreform">
+        <div class="scorefield"><label>Math</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongMath" value="${d.mock.wrongMath}" ${dis}></div>
+        <div class="scorefield"><label>Reasoning</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongReasoning" value="${d.mock.wrongReasoning}" ${dis}></div>
+        <div class="scorefield"><label>English</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongEnglish" value="${d.mock.wrongEnglish}" ${dis}></div>
+        <div class="scorefield"><label>GK</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongGk" value="${d.mock.wrongGk}" ${dis}></div>
+      </div>
+      <div class="scoretotal">Total Wrong: <b data-total-wrong>${wrongTotal}</b></div>
+      <div class="subhead">🎯 Chapter Mistake Quick-Log</div>
+      <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Weak" tab mein dikhegi.</div>
+      <div class="chapterQuickRow">
+        <select data-qc-sel="math" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+        <button type="button" class="chapterQuickBtn" data-qc-btn="math" ${dis}>➕ Math Wrong</button>
+        <span class="chapterQuickCount" data-qc-count="math">${chapterCount('math', MATH_CHAPTERS[0])} wrong so far</span>
+      </div>
+      <div class="chapterQuickRow">
+        <select data-qc-sel="english" ${dis}>${ENGLISH_TOPICS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
+        <button type="button" class="chapterQuickBtn" data-qc-btn="english" ${dis}>➕ English Wrong</button>
+        <span class="chapterQuickCount" data-qc-count="english">${chapterCount('english', ENGLISH_TOPICS[0])} wrong so far</span>
+      </div>
+    `;
+  }
+  if(type === 'sectional'){
+    const keys = Object.keys(d.sect);
+    const total = keys.reduce((s,k)=>s+num(d.sect[k]),0);
+    return `
+      <div class="subhead" style="margin-top:0;padding-top:0;border-top:none;">🧮 Sectional Scores</div>
+      <div class="sectCardGrid" data-sect-grid>
+        ${keys.map((k,i)=>sectCardHtml(d,k,'Sec '+(i+1),dis,keys.length>1)).join('')}
+      </div>
+      <div class="scoretotal">Total Score: <b data-total-sect>${total}</b></div>
+      ${dis?'':'<div class="btnrow"><button type="button" class="nav-btn" data-sect-add-btn>➕ Add More Section</button></div>'}
+    `;
+  }
+  return '';
+}
+// Wires up inputs/buttons inside ANY container holding a taskScoreBoxHtml()
+// card — works whether that container is the task row's own inline box or
+// the "complete task" note sheet's extra slot. Keeps every visible copy of
+// a shared field (row box + note sheet, if both happen to be open) in sync,
+// and always writes straight into the SAME d.mock object as before.
+function bindScoreBoxEvents(root){
+  const isReadOnly = viewingName !== myName && !(canAdminEditViewed() && adminEditModeOn);
+  if(isReadOnly) return;
+  root.querySelectorAll('input[data-mock]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const field = e.target.getAttribute('data-mock');
+      const d = getDay(selectedDay);
+      d.mock[field] = e.target.value;
+      document.querySelectorAll('[data-total-mock]').forEach(el=>{ el.textContent = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk); });
+      document.querySelectorAll('[data-total-wrong]').forEach(el=>{ el.textContent = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk); });
+      document.querySelectorAll(`input[data-mock="${field}"]`).forEach(other=>{ if(other!==e.target) other.value = e.target.value; });
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+    });
+  });
+  root.querySelectorAll('[data-qc-btn]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const type = btn.getAttribute('data-qc-btn');
+      const sel = root.querySelector(`select[data-qc-sel="${type}"]`);
+      if(!sel) return;
+      await bumpChapter(type, sel.value, 1);
+      document.querySelectorAll(`[data-qc-count="${type}"]`).forEach(el=>{ el.textContent = chapterCount(type, sel.value) + ' wrong so far'; });
+    });
+  });
+  root.querySelectorAll('[data-qc-sel]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const type = sel.getAttribute('data-qc-sel');
+      document.querySelectorAll(`[data-qc-count="${type}"]`).forEach(el=>{ el.textContent = chapterCount(type, sel.value) + ' wrong so far'; });
+    });
+  });
+  // ----- Sectional (dynamic) fields — same shared-copy pattern as data-mock
+  // above, so a "sectional"-named task's box stays in sync whether it's
+  // showing inside the task row, the note-sheet, or (rare) both at once.
+  root.querySelectorAll('input[data-sect]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const key = e.target.getAttribute('data-sect');
+      const d = getDay(selectedDay);
+      d.sect[key] = e.target.value;
+      const total = Object.keys(d.sect).reduce((s,k)=>s+num(d.sect[k]),0);
+      document.querySelectorAll('[data-total-sect]').forEach(el=>{ el.textContent = total; });
+      document.querySelectorAll(`input[data-sect="${key}"]`).forEach(other=>{ if(other!==e.target) other.value = e.target.value; });
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+    });
+  });
+  root.querySelectorAll('input[data-sectdetail]').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const key = e.target.getAttribute('data-sectdetail');
+      const field = e.target.getAttribute('data-sdfield');
+      const d = getDay(selectedDay);
+      d.sectDetail[key][field] = e.target.value;
+      document.querySelectorAll(`input[data-sectdetail="${key}"][data-sdfield="${field}"]`).forEach(other=>{ if(other!==e.target) other.value = e.target.value; });
+      clearTimeout(scoreTimer);
+      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+    });
+  });
+  // Structural sectional changes (add/remove a whole section, tag/clear a
+  // wrong chapter) change how many cards or chips exist, so the box needs a
+  // full rebuild rather than a simple value-sync — rebuild whichever box
+  // (task-row inline box via renderPanel, or the note-sheet's own extra
+  // slot) this root actually belongs to, then rebind it the same way.
+  async function refreshSectRoot(){
+    await save();
+    const d = getDay(selectedDay);
+    if(root.id === 'taskNoteSheetExtra'){
+      root.innerHTML = taskScoreBoxHtml(d, 'sectional', '');
+      bindScoreBoxEvents(root);
+    } else {
+      renderPanel();
+    }
+  }
+  root.querySelectorAll('[data-sectchbtn]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const key = btn.getAttribute('data-sectchbtn');
+      const sel = root.querySelector(`select[data-sectchsel="${key}"]`);
+      if(!sel) return;
+      const d = getDay(selectedDay);
+      d.sectDetail[key].chapters.push(sel.value);
+      await bumpChapter('math', sel.value, 1);
+      await refreshSectRoot();
+    });
+  });
+  root.querySelectorAll('[data-sectchclear]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const key = btn.getAttribute('data-sectchclear');
+      const d = getDay(selectedDay);
+      d.sectDetail[key].chapters = [];
+      await refreshSectRoot();
+    });
+  });
+  root.querySelectorAll('[data-sect-add-btn]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const d = getDay(selectedDay);
+      addSectSlot(d);
+      await refreshSectRoot();
+    });
+  });
+  root.querySelectorAll('[data-sect-remove]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const d = getDay(selectedDay);
+      const key = btn.getAttribute('data-sect-remove');
+      if(!removeSectSlot(d, key)) return;
+      await refreshSectRoot();
+    });
+  });
+}
 function renderPanel(){
   const panel = document.getElementById('panel');
   const d = getDay(selectedDay);
@@ -6218,6 +6464,12 @@ function renderPanel(){
     const showTimerBtn = canUseTaskTimer && !d.tasks[idx];
     const tt = taskTimers[idx];
     const note = (d.taskNotes && d.taskNotes[idx]) ? d.taskNotes[idx].trim() : '';
+    // Auto-detected score/wrong-log box — attaches itself to whichever task's
+    // NAME says "mock" (Full Mock Score) or "mock...analysis" (Wrong Qs +
+    // Chapter Quick-Log). Available on any day being viewed (not just today),
+    // same as the rest of the score fields — inputs just go read-only via `dis`.
+    const autoType = taskAutoType(t);
+    const showScoreBtn = !!autoType;
     html += `
       <div class="${cls} ${tier.cls}">
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
@@ -6225,67 +6477,13 @@ function renderPanel(){
         <div class="value ${tier.cls}">₹${Math.round(taskValue(idx))}</div>
         ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch">⏱️</button>` : ''}
+        ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
+        ${(showScoreBtn && taskScoreExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskScoreBox-${idx}">${taskScoreBoxHtml(d, autoType, dis)}</div>` : ''}
       </div>
       ${note ? `<div class="taskNoteView">📝 ${escapeHtml(note)}</div>` : ''}
     `;
   });
-
-  html += `
-    <div class="subhead">🧭 SMART TIME GUIDE</div>
-    <div class="timeSettingsBox" id="timeSettingsBox"></div>
-    <div class="guideBox" id="timeGuideBox"></div>
-  `;
-
-  const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
-  const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
-  html += `
-    <div class="subhead">🧪 FULL MOCK SCORE</div>
-    <div class="scoreform">
-      <div class="scorefield"><label>Math</label><input type="number" step="any" inputmode="decimal" data-mock="math" value="${d.mock.math}" ${dis}></div>
-      <div class="scorefield"><label>Reasoning</label><input type="number" step="any" inputmode="decimal" data-mock="reasoning" value="${d.mock.reasoning}" ${dis}></div>
-      <div class="scorefield"><label>English</label><input type="number" step="any" inputmode="decimal" data-mock="english" value="${d.mock.english}" ${dis}></div>
-      <div class="scorefield"><label>GK</label><input type="number" step="any" inputmode="decimal" data-mock="gk" value="${d.mock.gk}" ${dis}></div>
-      <div class="scorefield"><label>Percentile</label><input type="number" step="any" inputmode="decimal" min="0" max="100" data-mock="percentile" value="${d.mock.percentile}" ${dis}></div>
-    </div>
-    <div class="scoretotal">Total: <b id="mockTotalVal">${mockTotal}</b></div>
-
-    <div class="subhead">❌ WRONG QUESTIONS — SUBJECT-WISE (MOCK)</div>
-    <div class="scoreform">
-      <div class="scorefield"><label>Math</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongMath" value="${d.mock.wrongMath}" ${dis}></div>
-      <div class="scorefield"><label>Reasoning</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongReasoning" value="${d.mock.wrongReasoning}" ${dis}></div>
-      <div class="scorefield"><label>English</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongEnglish" value="${d.mock.wrongEnglish}" ${dis}></div>
-      <div class="scorefield"><label>GK</label><input type="number" step="1" min="0" inputmode="numeric" data-mock="wrongGk" value="${d.mock.wrongGk}" ${dis}></div>
-    </div>
-    <div class="scoretotal">Total Wrong: <b id="wrongTotalVal">${wrongTotal}</b></div>
-  `;
-
-  html += `
-    <div class="subhead">🎯 CHAPTER MISTAKE QUICK-LOG</div>
-    <div class="chapterQuickHint">Jo question galat hua uska chapter/topic chuno aur "+1 Wrong" daba do — poori weak-chapter list "Weak" tab mein dikhegi.</div>
-    <div class="chapterQuickRow">
-      <select id="quickMathChSel" ${dis}>${MATH_CHAPTERS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
-      <button class="chapterQuickBtn" id="quickMathChBtn" ${dis}>➕ Math Wrong</button>
-      <span class="chapterQuickCount" id="quickMathChCount">0</span>
-    </div>
-    <div class="chapterQuickRow">
-      <select id="quickEngChSel" ${dis}>${ENGLISH_TOPICS.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}</select>
-      <button class="chapterQuickBtn" id="quickEngChBtn" ${dis}>➕ English Wrong</button>
-      <span class="chapterQuickCount" id="quickEngChCount">0</span>
-    </div>
-  `;
-
-  const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
-  html += `
-    <div class="subhead">🧮 4 SECTIONAL MATH SCORES</div>
-    <div class="sectCardGrid">
-      ${sectCardHtml(d,'s1','Sec 1',dis)}
-      ${sectCardHtml(d,'s2','Sec 2',dis)}
-      ${sectCardHtml(d,'s3','Sec 3',dis)}
-      ${sectCardHtml(d,'s4','Sec 4',dis)}
-    </div>
-    <div class="scoretotal">Total Score: <b id="sectTotalVal">${sectTotal}</b></div>
-  `;
 
   html += `
     <div class="subhead">📝 NOTES / ERROR LOG</div>
@@ -6296,6 +6494,18 @@ function renderPanel(){
     <div class="subhead">🤦 SILLY MISTAKES — aaj ki chhoti galtiyan</div>
     <div class="notes voiceField"><textarea id="mistakesArea" placeholder="Jaise: sign galat likha, question dobara nahi padha, time waste hua..." ${isReadOnly?'readonly':''}>${d.mistakes}</textarea>${isReadOnly?'':'<button type="button" class="micBtn" data-mic-target="mistakesArea" aria-label="Bol kar likho" title="Bol kar likho"><svg viewBox="0 0 24 24" class="micIcon"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>'}</div>
   `;
+
+  html += `
+    <div class="subhead">🧭 SMART TIME GUIDE</div>
+    <div class="timeSettingsBox" id="timeSettingsBox"></div>
+    <div class="guideBox" id="timeGuideBox"></div>
+  `;
+
+  // Full Mock Score, Wrong Questions (Mock), Chapter Mistake Quick-Log, and
+  // Sectional Scores used to be fixed blocks here regardless of which task
+  // you were on — they now auto-attach to whichever task's NAME says "mock"
+  // / "mock...analysis" / "sectional" (🧪 / ❌ / 🧮 button on that task row,
+  // see TASKS.forEach above).
 
   html += `
     <div class="footer-row">
@@ -6403,82 +6613,16 @@ function renderPanel(){
       });
     });
   }
-  panel.querySelectorAll('input[data-mock]').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      if(isReadOnly) return;
-      const d = getDay(selectedDay);
-      d.mock[e.target.getAttribute('data-mock')] = e.target.value;
-      const totalEl = document.getElementById('mockTotalVal');
-      if(totalEl) totalEl.textContent = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
-      const wrongEl = document.getElementById('wrongTotalVal');
-      if(wrongEl) wrongEl.textContent = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
-      // Perf: don't rebuild the whole performance panel on every keystroke —
-      // debounce it along with save so typing numbers feels instant.
-      clearTimeout(scoreTimer);
-      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
+  panel.querySelectorAll('[data-score-btn-idx]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      toggleTaskScoreBox(parseInt(btn.getAttribute('data-score-btn-idx'),10));
     });
   });
-  panel.querySelectorAll('input[data-sect]').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      if(isReadOnly) return;
-      const d = getDay(selectedDay);
-      d.sect[e.target.getAttribute('data-sect')] = e.target.value;
-      const totalEl = document.getElementById('sectTotalVal');
-      if(totalEl) totalEl.textContent = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
-      clearTimeout(scoreTimer);
-      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
-    });
-  });
-  panel.querySelectorAll('input[data-sectdetail]').forEach(inp=>{
-    inp.addEventListener('input', (e)=>{
-      if(isReadOnly) return;
-      const d = getDay(selectedDay);
-      const key = e.target.getAttribute('data-sectdetail');
-      const field = e.target.getAttribute('data-sdfield');
-      d.sectDetail[key][field] = e.target.value;
-      clearTimeout(scoreTimer);
-      scoreTimer = setTimeout(()=>{ renderPerformance(); save(); }, 400);
-    });
-  });
-  panel.querySelectorAll('[data-sectchbtn]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(isReadOnly) return;
-      const key = btn.getAttribute('data-sectchbtn');
-      const sel = panel.querySelector(`select[data-sectchsel="${key}"]`);
-      if(!sel) return;
-      const d = getDay(selectedDay);
-      d.sectDetail[key].chapters.push(sel.value);
-      await bumpChapter('math', sel.value, 1);
-      renderPanel();
-    });
-  });
-  panel.querySelectorAll('[data-sectchclear]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(isReadOnly) return;
-      const key = btn.getAttribute('data-sectchclear');
-      const d = getDay(selectedDay);
-      d.sectDetail[key].chapters = [];
-      await save();
-      renderPanel();
-    });
-  });
-  const quickMathBtn = document.getElementById('quickMathChBtn');
-  if(quickMathBtn) quickMathBtn.addEventListener('click', async ()=>{
-    if(isReadOnly) return;
-    const sel = document.getElementById('quickMathChSel');
-    await bumpChapter('math', sel.value, 1);
-  });
-  const quickEngBtn = document.getElementById('quickEngChBtn');
-  if(quickEngBtn) quickEngBtn.addEventListener('click', async ()=>{
-    if(isReadOnly) return;
-    const sel = document.getElementById('quickEngChSel');
-    await bumpChapter('english', sel.value, 1);
-  });
-  const quickMathSel = document.getElementById('quickMathChSel');
-  if(quickMathSel) quickMathSel.addEventListener('change', renderQuickChapterLog);
-  const quickEngSel = document.getElementById('quickEngChSel');
-  if(quickEngSel) quickEngSel.addEventListener('change', renderQuickChapterLog);
-  renderQuickChapterLog();
+  // Full Mock / Wrong-Qs / Sectional fields now live inside each matching
+  // task's own inline box (built above via taskScoreBoxHtml) — wire them
+  // the same way regardless of which task row they ended up on.
+  bindScoreBoxEvents(panel);
   document.getElementById('notesArea').addEventListener('input', (e)=>{
     if(isReadOnly) return;
     getDay(selectedDay).notes = e.target.value;
@@ -6548,13 +6692,27 @@ function renderPerformance(){
     <div class="perfrow"><span>Wrong — Math / Reas / Eng / GK</span><span>${wMath} / ${wReas} / ${wEng} / ${wGk}</span></div>
     <div class="perfrow total"><span>Total wrong (all mocks)</span><span>${wTotAll}</span></div>
   `;
-  const s1=avgOf(d=>d.sect.s1), s2=avgOf(d=>d.sect.s2), s3=avgOf(d=>d.sect.s3), s4=avgOf(d=>d.sect.s4);
-  const sTot = avgTotalOf([d=>d.sect.s1,d=>d.sect.s2,d=>d.sect.s3,d=>d.sect.s4]);
+  // "Section N avg" rows now grow with however many sections have ever been
+  // added on any day (Part 2: "Add More"), instead of being stuck at a
+  // fixed Sec 1-4 — find the highest sN ever used, then build one avg row
+  // per section number up to that.
+  let maxSecN = 4;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    Object.keys(getDay(i).sect).forEach(k=>{
+      const m = /^s(\d+)$/.exec(k);
+      if(m) maxSecN = Math.max(maxSecN, parseInt(m[1],10));
+    });
+  }
+  const sectGetters = [];
+  let sectRowsHtml = '';
+  for(let n=1;n<=maxSecN;n++){
+    const key = 's'+n;
+    sectGetters.push(d=>d.sect[key]);
+    sectRowsHtml += `<div class="perfrow"><span>Section ${n} avg</span><span>${fmtAvg(avgOf(d=>d.sect[key]))}</span></div>`;
+  }
+  const sTot = avgTotalOf(sectGetters);
   document.getElementById('perfSect').innerHTML = `
-    <div class="perfrow"><span>Section 1 avg</span><span>${fmtAvg(s1)}</span></div>
-    <div class="perfrow"><span>Section 2 avg</span><span>${fmtAvg(s2)}</span></div>
-    <div class="perfrow"><span>Section 3 avg</span><span>${fmtAvg(s3)}</span></div>
-    <div class="perfrow"><span>Section 4 avg</span><span>${fmtAvg(s4)}</span></div>
+    ${sectRowsHtml}
     <div class="perfrow total"><span>Total avg (${sTot.count} sets)</span><span>${fmtAvg(sTot)}</span></div>
     <div class="perfrow"><span>Best total</span><span>${sTot.best||'—'}</span></div>
   `;
@@ -6633,16 +6791,17 @@ function getAutoPreMockEntries(){
   }
   return out;
 }
-// Builds read-only "auto" Math Sectional entries out of every day's 4
+// Builds read-only "auto" Math Sectional entries out of every day's
 // Sectional Math slots on the Today tab (Score + Right/Wrong/Skip + any
 // tagged weak chapters) — exactly the same auto-pull pattern as Pre Mocks
-// above, so nothing typed on the Today tab has to be re-typed here.
+// above, so nothing typed on the Today tab has to be re-typed here. A day
+// can have any number of sections now (Part 2: "Add More"), so this just
+// walks whatever keys that day's d.sect actually has instead of a fixed 4.
 function getAutoMathSecEntries(){
   const out = [];
-  const secLabel = {s1:'Sectional Math #1', s2:'Sectional Math #2', s3:'Sectional Math #3', s4:'Sectional Math #4'};
   function pushFromDay(dayNum, dayObj, cycleStartDate, cycleTag){
     if(!dayObj || !dayObj.sect) return;
-    ['s1','s2','s3','s4'].forEach(k=>{
+    Object.keys(dayObj.sect).forEach((k,idx)=>{
       const score = dayObj.sect[k];
       const sd = (dayObj.sectDetail && dayObj.sectDetail[k]) || {};
       const chapters = Array.isArray(sd.chapters) ? sd.chapters : [];
@@ -6658,7 +6817,7 @@ function getAutoMathSecEntries(){
       const chapterStr = Object.entries(chapCounts).map(([n,c])=> c>1?`${n} ×${c}`:n).join(', ');
       out.push({
         id: 'autosec_'+cycleTag+'_'+dayNum+'_'+k,
-        name: `Day ${dayNum} ${secLabel[k]}`,
+        name: `Day ${dayNum} Sectional Math #${idx+1}`,
         date: dateStr,
         score: score,
         right: sd.right, wrong: sd.wrong, skip: sd.skip,
@@ -7671,15 +7830,16 @@ function renderSectionalVsFullCompare(){
     }
     const tot = dayMockTotal(d);
     if(tot!==null){ fullMarksSum += tot; fullCount++; }
-    ['s1','s2','s3','s4'].forEach(k=>{
+    Object.keys(d.sect).forEach(k=>{
       const sd = d.sectDetail && d.sectDetail[k];
       if(sd && (hasVal(sd.right)||hasVal(sd.wrong))){
         sectRight += num(sd.right);
         sectWrong += num(sd.wrong);
       }
     });
-    if(hasVal(d.sect.s1)||hasVal(d.sect.s2)||hasVal(d.sect.s3)||hasVal(d.sect.s4)){
-      sectMarksSum += num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+    const sectKeys = Object.keys(d.sect);
+    if(sectKeys.some(k=>hasVal(d.sect[k]))){
+      sectMarksSum += sectKeys.reduce((s,k)=>s+num(d.sect[k]),0);
       sectCount++;
     }
   }
@@ -7959,16 +8119,30 @@ function renderBestWorst(){
 }
 
 function exportCSV(){
-  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Percentile','Mock Total','Wrong Math','Wrong Reasoning','Wrong English','Wrong GK','Wrong Total','Sec1','Sec2','Sec3','Sec4','Sec Total','Earned (₹)','Lost (₹)','Pending (₹)','Notes','Silly Mistakes'];
+  // Sectional columns are now dynamic (Part 2: "Add More") — find the
+  // highest section number ever used across all days so the CSV has enough
+  // "SecN" columns for everyone, blank where a given day didn't go that far.
+  let maxSecN = 4;
+  for(let i=1;i<=TOTAL_DAYS;i++){
+    Object.keys(getDay(i).sect).forEach(k=>{
+      const m = /^s(\d+)$/.exec(k);
+      if(m) maxSecN = Math.max(maxSecN, parseInt(m[1],10));
+    });
+  }
+  const secHeaders = [];
+  for(let n=1;n<=maxSecN;n++) secHeaders.push('Sec'+n);
+  const header = ['Day','Date','Rest Day','Tasks Done','Total Tasks','Math','Reasoning','English','GK','Percentile','Mock Total','Wrong Math','Wrong Reasoning','Wrong English','Wrong GK','Wrong Total',...secHeaders,'Sec Total','Earned (₹)','Lost (₹)','Pending (₹)','Notes','Silly Mistakes'];
   const rows = [header];
   for(let i=1;i<=TOTAL_DAYS;i++){
     const d = getDay(i);
     const done = d.tasks.filter(Boolean).length;
     const mockTotal = num(d.mock.math)+num(d.mock.reasoning)+num(d.mock.english)+num(d.mock.gk);
     const wrongTotal = num(d.mock.wrongMath)+num(d.mock.wrongReasoning)+num(d.mock.wrongEnglish)+num(d.mock.wrongGk);
-    const sectTotal = num(d.sect.s1)+num(d.sect.s2)+num(d.sect.s3)+num(d.sect.s4);
+    const sectTotal = Object.keys(d.sect).reduce((s,k)=>s+num(d.sect[k]),0);
+    const secVals = [];
+    for(let n=1;n<=maxSecN;n++) secVals.push(d.sect['s'+n] !== undefined ? d.sect['s'+n] : '');
     const r = dayEarnLoss(d, i);
-    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, d.mock.percentile, mockTotal, d.mock.wrongMath, d.mock.wrongReasoning, d.mock.wrongEnglish, d.mock.wrongGk, wrongTotal, d.sect.s1, d.sect.s2, d.sect.s3, d.sect.s4, sectTotal, Math.round(r.earned), Math.round(r.lost), Math.round(r.pending||0), (d.notes||''), (d.mistakes||'')]);
+    rows.push([i, fmtDate(i), d.rest?'Yes':'No', done, TASKS.length, d.mock.math, d.mock.reasoning, d.mock.english, d.mock.gk, d.mock.percentile, mockTotal, d.mock.wrongMath, d.mock.wrongReasoning, d.mock.wrongEnglish, d.mock.wrongGk, wrongTotal, ...secVals, sectTotal, Math.round(r.earned), Math.round(r.lost), Math.round(r.pending||0), (d.notes||''), (d.mistakes||'')]);
   }
   rows.push([]);
   rows.push(['Math Chapter','Wrong Count']);
@@ -10182,6 +10356,11 @@ let taskTimers = {};           // { [taskIdx]: {mode,running,isBreak,workAccumSe
 let taskTimerDay = null;       // which plan-day these belong to (stale day = discard)
 let taskTimerEngineHandle = null;
 let taskTimerExpandedIdx = null; // UI-only: which task's box is open right now
+let taskScoreExpandedIdx = null; // UI-only: which task's auto score/wrong-log box is open right now
+function toggleTaskScoreBox(idx){
+  taskScoreExpandedIdx = (taskScoreExpandedIdx === idx) ? null : idx;
+  renderPanel();
+}
 
 function ttTargetSecFor(idx){ return (TASK_DURATIONS_MIN[idx]||0) * 60; }
 
