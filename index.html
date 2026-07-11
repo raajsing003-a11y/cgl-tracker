@@ -323,18 +323,26 @@
   .chapterQuickCount{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;width:100%;text-align:right;}
 
   .chapterRow{
-    display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;
+    display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:12.5px;
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    border:1px solid var(--border);border-radius:12px;margin-bottom:7px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.3);
   }
-  .chapterRow:last-child{border-bottom:none;}
-  .chapterRow.weak{background:linear-gradient(90deg,rgba(248,113,113,0.1),transparent);border-radius:6px;}
+  .chapterRow.weak{
+    background:linear-gradient(160deg,rgba(248,113,113,0.14),#0d0c0f);
+    border-color:rgba(248,113,113,0.45);box-shadow:0 0 12px rgba(248,113,113,0.2),0 3px 8px rgba(0,0,0,0.3);
+  }
   .chapterRow .chName{flex:1;color:var(--text);font-weight:700;min-width:0;}
   .chapterRow.weak .chName{color:var(--loss);}
   .chapterRow .chCount{
-    min-width:22px;text-align:center;font-weight:800;color:var(--white);font-size:13px;
+    min-width:26px;text-align:center;font-weight:800;color:var(--white);font-size:13px;
+    background:var(--panel2);border-radius:20px;padding:3px 0;
   }
+  .chapterRow.weak .chCount{background:rgba(248,113,113,0.2);color:var(--loss);}
   .chapterRow .chBtn{
     background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
-    width:30px;height:30px;border-radius:7px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    width:30px;height:30px;border-radius:50%;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    transition:transform .12s ease;
   }
   .chapterRow .chBtn.chPlus{border-color:var(--loss);color:var(--loss);}
   .chapterRow .chBtn:active{transform:scale(0.9);}
@@ -1287,33 +1295,86 @@
     --tb-color:var(--accent);
     flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
     background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;
-    font-weight:800;font-size:9.5px;letter-spacing:0.1px;padding:5px 1px 4px;border-radius:10px;
+    font-weight:900;font-size:10px;letter-spacing:0.2px;padding:5px 1px 4px;border-radius:10px;
     cursor:pointer;position:relative;transition:color .15s ease,transform .12s ease;
     min-width:0;
   }
   .tabbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+  .tabbtn svg{width:18px;height:18px;transition:transform .18s ease,filter .18s ease;}
   .tabbtn[data-tab="today"]{--tb-color:var(--blue);}
   .tabbtn[data-tab="mock"]{--tb-color:var(--purple);}
   .tabbtn[data-tab="chapters"]{--tb-color:var(--pink);}
   .tabbtn[data-tab="compete"]{--tb-color:var(--orange);}
   .tabbtn[data-tab="more"]{--tb-color:var(--gain);}
   .tabbtn[data-tab="calc"]{--tb-color:#ec4899;}
-  /* "Learn" tab — deliberately always-colourful (unlike the other plain
-     line-icon tabs that only tint on active) so it stands out and is easy
-     to spot/tap at a glance, same shimmering palette as the Vocab card. */
+  /* Every tab now carries a small always-colourful gradient icon badge
+     (instead of a plain line icon that only tints on active) so the whole
+     bar reads as one lively, consistent set — same shimmering palette
+     family as the Vocab card, each tab with its own gradient + glow. */
   .tabIconBadge{
     width:25px;height:25px;border-radius:9px;display:flex;align-items:center;justify-content:center;
     background:linear-gradient(120deg,#7c3aed 0%,#ec4899 48%,#f59e0b 100%);
     background-size:220% 220%;animation:vocabShimmer 7s ease infinite;
     box-shadow:0 2px 8px rgba(236,72,153,0.45);margin-bottom:1px;
+    --badge-glow:rgba(236,72,153,0.75);--badge-glow2:rgba(124,58,237,0.5);
   }
-  .tabbtn[data-tab="calc"] svg{width:14px;height:14px;color:#fff;}
-  .tabbtn[data-tab="calc"].active svg{transform:none;filter:none;}
-  .tabbtn[data-tab="calc"].active .tabIconBadge{box-shadow:0 2px 10px rgba(236,72,153,0.75),0 0 12px rgba(124,58,237,0.5);}
+  .tabIconBadge-home{
+    background:linear-gradient(120deg,#fde047 0%,#fbbf24 48%,#fb923c 100%);
+    box-shadow:0 2px 8px rgba(251,191,36,0.45);
+    --badge-glow:rgba(251,191,36,0.8);--badge-glow2:rgba(251,146,60,0.5);
+  }
+  .tabIconBadge-today{
+    background:linear-gradient(120deg,#60a5fa 0%,#3b82f6 48%,#2dd4bf 100%);
+    box-shadow:0 2px 8px rgba(96,165,250,0.45);
+    --badge-glow:rgba(96,165,250,0.8);--badge-glow2:rgba(45,212,191,0.5);
+  }
+  .tabIconBadge-mock{
+    background:linear-gradient(120deg,#c084fc 0%,#a855f7 48%,#7c3aed 100%);
+    box-shadow:0 2px 8px rgba(192,132,252,0.45);
+    --badge-glow:rgba(192,132,252,0.8);--badge-glow2:rgba(124,58,237,0.5);
+  }
+  .tabIconBadge-weak{
+    background:linear-gradient(120deg,#f472b6 0%,#ec4899 48%,#db2777 100%);
+    box-shadow:0 2px 8px rgba(244,114,182,0.45);
+    --badge-glow:rgba(244,114,182,0.8);--badge-glow2:rgba(219,39,119,0.5);
+  }
+  .tabIconBadge-rank{
+    background:linear-gradient(120deg,#fb923c 0%,#f59e0b 48%,#facc15 100%);
+    box-shadow:0 2px 8px rgba(251,146,60,0.45);
+    --badge-glow:rgba(251,146,60,0.8);--badge-glow2:rgba(245,158,11,0.5);
+  }
+  .tabIconBadge-more{
+    background:linear-gradient(120deg,#2dd4bf 0%,#4ade80 50%,#60a5fa 100%);
+    box-shadow:0 2px 8px rgba(74,222,128,0.45);
+    --badge-glow:rgba(74,222,128,0.8);--badge-glow2:rgba(96,165,250,0.5);
+  }
+  .tabIconBadge svg{width:14px;height:14px;color:#fff;}
+  .tabbtn.active .tabIconBadge svg{transform:none;filter:none;}
+  .tabbtn.active .tabIconBadge{box-shadow:0 2px 10px var(--badge-glow),0 0 12px var(--badge-glow2);}
   .tabbtn:active{transform:scale(0.9);}
-  .tabbtn svg{width:18px;height:18px;transition:transform .18s ease,filter .18s ease;}
-  .tabbtn.active{color:var(--tb-color);}
-  .tabbtn.active svg{transform:translateY(-2px);filter:drop-shadow(0 0 6px var(--tb-color));}
+  /* Middle "Learn" tab pops up above the bar as a raised, floating pill —
+     the badge is bigger, ringed in the page background colour (so it reads
+     as a cut-out circle poking through the bar), and gently bobs to draw
+     the eye, same way a centre FAB works in many app tab bars. */
+  .tabbtn-pop{
+    transform:translateY(-15px);
+    z-index:2;
+  }
+  .tabbtn-pop:active{transform:translateY(-15px) scale(0.9);}
+  .tabbtn-pop .tabIconBadge{
+    width:46px;height:46px;border-radius:50%;margin-bottom:4px;
+    box-shadow:0 6px 16px rgba(236,72,153,0.55),0 0 0 5px var(--bg);
+    animation:vocabShimmer 7s ease infinite, tabPopFloat 2.6s ease-in-out infinite;
+  }
+  .tabbtn-pop.active .tabIconBadge{box-shadow:0 6px 20px var(--badge-glow),0 0 0 5px var(--bg),0 0 14px var(--badge-glow2);}
+  .tabbtn-pop svg{width:21px;height:21px;}
+  .tabbtn-pop span:last-child{font-size:10px;}
+  .tabbtn-pop.active::before{display:none;}
+  @keyframes tabPopFloat{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-4px);}
+  }
+  .tabbtn.active{color:var(--tb-color);text-shadow:0 0 8px var(--tb-color);}
   .tabbtn.active::before{
     content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);
     width:18px;height:3px;border-radius:0 0 3px 3px;background:var(--tb-color);
@@ -1353,14 +1414,23 @@
 
   /* ===== Compact "Compete With Friends" summary card on Home ===== */
   .homeLBrow{
-    display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:12px;
+    display:flex;align-items:center;gap:10px;padding:9px 10px;font-size:12px;
+    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    border:1px solid var(--border);border-radius:12px;margin-bottom:7px;
   }
-  .homeLBrow:last-child{border-bottom:none;}
-  .homeLBrow.me{background:rgba(251,191,36,0.08);border-radius:6px;padding:8px 6px;}
+  .homeLBrow.me{
+    background:linear-gradient(160deg,rgba(96,165,250,0.14),#0d0c0f);
+    border-color:var(--blue);
+  }
+  .homeLBrow.lead{
+    background:linear-gradient(160deg,rgba(251,191,36,0.14),#0d0c0f);
+    border-color:rgba(251,191,36,0.55);
+  }
   .homeLBrank{font-weight:900;min-width:22px;text-align:center;color:var(--muted);font-size:13px;}
   .homeLBrow.me .homeLBrank, .homeLBrow.lead .homeLBrank{color:var(--accent);}
   .homeLBname{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .homeLBmeta{display:flex;gap:8px;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .homeLBmeta{display:flex;gap:6px;font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .homeLBmeta span{background:var(--panel2);border-radius:20px;padding:2px 7px;}
   .homeLBfoot{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;
     border-top:1px dashed var(--border);gap:8px;flex-wrap:wrap;
@@ -1562,8 +1632,20 @@
 
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
-  .chapterRow.neverRevised{background:linear-gradient(90deg,rgba(251,191,36,0.10),transparent);border-radius:6px;}
+  .chapterRow.clear{
+    background:linear-gradient(160deg,rgba(74,222,128,0.12),#0d0c0f);
+    border-color:rgba(74,222,128,0.4);
+  }
+  .chapterRow.clear .chName{color:var(--gain);}
+  .chapterRow.clear .chCount{background:rgba(74,222,128,0.18);color:var(--gain);}
+  .chapterRow.revised{border-color:rgba(74,222,128,0.3);}
+  .chapterRow.revised .chCount{background:rgba(74,222,128,0.15);color:var(--gain);}
+  .chapterRow.neverRevised{
+    background:linear-gradient(160deg,rgba(251,191,36,0.14),#0d0c0f);
+    border-color:rgba(251,191,36,0.45);box-shadow:0 0 12px rgba(251,191,36,0.18),0 3px 8px rgba(0,0,0,0.3);
+  }
   .chapterRow.neverRevised .chName{color:var(--accent);}
+  .chapterRow.neverRevised .chCount{background:rgba(251,191,36,0.2);color:var(--accent);}
   .gkGroup{
     border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;
     background:linear-gradient(165deg,var(--panel),#0d0c0f);
@@ -1609,42 +1691,54 @@
   .mockBackRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .mockBackBtn{
     background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
-    width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:16px;font-weight:800;
+    width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:800;
     display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    transition:transform .12s ease,border-color .15s ease,box-shadow .15s ease;
   }
   .mockBackBtn:active{transform:scale(0.92);}
+  .mockBackBtn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 8px rgba(251,191,36,0.35);}
   .mockDetailTitle{font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;color:var(--white);flex:1;}
 
   .mockEntryCard{
     background:linear-gradient(165deg,var(--panel),#0d0c0f);border:1px solid var(--border);border-radius:12px;
-    padding:12px 14px;margin-bottom:10px;
+    padding:12px 14px;margin-bottom:10px;border-left:3px solid var(--border-strong);
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
   }
   .mockEntryCard.auto{border-style:dashed;opacity:0.92;}
+  #mockDetailSection[data-cat="preMock"] .mockEntryCard{border-left-color:var(--accent);}
+  #mockDetailSection[data-cat="mainsMock"] .mockEntryCard{border-left-color:var(--orange);}
+  #mockDetailSection[data-cat="mathSec"] .mockEntryCard{border-left-color:var(--blue);}
+  #mockDetailSection[data-cat="engSec"] .mockEntryCard{border-left-color:var(--purple);}
+  #mockDetailSection[data-cat="reasoningSec"] .mockEntryCard{border-left-color:var(--pink);}
   .mockEHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
   .mockEName{font-weight:800;color:var(--white);font-size:13.5px;}
   .mockEDate{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;}
   .mockETag{display:inline-block;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;font-weight:800;
     padding:2px 6px;border-radius:5px;margin-left:6px;background:var(--panel2);color:var(--accent);border:1px solid var(--accent-dim);vertical-align:middle;}
-  .mockEStats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .mockEStats{display:flex;gap:8px 10px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .mockEStats span{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;}
   .mockEStats b{color:var(--text);}
   .mockENote{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:4px;}
   .mockENote b{color:var(--text);}
   .mockEActions{display:flex;gap:8px;margin-top:8px;}
   .mockEActions button{
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
-    font-size:11px;font-weight:800;padding:5px 10px;border-radius:7px;cursor:pointer;
+    font-size:11px;font-weight:800;padding:6px 12px;border-radius:20px;cursor:pointer;
+    transition:transform .12s ease,border-color .15s ease,color .15s ease;
   }
   .mockEActions button:active{transform:scale(0.94);}
-  .mockEActions button.del{color:var(--loss);}
+  .mockEActions button.edit:hover{border-color:var(--blue);color:var(--blue);}
+  .mockEActions button.del{color:var(--loss);border-color:rgba(248,113,113,0.35);}
+  .mockEActions button.del:hover{background:rgba(248,113,113,0.14);}
 
   .mockEmptyState{text-align:center;padding:26px 10px;color:var(--muted);font-size:12.5px;font-weight:700;}
 
   .mockTypeToggle{display:flex;gap:8px;margin:6px 0 4px;}
   .mockTypeOpt{
-    flex:1;text-align:center;padding:9px 6px;border:1.5px solid var(--border-strong);border-radius:8px;
-    cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);
+    flex:1;text-align:center;padding:9px 6px;border:1.5px solid var(--border-strong);border-radius:20px;
+    cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);transition:box-shadow .15s ease;
   }
-  .mockTypeOpt.active{background:var(--accent);border-color:var(--accent);color:#1a1404;}
+  .mockTypeOpt.active{background:linear-gradient(160deg,#fff,#f1e0a8);border-color:var(--accent);color:#1a1404;box-shadow:0 3px 10px rgba(251,191,36,0.35);}
 
   .mockForm .onbLabel:first-child{margin-top:0;}
   .mockForm textarea{
@@ -2745,34 +2839,46 @@
 
 <div class="tabbar" id="tabbar">
   <button class="tabbtn active" data-tab="home">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    <span class="tabIconBadge tabIconBadge-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </span>
     <span>Home</span>
   </button>
   <button class="tabbtn" data-tab="today">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
+    <span class="tabIconBadge tabIconBadge-today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>
+    </span>
     <span>Today</span>
     <span class="tabdot" id="todayDot"></span>
   </button>
-  <button class="tabbtn" data-tab="calc">
+  <button class="tabbtn" data-tab="mock">
+    <span class="tabIconBadge tabIconBadge-mock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6v4H9z"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M8.5 12l2 2 4.5-4.5"/></svg>
+    </span>
+    <span>Mock</span>
+  </button>
+  <button class="tabbtn tabbtn-pop" data-tab="calc">
     <span class="tabIconBadge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5c-1.6-1.3-3.7-1.8-6-1.8v13c2.3 0 4.4.5 6 1.8 1.6-1.3 3.7-1.8 6-1.8v-13c-2.3 0-4.4.5-6 1.8Z"/><path d="M12 6.5v13"/></svg>
     </span>
     <span>Learn</span>
   </button>
-  <button class="tabbtn" data-tab="mock">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6v4H9z"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M8.5 12l2 2 4.5-4.5"/></svg>
-    <span>Mock</span>
-  </button>
   <button class="tabbtn" data-tab="chapters">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span class="tabIconBadge tabIconBadge-weak">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </span>
     <span>Weak</span>
   </button>
   <button class="tabbtn" data-tab="compete">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4.5a2 2 0 0 0 0 4H7"/><path d="M17 5h2.5a2 2 0 0 1 0 4H17"/></svg>
+    <span class="tabIconBadge tabIconBadge-rank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4.5a2 2 0 0 0 0 4H7"/><path d="M17 5h2.5a2 2 0 0 1 0 4H17"/></svg>
+    </span>
     <span>Rank</span>
   </button>
   <button class="tabbtn" data-tab="more">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
+    <span class="tabIconBadge tabIconBadge-more">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><path d="M15 6h4v4"/></svg>
+    </span>
     <span>Stats</span>
   </button>
 </div>
@@ -5297,6 +5403,9 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
     const dotHtml = isMe ? '🟢' : presenceLabel(r.name).dot;
+    const avatarColors=['av-blue','av-purple','av-pink','av-orange','av-teal','av-gain'];
+    const avatarColor = avatarColors[Math.abs([...r.name.toLowerCase()].reduce((a,c)=>a+c.charCodeAt(0),0)) % avatarColors.length];
+    const avatarHtml = `<span class="lbavatar ${avatarColor}" style="width:28px;height:28px;min-width:28px;font-size:13px;">${escapeHtml((r.name||'?').trim().charAt(0).toUpperCase())}</span>`;
     // One-click shortcut straight into an opponent's full tracker (Today tab:
     // tasks, mock/sectional scores, notes, mistakes, day grid) — no need to
     // go via the Compete tab and tap "View" separately.
@@ -5304,6 +5413,7 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
     return `
       <div class="homeLBrow ${isMe?'me':''} ${rank===1?'lead':''}">
         <div class="homeLBrank">${medal}</div>
+        ${avatarHtml}
         <div class="homeLBname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}</div>
         <div class="homeLBmeta"><span>⭐Lv${r.level}</span><span>🔥${r.streak}</span><span>📈${r.pct}%</span></div>
         ${viewBtn}
@@ -7517,6 +7627,8 @@ function renderMockDetail(){
   const bodyEl = document.getElementById('mockDetailBody');
   if(!cat || !titleEl || !bodyEl) return;
   titleEl.textContent = `${cat.icon} ${cat.label}`;
+  const detailSecEl = document.getElementById('mockDetailSection');
+  if(detailSecEl) detailSecEl.setAttribute('data-cat', cat.id);
   if(cat.id==='analysis'){
     bodyEl.innerHTML = renderMockAnalysisHtml();
     wireMockAnalysisAiBox();
@@ -8072,8 +8184,8 @@ function renderChapterList(type, chapters){
   return rows.map(r=>{
     const weak = maxCount>0 && r.count===maxCount && r.count>0;
     return `
-    <div class="chapterRow ${weak?'weak':''}">
-      <span class="chName">${weak?'🔥 ':''}${escapeHtml(r.name)}</span>
+    <div class="chapterRow ${weak?'weak':''} ${r.count===0?'clear':''}">
+      <span class="chName">${weak?'🔥 ':r.count===0?'✨ ':''}${escapeHtml(r.name)}</span>
       <span class="chCount">${r.count}</span>
       <button class="chBtn chMinus" data-ch-type="${type}" data-ch-name="${escapeHtml(r.name)}" data-ch-delta="-1" ${dis}>−1</button>
       <button class="chBtn chPlus" data-ch-type="${type}" data-ch-name="${escapeHtml(r.name)}" data-ch-delta="1" ${dis}>+1</button>
@@ -8315,7 +8427,7 @@ function renderRevisionRow(type, name){
   const dis = isReadOnly ? 'disabled' : '';
   const count = revisionCount(type, name);
   return `
-    <div class="chapterRow ${count===0?'neverRevised':''}">
+    <div class="chapterRow ${count===0?'neverRevised':'revised'}">
       <span class="chName">${count===0?'🆕 ':''}${escapeHtml(name)}</span>
       <span class="chCount">${count}</span>
       <button class="chBtn chMinus" data-rv-type="${type}" data-rv-name="${escapeHtml(name)}" data-rv-delta="-1" ${dis}>−1</button>
