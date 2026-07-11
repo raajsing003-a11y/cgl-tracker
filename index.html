@@ -1046,6 +1046,26 @@
     50%{background-position:100% 50%;}
     100%{background-position:0% 50%;}
   }
+  /* Idioms & Phrases card — teesra shimmer palette (amber → red → violet)
+     taaki Vocab/Spelling/Idioms teeno cards turant alag pehchane ja sakein. */
+  .calcCard-idiom{
+    background:linear-gradient(120deg,#f59e0b 0%,#ef4444 48%,#7c3aed 100%);
+    background-size:220% 220%;
+    animation:idiomShimmer 7s ease infinite;
+    border:none;
+    box-shadow:0 6px 22px rgba(239,68,68,0.38);
+  }
+  .calcCard-idiom .calcIcon-idiom{
+    background:rgba(255,255,255,0.22);color:#fff;box-shadow:none;
+  }
+  .calcCard-idiom .calcLabel{color:#fff;font-size:16.5px;}
+  .calcCard-idiom .calcSub{color:rgba(255,255,255,0.9);font-size:11.5px;font-weight:700;letter-spacing:0.2px;}
+  .calcCard-idiom .calcArrow{color:#fff;}
+  @keyframes idiomShimmer{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+  }
   /* "Saved Questions" button — sabse upar, Set list ke upar, gold/starred
      theme (same palette as .stat.invert) taaki alag se pehchana ja sake. */
   .calcCard-vocabSaved{
@@ -1261,7 +1281,7 @@
   /* ===== Bottom app tab bar ===== */
   .tabbar{
     position:fixed;bottom:0;left:0;right:0;z-index:60;
-    display:flex;
+    display:flex;align-items:flex-end;
     background:rgba(13,12,15,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     border-top:1px solid var(--border);
     padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
@@ -1357,10 +1377,10 @@
      as a cut-out circle poking through the bar), and gently bobs to draw
      the eye, same way a centre FAB works in many app tab bars. */
   .tabbtn-pop{
-    transform:translateY(-15px);
+    margin-top:-24px;
     z-index:2;
   }
-  .tabbtn-pop:active{transform:translateY(-15px) scale(0.9);}
+  .tabbtn-pop:active{transform:scale(0.9);}
   .tabbtn-pop .tabIconBadge{
     width:46px;height:46px;border-radius:50%;margin-bottom:4px;
     box-shadow:0 6px 16px rgba(236,72,153,0.55),0 0 0 5px var(--bg);
@@ -2581,6 +2601,16 @@
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
+        <button class="calcCard calcCard-idiom" id="calcIdiomBtn" data-calc="idiom">
+          <span class="calcIcon calcIcon-idiom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12c0 4.42-4.03 8-9 8-1.35 0-2.63-.26-3.78-.72L3 20l1.05-3.68A7.93 7.93 0 0 1 3 12c0-4.42 4.03-8 9-8s9 3.58 9 8z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
+          </span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Idioms &amp; Phrases</span>
+            <span class="calcSub" id="idiomSubLabel">60 idioms · 3 sets · MCQ</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
       </div>
 
       <div class="grid-label" style="margin-top:0;">🧮 Calculation Practice</div>
@@ -2743,6 +2773,48 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="spellingResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="spellingResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-idiommenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="idiomMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">Idioms &amp; Phrases — Choose a Set</div>
+      </div>
+      <div class="calcGrid calcGrid-1col" id="idiomSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-idiom">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="idiomBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="idiomQuizTitle">Idioms &amp; Phrases</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="idiomStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="idiomStatWrong">0</span></div>
+        <div class="calcStatPill" id="idiomStatProgress" style="margin-left:auto;color:var(--muted);">Q 1/1</div>
+      </div>
+
+      <div class="calcQuestionWrap" id="idiomQuestionWrap">
+        <div class="calcQuestion" id="idiomWordText" style="font-size:clamp(16px,4.5vw,21px);line-height:1.4;">—</div>
+        <div style="margin-top:8px;font-size:13px;color:var(--muted);font-weight:700;">Sahi meaning chuno</div>
+      </div>
+
+      <div class="calcAnsGrid" id="idiomAnsGrid"></div>
+
+      <div class="calcResultCard" id="idiomSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="idiomSolutionText" style="font-size:14px;line-height:1.5;color:var(--text);font-weight:700;"></div>
+        <button class="nav-btn onbPrimary" id="idiomNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="idiomResultCard" style="display:none;">
+        <div class="calcResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="idiomResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="idiomResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="idiomResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -11149,7 +11221,24 @@ function initVocabQuiz(){
   if(spellingAgainBtn) spellingAgainBtn.addEventListener('click', () => startSpellingQuiz());
   const spellingResBackBtn = document.getElementById('spellingResultBackBtn');
   if(spellingResBackBtn) spellingResBackBtn.addEventListener('click', () => showCalcPage('spellingmenu'));
+
+  // "Idioms & Phrases" card — same two-step flow: Set choose karo
+  // (calcPage-idiommenu), phir quiz shuru hota hai (calcPage-idiom).
+  const idiomBtn = document.getElementById('calcIdiomBtn');
+  if(idiomBtn) idiomBtn.addEventListener('click', () => showCalcPage('idiommenu'));
+  const idiomMenuBackBtn = document.getElementById('idiomMenuBackBtn');
+  if(idiomMenuBackBtn) idiomMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const idiomBackBtn = document.getElementById('idiomBackBtn');
+  if(idiomBackBtn) idiomBackBtn.addEventListener('click', () => showCalcPage('idiommenu'));
+  const idiomNextBtn = document.getElementById('idiomNextBtn');
+  if(idiomNextBtn) idiomNextBtn.addEventListener('click', goToNextIdiomQuestion);
+  const idiomAgainBtn = document.getElementById('idiomResultAgainBtn');
+  if(idiomAgainBtn) idiomAgainBtn.addEventListener('click', () => startIdiomQuiz());
+  const idiomResBackBtn = document.getElementById('idiomResultBackBtn');
+  if(idiomResBackBtn) idiomResBackBtn.addEventListener('click', () => showCalcPage('idiommenu'));
+
   initSpellingQuiz();
+  initIdiomQuiz();
 }
 
 // ===== Spelling Quiz (Learn/Calc tab) =====
@@ -11778,6 +11867,218 @@ function endSpellingQuiz(){
 
 function initSpellingQuiz(){
   renderSpellingSetMenu();
+}
+
+// ===== Idioms & Phrases Quiz (Learn/Calc tab) =====
+// DATA FORMAT: same shape as VOCAB_SETS -- { word, options, answer,
+// explanation }. 'word' field mein idiom ka sawaal hota hai, options
+// mein 4 possible meanings, 'answer' sahi meaning ka 0-based index hai.
+const idiomSession = { setKey: null, questions: [], index: 0, correct: 0, wrong: 0, answered: false };
+
+const IDIOM_SETS = {
+  set1: [
+    { word: "Choose the correct meaning of the idiom: 'Once in a blue moon'", options: ["Very rarely", "Every single day", "During a full moon night", "Very frequently"], answer: 0, explanation: ["'Once in a blue moon' - Very rarely (बहुत कम या कभी-कभार) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Beat around the bush'", options: ["To search in the garden", "To avoid talking about the main point", "To finish work quickly", "To speak very loudly"], answer: 1, explanation: ["'Beat around the bush' - To avoid talking about the main point (मुद्दे की बात न करना, इधर-उधर की बातें करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Add fuel to the fire'", options: ["To cook food quickly", "To calm someone down", "To make a bad situation worse", "To start a new project"], answer: 2, explanation: ["'Add fuel to the fire' - To make a bad situation worse (स्थिति को और बिगाड़ना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Break the ice'", options: ["To cool a room down", "To end a friendship", "To break something by accident", "To start a conversation in a social situation"], answer: 3, explanation: ["'Break the ice' - To start a conversation in a social situation (बातचीत की शुरुआत करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Call it a day'", options: ["To stop working on something for the rest of the day", "To plan the next day", "To celebrate a birthday", "To start work early"], answer: 0, explanation: ["'Call it a day' - To stop working on something for the rest of the day (दिन भर के लिए काम बंद करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Cut corners'", options: ["To take a shortcut route", "To do something in the cheapest or easiest way, ignoring quality", "To cut paper into pieces", "To finish work with great care"], answer: 1, explanation: ["'Cut corners' - To do something in the cheapest or easiest way, ignoring quality (काम को घटिया या सस्ते तरीके से करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Hit the nail on the head'", options: ["To hurt oneself while working", "To fail completely at a task", "To describe exactly what is causing a situation", "To hammer something loudly"], answer: 2, explanation: ["'Hit the nail on the head' - To describe exactly what is causing a situation (बिल्कुल सही बात कहना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Let the cat out of the bag'", options: ["To free a trapped animal", "To buy a new pet", "To pack one's belongings", "To reveal a secret by mistake"], answer: 3, explanation: ["'Let the cat out of the bag' - To reveal a secret by mistake (गलती से राज़ खोल देना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Piece of cake'", options: ["A task that is very easy to do", "A dessert served after dinner", "A very difficult task", "A small portion of food"], answer: 0, explanation: ["'Piece of cake' - A task that is very easy to do (बहुत आसान काम) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Under the weather'", options: ["Standing outside in the rain", "Feeling slightly ill", "Feeling extremely happy", "Watching the weather forecast"], answer: 1, explanation: ["'Under the weather' - Feeling slightly ill (थोड़ा बीमार महसूस करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'A blessing in disguise'", options: ["A gift wrapped in nice paper", "A curse that ruins everything", "Something good that seemed bad at first", "A prayer said in secret"], answer: 2, explanation: ["'A blessing in disguise' - Something good that seemed bad at first (जो पहले बुरा लगे पर बाद में अच्छा साबित हो) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Burn the midnight oil'", options: ["To waste money carelessly", "To light candles for a festival", "To finish work early in the morning", "To work or study late into the night"], answer: 3, explanation: ["'Burn the midnight oil' - To work or study late into the night (देर रात तक पढ़ाई या काम करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Cost an arm and a leg'", options: ["To be very expensive", "To cause a serious injury", "To be completely free", "To take a long time to make"], answer: 0, explanation: ["'Cost an arm and a leg' - To be very expensive (बहुत महंगा होना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Kill two birds with one stone'", options: ["To harm two people at once", "To achieve two things with a single action", "To fail at two tasks together", "To hunt birds for food"], answer: 1, explanation: ["'Kill two birds with one stone' - To achieve two things with a single action (एक काम से दो लक्ष्य पूरे करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'On thin ice'", options: ["Skating on a frozen lake", "Feeling very confident", "In a risky or dangerous situation", "Standing in a safe place"], answer: 2, explanation: ["'On thin ice' - In a risky or dangerous situation (जोखिम भरी स्थिति में होना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Speak of the devil'", options: ["To talk about scary stories", "To pray in a temple", "To argue with someone angrily", "Said when a person appears right after being talked about"], answer: 3, explanation: ["'Speak of the devil' - Said when a person appears right after being talked about (जिसकी बात हो रही हो वह अचानक आ जाए) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'The ball is in your court'", options: ["It is now your responsibility to decide or act", "It is time to play a sport", "The match has been cancelled", "Someone else must decide"], answer: 0, explanation: ["'The ball is in your court' - It is now your responsibility to decide or act (अब निर्णय लेने की जिम्मेदारी तुम्हारी है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Throw in the towel'", options: ["To clean the house quickly", "To give up or admit defeat", "To start a boxing match", "To win a difficult contest"], answer: 1, explanation: ["'Throw in the towel' - To give up or admit defeat (हार मान लेना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Smell a rat'", options: ["To find a hidden animal", "To cook a special dish", "To suspect that something is wrong", "To feel very confident about a plan"], answer: 2, explanation: ["'Smell a rat' - To suspect that something is wrong (किसी बात में गड़बड़ी का शक होना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Wild goose chase'", options: ["A fun hunting trip", "An easy and quick task", "A well-planned journey", "A hopeless and useless search for something"], answer: 3, explanation: ["'Wild goose chase' - A hopeless and useless search for something (बेकार और असफल खोज) - Correct meaning"] },
+  ],
+  set2: [
+    { word: "Choose the correct meaning of the idiom: 'A drop in the ocean'", options: ["A very small and insignificant amount compared to what is needed", "A huge and overwhelming quantity", "A rare natural phenomenon", "A perfect solution to a problem"], answer: 0, explanation: ["'A drop in the ocean' - A very small and insignificant amount compared to what is needed (जरूरत के मुकाबले बहुत छोटी मात्रा) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Bite the bullet'", options: ["To eat something very hard", "To face a difficult or unpleasant situation with courage", "To avoid a difficult decision", "To load a weapon carefully"], answer: 1, explanation: ["'Bite the bullet' - To face a difficult or unpleasant situation with courage (साहस के साथ कठिन परिस्थिति का सामना करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Bury the hatchet'", options: ["To hide evidence of a crime", "To start a new argument", "To make peace and end a quarrel", "To dig in the garden"], answer: 2, explanation: ["'Bury the hatchet' - To make peace and end a quarrel (झगड़ा खत्म कर सुलह करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'By the skin of one's teeth'", options: ["To lose a competition badly", "To win very easily and comfortably", "To smile while feeling nervous", "To narrowly succeed at something"], answer: 3, explanation: ["'By the skin of one's teeth' - To narrowly succeed at something (बहुत मुश्किल से सफल होना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Cross that bridge when you come to it'", options: ["Deal with a problem only when it actually happens", "Plan for every problem in advance", "Avoid crossing rivers on a trip", "Solve all problems immediately"], answer: 0, explanation: ["'Cross that bridge when you come to it' - Deal with a problem only when it actually happens (समस्या आने पर ही उसका हल सोचना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Cry over spilt milk'", options: ["To be careful while pouring milk", "To regret something that has already happened and cannot be changed", "To celebrate a small victory", "To plan ahead for the future"], answer: 1, explanation: ["'Cry over spilt milk' - To regret something that has already happened and cannot be changed (बीती बात पर पछताना जो बदली नहीं जा सकती) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Get a taste of your own medicine'", options: ["To try a new type of food", "To recover quickly from an illness", "To be treated the way you have treated others", "To receive an unexpected gift"], answer: 2, explanation: ["'Get a taste of your own medicine' - To be treated the way you have treated others (जैसा किया वैसा भरना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Give the benefit of the doubt'", options: ["To punish someone without a trial", "To doubt everything a person says", "To ignore someone's request completely", "To believe someone's claim without proof, trusting them"], answer: 3, explanation: ["'Give the benefit of the doubt' - To believe someone's claim without proof, trusting them (बिना सबूत के भरोसा करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Go the extra mile'", options: ["To make more effort than is expected", "To travel a longer distance than planned", "To do the bare minimum required", "To give up before finishing a task"], answer: 0, explanation: ["'Go the extra mile' - To make more effort than is expected (अपेक्षा से ज्यादा मेहनत करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Hit the sack'", options: ["To hit someone with a bag", "To go to bed and sleep", "To start working early", "To pack belongings for a trip"], answer: 1, explanation: ["'Hit the sack' - To go to bed and sleep (सोने जाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'In hot water'", options: ["Taking a warm bath", "Feeling extremely relaxed", "In a difficult or troublesome situation", "Cooking a meal at home"], answer: 2, explanation: ["'In hot water' - In a difficult or troublesome situation (मुसीबत में होना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'It's not rocket science'", options: ["It is a topic related to space travel", "It is an extremely difficult subject", "It requires years of scientific training", "It is not complicated or difficult to understand"], answer: 3, explanation: ["'It's not rocket science' - It is not complicated or difficult to understand (यह बहुत जटिल बात नहीं है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Jump on the bandwagon'", options: ["To join others in doing something that has become popular", "To ride a decorated vehicle in a parade", "To refuse to follow a popular trend", "To start a brand-new trend alone"], answer: 0, explanation: ["'Jump on the bandwagon' - To join others in doing something that has become popular (लोकप्रिय चीज़ में शामिल हो जाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Keep your fingers crossed'", options: ["To count numbers using your hands", "To hope that something will happen the way you want", "To promise never to lie again", "To signal that you are angry"], answer: 1, explanation: ["'Keep your fingers crossed' - To hope that something will happen the way you want (कुछ अच्छा होने की उम्मीद करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Let sleeping dogs lie'", options: ["To let pet dogs sleep peacefully", "To wake someone up quickly", "To avoid restarting an old argument or problem", "To start a fresh conflict on purpose"], answer: 2, explanation: ["'Let sleeping dogs lie' - To avoid restarting an old argument or problem (पुराने झगड़े को दोबारा न छेड़ना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Make a long story short'", options: ["To write a very lengthy report", "To add unnecessary details to a story", "To refuse to explain anything at all", "To summarize and tell only the important part"], answer: 3, explanation: ["'Make a long story short' - To summarize and tell only the important part (संक्षेप में बताना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Miss the boat'", options: ["To miss an opportunity because you acted too slowly", "To arrive early for a journey", "To catch a boat just in time", "To plan a trip very carefully"], answer: 0, explanation: ["'Miss the boat' - To miss an opportunity because you acted too slowly (अवसर चूक जाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'On the ball'", options: ["Confused and unaware of what's happening", "Alert, competent, and quick to understand situations", "Extremely tired and sleepy", "Playing a sport professionally"], answer: 1, explanation: ["'On the ball' - Alert, competent, and quick to understand situations (सतर्क और होशियार) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Pull someone's leg'", options: ["To physically hurt someone", "To help someone stand up", "To joke with or tease someone", "To ask someone for a favour seriously"], answer: 2, explanation: ["'Pull someone's leg' - To joke with or tease someone (किसी का मज़ाक उड़ाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Rain cats and dogs'", options: ["Animals falling from the sky", "A light drizzle of rain", "A sunny day with no clouds", "To rain very heavily"], answer: 3, explanation: ["'Rain cats and dogs' - To rain very heavily (बहुत तेज़ बारिश होना) - Correct meaning"] },
+  ],
+  set3: [
+    { word: "Choose the correct meaning of the idiom: 'Turn a blind eye'", options: ["To deliberately ignore something you know is wrong", "To lose one's eyesight suddenly", "To watch something very carefully", "To report a wrongdoing immediately"], answer: 0, explanation: ["'Turn a blind eye' - To deliberately ignore something you know is wrong (जानबूझकर अनदेखा करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Add insult to injury'", options: ["To apologize sincerely after a mistake", "To make a bad situation even worse by insulting the person", "To heal someone's wound quickly", "To praise someone generously"], answer: 1, explanation: ["'Add insult to injury' - To make a bad situation even worse by insulting the person (बुरी स्थिति को अपमान से और बिगाड़ना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'A penny for your thoughts'", options: ["An offer to lend someone money", "A request to keep a secret", "A way of asking someone what they are thinking about", "A way of ending a conversation"], answer: 2, explanation: ["'A penny for your thoughts' - A way of asking someone what they are thinking about (किसी के विचार पूछना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'A piece of one's mind'", options: ["To share a helpful and kind suggestion", "To give away one's personal belongings", "To praise someone for their good work", "To tell someone off angrily for something they did"], answer: 3, explanation: ["'A piece of one's mind' - To tell someone off angrily for something they did (गुस्से में खरी-खोटी सुनाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Actions speak louder than words'", options: ["What a person does matters more than what they say", "Loud speaking is more effective than action", "Words are always more important than deeds", "Silence is better than any action"], answer: 0, explanation: ["'Actions speak louder than words' - What a person does matters more than what they say (काम करना बातों से ज़्यादा महत्वपूर्ण है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Barking up the wrong tree'", options: ["Training a dog to climb trees", "Pursuing a mistaken course of action based on wrong information", "Choosing exactly the right approach", "Shouting loudly in a forest"], answer: 1, explanation: ["'Barking up the wrong tree' - Pursuing a mistaken course of action based on wrong information (गलत दिशा में प्रयास करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Best of both worlds'", options: ["A situation with no advantages at all", "Having to choose only one option", "A situation where you can enjoy the benefits of two different things", "Losing out on every opportunity"], answer: 2, explanation: ["'Best of both worlds' - A situation where you can enjoy the benefits of two different things (दोनों तरफ का फायदा मिलना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Better late than never'", options: ["It is always best to arrive early", "Doing something late is completely useless", "It is never acceptable to be late", "It is better to do something late than not do it at all"], answer: 3, explanation: ["'Better late than never' - It is better to do something late than not do it at all (देर से करना न करने से बेहतर है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Bite off more than you can chew'", options: ["To take on more responsibility than you can handle", "To eat a very large meal in one go", "To complete a task with great ease", "To refuse any new responsibility"], answer: 0, explanation: ["'Bite off more than you can chew' - To take on more responsibility than you can handle (क्षमता से अधिक काम अपने ऊपर ले लेना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Blood is thicker than water'", options: ["Family ties are weaker than friendships", "Family relationships are stronger than other relationships", "Water is more valuable than blood", "Strangers are more trustworthy than family"], answer: 1, explanation: ["'Blood is thicker than water' - Family relationships are stronger than other relationships (पारिवारिक रिश्ते अन्य रिश्तों से ज़्यादा मजबूत होते हैं) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Cut to the chase'", options: ["To run after someone quickly", "To add more background information", "To get to the point without wasting time on details", "To end a movie abruptly"], answer: 2, explanation: ["'Cut to the chase' - To get to the point without wasting time on details (बिना समय गंवाए मुद्दे पर आना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Play devil's advocate'", options: ["To genuinely support evil actions", "To always agree with the majority", "To avoid taking part in any argument", "To argue the opposite side of a debate, often to test an idea"], answer: 3, explanation: ["'Play devil's advocate' - To argue the opposite side of a debate, often to test an idea (बहस में जानबूझकर विरोधी पक्ष रखना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Every cloud has a silver lining'", options: ["Even difficult situations have a positive side", "Every situation is completely hopeless", "Clouds always bring good weather", "Bad times never really end"], answer: 0, explanation: ["'Every cloud has a silver lining' - Even difficult situations have a positive side (हर बुरी स्थिति में भी कुछ अच्छा छिपा होता है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Face the music'", options: ["To enjoy a live concert", "To accept the unpleasant consequences of one's actions", "To avoid all responsibility", "To celebrate an achievement"], answer: 1, explanation: ["'Face the music' - To accept the unpleasant consequences of one's actions (अपने किए का परिणाम भुगतना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Get out of hand'", options: ["To be fully under control", "To finish smoothly as planned", "To become difficult or impossible to control", "To become simple and manageable"], answer: 2, explanation: ["'Get out of hand' - To become difficult or impossible to control (काबू से बाहर हो जाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Give someone the cold shoulder'", options: ["To offer someone a warm welcome", "To help someone feel comfortable", "To give someone a warm piece of clothing", "To deliberately ignore or be unfriendly to someone"], answer: 3, explanation: ["'Give someone the cold shoulder' - To deliberately ignore or be unfriendly to someone (जानबूझकर किसी को नज़रअंदाज़ करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Go back to the drawing board'", options: ["To start planning something again from the beginning", "To finish a project successfully", "To draw a picture for fun", "To continue with the same old plan"], answer: 0, explanation: ["'Go back to the drawing board' - To start planning something again from the beginning (योजना को फिर से शुरू से बनाना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Hit the books'", options: ["To throw books away", "To study hard, especially before an exam", "To relax without studying", "To sell old textbooks"], answer: 1, explanation: ["'Hit the books' - To study hard, especially before an exam (मन लगाकर पढ़ाई करना) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'Ignorance is bliss'", options: ["Knowledge always brings happiness", "It is best to know everything", "Sometimes not knowing about a problem keeps you happier", "Ignoring people makes them happy"], answer: 2, explanation: ["'Ignorance is bliss' - Sometimes not knowing about a problem keeps you happier (अनजान रहना कभी-कभी सुखद होता है) - Correct meaning"] },
+    { word: "Choose the correct meaning of the idiom: 'In the heat of the moment'", options: ["Acting after a lot of careful planning", "Doing something on a very hot day", "Making a decision after long reflection", "Acting without thinking carefully, because of strong emotion at that time"], answer: 3, explanation: ["'In the heat of the moment' - Acting without thinking carefully, because of strong emotion at that time (तीव्र भावना में बिना सोचे-समझे कुछ करना) - Correct meaning"] },
+  ],
+};
+
+
+function idiomSetLabel(key, count){
+  const num = (key.match(/\d+/) || [key])[0];
+  return 'Set ' + num + ' (' + count + ' Qs)';
+}
+
+function buildIdiomSetPool(setKey){
+  const set = IDIOM_SETS[setKey] || [];
+  return shuffledCopy(set);
+}
+
+function renderIdiomSetMenu(){
+  const grid = document.getElementById('idiomSetGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  Object.keys(IDIOM_SETS).forEach(key => {
+    const count = IDIOM_SETS[key].length;
+    const btn = document.createElement('button');
+    btn.className = 'calcCard';
+    btn.innerHTML =
+      '<span class="calcIcon">\ud83d\udcac</span>' +
+      '<span class="calcLabel">' + escapeHtml(idiomSetLabel(key, count)) + '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => startIdiomQuiz(key));
+    grid.appendChild(btn);
+  });
+}
+
+function startIdiomQuiz(setKey){
+  if(!setKey) setKey = idiomSession.setKey;
+  if(!setKey || !IDIOM_SETS[setKey]) return;
+  idiomSession.setKey = setKey;
+  idiomSession.questions = buildIdiomSetPool(setKey);
+  idiomSession.index = 0;
+  idiomSession.correct = 0;
+  idiomSession.wrong = 0;
+  idiomSession.answered = false;
+  const titleEl = document.getElementById('idiomQuizTitle');
+  if(titleEl) titleEl.textContent = 'Idioms - ' + idiomSetLabel(setKey, idiomSession.questions.length);
+  const resultCard = document.getElementById('idiomResultCard');
+  if(resultCard) resultCard.style.display = 'none';
+  const qWrap = document.getElementById('idiomQuestionWrap');
+  if(qWrap) qWrap.style.display = '';
+  const ansGrid = document.getElementById('idiomAnsGrid');
+  if(ansGrid) ansGrid.style.display = '';
+  const solCard = document.getElementById('idiomSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  updateIdiomStats();
+  renderIdiomQuestion();
+  showCalcPage('idiom');
+}
+
+function updateIdiomStats(){
+  const c = document.getElementById('idiomStatCorrect');
+  const w = document.getElementById('idiomStatWrong');
+  const p = document.getElementById('idiomStatProgress');
+  if(c) c.textContent = idiomSession.correct;
+  if(w) w.textContent = idiomSession.wrong;
+  if(p) p.textContent = 'Q ' + Math.min(idiomSession.index + 1, idiomSession.questions.length) + '/' + idiomSession.questions.length;
+}
+
+function renderIdiomQuestion(){
+  const q = idiomSession.questions[idiomSession.index];
+  if(!q){ endIdiomQuiz(); return; }
+  idiomSession.answered = false;
+  const wordEl = document.getElementById('idiomWordText');
+  if(wordEl) wordEl.textContent = q.word || '\u2014';
+  const ansGrid = document.getElementById('idiomAnsGrid');
+  if(!ansGrid) return;
+  ansGrid.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'calcAnsBtn';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => selectIdiomAnswer(i, btn));
+    ansGrid.appendChild(btn);
+  });
+  const solCard = document.getElementById('idiomSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  updateIdiomStats();
+}
+
+function selectIdiomAnswer(i, btnEl){
+  if(idiomSession.answered) return;
+  idiomSession.answered = true;
+  const q = idiomSession.questions[idiomSession.index];
+  const correct = i === q.answer;
+  if(correct) idiomSession.correct++; else idiomSession.wrong++;
+  document.querySelectorAll('#idiomAnsGrid .calcAnsBtn').forEach((b, idx) => {
+    b.classList.add('disabled');
+    if(idx === q.answer) b.classList.add('correct');
+    else if(idx === i) b.classList.add('wrong');
+  });
+  updateIdiomStats();
+  const solCard = document.getElementById('idiomSolutionCard');
+  const solText = document.getElementById('idiomSolutionText');
+  if(solText){
+    const verdict = correct ? '\u2705 Sahi Jawaab!' : '\u274c Galat Jawaab.';
+    const correctLine = 'Sahi Meaning: <b>' + escapeHtml(q.options[q.answer]) + '</b>';
+    const explLine = (q.explanation && q.explanation.length)
+      ? '<div style="margin-top:6px;color:var(--muted);">' + (Array.isArray(q.explanation) ? q.explanation.map(b=>escapeHtml(b)).join('<br>') : escapeHtml(q.explanation)) + '</div>'
+      : '';
+    solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
+  }
+  if(solCard) solCard.style.display = 'block';
+}
+
+function goToNextIdiomQuestion(){
+  idiomSession.index++;
+  if(idiomSession.index < idiomSession.questions.length) renderIdiomQuestion();
+  else endIdiomQuiz();
+}
+
+function endIdiomQuiz(){
+  const total = idiomSession.correct + idiomSession.wrong;
+  const acc = total ? Math.round((idiomSession.correct / total) * 100) : 0;
+  const qWrap = document.getElementById('idiomQuestionWrap');
+  if(qWrap) qWrap.style.display = 'none';
+  const ansGrid = document.getElementById('idiomAnsGrid');
+  if(ansGrid) ansGrid.style.display = 'none';
+  const solCard = document.getElementById('idiomSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  const statsEl = document.getElementById('idiomResultStats');
+  if(statsEl){
+    statsEl.innerHTML =
+      '<div>\u2705 Correct: <b>' + idiomSession.correct + '</b></div>' +
+      '<div>\u274c Wrong: <b>' + idiomSession.wrong + '</b></div>' +
+      '<div>\ud83c\udfaf Accuracy: <b>' + acc + '%</b></div>';
+  }
+  const resultCard = document.getElementById('idiomResultCard');
+  if(resultCard) resultCard.style.display = 'block';
+}
+
+function initIdiomQuiz(){
+  renderIdiomSetMenu();
 }
 
 function initCalcNav(){
