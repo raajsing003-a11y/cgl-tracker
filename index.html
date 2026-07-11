@@ -10,8 +10,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Exam Tracker">
 <link rel="manifest" href="./manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#08070a;
@@ -19,7 +17,8 @@
     --panel2:#1a181d;
     --border:#333038;
     --border-strong:#726d7a;
-    --text:#dcdae0;
+    --font-main:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --text:#b4b1ba;
     --muted:#98939f;
     --white:#eeecf0;
     --gain:#4ade80;
@@ -31,7 +30,7 @@
     --pink:#f472b6;
     --orange:#fb923c;
     --teal:#2dd4bf;
-    --quiz-text:#c9c7cf;
+    --quiz-text:#a6a3ac;
   }
   *{box-sizing:border-box;}
   body{
@@ -42,18 +41,18 @@
       var(--bg);
     background-attachment:fixed;
     color:var(--text);
-    font-family:'IBM Plex Mono', monospace;
-    font-weight:800;
+    font-family:var(--font-main);
+    font-weight:600;
     padding:82px 12px calc(84px + env(safe-area-inset-bottom,0px));
   }
   .wrap{max-width:900px;margin:0 auto;}
   .eyebrow{
     font-size:12.5px;letter-spacing:3px;color:var(--border-strong);
-    text-transform:uppercase;margin-bottom:6px;font-weight:700;
+    text-transform:uppercase;margin-bottom:6px;font-weight:500;
   }
   h1{
-    font-family:'Oswald',sans-serif;
-    font-weight:800;
+    font-family:var(--font-main);
+    font-weight:600;
     font-size:clamp(26px,7vw,44px);
     margin:0 0 4px;
     letter-spacing:0.5px;
@@ -62,7 +61,7 @@
     padding-bottom:10px;
     display:inline-block;
   }
-  .sub{color:var(--muted);font-size:13px;margin:12px 0 20px;font-weight:700;}
+  .sub{color:var(--muted);font-size:13px;margin:12px 0 20px;font-weight:500;}
 
   .statrow, .wallet{
     display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;
@@ -74,10 +73,10 @@
   }
   .stat.invert{background:linear-gradient(160deg,#f4ecd6,#e8d59e);border-color:var(--accent);box-shadow:0 4px 14px rgba(251,191,36,0.2);}
   .stat .num{
-    font-family:'Oswald',sans-serif;font-size:clamp(19px,5vw,27px);font-weight:800;color:var(--white);
+    font-family:var(--font-main);font-size:clamp(19px,5vw,27px);font-weight:600;color:var(--white);
   }
   .stat.invert .num{color:#1a1404;}
-  .stat .lbl{font-size:12px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:700;}
+  .stat .lbl{font-size:12px;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:500;}
   .freezeInfo{font-size:13px;margin-top:4px;letter-spacing:1px;}
   .freezeInfo .freezeEmpty{opacity:0.25;filter:grayscale(1);}
   .stat.invert .lbl{color:#4a3f22;}
@@ -86,7 +85,7 @@
   .stat.stat-loss{background:linear-gradient(165deg,rgba(248,113,113,0.14),#0d0c0f);border-color:rgba(248,113,113,0.35);}
   .stat.stat-loss .num{color:var(--loss);}
 
-  .grid-label{font-size:12px;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin:22px 0 10px;font-weight:800;
+  .grid-label{font-size:12px;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin:22px 0 10px;font-weight:600;
     border-top:1px dashed var(--border);padding-top:16px;}
   .daygrid{
     display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:24px;
@@ -99,13 +98,13 @@
     aspect-ratio:1;border-radius:6px;border:1px solid var(--border);
     background:var(--panel);color:var(--muted);
     font-size:17px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;position:relative;font-weight:800;
+    cursor:pointer;position:relative;font-weight:600;
   }
   .daycell{transition:transform .1s ease,box-shadow .15s ease;}
   .daycell:active{transform:scale(0.92);}
   .daycell.today{border:3px double var(--accent);color:var(--accent);}
   .daycell.partial{border:1px dashed var(--border-strong);color:var(--text);}
-  .daycell.done{background:linear-gradient(160deg,#f4ecd6,#e6cf8e);color:#000;font-weight:800;border-color:var(--accent);}
+  .daycell.done{background:linear-gradient(160deg,#f4ecd6,#e6cf8e);color:#000;font-weight:600;border-color:var(--accent);}
   .daycell.rest{background:repeating-linear-gradient(45deg, var(--panel2), var(--panel2) 4px, #211f24 4px, #211f24 8px);color:var(--muted);}
   .daycell.frozen{background:linear-gradient(160deg,rgba(96,165,250,0.28),rgba(96,165,250,0.06));border-color:var(--blue);color:var(--blue);}
   .daycell.selected{box-shadow:0 0 0 2px var(--accent);}
@@ -134,9 +133,9 @@
   .last4Cell.pct-high{background:linear-gradient(160deg,#16a34a,#14532d);color:#eeecf0;border-color:#0f3d21;box-shadow:0 0 0 1px rgba(34,197,94,0.25), 0 3px 10px rgba(20,83,45,0.3);}
   .last4Cell.pct-mid{background:linear-gradient(160deg,#4ade80,#22c55e);color:#063814;border-color:#22c55e;}
   .last4Cell.pct-low{background:linear-gradient(160deg,#dc2626,#7f1d1d);color:#eeecf0;border-color:#5c1616;box-shadow:0 0 0 1px rgba(239,68,68,0.28), 0 3px 10px rgba(127,29,29,0.32);}
-  .last4Day{font-size:12px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;opacity:0.92;}
+  .last4Day{font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;opacity:0.92;}
   .last4Icon{font-size:22px;line-height:1;}
-  .last4Pct{font-family:'Oswald',sans-serif;font-size:17px;font-weight:800;}
+  .last4Pct{font-family:var(--font-main);font-size:17px;font-weight:600;}
   @media (max-width:380px){
     .last4Day{font-size:10.5px;}
     .last4Icon{font-size:19px;}
@@ -146,11 +145,11 @@
   /* ===== Merged Calendar+Grid View ===== */
   .calWrap{margin-bottom:18px;}
   .calMonthTitle{
-    font-family:'Oswald',sans-serif;font-size:19px;color:var(--white);font-weight:800;
+    font-family:var(--font-main);font-size:19px;color:var(--white);font-weight:600;
     margin:0 0 8px;letter-spacing:0.3px;
   }
   .calWeekHead{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
-  .calWeekHead span{font-size:13.5px;color:var(--text);text-align:center;font-weight:800;text-transform:uppercase;}
+  .calWeekHead span{font-size:13.5px;color:var(--text);text-align:center;font-weight:600;text-transform:uppercase;}
   .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .daycell.outrange{opacity:0.28;cursor:default;background:var(--panel2);}
   .daycell.outrange:active{transform:none;}
@@ -165,9 +164,9 @@
     display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;gap:6px;
   }
   .panel-head h2{
-    font-family:'Oswald',sans-serif;font-size:clamp(18px,4vw,22px);margin:0;color:var(--white);font-weight:800;
+    font-family:var(--font-main);font-size:clamp(18px,4vw,22px);margin:0;color:var(--white);font-weight:600;
   }
-  .panel-head .date{color:var(--muted);font-size:12px;font-weight:700;}
+  .panel-head .date{color:var(--muted);font-size:12px;font-weight:500;}
   .bar{
     height:7px;background:var(--panel2);border-radius:5px;overflow:hidden;margin:10px 0 16px;border:1px solid var(--border);
   }
@@ -175,7 +174,7 @@
 
   .restbtn{
     display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;
-    border:1px dashed var(--border-strong);border-radius:12px;cursor:pointer;font-size:12px;color:var(--muted);font-weight:700;
+    border:1px dashed var(--border-strong);border-radius:12px;cursor:pointer;font-size:12px;color:var(--muted);font-weight:500;
     background:linear-gradient(165deg,var(--panel),#0d0c0f);
     transition:border-color .15s ease,box-shadow .15s ease;
   }
@@ -190,8 +189,8 @@
     display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:10px 12px;
     border:1px dashed var(--accent-dim);border-radius:8px;background:rgba(251,191,36,0.05);
   }
-  .taskModeTitle{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:800;}
-  .taskModeOption{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;font-weight:700;}
+  .taskModeTitle{font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:600;}
+  .taskModeOption{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);cursor:pointer;font-weight:500;}
   .taskModeOption input{width:16px;height:16px;flex-shrink:0;}
 
   .task{
@@ -213,9 +212,9 @@
     border:solid #fff;border-width:0 3px 3px 0;transform:rotate(40deg);
   }
   .taskinfo{flex:1;min-width:150px;}
-  .task .name{font-size:13.5px;line-height:1.35;font-weight:700;color:var(--text);}
+  .task .name{font-size:13.5px;line-height:1.35;font-weight:500;color:var(--text);}
   .task.checked .name{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--border-strong);}
-  .task .value{font-size:12px;font-weight:800;text-align:right;padding:4px 10px;border-radius:20px;background:var(--panel2);}
+  .task .value{font-size:12px;font-weight:600;text-align:right;padding:4px 10px;border-radius:20px;background:var(--panel2);}
   .task.checked .value{opacity:0.55;}
   /* Size-based colour tiers — bigger task = bigger ₹, bigger pop of colour */
   .task.tier-small{border-color:rgba(96,165,250,0.4);}
@@ -228,21 +227,21 @@
 
   .subhead{
     font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);
-    margin:20px 0 10px;font-weight:800;border-top:1px dashed var(--border);padding-top:16px;
+    margin:20px 0 10px;font-weight:600;border-top:1px dashed var(--border);padding-top:16px;
   }
   .scoreform{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
   @media (max-width:480px){.scoreform{grid-template-columns:repeat(2,1fr);}}
-  .scorefield label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;font-weight:700;}
+  .scorefield label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;font-weight:500;}
   .scorefield input{
     width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:14px;
     padding:8px 6px;text-align:center;
   }
   .scorefield input:focus{outline:none;border-color:var(--white);}
-  .scoretotal{font-size:12px;color:var(--muted);text-align:right;margin-bottom:4px;font-weight:800;}
+  .scoretotal{font-size:12px;color:var(--muted);text-align:right;margin-bottom:4px;font-weight:600;}
   .scoretotal b{color:var(--white);font-size:14px;}
 
-  .chapterQuickHint{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 10px;line-height:1.4;}
+  .chapterQuickHint{font-size:12.5px;color:var(--muted);font-weight:500;margin:0 0 10px;line-height:1.4;}
 
   /* ===== Sectional Math cards (Today tab) — Score + Right/Wrong/Skip + chapter tag ===== */
   /* Always 1 full-width card per row (no 2-column layout at any width) so
@@ -254,21 +253,21 @@
   }
   .sectCardRemoveBtn{
     position:absolute;top:6px;right:6px;background:none;border:none;color:var(--muted);
-    font-size:13px;font-weight:800;cursor:pointer;padding:2px 6px;line-height:1;
+    font-size:13px;font-weight:600;cursor:pointer;padding:2px 6px;line-height:1;
   }
   .sectCardRemoveBtn:active{transform:scale(0.9);}
   .sectCardHead{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-  .sectCardLbl{font-size:11.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;flex:0 0 auto;}
+  .sectCardLbl{font-size:11.5px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;flex:0 0 auto;}
   .sectScoreInp{
     flex:0 1 90px;min-width:0;background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:13px;
     padding:7px 4px;text-align:center;
   }
   .sectScoreInp:focus{outline:none;border-color:var(--white);}
   .sectRWS{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:7px;}
   .sectRWS input{
     width:100%;min-width:0;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:13px;
     padding:7px 2px;text-align:center;
   }
   .sectRWS input:nth-child(1){border-color:rgba(74,222,128,0.35);}
@@ -279,49 +278,49 @@
   .sectChapRow{display:flex;flex-wrap:wrap;gap:6px;}
   .sectChapSel{
     flex:1 1 130px;min-width:0;background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11.5px;padding:7px 4px;
+    color:var(--text);font-family:var(--font-main);font-weight:600;font-size:11.5px;padding:7px 4px;
   }
   .sectChapSel:focus{outline:none;border-color:var(--white);}
   .sectChapBtn{
     flex:0 0 auto;
     background:var(--panel);border:1.5px solid var(--pink);color:var(--pink);
-    padding:7px 10px;border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;
-    font-size:11px;font-weight:800;white-space:nowrap;
+    padding:7px 10px;border-radius:6px;cursor:pointer;font-family:var(--font-main);
+    font-size:11px;font-weight:600;white-space:nowrap;
   }
   .sectChapBtn:active{transform:scale(0.94);}
   .sectChapTags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
   .sectChapTag{
     background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.4);color:var(--pink);
-    font-size:10px;font-weight:700;padding:3px 6px;border-radius:10px;white-space:nowrap;
+    font-size:10px;font-weight:500;padding:3px 6px;border-radius:10px;white-space:nowrap;
   }
   .sectChapClear{
-    background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;
+    background:none;border:none;color:var(--muted);font-size:10px;font-weight:500;
     cursor:pointer;text-decoration:underline;padding:2px 0;
   }
   .searchBox{margin-bottom:14px;}
   .searchBox input{
     width:100%;box-sizing:border-box;background:var(--panel2);border:1.5px solid var(--border-strong);
-    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;
+    border-radius:8px;color:var(--text);font-family:var(--font-main);font-weight:500;
     font-size:13px;padding:12px 12px;
   }
   .searchBox input:focus{outline:none;border-color:var(--accent);}
   .searchBox input::placeholder{color:var(--muted);}
-  .chapterEmptyMsg{font-size:12.5px;color:var(--muted);font-weight:700;padding:10px 2px;text-align:center;}
+  .chapterEmptyMsg{font-size:12.5px;color:var(--muted);font-weight:500;padding:10px 2px;text-align:center;}
   .chapterQuickRow{
     display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;
   }
   .chapterQuickRow select{
     flex:1 1 140px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;padding:8px 6px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12px;padding:8px 6px;
   }
   .chapterQuickRow select:focus{outline:none;border-color:var(--white);}
   .chapterQuickBtn{
     background:var(--panel2);border:1.5px solid var(--purple);color:var(--purple);
-    padding:8px 10px;border-radius:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:800;
+    padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font-main);font-size:12.5px;font-weight:600;
     white-space:nowrap;
   }
   .chapterQuickBtn:active{transform:scale(0.94);}
-  .chapterQuickCount{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;width:100%;text-align:right;}
+  .chapterQuickCount{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;width:100%;text-align:right;}
 
   .chapterRow{
     display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:12.5px;
@@ -333,16 +332,16 @@
     background:linear-gradient(160deg,rgba(248,113,113,0.14),#0d0c0f);
     border-color:rgba(248,113,113,0.45);box-shadow:0 0 12px rgba(248,113,113,0.2),0 3px 8px rgba(0,0,0,0.3);
   }
-  .chapterRow .chName{flex:1;color:var(--text);font-weight:700;min-width:0;}
+  .chapterRow .chName{flex:1;color:var(--text);font-weight:500;min-width:0;}
   .chapterRow.weak .chName{color:var(--loss);}
   .chapterRow .chCount{
-    min-width:26px;text-align:center;font-weight:800;color:var(--white);font-size:13px;
+    min-width:26px;text-align:center;font-weight:600;color:var(--white);font-size:13px;
     background:var(--panel2);border-radius:20px;padding:3px 0;
   }
   .chapterRow.weak .chCount{background:rgba(248,113,113,0.2);color:var(--loss);}
   .chapterRow .chBtn{
     background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
-    width:30px;height:30px;border-radius:50%;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    width:30px;height:30px;border-radius:50%;cursor:pointer;font-family:var(--font-main);font-weight:600;font-size:13px;
     transition:transform .12s ease;
   }
   .chapterRow .chBtn.chPlus{border-color:var(--loss);color:var(--loss);}
@@ -350,7 +349,7 @@
 
   .notes textarea{
     width:100%;min-height:80px;background:var(--panel2);border:1px solid var(--border-strong);
-    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;
+    border-radius:8px;color:var(--text);font-family:var(--font-main);font-size:13px;font-weight:500;
     padding:10px;resize:vertical;
   }
   .notes textarea:focus{outline:none;border-color:var(--white);}
@@ -361,7 +360,7 @@
   }
   .nav-btn{
     background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
-    padding:9px 14px;border-radius:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:800;
+    padding:9px 14px;border-radius:9px;cursor:pointer;font-family:var(--font-main);font-size:12px;font-weight:600;
     transition:all .15s ease;
   }
   .nav-btn:hover{border-color:var(--accent);background:var(--accent);color:#1a1404;}
@@ -373,13 +372,13 @@
     background:var(--panel);border:1px solid var(--border-strong);border-radius:10px;padding:14px 14px 8px;
   }
   .perfcard h3{
-    font-family:'Oswald',sans-serif;font-size:14px;margin:0 0 10px;color:var(--white);
-    letter-spacing:0.5px;font-weight:700;
+    font-family:var(--font-main);font-size:14px;margin:0 0 10px;color:var(--white);
+    letter-spacing:0.5px;font-weight:500;
   }
   .perfrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
   .perfrow:last-child{border-bottom:none;}
   .perfrow span:first-child{color:var(--muted);}
-  .perfrow span:last-child{font-weight:800;color:var(--text);}
+  .perfrow span:last-child{font-weight:600;color:var(--text);}
   .perfrow.total span:last-child{color:var(--white);font-size:14px;}
 
   .weekwrap{margin-bottom:22px;}
@@ -387,48 +386,48 @@
     display:flex;justify-content:space-between;align-items:center;padding:8px 12px;
     border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--panel);font-size:12px;
   }
-  .weekrow .wname{font-weight:800;color:var(--white);}
+  .weekrow .wname{font-weight:600;color:var(--white);}
   .weekrow .wrange{color:var(--muted);font-size:12px;}
-  .weekrow .wpct{font-weight:800;}
+  .weekrow .wpct{font-weight:600;}
   .weekstat{
     display:flex;justify-content:space-between;gap:6px;padding:6px 12px 10px;margin-top:-6px;margin-bottom:6px;
     background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;
-    font-size:12px;color:var(--muted);font-weight:700;flex-wrap:wrap;
+    font-size:12px;color:var(--muted);font-weight:500;flex-wrap:wrap;
   }
 
   .daybadge{position:absolute;top:-8px;right:-6px;font-size:13px;line-height:1;filter:drop-shadow(0 0 1px #000);}
   .planDayBadge{
-    position:absolute;bottom:2px;left:2px;font-size:10px;line-height:1;font-weight:800;
+    position:absolute;bottom:2px;left:2px;font-size:10px;line-height:1;font-weight:600;
     color:var(--accent);background:rgba(0,0,0,0.6);padding:2px 4px;border-radius:4px;
     letter-spacing:0.2px;
   }
   .daycell.done .planDayBadge{color:#7a5f14;background:rgba(255,255,255,0.5);}
   .chartcard{overflow:hidden;}
   .chartscroll{overflow-x:auto;padding-bottom:4px;}
-  .chartlegend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;font-weight:700;}
-  .chartlegend b{font-weight:800;}
+  .chartlegend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;font-weight:500;}
+  .chartlegend b{font-weight:600;}
   .lossrow{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
   .lossrow:last-child{border-bottom:none;}
   .lossrow .lday{color:var(--text);}
-  .lossrow .lamt{color:var(--loss);font-weight:800;white-space:nowrap;}
-  .losshint{font-size:12px;color:var(--muted);padding:6px 0;font-weight:700;}
+  .lossrow .lamt{color:var(--loss);font-weight:600;white-space:nowrap;}
+  .losshint{font-size:12px;color:var(--muted);padding:6px 0;font-weight:500;}
   .bwrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
   .bwrow:last-child{border-bottom:none;}
   .bwrow .tag{color:var(--muted);}
-  .bwrow .amt.gain{color:var(--gain);font-weight:800;}
-  .bwrow .amt.loss{color:var(--loss);font-weight:800;}
+  .bwrow .amt.gain{color:var(--gain);font-weight:600;}
+  .bwrow .amt.loss{color:var(--loss);font-weight:600;}
   .streakfire{color:var(--accent);}
   .backupwrap{margin-top:24px;border-top:1px dashed var(--border);padding-top:16px;}
   .backupwrap textarea{
     width:100%;min-height:70px;background:var(--panel2);border:1px solid var(--border-strong);
-    border-radius:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border-radius:8px;color:var(--muted);font-family:var(--font-main);font-size:12px;
     padding:10px;margin-top:8px;
   }
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 
   .reset{
     background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline;
-    margin-top:14px;font-weight:700;padding:0;
+    margin-top:14px;font-weight:500;padding:0;
   }
   .loading{color:var(--muted);font-size:13px;padding:30px 0;text-align:center;}
 
@@ -443,13 +442,13 @@
   }
   .rewardBanner.show{display:block;}
   .rewardBanner .rTitle{
-    font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;
+    font-family:var(--font-main);font-size:18px;font-weight:600;margin-bottom:6px;
   }
-  .rewardBanner .rMsg{font-size:13px;font-weight:700;line-height:1.5;margin-bottom:10px;}
-  .rewardBanner .rAmt{font-size:13px;font-weight:800;margin-bottom:10px;}
+  .rewardBanner .rMsg{font-size:13px;font-weight:500;line-height:1.5;margin-bottom:10px;}
+  .rewardBanner .rAmt{font-size:13px;font-weight:600;margin-bottom:10px;}
   .rewardBanner .rClose{
     background:#000;color:#fff;border:none;border-radius:6px;padding:7px 12px;
-    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;cursor:pointer;
+    font-family:var(--font-main);font-weight:500;font-size:12.5px;cursor:pointer;
   }
 
   /* ===== Badge Unlock Banner ===== */
@@ -461,11 +460,11 @@
     box-shadow:0 0 24px rgba(251,191,36,0.25);
   }
   .badgeBanner.show{display:block;}
-  .badgeBanner .rTitle{font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;color:var(--accent);}
-  .badgeBanner .rMsg{font-size:13px;font-weight:700;line-height:1.5;margin-bottom:10px;color:var(--text);}
+  .badgeBanner .rTitle{font-family:var(--font-main);font-size:18px;font-weight:600;margin-bottom:6px;color:var(--accent);}
+  .badgeBanner .rMsg{font-size:13px;font-weight:500;line-height:1.5;margin-bottom:10px;color:var(--text);}
   .badgeBanner .rClose{
     background:var(--accent);color:#1a1404;border:none;border-radius:6px;padding:7px 12px;
-    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;cursor:pointer;
+    font-family:var(--font-main);font-weight:500;font-size:12.5px;cursor:pointer;
   }
 
   /* ===== Achievement Badges ===== */
@@ -476,9 +475,9 @@
   }
   .badgeChip.earned{opacity:1;filter:none;border-color:var(--accent);background:linear-gradient(160deg,#1a1404,#141014);box-shadow:0 0 14px rgba(251,191,36,0.15);}
   .badgeChip .bEmoji{font-size:26px;line-height:1;margin-bottom:6px;}
-  .badgeChip .bLabel{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+  .badgeChip .bLabel{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:500;}
   .badgeChip.earned .bLabel{color:var(--accent);}
-  .badgeChip .bStatus{font-size:11px;color:var(--muted);margin-top:3px;font-weight:700;}
+  .badgeChip .bStatus{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500;}
 
   /* ===== XP / Level Card (Home) ===== */
   .levelCard{
@@ -492,43 +491,43 @@
     width:52px;height:52px;min-width:52px;border-radius:50%;
     background:linear-gradient(160deg,#f4ecd6,#e6cf8e);
     display:flex;align-items:center;justify-content:center;
-    font-family:'Oswald',sans-serif;font-size:20px;font-weight:800;color:#1a1404;
+    font-family:var(--font-main);font-size:20px;font-weight:600;color:#1a1404;
     border:2px solid var(--accent);box-shadow:0 0 14px rgba(251,191,36,0.25);
   }
   .levelInfo{flex:1;min-width:0;}
-  .levelName{font-family:'Oswald',sans-serif;font-size:15px;color:var(--white);font-weight:800;line-height:1.3;}
-  .levelSub{font-size:12.5px;color:var(--accent);font-weight:700;letter-spacing:0.3px;margin-top:3px;}
-  .levelXpText{font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;text-align:right;}
+  .levelName{font-family:var(--font-main);font-size:15px;color:var(--white);font-weight:600;line-height:1.3;}
+  .levelSub{font-size:12.5px;color:var(--accent);font-weight:500;letter-spacing:0.3px;margin-top:3px;}
+  .levelXpText{font-size:12px;color:var(--muted);font-weight:500;margin-top:6px;text-align:right;}
 
   /* ===== Task Name/Time Editor ===== */
-  .taskEditIntro{font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:700;}
+  .taskEditIntro{font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:500;}
   .taskEditRow{
     display:flex;flex-direction:column;gap:6px;margin-bottom:12px;padding-bottom:12px;
     border-bottom:1px dashed var(--border);
   }
   .taskEditRow:last-of-type{border-bottom:none;margin-bottom:4px;padding-bottom:0;}
   .taskEditTop{display:flex;align-items:center;gap:8px;}
-  .taskEditTop .tNum{font-size:12.5px;color:var(--muted);min-width:18px;font-weight:800;}
+  .taskEditTop .tNum{font-size:12.5px;color:var(--muted);min-width:18px;font-weight:600;}
   .taskEditRow input{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12.5px;
     padding:8px 10px;
   }
   .taskEditRow input:focus{outline:none;border-color:var(--accent);}
   .taskEditTop input.teName{flex:1;min-width:0;}
   .taskEditBottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-left:26px;}
   .taskEditBottom label{
-    font-size:11px;color:var(--muted);font-weight:800;letter-spacing:0.5px;
+    font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.5px;
     display:flex;align-items:center;gap:5px;text-transform:uppercase;
   }
   .taskEditBottom input.teStart{width:104px;font-size:12px;padding:6px 8px;}
   .taskEditBottom input.teDur{width:58px;font-size:12px;padding:6px 8px;text-align:center;}
   .teDel{
-    flex-shrink:0;width:26px;height:26px;border-radius:6px;cursor:pointer;font-weight:800;
+    flex-shrink:0;width:26px;height:26px;border-radius:6px;cursor:pointer;font-weight:600;
     background:var(--panel2);border:1px solid var(--loss);color:var(--loss);line-height:1;
   }
   .teDel:disabled{opacity:0.3;cursor:not-allowed;}
-  .tVal{font-size:12.5px;font-weight:800;white-space:nowrap;padding:4px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--border-strong);margin-left:auto;}
+  .tVal{font-size:12.5px;font-weight:600;white-space:nowrap;padding:4px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--border-strong);margin-left:auto;}
   .tVal.tier-small{color:var(--blue);border-color:var(--blue);}
   .tVal.tier-medium{color:var(--purple);border-color:var(--purple);}
   .tVal.tier-large{color:var(--accent);border-color:var(--accent);}
@@ -562,7 +561,7 @@
   }
   .taskTimerModeTabs{display:flex;gap:6px;margin-bottom:10px;}
   .taskTimerModeTab{
-    flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:11.5px;font-weight:800;
+    flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:11.5px;font-weight:600;
     background:var(--panel);border:1px solid var(--border);color:var(--muted);cursor:pointer;
   }
   .taskTimerModeTab.active{background:var(--white);color:#000;border-color:var(--white);}
@@ -580,10 +579,10 @@
   .ttRing.break{background:conic-gradient(var(--purple) calc(var(--p)*1%), var(--border) 0);}
   .ttRing.done{background:conic-gradient(var(--gain) calc(var(--p)*1%), var(--border) 0);}
   .ttRing::before{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--panel2);}
-  .taskTimerDisplay{position:relative;text-align:center;font-family:'Oswald',sans-serif;font-weight:800;font-size:20px;color:var(--white);}
-  .taskTimerSub{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .taskTimerDisplay{position:relative;text-align:center;font-family:var(--font-main);font-weight:600;font-size:20px;color:var(--white);}
+  .taskTimerSub{text-align:center;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;}
   .taskTimerSub b{color:var(--accent);}
-  .taskTimerStatus{text-align:center;font-size:11.5px;font-weight:800;color:var(--purple);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+  .taskTimerStatus{text-align:center;font-size:11.5px;font-weight:600;color:var(--purple);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
   .taskTimerStatus.done{color:var(--gain);}
   .taskTimerControls{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;}
   .taskTimerPlayBtn{
@@ -603,7 +602,7 @@
     width:100%;display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;
     padding:13px 16px;border-radius:12px;border:1.5px solid rgba(244,114,182,0.4);
     background:linear-gradient(135deg,#f472b6,#7c3aed);color:#fff;
-    font-family:'Oswald',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.3px;
+    font-family:var(--font-main);font-weight:600;font-size:14px;letter-spacing:0.3px;
     box-shadow:0 6px 16px rgba(124,58,237,0.35);transition:transform 0.15s ease, box-shadow 0.15s ease;
   }
   .teTabBtn:active{transform:scale(0.98);}
@@ -623,12 +622,12 @@
     border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;
     display:flex;flex-direction:column;gap:8px;background:var(--panel2);
   }
-  .adminMemberTop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:13px;flex-wrap:wrap;}
+  .adminMemberTop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:500;font-size:13px;flex-wrap:wrap;}
   .adminDelBtn{font-size:12px;padding:5px 9px;border-color:var(--loss);color:var(--loss);}
   .adminDelBtn:hover{background:var(--loss);color:#fff;}
   .adminMemberToggle{
     display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;
-    font-size:12px;color:var(--muted);font-weight:700;
+    font-size:12px;color:var(--muted);font-weight:500;
   }
   .adminMemberToggle input[type=checkbox]{width:18px;height:18px;flex-shrink:0;}
 
@@ -643,7 +642,7 @@
   .profilebar.viewing span{color:var(--accent);}
   .lbwrap{margin-bottom:4px;display:flex;flex-direction:column;gap:10px;}
   .lbsummary{
-    font-size:12px;color:var(--accent);font-weight:800;letter-spacing:0.3px;margin-bottom:12px;
+    font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.3px;margin-bottom:12px;
     background:rgba(251,191,36,0.08);border:1px dashed var(--accent-dim);border-radius:8px;padding:8px 10px;
   }
   /* ===== Compete tab — colourful leaderboard cards (avatar + rank-tier
@@ -678,14 +677,14 @@
     box-shadow:0 0 14px rgba(217,119,6,0.22),0 4px 14px rgba(0,0,0,0.4);
   }
   .lbrow.lead.me, .lbrow.silver.me, .lbrow.bronze.me{border-color:var(--blue);}
-  .lbrank{font-size:17px;font-weight:900;min-width:24px;text-align:center;color:var(--muted);}
+  .lbrank{font-size:17px;font-weight:700;min-width:24px;text-align:center;color:var(--muted);}
   .lbrow.lead .lbrank{color:var(--accent);}
   .lbrow.silver .lbrank{color:#cbd5e1;}
   .lbrow.bronze .lbrank{color:#d97706;}
   .lbavatar{
     width:34px;height:34px;min-width:34px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Oswald',sans-serif;font-weight:800;font-size:15px;color:#fff;
+    font-family:var(--font-main);font-weight:600;font-size:15px;color:#fff;
     box-shadow:0 3px 8px rgba(0,0,0,0.4);
   }
   .lbavatar.av-blue{background:linear-gradient(145deg,#60a5fa,#2563eb);}
@@ -696,8 +695,8 @@
   .lbavatar.av-gain{background:linear-gradient(145deg,#4ade80,#16a34a);}
   .lbmain{flex:1;min-width:130px;}
   .lbtoprow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
-  .lbname{font-weight:800;color:var(--white);}
-  .lbdelta{font-size:12px;font-weight:800;white-space:nowrap;}
+  .lbname{font-weight:600;color:var(--white);}
+  .lbdelta{font-size:12px;font-weight:600;white-space:nowrap;}
   .lbdelta.up{color:var(--gain);}
   .lbdelta.down{color:var(--loss);}
   .lbdelta.even{color:var(--muted);}
@@ -706,7 +705,7 @@
   .lbrow.lead .lbbarfill{background:linear-gradient(90deg,#fff,var(--accent));}
   .lbrow.silver .lbbarfill{background:linear-gradient(90deg,#e2e8f0,#94a3b8);}
   .lbrow.bronze .lbbarfill{background:linear-gradient(90deg,#fbbf24,#d97706);}
-  .lbstats{display:flex;gap:6px 8px;font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;flex-wrap:wrap;}
+  .lbstats{display:flex;gap:6px 8px;font-size:11.5px;color:var(--muted);font-weight:500;white-space:nowrap;flex-wrap:wrap;}
   .lbstats span{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:2px 8px;}
   .lbstats .lbgain{color:var(--gain);border-color:rgba(74,222,128,0.3);}
   .lbstats .lbloss{color:var(--loss);border-color:rgba(248,113,113,0.3);}
@@ -715,7 +714,7 @@
     width:32px;height:32px;border-radius:50%;flex-shrink:0;padding:0;
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
     font-size:14px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-family:'IBM Plex Mono',monospace;
+    cursor:pointer;font-family:var(--font-main);
   }
   .lbpin:active{transform:scale(0.9);}
   .lbpin.active{background:rgba(251,191,36,0.18);border-color:var(--accent);color:var(--accent);box-shadow:0 0 8px rgba(251,191,36,0.4);}
@@ -724,13 +723,13 @@
   .addfriend{display:flex;gap:8px;margin-top:12px;}
   .addfriend input{
     flex:1;background:var(--panel2);border:1px solid var(--border-strong);border-radius:20px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 14px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12.5px;padding:8px 14px;
   }
   .addfriend input:focus{outline:none;border-color:var(--blue);}
   .readonly-banner{
     background:linear-gradient(135deg,#1a1404,#0a0a0a);color:var(--accent);
     border:1px dashed var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:14px;
-    font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+    font-size:12px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
   }
   .admin-edit-banner{border-style:solid;}
   .admin-edit-banner.on{
@@ -747,22 +746,22 @@
   }
   .topbar-left{
     display:flex;align-items:center;gap:8px;
-    font-family:'Oswald',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.5px;color:var(--white);
+    font-family:var(--font-main);font-weight:500;font-size:14.5px;letter-spacing:0.5px;color:var(--white);
   }
   .topbar-title-col{display:flex;flex-direction:column;line-height:1.25;}
   .topbar-credit{
-    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9.5px;letter-spacing:0.6px;
+    font-family:var(--font-main);font-weight:500;font-size:9.5px;letter-spacing:0.6px;
     color:var(--accent);text-decoration:none;margin-top:1px;
   }
   .topbar-right{display:flex;align-items:center;gap:10px;}
   .helpBtn{
     width:34px;height:34px;border-radius:50%;flex-shrink:0;
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--accent);
-    font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-family:'IBM Plex Mono',monospace;text-decoration:none;
+    font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-family:var(--font-main);text-decoration:none;
   }
   .helpBtn:active{transform:scale(0.9);}
-  .helpStep{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:12.5px;line-height:1.55;color:var(--text);font-weight:700;}
+  .helpStep{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:12.5px;line-height:1.55;color:var(--text);font-weight:500;}
   .helpStepIcon{font-size:19px;flex-shrink:0;width:26px;text-align:center;}
   .helpStep b{color:var(--white);}
   .miniring{
@@ -772,7 +771,7 @@
     transition:background 0.4s ease;
   }
   .miniring::before{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d0c10;}
-  .miniring span{position:relative;font-size:9px;font-weight:800;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
+  .miniring span{position:relative;font-size:9px;font-weight:600;color:var(--accent);font-family:var(--font-main);}
 
   /* ===== "Exam Countdown" ring widget — same conic-gradient ring trick as
      .miniring above, just scaled up and styled to match a black-card +
@@ -795,13 +794,13 @@
     content:'';position:absolute;inset:13px;border-radius:50%;background:var(--bg);
   }
   .examRingNum{
-    position:relative;font-family:'Oswald',sans-serif;font-weight:800;
+    position:relative;font-family:var(--font-main);font-weight:600;
     font-size:clamp(30px,10vw,46px);line-height:1;color:var(--white);
   }
   .examRingLbl{
-    position:relative;font-size:12px;font-weight:800;letter-spacing:1px;
+    position:relative;font-size:12px;font-weight:600;letter-spacing:1px;
     text-transform:uppercase;color:var(--white);margin-top:5px;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:var(--font-main);
   }
   /* Small inline variant, sits next to the Home quote text */
   .examCountdownRing.examRingSmall{
@@ -841,11 +840,11 @@
     border-bottom:1px solid var(--accent);
   }
   .viewbar.show{display:flex;}
-  .viewbar-label{font-size:12px;font-weight:800;color:var(--accent);}
+  .viewbar-label{font-size:12px;font-weight:600;color:var(--accent);}
   .viewbar-label b{color:var(--white);}
   .viewbar-btn{
     background:var(--accent);color:#1a1404;border:none;border-radius:7px;
-    padding:6px 12px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace;
+    padding:6px 12px;font-size:12px;font-weight:600;font-family:var(--font-main);
     cursor:pointer;white-space:nowrap;
   }
   .viewbar-btn:active{transform:scale(0.95);}
@@ -863,7 +862,7 @@
     display:flex;align-items:center;justify-content:center;gap:7px;
     padding:14px 10px;border-radius:13px;border:1.5px solid var(--border);
     background:linear-gradient(165deg,var(--panel),#0d0c0f);color:var(--muted);
-    font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13.5px;
+    font-family:var(--font-main);font-weight:600;font-size:13.5px;
     cursor:pointer;letter-spacing:0.3px;
     box-shadow:0 4px 12px rgba(0,0,0,0.35);
     transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease, color .15s ease;
@@ -896,7 +895,7 @@
     background:linear-gradient(165deg,var(--panel),#0d0c0f);
     border:1px solid var(--border);border-radius:16px;
     padding:16px 12px;cursor:pointer;position:relative;
-    font-family:'IBM Plex Mono',monospace;color:var(--text);
+    font-family:var(--font-main);color:var(--text);
     box-shadow:0 4px 14px rgba(0,0,0,0.4);
     transition:transform .12s ease, border-color .15s ease, box-shadow .15s ease;
   }
@@ -1087,6 +1086,27 @@
     50%{background-position:100% 50%;}
     100%{background-position:0% 50%;}
   }
+  /* Grammar card — chautha shimmer palette (emerald → cyan → indigo)
+     taaki Vocab/Spelling/Idioms/Grammar chaaron cards turant alag pehchane
+     ja sakein. */
+  .calcCard-grammar{
+    background:linear-gradient(120deg,#047857 0%,#0891b2 48%,#4338ca 100%);
+    background-size:160% 160%;
+    animation:grammarShimmer 14s ease infinite;
+    border:none;
+    box-shadow:0 6px 18px rgba(8,145,178,0.22);
+  }
+  .calcCard-grammar .calcIcon-grammar{
+    background:rgba(255,255,255,0.22);color:#fff;box-shadow:none;
+  }
+  .calcCard-grammar .calcLabel{color:#fff;font-size:16.5px;}
+  .calcCard-grammar .calcSub{color:rgba(255,255,255,0.9);font-size:11.5px;font-weight:500;letter-spacing:0.2px;}
+  .calcCard-grammar .calcArrow{color:#fff;}
+  @keyframes grammarShimmer{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+  }
   /* "Saved Questions" button — sabse upar, Set list ke upar. Vocab/Spelling/
      Idioms teeno mein same loud, colourful shimmer treatment taaki yeh
      feature turant "khaas" lage aur set-list ke plain cards se alag dikhe. */
@@ -1124,11 +1144,11 @@
   .calcBackBtn{
     width:38px;height:38px;min-width:38px;border-radius:50%;
     background:var(--panel2);border:1px solid var(--border);
-    color:var(--text);font-size:21px;font-weight:800;line-height:1;
+    color:var(--text);font-size:21px;font-weight:600;line-height:1;
     display:flex;align-items:center;justify-content:center;cursor:pointer;
   }
   .calcBackBtn:active{transform:scale(0.9);}
-  .calcSubTitle{font-family:'Oswald',sans-serif;font-size:19px;font-weight:500;color:var(--quiz-text);}
+  .calcSubTitle{font-family:var(--font-main);font-size:19px;font-weight:500;color:var(--quiz-text);}
 
   /* ===== Calc bottom sheet (Practice Setup) ===== */
   .calcSheetOverlay{
@@ -1154,7 +1174,7 @@
   .calcHint{font-size:11.5px;color:var(--muted);font-weight:500;margin:4px 0 10px;line-height:1.4;}
   .calcSelect{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:14px;
+    color:var(--text);font-family:var(--font-main);font-weight:600;font-size:14px;
     padding:8px 10px;
   }
   .calcSelect:focus{outline:none;border-color:var(--white);}
@@ -1162,7 +1182,7 @@
   .calcChipRow-col{flex-direction:column;align-items:flex-start;}
   .calcChip{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:9px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:13px;
+    color:var(--text);font-family:var(--font-main);font-weight:600;font-size:13px;
     padding:9px 14px;cursor:pointer;
   }
   .calcChip.active{background:var(--white);color:#000;border-color:var(--white);}
@@ -1172,12 +1192,12 @@
   .taskNoteSheetInput{
     width:100%;box-sizing:border-box;margin-top:10px;
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13.5px;
+    color:var(--text);font-family:var(--font-main);font-size:13.5px;
     padding:10px;resize:vertical;
   }
   .taskNoteSheetInput:focus{outline:none;border-color:var(--white);}
   .taskNoteSheetErr{
-    display:none;color:#ff6b6b;font-size:12px;font-weight:700;margin-top:6px;
+    display:none;color:#ff6b6b;font-size:12px;font-weight:500;margin-top:6px;
   }
   .taskNoteSheetErr.show{display:block;}
   #taskNoteSheetExtra{margin-top:8px;}
@@ -1191,7 +1211,7 @@
   .antiCheatToast{
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
     background:#1a1404;color:var(--accent,#fbbf24);border:1px solid var(--accent,#fbbf24);
-    border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:700;
+    border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:500;
     max-width:88vw;text-align:center;z-index:900;
     opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
   }
@@ -1200,14 +1220,14 @@
   .syncPendingBadge{
     position:fixed;top:10px;right:10px;z-index:901;
     background:#1a1404;color:var(--accent,#fbbf24);border:1px solid var(--accent,#fbbf24);
-    border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:700;
+    border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:500;
     display:none;box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
   .syncPendingBadge.show{display:block;}
   .calcCountBadge{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:50%;
     width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:13.5px;color:var(--white);
+    font-weight:600;font-size:13.5px;color:var(--white);
   }
   .calcSlider{width:100%;margin-top:10px;accent-color:var(--teal);}
   .calcRangeRow{display:flex;gap:10px;margin-top:8px;}
@@ -1215,14 +1235,14 @@
   .calcRangeField label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.6px;}
   .calcRangeField input{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:14px;
     padding:9px 10px;width:100%;
   }
   .calcRangeField input:focus{outline:none;border-color:var(--white);}
   .calcSheetFooter{display:flex;gap:10px;margin-top:20px;}
   .calcSheetBtn{
-    flex:1;padding:13px 10px;border-radius:11px;font-weight:800;font-size:14.5px;
-    font-family:'IBM Plex Mono',monospace;cursor:pointer;text-align:center;border:1px solid transparent;
+    flex:1;padding:13px 10px;border-radius:11px;font-weight:600;font-size:14.5px;
+    font-family:var(--font-main);cursor:pointer;text-align:center;border:1px solid transparent;
   }
   .calcSheetCancel{background:transparent;border-color:var(--border-strong);color:var(--teal);}
   .calcSheetStart{background:var(--teal);border-color:var(--teal);color:#04211d;}
@@ -1240,13 +1260,13 @@
   .calcStatPill-timer{color:var(--blue);border-color:rgba(96,165,250,0.35);margin-left:auto;}
   .calcQuestionWrap{padding:26px 6px 34px;text-align:center;}
   .calcQuestion{
-    font-family:'Oswald',sans-serif;font-size:clamp(24px,7.5vw,34px);font-weight:500;color:var(--quiz-text);
+    font-family:var(--font-main);font-size:clamp(24px,7.5vw,34px);font-weight:500;color:var(--quiz-text);
     letter-spacing:0.3px;
   }
   .calcQuestion .calcQMark{color:var(--accent);}
   .calcCtrlRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .calcCtrlBtn{
-    font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:13px;
+    font-family:var(--font-main);font-weight:500;font-size:13px;
     border-radius:10px;cursor:pointer;border:1px solid transparent;
   }
   .calcSkipBtn{
@@ -1283,7 +1303,7 @@
   .calcAnsGrid-list .calcAnsBtn{font-size:14px;line-height:1.35;padding:12px 12px;text-align:left;}
   .calcAnsBtn{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:13px;
-    color:var(--quiz-text);font-family:'Oswald',sans-serif;font-weight:400;font-size:clamp(19px,5.5vw,25px);
+    color:var(--quiz-text);font-family:var(--font-main);font-weight:400;font-size:clamp(19px,5.5vw,25px);
     padding:22px 10px;cursor:pointer;text-align:center;
     transition:transform .1s ease,border-color .15s ease,background .15s ease;
   }
@@ -1294,7 +1314,7 @@
   .calcTypedWrap{display:flex;flex-direction:column;gap:14px;}
   .calcTypedDisplay{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:12px;
-    padding:16px;text-align:center;font-family:'Oswald',sans-serif;font-size:26px;font-weight:500;
+    padding:16px;text-align:center;font-family:var(--font-main);font-size:26px;font-weight:500;
     color:var(--quiz-text);min-height:60px;display:flex;align-items:center;justify-content:center;
   }
   .calcTypedDisplay.correct{border-color:var(--gain);color:var(--gain);}
@@ -1302,14 +1322,14 @@
   .calcKeypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .calcKeyBtn{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:11px;
-    color:var(--quiz-text);font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:19px;
+    color:var(--quiz-text);font-family:var(--font-main);font-weight:500;font-size:19px;
     padding:16px 0;cursor:pointer;text-align:center;
   }
   .calcKeyBtn:active{transform:scale(0.93);}
   .calcKeyBtn.calcKeySubmit{background:var(--teal);border-color:var(--teal);color:#04211d;}
   .calcKeyBtn.calcKeyClear{color:var(--loss);}
   .calcResultCard{text-align:center;padding:30px 10px 10px;}
-  .calcResultTitle{font-family:'Oswald',sans-serif;font-size:22px;font-weight:500;color:var(--quiz-text);margin-bottom:14px;}
+  .calcResultTitle{font-family:var(--font-main);font-size:22px;font-weight:500;color:var(--quiz-text);margin-bottom:14px;}
   .calcResultStats{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;font-size:14px;color:var(--muted);font-weight:400;}
   .calcResultStats b{color:var(--quiz-text);}
   .calcResultBtnRow{display:flex;gap:10px;}
@@ -1345,14 +1365,14 @@
   }
   .quickStudyBtn .qsIcon{width:26px;height:26px;position:relative;z-index:2;}
   .quickStudyBtn .qsLabel{
-    position:relative;z-index:2;color:#fff;font-family:'Oswald',sans-serif;font-weight:800;
+    position:relative;z-index:2;color:#fff;font-family:var(--font-main);font-weight:600;
     font-size:10px;letter-spacing:0.8px;text-transform:uppercase;
   }
   .tabbtn{
     --tb-color:var(--accent);
     flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
-    background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;
-    font-weight:900;font-size:10px;letter-spacing:0.2px;padding:5px 1px 4px;border-radius:10px;
+    background:none;border:none;color:var(--muted);font-family:var(--font-main);
+    font-weight:700;font-size:10px;letter-spacing:0.2px;padding:5px 1px 4px;border-radius:10px;
     cursor:pointer;position:relative;transition:color .15s ease,transform .12s ease;
     min-width:0;
   }
@@ -1457,15 +1477,15 @@
     animation:tabIn .35s ease;
   }
   .quoteCard::before{
-    content:'“';position:absolute;top:-30px;right:6px;font-family:'Oswald',sans-serif;
+    content:'“';position:absolute;top:-30px;right:6px;font-family:var(--font-main);
     font-size:120px;color:rgba(251,191,36,0.08);line-height:1;pointer-events:none;
   }
   .quoteEyebrow{
     font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
-    font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px;position:relative;z-index:1;
+    font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px;position:relative;z-index:1;
   }
   .quoteText{
-    font-size:13.5px;line-height:1.55;color:var(--text);font-weight:700;position:relative;z-index:1;
+    font-size:13.5px;line-height:1.55;color:var(--text);font-weight:500;position:relative;z-index:1;
   }
 
   /* ===== Compact "Compete With Friends" summary card on Home ===== */
@@ -1482,16 +1502,16 @@
     background:linear-gradient(160deg,rgba(251,191,36,0.14),#0d0c0f);
     border-color:rgba(251,191,36,0.55);
   }
-  .homeLBrank{font-weight:900;min-width:22px;text-align:center;color:var(--muted);font-size:13px;}
+  .homeLBrank{font-weight:700;min-width:22px;text-align:center;color:var(--muted);font-size:13px;}
   .homeLBrow.me .homeLBrank, .homeLBrow.lead .homeLBrank{color:var(--accent);}
-  .homeLBname{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .homeLBmeta{display:flex;gap:6px;font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;}
+  .homeLBname{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .homeLBmeta{display:flex;gap:6px;font-size:11.5px;color:var(--muted);font-weight:500;white-space:nowrap;}
   .homeLBmeta span{background:var(--panel2);border-radius:20px;padding:2px 7px;}
   .homeLBfoot{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;
     border-top:1px dashed var(--border);gap:8px;flex-wrap:wrap;
   }
-  .homeLBempty{font-size:12px;color:var(--muted);font-weight:700;padding:6px 0;}
+  .homeLBempty{font-size:12px;color:var(--muted);font-weight:500;padding:6px 0;}
 
   /* ===== Pinned Admin Announcement (Home) ===== */
   .announceCard{
@@ -1504,15 +1524,15 @@
   .announceCard.show{display:block;animation:tabIn .3s ease;}
   .announceEyebrow{
     font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);
-    font-weight:800;margin-bottom:6px;
+    font-weight:600;margin-bottom:6px;
   }
-  .announceText{font-size:13.5px;line-height:1.5;color:var(--text);font-weight:700;white-space:pre-wrap;word-break:break-word;}
-  .announceMeta{font-size:11px;color:var(--muted);margin-top:8px;font-weight:700;}
+  .announceText{font-size:13.5px;line-height:1.5;color:var(--text);font-weight:500;white-space:pre-wrap;word-break:break-word;}
+  .announceMeta{font-size:11px;color:var(--muted);margin-top:8px;font-weight:500;}
   .announceCloseBtn{
     position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
-    font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-main);
   }
   .announceCloseBtn:active{transform:scale(0.9);}
 
@@ -1520,15 +1540,15 @@
   .lbModeToggle{display:flex;gap:6px;margin-bottom:10px;}
   .lbModeBtn{
     flex:1;padding:9px 4px;border-radius:20px;border:1px solid var(--border-strong);
-    background:var(--panel2);color:var(--muted);font-size:11.5px;font-weight:800;
-    cursor:pointer;text-align:center;font-family:'IBM Plex Mono',monospace;
+    background:var(--panel2);color:var(--muted);font-size:11.5px;font-weight:600;
+    cursor:pointer;text-align:center;font-family:var(--font-main);
     transition:transform .12s ease,box-shadow .15s ease;
   }
   .lbModeBtn:active{transform:scale(0.96);}
   .lbModeBtn[data-lbmode="today"].active{background:linear-gradient(145deg,#60a5fa,#2563eb);color:#fff;border-color:var(--blue);box-shadow:0 3px 10px rgba(96,165,250,0.35);}
   .lbModeBtn[data-lbmode="week"].active{background:linear-gradient(145deg,#c084fc,#9333ea);color:#fff;border-color:var(--purple);box-shadow:0 3px 10px rgba(192,132,252,0.35);}
   .lbModeBtn[data-lbmode="all"].active{background:linear-gradient(160deg,#f4ecd6,#e6cf8e);color:#000;border-color:var(--accent);box-shadow:0 3px 10px rgba(251,191,36,0.22);}
-  .lbWeekHint{font-size:11px;color:var(--muted);margin:-2px 0 12px;font-weight:700;}
+  .lbWeekHint{font-size:11px;color:var(--muted);margin:-2px 0 12px;font-weight:500;}
 
   /* ===== "Right Now" live focus card on Home ===== */
   .rightNowCard{
@@ -1547,9 +1567,9 @@
     50%{box-shadow:0 0 0 7px rgba(74,222,128,0.05);}
   }
   .rightNowBody{flex:1;min-width:0;}
-  .rightNowLbl{font-size:11.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:3px;}
-  .rightNowTask{font-size:13.5px;font-weight:800;color:var(--white);}
-  .rightNowTime{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .rightNowLbl{font-size:11.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:500;margin-bottom:3px;}
+  .rightNowTask{font-size:13.5px;font-weight:600;color:var(--white);}
+  .rightNowTime{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px;}
   .rightNowGo{padding:8px 12px;font-size:12.5px;white-space:nowrap;flex-shrink:0;}
 
   /* ===== Home tab mini banner for an actively-running per-task timer —
@@ -1564,14 +1584,14 @@
   .homeTimerBanner:active{transform:scale(0.98);}
   .homeTimerDot{width:10px;height:10px;border-radius:50%;background:var(--gain);box-shadow:0 0 0 4px rgba(74,222,128,0.18);animation:dotPulse2 1.6s ease-in-out infinite;flex-shrink:0;}
   .homeTimerBody{flex:1;min-width:0;}
-  .homeTimerLbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--gain);font-weight:800;}
-  .homeTimerTask{font-size:13px;font-weight:800;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .homeTimerClock{font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:17px;color:var(--white);flex-shrink:0;}
+  .homeTimerLbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--gain);font-weight:600;}
+  .homeTimerTask{font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .homeTimerClock{font-family:var(--font-main);font-weight:600;font-size:17px;color:var(--white);flex-shrink:0;}
 
   /* ===== Smart Time Guide (Today tab, below tasks) ===== */
   .guideBox{font-size:12.5px;}
   .guideHead{
-    font-size:12.5px;font-weight:700;line-height:1.55;color:var(--text);margin-bottom:12px;
+    font-size:12.5px;font-weight:500;line-height:1.55;color:var(--text);margin-bottom:12px;
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;padding:10px 12px;
   }
   .guideHead b{color:var(--accent);}
@@ -1586,47 +1606,47 @@
   .guideRow.break{border-style:dashed;border-color:var(--border-strong);opacity:0.75;}
   .guideRow.break .guideTaskName{color:var(--muted);}
   .guideRow.break .guideTag{color:var(--blue);}
-  .guideTaskName{font-weight:800;font-size:12.5px;color:var(--text);}
-  .guideTaskMeta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;}
-  .guideTag{font-weight:800;}
+  .guideTaskName{font-weight:600;font-size:12.5px;color:var(--text);}
+  .guideTaskMeta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;}
+  .guideTag{font-weight:600;}
   .guideRow.tagnow .guideTag{color:var(--gain);}
   .guideRow.tagmiss .guideTag{color:var(--loss);}
-  .guideFoot{font-size:12.5px;color:var(--muted);font-weight:700;}
+  .guideFoot{font-size:12.5px;color:var(--muted);font-weight:500;}
   .guideFoot b{color:var(--accent);}
   .guideDone{
-    font-size:13px;font-weight:700;color:var(--accent);background:rgba(251,191,36,0.08);
+    font-size:13px;font-weight:500;color:var(--accent);background:rgba(251,191,36,0.08);
     border:1px dashed var(--accent-dim);border-radius:8px;padding:12px;text-align:center;
   }
-  .guideNote{font-size:12px;color:var(--muted);font-weight:700;padding:10px;text-align:center;}
+  .guideNote{font-size:12px;color:var(--muted);font-weight:500;padding:10px;text-align:center;}
   .guideAiBox{margin-bottom:12px;}
   .guideAiTip{
     font-size:12.5px;color:var(--text);line-height:1.65;font-weight:600;
     white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);
     border-radius:10px;padding:10px 12px;margin:0 0 10px;
   }
-  .guideAiSourceTag{display:block;font-size:10.5px;color:var(--accent);font-weight:800;letter-spacing:1px;margin:0 0 6px;}
+  .guideAiSourceTag{display:block;font-size:10.5px;color:var(--accent);font-weight:600;letter-spacing:1px;margin:0 0 6px;}
 
   /* ===== Smart Time Settings — user picks their own end-time + breaks ===== */
   .timeSettingsBox{
     background:var(--panel2);border:1px solid var(--border-strong);border-radius:10px;
     padding:12px 12px 10px;margin-bottom:12px;
   }
-  .tsHead{font-size:12px;letter-spacing:0.5px;text-transform:uppercase;color:var(--white);font-weight:800;margin-bottom:10px;}
+  .tsHead{font-size:12px;letter-spacing:0.5px;text-transform:uppercase;color:var(--white);font-weight:600;margin-bottom:10px;}
   .tsRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
-  .tsLabel{font-size:12.5px;color:var(--muted);font-weight:700;}
-  .tsBreaksLabel{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:4px 0 6px;}
+  .tsLabel{font-size:12.5px;color:var(--muted);font-weight:500;}
+  .tsBreaksLabel{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 6px;}
   .tsBreakRow{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-  .tsBreakSep{color:var(--muted);font-weight:800;font-size:12.5px;}
+  .tsBreakSep{color:var(--muted);font-weight:600;font-size:12.5px;}
   input[type="time"]{
     background:var(--panel);border:1px solid var(--border-strong);border-radius:6px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12.5px;
     padding:7px 6px;color-scheme:dark;flex:1;min-width:88px;
   }
   input[type="time"]:focus{outline:none;border-color:var(--white);}
   .tsBreakDel{
     background:var(--panel);border:1.5px solid var(--loss);color:var(--loss);
     width:28px;height:28px;min-width:28px;border-radius:7px;cursor:pointer;
-    font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:12px;flex-shrink:0;
+    font-family:var(--font-main);font-weight:600;font-size:12px;flex-shrink:0;
   }
   .tsBreakDel:active{transform:scale(0.9);}
 
@@ -1648,31 +1668,31 @@
     position:absolute;top:10px;right:10px;
     width:30px;height:30px;border-radius:50%;
     background:var(--panel2);border:1px solid var(--border-strong);
-    color:var(--muted);font-size:15px;font-weight:800;line-height:1;
+    color:var(--muted);font-size:15px;font-weight:600;line-height:1;
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;padding:0;
   }
   .onbCloseX:hover{color:var(--white);border-color:var(--white);}
-  .onbTitle{font-family:'Oswald',sans-serif;font-size:21px;font-weight:800;color:var(--white);margin:0 0 6px;}
-  .onbSub{font-size:12.5px;color:var(--muted);font-weight:700;margin:0 0 14px;line-height:1.55;}
-  .onbLabel{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:14px 0 6px;}
+  .onbTitle{font-family:var(--font-main);font-size:21px;font-weight:600;color:var(--white);margin:0 0 6px;}
+  .onbSub{font-size:12.5px;color:var(--muted);font-weight:500;margin:0 0 14px;line-height:1.55;}
+  .onbLabel{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin:14px 0 6px;}
   .onbCard input[type="text"]{
     width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:14px;
     padding:11px 10px;
   }
   .onbCard input[type="text"]:focus{outline:none;border-color:var(--white);}
-  .onbDivider{display:flex;align-items:center;gap:8px;margin:16px 0 4px;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+  .onbDivider{display:flex;align-items:center;gap:8px;margin:16px 0 4px;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;}
   .onbDivider::before, .onbDivider::after{content:"";flex:1;height:1px;background:var(--border);}
   .onbBtnRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
   .onbBtnRow .nav-btn{flex:1;text-align:center;min-width:0;}
   .onbPrimary{background:var(--accent);border-color:var(--accent);color:#1a1404;}
   .onbPrimary:hover{background:#ffd75e;color:#1a1404;}
-  .onbStatus{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:12px;line-height:1.5;display:none;}
+  .onbStatus{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:12px;line-height:1.5;display:none;}
 
   /* ===== AI Strict Manager ===== */
   .smBadge{
-    display:inline-block;font-size:12px;font-weight:800;letter-spacing:0.3px;
+    display:inline-block;font-size:12px;font-weight:600;letter-spacing:0.3px;
     padding:6px 10px;border-radius:8px;margin:2px 0 10px;
   }
   .smBadgeWarn{background:rgba(248,113,113,0.16);border:1px solid rgba(248,113,113,0.45);color:var(--loss);}
@@ -1684,7 +1704,7 @@
     white-space:pre-wrap;background:var(--panel2);border:1px solid var(--border);
     border-radius:10px;padding:12px 12px;margin:4px 0 4px;max-height:48vh;overflow-y:auto;
   }
-  .strictMgrSourceTag{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:0 0 6px;text-align:right;}
+  .strictMgrSourceTag{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin:0 0 6px;text-align:right;}
 
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
@@ -1708,11 +1728,11 @@
   }
   .gkGroup summary{
     list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;
-    align-items:center;font-family:'Oswald',sans-serif;font-size:13.5px;color:var(--white);
-    font-weight:800;letter-spacing:0.3px;
+    align-items:center;font-family:var(--font-main);font-size:13.5px;color:var(--white);
+    font-weight:600;letter-spacing:0.3px;
   }
   .gkGroup summary::-webkit-details-marker{display:none;}
-  .gkGroup summary .gkGroupCount{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .gkGroup summary .gkGroupCount{font-family:var(--font-main);font-size:12px;color:var(--muted);}
   .gkGroup[open] summary{border-bottom:1px dashed var(--border);}
   .gkGroupPanel{padding:2px 14px 4px;}
 
@@ -1724,13 +1744,13 @@
     background:linear-gradient(155deg,var(--panel),#0d0c0f);
     box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
     transition:transform .12s ease,border-color .15s ease;
-    font-family:'IBM Plex Mono',monospace;color:var(--text);
+    font-family:var(--font-main);color:var(--text);
   }
   .mockCatCard:active{transform:scale(0.96);}
   .mockCatCard.full{grid-column:1 / -1;}
   .mockCatCard .mcIcon{font-size:26px;line-height:1;margin-bottom:8px;display:block;}
-  .mockCatCard .mcLabel{font-family:'Oswald',sans-serif;font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px;}
-  .mockCatCard .mcStat{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.4;}
+  .mockCatCard .mcLabel{font-family:var(--font-main);font-size:15px;font-weight:600;color:var(--white);margin-bottom:4px;}
+  .mockCatCard .mcStat{font-size:11.5px;color:var(--muted);font-weight:500;line-height:1.4;}
   .mockCatCard::after{
     content:'';position:absolute;top:0;right:0;width:80px;height:80px;
     background:radial-gradient(circle at top right, var(--mc-color,var(--accent)), transparent 70%);
@@ -1747,13 +1767,13 @@
   .mockBackRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .mockBackBtn{
     background:var(--panel2);border:1.5px solid var(--border-strong);color:var(--text);
-    width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:800;
+    width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;font-weight:600;
     display:flex;align-items:center;justify-content:center;flex-shrink:0;
     transition:transform .12s ease,border-color .15s ease,box-shadow .15s ease;
   }
   .mockBackBtn:active{transform:scale(0.92);}
   .mockBackBtn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 8px rgba(251,191,36,0.22);}
-  .mockDetailTitle{font-family:'Oswald',sans-serif;font-size:18px;font-weight:800;color:var(--white);flex:1;}
+  .mockDetailTitle{font-family:var(--font-main);font-size:18px;font-weight:600;color:var(--white);flex:1;}
 
   .mockEntryCard{
     background:linear-gradient(165deg,var(--panel),#0d0c0f);border:1px solid var(--border);border-radius:12px;
@@ -1767,11 +1787,11 @@
   #mockDetailSection[data-cat="engSec"] .mockEntryCard{border-left-color:var(--purple);}
   #mockDetailSection[data-cat="reasoningSec"] .mockEntryCard{border-left-color:var(--pink);}
   .mockEHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
-  .mockEName{font-weight:800;color:var(--white);font-size:13.5px;}
-  .mockEDate{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;}
-  .mockETag{display:inline-block;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;font-weight:800;
+  .mockEName{font-weight:600;color:var(--white);font-size:13.5px;}
+  .mockEDate{font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;}
+  .mockETag{display:inline-block;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;font-weight:600;
     padding:2px 6px;border-radius:5px;margin-left:6px;background:var(--panel2);color:var(--accent);border:1px solid var(--accent-dim);vertical-align:middle;}
-  .mockEStats{display:flex;gap:8px 10px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .mockEStats{display:flex;gap:8px 10px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:6px;}
   .mockEStats span{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;}
   .mockEStats b{color:var(--text);}
   .mockENote{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:4px;}
@@ -1779,7 +1799,7 @@
   .mockEActions{display:flex;gap:8px;margin-top:8px;}
   .mockEActions button{
     background:var(--panel2);border:1px solid var(--border-strong);color:var(--muted);
-    font-size:11px;font-weight:800;padding:6px 12px;border-radius:20px;cursor:pointer;
+    font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;
     transition:transform .12s ease,border-color .15s ease,color .15s ease;
   }
   .mockEActions button:active{transform:scale(0.94);}
@@ -1787,25 +1807,25 @@
   .mockEActions button.del{color:var(--loss);border-color:rgba(248,113,113,0.35);}
   .mockEActions button.del:hover{background:rgba(248,113,113,0.14);}
 
-  .mockEmptyState{text-align:center;padding:26px 10px;color:var(--muted);font-size:12.5px;font-weight:700;}
+  .mockEmptyState{text-align:center;padding:26px 10px;color:var(--muted);font-size:12.5px;font-weight:500;}
 
   .mockTypeToggle{display:flex;gap:8px;margin:6px 0 4px;}
   .mockTypeOpt{
     flex:1;text-align:center;padding:9px 6px;border:1.5px solid var(--border-strong);border-radius:20px;
-    cursor:pointer;font-size:12px;font-weight:800;color:var(--muted);transition:box-shadow .15s ease;
+    cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:box-shadow .15s ease;
   }
   .mockTypeOpt.active{background:linear-gradient(160deg,#f4ecd6,#e6cf8e);border-color:var(--accent);color:#1a1404;box-shadow:0 3px 10px rgba(251,191,36,0.22);}
 
   .mockForm .onbLabel:first-child{margin-top:0;}
   .mockForm textarea{
     width:100%;min-height:60px;background:var(--panel2);border:1px solid var(--border-strong);
-    border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:700;
+    border-radius:8px;color:var(--text);font-family:var(--font-main);font-size:12.5px;font-weight:500;
     padding:9px;resize:vertical;margin-top:4px;
   }
   .mockForm textarea:focus{outline:none;border-color:var(--white);}
   .mockForm input[type="date"]{
     width:100%;background:var(--panel2);border:1px solid var(--border-strong);border-radius:8px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;padding:9px 10px;
+    color:var(--text);font-family:var(--font-main);font-weight:500;font-size:13px;padding:9px 10px;
   }
 
   .mockInsight{
@@ -1813,7 +1833,7 @@
     background:rgba(251,191,36,0.08);border:1px dashed var(--accent-dim);margin-bottom:14px;
   }
   .mockInsight .mi-icon{font-size:20px;line-height:1;}
-  .mockInsight .mi-text{font-size:12.5px;color:var(--text);font-weight:700;line-height:1.5;}
+  .mockInsight .mi-text{font-size:12.5px;color:var(--text);font-weight:500;line-height:1.5;}
   .mockInsight .mi-text b{color:var(--accent);}
 
   /* ===== Start Studying / Focus Timer ===== */
@@ -1823,11 +1843,11 @@
     border:1.5px solid var(--border-strong);border-radius:14px;padding:16px 8px;
     background:linear-gradient(155deg, var(--sm-color2,var(--panel)), #0d0c0f);
     box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
-    transition:transform .12s ease;font-family:'IBM Plex Mono',monospace;color:var(--white);
+    transition:transform .12s ease;font-family:var(--font-main);color:var(--white);
   }
   .studyModeBtn:active{transform:scale(0.95);}
   .studyModeBtn .smIcon{font-size:24px;line-height:1;margin-bottom:6px;display:block;}
-  .studyModeBtn .smLabel{font-family:'Oswald',sans-serif;font-size:13px;font-weight:800;}
+  .studyModeBtn .smLabel{font-family:var(--font-main);font-size:13px;font-weight:600;}
   .studyModeBtn::after{
     content:'';position:absolute;top:0;right:0;width:70px;height:70px;
     background:radial-gradient(circle at top right, var(--sm-color,var(--accent)), transparent 70%);
@@ -1836,21 +1856,21 @@
   .studyModeBtn.smPomodoro{--sm-color:var(--loss);--sm-color2:#2a1414;border-color:rgba(248,113,113,0.35);}
   .studyModeBtn.smStopwatch{--sm-color:var(--blue);--sm-color2:#12203a;border-color:rgba(96,165,250,0.35);}
   .studyModeBtn.smTimed{--sm-color:var(--purple);--sm-color2:#241a38;border-color:rgba(192,132,252,0.35);}
-  .studyTodayLine{font-size:11.5px;color:var(--muted);font-weight:700;margin:8px 2px 20px;text-align:center;}
+  .studyTodayLine{font-size:11.5px;color:var(--muted);font-weight:500;margin:8px 2px 20px;text-align:center;}
   .studyTodayLine b{color:var(--accent);}
 
   .focusModeTabs{display:flex;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;}
   .focusModeTab{
     flex:1;text-align:center;padding:8px 4px;border-radius:8px;cursor:pointer;
-    font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:800;color:var(--muted);
+    font-family:var(--font-main);font-size:11.5px;font-weight:600;color:var(--muted);
   }
   .focusModeTab.active{background:var(--white);color:#000;}
-  .focusPrompt{text-align:center;font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:14px;}
+  .focusPrompt{text-align:center;font-size:12.5px;color:var(--accent);font-weight:500;margin-bottom:14px;}
   .focusSubjectGrid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:240px;overflow-y:auto;}
   .focusSubjectBtn{
     text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;
     border:1.5px solid var(--border-strong);background:var(--panel2);
-    font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:800;color:var(--text);
+    font-family:var(--font-main);font-size:12.5px;font-weight:600;color:var(--text);
     line-height:1.4;
   }
   .focusSubjectBtn .fsIcon{margin-right:4px;}
@@ -1859,14 +1879,14 @@
   .focusBackBtn{
     flex-shrink:0;width:32px;height:32px;border-radius:8px;cursor:pointer;
     border:1.5px solid var(--border-strong);background:var(--panel2);color:var(--text);
-    font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;
   }
   .focusBackBtn:disabled{opacity:0.3;cursor:default;}
-  .focusSelectedName{flex:1;font-size:13.5px;font-weight:800;color:var(--white);text-align:center;line-height:1.35;}
-  .focusDurationRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;font-size:13px;color:var(--muted);font-weight:700;}
+  .focusSelectedName{flex:1;font-size:13.5px;font-weight:600;color:var(--white);text-align:center;line-height:1.35;}
+  .focusDurationRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;font-size:13px;color:var(--muted);font-weight:500;}
   .focusDurationRow input{
     width:60px;text-align:center;background:var(--panel2);border:1.5px solid var(--border-strong);
-    border-radius:8px;color:var(--white);font-family:'IBM Plex Mono',monospace;font-weight:800;font-size:15px;padding:6px 4px;
+    border-radius:8px;color:var(--white);font-family:var(--font-main);font-weight:600;font-size:15px;padding:6px 4px;
   }
   .focusDurationRow input:focus{outline:none;border-color:var(--accent);}
   .focusRing{
@@ -1877,8 +1897,8 @@
     box-shadow:0 0 22px rgba(251,191,36,0.14);transition:background 0.3s linear;
   }
   .focusRing::before{content:'';position:absolute;inset:12px;border-radius:50%;background:var(--bg);}
-  .focusTimeText{position:relative;font-family:'Oswald',sans-serif;font-weight:800;font-size:clamp(30px,9vw,40px);color:var(--white);}
-  .focusStatusText{position:relative;font-size:12px;font-weight:800;letter-spacing:0.5px;color:var(--purple);margin-top:4px;text-transform:uppercase;}
+  .focusTimeText{position:relative;font-family:var(--font-main);font-weight:600;font-size:clamp(30px,9vw,40px);color:var(--white);}
+  .focusStatusText{position:relative;font-size:12px;font-weight:600;letter-spacing:0.5px;color:var(--purple);margin-top:4px;text-transform:uppercase;}
   .focusControlRow{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px;}
   .focusPlayBtn{
     width:62px;height:62px;border-radius:50%;border:none;cursor:pointer;
@@ -1891,7 +1911,7 @@
     background:var(--panel2);color:var(--text);font-size:17px;display:flex;align-items:center;justify-content:center;
   }
   .focusResetBtn:active{transform:scale(0.92);}
-  .focusTodayText{text-align:center;font-size:12.5px;color:var(--muted);font-weight:700;}
+  .focusTodayText{text-align:center;font-size:12.5px;color:var(--muted);font-weight:500;}
   .focusTodayText b{color:var(--accent);}
 
   /* ===== Voice-to-text (Web Speech API) mic buttons ===== */
@@ -2645,6 +2665,16 @@
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
+        <button class="calcCard calcCard-grammar" id="calcGrammarBtn" data-calc="grammar">
+          <span class="calcIcon calcIcon-grammar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 21h14"/><path d="M7 8l5-5 5 5"/><path d="M4 14l3-6 3 6"/><path d="M14 14l3-6 3 6"/><path d="M4.5 12h5"/><path d="M14.5 12h5"/></svg>
+          </span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Grammar</span>
+            <span class="calcSub" id="grammarSubLabel">200 Qs · 10 sets · Spot the Error</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
       </div>
 
       <div class="grid-label" style="margin-top:0;">🧮 Calculation Practice</div>
@@ -2865,6 +2895,56 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="idiomResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="idiomResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-grammarmenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="grammarMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">Grammar — Choose a Set</div>
+      </div>
+      <button type="button" class="calcCard calcCard-saved" id="grammarSavedBtn">
+        <span class="calcIcon">⭐</span>
+        <span class="calcLabelCol">
+          <span class="calcLabel">Saved Questions</span>
+          <span class="calcSub" id="grammarSavedCountLabel">0 saved</span>
+        </span>
+        <span class="calcArrow">&#8250;</span>
+      </button>
+      <div class="calcGrid calcGrid-1col" id="grammarSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-grammar">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="grammarBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="grammarQuizTitle">Grammar</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="grammarStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="grammarStatWrong">0</span></div>
+        <div class="calcStatPill" id="grammarStatProgress" style="margin-left:auto;color:var(--muted);">Q 1/1</div>
+        <button type="button" class="calcCtrlBtn calcFlagBtn" id="grammarSaveBtn" aria-label="Save this question">☆</button>
+      </div>
+
+      <div class="calcQuestionWrap" id="grammarQuestionWrap">
+        <div class="calcQuestion" id="grammarWordText" style="font-size:clamp(15px,4.2vw,19px);line-height:1.45;">—</div>
+      </div>
+
+      <div class="calcAnsGrid calcAnsGrid-list" id="grammarAnsGrid"></div>
+
+      <div class="calcResultCard" id="grammarSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="grammarSolutionText" style="font-size:14px;line-height:1.5;color:var(--text);font-weight:500;"></div>
+        <button class="nav-btn onbPrimary" id="grammarNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="grammarResultCard" style="display:none;">
+        <div class="calcResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="grammarResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="grammarResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="grammarResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -5625,7 +5705,7 @@ function renderBackupNudgeInto(el, cachedBackup){
   const { text, stale } = formatBackupNudge(cachedBackup);
   el.textContent = text;
   el.style.cssText = 'padding-top:0;margin-top:8px;' + (stale
-    ? 'border:1px solid var(--loss);background:rgba(248,113,113,0.08);border-radius:6px;padding:8px 10px;color:var(--loss);font-weight:700;'
+    ? 'border:1px solid var(--loss);background:rgba(248,113,113,0.08);border-radius:6px;padding:8px 10px;color:var(--loss);font-weight:500;'
     : '');
 }
 function downloadJSONFile(filename, dataObj){
@@ -5938,7 +6018,7 @@ async function renderAdminPanelBody(){
     <div class="grid-label" style="margin-top:14px;">🛡️ Sub-Admin (Backup Admin)</div>
     <div class="losshint" style="padding-top:0;">Ek member ko Sub-Admin banao — tumhara account kho jaye ya tum group chhodo to wahi Admin ban sakta hai. Jab chaho badal do.</div>
     <div class="btnrow" style="margin-top:8px;flex-wrap:wrap;">
-      <select id="subAdminSelect" style="background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">
+      <select id="subAdminSelect" style="background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12.5px;padding:8px 10px;">
         <option value="">— Koi nahi —</option>
         ${others.map(nm=>`<option value="${escapeHtml(nm)}" ${(currentRoomSubAdmin && currentRoomSubAdmin.toLowerCase()===nm.toLowerCase()) ? 'selected' : ''}>${escapeHtml(nm)}</option>`).join('')}
       </select>
@@ -5958,7 +6038,7 @@ async function renderAdminPanelBody(){
     <div class="grid-label" style="margin-top:14px;">📌 Pinned Announcement (Home Tab)</div>
     <div class="losshint" style="padding-top:0;">Jo likhoge wo sabke Home tab pe pin ho jayega, jab tak hatao ya naya na likho.</div>
     <div class="voiceField">
-      <textarea id="annInput" placeholder="Jaise: Kal shaam 6 baje group study session hai..." style="width:100%;box-sizing:border-box;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;padding:8px 10px;">${ann ? escapeHtml(ann.text) : ''}</textarea>
+      <textarea id="annInput" placeholder="Jaise: Kal shaam 6 baje group study session hai..." style="width:100%;box-sizing:border-box;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--font-main);font-weight:500;font-size:12.5px;padding:8px 10px;">${ann ? escapeHtml(ann.text) : ''}</textarea>
       <button type="button" class="micBtn" data-mic-target="annInput" aria-label="Bol kar likho" title="Bol kar likho"><svg viewBox="0 0 24 24" class="micIcon"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>
     </div>
     <div class="btnrow" style="margin-top:8px;">
@@ -8771,7 +8851,7 @@ function renderAccuracyTrend(){
   if(statsEl) statsEl.innerHTML = `
     <div class="bwrow"><span>Latest Mock Accuracy</span><span class="amt ${latest>=70?'gain':'loss'}">${latest}%</span></div>
     <div class="bwrow"><span>Overall Accuracy (${points.length} mocks)</span><span>${overallAcc}%</span></div>
-    <div class="bwrow"><span>Total Right / Wrong</span><span><span style="color:var(--gain);font-weight:800;">${totalCorrect}</span> / <span style="color:var(--loss);font-weight:800;">${totalWrong}</span></span></div>
+    <div class="bwrow"><span>Total Right / Wrong</span><span><span style="color:var(--gain);font-weight:600;">${totalCorrect}</span> / <span style="color:var(--loss);font-weight:600;">${totalWrong}</span></span></div>
   `;
 }
 function renderPercentileTrend(){
@@ -8943,7 +9023,7 @@ function renderSectionalVsFullCompare(){
   function bar(label, val, color){
     const pct = val===null ? 0 : Math.round(val);
     return `<div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;"><span>${label}</span><span>${val===null?'—':pct+'%'}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px;"><span>${label}</span><span>${val===null?'—':pct+'%'}</span></div>
       <div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${color};"></div></div>
     </div>`;
   }
@@ -8963,8 +9043,8 @@ function renderWeakChapterInsight(){
     el.innerHTML = `<div class="guideNote">🎯 Chapter Mistake Quick-Log (Today ya Mock tab) use karo — yahan sabse weak chapters/topics ranked dikhenge.</div>`;
     return;
   }
-  const mathHtml = mathRows.length ? `<div style="margin-bottom:8px;"><div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:2px;">🧮 Weakest Math Chapters</div>${mathRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
-  const engHtml = engRows.length ? `<div><div style="font-size:12.5px;font-weight:800;color:var(--text);margin-bottom:2px;">🔤 Weakest English Topics</div>${engRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
+  const mathHtml = mathRows.length ? `<div style="margin-bottom:8px;"><div style="font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:2px;">🧮 Weakest Math Chapters</div>${mathRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
+  const engHtml = engRows.length ? `<div><div style="font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:2px;">🔤 Weakest English Topics</div>${engRows.map((r,idx)=>`<div class="bwrow"><span>${idx+1}. ${escapeHtml(r.n)}</span><span class="amt loss">${r.c} wrong</span></div>`).join('')}</div>` : '';
   el.innerHTML = mathHtml + engHtml;
 }
 function renderStudyUtilization(){
@@ -9124,7 +9204,7 @@ function renderLongTermAnalysis(){
   if(summaryEl){
     summaryEl.innerHTML = perCycle.map(c=>`
       <div class="lossrow">
-        <span class="lday">${c.label} <span style="color:var(--muted);font-weight:700;">(${c.startDate} · ${c.totalDays}d)</span></span>
+        <span class="lday">${c.label} <span style="color:var(--muted);font-weight:500;">(${c.startDate} · ${c.totalDays}d)</span></span>
         <span class="lamt" style="color:var(--accent);">${c.count ? `${c.avg.toFixed(1)} avg · ${c.count} mocks` : 'no mocks'}</span>
       </div>
     `).join('');
@@ -9154,7 +9234,7 @@ function renderLossLog(){
   const shown = rows.slice(0,10);
   el.innerHTML = shown.map(r=>`
     <div class="lossrow">
-      <span class="lday">📉 Day ${r.day} <span style="color:var(--muted);font-weight:700;">(${fmtDate(r.day)})</span> · ${r.missed} miss</span>
+      <span class="lday">📉 Day ${r.day} <span style="color:var(--muted);font-weight:500;">(${fmtDate(r.day)})</span> · ${r.missed} miss</span>
       <span class="lamt">-₹${Math.round(r.lostAmt).toLocaleString('en-IN')}</span>
     </div>
   `).join('') + (rows.length>10 ? `<div class="losshint">+ ${rows.length-10} aur din pending hai list mein…</div>` : '');
@@ -9178,8 +9258,8 @@ function renderMistakesLog(){
   const shown = rows.slice(0,15);
   el.innerHTML = shown.map(r=>`
     <div class="lossrow" style="flex-direction:column;align-items:flex-start;gap:3px;">
-      <span class="lday">🤦 Day ${r.day} <span style="color:var(--muted);font-weight:700;">(${fmtDate(r.day)})</span></span>
-      <span style="font-size:12.5px;color:var(--text);font-weight:700;white-space:pre-wrap;word-break:break-word;">${escapeHtml(r.text)}</span>
+      <span class="lday">🤦 Day ${r.day} <span style="color:var(--muted);font-weight:500;">(${fmtDate(r.day)})</span></span>
+      <span style="font-size:12.5px;color:var(--text);font-weight:500;white-space:pre-wrap;word-break:break-word;">${escapeHtml(r.text)}</span>
     </div>
   `).join('') + (rows.length>15 ? `<div class="losshint">+ ${rows.length-15} aur purani entries hain (upar 15 sabse recent hain).</div>` : '');
 }
@@ -9395,7 +9475,7 @@ function renderTaskEditForm(){
         <div class="taskEditRow" data-row-idx="${idx}">
           <div class="taskEditTop">
             <span class="tNum">${idx+1}.</span>
-            <span style="flex:1;font-size:13.5px;font-weight:700;">${escapeHtml(name)}</span>
+            <span style="flex:1;font-size:13.5px;font-weight:500;">${escapeHtml(name)}</span>
           </div>
           <div class="taskEditBottom">
             <span style="font-size:12px;color:var(--muted);">⏰ ${minToTimeInputStr(TASK_START_MIN[idx])}</span>
@@ -11319,6 +11399,7 @@ function initVocabQuiz(){
 
   initSpellingQuiz();
   initIdiomQuiz();
+  initGrammarQuiz();
 }
 
 // ===== Spelling Quiz (Learn/Calc tab) =====
@@ -12027,6 +12108,7 @@ function initSpellingQuiz(){
 // explanation }. 'word' field mein idiom ka sawaal hota hai, options
 // mein 4 possible meanings, 'answer' sahi meaning ka 0-based index hai.
 const idiomSession = { setKey: null, questions: [], index: 0, correct: 0, wrong: 0, answered: false };
+const grammarSession = { setKey: null, questions: [], index: 0, correct: 0, wrong: 0, answered: false };
 
 const IDIOM_SETS = {
   set1: [
@@ -14280,6 +14362,470 @@ function initIdiomQuiz(){
   updateIdiomSavedMenuBtn();
 }
 
+// ===== Grammar Quiz (Learn/Calc tab) — SSC 'Spot the Error' format =====
+// DATA FORMAT: GRAMMAR_SETS.setN = array of 20 questions, each
+// { word: full sentence with (A)(B)(C)(D) parts marked, options: the 4
+//   parts as separate choices, answer: 0-based index of the part with the
+//   error, explanation: [correction line, rule line] }. Mixed across all
+//   14 grammar topics in every set (not chapter-wise) — 200 Qs, 10 sets.
+const GRAMMAR_SETS = {
+  set1: [
+    { word: "Spot the error: (A) The professor (B) explained the (C) past history (D) of the ancient city.", options: ["(A) The professor", "(B) explained the", "(C) past history", "(D) of the ancient city."], answer: 2, explanation: ["Correction: \"past history\" → \"history\"", "Rule: 'History' always refers to the past; adding 'past' before it is a redundant phrase."] },
+    { word: "Spot the error: (A) The doctor (B) insisted that (C) the patient took (D) the medicine regularly.", options: ["(A) The doctor", "(B) insisted that", "(C) the patient took", "(D) the medicine regularly."], answer: 2, explanation: ["Correction: \"the patient took\" → \"the patient take\"", "Rule: Subjunctive Mood — after insist/demand/suggest + that, the verb stays in Base Form (V1), no 's/es'."] },
+    { word: "Spot the error: (A) He always (B) lived by (C) the same (D) principals throughout his life.", options: ["(A) He always", "(B) lived by", "(C) the same", "(D) principals throughout his life."], answer: 3, explanation: ["Correction: \"principals\" → \"principles\"", "Rule: 'Principal' means head/chief; 'principle' means a rule or belief — the sentence needs the latter."] },
+    { word: "Spot the error: (A) The teacher (B) told the class (C) that the sun (D) rose in the east.", options: ["(A) The teacher", "(B) told the class", "(C) that the sun", "(D) rose in the east."], answer: 3, explanation: ["Correction: \"rose in the east\" → \"rises in the east\"", "Rule: A universal truth never changes its tense in Indirect Speech, even if the reporting verb is Past."] },
+    { word: "Spot the error: (A) By the time (B) we reached the station, (C) the train (D) left.", options: ["(A) By the time", "(B) we reached the station,", "(C) the train", "(D) left."], answer: 3, explanation: ["Correction: \"left\" → \"had left\"", "Rule: Of two past actions, the one that happened first is put in Past Perfect (had + V3)."] },
+    { word: "Spot the error: (A) He caught (B) a ten-inches fish (C) from the (D) river yesterday.", options: ["(A) He caught", "(B) a ten-inches fish", "(C) from the", "(D) river yesterday."], answer: 1, explanation: ["Correction: \"ten-inches fish\" → \"ten-inch fish\"", "Rule: In \"Number + Unit + Noun\" constructions, the unit always stays Singular."] },
+    { word: "Spot the error: (A) My sister (B) is owning a (C) small scooty (D) that she loves riding.", options: ["(A) My sister", "(B) is owning a", "(C) small scooty", "(D) that she loves riding."], answer: 1, explanation: ["Correction: \"is owning\" → \"owns\"", "Rule: Stative verbs (own, know, believe) express a permanent state and are never used in continuous (-ing) form."] },
+    { word: "Spot the error: (A) She danced (B) graceful (C) on the stage (D) last evening.", options: ["(A) She danced", "(B) graceful", "(C) on the stage", "(D) last evening."], answer: 1, explanation: ["Correction: \"graceful\" → \"gracefully\"", "Rule: A verb (danced) is modified by an Adverb, not an Adjective."] },
+    { word: "Spot the error: (A) She exclaimed (B) that what a beautiful dress (C) it (D) was.", options: ["(A) She exclaimed", "(B) that what a beautiful dress", "(C) it", "(D) was."], answer: 1, explanation: ["Correction: \"that what a beautiful dress\" → \"with joy that it was a very beautiful dress\"", "Rule: When reporting an exclamatory sentence, it is converted into a statement; the exclamatory word (what) is dropped and 'very' is added instead."] },
+    { word: "Spot the error: (A) The dog hurt (B) it's leg (C) while chasing (D) the ball.", options: ["(A) The dog hurt", "(B) it's leg", "(C) while chasing", "(D) the ball."], answer: 1, explanation: ["Correction: \"it's leg\" → \"its leg\"", "Rule: \"Its\" (no apostrophe) shows possession; \"it's\" is short for \"it is/it has\"."] },
+    { word: "Spot the error: (A) He is coming (B) to the party (C) today, (D) isn't it?", options: ["(A) He is coming", "(B) to the party", "(C) today,", "(D) isn't it?"], answer: 3, explanation: ["Correction: \"isn't it?\" → \"isn't he?\"", "Rule: The question tag must use a pronoun that agrees with the subject of the sentence (he), not a generic 'it'."] },
+    { word: "Spot the error: (A) My uncle gave me (B) a hundred rupees note (C) as a gift (D) on my birthday.", options: ["(A) My uncle gave me", "(B) a hundred rupees note", "(C) as a gift", "(D) on my birthday."], answer: 1, explanation: ["Correction: \"a hundred rupees note\" → \"a hundred rupee note\"", "Rule: When a number+noun acts as an adjective before another noun, the first noun stays Singular."] },
+    { word: "Spot the error: (A) The committee (B) is divided (C) in their opinions (D) about the new policy.", options: ["(A) The committee", "(B) is divided", "(C) in their opinions", "(D) about the new policy."], answer: 1, explanation: ["Correction: \"is divided\" → \"are divided\"", "Rule: When members of a Collective Noun act/think differently (divided opinions), the verb becomes Plural."] },
+    { word: "Spot the error: (A) Several passer-bys (B) stopped to help (C) the injured man (D) on the road.", options: ["(A) Several passer-bys", "(B) stopped to help", "(C) the injured man", "(D) on the road."], answer: 0, explanation: ["Correction: \"passer-bys\" → \"passers-by\"", "Rule: In compound nouns, the plural is formed on the main/root word (passer), not the last word."] },
+    { word: "Spot the error: (A) The letter (B) was wrote (C) by him (D) last night.", options: ["(A) The letter", "(B) was wrote", "(C) by him", "(D) last night."], answer: 1, explanation: ["Correction: \"was wrote\" → \"was written\"", "Rule: The passive voice requires the past participle (third form) of the verb; 'wrote' is the simple past form, the correct form is 'written'."] },
+    { word: "Spot the error: (A) The children (B) went out (C) to play the cricket (D) in the evening.", options: ["(A) The children", "(B) went out", "(C) to play the cricket", "(D) in the evening."], answer: 2, explanation: ["Correction: \"play the cricket\" → \"play cricket\"", "Rule: No article is used before the names of games and sports (cricket, football, chess, etc.)."] },
+    { word: "Spot the error: (A) He got married (B) with his college (C) sweetheart (D) last December.", options: ["(A) He got married", "(B) with his college", "(C) sweetheart", "(D) last December."], answer: 1, explanation: ["Correction: \"married with\" → \"married to\"", "Rule: The correct preposition after 'married' (in the passive sense) is 'to', not 'with'."] },
+    { word: "Spot the error: (A) Bread and butter (B) are a (C) healthy breakfast (D) for children.", options: ["(A) Bread and butter", "(B) are a", "(C) healthy breakfast", "(D) for children."], answer: 1, explanation: ["Correction: \"are a\" → \"is a\"", "Rule: When two nouns joined by 'and' express a single idea, the verb is Singular."] },
+    { word: "Spot the error: (A) Please speak (B) more louder (C) so that (D) everyone can hear you.", options: ["(A) Please speak", "(B) more louder", "(C) so that", "(D) everyone can hear you."], answer: 1, explanation: ["Correction: \"more louder\" → \"louder\"", "Rule: A double comparative (more + louder) is incorrect; use only one comparative form."] },
+    { word: "Spot the error: (A) Though he (B) worked very hard (C) but he (D) still failed the test.", options: ["(A) Though he", "(B) worked very hard", "(C) but he", "(D) still failed the test."], answer: 2, explanation: ["Correction: \"but he\" → \"yet he\"", "Rule: 'Though/Although' pairs only with 'yet' (or a comma); 'but' can never be used with it."] },
+  ],
+  set2: [
+    { word: "Spot the error: (A) He returned back (B) home (C) late (D) at night.", options: ["(A) He returned back", "(B) home", "(C) late", "(D) at night."], answer: 0, explanation: ["Correction: \"returned back\" → \"returned\"", "Rule: 'Return' already means 'to come back', so adding 'back' after it is redundant."] },
+    { word: "Spot the error: (A) After the (B) breakfast, (C) we went for (D) a long walk.", options: ["(A) After the", "(B) breakfast,", "(C) we went for", "(D) a long walk."], answer: 0, explanation: ["Correction: \"After the breakfast\" → \"After breakfast\"", "Rule: No article is used before names of meals (breakfast, lunch, dinner)."] },
+    { word: "Spot the error: (A) Every student (B) in this school (C) is very talented, (D) isn't he?", options: ["(A) Every student", "(B) in this school", "(C) is very talented,", "(D) isn't he?"], answer: 3, explanation: ["Correction: \"isn't he?\" → \"aren't they?\"", "Rule: 'Each/Every' takes a Singular verb in the statement but always a Plural (they) question tag."] },
+    { word: "Spot the error: (A) Me and my friends (B) often go to (C) the park in the (D) evening.", options: ["(A) Me and my friends", "(B) often go to", "(C) the park in the", "(D) evening."], answer: 0, explanation: ["Correction: \"Me and my friends\" → \"My friends and I\"", "Rule: Subjective Case (I) is used as subject, and by good-sense order 2nd/3rd person comes before 1st."] },
+    { word: "Spot the error: (A) Scientists have long (B) believed that (C) gravity pulled down (D) everything on Earth.", options: ["(A) Scientists have long", "(B) believed that", "(C) gravity pulled down", "(D) everything on Earth."], answer: 2, explanation: ["Correction: \"gravity pulled down\" → \"gravity pulls down\"", "Rule: A universal truth/scientific fact always stays in Simple Present, regardless of the reporting verb's tense."] },
+    { word: "Spot the error: (A) He (B) told to me (C) that he had (D) completed his work.", options: ["(A) He", "(B) told to me", "(C) that he had", "(D) completed his work."], answer: 1, explanation: ["Correction: \"told to me\" → \"told me\"", "Rule: 'Tell' is directly followed by the object; 'to' is never used after 'told'."] },
+    { word: "Spot the error: (A) He drives (B) very careful (C) on the (D) busy highway.", options: ["(A) He drives", "(B) very careful", "(C) on the", "(D) busy highway."], answer: 1, explanation: ["Correction: \"very careful\" → \"very carefully\"", "Rule: An adverb, not an adjective, is required to modify a verb (drives)."] },
+    { word: "Spot the error: (A) Yesterday, (B) my car (C) was had washed (D) at the new service centre.", options: ["(A) Yesterday,", "(B) my car", "(C) was had washed", "(D) at the new service centre."], answer: 2, explanation: ["Correction: \"was had washed\" → \"was washed\"", "Rule: Causative verbs (get/have) already carry a passive meaning; a double passive is never formed."] },
+    { word: "Spot the error: (A) The reason (B) he failed the exam (C) is because (D) he didn't study enough.", options: ["(A) The reason", "(B) he failed the exam", "(C) is because", "(D) he didn't study enough."], answer: 2, explanation: ["Correction: \"is because\" → \"is that\"", "Rule: 'The reason...is because' is a redundant structure; it should be followed by 'that', not 'because'."] },
+    { word: "Spot the error: (A) Both of my (B) brother-in-laws (C) attended the (D) wedding ceremony.", options: ["(A) Both of my", "(B) brother-in-laws", "(C) attended the", "(D) wedding ceremony."], answer: 1, explanation: ["Correction: \"brother-in-laws\" → \"brothers-in-law\"", "Rule: In compound nouns, the plural is formed on the main/root word (brother), not the last word."] },
+    { word: "Spot the error: (A) The government (B) believes that (C) the rich is (D) getting richer every year.", options: ["(A) The government", "(B) believes that", "(C) the rich is", "(D) getting richer every year."], answer: 2, explanation: ["Correction: \"the rich is\" → \"the rich are\"", "Rule: \"The + Adjective\" (the rich, the poor) refers to a whole class of people and always takes a Plural verb."] },
+    { word: "Spot the error: (A) The three sisters (B) love (C) each other (D) very much.", options: ["(A) The three sisters", "(B) love", "(C) each other", "(D) very much."], answer: 2, explanation: ["Correction: \"each other\" → \"one another\"", "Rule: 'Each other' is used for two people/things; 'one another' is used for more than two."] },
+    { word: "Spot the error: (A) We always (B) meet our relatives (C) in the night (D) during festivals.", options: ["(A) We always", "(B) meet our relatives", "(C) in the night", "(D) during festivals."], answer: 2, explanation: ["Correction: \"in the night\" → \"at night\"", "Rule: 'Night' (a time of parting/darkness) always takes the preposition 'at', not 'in'."] },
+    { word: "Spot the error: (A) David looks (B) elder than (C) he really (D) is.", options: ["(A) David looks", "(B) elder than", "(C) he really", "(D) is."], answer: 1, explanation: ["Correction: \"elder than\" → \"older than\"", "Rule: 'Elder' is used only for family relations and takes 'to'; 'older...than' is used for general age."] },
+    { word: "Spot the error: (A) Rahul is (B) well known (C) by everyone (D) in the office.", options: ["(A) Rahul is", "(B) well known", "(C) by everyone", "(D) in the office."], answer: 2, explanation: ["Correction: \"by everyone\" → \"to everyone\"", "Rule: 'Known' in the passive sense is followed by 'to', not 'by'."] },
+    { word: "Spot the error: (A) He said (B) this deal was (C) more preferable than (D) the previous one.", options: ["(A) He said", "(B) this deal was", "(C) more preferable than", "(D) the previous one."], answer: 2, explanation: ["Correction: \"more preferable than\" → \"preferable to\"", "Rule: 'Preferable' is already comparative in meaning; it takes 'to', never 'more' or 'than'."] },
+    { word: "Spot the error: (A) If you (B) will call me (C) tomorrow, (D) I will give you the details.", options: ["(A) If you", "(B) will call me", "(C) tomorrow,", "(D) I will give you the details."], answer: 1, explanation: ["Correction: \"will call me\" → \"call me\"", "Rule: The 'If' clause of a Conditional Sentence never takes 'will/shall'."] },
+    { word: "Spot the error: (A) The match (B) was postponed (C) because heavy (D) rain in the city.", options: ["(A) The match", "(B) was postponed", "(C) because heavy", "(D) rain in the city."], answer: 2, explanation: ["Correction: \"because heavy\" → \"because of heavy\"", "Rule: 'Because' (Conjunction) is followed by a full clause; 'because of' (Preposition) is followed by only a noun."] },
+    { word: "Spot the error: (A) The strict teacher (B) made the students (C) to stand outside (D) the classroom.", options: ["(A) The strict teacher", "(B) made the students", "(C) to stand outside", "(D) the classroom."], answer: 1, explanation: ["Correction: \"made the students to stand\" → \"made the students stand\"", "Rule: In the causative structure 'made + object + base verb', the infinitive 'to' is not used."] },
+    { word: "Spot the error: (A) A new bridge (B) is being build (C) across the river (D) near the town.", options: ["(A) A new bridge", "(B) is being build", "(C) across the river", "(D) near the town."], answer: 1, explanation: ["Correction: \"is being build\" → \"is being built\"", "Rule: The passive continuous structure requires the past participle (built), not the base form (build)."] },
+  ],
+  set3: [
+    { word: "Spot the error: (A) Looking at the clock, (B) she said (C) it is time (D) you must go.", options: ["(A) Looking at the clock,", "(B) she said", "(C) it is time", "(D) you must go."], answer: 3, explanation: ["Correction: \"you must go\" → \"you went\"", "Rule: After \"It is (high) time\", the subject is followed by Simple Past (V2)."] },
+    { word: "Spot the error: (A) The warden locked (B) the boys's hostel (C) at exactly (D) ten o'clock.", options: ["(A) The warden locked", "(B) the boys's hostel", "(C) at exactly", "(D) ten o'clock."], answer: 1, explanation: ["Correction: \"boys's hostel\" → \"boys' hostel\"", "Rule: When a plural noun already ends in 's' (hissing sound), only an apostrophe (') is added, not 's."] },
+    { word: "Spot the error: (A) Among all the (B) students in the class, (C) Rahul is (D) most intelligent.", options: ["(A) Among all the", "(B) students in the class,", "(C) Rahul is", "(D) most intelligent."], answer: 3, explanation: ["Correction: \"most intelligent\" → \"the most intelligent\"", "Rule: 'The' is always placed before a Superlative Degree adjective."] },
+    { word: "Spot the error: (A) Rohan (B) did not complete (C) his homework (D) yet.", options: ["(A) Rohan", "(B) did not complete", "(C) his homework", "(D) yet."], answer: 1, explanation: ["Correction: \"did not complete\" → \"has not completed\"", "Rule: 'Yet' always requires the Present Perfect Negative form (has/have + not + V3)."] },
+    { word: "Spot the error: (A) Although he (B) was tired, (C) but he finished (D) the race anyway.", options: ["(A) Although he", "(B) was tired,", "(C) but he finished", "(D) the race anyway."], answer: 2, explanation: ["Correction: \"but he finished\" → \"he finished\"", "Rule: 'Although' and 'but' cannot be used together in the same sentence; only one of the paired conjunctions should be used."] },
+    { word: "Spot the error: (A) He is (B) more taller (C) than (D) his elder brother.", options: ["(A) He is", "(B) more taller", "(C) than", "(D) his elder brother."], answer: 1, explanation: ["Correction: \"more taller\" → \"taller\"", "Rule: A double comparative (more + taller) is incorrect; use only one comparative form."] },
+    { word: "Spot the error: (A) Despite of (B) his hard work, (C) he could not (D) clear the exam.", options: ["(A) Despite of", "(B) his hard work,", "(C) he could not", "(D) clear the exam."], answer: 0, explanation: ["Correction: \"Despite of\" → \"Despite\" (or \"In spite of\")", "Rule: 'Despite' is never followed by 'of'; only 'In spite of' takes 'of'."] },
+    { word: "Spot the error: (A) Sun rises (B) in the east (C) and sets (D) in the west.", options: ["(A) Sun rises", "(B) in the east", "(C) and sets", "(D) in the west."], answer: 0, explanation: ["Correction: \"Sun rises\" → \"The sun rises\"", "Rule: The definite article 'the' is used before unique natural objects (the sun, the moon, the sky, the earth)."] },
+    { word: "Spot the error: (A) He hardly never (B) comes late (C) to office (D) despite the heavy traffic.", options: ["(A) He hardly never", "(B) comes late", "(C) to office", "(D) despite the heavy traffic."], answer: 0, explanation: ["Correction: \"hardly never\" → \"hardly ever\"", "Rule: 'Hardly' is already negative in meaning, so it cannot be combined with another negative word like 'never' (double negative)."] },
+    { word: "Spot the error: (A) He told me (B) shut the door (C) as it was (D) very cold outside.", options: ["(A) He told me", "(B) shut the door", "(C) as it was", "(D) very cold outside."], answer: 1, explanation: ["Correction: \"shut the door\" → \"to shut the door\"", "Rule: When reporting an imperative sentence (a command), the infinitive 'to' must be used before the base verb."] },
+    { word: "Spot the error: (A) The Taj Mahal (B) was visiting (C) by millions of tourists (D) every year.", options: ["(A) The Taj Mahal", "(B) was visiting", "(C) by millions of tourists", "(D) every year."], answer: 1, explanation: ["Correction: \"was visiting\" → \"is visited\"", "Rule: A general, ongoing fact should be expressed in the Simple Present passive ('is visited'), and the verb must be in its past participle form."] },
+    { word: "Spot the error: (A) Despite years (B) of practice, (C) she speaks English (D) very good.", options: ["(A) Despite years", "(B) of practice,", "(C) she speaks English", "(D) very good."], answer: 3, explanation: ["Correction: \"very good\" → \"very well\"", "Rule: 'Good' is an Adjective; 'well' (Adverb) is needed to modify the action of speaking."] },
+    { word: "Spot the error: (A) He was given (B) a hike of (C) two month salary (D) as a bonus.", options: ["(A) He was given", "(B) a hike of", "(C) two month salary", "(D) as a bonus."], answer: 2, explanation: ["Correction: \"two month salary\" → \"two months' salary\"", "Rule: When a plural noun is used possessively before another noun, the apostrophe is added after the 's' (months')."] },
+    { word: "Spot the error: (A) If he (B) had studied (C) harder, (D) he would pass the exam.", options: ["(A) If he", "(B) had studied", "(C) harder,", "(D) he would pass the exam."], answer: 3, explanation: ["Correction: \"he would pass\" → \"he would have passed\"", "Rule: Type 3 Conditional: If + Had + V3 → Would have + V3."] },
+    { word: "Spot the error: (A) The comedian's jokes (B) were so funny (C) that they made me (D) to laugh loudly.", options: ["(A) The comedian's jokes", "(B) were so funny", "(C) that they made me", "(D) to laugh loudly."], answer: 3, explanation: ["Correction: \"to laugh loudly\" → \"laugh loudly\"", "Rule: Causative verbs Make/Let take the Bare Infinitive (V1) in Active Voice — 'to' is never used."] },
+    { word: "Spot the error: (A) He said (B) that he is going (C) to school (D) at that moment.", options: ["(A) He said", "(B) that he is going", "(C) to school", "(D) at that moment."], answer: 1, explanation: ["Correction: \"that he is going\" → \"that he was going\"", "Rule: When the reporting verb is in the past tense (said), the tense of the reported speech also shifts back to the past (is -> was)."] },
+    { word: "Spot the error: (A) I love (B) swimming, running (C) and to (D) cycle every morning.", options: ["(A) I love", "(B) swimming, running", "(C) and to", "(D) cycle every morning."], answer: 2, explanation: ["Correction: \"and to cycle\" → \"and cycling\"", "Rule: Parallelism — all items joined by 'and' must be in the same grammatical form (here, Gerund)."] },
+    { word: "Spot the error: (A) This is the boy (B) who he stole (C) the purse (D) from the old lady.", options: ["(A) This is the boy", "(B) who he stole", "(C) the purse", "(D) from the old lady."], answer: 1, explanation: ["Correction: \"who he stole\" → \"who stole\"", "Rule: A Relative Pronoun (who) is itself the subject; adding 'he' again is a redundancy error."] },
+    { word: "Spot the error: (A) I am really (B) looking forward to (C) meet you (D) at the conference.", options: ["(A) I am really", "(B) looking forward to", "(C) meet you", "(D) at the conference."], answer: 2, explanation: ["Correction: \"meet you\" → \"meeting you\"", "Rule: When 'to' functions as a preposition (as in 'look forward to'), it must be followed by a gerund (-ing form), not the base verb."] },
+    { word: "Spot the error: (A) The principal, (B) along with the vice principals, (C) have approved (D) the new schedule.", options: ["(A) The principal,", "(B) along with the vice principals,", "(C) have approved", "(D) the new schedule."], answer: 2, explanation: ["Correction: \"have approved\" → \"has approved\"", "Rule: With 'along with/as well as/together with', the verb agrees with the FIRST subject only."] },
+  ],
+  set4: [
+    { word: "Spot the error: (A) The Mount Everest (B) is (C) the highest peak (D) in the world.", options: ["(A) The Mount Everest", "(B) is", "(C) the highest peak", "(D) in the world."], answer: 0, explanation: ["Correction: \"The Mount Everest\" → \"Mount Everest\"", "Rule: No article is used before the names of individual mountain peaks, though it is used before mountain ranges (the Himalayas)."] },
+    { word: "Spot the error: (A) Yesterday, (B) I got my car (C) wash at the (D) new service centre.", options: ["(A) Yesterday,", "(B) I got my car", "(C) wash at the", "(D) new service centre."], answer: 2, explanation: ["Correction: \"wash\" → \"washed\"", "Rule: With causative Get/Have (getting work done by someone), the object is followed by V3."] },
+    { word: "Spot the error: (A) I will call you (B) as soon as (C) I will reach (D) home.", options: ["(A) I will call you", "(B) as soon as", "(C) I will reach", "(D) home."], answer: 2, explanation: ["Correction: \"I will reach\" → \"I reach\"", "Rule: The Future tense is not used in a clause of time (introduced by 'as soon as'); the Simple Present is used instead."] },
+    { word: "Spot the error: (A) Rina got (B) married with (C) a doctor (D) last month.", options: ["(A) Rina got", "(B) married with", "(C) a doctor", "(D) last month."], answer: 1, explanation: ["Correction: \"married with\" → \"married to\"", "Rule: In Active Voice, 'married' takes no preposition, but if one is used it must be 'to', never 'with'."] },
+    { word: "Spot the error: (A) Honesty is (B) the best principal (C) in (D) life.", options: ["(A) Honesty is", "(B) the best principal", "(C) in", "(D) life."], answer: 1, explanation: ["Correction: \"principal\" → \"principle\"", "Rule: 'Principle' (noun) means 'a fundamental rule or belief'; 'principal' usually means 'the head of an institution' or 'most important'."] },
+    { word: "Spot the error: (A) He asked (B) me (C) that (D) I was fine.", options: ["(A) He asked", "(B) me", "(C) that", "(D) I was fine."], answer: 2, explanation: ["Correction: \"that\" → \"whether\"", "Rule: For a Yes/No question reported indirectly, 'if/whether' is used to join the clause, not 'that'."] },
+    { word: "Spot the error: (A) She is (B) enough tall (C) to reach (D) the top shelf.", options: ["(A) She is", "(B) enough tall", "(C) to reach", "(D) the top shelf."], answer: 1, explanation: ["Correction: \"enough tall\" → \"tall enough\"", "Rule: The adverb 'enough' is placed after the adjective it modifies, not before it."] },
+    { word: "Spot the error: (A) This scissor is (B) too blunt (C) to cut (D) the thick cloth.", options: ["(A) This scissor is", "(B) too blunt", "(C) to cut", "(D) the thick cloth."], answer: 0, explanation: ["Correction: \"This scissor is\" → \"This pair of scissors is\" (or \"These scissors are\")", "Rule: Scissors is a noun of pair and is always used in the plural, or as 'a pair of scissors'."] },
+    { word: "Spot the error: (A) Each of the students (B) have submitted (C) their assignments (D) before the deadline.", options: ["(A) Each of the students", "(B) have submitted", "(C) their assignments", "(D) before the deadline."], answer: 1, explanation: ["Correction: \"have submitted\" → \"has submitted\"", "Rule: 'Each of' is followed by a singular verb, regardless of the plural noun that follows it."] },
+    { word: "Spot the error: (A) My brother (B) is very good (C) in cricket (D) and football.", options: ["(A) My brother", "(B) is very good", "(C) in cricket", "(D) and football."], answer: 2, explanation: ["Correction: \"in cricket\" → \"at cricket\"", "Rule: To show skill/ability, the fixed preposition used is 'good at', not 'good in'."] },
+    { word: "Spot the error: (A) You cannot (B) pass the exam (C) unless you (D) will work hard.", options: ["(A) You cannot", "(B) pass the exam", "(C) unless you", "(D) will work hard."], answer: 3, explanation: ["Correction: \"will work hard\" → \"work hard\"", "Rule: 'Unless' (meaning 'if not') never takes 'will' in its own clause."] },
+    { word: "Spot the error: (A) If it will rain (B) tomorrow, (C) we will cancel (D) the picnic.", options: ["(A) If it will rain", "(B) tomorrow,", "(C) we will cancel", "(D) the picnic."], answer: 0, explanation: ["Correction: \"If it will rain\" → \"If it rains\"", "Rule: In a First Conditional sentence, the 'if' clause uses the Simple Present tense, not 'will'."] },
+    { word: "Spot the error: (A) The number of (B) accidents on this road (C) are increasing (D) every year.", options: ["(A) The number of", "(B) accidents on this road", "(C) are increasing", "(D) every year."], answer: 2, explanation: ["Correction: \"are increasing\" → \"is increasing\"", "Rule: 'The number of' takes a singular verb, whereas 'A number of' takes a plural verb."] },
+    { word: "Spot the error: (A) As soon as (B) the bell rang, (C) then the students (D) left the classroom.", options: ["(A) As soon as", "(B) the bell rang,", "(C) then the students", "(D) left the classroom."], answer: 2, explanation: ["Correction: \"then the students\" → \"the students\"", "Rule: 'As soon as' and 'then' cannot be used together in the same sentence; 'then' is redundant here."] },
+    { word: "Spot the error: (A) Scarcely had he (B) reached home (C) than it started (D) raining heavily.", options: ["(A) Scarcely had he", "(B) reached home", "(C) than it started", "(D) raining heavily."], answer: 2, explanation: ["Correction: \"than it started\" → \"when it started\"", "Rule: 'Scarcely...when' (not 'than') is the correct paired conjunction to show two actions happening in quick succession."] },
+    { word: "Spot the error: (A) It is (B) a true fact (C) that honesty (D) is the best policy.", options: ["(A) It is", "(B) a true fact", "(C) that honesty", "(D) is the best policy."], answer: 1, explanation: ["Correction: \"a true fact\" → \"a fact\"", "Rule: A 'fact' is always true by definition; 'true fact' is a redundant phrase."] },
+    { word: "Spot the error: (A) I am (B) very tired (C) than you (D) after today's trek.", options: ["(A) I am", "(B) very tired", "(C) than you", "(D) after today's trek."], answer: 1, explanation: ["Correction: \"very tired\" → \"much tired\" (or \"more tired\")", "Rule: 'Very' cannot be used before a comparative adjective; 'much' or 'far' is used instead."] },
+    { word: "Spot the error: (A) According to the rule, (B) the truth (C) must told (D) by every witness.", options: ["(A) According to the rule,", "(B) the truth", "(C) must told", "(D) by every witness."], answer: 2, explanation: ["Correction: \"must told\" → \"must be told\"", "Rule: After a Modal verb in Passive Voice, 'be + V3' is required, not V3 alone."] },
+    { word: "Spot the error: (A) One must always (B) keep his promises (C) if one wants (D) to be respected.", options: ["(A) One must always", "(B) keep his promises", "(C) if one wants", "(D) to be respected."], answer: 1, explanation: ["Correction: \"keep his promises\" → \"keep one's promises\"", "Rule: If the subject of the sentence is 'One', it must be followed consistently by 'one's', not 'his/her'."] },
+    { word: "Spot the error: (A) Less students (B) attended the class (C) today because of (D) the heavy rain.", options: ["(A) Less students", "(B) attended the class", "(C) today because of", "(D) the heavy rain."], answer: 0, explanation: ["Correction: \"Less students\" → \"Fewer students\"", "Rule: 'Fewer' is used with countable nouns (students); 'less' is used with uncountable nouns."] },
+  ],
+  set5: [
+    { word: "Spot the error: (A) She has born (B) three children (C) in the last (D) five years.", options: ["(A) She has born", "(B) three children", "(C) in the last", "(D) five years."], answer: 0, explanation: ["Correction: \"has born\" → \"has borne\"", "Rule: 'Borne' is the past participle of 'bear' used in the active sense (to give birth to/carry); 'born' is used only in the passive (was born)."] },
+    { word: "Spot the error: (A) I saw a man (B) whom was wearing (C) a long coat (D) near the gate.", options: ["(A) I saw a man", "(B) whom was wearing", "(C) a long coat", "(D) near the gate."], answer: 1, explanation: ["Correction: \"whom was wearing\" → \"who was wearing\"", "Rule: 'Who' is used when the pronoun itself performs the action (Subject); 'whom' is used for the object."] },
+    { word: "Spot the error: (A) The government has (B) promised to improve (C) the poor's living conditions (D) within two years.", options: ["(A) The government has", "(B) promised to improve", "(C) the poor's living conditions", "(D) within two years."], answer: 2, explanation: ["Correction: \"the poor's living conditions\" → \"the living conditions of the poor\"", "Rule: Apostrophe 's' is not used with \"The + Adjective\" groups (the poor, the rich); use \"of\" instead."] },
+    { word: "Spot the error: (A) I will get (B) my hair to cut (C) at the new salon (D) tomorrow morning.", options: ["(A) I will get", "(B) my hair to cut", "(C) at the new salon", "(D) tomorrow morning."], answer: 1, explanation: ["Correction: \"my hair to cut\" → \"my hair cut\"", "Rule: In the causative structure 'get + object + past participle', the infinitive 'to' is not used."] },
+    { word: "Spot the error: (A) The new policy (B) was implement (C) by the (D) government last year.", options: ["(A) The new policy", "(B) was implement", "(C) by the", "(D) government last year."], answer: 1, explanation: ["Correction: \"was implement\" → \"was implemented\"", "Rule: The main verb in Passive Voice must always be in the Third Form (V3)."] },
+    { word: "Spot the error: (A) She works (B) as a honest (C) and dedicated (D) employee.", options: ["(A) She works", "(B) as a honest", "(C) and dedicated", "(D) employee."], answer: 1, explanation: ["Correction: \"a honest\" → \"an honest\"", "Rule: 'An' is used before a vowel SOUND — 'honest' begins with a silent 'h', so it sounds like 'onest'."] },
+    { word: "Spot the error: (A) She is (B) both a talented singer (C) as well as (D) a skilled dancer.", options: ["(A) She is", "(B) both a talented singer", "(C) as well as", "(D) a skilled dancer."], answer: 2, explanation: ["Correction: \"as well as\" → \"and\"", "Rule: 'Both' is always paired with 'and'; using 'as well as' with it is incorrect."] },
+    { word: "Spot the error: (A) One of (B) the boys (C) in the group (D) are missing.", options: ["(A) One of", "(B) the boys", "(C) in the group", "(D) are missing."], answer: 3, explanation: ["Correction: \"are missing\" → \"is missing\"", "Rule: With \"One of the + plural noun\", the real subject is 'One', so the verb is Singular."] },
+    { word: "Spot the error: (A) Everyone agrees (B) that she is (C) more smarter (D) than her sister.", options: ["(A) Everyone agrees", "(B) that she is", "(C) more smarter", "(D) than her sister."], answer: 2, explanation: ["Correction: \"more smarter\" → \"smarter\"", "Rule: 'More' and the comparative suffix '-er' can never be used together (double comparison)."] },
+    { word: "Spot the error: (A) Sometimes (B) I wish (C) I am (D) taller than my friends.", options: ["(A) Sometimes", "(B) I wish", "(C) I am", "(D) taller than my friends."], answer: 2, explanation: ["Correction: \"I am\" → \"I were\"", "Rule: After \"I wish\" for a present unreal wish, 'were' is used, never 'am/is/was'."] },
+    { word: "Spot the error: (A) The manager (B) said (C) that that (D) he was resigning.", options: ["(A) The manager", "(B) said", "(C) that that", "(D) he was resigning."], answer: 2, explanation: ["Correction: \"that that\" → \"that\"", "Rule: The conjunction 'that' is used only once to join the clauses; repeating it is redundant."] },
+    { word: "Spot the error: (A) The proposal (B) had rejected (C) by the committee (D) last week.", options: ["(A) The proposal", "(B) had rejected", "(C) by the committee", "(D) last week."], answer: 1, explanation: ["Correction: \"had rejected\" → \"had been rejected\"", "Rule: When the Active sentence has Has/Have/Had + V3, the Passive must include 'been' before V3."] },
+    { word: "Spot the error: (A) The company (B) has launched its (C) new product (D) two months ago.", options: ["(A) The company", "(B) has launched its", "(C) new product", "(D) two months ago."], answer: 1, explanation: ["Correction: \"has launched\" → \"launched\"", "Rule: A definite past time marker (two months ago) always takes Simple Past, never Present Perfect."] },
+    { word: "Spot the error: (A) I am so tired (B) that I am (C) going to lay down (D) for an hour.", options: ["(A) I am so tired", "(B) that I am", "(C) going to lay down", "(D) for an hour."], answer: 2, explanation: ["Correction: \"going to lay down\" → \"going to lie down\"", "Rule: 'Lie' (to recline oneself, intransitive) is confused with 'lay' (to place something, transitive)."] },
+    { word: "Spot the error: (A) The manager shared (B) several important informations (C) with the staff (D) during the meeting.", options: ["(A) The manager shared", "(B) several important informations", "(C) with the staff", "(D) during the meeting."], answer: 1, explanation: ["Correction: \"informations\" → \"information\" (or \"pieces of information\")", "Rule: Information is uncountable and has no plural form."] },
+    { word: "Spot the error: (A) Each employee (B) must submit (C) their report (D) by Friday.", options: ["(A) Each employee", "(B) must submit", "(C) their report", "(D) by Friday."], answer: 2, explanation: ["Correction: \"their report\" → \"his/her report\"", "Rule: Each/Every/Everyone is always Singular and takes his/her, never 'their'."] },
+    { word: "Spot the error: (A) A secret was (B) shared (C) among you and me (D) at the party.", options: ["(A) A secret was", "(B) shared", "(C) among you and me", "(D) at the party."], answer: 2, explanation: ["Correction: \"among you and me\" → \"between you and me\"", "Rule: 'Between' is used for exactly two people/things; 'among' is used for more than two."] },
+    { word: "Spot the error: (A) The officer (B) ordered the soldiers (C) that to (D) stand still.", options: ["(A) The officer", "(B) ordered the soldiers", "(C) that to", "(D) stand still."], answer: 2, explanation: ["Correction: \"that to\" → \"to\"", "Rule: Imperative sentences in Indirect Speech use \"to + V1\" directly; 'that' is never added before it."] },
+    { word: "Spot the error: (A) He didn't work (B) enough hard (C) to pass (D) the difficult exam.", options: ["(A) He didn't work", "(B) enough hard", "(C) to pass", "(D) the difficult exam."], answer: 1, explanation: ["Correction: \"enough hard\" → \"hard enough\"", "Rule: 'Enough' always follows the adjective/adverb it modifies, never precedes it."] },
+    { word: "Spot the error: (A) Getting this scholarship (B) was (C) an unique opportunity (D) for the young student.", options: ["(A) Getting this scholarship", "(B) was", "(C) an unique opportunity", "(D) for the young student."], answer: 2, explanation: ["Correction: \"an unique opportunity\" → \"a unique opportunity\"", "Rule: 'A' is used before words beginning with a consonant sound; 'unique' starts with the consonant sound /j/, so 'a' is correct."] },
+  ],
+  set6: [
+    { word: "Spot the error: (A) After years (B) of hard work, (C) she finally became (D) doctor.", options: ["(A) After years", "(B) of hard work,", "(C) she finally became", "(D) doctor."], answer: 3, explanation: ["Correction: \"doctor\" → \"a doctor\"", "Rule: 'A/An' is always used before a Singular profession noun."] },
+    { word: "Spot the error: (A) There (B) is two cats (C) sleeping under (D) the old wooden table.", options: ["(A) There", "(B) is two cats", "(C) sleeping under", "(D) the old wooden table."], answer: 1, explanation: ["Correction: \"is two cats\" → \"are two cats\"", "Rule: 'There' is a dummy subject; the verb agrees with the real noun that follows it (cats = plural)."] },
+    { word: "Spot the error: (A) The two leaders (B) discussed about (C) the trade deal (D) for three hours.", options: ["(A) The two leaders", "(B) discussed about", "(C) the trade deal", "(D) for three hours."], answer: 1, explanation: ["Correction: \"discussed about\" → \"discussed\"", "Rule: 'Discuss' is a transitive verb and is never followed by the preposition 'about'."] },
+    { word: "Spot the error: (A) All the equipments (B) in the laboratory (C) were checked (D) before the experiment.", options: ["(A) All the equipments", "(B) in the laboratory", "(C) were checked", "(D) before the experiment."], answer: 0, explanation: ["Correction: \"All the equipments\" → \"All the equipment\"", "Rule: Equipment is uncountable and never takes a plural 's'."] },
+    { word: "Spot the error: (A) Rarely (B) he went (C) there after (D) his retirement.", options: ["(A) Rarely", "(B) he went", "(C) there after", "(D) his retirement."], answer: 1, explanation: ["Correction: \"he went\" → \"did he go\"", "Rule: When a sentence begins with a negative adverb (Rarely, Never, Hardly), Inversion (auxiliary + subject) is required."] },
+    { word: "Spot the error: (A) The committee (B) comprises of (C) ten members (D) from different departments.", options: ["(A) The committee", "(B) comprises of", "(C) ten members", "(D) from different departments."], answer: 1, explanation: ["Correction: \"comprises of\" → \"comprises\"", "Rule: 'Comprise' is never followed by 'of' in Active Voice (only \"is comprised of\" is correct in Passive)."] },
+    { word: "Spot the error: (A) This chair (B) is costly than (C) the one we saw (D) yesterday.", options: ["(A) This chair", "(B) is costly than", "(C) the one we saw", "(D) yesterday."], answer: 1, explanation: ["Correction: \"is costly than\" → \"is costlier than\"", "Rule: A comparative form is required before 'than', not the positive degree."] },
+    { word: "Spot the error: (A) Thousands of people (B) die every year (C) of (D) road accidents.", options: ["(A) Thousands of people", "(B) die every year", "(C) of", "(D) road accidents."], answer: 2, explanation: ["Correction: \"of\" → \"from\"", "Rule: 'Die of' is used for disease; 'die from' is used for a cause like an accident or injury."] },
+    { word: "Spot the error: (A) I am trying (B) to reach him (C) for the (D) last one hour.", options: ["(A) I am trying", "(B) to reach him", "(C) for the", "(D) last one hour."], answer: 0, explanation: ["Correction: \"I am trying\" → \"I have been trying\"", "Rule: 'For' + a duration signals an action that started in the past and continues now — Present Perfect Continuous."] },
+    { word: "Spot the error: (A) She asked me (B) that I was coming (C) to the party (D) or not.", options: ["(A) She asked me", "(B) that I was coming", "(C) to the party", "(D) or not."], answer: 1, explanation: ["Correction: \"that I was coming\" → \"if I was coming\"", "Rule: When reporting a Yes/No question, the reported clause is introduced with 'if' or 'whether', not 'that'."] },
+    { word: "Spot the error: (A) Between the two sisters, (B) Riya is (C) the eldest (D) and much wiser.", options: ["(A) Between the two sisters,", "(B) Riya is", "(C) the eldest", "(D) and much wiser."], answer: 2, explanation: ["Correction: \"the eldest\" → \"the elder\"", "Rule: When comparing only two people or things, the comparative degree is used, not the superlative."] },
+    { word: "Spot the error: (A) It is well known (B) that Shakespeare (C) has written many (D) famous plays.", options: ["(A) It is well known", "(B) that Shakespeare", "(C) has written many", "(D) famous plays."], answer: 2, explanation: ["Correction: \"has written\" → \"wrote\"", "Rule: Actions of a person who is no longer alive are always expressed in Simple Past."] },
+    { word: "Spot the error: (A) Did (B) the match (C) postponed (D) by the organizers due to rain?", options: ["(A) Did", "(B) the match", "(C) postponed", "(D) by the organizers due to rain?"], answer: 0, explanation: ["Correction: \"Did\" → \"Was\"", "Rule: 'Do/Does/Did' is never used in Passive Voice; it is replaced by Is/Am/Are or Was/Were."] },
+    { word: "Spot the error: (A) Walking in the park, (B) a tree suddenly (C) fell right (D) in front of him.", options: ["(A) Walking in the park,", "(B) a tree suddenly", "(C) fell right", "(D) in front of him."], answer: 0, explanation: ["Correction: \"Walking in the park,\" → \"While he was walking in the park,\"", "Rule: A participle phrase's action must match the main subject; a tree cannot \"walk\" — this is a Dangling Participle."] },
+    { word: "Spot the error: (A) A sharp fall (B) in the price (C) of jute (D) have led to huge losses.", options: ["(A) A sharp fall", "(B) in the price", "(C) of jute", "(D) have led to huge losses."], answer: 3, explanation: ["Correction: \"have led\" → \"has led\"", "Rule: A prepositional phrase between subject and verb is ignored; verb agrees with the real subject (fall = singular)."] },
+    { word: "Spot the error: (A) They (B) secret decided (C) to leave the (D) city that night.", options: ["(A) They", "(B) secret decided", "(C) to leave the", "(D) city that night."], answer: 1, explanation: ["Correction: \"secret decided\" → \"secretly decided\"", "Rule: An Adverb (secretly), not an Adjective (secret), is needed to modify the verb 'decided'."] },
+    { word: "Spot the error: (A) Unless you (B) don't work hard, (C) you won't (D) succeed in life.", options: ["(A) Unless you", "(B) don't work hard,", "(C) you won't", "(D) succeed in life."], answer: 1, explanation: ["Correction: \"don't work hard\" → \"work hard\"", "Rule: 'Unless' already carries a negative meaning ('if not'), so it should never be followed by another negative word like 'don't'."] },
+    { word: "Spot the error: (A) Myself and my friend (B) went to (C) the market (D) to buy vegetables.", options: ["(A) Myself and my friend", "(B) went to", "(C) the market", "(D) to buy vegetables."], answer: 0, explanation: ["Correction: \"Myself and my friend\" → \"My friend and I\"", "Rule: A reflexive pronoun (myself) cannot be used as the subject of a sentence in place of 'I'."] },
+    { word: "Spot the error: (A) If I was you, (B) I would (C) accept (D) the job offer.", options: ["(A) If I was you,", "(B) I would", "(C) accept", "(D) the job offer."], answer: 0, explanation: ["Correction: \"If I was you\" → \"If I were you\"", "Rule: In a Second Conditional sentence, the subjunctive 'were' is used for all persons (I, he, she, it), not 'was'."] },
+    { word: "Spot the error: (A) No sooner had (B) the bell rung (C) when the students (D) rushed out of class.", options: ["(A) No sooner had", "(B) the bell rung", "(C) when the students", "(D) rushed out of class."], answer: 2, explanation: ["Correction: \"when the students\" → \"than the students\"", "Rule: 'No sooner' always pairs with 'than', never 'when'."] },
+  ],
+  set7: [
+    { word: "Spot the error: (A) She is (B) very good in (C) solving (D) difficult puzzles.", options: ["(A) She is", "(B) very good in", "(C) solving", "(D) difficult puzzles."], answer: 1, explanation: ["Correction: \"good in\" → \"good at\"", "Rule: The idiomatic preposition after 'good' (for skill/ability) is 'at', not 'in'."] },
+    { word: "Spot the error: (A) Regular exercise (B) has a great (C) affect on (D) our overall health.", options: ["(A) Regular exercise", "(B) has a great", "(C) affect on", "(D) our overall health."], answer: 2, explanation: ["Correction: \"affect on\" → \"effect on\"", "Rule: 'Affect' is a verb (to influence); 'effect' is a noun (a result) — here a noun is needed."] },
+    { word: "Spot the error: (A) She has been working (B) in this company (C) since (D) ten years.", options: ["(A) She has been working", "(B) in this company", "(C) since", "(D) ten years."], answer: 2, explanation: ["Correction: \"since ten years\" → \"for ten years\"", "Rule: 'Since' is used with a point of time (since 2015); 'for' is used with a period/duration of time (for ten years)."] },
+    { word: "Spot the error: (A) Peter was so upset (B) that he (C) did not speak (D) to no one.", options: ["(A) Peter was so upset", "(B) that he", "(C) did not speak", "(D) to no one."], answer: 3, explanation: ["Correction: \"to no one\" → \"to anyone\"", "Rule: English never uses two negative words (not + no one) together — Double Negative Error."] },
+    { word: "Spot the error: (A) The work (B) must finish (C) by tomorrow (D) evening.", options: ["(A) The work", "(B) must finish", "(C) by tomorrow", "(D) evening."], answer: 1, explanation: ["Correction: \"must finish\" → \"must be finished\"", "Rule: With a modal verb (must) in the passive voice, the structure required is 'modal + be + past participle'."] },
+    { word: "Spot the error: (A) She wants to study (B) in an university (C) abroad (D) after graduation.", options: ["(A) She wants to study", "(B) in an university", "(C) abroad", "(D) after graduation."], answer: 1, explanation: ["Correction: \"an university\" → \"a university\"", "Rule: 'A' is used before words beginning with a consonant sound; 'university' starts with the consonant sound /j/, so 'a' is correct."] },
+    { word: "Spot the error: (A) After much thought, (B) she is (C) considering to apply (D) for the scholarship.", options: ["(A) After much thought,", "(B) she is", "(C) considering to apply", "(D) for the scholarship."], answer: 2, explanation: ["Correction: \"considering to apply\" → \"considering applying\"", "Rule: Verbs like consider, avoid, enjoy, deny, suggest are always followed by Gerund (V-ing), not 'to+V1'."] },
+    { word: "Spot the error: (A) The news about (B) the accident (C) were shocking (D) for everyone.", options: ["(A) The news about", "(B) the accident", "(C) were shocking", "(D) for everyone."], answer: 2, explanation: ["Correction: \"were shocking\" → \"was shocking\"", "Rule: 'News' looks plural but is always Singular and takes a singular verb."] },
+    { word: "Spot the error: (A) If I (B) was the (C) Prime Minister, (D) I would change many laws.", options: ["(A) If I", "(B) was the", "(C) Prime Minister,", "(D) I would change many laws."], answer: 1, explanation: ["Correction: \"was the\" → \"were the\"", "Rule: In Type 2 (hypothetical) conditionals and after 'I wish', 'were' is used for all subjects, not 'was'."] },
+    { word: "Spot the error: (A) Close the door (B) before you leave (C) the office today, (D) does it?", options: ["(A) Close the door", "(B) before you leave", "(C) the office today,", "(D) does it?"], answer: 3, explanation: ["Correction: \"does it?\" → \"will you?\"", "Rule: An imperative sentence (a command/request) always takes the question tag 'will you?', regardless of the verb used."] },
+    { word: "Spot the error: (A) Many a man (B) have tried (C) to climb (D) this dangerous peak.", options: ["(A) Many a man", "(B) have tried", "(C) to climb", "(D) this dangerous peak."], answer: 1, explanation: ["Correction: \"have tried\" → \"has tried\"", "Rule: \"Many a\" is always followed by a Singular noun and Singular verb."] },
+    { word: "Spot the error: (A) Rahul is (B) taller than (C) any boy (D) in his class.", options: ["(A) Rahul is", "(B) taller than", "(C) any boy", "(D) in his class."], answer: 2, explanation: ["Correction: \"any boy\" → \"any other boy\"", "Rule: When comparing someone to their own group, 'other' must be added to exclude them from the group."] },
+    { word: "Spot the error: (A) The dog wagged (B) it's tail (C) happily on seeing (D) its owner.", options: ["(A) The dog wagged", "(B) it's tail", "(C) happily on seeing", "(D) its owner."], answer: 1, explanation: ["Correction: \"it's tail\" → \"its tail\"", "Rule: 'Its' (no apostrophe) is the possessive form; 'it's' is a contraction of 'it is'."] },
+    { word: "Spot the error: (A) Hardly had she (B) thrown the ball (C) than it (D) hit the window.", options: ["(A) Hardly had she", "(B) thrown the ball", "(C) than it", "(D) hit the window."], answer: 2, explanation: ["Correction: \"than it\" → \"when it\"", "Rule: 'Hardly/Scarcely' pairs with 'when' or 'before', never with 'than'."] },
+    { word: "Spot the error: (A) She was (B) really angry (C) with his (D) careless behaviour.", options: ["(A) She was", "(B) really angry", "(C) with his", "(D) careless behaviour."], answer: 2, explanation: ["Correction: \"with his\" → \"at his\"", "Rule: 'Angry with' is used for a person, but 'angry at/about' is used for a thing/behaviour."] },
+    { word: "Spot the error: (A) I could not decide (B) whether to accept (C) the job offer that (D) leave it.", options: ["(A) I could not decide", "(B) whether to accept", "(C) the job offer that", "(D) leave it."], answer: 3, explanation: ["Correction: \"that leave it\" → \"or leave it\"", "Rule: 'Whether' always pairs with 'or', never with 'that'."] },
+    { word: "Spot the error: (A) He said (B) that he (C) is building (D) a model ship.", options: ["(A) He said", "(B) that he", "(C) is building", "(D) a model ship."], answer: 2, explanation: ["Correction: \"is building\" → \"was building\"", "Rule: When the reporting verb is in Past Tense (said), the tense inside the clause shifts backward."] },
+    { word: "Spot the error: (A) According to (B) philosophers, (C) the man is (D) mortal by nature.", options: ["(A) According to", "(B) philosophers,", "(C) the man is", "(D) mortal by nature."], answer: 2, explanation: ["Correction: \"the man is\" → \"man is\"", "Rule: When 'man' refers to mankind in general (a universal concept), no article is used."] },
+    { word: "Spot the error: (A) His honesty (B) is known (C) by everyone (D) in the village.", options: ["(A) His honesty", "(B) is known", "(C) by everyone", "(D) in the village."], answer: 2, explanation: ["Correction: \"by everyone\" → \"to everyone\"", "Rule: 'Known' takes the fixed preposition 'to' in Passive Voice, not 'by'."] },
+    { word: "Spot the error: (A) He was in (B) such a hurry (C) that he (D) didn't went to the station.", options: ["(A) He was in", "(B) such a hurry", "(C) that he", "(D) didn't went to the station."], answer: 3, explanation: ["Correction: \"didn't went\" → \"didn't go\"", "Rule: After 'did/didn't', the main verb always stays in its Base Form (V1)."] },
+  ],
+  set8: [
+    { word: "Spot the error: (A) He has been (B) living in Delhi (C) since (D) five years.", options: ["(A) He has been", "(B) living in Delhi", "(C) since", "(D) five years."], answer: 2, explanation: ["Correction: \"since\" → \"for\"", "Rule: 'Since' is used with a point of time; 'for' is used with a duration/period (five years)."] },
+    { word: "Spot the error: (A) During the race, (B) the car was (C) moving very (D) fastly down the track.", options: ["(A) During the race,", "(B) the car was", "(C) moving very", "(D) fastly down the track."], answer: 3, explanation: ["Correction: \"fastly\" → \"fast\"", "Rule: 'Fast' itself works as both Adjective and Adverb; the word 'fastly' does not exist."] },
+    { word: "Spot the error: (A) By next year, (B) she will be completed (C) her important (D) research work.", options: ["(A) By next year,", "(B) she will be completed", "(C) her important", "(D) research work."], answer: 1, explanation: ["Correction: \"will be completed\" → \"will have completed\"", "Rule: A deadline in the future ('By next year') requires the Future Perfect Tense."] },
+    { word: "Spot the error: (A) He must have went (B) to school (C) yesterday (D) despite his fever.", options: ["(A) He must have went", "(B) to school", "(C) yesterday", "(D) despite his fever."], answer: 0, explanation: ["Correction: \"must have went\" → \"must have gone\"", "Rule: The structure 'must have + past participle' requires the third form of the verb (gone), not the past form (went)."] },
+    { word: "Spot the error: (A) In such difficult situations, (B) he (C) would be soon overcome (D) by fear and doubt.", options: ["(A) In such difficult situations,", "(B) he", "(C) would be soon overcome", "(D) by fear and doubt."], answer: 2, explanation: ["Correction: \"would be soon overcome\" → \"would soon be overcome\"", "Rule: Adverbs of frequency/manner are placed between the auxiliary verb and the main verb."] },
+    { word: "Spot the error: (A) Since the students (B) decided to leave early, (C) so the teacher (D) allowed them to go.", options: ["(A) Since the students", "(B) decided to leave early,", "(C) so the teacher", "(D) allowed them to go."], answer: 2, explanation: ["Correction: \"so the teacher\" → \"the teacher\"", "Rule: If a sentence begins with Since/As/Because, adding 'so' later is a redundancy error."] },
+    { word: "Spot the error: (A) I am really annoyed (B) because you (C) always disturb (D) me while I am studying.", options: ["(A) I am really annoyed", "(B) because you", "(C) always disturb", "(D) me while I am studying."], answer: 2, explanation: ["Correction: \"always disturb\" → \"are always disturbing\"", "Rule: When a habit is irritating/annoying, Present Continuous with 'always' is used, not Simple Present."] },
+    { word: "Spot the error: (A) Whom do you think (B) will win (C) the match (D) tomorrow?", options: ["(A) Whom do you think", "(B) will win", "(C) the match", "(D) tomorrow?"], answer: 0, explanation: ["Correction: \"Whom do you think\" → \"Who do you think\"", "Rule: 'Who' is used for the subject of the verb (will win); 'Whom' is only used for the object."] },
+    { word: "Spot the error: (A) The farmer's (B) cattles were grazing (C) peacefully in (D) the open field.", options: ["(A) The farmer's", "(B) cattles were grazing", "(C) peacefully in", "(D) the open field."], answer: 1, explanation: ["Correction: \"cattles were\" → \"cattle were\"", "Rule: 'Cattle' is already plural by nature; 's' is never added to it."] },
+    { word: "Spot the error: (A) She said (B) that she would meet (C) me (D) tomorrow.", options: ["(A) She said", "(B) that she would meet", "(C) me", "(D) tomorrow."], answer: 2, explanation: ["Correction: \"tomorrow\" → \"the next day\"", "Rule: In indirect speech, the time expression 'tomorrow' changes to 'the next day' (or 'the following day')."] },
+    { word: "Spot the error: (A) The number (B) of students (C) in this class (D) are fifty.", options: ["(A) The number", "(B) of students", "(C) in this class", "(D) are fifty."], answer: 3, explanation: ["Correction: \"are fifty\" → \"is fifty\"", "Rule: \"The number of\" (a definite count) always takes a Singular verb, unlike \"A number of\" (plural verb)."] },
+    { word: "Spot the error: (A) The new policy (B) will effect (C) the economy (D) greatly.", options: ["(A) The new policy", "(B) will effect", "(C) the economy", "(D) greatly."], answer: 1, explanation: ["Correction: \"will effect\" → \"will affect\"", "Rule: 'Affect' (verb) means 'to influence'; 'effect' is generally used as a noun meaning 'a result'."] },
+    { word: "Spot the error: (A) I asked him (B) what (C) was he (D) doing there.", options: ["(A) I asked him", "(B) what", "(C) was he", "(D) doing there."], answer: 2, explanation: ["Correction: \"was he\" → \"he was\"", "Rule: Indirect Speech is always a simple statement; Subject comes before the verb (no question-style inversion)."] },
+    { word: "Spot the error: (A) The hill station offered (B) breathtaking sceneries (C) that we (D) had never seen before.", options: ["(A) The hill station offered", "(B) breathtaking sceneries", "(C) that we", "(D) had never seen before."], answer: 1, explanation: ["Correction: \"sceneries\" → \"scenery\"", "Rule: Scenery is an uncountable noun and never takes a plural 's'."] },
+    { word: "Spot the error: (A) Every boy, (B) girl and teacher (C) are present (D) in the auditorium today.", options: ["(A) Every boy,", "(B) girl and teacher", "(C) are present", "(D) in the auditorium today."], answer: 2, explanation: ["Correction: \"are present\" → \"is present\"", "Rule: 'Every' makes the verb Singular, no matter how many nouns are joined by 'and' after it."] },
+    { word: "Spot the error: (A) She likes (B) reading, writing (C) and (D) to paint.", options: ["(A) She likes", "(B) reading, writing", "(C) and", "(D) to paint."], answer: 2, explanation: ["Correction: \"and to paint\" → \"and painting\"", "Rule: In a list of parallel items, all items must be in the same grammatical form (gerunds: reading, writing, painting)."] },
+    { word: "Spot the error: (A) Every Sunday, (B) my grandmother (C) goes to the temple (D) to pray.", options: ["(A) Every Sunday,", "(B) my grandmother", "(C) goes to the temple", "(D) to pray."], answer: 2, explanation: ["Correction: \"goes to the temple\" → \"goes to temple\"", "Rule: When going to a place for its primary purpose (worship, in this case), no article is used."] },
+    { word: "Spot the error: (A) If he would have studied (B) hard, (C) he would have passed (D) the exam.", options: ["(A) If he would have studied", "(B) hard,", "(C) he would have passed", "(D) the exam."], answer: 0, explanation: ["Correction: \"If he would have studied\" → \"If he had studied\"", "Rule: In a Third Conditional sentence, the 'if' clause uses the Past Perfect tense ('had + past participle'), not 'would have'."] },
+    { word: "Spot the error: (A) Visitors say (B) that the painting (C) is the most unique (D) piece in the gallery.", options: ["(A) Visitors say", "(B) that the painting", "(C) is the most unique", "(D) piece in the gallery."], answer: 2, explanation: ["Correction: \"the most unique\" → \"the unique\"", "Rule: Absolute adjectives (unique, perfect, complete) have no degree; 'more/most' cannot be used with them."] },
+    { word: "Spot the error: (A) The window (B) has broken (C) by the cricket ball (D) yesterday.", options: ["(A) The window", "(B) has broken", "(C) by the cricket ball", "(D) yesterday."], answer: 1, explanation: ["Correction: \"has broken\" → \"has been broken\"", "Rule: In the Present Perfect passive, the structure required is 'has/have + been + past participle'."] },
+  ],
+  set9: [
+    { word: "Spot the error: (A) More than (B) one boy (C) were absent (D) from school yesterday.", options: ["(A) More than", "(B) one boy", "(C) were absent", "(D) from school yesterday."], answer: 2, explanation: ["Correction: \"were absent\" → \"was absent\"", "Rule: \"More than one\" is always followed by a Singular noun and Singular verb."] },
+    { word: "Spot the error: (A) He made (B) a quickly decision (C) without checking (D) all the facts.", options: ["(A) He made", "(B) a quickly decision", "(C) without checking", "(D) all the facts."], answer: 1, explanation: ["Correction: \"a quickly decision\" → \"a quick decision\"", "Rule: A noun (decision) is always modified by an Adjective, not an Adverb (quickly)."] },
+    { word: "Spot the error: (A) I have met (B) him yesterday (C) at the (D) railway station.", options: ["(A) I have met", "(B) him yesterday", "(C) at the", "(D) railway station."], answer: 0, explanation: ["Correction: \"have met\" → \"met\"", "Rule: The Present Perfect tense is never used with a definite past time expression like 'yesterday'; the Simple Past is required."] },
+    { word: "Spot the error: (A) You will (B) not succeed in life (C) unless you do not (D) work sincerely.", options: ["(A) You will", "(B) not succeed in life", "(C) unless you do not", "(D) work sincerely."], answer: 2, explanation: ["Correction: \"unless you do not\" → \"unless you\"", "Rule: 'Unless' already means 'if not'; adding 'not' again creates a Double Negative error."] },
+    { word: "Spot the error: (A) Every citizen (B) should help (C) the poor's welfare (D) in every possible way.", options: ["(A) Every citizen", "(B) should help", "(C) the poor's welfare", "(D) in every possible way."], answer: 2, explanation: ["Correction: \"the poor's welfare\" → \"the welfare of the poor\"", "Rule: \"The + Adjective\" groups (the poor) never take an apostrophe 's'; use 'of' instead."] },
+    { word: "Spot the error: (A) After the trip, (B) they decided to (C) return back (D) home early.", options: ["(A) After the trip,", "(B) they decided to", "(C) return back", "(D) home early."], answer: 2, explanation: ["Correction: \"return back\" → \"return\"", "Rule: 'Re-' in 'return' already means 'back'; adding 'back' again is a redundancy error."] },
+    { word: "Spot the error: (A) He said (B) that he had bought (C) this book (D) the previous day.", options: ["(A) He said", "(B) that he had bought", "(C) this book", "(D) the previous day."], answer: 2, explanation: ["Correction: \"this book\" → \"that book\"", "Rule: In indirect speech, the demonstrative pronoun 'this' changes to 'that' when reporting past events."] },
+    { word: "Spot the error: (A) When they asked (B) who had broken the vase, (C) I simply said (D) it was me.", options: ["(A) When they asked", "(B) who had broken the vase,", "(C) I simply said", "(D) it was me."], answer: 3, explanation: ["Correction: \"it was me\" → \"it was I\"", "Rule: After \"It is/It was\", the Subjective Case (I, he, she) is always used."] },
+    { word: "Spot the error: (A) By who (B) was the telephone (C) invented (D) in 1876?", options: ["(A) By who", "(B) was the telephone", "(C) invented", "(D) in 1876?"], answer: 0, explanation: ["Correction: \"By who\" → \"By whom\"", "Rule: After a preposition (by), the objective case 'whom' is used, not the subjective case 'who'."] },
+    { word: "Spot the error: (A) You need not (B) to worry (C) about the results, (D) they will be good.", options: ["(A) You need not", "(B) to worry", "(C) about the results,", "(D) they will be good."], answer: 1, explanation: ["Correction: \"to worry\" → \"worry\"", "Rule: 'Need not' (as a modal auxiliary) is directly followed by the base form of the verb, without 'to'."] },
+    { word: "Spot the error: (A) She was (B) not enough tall (C) to reach (D) the top shelf.", options: ["(A) She was", "(B) not enough tall", "(C) to reach", "(D) the top shelf."], answer: 1, explanation: ["Correction: \"not enough tall\" → \"not tall enough\"", "Rule: 'Enough' always comes after the adjective, never before it."] },
+    { word: "Spot the error: (A) We will (B) arrive to Delhi (C) by (D) evening tomorrow.", options: ["(A) We will", "(B) arrive to Delhi", "(C) by", "(D) evening tomorrow."], answer: 1, explanation: ["Correction: \"arrive to Delhi\" → \"arrive in Delhi\"", "Rule: 'Arrive in' is used with large places like cities and countries; 'arrive at' is used with smaller/specific places."] },
+    { word: "Spot the error: (A) I hope (B) this letter finds (C) you well, (D) Your's sincerely.", options: ["(A) I hope", "(B) this letter finds", "(C) you well,", "(D) Your's sincerely."], answer: 3, explanation: ["Correction: \"Your's sincerely\" → \"Yours sincerely\"", "Rule: Possessive pronouns (Yours, Ours, Hers, Theirs) never take an apostrophe."] },
+    { word: "Spot the error: (A) The committee members (B) discussed about (C) the new project (D) for two hours.", options: ["(A) The committee members", "(B) discussed about", "(C) the new project", "(D) for two hours."], answer: 1, explanation: ["Correction: \"discussed about\" → \"discussed\"", "Rule: 'Discuss' is a transitive verb and is never followed by 'about'."] },
+    { word: "Spot the error: (A) He not only (B) sings (C) but also he (D) dances very well.", options: ["(A) He not only", "(B) sings", "(C) but also he", "(D) dances very well."], answer: 2, explanation: ["Correction: \"but also he\" → \"but also\"", "Rule: In the 'not only...but also' structure, the words following each part must be grammatically parallel; the subject should not be repeated."] },
+    { word: "Spot the error: (A) Rashmi (B) works very (C) hard, (D) don't she?", options: ["(A) Rashmi", "(B) works very", "(C) hard,", "(D) don't she?"], answer: 3, explanation: ["Correction: \"don't she?\" → \"doesn't she?\"", "Rule: The question tag must match the tense and person of the main statement (Simple Present, 3rd person = doesn't)."] },
+    { word: "Spot the error: (A) She sings (B) very good (C) at every (D) school function.", options: ["(A) She sings", "(B) very good", "(C) at every", "(D) school function."], answer: 1, explanation: ["Correction: \"very good\" → \"very well\"", "Rule: 'Well' (adverb) is used to modify a verb (sings); 'good' is an adjective and cannot modify a verb."] },
+    { word: "Spot the error: (A) Right now, (B) the homework (C) is checked (D) by the teacher.", options: ["(A) Right now,", "(B) the homework", "(C) is checked", "(D) by the teacher."], answer: 2, explanation: ["Correction: \"is checked\" → \"is being checked\"", "Rule: If the Active sentence is in Continuous Tense, 'being' must be added before V3 in Passive."] },
+    { word: "Spot the error: (A) The teacher gave (B) me a good advice (C) about how to prepare (D) for the exam.", options: ["(A) The teacher gave", "(B) me a good advice", "(C) about how to prepare", "(D) for the exam."], answer: 1, explanation: ["Correction: \"a good advice\" → \"good advice\"", "Rule: Advice is an uncountable noun; 'a/an' can never be used before it."] },
+    { word: "Spot the error: (A) If she had left (B) earlier, (C) she will catch (D) the train.", options: ["(A) If she had left", "(B) earlier,", "(C) she will catch", "(D) the train."], answer: 2, explanation: ["Correction: \"she will catch\" → \"she would have caught\"", "Rule: When the 'if' clause is in the Past Perfect tense, the main clause must use 'would have + past participle', not the future tense."] },
+  ],
+  set10: [
+    { word: "Spot the error: (A) Let's go (B) to the movies (C) this evening, (D) will we?", options: ["(A) Let's go", "(B) to the movies", "(C) this evening,", "(D) will we?"], answer: 3, explanation: ["Correction: \"will we?\" → \"shall we?\"", "Rule: A sentence beginning with 'Let's' always takes the question tag 'shall we?'."] },
+    { word: "Spot the error: (A) It was (B) Alexander Graham Bell (C) who invented (D) telephone.", options: ["(A) It was", "(B) Alexander Graham Bell", "(C) who invented", "(D) telephone."], answer: 3, explanation: ["Correction: \"telephone\" → \"the telephone\"", "Rule: Names of inventions always take the definite article 'the'."] },
+    { word: "Spot the error: (A) I need to buy (B) some stationary (C) for (D) the office.", options: ["(A) I need to buy", "(B) some stationary", "(C) for", "(D) the office."], answer: 1, explanation: ["Correction: \"stationary\" → \"stationery\"", "Rule: 'Stationery' (with -ery) refers to writing materials; 'stationary' (with -ary) means 'not moving'."] },
+    { word: "Spot the error: (A) The children (B) hurt themself (C) while playing (D) in the park.", options: ["(A) The children", "(B) hurt themself", "(C) while playing", "(D) in the park."], answer: 1, explanation: ["Correction: \"hurt themself\" → \"hurt themselves\"", "Rule: With a plural subject (children), the reflexive pronoun must also be plural (themselves)."] },
+    { word: "Spot the error: (A) A beautiful gift (B) was given me (C) by my (D) best friend.", options: ["(A) A beautiful gift", "(B) was given me", "(C) by my", "(D) best friend."], answer: 1, explanation: ["Correction: \"was given me\" → \"was given to me\"", "Rule: When a verb with two objects (direct and indirect) is changed to passive, the preposition 'to' must be added before the indirect object."] },
+    { word: "Spot the error: (A) Neither the manager (B) nor the employees (C) has noticed (D) the mistake in the report.", options: ["(A) Neither the manager", "(B) nor the employees", "(C) has noticed", "(D) the mistake in the report."], answer: 2, explanation: ["Correction: \"has noticed\" → \"have noticed\"", "Rule: With 'Neither...nor/Either...or', the verb agrees with the NEAREST subject (employees = plural)."] },
+    { word: "Spot the error: (A) This novel (B) is definitely (C) worth to read (D) during the holidays.", options: ["(A) This novel", "(B) is definitely", "(C) worth to read", "(D) during the holidays."], answer: 2, explanation: ["Correction: \"worth to read\" → \"worth reading\"", "Rule: The fixed phrase 'worth' is always followed by a Gerund (V-ing)."] },
+    { word: "Spot the error: (A) She speaks (B) always the truth (C) no matter (D) how difficult it is.", options: ["(A) She speaks", "(B) always the truth", "(C) no matter", "(D) how difficult it is."], answer: 1, explanation: ["Correction: \"speaks always the truth\" → \"always speaks the truth\"", "Rule: An adverb of frequency (always) is placed before the main verb, not after it."] },
+    { word: "Spot the error: (A) Don't worry, (B) I can to help you (C) finish this (D) project today.", options: ["(A) Don't worry,", "(B) I can to help you", "(C) finish this", "(D) project today."], answer: 1, explanation: ["Correction: \"can to help you\" → \"can help you\"", "Rule: A modal verb (can) is always followed directly by V1 — never by 'to'."] },
+    { word: "Spot the error: (A) He is (B) the most cleverest boy (C) in (D) the whole class.", options: ["(A) He is", "(B) the most cleverest boy", "(C) in", "(D) the whole class."], answer: 1, explanation: ["Correction: \"the most cleverest boy\" → \"the cleverest boy\"", "Rule: A double superlative (most + cleverest) is incorrect; use only one superlative form."] },
+    { word: "Spot the error: (A) He is known to be (B) a honest man (C) in (D) the entire village.", options: ["(A) He is known to be", "(B) a honest man", "(C) in", "(D) the entire village."], answer: 1, explanation: ["Correction: \"a honest man\" → \"an honest man\"", "Rule: 'An' is used before words beginning with a vowel sound; the 'h' in 'honest' is silent, so the word begins with a vowel sound."] },
+    { word: "Spot the error: (A) The committee (B) consists in (C) five members (D) from different states.", options: ["(A) The committee", "(B) consists in", "(C) five members", "(D) from different states."], answer: 1, explanation: ["Correction: \"consists in\" → \"consists of\"", "Rule: 'Consist of' means 'to be made up of' and is the correct usage; 'consist in' means 'to lie in' and has a different meaning."] },
+    { word: "Spot the error: (A) We bought (B) some new furnitures (C) for our (D) living room.", options: ["(A) We bought", "(B) some new furnitures", "(C) for our", "(D) living room."], answer: 1, explanation: ["Correction: \"furnitures\" → \"furniture\"", "Rule: Furniture is uncountable; it never takes a plural 's'."] },
+    { word: "Spot the error: (A) Neither of the two roads (B) lead (C) to the (D) railway station.", options: ["(A) Neither of the two roads", "(B) lead", "(C) to the", "(D) railway station."], answer: 1, explanation: ["Correction: \"lead\" → \"leads\"", "Rule: 'Neither of' is followed by a singular verb, as it refers to each one individually."] },
+    { word: "Spot the error: (A) He is senior (B) than me (C) in the (D) sales department.", options: ["(A) He is senior", "(B) than me", "(C) in the", "(D) sales department."], answer: 1, explanation: ["Correction: \"senior than me\" → \"senior to me\"", "Rule: Certain comparative adjectives of Latin origin (senior, junior, superior, inferior, prior) take 'to' instead of 'than'."] },
+    { word: "Spot the error: (A) Ten rupees (B) are enough (C) to buy (D) a cup of tea.", options: ["(A) Ten rupees", "(B) are enough", "(C) to buy", "(D) a cup of tea."], answer: 1, explanation: ["Correction: \"are enough\" → \"is enough\"", "Rule: A sum of money, distance, or time is treated as a single unit and takes a singular verb."] },
+    { word: "Spot the error: (A) This matter should (B) remain strictly (C) between you and I (D) for now.", options: ["(A) This matter should", "(B) remain strictly", "(C) between you and I", "(D) for now."], answer: 2, explanation: ["Correction: \"between you and I\" → \"between you and me\"", "Rule: A preposition (between) is always followed by the Objective Case (me), never Subjective (I)."] },
+    { word: "Spot the error: (A) He is (B) not only intelligent (C) but also he (D) is very hardworking.", options: ["(A) He is", "(B) not only intelligent", "(C) but also he", "(D) is very hardworking."], answer: 2, explanation: ["Correction: \"but also he\" → \"but also\"", "Rule: Correlative conjunctions (not only...but also) must join the same grammatical form for parallelism."] },
+    { word: "Spot the error: (A) After he finished (B) his homework, (C) he goes out (D) to play with friends.", options: ["(A) After he finished", "(B) his homework,", "(C) he goes out", "(D) to play with friends."], answer: 2, explanation: ["Correction: \"he goes out\" → \"he went out\"", "Rule: When narrating a past sequence of events, all verbs must remain consistently in the past tense."] },
+    { word: "Spot the error: (A) He asked me (B) where did I live (C) at (D) that time.", options: ["(A) He asked me", "(B) where did I live", "(C) at", "(D) that time."], answer: 1, explanation: ["Correction: \"where did I live\" → \"where I lived\"", "Rule: In reported WH-questions, the word order changes to that of a statement (subject before verb), and the auxiliary 'did' is dropped."] },
+  ],
+};
+
+function grammarSetLabel(key, count){
+  const num = (key.match(/\d+/) || [key])[0];
+  return 'Set ' + num + ' (' + count + ' Qs)';
+}
+
+function buildGrammarSetPool(setKey){
+  const set = GRAMMAR_SETS[setKey] || [];
+  // Har question par origin tag kar do (kaunse set ka kaunsa index) — isi
+  // se save/unsave button ko pata chalta hai ki kis question ko toggle
+  // karna hai, chahe woh shuffled order mein kahin bhi ho.
+  set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
+  return shuffledCopy(set);
+}
+
+// ===== Grammar "Saved Questions" — localStorage mein {setKey, qIndex} pairs
+// ki list save hoti hai (poora question data nahi), taaki GRAMMAR_SETS hi
+// single source of truth rahe. Vocab/Idiom wale pattern jaisa hi. =====
+const GRAMMAR_SAVED_KEY = 'cgl50-grammar-saved';
+function grammarQuestionUid(setKey, qIndex){ return setKey + '#' + qIndex; }
+function loadGrammarSavedList(){
+  try{
+    const raw = localStorage.getItem(GRAMMAR_SAVED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveGrammarSavedList(list){
+  try{ localStorage.setItem(GRAMMAR_SAVED_KEY, JSON.stringify(list)); }catch(e){}
+}
+function isGrammarQuestionSaved(setKey, qIndex){
+  if(setKey == null || qIndex == null) return false;
+  const uid = grammarQuestionUid(setKey, qIndex);
+  return loadGrammarSavedList().some(it => grammarQuestionUid(it.setKey, it.qIndex) === uid);
+}
+function toggleGrammarQuestionSaved(setKey, qIndex){
+  if(setKey == null || qIndex == null) return false;
+  const list = loadGrammarSavedList();
+  const uid = grammarQuestionUid(setKey, qIndex);
+  const idx = list.findIndex(it => grammarQuestionUid(it.setKey, it.qIndex) === uid);
+  let nowSaved;
+  if(idx >= 0){ list.splice(idx, 1); nowSaved = false; }
+  else { list.push({ setKey, qIndex }); nowSaved = true; }
+  saveGrammarSavedList(list);
+  return nowSaved;
+}
+function grammarSavedCount(){ return loadGrammarSavedList().length; }
+function buildGrammarSavedPool(){
+  const list = loadGrammarSavedList();
+  const pool = [];
+  list.forEach(it => {
+    const set = GRAMMAR_SETS[it.setKey];
+    const q = set && set[it.qIndex];
+    if(!q) return;
+    q._setKey = it.setKey;
+    q._qIndex = it.qIndex;
+    pool.push(q);
+  });
+  return shuffledCopy(pool);
+}
+function updateGrammarSavedMenuBtn(){
+  const lbl = document.getElementById('grammarSavedCountLabel');
+  if(lbl) lbl.textContent = grammarSavedCount() + ' saved';
+}
+
+function renderGrammarSetMenu(){
+  const grid = document.getElementById('grammarSetGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  Object.keys(GRAMMAR_SETS).forEach(key => {
+    const count = GRAMMAR_SETS[key].length;
+    const btn = document.createElement('button');
+    btn.className = 'calcCard';
+    btn.innerHTML =
+      '<span class="calcIcon">📝</span>' +
+      '<span class="calcLabel">' + escapeHtml(grammarSetLabel(key, count)) + '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => startGrammarQuiz(key));
+    grid.appendChild(btn);
+  });
+}
+
+function startGrammarQuiz(setKey){
+  if(!setKey) setKey = grammarSession.setKey;
+  if(!setKey) return;
+  const isSaved = setKey === 'saved';
+  if(!isSaved && !GRAMMAR_SETS[setKey]) return;
+  grammarSession.setKey = setKey;
+  grammarSession.questions = isSaved ? buildGrammarSavedPool() : buildGrammarSetPool(setKey);
+  if(isSaved && grammarSession.questions.length === 0){
+    alert('Abhi tak koi grammar question save nahi kiya. Quiz ke dauraan ⭐ button dabakar koi bhi question save kar sakte ho.');
+    return;
+  }
+  grammarSession.index = 0;
+  grammarSession.correct = 0;
+  grammarSession.wrong = 0;
+  grammarSession.answered = false;
+  const titleEl = document.getElementById('grammarQuizTitle');
+  if(titleEl) titleEl.textContent = isSaved
+    ? 'Grammar — ⭐ Saved (' + grammarSession.questions.length + ')'
+    : 'Grammar - ' + grammarSetLabel(setKey, grammarSession.questions.length);
+  const resultCard = document.getElementById('grammarResultCard');
+  if(resultCard) resultCard.style.display = 'none';
+  const qWrap = document.getElementById('grammarQuestionWrap');
+  if(qWrap) qWrap.style.display = '';
+  const ansGrid = document.getElementById('grammarAnsGrid');
+  if(ansGrid) ansGrid.style.display = '';
+  const solCard = document.getElementById('grammarSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  updateGrammarStats();
+  renderGrammarQuestion();
+  showCalcPage('grammar');
+}
+
+function updateGrammarStats(){
+  const c = document.getElementById('grammarStatCorrect');
+  const w = document.getElementById('grammarStatWrong');
+  const p = document.getElementById('grammarStatProgress');
+  if(c) c.textContent = grammarSession.correct;
+  if(w) w.textContent = grammarSession.wrong;
+  if(p) p.textContent = 'Q ' + Math.min(grammarSession.index + 1, grammarSession.questions.length) + '/' + grammarSession.questions.length;
+}
+
+function renderGrammarQuestion(){
+  const q = grammarSession.questions[grammarSession.index];
+  if(!q){ endGrammarQuiz(); return; }
+  grammarSession.answered = false;
+  const wordEl = document.getElementById('grammarWordText');
+  if(wordEl) wordEl.textContent = q.word || '—';
+  const ansGrid = document.getElementById('grammarAnsGrid');
+  if(!ansGrid) return;
+  ansGrid.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'calcAnsBtn';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => selectGrammarAnswer(i, btn));
+    ansGrid.appendChild(btn);
+  });
+  const solCard = document.getElementById('grammarSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  updateGrammarStats();
+  updateGrammarSaveBtn(q);
+}
+
+// Current question ke hisaab se ⭐ button ka look (filled/outline) set karta hai.
+function updateGrammarSaveBtn(q){
+  const btn = document.getElementById('grammarSaveBtn');
+  if(!btn || !q) return;
+  const saved = isGrammarQuestionSaved(q._setKey, q._qIndex);
+  btn.classList.toggle('active', saved);
+  btn.textContent = saved ? '★' : '☆';
+  btn.setAttribute('aria-label', saved ? 'Saved — tap to remove' : 'Save this question');
+}
+
+function selectGrammarAnswer(i, btnEl){
+  if(grammarSession.answered) return;
+  grammarSession.answered = true;
+  const q = grammarSession.questions[grammarSession.index];
+  const correct = i === q.answer;
+  if(correct) grammarSession.correct++; else grammarSession.wrong++;
+  document.querySelectorAll('#grammarAnsGrid .calcAnsBtn').forEach((b, idx) => {
+    b.classList.add('disabled');
+    if(idx === q.answer) b.classList.add('correct');
+    else if(idx === i) b.classList.add('wrong');
+  });
+  updateGrammarStats();
+  const solCard = document.getElementById('grammarSolutionCard');
+  const solText = document.getElementById('grammarSolutionText');
+  if(solText){
+    const verdict = correct ? '✅ Sahi Jawaab!' : '❌ Galat Jawaab.';
+    const correctLine = 'Galti thi: <b>' + escapeHtml(q.options[q.answer]) + '</b>';
+    const explLine = (q.explanation && q.explanation.length)
+      ? '<div style="margin-top:6px;color:var(--muted);">' + (Array.isArray(q.explanation) ? q.explanation.map(b=>escapeHtml(b)).join('<br>') : escapeHtml(q.explanation)) + '</div>'
+      : '';
+    solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
+  }
+  if(solCard) solCard.style.display = 'block';
+}
+
+function goToNextGrammarQuestion(){
+  grammarSession.index++;
+  if(grammarSession.index < grammarSession.questions.length) renderGrammarQuestion();
+  else endGrammarQuiz();
+}
+
+function endGrammarQuiz(){
+  const total = grammarSession.correct + grammarSession.wrong;
+  const acc = total ? Math.round((grammarSession.correct / total) * 100) : 0;
+  const qWrap = document.getElementById('grammarQuestionWrap');
+  if(qWrap) qWrap.style.display = 'none';
+  const ansGrid = document.getElementById('grammarAnsGrid');
+  if(ansGrid) ansGrid.style.display = 'none';
+  const solCard = document.getElementById('grammarSolutionCard');
+  if(solCard) solCard.style.display = 'none';
+  const statsEl = document.getElementById('grammarResultStats');
+  if(statsEl){
+    statsEl.innerHTML =
+      '<div>✅ Correct: <b>' + grammarSession.correct + '</b></div>' +
+      '<div>❌ Wrong: <b>' + grammarSession.wrong + '</b></div>' +
+      '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
+  }
+  const resultCard = document.getElementById('grammarResultCard');
+  if(resultCard) resultCard.style.display = 'block';
+}
+
+function initGrammarQuiz(){
+  renderGrammarSetMenu();
+  updateGrammarSavedMenuBtn();
+  const grammarBtn = document.getElementById('calcGrammarBtn');
+  if(grammarBtn) grammarBtn.addEventListener('click', () => showCalcPage('grammarmenu'));
+  const grammarMenuBackBtn = document.getElementById('grammarMenuBackBtn');
+  if(grammarMenuBackBtn) grammarMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const grammarBackBtn = document.getElementById('grammarBackBtn');
+  if(grammarBackBtn) grammarBackBtn.addEventListener('click', () => showCalcPage('grammarmenu'));
+  const grammarNextBtn = document.getElementById('grammarNextBtn');
+  if(grammarNextBtn) grammarNextBtn.addEventListener('click', goToNextGrammarQuestion);
+  const grammarAgainBtn = document.getElementById('grammarResultAgainBtn');
+  if(grammarAgainBtn) grammarAgainBtn.addEventListener('click', () => startGrammarQuiz());
+  const grammarResBackBtn = document.getElementById('grammarResultBackBtn');
+  if(grammarResBackBtn) grammarResBackBtn.addEventListener('click', () => showCalcPage('grammarmenu'));
+  // "Saved Questions" button — set-menu ke sabse upar — bookmarked
+  // grammar questions ka apna mini-quiz shuru karta hai.
+  const grammarSavedBtn = document.getElementById('grammarSavedBtn');
+  if(grammarSavedBtn) grammarSavedBtn.addEventListener('click', () => startGrammarQuiz('saved'));
+  // ⭐ Save/unsave toggle — jo bhi question abhi screen par hai usko
+  // save karta hai (ya already saved ho to hata deta hai).
+  const grammarSaveBtn = document.getElementById('grammarSaveBtn');
+  if(grammarSaveBtn) grammarSaveBtn.addEventListener('click', () => {
+    const q = grammarSession.questions[grammarSession.index];
+    if(!q || q._setKey == null || q._qIndex == null) return;
+    toggleGrammarQuestionSaved(q._setKey, q._qIndex);
+    updateGrammarSaveBtn(q);
+    updateGrammarSavedMenuBtn();
+  });
+}
+
 function initCalcNav(){
   // All four operations now launch practice directly from the Calc menu —
   // one tap straight into the setup sheet (no intermediate sub-page).
@@ -14416,9 +14962,9 @@ function drawAppIcon(size){
   ctx.fillStyle = '#fbbf24';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `800 ${Math.round(size*0.281)}px 'Oswald', sans-serif`;
+  ctx.font = `600 ${Math.round(size*0.281)}px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
   ctx.fillText('EXAM', size/2, size/2-size*0.094);
-  ctx.font = `700 ${Math.round(size*0.135)}px 'IBM Plex Mono', monospace`;
+  ctx.font = `500 ${Math.round(size*0.135)}px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif`;
   ctx.fillStyle = '#ffffff';
   ctx.fillText('TRACKER', size/2, size/2+size*0.198);
   return canvas.toDataURL('image/png');
