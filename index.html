@@ -1024,7 +1024,27 @@
     100%{background-position:0% 50%;}
   }
   /* Home tab quick-access banner reuses the same colourful theme */
-  .homeVocabBtn{width:100%;box-sizing:border-box;margin-bottom:14px;}
+  .homeQuickRow{display:flex;align-items:stretch;gap:10px;margin-bottom:14px;}
+  .homeVocabBtn,.homeTargetBtn{
+    flex:1;min-width:0;
+    display:flex;align-items:center;justify-content:center;
+    background-size:160% 160%;
+    border:none;border-radius:13px;
+    padding:14px 8px;cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .homeVocabBtn:active,.homeTargetBtn:active{transform:scale(0.96);}
+  .homeVocabBtn{
+    background-image:linear-gradient(120deg,#5b21b6 0%,#be185d 48%,#b45309 100%);
+    animation:vocabShimmer 14s ease infinite;
+    box-shadow:0 4px 14px rgba(190,24,93,0.28);
+  }
+  .homeTargetBtn{
+    background-image:linear-gradient(120deg,#b45309 0%,#c2410c 45%,#be185d 100%);
+    animation:savedShimmer 12s ease infinite;
+    box-shadow:0 4px 14px rgba(194,65,12,0.28);
+  }
+  .homeQuickLabel{font-size:14px;font-weight:600;color:#fff;}
   /* Spelling card — same "loud" treatment as Vocab Quiz, apni alag
      shimmer palette (teal → blue → green) taaki dono cards ek dusre se
      turant alag pehchane ja sakein. Data baad mein add hoga. */
@@ -2252,16 +2272,14 @@
       </div>
     </div>
 
-    <button type="button" class="calcCard calcCard-vocab homeVocabBtn" id="homeVocabBtn">
-      <span class="calcIcon calcIcon-vocab">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h5"/></svg>
-      </span>
-      <span class="calcLabelCol">
-        <span class="calcLabel">📚 Vocab Quiz</span>
-        <span class="calcSub">500+ words · 21 sets · MCQ</span>
-      </span>
-      <span class="calcArrow">&#8250;</span>
-    </button>
+    <div class="homeQuickRow">
+      <button type="button" class="homeVocabBtn" id="homeVocabBtn">
+        <span class="homeQuickLabel">Quiz</span>
+      </button>
+      <button type="button" class="homeTargetBtn" id="homeTargetBtn" aria-label="Go to Today">
+        <span class="homeQuickLabel">Target</span>
+      </button>
+    </div>
 
     <button type="button" class="quickStudyBtn" id="quickStudyBtn">
       <svg class="qsIcon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2781,7 +2799,6 @@
 
       <div class="calcQuestionWrap" id="spellingQuestionWrap">
         <div class="calcQuestion" id="spellingWordText" style="font-size:clamp(16px,4.5vw,21px);line-height:1.4;">Galat spelling waala word chuno</div>
-        <div style="margin-top:8px;font-size:13px;color:var(--muted);font-weight:700;">In 4 mein se sirf ek galat hai, usko chuno</div>
       </div>
 
       <div class="calcAnsGrid" id="spellingAnsGrid"></div>
@@ -11227,7 +11244,9 @@ function initVocabQuiz(){
     updateVocabSavedMenuBtn();
   });
   const homeVocabBtn = document.getElementById('homeVocabBtn');
-  if(homeVocabBtn) homeVocabBtn.addEventListener('click', () => { switchTab('calc'); showCalcPage('vocabmenu'); });
+  if(homeVocabBtn) homeVocabBtn.addEventListener('click', () => { switchTab('calc'); });
+  const homeTargetBtn = document.getElementById('homeTargetBtn');
+  if(homeTargetBtn) homeTargetBtn.addEventListener('click', () => { switchTab('today'); });
   const vocabMenuBackBtn = document.getElementById('vocabMenuBackBtn');
   if(vocabMenuBackBtn) vocabMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const nextBtn = document.getElementById('vocabNextBtn');
