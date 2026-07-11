@@ -2787,10 +2787,6 @@
   <div class="tabview" id="tab-calc" data-tabview="calc">
 
     <div class="calcPage active" id="calcPage-menu">
-      <div class="quoteCard">
-        <div class="quoteEyebrow">🧮 Calc</div>
-        <div class="quoteText" id="quoteText-calc">Speed calculation daily practice.</div>
-      </div>
 
       <div class="grid-label" style="margin-top:0;">📚 English Vocab</div>
       <div class="calcGrid calcGrid-2col">
@@ -2854,10 +2850,22 @@
 
       <div class="grid-label" style="margin-top:0;">🧩 Reasoning</div>
       <div class="calcGrid calcGrid-2col">
-        <button class="calcCard calcCard-reasoning" id="calcReasoningBtn" data-calc="reasoning">
-          <span class="calcIcon calcIcon-reasoning">🧩</span>
+        <button class="calcCard calcCard-oddone" id="calcOddOneBtn" data-calc="oddone">
+          <span class="calcIcon calcIcon-oddone">🔀</span>
           <span class="calcLabelCol">
-            <span class="calcLabel">Reasoning</span>
+            <span class="calcLabel">Odd One Out</span>
+          </span>
+        </button>
+        <button class="calcCard calcCard-series" id="calcSeriesBtn" data-calc="series">
+          <span class="calcIcon calcIcon-series">🔢</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Series</span>
+          </span>
+        </button>
+        <button class="calcCard calcCard-coding" id="calcCodingBtn" data-calc="coding">
+          <span class="calcIcon calcIcon-coding">🔐</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Coding-Decoding</span>
           </span>
         </button>
       </div>
@@ -3281,40 +3289,6 @@
           <button class="nav-btn" id="prepositionResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="prepositionResultBackBtn">⬅️ Back</button>
         </div>
-      </div>
-    </div>
-
-    <!-- ===== Reasoning: submenu (Odd One Out / Series / Coding-Decoding) ===== -->
-    <div class="calcPage" id="calcPage-reasoningmenu">
-      <div class="calcSubHead">
-        <button class="calcBackBtn" id="reasoningMenuBackBtn" aria-label="Back">&#8249;</button>
-        <div class="calcSubTitle">Reasoning</div>
-      </div>
-      <div class="calcGrid calcGrid-1col">
-        <button class="calcCard calcCard-oddone" id="calcOddOneBtn" data-calc="oddone">
-          <span class="calcIcon calcIcon-oddone">🔀</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">Odd One Out</span>
-            <span class="calcSub" id="oddoneSubLabel">30 Qs · 2 sets · MCQ</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
-        <button class="calcCard calcCard-series" id="calcSeriesBtn" data-calc="series">
-          <span class="calcIcon calcIcon-series">🔢</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">Series</span>
-            <span class="calcSub" id="seriesSubLabel">30 Qs · 2 sets · MCQ</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
-        <button class="calcCard calcCard-coding" id="calcCodingBtn" data-calc="coding">
-          <span class="calcIcon calcIcon-coding">🔐</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">Coding-Decoding</span>
-            <span class="calcSub" id="codingSubLabel">95 Qs · 10 sets · MCQ</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
       </div>
     </div>
 
@@ -15648,22 +15622,6 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
     return shuffledCopy(set);
   }
-  // Sabhi sets ke questions ek saath mix karke ek combined pool banata hai —
-  // isse ek hi set ke andar same-answer clusters (jaise "to,to,to...") ka
-  // pattern-guessing wala issue nahi hota, kyuki questions har set se randomly
-  // aa mix hoke shuffle hote hain.
-  function buildAllPool(){
-    const pool = [];
-    Object.keys(SETS).forEach(setKey => {
-      const set = SETS[setKey] || [];
-      set.forEach((q, i) => {
-        q._setKey = setKey;
-        q._qIndex = i;
-        pool.push(q);
-      });
-    });
-    return shuffledCopy(pool);
-  }
   function uid(setKey, qIndex){ return setKey + '#' + qIndex; }
   function loadSavedList(){
     try{ const raw = localStorage.getItem(SAVED_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
@@ -15707,15 +15665,6 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     const grid = document.getElementById(prefix + 'SetGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    const allCount = Object.keys(SETS).reduce((sum, k) => sum + SETS[k].length, 0);
-    const allBtn = document.createElement('button');
-    allBtn.className = 'calcCard';
-    allBtn.innerHTML =
-      '<span class="calcIcon">\ud83d\udd00</span>' +
-      '<span class="calcLabel">All Sets \u2014 Mixed (' + allCount + ' Qs)</span>' +
-      '<span class="calcArrow">&#8250;</span>';
-    allBtn.addEventListener('click', () => startQuiz('all'));
-    grid.appendChild(allBtn);
     Object.keys(SETS).forEach(key => {
       const count = SETS[key].length;
       const btn = document.createElement('button');
@@ -15732,10 +15681,9 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     if(!setKey) setKey = session.setKey;
     if(!setKey) return;
     const isSavedRun = setKey === 'saved';
-    const isAllRun = setKey === 'all';
-    if(!isSavedRun && !isAllRun && !SETS[setKey]) return;
+    if(!isSavedRun && !SETS[setKey]) return;
     session.setKey = setKey;
-    session.questions = isSavedRun ? buildSavedPool() : (isAllRun ? buildAllPool() : buildSetPool(setKey));
+    session.questions = isSavedRun ? buildSavedPool() : buildSetPool(setKey);
     if(isSavedRun && session.questions.length === 0){
       alert('Abhi tak koi question save nahi kiya. Quiz ke dauraan \u2b50 button dabakar koi bhi question save kar sakte ho.');
       return;
@@ -15747,9 +15695,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     const titleEl = document.getElementById(prefix + 'QuizTitle');
     if(titleEl) titleEl.textContent = isSavedRun
       ? label + ' \u2014 \u2b50 Saved (' + session.questions.length + ')'
-      : isAllRun
-        ? label + ' \u2014 All Sets Mixed (' + session.questions.length + ')'
-        : label + ' - ' + setLabel(setKey, session.questions.length);
+      : label + ' - ' + setLabel(setKey, session.questions.length);
     const resultCard = document.getElementById(prefix + 'ResultCard');
     if(resultCard) resultCard.style.display = 'none';
     const qWrap = document.getElementById(prefix + 'QuestionWrap');
@@ -15873,9 +15819,9 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
   return { init, startQuiz };
 }
 
-const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out');
-const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series');
-const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding');
+const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'menu');
+const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series', 'menu');
+const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding', 'menu');
 
 // ===== Phrasal Verbs Quiz (Learn/Calc tab) =====
 // DATA FORMAT: PHRASAL_SETS.setN = array of up to 10 questions, each
@@ -16766,12 +16712,30 @@ const PREPOSITION_SETS = {
 
 const prepositionQuiz = makeReasoningQuiz('preposition', PREPOSITION_SETS, 'Prepositions', 'menu');
 
+// ===== Fix: sets were topic-clustered in the source data (ek pure set mein
+// zyada tar questions ka answer wahi ek preposition word hota tha, jaise
+// "to" 8-10 baar lagatar) — isse bina sentence padhe hi pattern se answer
+// pata chal jaata tha. Fix: app load hote hi saare 619 questions ko ek pool
+// mein mila ke globally shuffle karte hain, phir wapas usi set-size
+// structure (10-10 ka set) mein bhar dete hain. Ab Set 1/2/3... har baar
+// app khulne par ek random, mixed-answer combination dikhayenge.
+function redistributeSetsAcrossPool(SETS){
+  const keys = Object.keys(SETS);
+  const sizes = keys.map(k => SETS[k].length);
+  const pool = [];
+  keys.forEach(k => { SETS[k].forEach(q => pool.push(q)); });
+  const shuffled = shuffledCopy(pool);
+  let idx = 0;
+  keys.forEach((k, i) => {
+    SETS[k] = shuffled.slice(idx, idx + sizes[i]);
+    idx += sizes[i];
+  });
+}
+redistributeSetsAcrossPool(PREPOSITION_SETS);
+
+
 
 function initReasoningQuiz(){
-  const reasoningBtn = document.getElementById('calcReasoningBtn');
-  if(reasoningBtn) reasoningBtn.addEventListener('click', () => showCalcPage('reasoningmenu'));
-  const reasoningMenuBackBtn = document.getElementById('reasoningMenuBackBtn');
-  if(reasoningMenuBackBtn) reasoningMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const oddOneBtn = document.getElementById('calcOddOneBtn');
   if(oddOneBtn) oddOneBtn.addEventListener('click', () => showCalcPage('oddonemenu'));
   const seriesBtn = document.getElementById('calcSeriesBtn');
