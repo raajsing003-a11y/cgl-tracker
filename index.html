@@ -1366,6 +1366,20 @@
     padding:2px 14px 10px 46px;margin-top:-6px;line-height:1.4;
     word-break:break-word;
   }
+  .quizLogBox{margin-bottom:8px;}
+  .quizLogItem{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:10px 12px;margin-bottom:6px;border-radius:10px;
+    background:linear-gradient(165deg,rgba(74,222,128,0.08),var(--panel));
+    border:1px solid rgba(74,222,128,0.3);
+  }
+  .quizLogText{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.4;word-break:break-word;}
+  .quizLogDelBtn{
+    background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;
+    padding:2px 6px;line-height:1;flex-shrink:0;
+  }
+  .quizLogDelBtn:active{color:#f87171;}
+  .quizLogEmpty{font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 2px;}
   /* ===== Anti-cheat toast ===== */
   .antiCheatToast{
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
@@ -4483,6 +4497,10 @@ function getDay(n){
   if(typeof d.notes !== 'string') d.notes = '';
   if(typeof d.mistakes !== 'string') d.mistakes = '';
   if(typeof d.rest !== 'boolean') d.rest = false;
+  // Auto-log of quizzes taken today (Vocab/Spelling/Idioms/Grammar/Phrasal/
+  // Homophones/Prepositions/Odd One Out/Series/Coding-Decoding — koi bhi).
+  // Populated by logQuizActivity(), shown read-only in the Today tab.
+  if(!Array.isArray(d.quizLog)) d.quizLog = [];
   // Focus Timer minutes studied per daily target/task (Pomodoro/Stopwatch/Timed) —
   // independent of the task checklist ticks above, purely a free-running study
   // log. Keyed dynamically (task0, task1, ...) instead of fixed subject names,
@@ -4496,6 +4514,19 @@ function getDay(n){
     Object.keys(d.studyMin).forEach(k=>{ if(typeof d.studyMin[k] !== 'number' || isNaN(d.studyMin[k])) d.studyMin[k] = 0; });
   }
   return d;
+}
+// Har quiz (Vocab, Spelling, Idioms, Grammar, Phrasal Verbs, Homophones,
+// Prepositions, Odd One Out, Series, Coding-Decoding — app mein kahin se
+// bhi) khatam hone par yahaan se call hota hai, taaki Today tab mein aaj ke
+// din ke andar ek auto-log entry ban jaaye — bina user ko khud kuch add
+// karne ki zaroorat ke.
+function logQuizActivity(label, correct, total){
+  if(!total) return;
+  const day = todayDayNum();
+  const d = getDay(day);
+  d.quizLog.push({ label: label, correct: correct, total: total, ts: Date.now() });
+  save();
+  if(selectedDay === day) renderAll();
 }
 function dayStatus(n){
   const d = getDay(n);
@@ -7847,6 +7878,18 @@ function renderPanel(){
   });
 
   html += `
+    <div class="subhead">🧠 QUIZZES DIYE AAJ (auto-log)</div>
+    <div class="quizLogBox">
+      ${(d.quizLog && d.quizLog.length) ? d.quizLog.map((q,qi)=>`
+        <div class="quizLogItem">
+          <span class="quizLogText">✅ ${escapeHtml(q.label)} — ${q.correct}/${q.total}</span>
+          ${(!isReadOnly && viewingName===myName) ? `<button type="button" class="quizLogDelBtn" data-quizlog-idx="${qi}" aria-label="Hatao" title="Ye entry hatao">✕</button>` : ''}
+        </div>
+      `).join('') : '<div class="quizLogEmpty">Learn tab se koi bhi quiz doge, to wo yahan automatic dikhega.</div>'}
+    </div>
+  `;
+
+  html += `
     <div class="subhead">📝 NOTES / ERROR LOG</div>
     <div class="notes voiceField"><textarea id="notesArea" placeholder="Aaj kya galat hua, kya seekha..." ${isReadOnly?'readonly':''}>${d.notes}</textarea>${isReadOnly?'':'<button type="button" class="micBtn" data-mic-target="notesArea" aria-label="Bol kar likho" title="Bol kar likho"><svg viewBox="0 0 24 24" class="micIcon"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>'}</div>
   `;
@@ -7877,6 +7920,16 @@ function renderPanel(){
   panel.innerHTML = html;
   renderTimeSettings();
   renderTimeGuide();
+
+  panel.querySelectorAll('.quizLogDelBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const qi = parseInt(btn.getAttribute('data-quizlog-idx'));
+      const dayObj = getDay(selectedDay);
+      dayObj.quizLog.splice(qi, 1);
+      await save();
+      renderAll();
+    });
+  });
 
   const editModeBtn = document.getElementById('adminEditModeToggleBtn');
   if(editModeBtn) editModeBtn.addEventListener('click', ()=>{
@@ -11797,6 +11850,8 @@ function endVocabQuiz(){
   }
   const resultCard = document.getElementById('vocabResultCard');
   if(resultCard) resultCard.style.display = 'block';
+  const titleEl = document.getElementById('vocabQuizTitle');
+  logQuizActivity(titleEl ? titleEl.textContent : 'Vocab Quiz', vocabSession.correct, total);
 }
 
 function initVocabQuiz(){
@@ -12592,6 +12647,8 @@ function endSpellingQuiz(){
   }
   const resultCard = document.getElementById('spellingResultCard');
   if(resultCard) resultCard.style.display = 'block';
+  const titleEl = document.getElementById('spellingQuizTitle');
+  logQuizActivity(titleEl ? titleEl.textContent : 'Spelling', spellingSession.correct, total);
 }
 
 function initSpellingQuiz(){
@@ -14851,6 +14908,8 @@ function endIdiomQuiz(){
   }
   const resultCard = document.getElementById('idiomResultCard');
   if(resultCard) resultCard.style.display = 'block';
+  const titleEl = document.getElementById('idiomQuizTitle');
+  logQuizActivity(titleEl ? titleEl.textContent : 'Idioms & Phrases', idiomSession.correct, total);
 }
 
 function initIdiomQuiz(){
@@ -15289,6 +15348,8 @@ function endGrammarQuiz(){
   }
   const resultCard = document.getElementById('grammarResultCard');
   if(resultCard) resultCard.style.display = 'block';
+  const titleEl = document.getElementById('grammarQuizTitle');
+  logQuizActivity(titleEl ? titleEl.textContent : 'Grammar', grammarSession.correct, total);
 }
 
 function initGrammarQuiz(){
@@ -15791,6 +15852,8 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     }
     const resultCard = document.getElementById(prefix + 'ResultCard');
     if(resultCard) resultCard.style.display = 'block';
+    const titleEl2 = document.getElementById(prefix + 'QuizTitle');
+    logQuizActivity(titleEl2 ? titleEl2.textContent : label, session.correct, total);
   }
   function init(){
     renderSetMenu();
