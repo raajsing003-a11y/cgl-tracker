@@ -1166,6 +1166,25 @@
     50%{background-position:100% 50%;}
     100%{background-position:0% 50%;}
   }
+  /* Active ↔ Passive Voice card — nauvaan shimmer palette (teal → indigo → fuchsia). */
+  .calcCard-voice{
+    background:linear-gradient(120deg,#0f766e 0%,#4f46e5 48%,#c026d3 100%);
+    background-size:160% 160%;
+    animation:voiceShimmer 14s ease infinite;
+    border:none;
+    box-shadow:0 6px 18px rgba(79,70,229,0.22);
+  }
+  .calcCard-voice .calcIcon-voice{
+    background:rgba(255,255,255,0.22);color:#fff;box-shadow:none;
+  }
+  .calcCard-voice .calcLabel{color:#fff;font-size:16.5px;}
+  .calcCard-voice .calcSub{color:rgba(255,255,255,0.9);font-size:11.5px;font-weight:600;letter-spacing:0.2px;}
+  .calcCard-voice .calcArrow{color:#fff;}
+  @keyframes voiceShimmer{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+  }
   /* Reasoning card (Learn menu) — paanchvaan shimmer palette (indigo →
      violet → pink) taaki Vocab/Spelling/Idioms/Grammar/Reasoning paanchon
      turant alag pehchane ja sakein. Isi ke andar Odd One Out / Series /
@@ -2860,6 +2879,14 @@
             <span class="calcLabel">Prepositions</span>
           </span>
         </button>
+        <button class="calcCard calcCard-voice" id="calcVoiceBtn" data-calc="voice">
+          <span class="calcIcon calcIcon-voice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10"/><path d="M7 12h6"/><path d="M17 12l3 3-3 3"/><path d="M7 17h4"/></svg>
+          </span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Active ↔ Passive</span>
+          </span>
+        </button>
       </div>
 
       <div class="grid-label" style="margin-top:0;">🧩 Reasoning</div>
@@ -3302,6 +3329,56 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="prepositionResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="prepositionResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-voicemenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="voiceMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">Active ↔ Passive Voice — Choose a Set</div>
+      </div>
+      <button type="button" class="calcCard calcCard-saved" id="voiceSavedBtn">
+        <span class="calcIcon">⭐</span>
+        <span class="calcLabelCol">
+          <span class="calcLabel">Saved Questions</span>
+          <span class="calcSub" id="voiceSavedCountLabel">0 saved</span>
+        </span>
+        <span class="calcArrow">&#8250;</span>
+      </button>
+      <div class="calcGrid calcGrid-1col" id="voiceSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-voice">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="voiceBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="voiceQuizTitle">Active ↔ Passive Voice</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="voiceStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="voiceStatWrong">0</span></div>
+        <div class="calcStatPill" id="voiceStatProgress" style="margin-left:auto;color:var(--muted);">Q 1/1</div>
+        <button type="button" class="calcCtrlBtn calcFlagBtn" id="voiceSaveBtn" aria-label="Save this question">☆</button>
+      </div>
+
+      <div class="calcQuestionWrap" id="voiceQuestionWrap">
+        <div class="calcQuestion" id="voiceWordText" style="font-size:clamp(18px,5vw,23px);line-height:1.4;">—</div>
+      </div>
+
+      <div class="calcAnsGrid calcAnsGrid-list" id="voiceAnsGrid"></div>
+
+      <div class="calcResultCard" id="voiceSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="voiceSolutionText" style="font-size:14px;line-height:1.5;color:var(--text);font-weight:600;"></div>
+        <button class="nav-btn onbPrimary" id="voiceNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="voiceResultCard" style="display:none;">
+        <div class="calcResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="voiceResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="voiceResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="voiceResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -15923,6 +16000,137 @@ const PHRASAL_SETS = {
 
 const phrasalQuiz = makeReasoningQuiz('phrasal', PHRASAL_SETS, 'Phrasal Verbs', 'menu');
 
+// ===== Active ↔ Passive Voice Quiz (Learn/Calc tab) =====
+// DATA FORMAT: VOICE_SETS.setN = array of 10 questions, each
+// { word: sentence to convert (with tense/pattern tag in [brackets]),
+//   options: 4 converted choices, answer: 0-based correct index,
+//   explanation: [rule line] }. 100 Qs total across 10 sets, in the
+//   original curated order (basic tenses -> modals -> advanced traps).
+const VOICE_SETS = {
+  set1: [
+    { word: "Simple Present. Sonam does not like bananas. [Active → Passive]", options: ["Banana is not liked by Sonam.", "Bananas have not been liked by Sonam.", "Bananas are not liked by Sonam.", "Bananas had not been liked by Sonam."], answer: 2, explanation: ["does not + V1 → is/are + not + V3."] },
+    { word: "Simple Past. The baker baked the cake. [Active → Passive]", options: ["The cake was baked by the baker.", "The cake had been baked by the baker.", "The baker has been baking the cake.", "The cake has been baked by the baker."], answer: 0, explanation: ["V2 → was/were + V3."] },
+    { word: "Simple Future. The school will hire new teachers. [Active → Passive]", options: ["New teachers will join the school.", "The school will be hiring new teachers.", "New teachers are hired by the school.", "New teachers will be hired by the school."], answer: 3, explanation: ["will + V1 → will be + V3."] },
+    { word: "Present Continuous. They are building a new hospital in the city. [Active → Passive]", options: ["A new hospital was built in the city by them.", "A new hospital has been built in the city by them.", "A new hospital will be built in the city by them.", "A new hospital is being built in the city by them."], answer: 3, explanation: ["is/are + V-ing → is/are being + V3."] },
+    { word: "Past Continuous. The letter was being typed by the secretary when the phone rang. [Passive → Active]", options: ["The secretary will type the letter when the phone rings.", "The secretary types the letter when the phone rings.", "The secretary was typing the letter when the phone rang.", "The secretary is typing the letter when the phone rings."], answer: 2, explanation: ["was/were being + V3 → was/were + V-ing."] },
+    { word: "Future Continuous — Advanced. They will be delivering the parcels this afternoon. [Active → Passive]", options: ["The parcels will be being delivered this afternoon.", "are being delivered this afternoon.", "will being delivered this afternoon.", "will have been delivered this afternoon."], answer: 0, explanation: ["Rare double-auxiliary \"will be being\" is the technically correct (though clunky) passive of future continuous."] },
+    { word: "Present Perfect. The children have made the box. [Active → Passive]", options: ["The box is being made by the children.", "Children had made the box.", "The box had been made by the children.", "The box has been made by the children."], answer: 3, explanation: ["have/has + V3 → has/have been + V3."] },
+    { word: "Past Perfect. The tourists had taken many photographs. [Active → Passive]", options: ["Many photographs have been taken by the tourists.", "Many photographs are taken by the tourists.", "Many photographs had been taken by the tourists.", "Many photographs were being taken by the tourists."], answer: 2, explanation: ["had + V3 → had been + V3."] },
+    { word: "Future Perfect. They will have opened the new airport by 2026. [Active → Passive]", options: ["The new airport will have been opened by 2026.", "will be opened by 2026.", "has been opened by 2026.", "will being opened by 2026."], answer: 0, explanation: ["will have + V3 → will have been + V3."] },
+    { word: "Present Perfect Continuous — Advanced. They have been neglecting maintenance of the archives for years. [Active → Passive]", options: ["Maintenance of the archives had been neglected by them for years.", "Maintenance of the archives is being neglected by them for years.", "Maintenance of the archives was being neglected by them for years.", "Maintenance of the archives has been being neglected by them for years."], answer: 3, explanation: ["\"has/have been being\" is the correct (rarely-used) passive of present perfect continuous."] },
+  ],
+  set2: [
+    { word: "Past Perfect Continuous — Advanced. They had been negotiating the deal for months. [Active → Passive]", options: ["had been negotiating for months.", "The deal had been being negotiated for months.", "has been being negotiated for months.", "was being negotiated for months."], answer: 1, explanation: ["had been + V-ing → had been being + V3."] },
+    { word: "The homework must be done by you. [Passive → Active]", options: ["You should have done the homework.", "You do the homework.", "You will do the homework.", "You must do the homework."], answer: 3, explanation: ["must + be + V3 → must + V1."] },
+    { word: "Can you compose an inspiring poem? [Active → Passive]", options: ["Can an inspiring poem be composed?", "An inspiring poem can be composed by you.", "Can an inspiring poem be composed by you?", "Can an inspiring poem by you composed?"], answer: 2, explanation: ["Question word order: Modal + object + be + V3 + by + subject?"] },
+    { word: "The university may confer honorary degrees upon exceptional scholars. [Active → Passive]", options: ["Honorary degrees might have been conferred upon exceptional scholars by the university.", "Honorary degrees may be conferred upon exceptional scholars by the university.", "Honorary degrees may have conferred upon exceptional scholars by the university.", "Honorary degrees must be being conferred upon exceptional scholars by the university."], answer: 1, explanation: ["may + V1 → may be + V3."] },
+    { word: "We should clean the house regularly. [Active → Passive]", options: ["The house should have been cleaned regularly by us.", "The house should be being cleaned regularly by us.", "The house should be cleaned regularly by us.", "The house should be clean regularly by us."], answer: 2, explanation: ["should + V1 → should be + V3."] },
+    { word: "\"is/are to\" construction (planned action). The authorities are to close the road. [Active → Passive]", options: ["The road to be closed by the authorities.", "The road is to be closed by the authorities.", "The road has to be closed by the authorities.", "The road will be closed by the authorities."], answer: 1, explanation: ["\"is/are to + V1\" → \"is/are to be + V3\"."] },
+    { word: "\"going to\" construction. We are going to start the project soon. [Active → Passive]", options: ["The project is going to be started soon.", "was going to be started soon.", "is being going to be started soon.", "has been going to be started soon."], answer: 0, explanation: ["\"is/are going to + V1\" → \"is/are going to be + V3\"."] },
+    { word: "Someone must have tampered with the encryption keys. [Active → Passive]", options: ["The encryption keys must have been tampered with.", "must have tampered by someone.", "must be tampered with by someone.", "must had been tampered with."], answer: 0, explanation: ["must have + V3 → must have been + V3. Prepositional verb \"tamper with\" keeps \"with\"; agent is dropped since \"someone\" is unspecified."] },
+    { word: "The agent could have sold the house. [Active → Passive]", options: ["The house could have been sold by the agent.", "could be sold by the agent.", "could have sold by the agent.", "could had been sold by the agent."], answer: 0, explanation: ["could have + V3 → could have been + V3."] },
+    { word: "Meenakshi could have sent a reply. [Active → Passive]", options: ["A reply could have be sent by Meenakshi.", "A reply could have been sent by Meenakshi.", "A reply could have sent by Meenakshi.", "A reply could have been send by Meenakshi."], answer: 1, explanation: [] },
+  ],
+  set3: [
+    { word: "Causative nuance. They should have had the matter re-examined before escalation. [Passive → Active]", options: ["The matter should have had to be re-examined before escalation.", "The matter should have been re-examined before escalation.", "The matter should have been had re-examined before escalation.", "The matter should have been made to be re-examined before escalation."], answer: 1, explanation: ["Note: the original already uses causative \"had + object + V3\" (got it done by someone). A plain passive loses that causative shade slightly, but B is the accepted standard conversion."] },
+    { word: "Who invited you to this party? [Active → Passive]", options: ["By whom you are invited to this party?", "By whom are you invited to this party?", "By whom you were invited to this party?", "By whom were you invited to this party?"], answer: 3, explanation: ["\"Who\" (subject, doing the inviting) → \"by whom\"; auxiliary moves before subject."] },
+    { word: "Did you hear that noise? [Active → Passive]", options: ["Was that noise heard by you?", "Is that noise heard by you?", "Wasn't that noise heard by you?", "Has that noise been heard by you?"], answer: 0, explanation: ["Did + V1...? → Was/Were + object + V3 + by + subject?"] },
+    { word: "Where will they hold the conference? [Active → Passive]", options: ["Where the conference will be held?", "Where will the conference be held?", "Where is the conference held?", "Where has the conference been held?"], answer: 1, explanation: ["Wh-word stays first, then auxiliary, then subject."] },
+    { word: "Negative question. Why didn't she bring her son to my house? [Active → Passive]", options: ["Why wasn't her son brought by her to my house?", "Why isn't her son brought to my house?", "Why wasn't her son brought to my house?", "Why isn't her son brought by you to my house?"], answer: 0, explanation: ["didn't + V1 → wasn't + V3; agent \"by her\" is kept for clarity."] },
+    { word: "Have the engineers resolved the calibration issue yet? [Active → Passive]", options: ["Has the calibration issue had been resolved by the engineers yet?", "Has the calibration issue been resolved by the engineers yet?", "Has the calibration issue be resolved by the engineers yet?", "Has the calibration issue resolved by the engineers yet?"], answer: 1, explanation: ["Have/Has + V3...? → Has/Have + object + been + V3 + by + subject?"] },
+    { word: "Take these two pills with warm water. [Imperative → Passive]", options: ["You may take these two pills with warm water.", "You are ordered to take these two pills with warm water.", "These two pills should be taken with warm water.", "Warm water should be taken with these two pills."], answer: 2, explanation: ["Command → object + should be + V3."] },
+    { word: "Don't let Dylan fool you! [Imperative → Passive]", options: ["Do not be fooled by Dylan.", "Do not ever be fooled by Dylan.", "Do not be fool by Dylan.", "Do not have been fooled by Dylan."], answer: 0, explanation: ["Negative command → Do not be + V3 + by + agent."] },
+    { word: "Let the fire be kept burning at night. [Passive → Active imperative]", options: ["You must burn the fire at night.", "Let the fire burning at night.", "The fire should be burnt at night.", "Keep the fire burning at night."], answer: 3, explanation: ["\"Let + object + be + V3\" → plain imperative \"V1 + object\"."] },
+    { word: "Let your son manage your business after your retirement. [Imperative → Passive]", options: ["Let your retirement be managed by your son after your business.", "Let your business be managed by your son after your retirement.", "Your business can be managed by your son after your retirement.", "Your business is being managed by your son after your retirement."], answer: 1, explanation: ["\"Let + subject + V1 + object\" → \"Let + object + be + V3 + by + subject\"."] },
+  ],
+  set4: [
+    { word: "I bade him write the composition twice. [Active → Passive]", options: ["He was bid to write the composition twice.", "He was baden to write the composition twice.", "He was bade to write the composition twice.", "He was bidden to write the composition twice."], answer: 2, explanation: ["\"bade\" (old past tense of \"bid,\" meaning ordered) keeps its form in passive: \"was bade + to-infinitive.\" Archaic but exam-favourite."] },
+    { word: "She was made to feel responsible for the team's failure by the manager. [Passive → Active]", options: ["The manager had her feel responsible for the team's failure.", "The manager made her feel responsible for the team's failure.", "The team's failure was blamed on her by the manager.", "The manager got her to be blamed for the team's failure."], answer: 1, explanation: ["Causative passive \"made to + V1\" → active \"made + object + V1\" (no \"to\" in active). *(Note: the source key prints \"C\" here, but option C is still passive-worded and changes the meaning — B is the grammatically correct pick.)*"] },
+    { word: "The court let the plaintiff argue the motion without interruption. [Active → Passive]", options: ["The motion was argued by the plaintiff without interruption.", "The plaintiff was let to argue the motion without interruption.", "The plaintiff was allowed to argue the motion without interruption.", "The court was letting the plaintiff argue the motion without interruption."], answer: 2, explanation: ["\"let\" has no passive of its own (\"was let to\" is wrong); it's replaced by \"was allowed to.\""] },
+    { word: "Double-object verb. Somebody sent him a cheque for a hundred euros as his remuneration. [Active → Passive]", options: ["He was sent a cheque for a hundred euros as his remuneration by someone.", "He was been sent a cheque for a hundred euros as his remuneration by someone.", "He sent a cheque for a hundred euros as his remuneration.", "He is sent a cheque for a hundred euros as his remuneration by someone."], answer: 0, explanation: ["Verbs like send/give/offer (two objects) can be passivised on the indirect object (him → subject); direct object (cheque) stays after the verb."] },
+    { word: "People say Shyam is wise and honest. [Active → Passive]", options: ["It is believed that Shyam is wise and honest.", "Let's say that Shyam is wise and honest.", "Shyam is wise and honest is said by people.", "It is said that Shyam is wise and honest."], answer: 3, explanation: ["\"People/They say that...\" → \"It is said that...\""] },
+    { word: "It was decided by Salim Ali to devote his life to the preservation of Indian birds. [Passive → Active]", options: ["Salim Ali decided to devote his life to the preservation of Indian birds.", "Salim devoted his life to the preservation of Indian birds.", "Salim Ali has decided to devote his life to the preservation of Indian birds.", "Salim Ali had decided to devote his life to the preservation of Indian birds."], answer: 0, explanation: ["Impersonal \"It was decided by X to...\" → \"X decided to...\""] },
+    { word: "Some students are known to grow wise early. [Passive → Active]", options: ["Some students have been knowing that they grow wise early.", "People know that some students grow wise early.", "Few of us know that students grow early.", "We all know that students grew wise early."], answer: 1, explanation: ["\"Subject + is/are known to + V1\" → \"People know that + subject + V1.\""] },
+    { word: "Correction note. The allegation that the system had been hacked was denied by the company. [Passive → Active]", options: ["The company denied the allegation that someone had hacked the system.", "The company was denying the allegation that someone had hacked the system.", "The company has denied the allegation that someone hacked the system.", "The company denies the allegation that someone had hacked the system."], answer: 0, explanation: ["The original sheet’s options here were flawed (two were identically worded), so this is the model answer: \"was denied by the company\" → \"the company denied\"; the embedded passive \"had been hacked\" → active \"someone had hacked.\""] },
+    { word: "The culprit is believed to have been hiding in the abandoned warehouse for weeks. [Passive → Active]", options: ["It is believed that the culprit has been hiding in the warehouse for weeks.", "Authorities believe that the culprit has been hiding in the warehouse for weeks.", "The culprit believed he was hiding in the warehouse for weeks.", "It was believed that the culprit had been hiding in the warehouse for weeks."], answer: 1, explanation: ["Pattern: \"Subject + is believed to have been + V-ing\" → \"People/Authorities believe that + subject + has/have been + V-ing.\" Option A keeps an impersonal passive (\"it is believed\") and is the official-key pick, but B is the fully active, grammatically cleaner conversion."] },
+    { word: "The CEO is known to have been influenced by external advisors. [Passive → Active]", options: ["External advisors are known to influence the CEO.", "People know that external advisors have influenced the CEO.", "The CEO knows that external advisors influenced him.", "External advisors were known to have influenced the CEO."], answer: 1, explanation: ["Same pattern as H1 — official SSC keys often pick a partially-passive option (A); B is the fully active, ideal form worth knowing too."] },
+  ],
+  set5: [
+    { word: "The findings were interpreted to have been misrepresented by the spokesperson in the official release. [Passive → Active]", options: ["The spokesperson is believed to have misrepresented the findings.", "They believed that the spokesperson had misrepresented the findings in the official release.", "The findings misrepresented the spokesperson in the official release.", "The spokesperson believes the findings were misrepresented in the official release."], answer: 1, explanation: ["The official key (A) still keeps a passive shell (\"is believed\"); B is the cleaner, fully active version of the same meaning."] },
+    { word: "They should be auditing the subsidiary accounts this quarter. [Active → Passive]", options: ["The subsidiary accounts should have been audited this quarter.", "The subsidiary accounts are being audited this quarter.", "The subsidiary accounts should be being audited by them this quarter.", "The subsidiary accounts should be audited by them this quarter."], answer: 2, explanation: ["(technically correct modal-continuous passive: \"should be being + V3\"). Note: (D) is often accepted too since it's less awkward — good to recognise both for exams."] },
+    { word: "Verbs of perception (see/hear/watch + object + V-ing). Bhavna saw him carrying your suitcase. [Active → Passive]", options: ["Your suitcase carried by him was seen by Bhavna.", "He was seen by Bhavna carrying your suitcase.", "He had been seen by Bhavna carrying your suitcase.", "Your suitcase was seen by Bhavna carrying him."], answer: 1, explanation: ["The object of \"saw\" (him) becomes subject of passive; the V-ing form stays unchanged."] },
+    { word: "Prepositional verb. The poor fellow was laughed at by the crowd. [Passive → Active]", options: ["The crowd was laughing at the poor fellow.", "The crowd had laughed at the poor fellow.", "The crowd is laughing at the poor fellow.", "The crowd laughed at the poor fellow."], answer: 3, explanation: ["\"laugh at\" keeps \"at\" attached to the verb in active voice, not floating near the subject."] },
+    { word: "Subject-verb agreement trap. Aspirations give us the clarity of our goals. [Active → Passive]", options: ["The clarity of our goals has been given by aspirations.", "We are given the clarity of our goals by aspirations.", "The clarity of our goals are given by aspirations.", "The clarity of our goals is given by aspirations."], answer: 3, explanation: ["Real subject is \"clarity\" (singular) → needs \"is,\" not \"are,\" despite \"goals\" being plural nearby."] },
+    { word: "Impersonal \"one\". One must adopt a life of self-control. [Active → Passive]", options: ["was adopted by one.", "A life of self-control must be adopted by one.", "will be adopted by one.", "has adopted by one."], answer: 1, explanation: ["Impersonal subject \"one\" is retained as the agent."] },
+    { word: "Impersonal passive. Nothing can be achieved without hard work. [Passive → Active]", options: ["One has achieved nothing without hard work.", "One can achieve nothing without hard work.", "One could achieve nothing without hard work.", "One will achieve nothing without hard work."], answer: 1, explanation: ["\"Nothing can be + V3\" → \"One can + V1 + nothing.\""] },
+    { word: "Exception: stative/linking verbs have NO passive. Lemon tastes sour.", options: ["Lemon has been tasted sour.", "Lemon is tasted sour.", "Lemon is sour when it is tasted.", "Lemon has been sour when tasted."], answer: 1, explanation: ["but important note: \"taste\" here is a linking verb (like seem/look/smell), and such verbs normally **cannot** be passivised at all in real usage. This question is included only because the official key marks (B); don't apply this logic elsewhere. (Compare with J2 below — \"love\" behaves differently.)"] },
+    { word: "His behaviour vexes me sometimes. [Active → Passive]", options: ["I am being vexed by his behaviour sometimes.", "Sometimes he vexes me.", "I am sometimes vexed by his behaviour.", "His behaviour is vexed."], answer: 2, explanation: [] },
+    { word: "Prepositional passive with modal. He must be written to by us. [Passive → Active]", options: ["We can write.", "We must write to him.", "We are writing to him.", "I have been writing to him."], answer: 1, explanation: ["The preposition \"to\" moves back next to its object (\"write to him\") in active voice."] },
+  ],
+  set6: [
+    { word: "Trigonometry has been taught by him for donkey's years. [Passive → Active]", options: ["He had been teaching trigonometry for donkey's years.", "Trigonometry has been teaching by him for donkey's years.", "He is teaching trigonometry for donkey's years.", "He has been teaching trigonometry for donkey's years."], answer: 3, explanation: ["Present perfect continuous active: has/have been + V-ing."] },
+    { word: "Complex sentence — only the main clause changes. The research team is conducting experiments on a new drug that could revolutionise the treatment of the disease. [Active → Passive]", options: ["Experiments are being conducted on a new drug that could revolutionise the treatment of the disease through the research team.", "Experiments were being conducted on a new drug that could revolutionise the treatment of the disease by the research team.", "Experiments are being conducted on a new drug that could revolutionise the treatment of the disease from the research team.", "Experiments are being conducted on a new drug that could revolutionise the treatment of the disease by the research team."], answer: 3, explanation: ["The relative clause \"that could revolutionise...\" has its own subject (\"that\") and stays untouched; only the main clause is passivised."] },
+    { word: "Compound sentence — convert each clause separately. The company will launch the new product next month, and they are already promoting it through various marketing channels. [Active → Passive]", options: ["The new product will be launched by the company next month, and it is already being promoted through various marketing channels.", "The new product were been launched by the company next month, and it was promoting it through various marketing channels.", "The new product was launched by the company next month, and it is already promoted through various marketing channels.", "The new product will have been launched by the company next month, and it was already being promoted through various marketing channels."], answer: 0, explanation: ["Each clause keeps its own original tense (simple future / present continuous) when converted."] },
+    { word: "Lovely tunes are composed by Domnica. [Passive → Active, Simple Present]", options: ["Domnica composed lovely tunes.", "Domnica composes tunes lovely.", "Domnica will compose lovely tunes.", "Domnica composes lovely tunes."], answer: 3, explanation: [] },
+    { word: "Stative verb that CAN be passivised. The mother loves the baby. [Active → Passive]", options: ["The baby was loved by the mother.", "The baby will be loved by the mother.", "The baby has been loved by the mother.", "The baby is loved by the mother."], answer: 3, explanation: ["Unlike \"taste\" (I6), \"love\" passivises normally."] },
+    { word: "Scientists were conducting experiments on the newly discovered species. [Active → Passive, Past Continuous]", options: ["Experiments had been conducted on the newly discovered species by scientists.", "Experiments has been conducting on the newly discovered species by scientists.", "Experiments has been experimented on the newly discovered species by scientists.", "Experiments were being conducted on the newly discovered species by scientists."], answer: 3, explanation: [] },
+    { word: "Subject-verb agreement with numbers. Gill scored 3 centuries in Tata IPL 2023. [Active → Passive]", options: ["3 centuries has been scored by Gill in Tata IPL 2023.", "3 centuries were scored by Gill in Tata IPL 2023.", "3 centuries had been scored by Gill in Tata IPL 2023.", "3 centuries were being scored by Gill in Tata IPL 2023."], answer: 1, explanation: ["Plural quantity (\"3 centuries\") takes \"were,\" not \"was\" or \"has.\""] },
+    { word: "Neena will visit Greece in May. [Active → Passive, Simple Future + time]", options: ["Greece had been visited by Neena in May.", "Greece has been visited by Neena in May.", "Greece will be visited by Neena in May.", "Greece will visit Neena in May."], answer: 2, explanation: [] },
+    { word: "Rick was completing graduation last year. [Active → Passive, Past Continuous]", options: ["Graduation is being completed by Rick last year.", "Graduation was being completed by Rick last year.", "Graduation were completed by Rick last year.", "Graduation was completed by Rick last year."], answer: 1, explanation: [] },
+    { word: "Subordinate clause stays unchanged. John bought sweets at the store when he visited yesterday. [Active → Passive]", options: ["Sweets were to be bought by John at the store when he visited yesterday.", "Sweets were bought by John at the store when he visited yesterday.", "Sweets were being bought by John at the store when he visited yesterday.", "Sweets are bought by John at the store when he visited yesterday."], answer: 1, explanation: ["Only the main clause (\"John bought sweets\") is passivised; the time clause \"when he visited yesterday\" stays exactly as it was."] },
+  ],
+  set7: [
+    { word: "The earthquake had devastated the village beyond imagination. [Active → Passive, Past Perfect]", options: ["The village had devastated by the earthquake beyond imagination.", "The village had been devastated beyond imagination by the earthquake.", "The village was devastated beyond imagination by the earthquake.", "The village has been devastated beyond imagination by the earthquake."], answer: 1, explanation: [] },
+    { word: "The jury has delivered a unanimous verdict. [Active → Passive, Present Perfect]", options: ["A unanimous verdict has been delivered by the jury.", "A unanimous verdict was being delivered by the jury.", "A unanimous verdict had been delivered by the jury.", "A unanimous verdict is delivered by the jury."], answer: 0, explanation: [] },
+    { word: "Martha made pancakes yesterday. [Active → Passive, Simple Past + time adverb]", options: ["Pancakes had been made by Martha yesterday.", "Pancakes were being made by Martha yesterday.", "Pancakes were made by Martha yesterday.", "Pancakes was made by Martha yesterday."], answer: 2, explanation: [] },
+    { word: "He must deliver pizza. [Active → Passive]", options: ["Pizza has to be delivered by him.", "Pizza have to be delivered by him.", "Pizza must be delivered by him.", "Pizza can be delivered by him."], answer: 2, explanation: [] },
+    { word: "\"have to\" as obligation. We have to say little in this matter. [Active → Passive]", options: ["Little had to be said in this matter.", "Little is to be said in this matter.", "Little must be said in this matter.", "Little has to be said in this matter."], answer: 3, explanation: [] },
+    { word: "\"have to\" in a question. Why do we have to accept these conditions? [Active → Passive]", options: ["Why do these conditions have to be accepted?", "Why should these conditions be accepted?", "These conditions do not have to be accepted.", "Why are these conditions needed to be accepted?"], answer: 0, explanation: [] },
+    { word: "\"have to\" with a time adverb. The flood victims of Assam have to make highway their home every year. [Active → Passive]", options: ["Highway has made their home every year by the flood victims of Assam.", "Highway has been made their home every year by the flood victims of Assam.", "Highway is being made their home every year by the flood victims of Assam.", "Highway has to be made their home every year by the flood victims of Assam."], answer: 3, explanation: [] },
+    { word: "Adverb + modal placement. People can seldom access archived manuscripts without clearance. [Active → Passive]", options: ["Archived manuscripts can seldom being accessed without clearance.", "Archived manuscripts could seldom be accessed without clearance.", "Archived manuscripts can seldom be accessed without clearance.", "Archived manuscripts are seldom able to be accessed without clearance."], answer: 2, explanation: ["\"Seldom\" stays right after the modal in the passive form too."] },
+    { word: "\"is/are to be\" duty pattern. It is your duty to help the poor people in your parish. [Active → Passive]", options: ["The poor people in your parish are to be helped by you.", "It is suggested that you do your duty to help the poor people in your parish.", "The poor people in your parish are helped by you as duty.", "You may be allowed to help the poor people in your parish."], answer: 0, explanation: [] },
+    { word: "Pronoun swap in questions. Will you give me an independent project? [Active → Passive]", options: ["Will you be given an independent project by me?", "Would an independent project be given?", "Would I be given an independent project?", "Will I be given an independent project by you?"], answer: 3, explanation: ["Careful: \"me\" (object) becomes \"I\" (subject); \"you\" (subject) becomes \"by you\" (agent)."] },
+  ],
+  set8: [
+    { word: "Obligation paraphrase. I have to stay in Netherlands for a year till I finish my course. [Active → Passive-style paraphrase]", options: ["I may be allowed to stay in Netherlands for a year till I finish my course.", "It is suggested that I stay in Netherlands for a year till I finish my course.", "I am obliged to stay in Netherlands for a year till I finish my course.", "Let me stay in Netherlands for a year till I finish my course."], answer: 2, explanation: ["This tests obligation-meaning (\"have to\" ≈ \"am obliged to\"), not a literal passive."] },
+    { word: "By whom was grammar taught to you? [Passive → Active]", options: ["Did he teach you grammar?", "Who had taught you grammar?", "You were taught grammar by whom?", "Who taught you grammar?"], answer: 3, explanation: [] },
+    { word: "By whom were you injured? [Passive → Active]", options: ["Who has injured you?", "Who injured you?", "Who had injured you?", "Who had been injuring you?"], answer: 1, explanation: [] },
+    { word: "Why are you repeatedly called by her? [Passive → Active]", options: ["Why she calls you repeatedly?", "Why had she called you repeatedly?", "Why was she calling you repeatedly?", "Why does she call you repeatedly?"], answer: 3, explanation: [] },
+    { word: "Agentless question. Has anyone ever challenged this constitutional clause? [Active → Passive]", options: ["Has this constitutional clause ever challenged?", "Has this constitutional clause ever been challenged?", "Has this constitutional clause ever be challenged?", "Has this constitutional clause ever had been challenged?"], answer: 1, explanation: ["\"Anyone\" (unknown agent) is simply dropped in the passive."] },
+    { word: "Has Rahul been declared fit to play the next match? [Passive → Active]", options: ["Have they declared Rahul fit to play the next match?", "Did they declare Rahul fit to play the next match?", "Are they declaring Rahul fit to play the next match?", "Has Rahul declared the next match fit to play?"], answer: 0, explanation: [] },
+    { word: "Modal perfect question. Who could have made such a silly mistake? [Active → Passive]", options: ["By whom could such a silly mistake be made?", "By whom could such a silly mistake have been made?", "By whom can such a silly mistake have been made?", "By whom can such a silly mistake be made?"], answer: 1, explanation: [] },
+    { word: "Throw the jacket. [Imperative → Passive]", options: ["Let us throw the jacket.", "The jacket was thrown by you.", "Let the jacket be thrown.", "The jacket must thrown by you."], answer: 2, explanation: [] },
+    { word: "Leave the premises at once. [Imperative → Passive]", options: ["You are told to leave the premises at once.", "Someone is to leave the premises at once.", "People left the premises at once.", "Let the premises be left at once."], answer: 3, explanation: [] },
+    { word: "Pay the electricity bill for the month of April. [Imperative → Passive]", options: ["The electricity bill for the month of April has to be paid.", "We should pay the electricity bill for the month of April.", "Let us pay the electricity bill for the month of April.", "Let the electricity bill for the month of April be paid."], answer: 3, explanation: [] },
+  ],
+  set9: [
+    { word: "\"Let us\" imperative. Let us donate the money. [Imperative → Passive]", options: ["We are told to donate the money.", "Let the money is donated by us.", "Let the money be donated by us.", "The money was donated by us."], answer: 2, explanation: ["\"Let us\" (first person plural) becomes \"by us\" in the passive."] },
+    { word: "The children were made to apologize by the principal for their behavior. [Passive → Active]", options: ["The principal made the children apologize for their behavior.", "The principal was making the children apologize for their behavior.", "The children made the principal apologize for their behavior.", "The principal had made the children apologize for their behavior."], answer: 0, explanation: ["Causative rule: \"was made to + V1\" → \"made + object + V1\" (no \"to\" in the active form). The source answer key marks a less coherent option here — trust the logic of the rule over the printed key."] },
+    { word: "The audience was made to believe that the product was revolutionary. [Passive → Active]", options: ["The presenter made the audience believe the product was revolutionary.", "The audience made the presenter believe the product was revolutionary.", "The presenter was made to believe the product was revolutionary.", "The presenter had made the audience believe the product was revolutionary."], answer: 0, explanation: ["Same causative rule as N1 — again, use the logic, not the printed key."] },
+    { word: "\"Have/Get something done\" pattern. A decision has been taken to have the proposal reviewed by an external panel. [Passive → Active]", options: ["An external panel has reviewed the proposal.", "The proposal is being reviewed by an external panel.", "They have decided to get the proposal reviewed by an external panel.", "The proposal was reviewed by the panel as per the decision."], answer: 2, explanation: ["\"have something done\" (getting someone else to do it for you) is a special causative form, different from a plain passive."] },
+    { word: "Double object + causative source. He was given a reward for his contribution by the Governor. [Passive → Active]", options: ["For his contribution, he was rewarded by the governor.", "The governor rewarded him.", "The governor gave him a reward for his contribution.", "Rewarded by the governor, as he contributed along."], answer: 2, explanation: [] },
+    { word: "Active → Passive with causative retained. They had been making the staff report discrepancies silently. [Active → Passive]", options: ["The staff had been made to report discrepancies silently.", "The staff were being made to report discrepancies silently.", "Discrepancies had been reported by the staff silently.", "The staff have been made to report discrepancies silently."], answer: 0, explanation: ["Best answer preserving the causative meaning. The printed key picks a simpler option that drops the causative \"made to\" — know both, since exams sometimes reward the simpler form too."] },
+    { word: "Word-order trap. Ishika saw the tiger in the forest. [Active → Passive]", options: ["The tiger saw by Ishika in the forest.", "The tiger was seen by the forest in Ishika.", "The tiger was seen by Ishika in the forest.", "The tiger sees Ishika in the forest."], answer: 2, explanation: ["Common trap: don't scramble the place-phrase (\"in the forest\") away from where it belongs."] },
+    { word: "Phrasal verb + adverb. Nargis quickly picks out the important files from her office shelf. [Active → Passive]", options: ["The important files are quickly being picked out by Nargis from her office shelf.", "The important files will be quickly picked out by Nargis from her office shelf.", "The important files are quickly picked out by Nargis from her office shelf.", "The important files have quickly been picked out by Nargis from her office shelf."], answer: 2, explanation: ["Phrasal verb \"pick out\" stays together; adverb \"quickly\" sits right before the verb."] },
+    { word: "Instrument \"with\" vs. agent \"by\". The cat was hit with a bat. [Passive → Active]", options: ["Somebody has hit the cat by bat.", "Somebody had hit the cat with a bat.", "Somebody hit the cat with a bat.", "Somebody hits the cat with a bat."], answer: 2, explanation: ["\"with a bat\" is the instrument (tool used), so it stays \"with,\" not \"by,\" in active voice."] },
+    { word: "Inanimate agent. The road was blocked by the fallen tree. [Passive → Active]", options: ["The fallen tree blocked the road.", "had blocked the road.", "The road blocks the tree.", "The road had been blocked by the tree."], answer: 0, explanation: ["The \"agent\" doesn't have to be a person; a thing can perform the action too."] },
+  ],
+  set10: [
+    { word: "Agent unknown → insert \"someone\". The package is delivered to the office every morning. [Passive → Active]", options: ["The office delivers the package every morning.", "Someone delivers the package to the office every morning.", "The office has delivered the package every morning.", "The package delivers itself to the office every morning."], answer: 1, explanation: ["When no agent is named, use \"someone/they/people\" in the active version."] },
+    { word: "Agent dropped + adverb. People don't use this road much. [Active → Passive]", options: ["This road isn't much used by people.", "This road cannot be used much by people.", "This road isn't used much by public.", "This road isn't used much."], answer: 3, explanation: ["When the agent (\"people\" = everyone in general) is obvious, it's dropped entirely; \"much\" stays close to the verb."] },
+    { word: "Passive inside a noun clause. Historians tell us how this country was divided into three. [Active → Passive]", options: ["We are told by historians how this country has been divided into three.", "We are told by historians how this country has divided into three.", "We are told by historians how this country was divided into three.", "We have been told by historians how this country was divided into three."], answer: 2, explanation: ["Only \"historians tell us\" becomes passive; the embedded clause \"how this country was divided into three\" (already passive) stays untouched."] },
+    { word: "\"Consider that\" impersonal pattern. People consider that Radha is creative in her work. [Active → Passive]", options: ["Radha's creativity in her work is considered by others.", "It is considered that Radha is creative in her work.", "Creativity in work by Radha is considered by people.", "People have considered Radha's creativity in her work."], answer: 1, explanation: [] },
+    { word: "Infinitive complement passive. Everybody wants others to respect them. [Active → Passive]", options: ["Everybody wanted to be respected by others.", "Everybody wants to be respected by others.", "They want others to be respected by everybody.", "Everybody wants to respect others."], answer: 1, explanation: ["\"wants + object + to + V1\" → \"wants + to be + V3\" (the object of \"want\" disappears; it becomes the implied subject of \"be respected\")."] },
+    { word: "Same infinitive-complement pattern. He likes people to flatter him. [Active → Passive]", options: ["He likes people to be flattered by him.", "He likes to have been flattered by people.", "He liked to be flattered by people.", "He likes to be flattered by people."], answer: 3, explanation: ["Same rule as P3."] },
+    { word: "Subordinate clause keeps its own subject unchanged. His mother accompanies him wherever he goes. [Active → Passive]", options: ["He has accompanied his mother wherever she has gone.", "He was accompanied by his mother wherever he went.", "He is accompanied by his mother wherever he goes.", "He accompanies his mother wherever she goes."], answer: 2, explanation: ["Only the main clause subject/object swap; \"wherever he goes\" keeps \"he,\" not \"she,\" since that clause was never about the mother."] },
+    { word: "Embedded passive + \"It was found that...\". It was found that my shoes were cleaned. [Passive → Active]", options: ["It was found that somebody had cleaned my shoes.", "I found that somebody had cleaned my shoes.", "Somebody found out that he had cleaned my shoes.", "Someone found my shoes cleaned."], answer: 3, explanation: ["Official key picks the \"found + object + V3\" (perception-style) structure over the more literal \"I found that...\" rephrasing."] },
+    { word: "\"Deem/consider + object + complement\" pattern. Editors deem such practices incompatible with editorial ethics. [Active → Passive]", options: ["Such practices are deemed incompatible with editorial ethics.", "Editorial ethics deems such practices as incompatible.", "Editors have deemed editorial ethics incompatible with such practices.", "Editorial compatibility is deemed absent in such practices."], answer: 0, explanation: ["With \"deem/consider/regard + object + complement,\" the object becomes the subject and the complement stays attached in the passive."] },
+    { word: "Identify the passive-voice sentence. Which of these is in passive voice?", options: ["I prefer tea to coffee.", "Children are participating in sand-art competition.", "She sketches beautifully.", "The consignment was delivered yesterday."], answer: 3, explanation: ["Only this one has \"be + V3\" structure (was delivered); the others are all active."] },
+  ],
+};
+
+const voiceQuiz = makeReasoningQuiz('voice', VOICE_SETS, 'Active ↔ Passive Voice', 'menu');
+
 // ===== Homophones / Confusing Words Quiz (Learn/Calc tab) =====
 // DATA FORMAT: HOMOPHONE_SETS.setN = array of up to 10 questions, each
 // { word: "fill-in-the-blank sentence", options: [4 confusable words],
@@ -16834,6 +17042,14 @@ function initPrepositionQuiz(){
   prepositionQuiz.init();
 }
 
+function initVoiceQuiz(){
+  // "Active ↔ Passive Voice" card — same flow: Set choose karo
+  // (calcPage-voicemenu), phir quiz shuru hota hai (calcPage-voice).
+  const voiceBtn = document.getElementById('calcVoiceBtn');
+  if(voiceBtn) voiceBtn.addEventListener('click', () => showCalcPage('voicemenu'));
+  voiceQuiz.init();
+}
+
 function initCalcNav(){
   // All four operations now launch practice directly from the Calc menu —
   // one tap straight into the setup sheet (no intermediate sub-page).
@@ -16868,6 +17084,7 @@ function initCalcNav(){
   initPhrasalQuiz();
   initHomophoneQuiz();
   initPrepositionQuiz();
+  initVoiceQuiz();
 }
 
 // ===== Weak / Revise sub-tab switcher (lives inside the "Weak" tab) =====
