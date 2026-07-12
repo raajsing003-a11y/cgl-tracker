@@ -581,6 +581,58 @@
   .taskTimerBtn:active{transform:scale(0.9);}
   .taskTimerBtn:hover{border-color:var(--blue);color:var(--blue);box-shadow:0 0 8px rgba(96,165,250,0.35);}
   .taskTimerBtn.active{border-color:var(--gain);color:var(--gain);box-shadow:0 0 8px rgba(74,222,128,0.4);}
+  /* Task row ka 📷 badge — sirf tab dikhta hai jab us task-submit ke saath
+     is device pe koi photo attach ki gayi ho (images IndexedDB mein local
+     rehti hain, sync nahi hoti — see taskPhoto* functions). */
+  .taskPhotoBadgeBtn{border-color:var(--accent);color:var(--accent);}
+  .taskPhotoBadgeBtn:hover{box-shadow:0 0 8px rgba(251,191,36,0.35);}
+
+  /* ===== Task Complete sheet: photo attach (camera / gallery) ===== */
+  .taskPhotoField{margin-top:14px;}
+  .taskPhotoRow{display:flex;gap:10px;}
+  .taskPhotoRow .nav-btn{flex:1;padding:10px 6px;font-size:13px;}
+  .taskPhotoPreviewWrap{
+    position:relative;margin-top:10px;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border-strong);max-width:220px;
+  }
+  .taskPhotoPreviewWrap img{display:block;width:100%;height:auto;max-height:260px;object-fit:cover;}
+  .taskPhotoRemoveBtn{
+    position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:none;
+    background:rgba(0,0,0,0.65);color:#fff;font-size:14px;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;padding:0;
+  }
+  .taskPhotoHint{font-size:11.5px;color:var(--muted);margin-top:6px;font-weight:600;}
+
+  /* ===== Mock form: "Screenshot Se Fill Karo" (client-side OCR) =====
+     Same camera/gallery button pattern as the task-complete proof photo
+     above, but the picked image is fed to Tesseract.js (loaded on first
+     use) instead of being stored — nothing here is saved anywhere. */
+  .ocrField{margin:10px 0 4px;}
+  .ocrRow{display:flex;gap:10px;}
+  .ocrRow .nav-btn{flex:1;padding:10px 6px;font-size:13px;}
+  .ocrRow .nav-btn:disabled{opacity:0.55;cursor:not-allowed;}
+  .ocrStatus{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--accent);}
+  .ocrSpinner{width:15px;height:15px;border-radius:50%;flex-shrink:0;
+    border:2px solid rgba(251,191,36,0.25);border-top-color:var(--accent);
+    animation:ocrSpin 0.8s linear infinite;}
+  @keyframes ocrSpin{to{transform:rotate(360deg);}}
+  .ocrHint{font-size:11.5px;color:var(--muted);margin-top:6px;font-weight:600;}
+  /* Brief highlight on any field the OCR pass just filled in, so it's
+     obvious what needs a manual double-check before Save — clears the
+     moment the person touches that field. */
+  .mockForm input.ocrFilled{border-color:var(--accent);box-shadow:0 0 0 2px rgba(251,191,36,0.25);transition:box-shadow 0.3s, border-color 0.3s;}
+
+  /* ===== Photo lightbox — full-size view of an attached task photo ===== */
+  .imgLightboxOverlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;
+    align-items:center;justify-content:center;padding:24px;
+  }
+  .imgLightboxOverlay.show{display:flex;}
+  .imgLightboxOverlay img{max-width:100%;max-height:85vh;border-radius:10px;display:block;}
+  .imgLightboxCloseBtn{
+    position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.12);color:#fff;font-size:18px;cursor:pointer;
+  }
   .taskTimerBox{
     flex-basis:100%;margin-top:8px;padding:12px;border-radius:10px;
     background:var(--panel2);border:1px solid var(--border-strong);
@@ -2413,11 +2465,30 @@
     </div>
     <div class="taskNoteSheetErr" id="taskNoteSheetErr">Thoda aur likho.</div>
     <div id="taskNoteSheetExtra" style="display:none;"></div>
+    <div class="taskPhotoField">
+      <div class="onbLabel">📷 Proof Photo (optional)</div>
+      <div class="taskPhotoRow">
+        <button type="button" class="nav-btn" id="taskNoteSheetCameraBtn">📷 Camera Se Khincho</button>
+        <button type="button" class="nav-btn" id="taskNoteSheetGalleryBtn">🖼️ Gallery Se Chuno</button>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="taskNoteSheetCameraInput" style="display:none;">
+      <input type="file" accept="image/*" id="taskNoteSheetGalleryInput" style="display:none;">
+      <div class="taskPhotoPreviewWrap" id="taskPhotoPreviewWrap" style="display:none;">
+        <img id="taskPhotoPreviewImg" alt="Proof photo preview">
+        <button type="button" class="taskPhotoRemoveBtn" id="taskPhotoRemoveBtn" title="Photo hatao">✕</button>
+      </div>
+      <div class="taskPhotoHint">Photo sirf isi phone/browser mein save hoti hai — dusre device pe sync nahi hoti.</div>
+    </div>
     <div class="onbBtnRow" style="display:flex;gap:10px;margin-top:12px;">
       <button class="nav-btn" id="taskNoteSheetCancel" style="flex:1;">❌ Cancel</button>
       <button class="nav-btn onbPrimary" id="taskNoteSheetSave" style="flex:1;">✅ Complete Karo</button>
     </div>
   </div>
+</div>
+
+<div class="imgLightboxOverlay" id="imgLightboxOverlay">
+  <button type="button" class="imgLightboxCloseBtn" id="imgLightboxCloseBtn">✕</button>
+  <img id="imgLightboxImg" alt="Task proof photo">
 </div>
 
 <div class="antiCheatToast" id="antiCheatToast"></div>
@@ -7314,6 +7385,170 @@ function showAntiCheatToast(msg){
   clearTimeout(antiCheatToastTimer);
   antiCheatToastTimer = setTimeout(()=>el.classList.remove('show'), 3200);
 }
+// ===== Task-complete proof photo (camera / gallery) =====
+// Photos are stored ONLY in this browser's IndexedDB — never inside `state`
+// (which gets JSON.stringify'd and pushed to localStorage/window.storage/
+// Firebase as ONE blob on every save() — see save() above). Base64 images
+// stuffed into that blob would blow past window.storage's 5MB-per-key cap
+// and make every 25s room-sync heavier. So: photos stay 100% local to this
+// device/browser, looked up via a small in-memory key Set so renderPanel
+// can decide synchronously whether to show a task's 📷 badge.
+const TASK_PHOTO_DB_NAME = 'examTrackerPhotosDB';
+const TASK_PHOTO_STORE = 'taskPhotos';
+let taskPhotoDbPromise = null;
+function openTaskPhotoDb(){
+  if(taskPhotoDbPromise) return taskPhotoDbPromise;
+  taskPhotoDbPromise = new Promise((resolve, reject)=>{
+    if(!('indexedDB' in window)){ reject(new Error('no indexeddb')); return; }
+    const req = indexedDB.open(TASK_PHOTO_DB_NAME, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(TASK_PHOTO_STORE)) db.createObjectStore(TASK_PHOTO_STORE);
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+  return taskPhotoDbPromise;
+}
+function taskPhotoKey(day, idx){ return `${myName}:${day}:${idx}`; }
+async function taskPhotoPut(key, blob){
+  try{
+    const db = await openTaskPhotoDb();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction(TASK_PHOTO_STORE, 'readwrite');
+      tx.objectStore(TASK_PHOTO_STORE).put(blob, key);
+      tx.oncomplete = resolve;
+      tx.onerror = ()=> reject(tx.error);
+    });
+    taskPhotoKeySet.add(key);
+  }catch(e){ console.error('taskPhotoPut failed', e); }
+}
+async function taskPhotoGet(key){
+  try{
+    const db = await openTaskPhotoDb();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(TASK_PHOTO_STORE, 'readonly');
+      const req = tx.objectStore(TASK_PHOTO_STORE).get(key);
+      req.onsuccess = ()=> resolve(req.result || null);
+      req.onerror = ()=> reject(req.error);
+    });
+  }catch(e){ console.error('taskPhotoGet failed', e); return null; }
+}
+let taskPhotoKeySet = new Set();
+async function loadTaskPhotoKeySet(){
+  try{
+    const db = await openTaskPhotoDb();
+    const keys = await new Promise((resolve, reject)=>{
+      const tx = db.transaction(TASK_PHOTO_STORE, 'readonly');
+      const req = tx.objectStore(TASK_PHOTO_STORE).getAllKeys();
+      req.onsuccess = ()=> resolve(req.result || []);
+      req.onerror = ()=> reject(req.error);
+    });
+    taskPhotoKeySet = new Set(keys);
+  }catch(e){ console.error('loadTaskPhotoKeySet failed', e); taskPhotoKeySet = new Set(); }
+}
+
+// Resizes+JPEG-compresses a picked/captured photo before it ever touches
+// IndexedDB — a raw phone-camera shot can be 4-8MB; a task proof photo
+// doesn't need full resolution.
+function compressImageFile(file, maxDim, quality){
+  maxDim = maxDim || 1280; quality = quality || 0.72;
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if(w > maxDim || h > maxDim){
+        if(w >= h){ h = Math.round(h * (maxDim/w)); w = maxDim; }
+        else { w = Math.round(w * (maxDim/h)); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob=>{ blob ? resolve(blob) : reject(new Error('toBlob failed')); }, 'image/jpeg', quality);
+    };
+    img.onerror = (e)=>{ URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
+// Photo picked/clicked inside the sheet right now — stays in memory only
+// until "Complete Karo" is actually pressed; Cancel throws it away.
+let pendingTaskPhotoBlob = null;
+function clearPendingTaskPhoto(){
+  pendingTaskPhotoBlob = null;
+  const wrap = document.getElementById('taskPhotoPreviewWrap');
+  const img = document.getElementById('taskPhotoPreviewImg');
+  if(img && img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+  if(img) img.src = '';
+  if(wrap) wrap.style.display = 'none';
+  const camInput = document.getElementById('taskNoteSheetCameraInput');
+  const galInput = document.getElementById('taskNoteSheetGalleryInput');
+  if(camInput) camInput.value = '';
+  if(galInput) galInput.value = '';
+}
+async function handleTaskPhotoFileChosen(file){
+  if(!file) return;
+  try{
+    const blob = await compressImageFile(file);
+    pendingTaskPhotoBlob = blob;
+    const wrap = document.getElementById('taskPhotoPreviewWrap');
+    const img = document.getElementById('taskPhotoPreviewImg');
+    if(img){
+      if(img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+      img.src = URL.createObjectURL(blob);
+    }
+    if(wrap) wrap.style.display = '';
+  }catch(e){
+    console.error('photo compress failed', e);
+    alert('Photo load nahi ho payi, dobara try karo.');
+  }
+}
+{
+  const camBtn = document.getElementById('taskNoteSheetCameraBtn');
+  const galBtn = document.getElementById('taskNoteSheetGalleryBtn');
+  const camInput = document.getElementById('taskNoteSheetCameraInput');
+  const galInput = document.getElementById('taskNoteSheetGalleryInput');
+  const removeBtn = document.getElementById('taskPhotoRemoveBtn');
+  // Two separate inputs on purpose: the `capture="environment"` one opens
+  // the phone's camera app directly on most Android/iOS browsers, while the
+  // plain one always opens the normal gallery/file picker — so both of the
+  // person's explicit options ("camera se click" / "gallery se chuno") are
+  // guaranteed, instead of relying on the OS's combined picker UI.
+  if(camBtn && camInput) camBtn.addEventListener('click', ()=> camInput.click());
+  if(galBtn && galInput) galBtn.addEventListener('click', ()=> galInput.click());
+  if(camInput) camInput.addEventListener('change', ()=> handleTaskPhotoFileChosen(camInput.files && camInput.files[0]));
+  if(galInput) galInput.addEventListener('change', ()=> handleTaskPhotoFileChosen(galInput.files && galInput.files[0]));
+  if(removeBtn) removeBtn.addEventListener('click', clearPendingTaskPhoto);
+}
+
+// ===== Photo lightbox — tap a task's 📷 badge to view the full photo =====
+async function openTaskPhotoLightbox(day, idx){
+  const key = taskPhotoKey(day, idx);
+  const blob = await taskPhotoGet(key);
+  if(!blob){ showAntiCheatToast('📷 Ye photo is device pe nahi mili.'); return; }
+  const overlay = document.getElementById('imgLightboxOverlay');
+  const img = document.getElementById('imgLightboxImg');
+  if(img){
+    if(img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(blob);
+  }
+  if(overlay) overlay.classList.add('show');
+}
+function closeTaskPhotoLightbox(){
+  const overlay = document.getElementById('imgLightboxOverlay');
+  const img = document.getElementById('imgLightboxImg');
+  if(overlay) overlay.classList.remove('show');
+  if(img && img.src && img.src.startsWith('blob:')){ URL.revokeObjectURL(img.src); img.src=''; }
+}
+{
+  const closeBtn = document.getElementById('imgLightboxCloseBtn');
+  const overlay = document.getElementById('imgLightboxOverlay');
+  if(closeBtn) closeBtn.addEventListener('click', closeTaskPhotoLightbox);
+  if(overlay) overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeTaskPhotoLightbox(); });
+}
+
 function openTaskNoteSheet(idx){
   pendingTaskNoteIdx = idx;
   const overlay = document.getElementById('taskNoteSheetOverlay');
@@ -7325,6 +7560,7 @@ function openTaskNoteSheet(idx){
   if(nameEl) nameEl.textContent = TASKS[idx] || '';
   if(input) input.value = '';
   if(err) err.classList.remove('show');
+  clearPendingTaskPhoto();
   // Task submit karte hi — agar iss task ka naam "mock" bata raha hai, iske
   // sahi score/wrong-log fields yahin sheet ke andar apne aap aa jaate hain.
   const autoType = taskAutoType(TASKS[idx]);
@@ -7345,6 +7581,7 @@ function hideTaskNoteSheet(){
   const overlay = document.getElementById('taskNoteSheetOverlay');
   if(overlay) overlay.classList.remove('show');
   pendingTaskNoteIdx = null;
+  clearPendingTaskPhoto();
 }
 document.getElementById('taskNoteSheetCancel').addEventListener('click', ()=>{
   hideTaskNoteSheet();
@@ -7367,6 +7604,9 @@ document.getElementById('taskNoteSheetSave').addEventListener('click', async ()=
   dayObj.taskCheckedAt[idx] = Date.now();
   const doneAfter = dayObj.tasks.filter(Boolean).length;
   if(taskTimers[idx]) clearTaskTimer(idx);
+  // Photo (if attached) is saved to local IndexedDB BEFORE hideTaskNoteSheet
+  // wipes pendingTaskPhotoBlob — see clearPendingTaskPhoto() inside it.
+  if(pendingTaskPhotoBlob) await taskPhotoPut(taskPhotoKey(selectedDay, idx), pendingTaskPhotoBlob);
   hideTaskNoteSheet();
   renderAll();
   await save();
@@ -8144,6 +8384,10 @@ function renderPanel(){
     // same as the rest of the score fields — inputs just go read-only via `dis`.
     const autoType = taskAutoType(t);
     const showScoreBtn = !!autoType;
+    // 📷 badge — only appears if a proof photo was attached to THIS task on
+    // THIS day, on THIS device (see taskPhotoKeySet — images live in local
+    // IndexedDB only, never in synced `state`).
+    const hasPhoto = taskPhotoKeySet.has(taskPhotoKey(selectedDay, idx));
     html += `
       <div class="${cls} ${tier.cls}">
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
@@ -8152,6 +8396,7 @@ function renderPanel(){
         ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo"><span class="icoEdit" aria-hidden="true"></span></button>`}
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch"><span class="icoClock" aria-hidden="true"></span></button>` : ''}
         ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
+        ${hasPhoto ? `<button class="taskTimerBtn taskPhotoBadgeBtn" type="button" data-photo-view-idx="${idx}" title="Proof photo dekho">📷</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
         ${(showScoreBtn && taskScoreExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskScoreBox-${idx}">${taskScoreBoxHtml(d, autoType, dis)}</div>` : ''}
       </div>
@@ -8320,6 +8565,12 @@ function renderPanel(){
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
       toggleTaskScoreBox(parseInt(btn.getAttribute('data-score-btn-idx'),10));
+    });
+  });
+  panel.querySelectorAll('[data-photo-view-idx]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openTaskPhotoLightbox(selectedDay, parseInt(btn.getAttribute('data-photo-view-idx'),10));
     });
   });
   // Full Mock / Wrong-Qs / Sectional fields now live inside each matching
@@ -8720,6 +8971,19 @@ function openMockForm(catId, entryId){
     <input type="text" id="mfName" placeholder="e.g. Adda247 Mock 12" value="${escapeHtml(v.name)}">
     <div class="onbLabel">Date</div>
     <input type="date" id="mfDate" value="${v.date}">
+    <div class="ocrField">
+      <div class="onbLabel">📷 Screenshot Se Fill Karo</div>
+      <div class="ocrRow">
+        <button type="button" class="nav-btn" id="mfOcrCameraBtn">📷 Camera Se Khincho</button>
+        <button type="button" class="nav-btn" id="mfOcrGalleryBtn">🖼️ Gallery Se Chuno</button>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="mfOcrCameraInput" style="display:none;">
+      <input type="file" accept="image/*" id="mfOcrGalleryInput" style="display:none;">
+      <div class="ocrStatus" id="mfOcrStatus" style="display:none;">
+        <span class="ocrSpinner"></span><span id="mfOcrStatusText"></span>
+      </div>
+      <div class="ocrHint">Result ke screenshot se numbers auto-fill honge — Save karne se pehle sab fields ek baar zaroor check kar lo.</div>
+    </div>
   `;
   if(isPre){
     html += `
@@ -8777,6 +9041,7 @@ function openMockForm(catId, entryId){
   `;
   bodyEl.innerHTML = html;
   wireMockQuickChapterLog();
+  wireMockOcr(catId);
   const saveBtn = document.getElementById('mockFormSaveBtn');
   if(saveBtn) saveBtn.onclick = ()=> saveMockForm(catId);
   modal.style.display = 'flex';
@@ -8818,6 +9083,213 @@ function wireMockQuickChapterLog(){
     refreshCounts();
   });
   refreshCounts();
+}
+// ===================================================================
+// ===== Mock form: "📷 Screenshot Se Fill Karo" (client-side OCR) =====
+// ===================================================================
+// Lets the person snap/pick a photo of their mock-result screen and have
+// Tesseract.js — loaded once from a CDN the same way the Firebase SDK is
+// already imported above — read the text INSIDE the browser. There's no
+// OCR API, no API key, and the image/text never gets sent anywhere; all
+// recognition runs locally via WebAssembly. (The one-time Tesseract.js +
+// language-data download itself does need internet, exactly like the
+// Firebase scripts this app already loads — after that first load it's
+// cached by the browser.)
+//
+// The recognized text is then pattern-matched against the exact labels
+// this form uses (Math/Reasoning/English/GK/Right/Wrong/%ile for the
+// Pre & Mains form, or Score/Right/Wrong/Skip for the Sectional form).
+// Only fields with an unambiguous, in-range number get prefilled — every
+// other field is left exactly as it was, so an uncertain guess never
+// overwrites the truth with a wrong number. Nothing here auto-saves:
+// "Save Karo" still has to be pressed, so every prefilled value gets a
+// manual look before it's ever stored.
+let ocrTesseractLoadPromise = null;
+function loadOcrTesseract(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  if(ocrTesseractLoadPromise) return ocrTesseractLoadPromise;
+  ocrTesseractLoadPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload = ()=> window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Tesseract.js load hua par global object nahi mila'));
+    s.onerror = ()=> reject(new Error('Tesseract.js CDN se load nahi ho paya — internet check karo'));
+    document.head.appendChild(s);
+  });
+  return ocrTesseractLoadPromise;
+}
+// One spec per input box this feature can fill. `labels` = regexes
+// (checked in order, first hit wins) that identify that field's word in
+// the OCR text; `min`/`max` = the sanity range a parsed number must fall
+// inside to be trusted — anything outside it is treated exactly like "no
+// match" and the field is left blank/unchanged rather than force-filled.
+function mockOcrFieldSpecs(catId){
+  if(catId==='preMock' || catId==='mainsMock'){
+    return [
+      {id:'mfMath', labels:[/quant(?:itative)?(?:\s*apt(?:itude)?)?/i, /\bmaths?\b/i, /\bmath(?:ematics)?\b/i], min:0, max:200},
+      {id:'mfReasoning', labels:[/general\s*intelligence/i, /\breasoning\b/i, /\bg\.?\s*i\.?\b/i], min:0, max:200},
+      {id:'mfEnglish', labels:[/english/i], min:0, max:200},
+      {id:'mfGk', labels:[/general\s*awareness/i, /general\s*studies/i, /\bg\.?\s*k\.?\b/i, /\bg\.?\s*a\.?\b/i], min:0, max:200},
+      {id:'mfRightPre', labels:[/\bright\b/i, /\bcorrect\b/i], min:0, max:300},
+      {id:'mfWrongPre', labels:[/\bwrong\b/i, /\bincorrect\b/i], min:0, max:300},
+      {id:'mfPercentile', labels:[/percentile/i, /%\s*ile/i], min:0, max:100},
+    ];
+  }
+  return [
+    {id:'mfScore', labels:[/\bscore\b/i, /total\s*marks/i, /marks\s*obtained/i], min:-999, max:999},
+    {id:'mfRightSec', labels:[/\bright\b/i, /\bcorrect\b/i], min:0, max:300},
+    {id:'mfWrongSec', labels:[/\bwrong\b/i, /\bincorrect\b/i], min:0, max:300},
+    {id:'mfSkip', labels:[/\bskip(?:ped)?\b/i, /un-?attempted/i, /not\s*attempted/i], min:0, max:300},
+  ];
+}
+// Parses raw OCR text into {fieldId: valueString}. Strategy per line:
+//  - a line with exactly ONE field-label match is almost always either
+//    "Label: value" or a table row like "Quantitative Aptitude 25 20 5
+//    40.00" — take the number right after the label, or if several
+//    trail it (a table row), take the LAST one (rightmost column, which
+//    result screens almost always use for the final marks/score).
+//  - a line with MULTIPLE field-label matches (e.g. "Right: 82  Wrong:
+//    15") is segmented between consecutive labels, and the first number
+//    inside each label's own segment is taken as its value.
+//  - a label with no number anywhere on its line is held as "pending" —
+//    if the very next line is nothing but a bare number, that number is
+//    used (handles OCR splitting a label and its value onto two lines).
+// Any candidate outside that field's min/max range is discarded, same as
+// finding no number at all.
+function parseMockOcrText(rawText, fieldSpecs){
+  const text = (rawText||'')
+    .replace(/[|]/g, ' ')                       // strip table-border pipes
+    .replace(/(\d),(\d{2})(?!\d)/g, '$1.$2');   // OCR comma-as-decimal fix
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const result = {};
+  const claimed = new Set();
+  let pendingSpec = null;
+  function numsIn(str){
+    const out = [];
+    const re = /-?\d+(?:\.\d+)?/g;
+    let m;
+    while((m = re.exec(str))) out.push(parseFloat(m[0]));
+    return out;
+  }
+  function tryClaim(spec, chosen){
+    if(claimed.has(spec.id)) return;
+    if(chosen===null || chosen===undefined || isNaN(chosen)){ pendingSpec = spec; return; }
+    if(chosen>=spec.min && chosen<=spec.max){
+      result[spec.id] = String(chosen);
+      claimed.add(spec.id);
+      pendingSpec = null;
+    } else {
+      pendingSpec = spec; // out of range here — maybe the real value is on the next line
+    }
+  }
+  lines.forEach(line=>{
+    const hits = [];
+    fieldSpecs.forEach(spec=>{
+      if(claimed.has(spec.id)) return;
+      for(const re of spec.labels){
+        const m = re.exec(line);
+        if(m){ hits.push({spec, start:m.index, end:m.index+m[0].length}); break; }
+      }
+    });
+    if(!hits.length){
+      const bare = line.match(/^-?\d+(?:\.\d+)?%?$/);
+      if(bare && pendingSpec && !claimed.has(pendingSpec.id)){
+        const val = parseFloat(bare[0]);
+        if(val>=pendingSpec.min && val<=pendingSpec.max){
+          result[pendingSpec.id] = String(val);
+          claimed.add(pendingSpec.id);
+        }
+        pendingSpec = null;
+      }
+      return;
+    }
+    hits.sort((a,b)=>a.start-b.start);
+    if(hits.length===1){
+      const hit = hits[0];
+      const after = numsIn(line.slice(hit.end));
+      const before = numsIn(line.slice(0, hit.start));
+      const chosen = after.length ? after[after.length-1] : (before.length ? before[before.length-1] : null);
+      tryClaim(hit.spec, chosen);
+    } else {
+      hits.forEach((hit, hi)=>{
+        const segEnd = hi+1<hits.length ? hits[hi+1].start : line.length;
+        const forward = numsIn(line.slice(hit.end, segEnd));
+        let chosen;
+        if(forward.length) chosen = forward[0];
+        else {
+          const prevEnd = hi>0 ? hits[hi-1].end : 0;
+          const backward = numsIn(line.slice(prevEnd, hit.start));
+          chosen = backward.length ? backward[backward.length-1] : null;
+        }
+        tryClaim(hit.spec, chosen);
+      });
+    }
+  });
+  return result;
+}
+// Runs OCR on the chosen file and prefills whichever inputs got a
+// confident match. Highlights each just-filled field (cleared on first
+// touch) so the mandatory manual review has something to look at.
+async function runMockOcr(file, catId){
+  if(!file) return;
+  const statusEl = document.getElementById('mfOcrStatus');
+  const statusText = document.getElementById('mfOcrStatusText');
+  const camBtn = document.getElementById('mfOcrCameraBtn');
+  const galBtn = document.getElementById('mfOcrGalleryBtn');
+  const camInput = document.getElementById('mfOcrCameraInput');
+  const galInput = document.getElementById('mfOcrGalleryInput');
+  if(statusEl) statusEl.style.display = 'flex';
+  if(statusText) statusText.textContent = 'OCR taiyaar ho raha hai...';
+  if(camBtn) camBtn.disabled = true;
+  if(galBtn) galBtn.disabled = true;
+  try{
+    const Tesseract = await loadOcrTesseract();
+    if(statusText) statusText.textContent = '🔍 Screenshot padh rahe hain (2-5 sec)...';
+    const { data } = await Tesseract.recognize(file, 'eng');
+    const rawText = (data && data.text) || '';
+    const fieldSpecs = mockOcrFieldSpecs(catId);
+    const parsed = parseMockOcrText(rawText, fieldSpecs);
+    let filled = 0;
+    fieldSpecs.forEach(spec=>{
+      if(!(spec.id in parsed)) return;
+      const inp = document.getElementById(spec.id);
+      if(!inp) return;
+      inp.value = parsed[spec.id];
+      inp.classList.add('ocrFilled');
+      inp.addEventListener('input', function clearHighlight(){
+        inp.classList.remove('ocrFilled');
+        inp.removeEventListener('input', clearHighlight);
+      }, {once:true});
+      filled++;
+    });
+    if(statusText){
+      statusText.textContent = filled
+        ? `✅ ${filled} field${filled>1?'s':''} bhar diye — ek baar sab check kar lo!`
+        : '⚠️ Kuch bhi confidently match nahi hua — manually bhar do.';
+    }
+    setTimeout(()=>{ if(statusEl) statusEl.style.display = 'none'; }, filled ? 3500 : 4000);
+  }catch(err){
+    console.error('mock ocr failed', err);
+    if(statusText) statusText.textContent = '❌ OCR nahi chal paya. Manually bhar do ya dobara try karo.';
+    setTimeout(()=>{ if(statusEl) statusEl.style.display = 'none'; }, 4000);
+  }finally{
+    if(camBtn) camBtn.disabled = false;
+    if(galBtn) galBtn.disabled = false;
+    if(camInput) camInput.value = '';
+    if(galInput) galInput.value = '';
+  }
+}
+// Wires the camera/gallery buttons every time the mock form HTML is
+// (re)built — same "two separate inputs" pattern as the task proof photo
+// feature, so both explicit options always open the right native picker.
+function wireMockOcr(catId){
+  const camBtn = document.getElementById('mfOcrCameraBtn');
+  const galBtn = document.getElementById('mfOcrGalleryBtn');
+  const camInput = document.getElementById('mfOcrCameraInput');
+  const galInput = document.getElementById('mfOcrGalleryInput');
+  if(camBtn && camInput) camBtn.addEventListener('click', ()=> camInput.click());
+  if(galBtn && galInput) galBtn.addEventListener('click', ()=> galInput.click());
+  if(camInput) camInput.addEventListener('change', ()=> runMockOcr(camInput.files && camInput.files[0], catId));
+  if(galInput) galInput.addEventListener('change', ()=> runMockOcr(galInput.files && galInput.files[0], catId));
 }
 function closeMockForm(){
   const modal = document.getElementById('mockFormModal');
@@ -19544,6 +20016,7 @@ window.addEventListener('pagehide', ()=>{ save(); });
   }
   selectedDay = todayDayNum();
   lastRenderedDayNum = todayDayNum(); // baseline for the 24hr Today-Rank rollover check
+  await loadTaskPhotoKeySet(); // so 📷 badges are correct on the very first render
   resumeTaskTimersOnLoad();
   setupHomeScreenIcon();
   initSwipeTabs();
