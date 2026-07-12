@@ -603,25 +603,6 @@
   }
   .taskPhotoHint{font-size:11.5px;color:var(--muted);margin-top:6px;font-weight:600;}
 
-  /* ===== Mock form: "Screenshot Se Fill Karo" (client-side OCR) =====
-     Same camera/gallery button pattern as the task-complete proof photo
-     above, but the picked image is fed to Tesseract.js (loaded on first
-     use) instead of being stored — nothing here is saved anywhere. */
-  .ocrField{margin:10px 0 4px;}
-  .ocrRow{display:flex;gap:10px;}
-  .ocrRow .nav-btn{flex:1;padding:10px 6px;font-size:13px;}
-  .ocrRow .nav-btn:disabled{opacity:0.55;cursor:not-allowed;}
-  .ocrStatus{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--accent);}
-  .ocrSpinner{width:15px;height:15px;border-radius:50%;flex-shrink:0;
-    border:2px solid rgba(251,191,36,0.25);border-top-color:var(--accent);
-    animation:ocrSpin 0.8s linear infinite;}
-  @keyframes ocrSpin{to{transform:rotate(360deg);}}
-  .ocrHint{font-size:11.5px;color:var(--muted);margin-top:6px;font-weight:600;}
-  /* Brief highlight on any field the OCR pass just filled in, so it's
-     obvious what needs a manual double-check before Save — clears the
-     moment the person touches that field. */
-  .mockForm input.ocrFilled{border-color:var(--accent);box-shadow:0 0 0 2px rgba(251,191,36,0.25);transition:box-shadow 0.3s, border-color 0.3s;}
-
   /* ===== Photo lightbox — full-size view of an attached task photo ===== */
   .imgLightboxOverlay{
     display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;
@@ -8971,19 +8952,6 @@ function openMockForm(catId, entryId){
     <input type="text" id="mfName" placeholder="e.g. Adda247 Mock 12" value="${escapeHtml(v.name)}">
     <div class="onbLabel">Date</div>
     <input type="date" id="mfDate" value="${v.date}">
-    <div class="ocrField">
-      <div class="onbLabel">📷 Screenshot Se Fill Karo</div>
-      <div class="ocrRow">
-        <button type="button" class="nav-btn" id="mfOcrCameraBtn">📷 Camera Se Khincho</button>
-        <button type="button" class="nav-btn" id="mfOcrGalleryBtn">🖼️ Gallery Se Chuno</button>
-      </div>
-      <input type="file" accept="image/*" capture="environment" id="mfOcrCameraInput" style="display:none;">
-      <input type="file" accept="image/*" id="mfOcrGalleryInput" style="display:none;">
-      <div class="ocrStatus" id="mfOcrStatus" style="display:none;">
-        <span class="ocrSpinner"></span><span id="mfOcrStatusText"></span>
-      </div>
-      <div class="ocrHint">Result ke screenshot se numbers auto-fill honge — Save karne se pehle sab fields ek baar zaroor check kar lo.</div>
-    </div>
   `;
   if(isPre){
     html += `
@@ -9041,7 +9009,6 @@ function openMockForm(catId, entryId){
   `;
   bodyEl.innerHTML = html;
   wireMockQuickChapterLog();
-  wireMockOcr(catId);
   const saveBtn = document.getElementById('mockFormSaveBtn');
   if(saveBtn) saveBtn.onclick = ()=> saveMockForm(catId);
   modal.style.display = 'flex';
@@ -9083,213 +9050,6 @@ function wireMockQuickChapterLog(){
     refreshCounts();
   });
   refreshCounts();
-}
-// ===================================================================
-// ===== Mock form: "📷 Screenshot Se Fill Karo" (client-side OCR) =====
-// ===================================================================
-// Lets the person snap/pick a photo of their mock-result screen and have
-// Tesseract.js — loaded once from a CDN the same way the Firebase SDK is
-// already imported above — read the text INSIDE the browser. There's no
-// OCR API, no API key, and the image/text never gets sent anywhere; all
-// recognition runs locally via WebAssembly. (The one-time Tesseract.js +
-// language-data download itself does need internet, exactly like the
-// Firebase scripts this app already loads — after that first load it's
-// cached by the browser.)
-//
-// The recognized text is then pattern-matched against the exact labels
-// this form uses (Math/Reasoning/English/GK/Right/Wrong/%ile for the
-// Pre & Mains form, or Score/Right/Wrong/Skip for the Sectional form).
-// Only fields with an unambiguous, in-range number get prefilled — every
-// other field is left exactly as it was, so an uncertain guess never
-// overwrites the truth with a wrong number. Nothing here auto-saves:
-// "Save Karo" still has to be pressed, so every prefilled value gets a
-// manual look before it's ever stored.
-let ocrTesseractLoadPromise = null;
-function loadOcrTesseract(){
-  if(window.Tesseract) return Promise.resolve(window.Tesseract);
-  if(ocrTesseractLoadPromise) return ocrTesseractLoadPromise;
-  ocrTesseractLoadPromise = new Promise((resolve, reject)=>{
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-    s.onload = ()=> window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Tesseract.js load hua par global object nahi mila'));
-    s.onerror = ()=> reject(new Error('Tesseract.js CDN se load nahi ho paya — internet check karo'));
-    document.head.appendChild(s);
-  });
-  return ocrTesseractLoadPromise;
-}
-// One spec per input box this feature can fill. `labels` = regexes
-// (checked in order, first hit wins) that identify that field's word in
-// the OCR text; `min`/`max` = the sanity range a parsed number must fall
-// inside to be trusted — anything outside it is treated exactly like "no
-// match" and the field is left blank/unchanged rather than force-filled.
-function mockOcrFieldSpecs(catId){
-  if(catId==='preMock' || catId==='mainsMock'){
-    return [
-      {id:'mfMath', labels:[/quant(?:itative)?(?:\s*apt(?:itude)?)?/i, /\bmaths?\b/i, /\bmath(?:ematics)?\b/i], min:0, max:200},
-      {id:'mfReasoning', labels:[/general\s*intelligence/i, /\breasoning\b/i, /\bg\.?\s*i\.?\b/i], min:0, max:200},
-      {id:'mfEnglish', labels:[/english/i], min:0, max:200},
-      {id:'mfGk', labels:[/general\s*awareness/i, /general\s*studies/i, /\bg\.?\s*k\.?\b/i, /\bg\.?\s*a\.?\b/i], min:0, max:200},
-      {id:'mfRightPre', labels:[/\bright\b/i, /\bcorrect\b/i], min:0, max:300},
-      {id:'mfWrongPre', labels:[/\bwrong\b/i, /\bincorrect\b/i], min:0, max:300},
-      {id:'mfPercentile', labels:[/percentile/i, /%\s*ile/i], min:0, max:100},
-    ];
-  }
-  return [
-    {id:'mfScore', labels:[/\bscore\b/i, /total\s*marks/i, /marks\s*obtained/i], min:-999, max:999},
-    {id:'mfRightSec', labels:[/\bright\b/i, /\bcorrect\b/i], min:0, max:300},
-    {id:'mfWrongSec', labels:[/\bwrong\b/i, /\bincorrect\b/i], min:0, max:300},
-    {id:'mfSkip', labels:[/\bskip(?:ped)?\b/i, /un-?attempted/i, /not\s*attempted/i], min:0, max:300},
-  ];
-}
-// Parses raw OCR text into {fieldId: valueString}. Strategy per line:
-//  - a line with exactly ONE field-label match is almost always either
-//    "Label: value" or a table row like "Quantitative Aptitude 25 20 5
-//    40.00" — take the number right after the label, or if several
-//    trail it (a table row), take the LAST one (rightmost column, which
-//    result screens almost always use for the final marks/score).
-//  - a line with MULTIPLE field-label matches (e.g. "Right: 82  Wrong:
-//    15") is segmented between consecutive labels, and the first number
-//    inside each label's own segment is taken as its value.
-//  - a label with no number anywhere on its line is held as "pending" —
-//    if the very next line is nothing but a bare number, that number is
-//    used (handles OCR splitting a label and its value onto two lines).
-// Any candidate outside that field's min/max range is discarded, same as
-// finding no number at all.
-function parseMockOcrText(rawText, fieldSpecs){
-  const text = (rawText||'')
-    .replace(/[|]/g, ' ')                       // strip table-border pipes
-    .replace(/(\d),(\d{2})(?!\d)/g, '$1.$2');   // OCR comma-as-decimal fix
-  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  const result = {};
-  const claimed = new Set();
-  let pendingSpec = null;
-  function numsIn(str){
-    const out = [];
-    const re = /-?\d+(?:\.\d+)?/g;
-    let m;
-    while((m = re.exec(str))) out.push(parseFloat(m[0]));
-    return out;
-  }
-  function tryClaim(spec, chosen){
-    if(claimed.has(spec.id)) return;
-    if(chosen===null || chosen===undefined || isNaN(chosen)){ pendingSpec = spec; return; }
-    if(chosen>=spec.min && chosen<=spec.max){
-      result[spec.id] = String(chosen);
-      claimed.add(spec.id);
-      pendingSpec = null;
-    } else {
-      pendingSpec = spec; // out of range here — maybe the real value is on the next line
-    }
-  }
-  lines.forEach(line=>{
-    const hits = [];
-    fieldSpecs.forEach(spec=>{
-      if(claimed.has(spec.id)) return;
-      for(const re of spec.labels){
-        const m = re.exec(line);
-        if(m){ hits.push({spec, start:m.index, end:m.index+m[0].length}); break; }
-      }
-    });
-    if(!hits.length){
-      const bare = line.match(/^-?\d+(?:\.\d+)?%?$/);
-      if(bare && pendingSpec && !claimed.has(pendingSpec.id)){
-        const val = parseFloat(bare[0]);
-        if(val>=pendingSpec.min && val<=pendingSpec.max){
-          result[pendingSpec.id] = String(val);
-          claimed.add(pendingSpec.id);
-        }
-        pendingSpec = null;
-      }
-      return;
-    }
-    hits.sort((a,b)=>a.start-b.start);
-    if(hits.length===1){
-      const hit = hits[0];
-      const after = numsIn(line.slice(hit.end));
-      const before = numsIn(line.slice(0, hit.start));
-      const chosen = after.length ? after[after.length-1] : (before.length ? before[before.length-1] : null);
-      tryClaim(hit.spec, chosen);
-    } else {
-      hits.forEach((hit, hi)=>{
-        const segEnd = hi+1<hits.length ? hits[hi+1].start : line.length;
-        const forward = numsIn(line.slice(hit.end, segEnd));
-        let chosen;
-        if(forward.length) chosen = forward[0];
-        else {
-          const prevEnd = hi>0 ? hits[hi-1].end : 0;
-          const backward = numsIn(line.slice(prevEnd, hit.start));
-          chosen = backward.length ? backward[backward.length-1] : null;
-        }
-        tryClaim(hit.spec, chosen);
-      });
-    }
-  });
-  return result;
-}
-// Runs OCR on the chosen file and prefills whichever inputs got a
-// confident match. Highlights each just-filled field (cleared on first
-// touch) so the mandatory manual review has something to look at.
-async function runMockOcr(file, catId){
-  if(!file) return;
-  const statusEl = document.getElementById('mfOcrStatus');
-  const statusText = document.getElementById('mfOcrStatusText');
-  const camBtn = document.getElementById('mfOcrCameraBtn');
-  const galBtn = document.getElementById('mfOcrGalleryBtn');
-  const camInput = document.getElementById('mfOcrCameraInput');
-  const galInput = document.getElementById('mfOcrGalleryInput');
-  if(statusEl) statusEl.style.display = 'flex';
-  if(statusText) statusText.textContent = 'OCR taiyaar ho raha hai...';
-  if(camBtn) camBtn.disabled = true;
-  if(galBtn) galBtn.disabled = true;
-  try{
-    const Tesseract = await loadOcrTesseract();
-    if(statusText) statusText.textContent = '🔍 Screenshot padh rahe hain (2-5 sec)...';
-    const { data } = await Tesseract.recognize(file, 'eng');
-    const rawText = (data && data.text) || '';
-    const fieldSpecs = mockOcrFieldSpecs(catId);
-    const parsed = parseMockOcrText(rawText, fieldSpecs);
-    let filled = 0;
-    fieldSpecs.forEach(spec=>{
-      if(!(spec.id in parsed)) return;
-      const inp = document.getElementById(spec.id);
-      if(!inp) return;
-      inp.value = parsed[spec.id];
-      inp.classList.add('ocrFilled');
-      inp.addEventListener('input', function clearHighlight(){
-        inp.classList.remove('ocrFilled');
-        inp.removeEventListener('input', clearHighlight);
-      }, {once:true});
-      filled++;
-    });
-    if(statusText){
-      statusText.textContent = filled
-        ? `✅ ${filled} field${filled>1?'s':''} bhar diye — ek baar sab check kar lo!`
-        : '⚠️ Kuch bhi confidently match nahi hua — manually bhar do.';
-    }
-    setTimeout(()=>{ if(statusEl) statusEl.style.display = 'none'; }, filled ? 3500 : 4000);
-  }catch(err){
-    console.error('mock ocr failed', err);
-    if(statusText) statusText.textContent = '❌ OCR nahi chal paya. Manually bhar do ya dobara try karo.';
-    setTimeout(()=>{ if(statusEl) statusEl.style.display = 'none'; }, 4000);
-  }finally{
-    if(camBtn) camBtn.disabled = false;
-    if(galBtn) galBtn.disabled = false;
-    if(camInput) camInput.value = '';
-    if(galInput) galInput.value = '';
-  }
-}
-// Wires the camera/gallery buttons every time the mock form HTML is
-// (re)built — same "two separate inputs" pattern as the task proof photo
-// feature, so both explicit options always open the right native picker.
-function wireMockOcr(catId){
-  const camBtn = document.getElementById('mfOcrCameraBtn');
-  const galBtn = document.getElementById('mfOcrGalleryBtn');
-  const camInput = document.getElementById('mfOcrCameraInput');
-  const galInput = document.getElementById('mfOcrGalleryInput');
-  if(camBtn && camInput) camBtn.addEventListener('click', ()=> camInput.click());
-  if(galBtn && galInput) galBtn.addEventListener('click', ()=> galInput.click());
-  if(camInput) camInput.addEventListener('change', ()=> runMockOcr(camInput.files && camInput.files[0], catId));
-  if(galInput) galInput.addEventListener('change', ()=> runMockOcr(galInput.files && galInput.files[0], catId));
 }
 function closeMockForm(){
   const modal = document.getElementById('mockFormModal');
