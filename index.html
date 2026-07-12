@@ -224,6 +224,12 @@
   .task.tier-large{border-color:rgba(251,191,36,0.45);box-shadow:0 0 12px rgba(251,191,36,0.16),0 3px 10px rgba(0,0,0,0.35);}
   .task.tier-large .value{color:var(--accent);background:rgba(251,191,36,0.15);font-size:13px;}
   .task.checked{background:linear-gradient(165deg,rgba(74,222,128,0.08),#0d0c0f);border-color:rgba(74,222,128,0.4);box-shadow:0 3px 10px rgba(0,0,0,0.35);}
+  /* Quiz-based tasks — auto-added the moment a quiz is completed (Learn tab),
+     always already ✅, styled in the quiz-teal accent so they read as a
+     distinct "bonus" row rather than a regular scheduled task. */
+  .task.quiz-task{border-color:rgba(45,212,191,0.45);background:linear-gradient(165deg,rgba(45,212,191,0.10),#0d0c0f);}
+  .task.quiz-task .value{color:var(--teal);background:rgba(45,212,191,0.15);}
+  .task.quiz-task input[type=checkbox]{opacity:0.75;}
 
   .subhead{
     font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);
@@ -4127,6 +4133,31 @@ let TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
 function taskValue(idx){
   return (TASK_VALUES[idx]!==undefined) ? TASK_VALUES[idx] : (DAILY_TARGET/(TASKS.length||1));
 }
+
+// ===== Quiz tasks auto-added to the ₹5,000 split =====
+// Learn tab se jo bhi quiz complete hoti hai (logQuizActivity below), wo
+// us din ke target list mein apna ek alag "task" ban jaati hai — already
+// ✅ complete maani jaati hai (quiz to ho hi chuki hai). Ismein koi apna
+// fixed ₹ nahi hai: bas ek dusre normal task jitna "weight" maan kar,
+// computeTaskValues() wahi purana ₹5,000-split formula chala deta hai
+// saare tasks + saari quizzes milakar — isliye jitni zyada quiz doge,
+// utna hi baaki tasks ka ₹ thoda kam hoke sabme barabar-sa baant jaata hai,
+// lekin din ka total hamesha poora ₹5,000 hi rehta hai.
+const QUIZ_TASK_WEIGHT_MIN = 20;
+function quizDurationWeights(quizLog){
+  const list = Array.isArray(quizLog) ? quizLog : [];
+  return list.map(()=>QUIZ_TASK_WEIGHT_MIN);
+}
+// Ek din (d) ke saare task-values — agar us din koi quiz nahi hui to seedha
+// global TASK_VALUES (fast path, baaki sab dino jaisa hi behaviour), warna
+// TASK_DURATIONS_MIN + us din ki quizzes milakar ₹5,000 dobara baant do.
+// Returned array: pehle TASKS.length entries normal tasks ke, uske baad
+// ek entry per quiz (usi order mein jis order mein quiz log hui thi).
+function dayTaskValues(d){
+  const qw = quizDurationWeights(d && d.quizLog);
+  if(!qw.length) return TASK_VALUES;
+  return computeTaskValues(TASK_DURATIONS_MIN.concat(qw));
+}
 // Rough size tier per task (for a colourful at-a-glance cue) — purely
 // cosmetic, driven by the same minutes used to set the ₹ value above.
 function taskTier(idx){
@@ -4705,8 +4736,9 @@ function escapeHtml(s){
 function dayEarnLoss(d, dayIndex){
   if(d.rest) return {earned:0, lost:0, pending:0};
   let earned=0, lost=0, pending=0;
+  const values = dayTaskValues(d);
   d.tasks.forEach((checked, idx)=>{
-    const v = taskValue(idx);
+    const v = values[idx];
     if(checked){ earned += v; return; }
     if(dayIndex===undefined || isTaskDue(dayIndex, TASK_START_MIN[idx], TASK_DURATIONS_MIN[idx])){
       lost += v;
@@ -4714,6 +4746,10 @@ function dayEarnLoss(d, dayIndex){
       pending += v;
     }
   });
+  // Har quiz jo log ho chuki hai wo already complete maani jaati hai —
+  // uska slice hamesha "earned" mein jaata hai, kabhi lost/pending mein nahi.
+  const quizList = Array.isArray(d.quizLog) ? d.quizLog : [];
+  quizList.forEach((q, qi)=>{ earned += (values[TASKS.length+qi] || 0); });
   return { earned, lost, pending };
 }
 
@@ -5645,6 +5681,15 @@ function taskValuesFrom(st){
   const defs = getTaskDefsFromState(st);
   return computeTaskValues(defs.map(d=>d.duration));
 }
+// Same idea as dayTaskValues(), but for the generic "any player's state"
+// helpers below (leaderboard/compete panel) — keeps a player's own numbers
+// here matching what they see on their own Today tab, quizzes included.
+function dayTaskValuesFrom(st, d){
+  const defs = getTaskDefsFromState(st);
+  const qw = quizDurationWeights(d && d.quizLog);
+  if(!qw.length) return computeTaskValues(defs.map(x=>x.duration));
+  return computeTaskValues(defs.map(x=>x.duration).concat(qw));
+}
 
 // ===== Shared (Admin-broadcast) task list =====
 // Lives at rooms/{room}/_sharedTasks — completely separate from any one
@@ -5718,8 +5763,8 @@ async function applySharedTaskModeIfNeeded(){
 
 function dayEarnLossFrom(st, d, dayIndex){
   if(d.rest) return {earned:0, lost:0, pending:0};
-  const values = taskValuesFrom(st);
   const defs = getTaskDefsFromState(st);
+  const values = dayTaskValuesFrom(st, d);
   let earned=0, lost=0, pending=0;
   d.tasks.forEach((checked, idx)=>{
     const v = (values[idx]!==undefined) ? values[idx] : (DAILY_TARGET/(values.length||1));
@@ -5731,6 +5776,8 @@ function dayEarnLossFrom(st, d, dayIndex){
       pending += v;
     }
   });
+  const quizList = Array.isArray(d.quizLog) ? d.quizLog : [];
+  quizList.forEach((q, qi)=>{ earned += (values[defs.length+qi] || 0); });
   return { earned, lost, pending };
 }
 function dayStudyMinutesFrom(st, d){
@@ -8004,6 +8051,9 @@ function renderPanel(){
   // list — past/future days and other people's trackers don't get it.
   const canUseTaskTimer = !isReadOnly && viewingName===myName && selectedDay===todayDayNum();
   if(canUseTaskTimer) ensureTaskTimerDayFresh();
+  // Aaj jitni quizzes ho chuki hain, unke hisab se ₹5,000 dobara baant do —
+  // niche saare taskValue(idx) ki jagah values[idx] use hoga.
+  const values = dayTaskValues(d);
   TASKS.forEach((t, idx)=>{
     const checked = d.tasks[idx] ? 'checked' : '';
     const cls = d.tasks[idx] ? 'task checked' : 'task';
@@ -8021,7 +8071,7 @@ function renderPanel(){
       <div class="${cls} ${tier.cls}">
         <input type="checkbox" data-idx="${idx}" ${checked} ${dis}>
         <div class="taskinfo"><div class="name">${checked? '✅' : tier.emoji} ${t}</div></div>
-        <div class="value ${tier.cls}">₹${Math.round(taskValue(idx))}</div>
+        <div class="value ${tier.cls}">₹${Math.round(values[idx])}</div>
         ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo">✏️</button>`}
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch">⏱️</button>` : ''}
         ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
@@ -8032,17 +8082,24 @@ function renderPanel(){
     `;
   });
 
-  html += `
-    <div class="subhead">🧠 QUIZZES DIYE AAJ (auto-log)</div>
-    <div class="quizLogBox">
-      ${(d.quizLog && d.quizLog.length) ? d.quizLog.map((q,qi)=>`
-        <div class="quizLogItem">
-          <span class="quizLogText">✅ ${escapeHtml(q.label)} — ${q.correct}/${q.total}</span>
-          ${(!isReadOnly && viewingName===myName) ? `<button type="button" class="quizLogDelBtn" data-quizlog-idx="${qi}" aria-label="Hatao" title="Ye entry hatao">✕</button>` : ''}
-        </div>
-      `).join('') : '<div class="quizLogEmpty">Learn tab se koi bhi quiz doge, to wo yahan automatic dikhega.</div>'}
-    </div>
-  `;
+  // Learn tab se di gayi har quiz yahan apne aap ek alag ✅ task ban jaati
+  // hai — already complete (quiz to ho chuki), aur uska ₹ upar wale values[]
+  // se hi aata hai (TASKS ke baad wale slots). ✕ dabakar hataoge to wo din
+  // ka ₹5,000-split bhi turant dobara recalculate ho jaayega.
+  (d.quizLog || []).forEach((q, qi)=>{
+    const qv = values[TASKS.length+qi] || 0;
+    html += `
+      <div class="task checked quiz-task">
+        <input type="checkbox" checked disabled>
+        <div class="taskinfo"><div class="name">✅ 🧠 ${escapeHtml(q.label)} — ${q.correct}/${q.total}</div></div>
+        <div class="value">₹${Math.round(qv)}</div>
+        ${(!isReadOnly && viewingName===myName) ? `<button type="button" class="quizLogDelBtn" data-quizlog-idx="${qi}" aria-label="Hatao" title="Ye quiz task hatao">✕</button>` : ''}
+      </div>
+    `;
+  });
+  if(!isReadOnly && viewingName===myName && (!d.quizLog || !d.quizLog.length)){
+    html += `<div class="quizLogEmpty">Learn tab se koi bhi quiz doge, to wo yahan target list mein ek task ki tarah, ₹ ke saath, automatic aa jaayegi.</div>`;
+  }
 
   html += `
     <div class="subhead">📝 NOTES / ERROR LOG</div>
