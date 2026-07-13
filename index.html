@@ -1570,7 +1570,7 @@
      answer grid (right-aligned, roughly over the 2nd option), so people don't
      have to scroll past a long explanation to move on.
      Same action as the bottom Next / a left-swipe on the question card. ===== */
-  .calcNextTopRow{display:flex;justify-content:flex-end;margin-bottom:12px;}
+  .calcNextTopRow{display:none;justify-content:flex-end;margin-bottom:12px;}
   .calcNextTopBtn{
     width:60px;height:60px;min-width:60px;background:var(--panel2);
     border-color:var(--accent);color:var(--accent);font-size:26px;
@@ -12625,6 +12625,9 @@ function renderVocabQuestion(){
   });
   const solCard = document.getElementById('vocabSolutionCard');
   if(solCard) solCard.style.display = 'none';
+  const nextTopBtn = document.getElementById('vocabNextBtnTop');
+  const nextTopRow = nextTopBtn ? nextTopBtn.closest('.calcNextTopRow') : null;
+  if(nextTopRow) nextTopRow.style.display = 'none';
   updateVocabStats();
   updateVocabSaveBtn(q);
 }
@@ -12664,6 +12667,9 @@ function selectVocabAnswer(i, btnEl){
     solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
   }
   if(solCard) solCard.style.display = 'block';
+  const nextTopBtn2 = document.getElementById('vocabNextBtnTop');
+  const nextTopRow2 = nextTopBtn2 ? nextTopBtn2.closest('.calcNextTopRow') : null;
+  if(nextTopRow2) nextTopRow2.style.display = 'flex';
 }
 
 function goToNextVocabQuestion(){
@@ -13490,6 +13496,9 @@ function renderSpellingQuestion(){
   });
   const solCard = document.getElementById('spellingSolutionCard');
   if(solCard) solCard.style.display = 'none';
+  const nextTopBtn = document.getElementById('spellingNextBtnTop');
+  const nextTopRow = nextTopBtn ? nextTopBtn.closest('.calcNextTopRow') : null;
+  if(nextTopRow) nextTopRow.style.display = 'none';
   updateSpellingStats();
   updateSpellingSaveBtn(q);
 }
@@ -13527,6 +13536,9 @@ function selectSpellingAnswer(i, btnEl){
     solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
   }
   if(solCard) solCard.style.display = 'block';
+  const nextTopBtn2 = document.getElementById('spellingNextBtnTop');
+  const nextTopRow2 = nextTopBtn2 ? nextTopBtn2.closest('.calcNextTopRow') : null;
+  if(nextTopRow2) nextTopRow2.style.display = 'flex';
 }
 
 function goToNextSpellingQuestion(){
@@ -15980,6 +15992,9 @@ function renderIdiomQuestion(){
   });
   const solCard = document.getElementById('idiomSolutionCard');
   if(solCard) solCard.style.display = 'none';
+  const nextTopBtn = document.getElementById('idiomNextBtnTop');
+  const nextTopRow = nextTopBtn ? nextTopBtn.closest('.calcNextTopRow') : null;
+  if(nextTopRow) nextTopRow.style.display = 'none';
   updateIdiomStats();
   updateIdiomSaveBtn(q);
 }
@@ -16017,6 +16032,9 @@ function selectIdiomAnswer(i, btnEl){
     solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
   }
   if(solCard) solCard.style.display = 'block';
+  const nextTopBtn2 = document.getElementById('idiomNextBtnTop');
+  const nextTopRow2 = nextTopBtn2 ? nextTopBtn2.closest('.calcNextTopRow') : null;
+  if(nextTopRow2) nextTopRow2.style.display = 'flex';
 }
 
 function goToNextIdiomQuestion(){
@@ -16447,6 +16465,9 @@ function renderGrammarQuestion(){
   });
   const solCard = document.getElementById('grammarSolutionCard');
   if(solCard) solCard.style.display = 'none';
+  const nextTopBtn = document.getElementById('grammarNextBtnTop');
+  const nextTopRow = nextTopBtn ? nextTopBtn.closest('.calcNextTopRow') : null;
+  if(nextTopRow) nextTopRow.style.display = 'none';
   updateGrammarStats();
   updateGrammarSaveBtn(q);
 }
@@ -16484,6 +16505,9 @@ function selectGrammarAnswer(i, btnEl){
     solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
   }
   if(solCard) solCard.style.display = 'block';
+  const nextTopBtn2 = document.getElementById('grammarNextBtnTop');
+  const nextTopRow2 = nextTopBtn2 ? nextTopBtn2.closest('.calcNextTopRow') : null;
+  if(nextTopRow2) nextTopRow2.style.display = 'flex';
 }
 
 function goToNextGrammarQuestion(){
@@ -16960,6 +16984,15 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     btn.textContent = s ? '\u2605' : '\u2606';
     btn.setAttribute('aria-label', s ? 'Saved \u2014 tap to remove' : 'Save this question');
   }
+  // The top ⏭ "Next" shortcut only makes sense once you've actually
+  // answered (before that, tapping it would just skip a question you
+  // haven't attempted) — and hiding its whole row until then means it no
+  // longer sits as a permanent empty gap between the question and the
+  // answer options.
+  function nextTopRowEl(){
+    const btn = document.getElementById(prefix + 'NextBtnTop');
+    return btn ? btn.closest('.calcNextTopRow') : null;
+  }
   function renderQuestion(){
     const q = session.questions[session.index];
     if(!q){ endQuiz(); return; }
@@ -16978,6 +17011,8 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
     });
     const solCard = document.getElementById(prefix + 'SolutionCard');
     if(solCard) solCard.style.display = 'none';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'none';
     updateStats();
     updateSaveBtn(q);
   }
@@ -17003,6 +17038,8 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
       solText.innerHTML = '<div>' + verdict + '</div>' + explLine;
     }
     if(solCard) solCard.style.display = 'block';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'flex';
   }
   function goToNext(){
     session.index++;
