@@ -3899,6 +3899,9 @@ let TASKS = DEFAULT_TASKS.slice();
 //   'mockScore'    -> task name has "mock" but not "analysis"  (e.g. "Full Mock (Attempt Only)")
 //   'mockAnalysis' -> task name has "mock" AND "analysis"      (e.g. "Mock Analysis")
 //   'sectional'    -> task name has "sectional"                (wired up in Part 2)
+//   'calcQuiz'     -> task name has "calculat"                 (e.g. "Calculation") — gets a
+//                      direct "take the quiz" button, and completing a Calc-tab quiz session
+//                      auto-ticks this task instead of needing a manual checkbox tap.
 function taskAutoType(name){
   const n = (name||'').toLowerCase();
   if(n.includes('mock')){
@@ -3906,6 +3909,7 @@ function taskAutoType(name){
     return 'mockScore';
   }
   if(n.includes('sectional')) return 'sectional';
+  if(n.includes('calculat')) return 'calcQuiz';
   return null;
 }
 
@@ -4842,6 +4846,31 @@ function logQuizActivity(label, correct, total){
   d.quizLog.push({ label: label, correct: correct, total: total, ts: Date.now() });
   save();
   if(selectedDay === day) renderAll();
+}
+// Calc tab's arithmetic Calculation quiz (Addition/Square/Table/... — see
+// finishCalcSession) is different from the other Learn-tab quizzes above:
+// instead of appending a new row, it ticks the existing "Calculation" task
+// in today's target list (matched via taskAutoType), so the quiz result
+// shows up right on that task's own row with its own ₹ share — no separate
+// checkbox tap needed. Falls back to the normal quiz-log entry if the task
+// list has been customized and no "Calculation" task exists anymore.
+function markCalcTaskFromQuiz(opLabel, correct, total){
+  if(!total) return;
+  const day = todayDayNum();
+  const d = getDay(day);
+  const idx = TASKS.findIndex(t => taskAutoType(t) === 'calcQuiz');
+  if(idx === -1){
+    logQuizActivity('Calculation \u2014 ' + opLabel, correct, total);
+    return;
+  }
+  const doneBefore = d.tasks.filter(Boolean).length;
+  d.tasks[idx] = true;
+  const doneAfter = d.tasks.filter(Boolean).length;
+  if(d.taskCheckedAt) d.taskCheckedAt[idx] = Date.now();
+  if(d.taskNotes) d.taskNotes[idx] = '\ud83e\uddee ' + opLabel + ' \u2014 ' + correct + '/' + total + ' correct';
+  save();
+  if(selectedDay === day) renderAll();
+  if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(day);
 }
 function dayStatus(n){
   const d = getDay(n);
@@ -7545,8 +7574,9 @@ function openTaskNoteSheet(idx){
   // Task submit karte hi — agar iss task ka naam "mock" bata raha hai, iske
   // sahi score/wrong-log fields yahin sheet ke andar apne aap aa jaate hain.
   const autoType = taskAutoType(TASKS[idx]);
+  const hasScoreBox = (autoType==='mockScore' || autoType==='mockAnalysis' || autoType==='sectional');
   if(extra){
-    if(autoType){
+    if(hasScoreBox){
       extra.innerHTML = taskScoreBoxHtml(getDay(selectedDay), autoType, '');
       bindScoreBoxEvents(extra);
       extra.style.display = '';
@@ -8364,7 +8394,12 @@ function renderPanel(){
     // Chapter Quick-Log). Available on any day being viewed (not just today),
     // same as the rest of the score fields — inputs just go read-only via `dis`.
     const autoType = taskAutoType(t);
-    const showScoreBtn = !!autoType;
+    const showScoreBtn = (autoType==='mockScore' || autoType==='mockAnalysis' || autoType==='sectional');
+    // "Calculation" task gets its own 🧮 button instead — tapping it jumps
+    // straight into the Calc tab's quiz menu. Hidden once the task is
+    // already done today (no need to relaunch), and only on today's own
+    // editable list (same gating as the ⏱️ timer button).
+    const showCalcQuizBtn = canUseTaskTimer && autoType==='calcQuiz' && !d.tasks[idx];
     // 📷 badge — only appears if a proof photo was attached to THIS task on
     // THIS day, on THIS device (see taskPhotoKeySet — images live in local
     // IndexedDB only, never in synced `state`).
@@ -8377,6 +8412,7 @@ function renderPanel(){
         ${(isReadOnly || viewingName!==myName) ? '' : `<button class="taskEditIconBtn" type="button" data-edit-task-idx="${idx}" title="Ye task edit karo"><span class="icoEdit" aria-hidden="true"></span></button>`}
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch"><span class="icoClock" aria-hidden="true"></span></button>` : ''}
         ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
+        ${showCalcQuizBtn ? `<button class="taskTimerBtn" type="button" data-calc-quiz-btn-idx="${idx}" title="Calculation quiz shuru karo">🧮</button>` : ''}
         ${hasPhoto ? `<button class="taskTimerBtn taskPhotoBadgeBtn" type="button" data-photo-view-idx="${idx}" title="Proof photo dekho">📷</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
         ${(showScoreBtn && taskScoreExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskScoreBox-${idx}">${taskScoreBoxHtml(d, autoType, dis)}</div>` : ''}
@@ -8546,6 +8582,13 @@ function renderPanel(){
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
       toggleTaskScoreBox(parseInt(btn.getAttribute('data-score-btn-idx'),10));
+    });
+  });
+  panel.querySelectorAll('[data-calc-quiz-btn-idx]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      switchTab('calc');
+      showCalcPage('menu');
     });
   });
   panel.querySelectorAll('[data-photo-view-idx]').forEach(btn=>{
@@ -11042,14 +11085,14 @@ const CALC_OP_LABELS = {
 function calcOpLabel(op){ return CALC_OP_LABELS[op] || op; }
 
 const CALC_DIFFICULTY_HINTS = {
-  square:'Easy: 11\u201330\u00b2 \u00b7 Medium: 11\u201360\u00b2 \u00b7 Hard: 25\u201399\u00b2',
-  cube:'Easy: 2\u201315\u00b3 \u00b7 Medium: 2\u201325\u00b3 \u00b7 Hard: 15\u201335\u00b3',
-  sqrt:'Easy: \u221A4\u2013\u221A225 \u00b7 Medium: \u221A4\u2013\u221A625 \u00b7 Hard: \u221A400\u2013\u221A1600',
-  cbrt:'Easy: \u221B8\u2013\u221B512 \u00b7 Medium: \u221B8\u2013\u221B2744 \u00b7 Hard: \u221B1000\u2013\u221B8000',
-  table:'Easy: tables 2\u201310 \u00b7 Medium: 2\u201320 \u00b7 Hard: 11\u201330',
+  square:'Easy: 10\u201325\u00b2 \u00b7 Medium: 26\u201355\u00b2 \u00b7 Hard: 56\u201399\u00b2',
+  cube:'Easy: 2\u201310\u00b3 \u00b7 Medium: 11\u201320\u00b3 \u00b7 Hard: 21\u201335\u00b3',
+  sqrt:'Easy: \u221A4\u2013\u221A144 \u00b7 Medium: \u221A169\u2013\u221A625 \u00b7 Hard: \u221A676\u2013\u221A1600',
+  cbrt:'Easy: \u221B8\u2013\u221B343 \u00b7 Medium: \u221B512\u2013\u221B2744 \u00b7 Hard: \u221B3375\u2013\u221B10648',
+  table:'Easy: tables 2\u201310 \u00b7 Medium: 11\u201320 \u00b7 Hard: 21\u201330',
   trig:'Easy: sin & cos \u00b7 Medium: + tan \u00b7 Hard: all six ratios',
-  percentage:'Easy: clean percents \u00b7 Medium & Hard: trickier fractions',
-  fraction:'Easy: small denominators \u00b7 Medium & Hard: bigger denominators & values'
+  percentage:'Easy: clean percents of 20\u2013200 \u00b7 Medium: trickier fractions of 201\u20131000 \u00b7 Hard: of 1001\u20139999',
+  fraction:'Easy: denominators 2\u20135 \u00b7 Medium: 6\u20139 \u00b7 Hard: 10\u201314'
 };
 function calcDifficultyHintText(op){
   return CALC_DIFFICULTY_HINTS[op] || 'Easy uses smaller numbers, Hard prefers larger or trickier ones.';
@@ -11091,13 +11134,13 @@ function calcPercentPool(difficulty){
 // Base-number ranges for every "advanced" (non-chain) operation, per difficulty.
 function calcAdvancedRange(op, difficulty){
   const R = {
-    square:    {easy:[11,30], medium:[11,60], hard:[25,99]},
-    cube:      {easy:[2,15],  medium:[2,25],  hard:[15,35]},
-    sqrt:      {easy:[2,15],  medium:[2,25],  hard:[20,40]},
-    cbrt:      {easy:[2,8],   medium:[2,14],  hard:[10,20]},
-    table:     {easy:[2,10],  medium:[2,20],  hard:[11,30]},
-    fraction:  {easy:[2,5],   medium:[3,8],   hard:[4,12]},
-    percentage:{easy:[20,200],medium:[200,2000],hard:[1000,9999]}
+    square:    {easy:[10,25], medium:[26,55],  hard:[56,99]},
+    cube:      {easy:[2,10],  medium:[11,20],  hard:[21,35]},
+    sqrt:      {easy:[2,12],  medium:[13,25],  hard:[26,40]},
+    cbrt:      {easy:[2,7],   medium:[8,14],   hard:[15,22]},
+    table:     {easy:[2,10],  medium:[11,20],  hard:[21,30]},
+    fraction:  {easy:[2,5],   medium:[6,9],    hard:[10,14]},
+    percentage:{easy:[20,200],medium:[201,1000],hard:[1001,9999]}
   };
   const cfg = R[op] || {easy:[1,50], medium:[1,100], hard:[1,500]};
   return cfg[difficulty] || cfg.easy;
@@ -11126,8 +11169,8 @@ function closeCalcSetup(){
 
 function calcRandInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function calcDifficultyRange(difficulty){
-  if(difficulty==='medium') return [50, 500];
-  if(difficulty==='hard') return [100, 999];
+  if(difficulty==='medium') return [51, 300];
+  if(difficulty==='hard') return [301, 999];
   return [10, 50];
 }
 // Picks one number honoring the setup sheet's "Number range" / "Random" (difficulty) mode.
@@ -11250,11 +11293,26 @@ function generateOneCalcQuestion(dMin, dMax){
   const answer = operands.reduce((a,b)=>a+b, 0);
   return {operands, answer, opSymbol:'+'};
 }
+function calcQuestionSignature(q){
+  return q.html ? q.html : (q.operands.join(',') + '|' + q.opSymbol);
+}
 function generateCalcQuestions(){
   const qs = [];
   const [dMin,dMax] = calcDifficultyRange(calcSession.difficulty);
+  let prevSig = null;
   for(let i=0;i<calcSession.totalQuestions;i++){
-    qs.push(generateOneCalcQuestion(dMin, dMax));
+    let q, sig, tries = 0;
+    // Regenerate on an exact back-to-back repeat (same numbers as the
+    // question right before it) so a 20-question set feels varied instead
+    // of occasionally showing the same sum twice in a row. Capped at a few
+    // tries so it can never loop forever on a tiny question-space.
+    do{
+      q = generateOneCalcQuestion(dMin, dMax);
+      sig = calcQuestionSignature(q);
+      tries++;
+    } while(sig === prevSig && tries < 8);
+    prevSig = sig;
+    qs.push(q);
   }
   return qs;
 }
@@ -11266,7 +11324,27 @@ function buildCalcMcqOptions(q){
       const j = Math.floor(Math.random()*(i+1));
       const t = otherAngles[i]; otherAngles[i]=otherAngles[j]; otherAngles[j]=t;
     }
-    const values = [q.answer].concat(otherAngles.slice(0,3).map(a=> table[a]));
+    const values = [q.answer];
+    otherAngles.forEach(a=>{ if(values.length<4) values.push(table[a]); });
+    // Guaranteed fallback: cosec/sec/cot are undefined at some angles, so
+    // their own table sometimes can't supply 3 distinct distractors on its
+    // own. Top up from every valid ratio value across the whole trig table
+    // instead, so the grid is never short of 4 options.
+    if(values.length < 4){
+      const pool = [];
+      Object.keys(CALC_TRIG_TABLE).forEach(fn=>{
+        [0,30,45,60,90].forEach(a=>{
+          const v = CALC_TRIG_TABLE[fn][a];
+          if(v!==null && values.indexOf(v)===-1 && pool.indexOf(v)===-1) pool.push(v);
+        });
+      });
+      for(let i=pool.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        const t = pool[i]; pool[i]=pool[j]; pool[j]=t;
+      }
+      let p = 0;
+      while(values.length < 4 && p < pool.length){ values.push(pool[p]); p++; }
+    }
     for(let i=values.length-1;i>0;i--){
       const j = Math.floor(Math.random()*(i+1));
       const t = values[i]; values[i]=values[j]; values[j]=t;
@@ -11275,19 +11353,30 @@ function buildCalcMcqOptions(q){
   }
   const answer = q.answer;
   const opts = new Set([answer]);
-  let guard = 0;
-  // Distractors are generated as answer +/- (multiple of 10) so every option
-  // ends in the SAME last digit as the correct answer — this removes the
-  // "just check the last digit" shortcut and forces a full calculation.
-  const maxUnitDelta = Math.max(1, Math.round((Math.max(5, Math.round(Math.abs(answer)*0.15)+3))/10));
-  while(opts.size < 4 && guard < 60){
+  // Distractors are answer +/- (multiple of 10) so every option ends in the
+  // SAME last digit as the correct answer — this removes the "just check the
+  // last digit" shortcut and forces a full calculation. The step grows on
+  // every attempt instead of using one fixed small step: for small answers
+  // (e.g. sqrt/cbrt/table results of 2-20) a fixed step often had only 1-2
+  // possible distinct, non-negative values to offer, so the old loop could
+  // run out of tries and silently hand back an MCQ with fewer than 4 options.
+  let step = 1, guard = 0;
+  while(opts.size < 4 && guard < 300){
     guard++;
-    const deltaUnits = calcRandInt(1, maxUnitDelta);
-    const delta = deltaUnits * 10;
-    const sign = Math.random() < 0.5 ? -1 : 1;
-    let candidate = answer + sign*delta;
-    if(candidate < 0) candidate = answer + delta;
-    if(candidate !== answer) opts.add(candidate);
+    const delta = step * 10;
+    const plus = answer + delta;
+    const minus = answer - delta;
+    if(opts.size < 4 && !opts.has(plus)) opts.add(plus);
+    if(opts.size < 4 && minus >= 0 && !opts.has(minus)) opts.add(minus);
+    step++;
+  }
+  // Absolute last-resort fallback (should never actually trigger, but keeps
+  // the grid at a guaranteed 4 options no matter what).
+  let filler = 1;
+  while(opts.size < 4){
+    const c = answer + filler;
+    if(c !== answer && !opts.has(c)) opts.add(c);
+    filler++;
   }
   const arr = Array.from(opts);
   for(let i=arr.length-1;i>0;i--){
@@ -11585,6 +11674,10 @@ function finishCalcSession(){
   }
   const resultCard = document.getElementById('calcResultCard');
   if(resultCard) resultCard.style.display = 'block';
+  // Ticks the "Calculation" task in Today's target list directly (score shown
+  // as its note) instead of adding a separate quiz-log row — see
+  // markCalcTaskFromQuiz() for the fallback if that task doesn't exist.
+  markCalcTaskFromQuiz(calcOpLabel(calcSession.op), calcSession.correct, total);
 }
 
 // Every operation (addition, subtraction, multiplication, division) is now
