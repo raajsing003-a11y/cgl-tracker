@@ -5615,6 +5615,69 @@ async function loadPlayerState(name){
 //    deliberately removed it locally (e.g. archiving old days into
 //    history) — a key this device never even saw is left untouched,
 //    even though it's technically "missing" from the local copy
+// Deep-merges ONE day's remote vs local copy so a tick/quiz made on either
+// device never gets silently erased by the other saving afterward with a
+// stale copy of that same day (see mergeWithRemoteBeforeSave below — the
+// old code let the whole day object from whichever device saved LAST win,
+// which is exactly what made two devices used the same day show different
+// checkboxes). Only tasks/taskNotes/taskCheckedAt/quizLog get this deep
+// treatment; every other per-day field (mock scores, notes, rest flag,
+// studyMin...) still uses simple last-write-wins at the whole-day level.
+function mergeDayObjects(remoteDay, localDay){
+  if(!remoteDay || typeof remoteDay !== 'object') return localDay;
+  if(!localDay || typeof localDay !== 'object') return remoteDay;
+  const merged = Object.assign({}, remoteDay, localDay);
+  const rTasks = Array.isArray(remoteDay.tasks) ? remoteDay.tasks : [];
+  const lTasks = Array.isArray(localDay.tasks) ? localDay.tasks : [];
+  const len = Math.max(rTasks.length, lTasks.length);
+  if(len > 0){
+    const rNotes = Array.isArray(remoteDay.taskNotes) ? remoteDay.taskNotes : [];
+    const lNotes = Array.isArray(localDay.taskNotes) ? localDay.taskNotes : [];
+    const rAt = Array.isArray(remoteDay.taskCheckedAt) ? remoteDay.taskCheckedAt : [];
+    const lAt = Array.isArray(localDay.taskCheckedAt) ? localDay.taskCheckedAt : [];
+    const mergedTasks = new Array(len).fill(false);
+    const mergedNotes = new Array(len).fill('');
+    const mergedAt = new Array(len).fill(null);
+    for(let i=0;i<len;i++){
+      const rOn = !!rTasks[i], lOn = !!lTasks[i];
+      // Once ticked on EITHER device, it stays ticked — this is the actual fix.
+      mergedTasks[i] = rOn || lOn;
+      if(rOn && lOn){
+        const rt = rAt[i] || 0, lt = lAt[i] || 0;
+        if(lt >= rt){ mergedNotes[i] = lNotes[i] || rNotes[i] || ''; mergedAt[i] = lAt[i] || rAt[i] || null; }
+        else { mergedNotes[i] = rNotes[i] || lNotes[i] || ''; mergedAt[i] = rAt[i] || lAt[i] || null; }
+      } else if(lOn){
+        mergedNotes[i] = lNotes[i] || ''; mergedAt[i] = lAt[i] || null;
+      } else if(rOn){
+        mergedNotes[i] = rNotes[i] || ''; mergedAt[i] = rAt[i] || null;
+      } else {
+        mergedNotes[i] = lNotes[i] || rNotes[i] || ''; mergedAt[i] = lAt[i] || rAt[i] || null;
+      }
+    }
+    merged.tasks = mergedTasks;
+    merged.taskNotes = mergedNotes;
+    merged.taskCheckedAt = mergedAt;
+  }
+  // quizLog: union of both sides, deduped by label+correct+total+ts, so a
+  // Learn-tab/Calc quiz logged on one device never disappears because the
+  // other device saved afterward with a copy from before that quiz existed.
+  const rLog = Array.isArray(remoteDay.quizLog) ? remoteDay.quizLog : [];
+  const lLog = Array.isArray(localDay.quizLog) ? localDay.quizLog : [];
+  if(rLog.length || lLog.length){
+    const seen = new Set();
+    const mergedLog = [];
+    rLog.concat(lLog).forEach(q=>{
+      if(!q) return;
+      const key = (q.label||'')+'|'+q.correct+'|'+q.total+'|'+(q.ts||'');
+      if(seen.has(key)) return;
+      seen.add(key);
+      mergedLog.push(q);
+    });
+    mergedLog.sort((a,b)=> (a.ts||0)-(b.ts||0));
+    merged.quizLog = mergedLog;
+  }
+  return merged;
+}
 async function mergeWithRemoteBeforeSave(localState, name){
   const targetName = name || myName;
   try{
@@ -5623,10 +5686,18 @@ async function mergeWithRemoteBeforeSave(localState, name){
     const remote = JSON.parse(raw);
     if(!remote || typeof remote !== 'object' || Array.isArray(remote)) return localState;
     const merged = Object.assign({}, remote, localState);
+    // Day entries (numeric keys) that BOTH sides have get a deep merge
+    // instead of the local copy blindly winning whole — see mergeDayObjects().
+    Object.keys(merged).forEach(k=>{
+      if(/^\d+$/.test(k) && remote[k] && localState[k]){
+        merged[k] = mergeDayObjects(remote[k], localState[k]);
+      }
+    });
     lastLoadedStateKeys.forEach(k=>{ if(!(k in localState)) delete merged[k]; });
     return merged;
   }catch(e){ console.error('pre-save merge failed', e); return localState; }
 }
+
 
 async function save(opts){
   opts = opts || {};
@@ -11043,7 +11114,17 @@ function switchTab(name, _fromPopState){
 }
 function initTabs(){
   document.querySelectorAll('.tabbtn').forEach(btn=>{
-    btn.addEventListener('click', ()=> switchTab(btn.getAttribute('data-tab')));
+    btn.addEventListener('click', ()=>{
+      const tab = btn.getAttribute('data-tab');
+      // "Today" tab must always mean TODAY. If selectedDay got left on some
+      // other day (e.g. after browsing history via the Home tab calendar),
+      // tapping this button used to just reveal whatever day was already
+      // selected — so a just-finished Calc quiz (which always saves against
+      // the real todayDayNum()) could look like it "didn't update" simply
+      // because a different day's tasks were on screen. Snap back first.
+      if(tab === 'today' && viewingName === myName) selectedDay = todayDayNum();
+      switchTab(tab);
+    });
   });
   let saved = 'home';
   try{ saved = localStorage.getItem('cgl50-activetab') || 'home'; }catch(e){}
