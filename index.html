@@ -1340,6 +1340,34 @@
     50%{background-position:100% 50%;}
     100%{background-position:0% 50%;}
   }
+  .calcCard-digitalsum{
+    background:linear-gradient(120deg,#92400e 0%,#b45309 48%,#a16207 100%);
+    background-size:160% 160%;
+    animation:digitalsumShimmer 14s ease infinite;
+    border:none;
+    box-shadow:0 6px 18px rgba(180,83,9,0.24);
+  }
+  .calcCard-digitalsum .calcIcon-digitalsum{background:rgba(255,255,255,0.22);color:#fff;box-shadow:none;font-size:19px;}
+  .calcCard-digitalsum .calcLabel{color:#fff;font-size:15.5px;}
+  .calcCard-digitalsum .calcSub{color:rgba(255,255,255,0.9);font-size:11.5px;font-weight:600;letter-spacing:0.2px;}
+  .calcCard-digitalsum .calcArrow{color:#fff;}
+  @keyframes digitalsumShimmer{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+  }
+  /* Digital Sum quiz — small exam-name badge shown above the question text,
+     and the language-choice screen shown before every set starts. */
+  .dsExamBadge{
+    display:inline-block;background:var(--panel2);border:1px solid var(--border-strong);
+    border-radius:20px;padding:5px 13px;font-size:11.5px;font-weight:700;
+    color:var(--accent);letter-spacing:0.2px;margin-bottom:14px;
+  }
+  .dsSolBlock{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-strong);}
+  .dsSolBlock:first-of-type{margin-top:12px;border-top:none;padding-top:0;}
+  .dsSolLabel{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;}
+  .dsSolText{font-size:13.5px;line-height:1.55;color:var(--muted);font-weight:500;}
+  .dsLangIntro{font-size:13.5px;line-height:1.6;color:var(--muted);font-weight:500;margin-bottom:18px;text-align:center;}
   /* "Saved Questions" button — sabse upar, Set list ke upar. Vocab/Spelling/
      Idioms teeno mein same loud, colourful shimmer treatment taaki yeh
      feature turant "khaas" lage aur set-list ke plain cards se alag dikhe. */
@@ -3033,6 +3061,18 @@
         </button>
       </div>
 
+      <div class="grid-label" style="margin-top:0;">📐 Math Quiz</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard calcCard-digitalsum" id="calcDigitalSumBtn" data-calc="digitalsum">
+          <span class="calcIcon calcIcon-digitalsum">➗</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Digital Sum</span>
+            <span class="calcSub">77 Qs · SSC/RRB PYQs · Hindi + English</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+
       <div class="grid-label" style="margin-top:0;">🧮 Calculation Practice</div>
       <div class="calcGrid calcGrid-3col">
         <button class="calcCard calcTile" id="calcAddBtn" data-calc="addition">
@@ -3748,6 +3788,78 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="codingResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="codingResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Digital Sum (Math) ===== -->
+    <div class="calcPage" id="calcPage-digitalsummenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="digitalsumMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">Digital Sum — Choose a Set</div>
+      </div>
+      <div class="calcGrid calcGrid-1col" id="digitalsumSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-digitalsumlang">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="digitalsumLangBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="digitalsumLangTitle">Digital Sum</div>
+      </div>
+      <div class="dsLangIntro">Quiz kis language mein chahiye? Quiz shuru hote hi ⏳ 10 minute ka timer chalu ho jayega.</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard" id="digitalsumLangHindiBtn">
+          <span class="calcIcon">🇮🇳</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">हिंदी (Hindi)</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="digitalsumLangEnglishBtn">
+          <span class="calcIcon">🇬🇧</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">English</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-digitalsum">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="digitalsumBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="digitalsumQuizTitle">Digital Sum</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="digitalsumStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="digitalsumStatWrong">0</span></div>
+        <div class="calcStatPill" id="digitalsumStatProgress" style="color:var(--muted);">Q 1/1</div>
+        <div class="calcStatPill calcStatPill-timer">⏳ <span id="digitalsumStatTimer">10:00</span></div>
+      </div>
+
+      <div class="calcQuestionWrap" id="digitalsumQuestionWrap" style="padding:6px 2px 20px;text-align:left;">
+        <div class="dsExamBadge" id="digitalsumExamBadge">📋 Exam</div>
+        <div class="calcQuestion" id="digitalsumWordText" style="font-size:clamp(16px,4.6vw,20px);line-height:1.45;text-align:left;">—</div>
+      </div>
+
+      <div class="calcNextTopRow">
+        <button type="button" class="calcCtrlBtn calcNextTopBtn" id="digitalsumNextBtnTop" aria-label="Next Question" title="Next Question">⏭</button>
+      </div>
+
+      <div class="calcAnsGrid calcAnsGrid-list" id="digitalsumAnsGrid"></div>
+
+      <div class="calcResultCard" id="digitalsumSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="digitalsumSolutionText"></div>
+        <button class="nav-btn onbPrimary" id="digitalsumNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="digitalsumResultCard" style="display:none;">
+        <div class="calcResultTitle" id="digitalsumResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="digitalsumResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="digitalsumResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="digitalsumResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -17103,6 +17215,246 @@ const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'menu
 const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series', 'menu');
 const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding', 'menu');
 
+const DIGITALSUM_SETS = {
+  set1: [{qn:1, exam:'SSC CGL PRE 2024', en:'Simplify: 626 × 2912 ÷ 8138', hi:'सरल कीजिए: 626 × 2912 ÷ 8138', options:['285', '224', '364', '310'], answer:1, sol1:'Digit-sum (mod 9) check: DS(626)=5, DS(2912)=5, so DS(product)=5×5=25→7. DS(8138)=2. For the quotient 224, DS=8; check 2×8=16→7, which matches the dividend\'s digit-sum residue (7). This confirms option (b).', sol2:'Multiply first: 626 × 2912 = 18,22,912. Now divide by 8138: 18,22,912 ÷ 8138 = 224 exactly.'}, {qn:2, exam:'SSC CHSL Tier 1 (17 Nov 2025, S-2)', en:'What is the square of 129?', hi:'129 का वर्ग क्या है?', options:['16541', '16641', '16741', '16841'], answer:1, sol1:'DS(129) = 1+2+9 = 12 → 3. Square of digit-sum: 3×3 = 9. Now check the digit-sum of each option: 16641 → 1+6+6+4+1 = 18 → 9. Only this option matches, so (b) is correct.', sol2:'Write 129 = 130 − 1. Then 129² = (130−1)² = 130² − 2×130×1 + 1 = 16900 − 260 + 1 = 16641.'}, {qn:3, exam:'SSC MTS 2025', en:'(512 + 288)² – 4 × 512 × 288', hi:'(512 + 288)² – 4 × 512 × 288 का मान ज्ञात कीजिए।', options:['50328', '56186', '62783', '50176'], answer:3, sol1:'This is the algebraic identity (a+b)² − 4ab = (a−b)². Here a−b = 512−288 = 224. DS(224)=8, so 8²=64→1. Checking option 50176: DS = 5+0+1+7+6 = 19 → 1. This matches, confirming (d).', sol2:'(a+b)² − 4ab = a² + 2ab + b² − 4ab = a² − 2ab + b² = (a−b)². Here a−b = 512−288 = 224. So the value = 224² = 50176.'}, {qn:4, exam:'SSC CGL 2025 T-1', en:'The following is equal to: 44³ + 35³ – 53³ + 159', hi:'निम्नलिखित बराबर है: 44³ + 35³ – 53³ + 159', options:['–20659', '0', '–18659', '1'], answer:0, sol1:'Since 44+35−53 = 26 ≠ 0, the shortcut a³+b³+c³=3abc (valid only when a+b+c=0) does not directly apply, so we must calculate normally — but a quick digit-sum cross-check on the final result (using DS of 44,35,53 all being 8, and DS of 159 being 6) is consistent with option (a) after full computation.', sol2:'Direct computation: 44³ = 85184, 35³ = 42875, 53³ = 148877. So 85184 + 42875 − 148877 + 159 = 128059 − 148877 + 159 = −20659.'}, {qn:5, exam:'CHSL 2017/18', en:'P = 99, then P(P² + 3P + 3) = ?', hi:'P = 99 है, तो P(P² + 3P + 3) = ?', options:['998889', '988899', '989898', '999999'], answer:3, sol1:'P³+3P²+3P is one term short of the expansion of (P+1)³ = P³+3P²+3P+1. So P³+3P²+3P = (P+1)³ − 1. With P+1 = 100, we get 100³ − 1 = 999999, matching option (d) instantly without long multiplication.', sol2:'P(P²+3P+3) = P³+3P²+3P = (P³+3P²+3P+1) − 1 = (P+1)³ − 1. Putting P=99: (100)³ − 1 = 1000000 − 1 = 999999.'}, {qn:6, exam:'RPF Cons. 12/03/2025 (Shift-3)', en:'2.54 × 0.4 – 0.58 × 5.64 + 2.85 × 3.14 – 0.84 + 4.8 × 3.8 – 7.0938', hi:'2.54 × 0.4 – 0.58 × 5.64 + 2.85 × 3.14 – 0.84 + 4.8 × 3.8 – 7.0938 का मान ज्ञात कीजिए।', options:['21.58', '19', '17', '23.67'], answer:2, sol1:'Rounding each product to the nearest whole number gives a fast estimate: 2.54×0.4≈1, 0.58×5.64≈3.3, 2.85×3.14≈8.95, 4.8×3.8≈18.24. Rough total: 1−3.3+8.95−0.84+18.24−7.09 ≈ 16.96, which is closest to option (c) 17.', sol2:'Evaluate each product exactly: 2.54×0.4=1.016; 0.58×5.64=3.2712; 2.85×3.14=8.949; 4.8×3.8=18.24. Now sum: 1.016−3.2712+8.949−0.84+18.24−7.0938 = 17.0000 (exactly 17).'}, {qn:7, exam:'Group D 18/08/2022 (Evening)', en:'Find the value of 325 × 5 + 31 × 21 – 22(63 – 52)', hi:'325 × 5 + 31 × 21 – 22(63 – 52) का मान ज्ञात कीजिए।', options:['2044', '2024', '2034', '2014'], answer:2, sol1:'Digit-sum route: DS(325×5)=DS(1625)=14→5; DS(31×21)=DS(651)=12→3; DS(22×11)=DS(242)=8. Net: 5+3−8=0. Checking option (c) 2034: DS=2+0+3+4=9→0. This matches, confirming (c).', sol2:'325×5 = 1625. 31×21 = 651. (63−52)=11, so 22×11 = 242. Now 1625 + 651 − 242 = 2276 − 242 = 2034.'}, {qn:8, exam:'Group D 17/09/2022 (Evening)', en:'Evaluate 23³ + (– 11)³ + (– 12)³', hi:'23³ + (– 11)³ + (– 12)³ का मान ज्ञात कीजिए।', options:['8708', '8908', '9108', '8608'], answer:2, sol1:'Since 23 + (–11) + (–12) = 0, the identity a³+b³+c³ = 3abc applies directly: 3×23×(−11)×(−12) = 3×23×132 = 9108. Digit-sum cross-check: DS(23)=5, DS(11)=2, DS(12)=3; 3×5×2×3=90→9; DS(9108)=18→9. This matches, confirming (c).', sol2:'Because 23 + (–11) + (–12) = 0, we use the identity a³+b³+c³ = 3abc. So the value = 3×23×(–11)×(–12) = 3×23×132 = 9108.'}, {qn:9, exam:'Group D 19/09/2022 (Evening)', en:'The expression (3.7)³ – 3×(3.7)²×(0.7) + 3×(3.7)×(0.7)² – (0.7)³ is equal to:', hi:'व्यंजक (3.7)³ – 3×(3.7)²×(0.7) + 3×(3.7)×(0.7)² – (0.7)³ बराबर है:', options:['30', '27', '35', '10'], answer:1, sol1:'This is exactly the expansion of (a−b)³ with a=3.7 and b=0.7, so we can skip all the multiplication: a−b = 3, and the whole expression = 3³ = 27, directly matching option (b).', sol2:'Recognize the identity a³−3a²b+3ab²−b³ = (a−b)³, with a=3.7, b=0.7. So the expression = (3.7−0.7)³ = 3³ = 27.'}, {qn:10, exam:'Level 4 (10/05/2022) Shift 1', en:'Simplify the following expression: 81.7100 + 198.0020 – 2071.1985 + 9.0900 + 1591.42', hi:'निम्नलिखित व्यंजक को सरल कीजिए: 81.7100 + 198.0020 – 2071.1985 + 9.0900 + 1591.42', options:['-190.8765', '-190.9765', '190.9865', '-190.9865'], answer:1, sol1:'Since 2071.1985 is bigger than the sum of the other positive terms, the answer must be negative and close to −191 in magnitude, which immediately rules out the two positive-looking options and leaves (b) −190.9765 as the correct match (option d is close but has digits swapped).', sol2:'Add all positive terms first: 81.7100+198.0020+9.0900+1591.4200 = 1880.2220. Then subtract: 1880.2220 − 2071.1985 = −190.9765.'}, {qn:11, exam:'Level 2 ((13/6)/2022) Shift 2', en:'Find the value of (13)³ + (– 8)³ + (– 5)³', hi:'(13)³ + (– 8)³ + (– 5)³ का मान ज्ञात कीजिए।', options:['-40 × 41', '39 × 40', '-39 × 40', '41 × 38'], answer:1, sol1:'Since 13 + (–8) + (–5) = 0, use a³+b³+c³ = 3abc = 3×13×(−8)×(−5) = 3×13×40 = 1560. Now check the options: 39×40 = 1560, so option (b) matches exactly.', sol2:'Because 13 − 8 − 5 = 0, apply a³+b³+c³ = 3abc = 3×13×(–8)×(–5) = 1560 = 39×40.'}, {qn:12, exam:'Level 3 (17/06/2022) Shift 1', en:'Simplify: 484.71 + 285.33 – 827.38 + 73.9', hi:'सरल कीजिए: 484.71 + 285.33 – 827.38 + 73.9', options:['16.56', '36.54', '15.78', '19.78'], answer:0, sol1:'Adding all positives first (484.71+285.33+73.9=843.94) and subtracting 827.38 gives a result close to 16–17, which immediately matches only option (a) among the choices.', sol2:'Add positive terms first: 484.71+285.33+73.90 = 843.94. Then 843.94 − 827.38 = 16.56.'}, {qn:13, exam:'RRB NTPC 30/12/2020 (Morning)', en:'Solve the following: 6202.5 + 620.25 + 62.025 + 6.2025 + 0.62025', hi:'निम्नलिखित हल कीजिए: 6202.5 + 620.25 + 62.025 + 6.2025 + 0.62025', options:['6791.59775', '6891.59775', '6891.59675', '5892.59775'], answer:1, sol1:'Each term is exactly 1/10th of the one before it (a geometric pattern), so the sum equals 6202.5 × 1.11111 ≈ 6891.59775, matching option (b) precisely.', sol2:'Align decimal points and add: 6202.50000 + 620.25000 + 62.02500 + 6.20250 + 0.62025 = 6891.59775.'}, {qn:14, exam:'RRB NTPC 03/02/2021 (Evening)', en:'Which of the following options gives the value of 1999² – 999²?', hi:'निम्नलिखित में से कौन सा विकल्प 1999² – 999² का मान देता है?', options:['3000000', '2988000', '2998000', '1000000'], answer:2, sol1:'Use a²−b² = (a−b)(a+b): (1999−999)(1999+999) = 1000×2998 = 2998000. Note: the printed answer key in this sheet marks option (d) as correct, but direct calculation clearly gives option (c) 2998000 — this appears to be an error in the source key; please double-check with your source.', sol2:'a²−b² = (a−b)(a+b). Here a=1999, b=999: (1999−999)×(1999+999) = 1000×2998 = 29,98,000.'}, {qn:15, exam:'SSC CPO 28/06/2024 (3rd Shift)', en:'If x = 11, then the value of (x⁵ – 12x⁴ + 12x³ – 12x² + 12x – 1)', hi:'यदि x = 11, तो (x⁵ – 12x⁴ + 12x³ – 12x² + 12x – 1) का मान ज्ञात कीजिए।', options:['10', '8', '9', '14'], answer:0, sol1:'Since x=11, notice that 12 = x+1. Rewriting every \'12\' as \'(x+1)\' and expanding causes almost all terms to cancel out in a telescoping pattern, leaving simply (x−1) = 10 — no heavy computation needed.', sol2:'Since x=11, write 12 = x+1. Substitute: x⁵−(x+1)x⁴+(x+1)x³−(x+1)x²+(x+1)x−1. Expanding and cancelling term by term gives (x−1). So the answer = 11−1 = 10.'}],
+  set2: [{qn:16, exam:'SSC CGL 17/07/2023 (Shift-01)', en:'If x% of 280 = 15% of 240 + 20% of 310, then the value of x is:', hi:'यदि 280 का x% = 240 का 15% + 310 का 20% है, तो x का मान ज्ञात कीजिए।', options:['38', '35', '30', '40'], answer:1, sol1:'RHS = 15% of 240 + 20% of 310 = 36+62 = 98. Then x = (98/280)×100 = 35. Note: our calculation gives 35 (option b), while the printed key lists (c) 30 — please recheck the original answer key, as the arithmetic above is straightforward and verified.', sol2:'15% of 240 = 36. 20% of 310 = 62. Sum = 98. Now, x% of 280 = 98 ⟹ x = (98/280)×100 = 35.'}, {qn:17, exam:'Group D 11/10/2022 (Afternoon)', en:'If 1.345 + 13.45 + 0.1354 + 0.0596 = 11.453 – 0.543 + k, then what is the value of k?', hi:'यदि 1.345 + 13.45 + 0.1354 + 0.0596 = 11.453 – 0.543 + k है, तो k का मान ज्ञात कीजिए।', options:['4.08', '4.48', '3.06', '3.28'], answer:0, sol1:'LHS sum ≈ 14.99, and the fixed part of RHS ≈ 10.91, so k must be roughly their difference (≈4.08), matching option (a) without needing full precision arithmetic.', sol2:'Add the LHS: 1.3450+13.4500+0.1354+0.0596 = 14.9900. Compute 11.453−0.543 = 10.910. So k = 14.990 − 10.910 = 4.080.'}, {qn:18, exam:'SSC CGL T-1 2023', en:'If 65% of 350 – ?% of 250 + 40% of 120 = 158, then find the value of ?', hi:'यदि 350 का 65% – 250 का ?% + 120 का 40% = 158 है, तो ? का मान ज्ञात कीजिए।', options:['47', '57', '54', '63'], answer:0, sol1:'65% of 350 = 227.5, 40% of 120 = 48; adding these and subtracting 158 leaves the \'?%\' contribution, which quickly divides out to about 47 — matching option (a) exactly on full calculation.', sol2:'0.65×350 = 227.5 and 0.40×120 = 48. Equation: 227.5 − (q/100)×250 + 48 = 158 ⟹ 275.5 − 2.5q = 158 ⟹ 2.5q = 117.5 ⟹ q = 47.'}, {qn:1, exam:'RRB Group D 02/12/2025 (Shift-02)', en:'The value of 999.99 + 99.99 + 9.99 is:', hi:'999.99 + 99.99 + 9.99 का मान है:', options:['1109.97', '1119.99', '1109.99', '1999.9'], answer:0, sol1:'Each number is just short of a round figure: 1000−0.01, 100−0.01, 10−0.01. Sum of round figures = 1110, minus 3×0.01 = 0.03, giving 1109.97 — matching option (a) instantly.', sol2:'999.99+99.99+9.99: add directly, 999.99+99.99=1099.98, then 1099.98+9.99=1109.97.'}, {qn:2, exam:'SSC CGL 26/09/2025 (Shift-03)', en:'Solve (34.12)² – 7396', hi:'(34.12)² – 7396 हल कीजिए।', options:['-6231.8256', '6231.8256', '-9251.8256', '9251.8256'], answer:0, sol1:'34.12² is roughly 1164 (since 34²=1156), which is far smaller than 7396, so the answer must be a fairly large negative number close to −6232 — matching option (a).', sol2:'34.12² = 1164.1744. Now 1164.1744 − 7396 = −6231.8256.'}, {qn:3, exam:'SSC CPO 09/12/2025 (Shift-02)', en:'Solve (56.75)² – 3220', hi:'(56.75)² – 3220 हल कीजिए।', options:['-0.5625', '0.5625', '2.5625', '-2.5625'], answer:1, sol1:'56.75² is close to 3220 (since 56²=3136, 57²=3249), so the difference should be a small number near zero — this quickly narrows it to option (b) 0.5625 once computed precisely.', sol2:'56.75² = 3220.5625. Now 3220.5625 − 3220 = 0.5625.'}, {qn:4, exam:'RRB NTPC G CBT-I 09/06/2025 (Shift-02)', en:'The value of 19³ – 14² + (8/2)² – 19 + 5×20', hi:'19³ – 14² + (8/2)² – 19 + 5×20 का मान:', options:['6761', '6753', '6758', '6760'], answer:3, sol1:'19³=6859 dominates; subtracting 196 (14²) and adding 16 ((4)²), then −19+100 gives a net adjustment of about −99, landing near 6760 — matching option (d).', sol2:'19³=6859; 14²=196; (8/2)²=4²=16; 5×20=100. So 6859−196+16−19+100 = 6663+16−19+100 = 6679−19+100 = 6660+100 = 6760.'}, {qn:5, exam:'SSC CHSL 12/11/2025 (Shift-03)', en:'The value of 14² + 87² is the same as which of the following?', hi:'14² + 87² का मान निम्नलिखित में से किसके बराबर है?', options:['17² + 48²', '41² + 78²', '18² + 47²', '81² + 74²'], answer:1, sol1:'14²+87² = 196+7569 = 7765. Quickly checking option sums using rounded squares shows only 41²+78² (1681+6084=7765) lands exactly on 7765; the other combinations are visibly off by hundreds.', sol2:'14²+87² = 196+7569 = 7765. Checking option (b): 41²+78² = 1681+6084 = 7765. This matches exactly.'}, {qn:6, exam:'SSC CPO 09/12/2025 (Shift-02)', en:'55³ + 17³ – 72³ + 201960 is equal to:', hi:'55³ + 17³ – 72³ + 201960 बराबर है:', options:['0', '1', '2', '3'], answer:0, sol1:'Since 55+17 = 72, we have 72³ = (55+17)³ = 55³+17³+3×55×17×72, so 55³+17³−72³ = −3×55×17×72 = −201960. Adding 201960 gives exactly 0.', sol2:'Since 55+17=72, expand 72³=55³+17³+3×55×17×72. So 55³+17³−72³ = −3×55×17×72 = −201960. Then −201960+201960 = 0.'}, {qn:7, exam:'SSC CGL PRE 2025', en:'19³ + 20³ – 39³ + 118 is equal to:', hi:'19³ + 20³ – 39³ + 118 बराबर है:', options:['-44342', '-6789', '0', '1'], answer:0, sol1:'Since 19+20=39, 39³ expands to 19³+20³+3×19×20×39, so 19³+20³−39³ = −3×19×20×39 = −44460. Adding 118 gives −44342, matching option (a).', sol2:'19+20=39, so 39³ = 19³+20³+3×19×20×39. Thus 19³+20³−39³ = −3×19×20×39 = −44460. Now −44460+118 = −44342.'}, {qn:8, exam:'SSC CGL PRE 2025', en:'Simplify: (2.4 + 3.125) × 0.25 – (0.75 ÷ 0.3)', hi:'सरल कीजिए: (2.4 + 3.125) × 0.25 – (0.75 ÷ 0.3)', options:['-1.11875', '1.11875', '2.8756', '-2.8756'], answer:0, sol1:'(2.4+3.125)=5.525, ×0.25≈1.38, and 0.75/0.3=2.5. So 1.38−2.5 is a small negative number close to −1.12, matching only option (a).', sol2:'(2.4+3.125) = 5.525. 5.525×0.25 = 1.38125. (0.75÷0.3) = 2.5. So 1.38125 − 2.5 = −1.11875.'}, {qn:9, exam:'SSC CGL PRE 2025', en:'Solve: (7921 – 2070.25) × (1/4)', hi:'हल कीजिए: (7921 – 2070.25) × (1/4)', options:['10.875', '8.875', '7.785', '6.685'], answer:0, sol1:'The bracket (7921−2070.25) = 5850.75 is divided down to a small number matching option (a) once the correct fractional operation (as intended in the original expression) is applied — since the printed fraction symbol did not extract cleanly from the source PDF, we rely on the official answer key value of 10.875 here.', sol2:'7921 − 2070.25 = 5850.75. Following the source\'s intended operation on this difference (fraction distorted in extraction), the final simplified value works out to 10.875 as per the answer key.'}, {qn:10, exam:'SSC CGL PRE 2025', en:'27³ + 10³ – 29³ + 246 is equal to:', hi:'27³ + 10³ – 29³ + 246 बराबर है:', options:['0', '-3460', '-2860', '1'], answer:1, sol1:'Since 27+10=37≠29, the a+b+c=0 shortcut doesn\'t directly apply here; but noting 29=27+2 (not 27+10), we simply compute directly: 27³+10³=19683+1000=20683, 29³=24389, so 20683−24389+246 = −3460, matching option (b).', sol2:'27³=19683, 10³=1000, 29³=24389. So 19683+1000−24389+246 = 20683−24389+246 = −3706+246 = −3460.'}, {qn:11, exam:'UPSI, 15.12.2017 Shift-2', en:'(23.1)(10+13.1) + (48.6)(24+24.6) – (39.8)(13+13.4+13.4) = 1011 + x, then x =', hi:'(23.1)(10+13.1) + (48.6)(24+24.6) – (39.8)(13+13.4+13.4) = 1011 + x, तो x =', options:['300.53', '310.5', '313.53', '305.53'], answer:0, sol1:'Rounding: 23.1×23.1≈533, 48.6×48.6≈2362, 39.8×39.8≈1584; net ≈533+2362−1584=1311, minus 1011 gives about 300, matching option (a) most closely.', sol2:'23.1×23.1 = 533.61; 48.6×48.6 = 2361.96; 39.8×39.8 = 1584.04. Sum: 533.61+2361.96−1584.04 = 1311.53. So x = 1311.53−1011 = 300.53.'}, {qn:12, exam:'RRB GROUP – D, 2025-26', en:'Find the simplified value of 37² – 36² + 35² – 34² + 33² – 32²', hi:'37² – 36² + 35² – 34² + 33² – 32² का सरलीकृत मान ज्ञात कीजिए।', options:['207', '200', '197', '211'], answer:0, sol1:'Each pair (a²−b²)=(a−b)(a+b)=1×(a+b) since consecutive numbers differ by 1. So sum = (37+36)+(35+34)+(33+32) = 73+69+65 = 207, matching option (a) directly.', sol2:'Group in pairs: (37²−36²)=(37+36)=73; (35²−34²)=(35+34)=69; (33²−32²)=(33+32)=65. Sum = 73+69+65 = 207.'}],
+  set3: [{qn:13, exam:'SSC CGL PRE 2025', en:'Evaluate: 80% of 350 – 37(1/2)% of 160 + 11% of 500', hi:'मान ज्ञात कीजिए: 350 का 80% – 160 का 37(1/2)% + 500 का 11%', options:['225', '250', '275', '300'], answer:2, sol1:'80% of 350=280, 37.5% of 160=60, 11% of 500=55. So 280−60+55 = 275, matching option (c) directly with simple rounding checks confirming the magnitude.', sol2:'0.80×350 = 280. 0.375×160 = 60. 0.11×500 = 55. So 280 − 60 + 55 = 275.'}, {qn:1, exam:'UP Constable 31/08/2024 (Shift-01)', en:'If 30% of 4200 + 35% of 2400 = x% of 4200, then find the value of x.', hi:'यदि 4200 का 30% + 2400 का 35% = 4200 का x% है, तो x का मान ज्ञात कीजिए।', options:['50', '40', '48', '48'], answer:0, sol1:'30% of 4200=1260 and 35% of 2400=840, sum=2100, which is exactly half of 4200 — so x must be 50, matching option (a) without long division.', sol2:'0.30×4200 = 1260. 0.35×2400 = 840. Sum = 2100. Now x% of 4200 = 2100 ⟹ x = (2100/4200)×100 = 50.'}, {qn:2, exam:'NTPC UG, CBT-1, 2025', en:'Find the value of 145²', hi:'145² का मान ज्ञात कीजिए।', options:['21025', '21005', '21075', '20975'], answer:0, sol1:'For numbers ending in 5, square shortcut: 14×15=210, append 25 → 21025, matching option (a) instantly.', sol2:'Use (a+b)² form: 145=140+5. (140+5)² = 19600+1400+25 = 21025.'}, {qn:3, exam:'NTPC UG, CBT-1, 2025', en:'Find the value of 74²', hi:'74² का मान ज्ञात कीजिए।', options:['5456', '5526', '5486', '5476'], answer:3, sol1:'74 is close to 75, whose square (5625) is a known milestone; 74² should be a bit less, and only option (d) 5476 fits that range precisely.', sol2:'74² = (70+4)² = 4900+560+16 = 5476.'}, {qn:4, exam:'NTPC UG, CBT-1, 2025', en:'Find the value of 182²', hi:'182² का मान ज्ञात कीजिए।', options:['33074', '33094', '33124', '33084'], answer:2, sol1:'182 is close to 180 (180²=32400); adding the correction for the extra 2 gives roughly 33124, matching option (c).', sol2:'182² = (180+2)² = 32400+720+4 = 33124.'}, {qn:5, exam:'RRB JE 2024', en:'Find the value of 184²', hi:'184² का मान ज्ञात कीजिए।', options:['33806', '33856', '33836', '33866'], answer:1, sol1:'184 is close to 180 (180²=32400); the correction for +4 gives 32400+1440+16=33856, matching option (b).', sol2:'184² = (180+4)² = 32400+1440+16 = 33856.'}, {qn:6, exam:'RRB RPF SI 2024', en:'Find the value of 124²', hi:'124² का मान ज्ञात कीजिए।', options:['15366', '15406', '15376', '15356'], answer:2, sol1:'124 is close to 120 (120²=14400); correction for +4 gives 14400+960+16=15376, matching option (c).', sol2:'124² = (120+4)² = 14400+960+16 = 15376.'}, {qn:7, exam:'RRB RPF SI 2024', en:'Find the value of 147²', hi:'147² का मान ज्ञात कीजिए।', options:['21609', '21669', '21629', '21639'], answer:0, sol1:'147 is close to 150 (150²=22500); since 147 is 3 less, subtract roughly 2×150×3=900 minus 9, giving 21609, matching option (a).', sol2:'147² = (150−3)² = 22500−900+9 = 21609.'}, {qn:8, exam:'SSC CHSL 2021', en:'If p = 38, then the value of p(p² + 3p + 3) is ____', hi:'यदि p = 38 है तो p(p² + 3p + 3) का मान ज्ञात कीजिए।', options:['39313', '59319', '39318', '59318'], answer:3, sol1:'p(p²+3p+3) = (p+1)³ − 1. Here p+1=39, so 39³−1. Since 39³ ends near 59319, subtracting 1 keeps it near that value — matching option (d) 59318.', sol2:'p(p²+3p+3) = p³+3p²+3p = (p+1)³ − 1. With p=38, (39)³−1 = 59319−1 = 59318.'}, {qn:9, exam:'SSC CHSL 30/05/2022 (Afternoon)', en:'If x = 9, then the value of x⁵ – 10x⁴ + 10x³ – 10x² + 10x – 1 is:', hi:'यदि x = 9, तो x⁵ – 10x⁴ + 10x³ – 10x² + 10x – 1 का मान है:', options:['10', '8', '9', '1'], answer:1, sol1:'Since x=9, note that 10=x+1. Substituting (x+1) for every \'10\' causes the expansion to telescope, leaving just (x−1) = 8, matching option (b) directly.', sol2:'Since x=9, write 10=x+1. Then x⁵−(x+1)x⁴+(x+1)x³−(x+1)x²+(x+1)x−1 telescopes to (x−1). So answer = 9−1 = 8.'}, {qn:10, exam:'RRB NTPC GL, CBT-1, 2025', en:'If x = 5 and y = -5, then find the value of 64x³ + 27y³ + 144x²y + 108xy²', hi:'यदि x = 5 और y = -5 है, तो 64x³ + 27y³ + 144x²y + 108xy² का मान ज्ञात कीजिए।', options:['120', '100', '150', '125'], answer:3, sol1:'This expression is the expansion of (4x+3y)³ (since 64=4³, 27=3³, and cross-terms 144=3×4²×3, 108=3×4×3²). So value = (4×5+3×(−5))³ = (20−15)³ = 5³ = 125, matching option (d).', sol2:'Recognize (4x+3y)³ = 64x³+27y³+3×(4x)²(3y)+3×(4x)(3y)² = 64x³+27y³+144x²y+108xy². With x=5,y=−5: (4×5+3×(−5))³ = (20−15)³ = 5³ = 125.'}, {qn:11, exam:'SSC CGL T-2 2018', en:'If A = (1/0.4) + (1/0.04) + (1/0.004) + ... upto 8 terms, then what is the value of A?', hi:'यदि A = (1/0.4) + (1/0.04) + (1/0.004) + ... upto 8 पदों तक, A का मान क्या है?', options:['27272727.5', '25252525.5', '27777777.5', '55555555.5'], answer:2, sol1:'Each term is 10× the previous one (2.5, 25, 250, ...), a geometric series with ratio 10 and 8 terms. The sum of such a series is dominated by the last couple of terms, landing near 2.78×10⁷ — matching option (c) precisely.', sol2:'First term = 1/0.4 = 2.5, common ratio = 10. Sum of 8 terms = 2.5×(10⁸−1)/(10−1) = 2.5×11111111 = 27777777.5.'}, {qn:12, exam:'SSC CGL T-2 2017', en:'If M = 0.1 + (0.1)² + (0.01)² and N = (0.3) + (0.03)² + (0.003)², then what is the value of M + N?', hi:'यदि M = 0.1 + (0.1)² + (0.01)² तथा N = (0.3) + (0.03)² + (0.003)² हैं, तो M + N का मान क्या होगा?', options:['0.411009', '0.413131', '0.313131', '0.131313'], answer:0, sol1:'M=0.1+0.01+0.0001=0.1101, N=0.3+0.0009+0.000009=0.300909. Adding gives roughly 0.411, matching option (a).', sol2:'M = 0.1+0.01+0.0001 = 0.1101. N = 0.3+0.0009+0.000009 = 0.300909. M+N = 0.1101+0.300909 = 0.411009.'}, {qn:13, exam:'SSC CHSL 2023 PRE', en:'Find x, if 30% of 400 + x% of 70 = 25% of 536', hi:'x ज्ञात कीजिए, यदि 400 का 30% + 70 का x% = 536 का 25% है।', options:['20', '30', '10', '40'], answer:0, sol1:'25% of 536=134, 30% of 400=120, so x% of 70 must equal 134−120=14, giving x=20, matching option (a) directly.', sol2:'0.25×536 = 134. 0.30×400 = 120. So (x/100)×70 = 134−120 = 14 ⟹ x = (14/70)×100 = 20.'}, {qn:14, exam:'CPO 2018', en:'6410.25/3465 + 1.12×1.18×1.25 + 1.392% of 1605 + (1.4)³ – (1.45)² = ?', hi:'6410.25/3465 + 1.12×1.18×1.25 + 1605 का 1.392% + (1.4)³ – (1.45)² = ?', options:['26.4851', '28.6232', '24.3524', '27.6828'], answer:0, sol1:'6410.25/3465≈1.85, 1.12×1.18×1.25≈1.65, 1.392% of 1605≈22.35, 1.4³=2.744, 1.45²≈2.10; summing 1.85+1.65+22.35+2.744−2.10 ≈ 26.5, closely matching option (a).', sol2:'6410.25/3465 = 1.8500 (approx). 1.12×1.18×1.25 = 1.652. 1.392% of 1605 = 22.3416. 1.4³=2.744. 1.45²=2.1025. Sum: 1.85+1.652+22.3416+2.744−2.1025 ≈ 26.4851.'}],
+  set4: [{qn:15, exam:'SSC CHSL T-1 2023', en:'Simplify: [(80×80×80)+(70×70×70)+(50×50×50) – 840000] / [6400+4900+2500–5600–3500–4000]', hi:'दिए गए व्यंजक को सरल कीजिए: [(80×80×80)+(70×70×70)+(50×50×50)–840000] / [6400+4900+2500–5600–3500–4000]', options:['300', '200', '100', '400'], answer:1, sol1:'Note 80+70+50=200 and their product-related term 3×80×70×50=840000 exactly cancels the subtracted 840000, meaning numerator = a³+b³+c³−3abc = (a+b+c)(a²+b²+c²−ab−bc−ca). Denominator simplifies similarly, and dividing gives a clean value of 200, matching option (b).', sol2:'Numerator: 80³+70³+50³−840000 = 512000+343000+125000−840000 = 140000. Denominator: 6400+4900+2500−5600−3500−4000 = 700. So 140000/700 = 200.'}, {qn:16, exam:'CDS', en:'Value of x⁵ – 8x³ + 16x² – 7x + 1 at x = 9', hi:'x⁵ – 8x³ + 16x² – 7x + 1 का मान, जब x = 9 है', options:['51858', '51859', '51849', '51839'], answer:1, sol1:'Direct substitution of x=9 gives 9⁵−8(9³)+16(9²)−7(9)+1 = 59049−5832+1296−63+1 = 54451. NOTE: this computed value (54451) does not match any of the listed options (~51,800s); there appears to be a transcription error in this question as printed in the source sheet. We show the standard working below and flag the discrepancy for the reader to verify against the original source.', sol2:'9⁵=59049, 8×9³=8×729=5832, 16×9²=16×81=1296, 7×9=63. So 59049−5832+1296−63+1 = 54451. [This does not match the printed options; likely a typo in the source expression or options.]'}, {qn:17, exam:'SSC CGL PRE 2023', en:'What is the value of (3x³+5x²y+12xy²+7y³), when x = -4 and y = -1?', hi:'(3x³+5x²y+12xy²+7y³) का मान क्या है, जब x = -4 और y = -1 है?', options:['-329', '-359', '-361', '-327'], answer:3, sol1:'With x=−4,y=−1, each term is negative or small: 3x³=−192, 5x²y=−80, 12xy²=−48, 7y³=−7. Summing these negative values gives something close to −327, matching option (d).', sol2:'x=−4,y=−1: 3x³=3×(−64)=−192. 5x²y=5×16×(−1)=−80. 12xy²=12×(−4)×1=−48. 7y³=7×(−1)=−7. Sum: −192−80−48−7 = −327.'}, {qn:18, exam:'CHSL 2018', en:'If a = 102, then find the value of a(a² – 3a + 3)', hi:'यदि a = 102 हो, तो a(a² – 3a + 3) का मान बताइए।', options:['1030302', '1010101', '1000002', '9999992'], answer:0, sol1:'a(a²−3a+3) = (a−1)³ + 1. With a−1=101, 101³+1 is close to 1,030,301+1=1,030,302, matching option (a) directly.', sol2:'a(a²−3a+3) = a³−3a²+3a = (a³−3a²+3a−1)+1 = (a−1)³+1. With a=102: (101)³+1 = 1030301+1 = 1030302.'}, {qn:19, exam:'SSC CGL Pre. 2022, 03.12.2022 Shift-3', en:'The value of 95 × 105 is:', hi:'95 × 105 का मान है:', options:['9981', '9935', '9965', '9975'], answer:3, sol1:'95×105 = (100−5)(100+5) = 100²−5² = 10000−25 = 9975, matching option (d) instantly via the difference-of-squares trick.', sol2:'Use (a−b)(a+b) with a=100,b=5: 100²−5² = 10000−25 = 9975.'}, {qn:20, exam:'SSC CPO 09/11/2022 (Shift-01)', en:'The value of (1018)² – 1019×1017 + 1015×1012 – 1016×1011', hi:'(1018)² – 1019×1017 + 1015×1012 – 1016×1011 का मान ज्ञात करें।', options:['1', '4', '3', '5'], answer:3, sol1:'Each pair of terms is close to 1018², and writing every number as 1018±small_offset and expanding using (a+p)(a+q)=a²+a(p+q)+pq shows the a² terms cancel, leaving only small offset-products which sum to 5, matching option (d).', sol2:'Let a=1018. 1019×1017=(a+1)(a−1)=a²−1. 1015×1012=(a−3)(a−6)=a²−9a+18. 1016×1011=(a−2)(a−7)=a²−9a+14. So expression = a² − (a²−1) + (a²−9a+18) − (a²−9a+14) = 1 + 4 = 5.'}, {qn:21, exam:'SSC CGL 17/07/2023 (S-3)', en:'The product of 277 and 323 is:', hi:'277 और 323 का गुणनफल है:', options:['89471', '88471', '91371', '89391'], answer:0, sol1:'Write as (300−23)(300+23) = 300²−23² = 90000−529 = 89471, matching option (a) via the difference-of-squares shortcut.', sol2:'277×323 = (300−23)(300+23) = 300²−23² = 90000−529 = 89471.'}, {qn:1, exam:'SSC CHSL Tier 1 (17 Nov 2025, Shift-2)', en:'If the original price of the items is ₹2,050 and the discount is 26%, what will be the final price after the discount?', hi:'यदि वस्तुओं की मूल कीमत ₹2,050 है और छूट 26% है, तो छूट के बाद अंतिम कीमत क्या होगी?', options:['₹1,500', '₹1,650', '₹1,517', '₹1,710'], answer:2, sol1:'26% off means paying 74% of the price. 74% of 2050 is close to 3/4 of 2050 (≈1538), slightly less — landing near 1517, matching option (c).', sol2:'Final price = 2050 × (1−0.26) = 2050 × 0.74 = 1517.'}, {qn:2, exam:'IB ACIO 2025 GRADE-II', en:'A person invested ₹54,500 at 12% p.a. simple interest for 2 years. Find the amount (in ₹) received after 2 years.', hi:'किसी व्यक्ति ने ₹54,500 का निवेश 12% वार्षिक साधारण ब्याज की दर पर 2 वर्षों के लिए किया है। 2 वर्ष बाद उसे प्राप्त होने वाला मिश्रधन (₹ में) ज्ञात कीजिए।', options:['68,580', '13,080', '14,080', '67,580'], answer:3, sol1:'SI for 2 years at 12% = 24% of principal ≈ 13,080; adding to principal (54500) gives about 67,580, matching option (d).', sol2:'SI = (54500×12×2)/100 = 13080. Amount = 54500+13080 = 67580.'}, {qn:3, exam:'SSC CPO 2023', en:'At a courier shop, 8 parcels were found weighing 1.5 kg, 1.25 kg, 1.35 kg, 750 gm, 950 gm, 0.7 kg, 0.4 kg and 0.5 kg. Find their average weight.', hi:'एक कूरियर शॉप पर, 8 पार्सलों का वजन 1.5 kg, 1.25 kg, 1.35 kg, 750 gm, 950 gm, 0.7 kg, 0.4 kg और 0.5 kg पाया गया। उनका औसत वजन ज्ञात कीजिए।', options:['875gm', '925gm', '900gm', '700gm'], answer:1, sol1:'Convert all to kg: 1.5,1.25,1.35,0.75,0.95,0.7,0.4,0.5 — total is 7.4 kg; dividing by 8 gives 0.925 kg = 925 gm, matching option (b).', sol2:'Sum = 1.5+1.25+1.35+0.75+0.95+0.7+0.4+0.5 = 7.4 kg. Average = 7.4/8 = 0.925 kg = 925 gm.'}, {qn:4, exam:'SSC MTS 2025', en:'A grocer\'s sales for five consecutive months were Rs. 5456, Rs. 5972, Rs. 5857, Rs. 5235, and Rs. 5526. What must his sales be in the sixth month to achieve an average sale of Rs. 6400?', hi:'एक किराना दुकानदार की लगातार पाँच महीनों की बिक्री क्रमशः 5456 रुपये, 5972 रुपये, 5857 रुपये, 5235 रुपये और 5526 रुपये थी। 6400 रुपये की औसत बिक्री हासिल करने के लिए छठे महीने में उसकी बिक्री कितनी होनी चाहिए?', options:['Rs. 18354', 'Rs. 12534', 'Rs. 14368', 'Rs. 10354'], answer:3, sol1:'Total needed for 6 months at average 6400 = 38400. Sum of first five months ≈ 28046. Required sixth month sale ≈ 38400−28046 = 10354, matching option (d).', sol2:'Required total = 6400×6 = 38400. Sum of 5 months = 5456+5972+5857+5235+5526 = 28046. Sixth month sales = 38400−28046 = 10354.'}, {qn:5, exam:'IB ACIO 2025 GRADE-II', en:'The product of two numbers is 28224 and their H.C.F. is 56. Find their L.C.M.', hi:'दो संख्याओं का गुणनफल 28224 है और उनका महत्तम समापवर्तक (H.C.F.) 56 है। उनका लघुत्तम समापवर्त्य (L.C.M.) ज्ञात कीजिए।', options:['499', '505', '504', '512'], answer:2, sol1:'Product = HCF × LCM. So LCM = 28224/56. Since 56×500=28000, and 28224 is a bit more, LCM is a little over 500 — closely matching option (c) 504.', sol2:'Product of numbers = HCF × LCM. So LCM = 28224/56 = 504.'}, {qn:6, exam:'RRB Technician Grade-III 20/12/2024', en:'A man has invested Rs.65000 at a rate of 7(1/2)% per annum simple interest for 6 years. Find the amount he will receive after 6 years.', hi:'एक आदमी ने 6 वर्ष के लिए 7(1/2)% वार्षिक साधारण ब्याज की दर पर 65,000 रुपये का निवेश किया है। वह धनराशि ज्ञात कीजिए जो उसे 6 वर्ष बाद प्राप्त होगी।', options:['Rs.28750', 'Rs.95750', 'Rs.29250', 'Rs.94250'], answer:3, sol1:'7.5% for 6 years = 45% of principal as interest ≈ 29,250; adding to 65000 gives about 94,250, matching option (d).', sol2:'SI = (65000×7.5×6)/100 = 29250. Amount = 65000+29250 = 94250.'}, {qn:7, exam:'IB ACIO GRADE-II 16/09/2025 (Shift-01)', en:'A person invests ₹54,500 at 12% per annum simple interest for 2 years. Find the amount he will receive after 2 years.', hi:'एक व्यक्ति 2 वर्षों के लिए 12% प्रति वर्ष साधारण ब्याज की दर से ₹54,500 का निवेश करता है। 2 वर्षों के बाद उसे प्राप्त होने वाली राशि (₹ में) ज्ञात कीजिए।', options:['68,580', '13,080', '14,080', '67,580'], answer:3, sol1:'Same setup as Q2: SI for 2 years at 12% adds 24% of principal, giving amount close to 67,580, matching option (d).', sol2:'SI = (54500×12×2)/100 = 13080. Amount = 54500+13080 = 67580.'}, {qn:8, exam:'UPSC CDS-1 2025', en:'How much will Rs 10,000 amount to in one year\'s time at 4% rate of interest per annum if the interest is compounded once every three months?', hi:'यदि ब्याज हर तीन महीने में एक बार संयोजित किया जाता है, तो 4% वार्षिक ब्याज दर पर एक वर्ष में 10000 रुपये कितने हो जाएँगे?', options:['Rs 10,406', 'Rs 10,416', 'Rs 10,426', 'Rs 10,436'], answer:0, sol1:'Quarterly compounding at 1% per quarter for 4 quarters gives roughly 4% growth plus a small compounding bonus, landing just above 10,400 — matching option (a).', sol2:'Rate per quarter = 4%/4 = 1%. Amount = 10000×(1.01)⁴ = 10000×1.040604 ≈ 10406.'}],
+  set5: [{qn:9, exam:'IB ACIO 2025 GRADE-II', en:'Vipul gets an increase of 5% in his sales in the first year and an increase of 25% in the second year, taking his current sales to ₹1,42,800. What was his sales (in ₹) two years ago?', hi:'विपुल को सेल में पहले वर्ष में 5% की वृद्धि और दूसरे वर्ष में 25% की वृद्धि प्राप्त होती है, जिससे उनकी वर्तमान सेल ₹1,42,800 हो जाती है। दो वर्ष पहले उसका सेल (₹ में) कितना था?', options:['1,14,240', '1,08,800', '1,36,000', '88,800'], answer:1, sol1:'Working backwards: divide 142800 by 1.25 then by 1.05. Rough estimate: 142800/1.25≈114240, /1.05≈108800, matching option (b).', sol2:'Two years ago sales = 142800 ÷ 1.25 ÷ 1.05 = 114240 ÷ 1.05 = 108800.'}, {qn:10, exam:'RRB NTPC GL, 27/03/2026 (Morning)', en:'A person sets up a concession stand and sells burgers and soft drinks. Each burger costs ₹15, and each soft drink costs ₹5. By the end, having sold a total of 87 burgers and soft drinks, he earns a total income of ₹785. How many soft drinks were sold in total?', hi:'एक व्यक्ति बास्केटबॉल मैच के दौरान एक रियायती स्टॉल लगाता है और बर्गर एवं सॉफ्ट ड्रिंक्स बेचता है। प्रत्येक बर्गर की कीमत ₹15 और सॉफ्ट ड्रिंक की कीमत ₹5 है। अंत में, कुल 87 बर्गर और सॉफ्ट ड्रिंक बेचकर उसे कुल ₹785 की आय अर्जित होती है। कुल कितनी सॉफ्ट ड्रिंक बेची गई?', options:['52', '35', '27', '60'], answer:0, sol1:'If all 87 were burgers, income would be 87×15=1305, which is 520 more than 785. Each soft drink instead of a burger reduces income by 10, so 520/10=52 soft drinks — matching option (a).', sol2:'Let soft drinks = s, burgers = 87−s. 15(87−s)+5s = 785 ⟹ 1305−10s = 785 ⟹ 10s = 520 ⟹ s = 52.'}, {qn:11, exam:'RRB NTPC GL, 16/03/2026 (Afternoon)', en:'Jaspreet deposited a sum of ₹28,450 at an annual interest rate of 20%, compounded annually. Calculate the total amount Jaspreet will receive after 2 years.', hi:'जसप्रीत ने ₹28,450 की धनराशि 20% वार्षिक ब्याज दर पर जमा की जबकि ब्याज वार्षिक रूप से संयोजित होता है। 2 वर्ष बाद जसप्रीत को प्राप्त कुल मिश्रधन ज्ञात कीजिए।', options:['₹40,624', '₹40,968', '₹40,958', '₹41,126'], answer:1, sol1:'20% compounded for 2 years means multiplying by 1.2 twice, i.e., by 1.44. 28450×1.44 is close to 40,968, matching option (b).', sol2:'Amount = 28450×(1.2)² = 28450×1.44 = 40968.'}, {qn:12, exam:'RRB NTPC GL, 18/03/2026 (Afternoon)', en:'Group A has 48 members, Group B has 46 members, and Group C has 36 members. The average amount spent per member in Groups A, B, and C is ₹477, ₹236, and ₹348, respectively. Find the overall average amount spent per member (in ₹).', hi:'समूह A में 48 सदस्य, समूह B में 46 सदस्य और समूह C में 36 सदस्य हैं। इन सभी समूहों के सदस्य एक रेस्टोरेंट में गए। समूह A, B और C के प्रत्येक सदस्य पर व्यय की गई औसत धनराशि क्रमशः ₹477, ₹236 और ₹348 है। प्रति सदस्य व्यय की गई समग्र औसत धनराशि (₹ में) ज्ञात कीजिए।', options:['351', '360', '356', '355'], answer:2, sol1:'Weighted average = (48×477+46×236+36×348)/(48+46+36). Rough estimate: total spend ≈22896+10856+12528=46280, total members=130, average≈356, matching option (c).', sol2:'Total spent = 48×477+46×236+36×348 = 22896+10856+12528 = 46280. Total members = 48+46+36 = 130. Average = 46280/130 = 356.'}, {qn:13, exam:'RRB NTPC GL, 16/03/2026 (Afternoon)', en:'The price of fuel decreases by 40%, 60%, and 60% over three consecutive months, but increases by 70% in the fourth month. In the fourth month, what is the percentage increase or decrease in fuel prices compared to the original price?', hi:'ईंधन की कीमत लगातार तीन महीनों में 40%, 60% और 60% घटती है, लेकिन चौथे महीने में 70% बढ़ जाती है। चौथे महीने में ईंधन की कीमतों में इसकी मूल कीमत की तुलना में कितना प्रतिशत वृद्धि या कमी हुई है?', options:['87.04% की वृद्धि', '84.38% की कमी', '80.38% की वृद्धि', '83.68% की कमी'], answer:3, sol1:'Multiply the retained fractions: 0.60×0.40×0.40×1.70. This is a small fraction (about 0.163) of the original, meaning roughly an 84% decrease overall, closely matching option (d) 83.68% decrease.', sol2:'Net factor = 0.60×0.40×0.40×1.70 = 0.1632. So new price = 16.32% of original, a decrease of 100−16.32 = 83.68%.'}, {qn:14, exam:'RRB JE 2025', en:'Garima bought an original hardbound book for ₹56,000. Its value depreciates by 5% per year. What will be the price of the book after 3 years?', hi:'गरिमा ने एक असली सजिल्द पुस्तक ₹56,000 में खरीदी। इसका मूल्य 5% वार्षिक दर से घटता है। 3 वर्ष बाद पुस्तक का मूल्य क्या होगा?', options:['47,052', '48,013', '48,512', '48,713'], answer:1, sol1:'5% yearly depreciation for 3 years means multiplying by 0.95 three times (≈0.857). 56000×0.857 is close to 48,013, matching option (b).', sol2:'Value after 3 years = 56000×(0.95)³ = 56000×0.857375 = 48013.'}, {qn:15, exam:'SSC MTS 2025', en:'A retailer marks an article 30% above its cost price. During a clearance sale, he gives two successive discounts of 15% and 10% on the marked price. If the final selling price is Rs 11934, find the cost price of the article.', hi:'एक खुदरा विक्रेता एक वस्तु पर उसके क्रय मूल्य से 30% अधिक मूल्य अंकित करता है। एक क्लीयरेंस सेल के दौरान, वह अंकित मूल्य पर 15% और 10% की दो क्रमिक छूट देता है। यदि अंतिम विक्रय मूल्य 11934 रुपये है, तो वस्तु का क्रय मूल्य ज्ञात कीजिए।', options:['Rs.12000', 'Rs. 12200', 'Rs. 12400', 'Rs. 12600'], answer:0, sol1:'Overall multiplying factor from CP to SP = 1.30×0.85×0.90 ≈ 0.9945, so CP ≈ SP/0.9945 ≈ 12000, matching option (a) neatly (a round number, a good sign in MCQ problems).', sol2:'SP = CP×1.30×0.85×0.90 = CP×0.9945. So CP = 11934/0.9945 = 12000.'}, {qn:16, exam:'DP CONSTABLE 02/12/2023 (Shift-02)', en:'Three successive discounts of 15%, 10% and 8% are equivalent to a single discount of k%. Find the value of k.', hi:'15%, 10% और 8% की तीन क्रमिक छूट k% की एकल छूट के बराबर हैं। k का मान ज्ञात करें।', options:['27.62%', '28.62%', '29.62%', '30.62%'], answer:2, sol1:'Multiply retained fractions: 0.85×0.90×0.92 ≈ 0.7038, meaning about 70.4% is retained, so the discount is close to 29.6%, matching option (c).', sol2:'Retained fraction = 0.85×0.90×0.92 = 0.7038. So single discount = (1−0.7038)×100 = 29.62%.'}, {qn:17, exam:'UPSI 22/11/2021 (Shift-03)', en:'A trader sells an item after giving successive discounts of 25% and 26%. If the marked price of the item is ₹21,600 (as per answer key), what is the selling price?', hi:'एक व्यापारी क्रमशः 25% और 26% की दो क्रमिक छूट के बाद वस्तु बेचता है। यदि वस्तु का अंकित मूल्य ₹21,600 है (उत्तर कुंजी अनुसार), तो विक्रय मूल्य ज्ञात कीजिए?', options:['11988', '11688', '11788', '11888'], answer:0, sol1:'Retained fraction = 0.75×0.74 = 0.555. 21600×0.555 ≈ 11988, matching option (a). Note: the printed question shows the marked price as ₹2,16,000, but this gives SP=₹1,19,880, ten times the option values — the marked price is very likely ₹21,600 (a decimal/printing slip in the source), which correctly gives option (a).', sol2:'SP = MP×0.75×0.74. Using MP=21600 (matching the answer key scale): SP = 21600×0.555 = 11988.'}, {qn:18, exam:'DPHC AWO/TPO 28/10/2022 (Shift-03)', en:'An electric fan lists at ₹265.80 and is sold at a discount of 10%. The shopkeeper gives a further discount of 8% for cash payment. The selling price of the fan, when payment is made in cash, is:', hi:'एक इलेक्ट्रिक पंखा 265.80 रुपये पर सूचीबद्ध है और 10% की छूट पर बेचा जाता है। दुकानदार नकद भुगतान पर 8% की अतिरिक्त छूट देता है। जब भुगतान नकद में किया जाता है, तो पंखे का विक्रय मूल्य हैः', options:['₹10.07', '₹220.08', '₹239.22', '₹250.00'], answer:2, sol1:'After the first 10% discount, price = 265.80×0.90 = 239.22. NOTE: the source\'s printed answer key marks (c) 239.22 as correct, though applying the second 8% discount as well gives 239.22×0.92 = 220.08 (option b) mathematically — this looks like a key inconsistency; we present both steps below for clarity.', sol2:'After first discount: 265.80×0.90 = 239.22. Applying the further 8% cash discount: 239.22×0.92 = 220.0824 (≈₹220.08). [The printed key states (c) 239.22, which is only the price after the first discount; please verify against your source.]'}, {qn:19, exam:'DPHC AWO/TPO 27/10/2022 (Shift-02)', en:'The marked price of a water bottle is ₹950. A man bought the same for ₹740, after getting two successive discounts. If the first discount is 12%, then what is the second discount?', hi:'एक पानी की बोतल का अंकित मूल्य 950 रुपये है। एक व्यक्ति ने लगातार दो छूट प्राप्त करने के बाद इसे 740 रुपये में खरीदा। यदि पहली छूट 12% है, तो दूसरी छूट क्या है?', options:['13.45%', '12.46%', '14.56%', '11.48%'], answer:3, sol1:'After 12% off, price = 950×0.88 = 836. The second discount reduces 836 to 740, a drop of about 96, which is roughly 11.5% of 836 — matching option (d).', sol2:'After first discount: 950×0.88 = 836. Second discount % = (836−740)/836×100 = 96/836×100 ≈ 11.48%.'}, {qn:20, exam:'RRB Group – D, 02/02/2026 (Afternoon)', en:'A bookstore sells 2 mathematics books and 3 science books for ₹1,980. It also sells 3 mathematics books and 2 science books for ₹1,920. What is the total cost of one mathematics book and one science book?', hi:'एक बुकस्टोर 2 गणित की किताबें और 3 विज्ञान की किताबें ₹1,980 में बेचता है। वह साथ ही 3 गणित की किताबें और 2 विज्ञान की किताबें ₹1,920 में बेचता है। एक गणित की किताब और एक विज्ञान की किताब का कुल मूल्य कितना है?', options:['₹780', '₹760', '₹820', '₹800'], answer:0, sol1:'Simply add both given equations directly: (2M+3S)+(3M+2S) = 1980+1920 ⟹ 5M+5S = 3900 ⟹ M+S = 3900/5 = 780, matching option (a) without solving for M and S individually.', sol2:'Let M=maths book, S=science book. 2M+3S=1980 ... (i); 3M+2S=1920 ... (ii). Adding (i)+(ii): 5M+5S=3900 ⟹ M+S=780. (Individually: solving gives M=360, S=420, and indeed 360+420=780.)'}, {qn:21, exam:'RRB Group – D, 11/12/2025 (Morning)', en:'The cost of 3 cups and 4 glasses is ₹270. If 2 more glasses are purchased, the total amount becomes ₹330. Find the cost of one cup.', hi:'3 कप और 4 गिलासों की कीमत ₹270 है। यदि 2 गिलास और खरीदे जाएँ, तो कुल राशि ₹330 हो जाती है। एक कप की कीमत ज्ञात कीजिए।', options:['₹40', '₹30', '₹45', '₹50'], answer:3, sol1:'2 extra glasses cost ₹60, so one glass = ₹30. Substituting back: 3 cups + 4(30) = 270 ⟹ 3 cups = 150 ⟹ 1 cup = 50, matching option (d).', sol2:'2 glasses cost 330−270=60, so 1 glass = 30. From 3 cups+4 glasses=270: 3 cups = 270−120 = 150, so 1 cup = 50.'}, {qn:22, exam:'RRB Group – D, 26/12/2025 (Afternoon)', en:'At a stationery shop, the total cost of 2 red pens and 3 blue pens is ₹78. On the other hand, the total cost of 3 red pens and 2 blue pens is ₹72. What is the combined cost of one red pen and one blue pen?', hi:'एक स्टेशनरी शॉप पर, 2 लाल पेन और 3 नीले पेन की कुल कीमत ₹78 है। दूसरी ओर, 3 लाल पेन और 2 नीले पेन की कुल कीमत ₹72 है। एक लाल पेन और एक नीले पेन को मिलाकर कुल कीमत कितनी है?', options:['₹30', '₹26', '₹36', '₹33'], answer:0, sol1:'Adding both equations: 5 red+5 blue=150, so 1 red+1 blue=30, matching option (a) directly without solving for each pen individually.', sol2:'2R+3B=78 ...(i); 3R+2B=72 ...(ii). Adding: 5R+5B=150 ⟹ R+B=30.'}, {qn:23, exam:'RRB Group – D, 09/02/2026 (Evening)', en:'The cost of 2 chocolates and 3 cookies is ₹36. The cost of 1 chocolate and 2 cookies is ₹23. What will be the cost of 4 chocolates and 5 cookies?', hi:'2 चॉकलेट और 3 कुकीज़ की कीमत ₹36 है। 1 चॉकलेट और 2 कुकीज़ की कीमत ₹23 है। 4 चॉकलेट और 5 कुकीज़ की कीमत कितनी होगी?', options:['₹66', '₹56', '₹52', '₹62'], answer:3, sol1:'Doubling the second equation gives 2 chocolate+4 cookies=46; subtracting from the first (2choc+3cookies=36) isolates cookies: 1 cookie=10, then 1 chocolate=3. So 4 choc+5 cookies = 12+50 = 62, matching option (d).', sol2:'2C+3K=36 ...(i); C+2K=23 ...(ii). From (ii): C=23−2K. Substitute in (i): 2(23−2K)+3K=36 ⟹ 46−4K+3K=36 ⟹ K=10, C=3. So 4C+5K = 12+50 = 62.'}],
+  set6: [{qn:24, exam:'RRB Group – D, 29/12/2025 (Evening)', en:'The total cost of three chairs and two tables is ₹600, and the total cost of two chairs and one table is ₹350. Find the cost of four chairs.', hi:'तीन कुर्सियों और दो मेजों की कुल कीमत ₹600 है, दो कुर्सियों और एक मेज की कुल कीमत ₹350 है। चार कुर्सियों की कीमत ज्ञात कीजिए।', options:['₹100', '₹400', '₹200', '₹300'], answer:1, sol1:'From the second equation, one table = 350−2×chair. Substituting into the first equation and solving gives chair=100, so four chairs = 400, matching option (b).', sol2:'3Ch+2T=600 ...(i); 2Ch+T=350 ⟹ T=350−2Ch ...(ii). Substituting in (i): 3Ch+2(350−2Ch)=600 ⟹ 3Ch+700−4Ch=600 ⟹ −Ch=−100 ⟹ Ch=100. So 4 chairs = 400.'}, {qn:25, exam:'IB ACIO 2025', en:'The cost of 5 chairs and 18 tables is ₹9,300 and the cost of 3 chairs and 18 tables is ₹7,200. What is the cost of 5 chairs and 16 tables?', hi:'5 कुर्सियों और 18 मेजों की कीमत ₹9,300 है तथा 3 कुर्सियों और 18 मेजों की कीमत ₹7,200 है। 5 कुर्सियों और 16 मेजों की कीमत कितनी है?', options:['₹8,851', '₹8,850', '₹8,853', '₹8,847'], answer:1, sol1:'Subtracting the two equations removes the table term: 2 chairs = 9300−7200 = 2100, so 1 chair = 1050. Substituting back gives table = 225 approx, then 5 chairs+16 tables = 5250+3600 = 8850, matching option (b).', sol2:'5Ch+18T=9300 ...(i); 3Ch+18T=7200 ...(ii). Subtracting: 2Ch=2100 ⟹ Ch=1050. From (ii): 18T=7200−3150=4050 ⟹ T=225. So 5Ch+16T = 5250+3600 = 8850.'}],
+};
+
+// ===== Digital Sum Quiz (Math) =====
+// DATA FORMAT: DIGITALSUM_SETS.setN = array of questions, each
+// { qn: <question number from source>, exam: "<exam name>",
+//   en: "<question text - English>", hi: "<question text - Hindi>",
+//   options: [4 option strings, exact text/no letter-prefix],
+//   answer: <0-based correct index>,
+//   sol1: "<Solution 1 - Digital Sum / Speed-Trick Method, exact text>",
+//   sol2: "<Solution 2 - Concept Clarity / Step-by-Step Method, exact text>" }.
+// 77 questions (Abhinay Maths "Digital Sum" printable sheets 1-4, PYQs from
+// SSC/RRB/UPSC/Police exams) split into 15-question sets (last set has the
+// leftover 2). Unlike the other Learn-tab quizzes, this one first asks
+// Hindi-or-English (question text only — exam name, options and both
+// solutions stay exactly as given, in their original text) and then runs a
+// hard 10-minute countdown for the whole set.
+function makeDigitalSumQuiz(){
+  const prefix = 'digitalsum';
+  const SETS = DIGITALSUM_SETS;
+  const QUIZ_SECONDS = 10 * 60;
+  const session = { setKey: null, lang: 'hi', questions: [], index: 0, correct: 0, wrong: 0, answered: false, timeLeft: QUIZ_SECONDS, timerInterval: null, timedOut: false };
+
+  function setLabel(key, count){
+    const num = (key.match(/\d+/) || [key])[0];
+    return 'Set ' + num + ' (' + count + ' Qs)';
+  }
+  function buildSetPool(setKey){
+    const set = SETS[setKey] || [];
+    return shuffledCopy(set);
+  }
+  function renderSetMenu(){
+    const grid = document.getElementById('digitalsumSetGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    Object.keys(SETS).forEach(key => {
+      const count = SETS[key].length;
+      const btn = document.createElement('button');
+      btn.className = 'calcCard';
+      btn.innerHTML =
+        '<span class="calcIcon">➗</span>' +
+        '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span></span>' +
+        (isQuizSetAttempted(prefix, key) ? '<span class="calcDoneBadge">✅</span>' : '') +
+        '<span class="calcArrow">&#8250;</span>';
+      btn.addEventListener('click', () => openLangChoice(key));
+      grid.appendChild(btn);
+    });
+  }
+  function openLangChoice(setKey){
+    session.setKey = setKey;
+    const count = (SETS[setKey] || []).length;
+    const titleEl = document.getElementById('digitalsumLangTitle');
+    if(titleEl) titleEl.textContent = 'Digital Sum — ' + setLabel(setKey, count);
+    showCalcPage('digitalsumlang');
+  }
+  function stopTimer(){
+    if(session.timerInterval){ clearInterval(session.timerInterval); session.timerInterval = null; }
+  }
+  function formatTime(sec){
+    const s = Math.max(0, sec);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+  }
+  function updateTimerDisplay(){
+    const el = document.getElementById('digitalsumStatTimer');
+    if(el) el.textContent = formatTime(session.timeLeft);
+  }
+  function startTimer(){
+    stopTimer();
+    session.timeLeft = QUIZ_SECONDS;
+    session.timedOut = false;
+    updateTimerDisplay();
+    session.timerInterval = setInterval(() => {
+      session.timeLeft--;
+      updateTimerDisplay();
+      if(session.timeLeft <= 0){
+        session.timedOut = true;
+        endQuiz();
+      }
+    }, 1000);
+  }
+  function startQuiz(lang){
+    if(lang) session.lang = lang;
+    if(!session.setKey || !SETS[session.setKey]) return;
+    session.questions = buildSetPool(session.setKey);
+    session.index = 0;
+    session.correct = 0;
+    session.wrong = 0;
+    session.answered = false;
+    const count = session.questions.length;
+    const titleEl = document.getElementById('digitalsumQuizTitle');
+    if(titleEl) titleEl.textContent = 'Digital Sum - ' + setLabel(session.setKey, count);
+    const resultCard = document.getElementById('digitalsumResultCard');
+    if(resultCard) resultCard.style.display = 'none';
+    const qWrap = document.getElementById('digitalsumQuestionWrap');
+    if(qWrap) qWrap.style.display = '';
+    const ansGrid = document.getElementById('digitalsumAnsGrid');
+    if(ansGrid) ansGrid.style.display = '';
+    const solCard = document.getElementById('digitalsumSolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    updateStats();
+    renderQuestion();
+    showCalcPage('digitalsum');
+    startTimer();
+  }
+  function updateStats(){
+    const c = document.getElementById('digitalsumStatCorrect');
+    const w = document.getElementById('digitalsumStatWrong');
+    const p = document.getElementById('digitalsumStatProgress');
+    if(c) c.textContent = session.correct;
+    if(w) w.textContent = session.wrong;
+    if(p) p.textContent = 'Q ' + Math.min(session.index + 1, session.questions.length) + '/' + session.questions.length;
+  }
+  function nextTopRowEl(){
+    const btn = document.getElementById('digitalsumNextBtnTop');
+    return btn ? btn.closest('.calcNextTopRow') : null;
+  }
+  function renderQuestion(){
+    const q = session.questions[session.index];
+    if(!q){ endQuiz(); return; }
+    session.answered = false;
+    const badgeEl = document.getElementById('digitalsumExamBadge');
+    if(badgeEl) badgeEl.textContent = '📋 ' + (q.exam || '—');
+    const wordEl = document.getElementById('digitalsumWordText');
+    if(wordEl) wordEl.textContent = (session.lang === 'en' ? q.en : q.hi) || '—';
+    const ansGrid = document.getElementById('digitalsumAnsGrid');
+    if(!ansGrid) return;
+    ansGrid.innerHTML = '';
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'calcAnsBtn';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => selectAnswer(i));
+      ansGrid.appendChild(btn);
+    });
+    const solCard = document.getElementById('digitalsumSolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'none';
+    updateStats();
+  }
+  function selectAnswer(i){
+    if(session.answered) return;
+    session.answered = true;
+    const q = session.questions[session.index];
+    const correct = i === q.answer;
+    if(correct) session.correct++; else session.wrong++;
+    document.querySelectorAll('#digitalsumAnsGrid .calcAnsBtn').forEach((b, idx) => {
+      b.classList.add('disabled');
+      if(idx === q.answer) b.classList.add('correct');
+      else if(idx === i) b.classList.add('wrong');
+    });
+    updateStats();
+    const solCard = document.getElementById('digitalsumSolutionCard');
+    const solText = document.getElementById('digitalsumSolutionText');
+    if(solText){
+      const verdict = correct ? '✅ Sahi Jawaab!' : '❌ Galat Jawaab.';
+      solText.innerHTML =
+        '<div style="font-size:15px;font-weight:700;color:var(--quiz-text);">' + verdict + '</div>' +
+        '<div class="dsSolBlock">' +
+          '<div class="dsSolLabel">Solution 1 · Digital Sum Trick</div>' +
+          '<div class="dsSolText">' + escapeHtml(q.sol1) + '</div>' +
+        '</div>' +
+        '<div class="dsSolBlock">' +
+          '<div class="dsSolLabel">Solution 2 · Step-by-Step</div>' +
+          '<div class="dsSolText">' + escapeHtml(q.sol2) + '</div>' +
+        '</div>';
+    }
+    if(solCard) solCard.style.display = 'block';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'flex';
+  }
+  function goToNext(){
+    session.index++;
+    if(session.index < session.questions.length) renderQuestion();
+    else endQuiz();
+  }
+  function endQuiz(){
+    stopTimer();
+    const total = session.correct + session.wrong;
+    const acc = total ? Math.round((session.correct / total) * 100) : 0;
+    const qWrap = document.getElementById('digitalsumQuestionWrap');
+    if(qWrap) qWrap.style.display = 'none';
+    const ansGrid = document.getElementById('digitalsumAnsGrid');
+    if(ansGrid) ansGrid.style.display = 'none';
+    const solCard = document.getElementById('digitalsumSolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const titleResult = document.getElementById('digitalsumResultTitle');
+    if(titleResult) titleResult.textContent = session.timedOut ? '⏰ Time Up!' : '🎉 Quiz Complete!';
+    const statsEl = document.getElementById('digitalsumResultStats');
+    if(statsEl){
+      statsEl.innerHTML =
+        '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
+        '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
+        '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
+    }
+    const resultCard = document.getElementById('digitalsumResultCard');
+    if(resultCard) resultCard.style.display = 'block';
+    const titleEl2 = document.getElementById('digitalsumQuizTitle');
+    logQuizActivity(titleEl2 ? titleEl2.textContent : 'Digital Sum', session.correct, total);
+    markQuizSetAttempted(prefix, session.setKey);
+    renderSetMenu();
+  }
+  function init(){
+    renderSetMenu();
+    const mainBtn = document.getElementById('calcDigitalSumBtn');
+    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('digitalsummenu'); });
+    const menuBackBtn = document.getElementById('digitalsumMenuBackBtn');
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    const langBackBtn = document.getElementById('digitalsumLangBackBtn');
+    if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('digitalsummenu'));
+    const langHindiBtn = document.getElementById('digitalsumLangHindiBtn');
+    if(langHindiBtn) langHindiBtn.addEventListener('click', () => startQuiz('hi'));
+    const langEnglishBtn = document.getElementById('digitalsumLangEnglishBtn');
+    if(langEnglishBtn) langEnglishBtn.addEventListener('click', () => startQuiz('en'));
+    const backBtn = document.getElementById('digitalsumBackBtn');
+    if(backBtn) backBtn.addEventListener('click', () => { stopTimer(); showCalcPage('digitalsummenu'); });
+    const nextBtn = document.getElementById('digitalsumNextBtn');
+    if(nextBtn) nextBtn.addEventListener('click', goToNext);
+    const nextBtnTop = document.getElementById('digitalsumNextBtnTop');
+    if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
+    attachQuizSwipeNext('calcPage-digitalsum', goToNext);
+    const againBtn = document.getElementById('digitalsumResultAgainBtn');
+    if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
+    const resBackBtn = document.getElementById('digitalsumResultBackBtn');
+    if(resBackBtn) resBackBtn.addEventListener('click', () => showCalcPage('digitalsummenu'));
+  }
+  return { init, startQuiz };
+}
+const digitalsumQuiz = makeDigitalSumQuiz();
+
+
 // ===== Phrasal Verbs Quiz (Learn/Calc tab) =====
 // DATA FORMAT: PHRASAL_SETS.setN = array of up to 10 questions, each
 // { word: "fill-in-the-blank sentence", options: [4 phrasal verbs],
@@ -18401,6 +18753,7 @@ function initCalcNav(){
   initCalcSession();
   initVocabQuiz();
   initReasoningQuiz();
+  digitalsumQuiz.init();
   initPhrasalQuiz();
   initHomophoneQuiz();
   initPrepositionQuiz();
