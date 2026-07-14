@@ -19814,6 +19814,7 @@ const TT_STORE_KEY = 'cgl50-tasktimer-v1';
 let taskTimers = {};           // { [taskIdx]: {mode,running,isBreak,workAccumSec,sessionWorkSec,breakElapsedSec,targetSec,lastTs} }
 let taskTimerDay = null;       // which plan-day these belong to (stale day = discard)
 let taskTimerEngineHandle = null;
+let taskTimerLastSaveTs = 0;   // perf: throttles the localStorage write in taskTimerGlobalTick, see there
 let taskTimerExpandedIdx = null; // UI-only: which task's box is open right now
 let taskScoreExpandedIdx = null; // UI-only: which task's auto score/wrong-log box is open right now
 function toggleTaskScoreBox(idx){
@@ -20018,6 +20019,7 @@ function clearTaskTimer(idx){
 }
 function startTaskTimerEngine(){
   if(taskTimerEngineHandle) return;
+  taskTimerLastSaveTs = 0;
   taskTimerEngineHandle = setInterval(taskTimerGlobalTick, 1000);
 }
 function taskTimerGlobalTick(){
@@ -20030,7 +20032,18 @@ function taskTimerGlobalTick(){
   t.lastTs = now;
   ttAdvance(idx, delta);
   if(taskTimers[idx]){
-    saveTaskTimersToStorage();
+    // Perf: localStorage.setItem is synchronous and can cost real main-thread
+    // time — doing it every single second for hours during a study session
+    // adds up to a lot of jank for very little benefit. Persist at most every
+    // 5s instead; the in-memory object (and the on-screen display below)
+    // still update every tick, so nothing feels different, and
+    // visibilitychange/pagehide (see bottom of file) force an immediate
+    // flush before the app backgrounds/closes so at most ~5s of progress is
+    // ever at risk.
+    if(now - taskTimerLastSaveTs >= 5000){
+      saveTaskTimersToStorage();
+      taskTimerLastSaveTs = now;
+    }
     updateTaskTimerLiveDisplay(parseInt(idx,10));
     updateHomeTimerBannerLiveDisplay(parseInt(idx,10));
     if(taskTimers[idx].subjectPendingSec >= 30) ttFlushSubjectPending(parseInt(idx,10));
@@ -20346,8 +20359,8 @@ window.addEventListener('pageshow', ()=>{
 // person closes the tab or switches apps right after typing. Flushing a
 // save the moment the page goes to background/closes means that last
 // keystroke never gets silently dropped.
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
-window.addEventListener('pagehide', ()=>{ save(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ save(); if(findRunningTaskIdx()!==undefined) saveTaskTimersToStorage(); } });
+window.addEventListener('pagehide', ()=>{ save(); if(findRunningTaskIdx()!==undefined) saveTaskTimersToStorage(); });
 
 (async function init(){
   myName = await getOrCreateMyNameAsync();
