@@ -1568,6 +1568,10 @@
     letter-spacing:0.3px;
   }
   .calcQuestion .calcQMark{color:var(--accent);}
+  .spellingRevealWord{
+    font-size:clamp(28px,9vw,42px)!important;line-height:1.3!important;
+    font-weight:800!important;color:var(--gain)!important;
+  }
   .calcCtrlRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .calcCtrlBtn{
     font-family:var(--font-main);font-weight:600;font-size:13px;
@@ -13611,7 +13615,10 @@ function renderSpellingQuestion(){
   if(!q){ endSpellingQuiz(); return; }
   spellingSession.answered = false;
   const wordEl = document.getElementById('spellingWordText');
-  if(wordEl) wordEl.textContent = q.word || 'Galat spelling waala word chuno';
+  if(wordEl){
+    wordEl.classList.remove('spellingRevealWord');
+    wordEl.textContent = q.word || 'Galat spelling waala word chuno';
+  }
   const ansGrid = document.getElementById('spellingAnsGrid');
   if(!ansGrid) return;
   ansGrid.innerHTML = '';
@@ -13653,15 +13660,20 @@ function selectSpellingAnswer(i, btnEl){
     else if(idx === i) b.classList.add('wrong');
   });
   updateSpellingStats();
+  const correctWord = q.correct || q.options[q.answer];
+  const wordEl2 = document.getElementById('spellingWordText');
+  if(wordEl2){
+    wordEl2.classList.add('spellingRevealWord');
+    wordEl2.innerHTML = 'Sahi Spelling: ' + escapeHtml(correctWord);
+  }
   const solCard = document.getElementById('spellingSolutionCard');
   const solText = document.getElementById('spellingSolutionText');
   if(solText){
     const verdict = correct ? '✅ Sahi Jawaab!' : '❌ Galat Jawaab.';
-    const correctLine = 'Sahi Spelling: <b>' + escapeHtml(q.correct || q.options[q.answer]) + '</b>';
     const explLine = (q.explanation && q.explanation.length)
       ? '<div style="margin-top:6px;color:var(--muted);">' + (Array.isArray(q.explanation) ? q.explanation.map(b=>escapeHtml(b)).join('<br>') : escapeHtml(q.explanation)) + '</div>'
       : '';
-    solText.innerHTML = '<div>' + verdict + '</div><div style="margin-top:4px;">' + correctLine + '</div>' + explLine;
+    solText.innerHTML = '<div>' + verdict + '</div>' + explLine;
   }
   if(solCard) solCard.style.display = 'block';
   const nextTopBtn2 = document.getElementById('spellingNextBtnTop');
