@@ -11650,7 +11650,7 @@ function makeMathPyqQuiz(){
     }
     const overlay = document.getElementById('examPauseOverlay');
     if(overlay) overlay.style.display = paused ? 'flex' : 'none';
-    ['examMarkBtn','examClearBtn','examSaveNextBtn','examSubmitBtn'].forEach(id => {
+    ['examMarkBtn','examClearBtn','examSaveNextBtn','examSaveNextBtnBottom','examSubmitBtn'].forEach(id => {
       const b = document.getElementById(id);
       if(b) b.disabled = paused;
     });
@@ -11933,6 +11933,8 @@ function makeMathPyqQuiz(){
     if(examClearBtn) examClearBtn.addEventListener('click', examClearResponse);
     const examSaveNextBtn = document.getElementById('examSaveNextBtn');
     if(examSaveNextBtn) examSaveNextBtn.addEventListener('click', examSaveNext);
+    const examSaveNextBtnBottom = document.getElementById('examSaveNextBtnBottom');
+    if(examSaveNextBtnBottom) examSaveNextBtnBottom.addEventListener('click', examSaveNext);
     const examPauseBtn = document.getElementById('examPauseBtn');
     if(examPauseBtn) examPauseBtn.addEventListener('click', examTogglePause);
     const examResumeBtn = document.getElementById('examResumeBtn');
@@ -12282,7 +12284,7 @@ function makeReasoningMockQuiz(){
     }
     const overlay = document.getElementById('reasoningmockExamPauseOverlay');
     if(overlay) overlay.style.display = paused ? 'flex' : 'none';
-    ['reasoningmockExamMarkBtn','reasoningmockExamClearBtn','reasoningmockExamSaveNextBtn','reasoningmockExamSubmitBtn'].forEach(id => {
+    ['reasoningmockExamMarkBtn','reasoningmockExamClearBtn','reasoningmockExamSaveNextBtn','reasoningmockExamSaveNextBtnBottom','reasoningmockExamSubmitBtn'].forEach(id => {
       const b = document.getElementById(id);
       if(b) b.disabled = paused;
     });
@@ -12564,6 +12566,8 @@ function makeReasoningMockQuiz(){
     if(examClearBtn) examClearBtn.addEventListener('click', examClearResponse);
     const examSaveNextBtn = document.getElementById('reasoningmockExamSaveNextBtn');
     if(examSaveNextBtn) examSaveNextBtn.addEventListener('click', examSaveNext);
+    const examSaveNextBtnBottom = document.getElementById('reasoningmockExamSaveNextBtnBottom');
+    if(examSaveNextBtnBottom) examSaveNextBtnBottom.addEventListener('click', examSaveNext);
     const examPauseBtn = document.getElementById('reasoningmockExamPauseBtn');
     if(examPauseBtn) examPauseBtn.addEventListener('click', examTogglePause);
     const examResumeBtn = document.getElementById('reasoningmockExamResumeBtn');
