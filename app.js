@@ -8443,7 +8443,7 @@ function buildVocabSetPool(setKey){
   // index) — isi se save/unsave button ko pata chalta hai ki kis question
   // ko toggle karna hai, chahe woh shuffled order mein kahin bhi ho.
   set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
-  return shuffledCopy(set);
+  return set.slice();
 }
 
 // ===== Vocab "Saved Questions" — localStorage mein {setKey, qIndex} pairs
@@ -8805,7 +8805,7 @@ function buildSpellingSetPool(setKey){
   // se save/unsave button ko pata chalta hai ki kis question ko toggle
   // karna hai, chahe woh shuffled order mein kahin bhi ho.
   set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
-  return shuffledCopy(set);
+  return set.slice();
 }
 
 // ===== Spelling "Saved Questions" — localStorage mein {setKey, qIndex}
@@ -9265,7 +9265,7 @@ function buildIdiomSetPool(setKey){
   // se save/unsave button ko pata chalta hai ki kis question ko toggle
   // karna hai, chahe woh shuffled order mein kahin bhi ho.
   set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
-  return shuffledCopy(set);
+  return set.slice();
 }
 
 // ===== Idiom "Saved Questions" — localStorage mein {setKey, qIndex} pairs
@@ -9561,7 +9561,7 @@ function buildGrammarSetPool(setKey){
   // se save/unsave button ko pata chalta hai ki kis question ko toggle
   // karna hai, chahe woh shuffled order mein kahin bhi ho.
   set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
-  return shuffledCopy(set);
+  return set.slice();
 }
 
 // ===== Grammar "Saved Questions" — localStorage mein {setKey, qIndex} pairs
@@ -9843,7 +9843,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
     set.forEach((q, i) => { q._setKey = setKey; q._qIndex = i; });
-    return shuffledCopy(set);
+    return set.slice();
   }
   function uid(setKey, qIndex){ return setKey + '#' + qIndex; }
   function loadSavedList(){
@@ -10109,7 +10109,7 @@ function makeDigitalSumQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   function renderSetMenu(){
     const grid = document.getElementById('digitalsumSetGrid');
@@ -10318,7 +10318,7 @@ function makeUnitDigitQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   function renderSetMenu(){
     const grid = document.getElementById('unitdigitSetGrid');
@@ -10550,7 +10550,7 @@ function makeStatementQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   // Statement questions ka schema baaki math-quiz modules se alag hai
   // (q.hi/q.en ke andar apna prompt + options nested hain), isliye inke
@@ -10789,7 +10789,7 @@ function makeDecisionMakingQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   function buildDecisionMakingReviewItems(questions, userAnswers, lang){
     return (questions || []).map((q, i) => {
@@ -11013,7 +11013,7 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   function buildReviewItems(questions, userAnswers, lang){
     return (questions || []).map((q, i) => {
@@ -11351,7 +11351,9 @@ function makeMathPyqQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    // Math PYQ chapters are shown in their original Q1, Q2, Q3... order
+    // (not shuffled) so revision feels sequential/predictable.
+    return set.slice();
   }
   function renderSetMenu(){
     const grid = document.getElementById('mathpyqSetGrid');
@@ -12106,7 +12108,7 @@ function makeReasoningMockQuiz(){
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];
-    return shuffledCopy(set);
+    return set.slice();
   }
   function questionLines(q, lang){
     const langObj = (lang === 'en' ? q.en : q.hi) || q.hi || {};
