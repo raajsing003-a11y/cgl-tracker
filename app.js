@@ -11848,11 +11848,18 @@ function makeMathPyqQuiz(){
       grid.appendChild(btn);
     });
   }
+  let resultRevealed = false;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
+    resultRevealed = false;
     resultRenderQuestion();
     resultRenderPalette();
+  }
+  function resultReveal(){
+    if(resultRevealed) return;
+    resultRevealed = true;
+    resultRenderQuestion();
   }
   function resultRenderQuestion(){
     const i = examSession.current;
@@ -11863,9 +11870,13 @@ function makeMathPyqQuiz(){
     const st = resultQState(i);
     const tagWrap = document.getElementById('resultTagWrap');
     if(tagWrap){
-      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
-      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
-      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+      if(resultRevealed){
+        const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+        const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+        tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+      } else {
+        tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+      }
     }
     const badgeEl = document.getElementById('resultExamBadge');
     if(badgeEl) badgeEl.textContent = '📋 ' + (q.exam || '—');
@@ -11883,16 +11894,26 @@ function makeMathPyqQuiz(){
       q.options.forEach((opt, idx) => {
         const div = document.createElement('div');
         let cls = 'examReviewOptBtn';
-        if(idx === q.answer) cls += ' reviewCorrect';
-        else if(idx === userAns) cls += ' reviewWrong';
+        let tag = '';
+        if(resultRevealed){
+          if(idx === q.answer) cls += ' reviewCorrect';
+          else if(idx === userAns) cls += ' reviewWrong';
+          tag = idx === q.answer ? ' ✅' : (idx === userAns ? ' ❌' : '');
+        }
         div.className = cls;
-        const tag = idx === q.answer ? ' ✅' : (idx === userAns ? ' ❌' : '');
         div.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + idx) + '</span><span>' + mathify(opt) + tag + '</span>';
         optList.appendChild(div);
       });
     }
+    const solCard = document.getElementById('resultSolutionCard');
     const solText = document.getElementById('resultSolutionText');
-    if(solText) solText.innerHTML = formatSolSteps(q.sol || '');
+    if(resultRevealed){
+      if(solText) solText.innerHTML = formatSolSteps(q.sol || '');
+      if(solCard) solCard.style.display = 'block';
+    } else {
+      if(solText) solText.innerHTML = '';
+      if(solCard) solCard.style.display = 'none';
+    }
     const prevBtn = document.getElementById('resultPrevBtn');
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('resultNextBtn');
@@ -11932,6 +11953,12 @@ function makeMathPyqQuiz(){
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
       else showCalcPage('mathpyqmenu');
     });
+    const resultQuestionWrap = document.getElementById('resultQuestionWrap');
+    if(resultQuestionWrap) resultQuestionWrap.addEventListener('click', resultReveal);
+    const resultOptList = document.getElementById('resultOptList');
+    if(resultOptList) resultOptList.addEventListener('click', resultReveal);
+    const resultTagWrap = document.getElementById('resultTagWrap');
+    if(resultTagWrap) resultTagWrap.addEventListener('click', resultReveal);
   }
 
   return { init, startQuiz, initExamMode };
@@ -12445,11 +12472,18 @@ function makeReasoningMockQuiz(){
       grid.appendChild(btn);
     });
   }
+  let resultRevealed = false;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
+    resultRevealed = false;
     resultRenderQuestion();
     resultRenderPalette();
+  }
+  function resultReveal(){
+    if(resultRevealed) return;
+    resultRevealed = true;
+    resultRenderQuestion();
   }
   function resultRenderQuestion(){
     const i = examSession.current;
@@ -12460,9 +12494,13 @@ function makeReasoningMockQuiz(){
     const st = resultQState(i);
     const tagWrap = document.getElementById('reasoningmockResultTagWrap');
     if(tagWrap){
-      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
-      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
-      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+      if(resultRevealed){
+        const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+        const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+        tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+      } else {
+        tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+      }
     }
     const badgeEl = document.getElementById('reasoningmockResultExamBadge');
     if(badgeEl) badgeEl.textContent = '📋 ' + (q.exam || '—');
@@ -12475,16 +12513,26 @@ function makeReasoningMockQuiz(){
       questionOptions(q, examSession.lang).forEach((opt, idx) => {
         const div = document.createElement('div');
         let cls = 'examReviewOptBtn';
-        if(idx === q.answer) cls += ' reviewCorrect';
-        else if(idx === userAns) cls += ' reviewWrong';
+        let tag = '';
+        if(resultRevealed){
+          if(idx === q.answer) cls += ' reviewCorrect';
+          else if(idx === userAns) cls += ' reviewWrong';
+          tag = idx === q.answer ? ' ✅' : (idx === userAns ? ' ❌' : '');
+        }
         div.className = cls;
-        const tag = idx === q.answer ? ' ✅' : (idx === userAns ? ' ❌' : '');
         div.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + idx) + '</span><span>' + mathify(opt) + tag + '</span>';
         optList.appendChild(div);
       });
     }
+    const solCard = document.getElementById('reasoningmockResultSolutionCard');
     const solText = document.getElementById('reasoningmockResultSolutionText');
-    if(solText) solText.innerHTML = renderSolutionHtml(q, examSession.lang);
+    if(resultRevealed){
+      if(solText) solText.innerHTML = renderSolutionHtml(q, examSession.lang);
+      if(solCard) solCard.style.display = 'block';
+    } else {
+      if(solText) solText.innerHTML = '';
+      if(solCard) solCard.style.display = 'none';
+    }
     const prevBtn = document.getElementById('reasoningmockResultPrevBtn');
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('reasoningmockResultNextBtn');
@@ -12537,6 +12585,12 @@ function makeReasoningMockQuiz(){
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
       else showCalcPage('reasoningmockmenu');
     });
+    const resultQuestionWrap = document.getElementById('reasoningmockResultQuestionWrap');
+    if(resultQuestionWrap) resultQuestionWrap.addEventListener('click', resultReveal);
+    const resultOptList = document.getElementById('reasoningmockResultOptList');
+    if(resultOptList) resultOptList.addEventListener('click', resultReveal);
+    const resultTagWrap = document.getElementById('reasoningmockResultTagWrap');
+    if(resultTagWrap) resultTagWrap.addEventListener('click', resultReveal);
   }
 
   return { init };
