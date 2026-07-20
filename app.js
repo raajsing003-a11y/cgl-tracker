@@ -10050,11 +10050,11 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
   return { init, startQuiz };
 }
 
-const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'menu');
-const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series', 'menu');
-const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding', 'menu');
-const oddoneSsc2025Quiz = makeReasoningQuiz('oddonessc2025', ODDONE_SSC2025_SETS, 'Odd One Out — SSC 2025', 'menu');
-const seriesSsc2025Quiz = makeReasoningQuiz('seriesssc2025', SERIES_SSC2025_SETS, 'Number Series — SSC 2025', 'menu');
+const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'reasoningchapters');
+const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series', 'reasoningchapters');
+const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding', 'reasoningchapters');
+const oddoneSsc2025Quiz = makeReasoningQuiz('oddonessc2025', ODDONE_SSC2025_SETS, 'Odd One Out — SSC 2025', 'reasoningchapters');
+const seriesSsc2025Quiz = makeReasoningQuiz('seriesssc2025', SERIES_SSC2025_SETS, 'Number Series — SSC 2025', 'reasoningchapters');
 
 // [data moved to data/digitalsum_sets.js]
 
@@ -10498,6 +10498,15 @@ const unitdigitQuiz = makeUnitDigitQuiz();
 // first asks Hindi-or-English — but here EVERYTHING (statement, options, solution)
 // switches language, not just the question text, since these are language-heavy
 // verbal-reasoning questions rather than numeric ones.
+// Adds the "conclusion" topic (106 Qs) to STATEMENT_SETS so it shows up
+// automatically as a 4th card, reusing the existing Statement engine below.
+// Source data had no separate Hindi text, so hi/en both show the English
+// text for this topic only (flagged to Rahul — assumption/courseofaction/
+// argument keep their real Hindi as before).
+if(typeof STATEMENT_CONCLUSION_EXTRA !== 'undefined'){
+  STATEMENT_SETS.conclusion = STATEMENT_CONCLUSION_EXTRA;
+}
+
 function makeStatementQuiz(){
   const prefix = 'statement';
   const SETS = STATEMENT_SETS;
@@ -10506,7 +10515,8 @@ function makeStatementQuiz(){
   const TOPIC_META = {
     assumption:     { hi: 'कथन एवं धारणा',      en: 'Statement & Assumption',      icon: '🧠' },
     courseofaction: { hi: 'कथन एवं कार्यवाही',   en: 'Statement & Course of Action', icon: '🛠️' },
-    argument:       { hi: 'कथन एवं तर्क',        en: 'Statement & Argument',        icon: '⚖️' }
+    argument:       { hi: 'कथन एवं तर्क',        en: 'Statement & Argument',        icon: '⚖️' },
+    conclusion:     { hi: 'कथन एवं निष्कर्ष',    en: 'Statement & Conclusion',       icon: '🧾' }
   };
 
   function setLabel(key, count){
@@ -10711,7 +10721,7 @@ function makeStatementQuiz(){
     const mainBtn = document.getElementById('calcStatementBtn');
     if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('statementmenu'); });
     const menuBackBtn = document.getElementById('statementMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('reasoningchapters'));
     const langBackBtn = document.getElementById('statementLangBackBtn');
     if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('statementmenu'));
     const langHindiBtn = document.getElementById('statementLangHindiBtn');
@@ -10941,7 +10951,7 @@ function makeDecisionMakingQuiz(){
     const mainBtn = document.getElementById('calcDecisionMakingBtn');
     if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('decisionmakingmenu'); });
     const menuBackBtn = document.getElementById('decisionmakingMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('reasoningchapters'));
     const langBackBtn = document.getElementById('decisionmakingLangBackBtn');
     if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('decisionmakingmenu'));
     const langHindiBtn = document.getElementById('decisionmakingLangHindiBtn');
@@ -10963,6 +10973,231 @@ function makeDecisionMakingQuiz(){
   return { init, startQuiz };
 }
 const decisionmakingQuiz = makeDecisionMakingQuiz();
+
+// ===== Generic reusable bilingual (Hindi/English toggle) quiz engine =====
+// Used for new bilingual reasoning categories that don't need Statement's
+// multi-topic sub-menu: Seating Arrangement, Order & Ranking, Letter
+// Analogy, Letter/Word Position Analysis, Inequality & Word Formation.
+// DATA FORMAT: SETS.setN = array of questions, each
+// { qn, hi:{prompt:[...], options:[4], solution:"..."}, en:{...same...}, answer:<0-3> }
+function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, menuBackPage){
+  const session = { setKey: null, lang: 'hi', questions: [], index: 0, correct: 0, wrong: 0, answered: false, userAnswers: [] };
+
+  function setLabel(key, count){
+    const num = (key.match(/\d+/) || [key])[0];
+    return (unitLabel || 'Set') + ' ' + num + ' (' + count + ' Qs)';
+  }
+  function buildSetPool(setKey){
+    const set = SETS[setKey] || [];
+    return shuffledCopy(set);
+  }
+  function buildReviewItems(questions, userAnswers, lang){
+    return (questions || []).map((q, i) => {
+      const langObj = (lang === 'en' ? q.en : q.hi) || q.hi;
+      const userIdx = userAnswers ? userAnswers[i] : null;
+      const lines = langObj.prompt || [];
+      const qHtml = lines.map((ln, idx) =>
+        '<div class="' + (idx === 0 ? 'dsStatementLine' : 'dsItemLine') + '">' + mathify(ln) + '</div>'
+      ).join('');
+      const optionsHtml = '<div style="display:flex;flex-direction:column;gap:8px;">' +
+        (langObj.options || []).map((opt, idx) => {
+          let cls = 'examReviewOptBtn';
+          let mark = '';
+          if(idx === q.answer){ cls += ' reviewCorrect'; mark = ' ✓'; }
+          else if(idx === userIdx){ cls += ' reviewWrong'; mark = ' ✗'; }
+          return '<div class="' + cls + '">' + mathify(opt) + mark + '</div>';
+        }).join('') + '</div>';
+      const explHtml = langObj.solution
+        ? '<div class="dsSolBlock"><div class="dsSolText">' + mathify(langObj.solution) + '</div></div>'
+        : '';
+      return { qHtml, optionsHtml, explHtml, skipped: (userIdx === null || userIdx === undefined) };
+    });
+  }
+  function renderSetMenu(){
+    const grid = document.getElementById(prefix + 'SetGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    Object.keys(SETS).forEach(key => {
+      const count = SETS[key].length;
+      const lbl = setLabel(key, count);
+      if(renderQuizAttemptCard(grid, prefix, key, icon, lbl, () => openLangChoice(key))) return;
+      const btn = document.createElement('button');
+      btn.className = 'calcCard';
+      btn.innerHTML =
+        '<span class="calcIcon">' + icon + '</span>' +
+        '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(lbl) + '</span></span>' +
+        '<span class="calcArrow">&#8250;</span>';
+      btn.addEventListener('click', () => openLangChoice(key));
+      grid.appendChild(btn);
+    });
+  }
+  function openLangChoice(setKey){
+    session.setKey = setKey;
+    const count = (SETS[setKey] || []).length;
+    const titleEl = document.getElementById(prefix + 'LangTitle');
+    if(titleEl) titleEl.textContent = label + ' — ' + setLabel(setKey, count);
+    showCalcPage(prefix + 'lang');
+  }
+  function startQuiz(lang){
+    if(lang) session.lang = lang;
+    if(!session.setKey || !SETS[session.setKey]) return;
+    session.questions = buildSetPool(session.setKey);
+    session.index = 0;
+    session.correct = 0;
+    session.wrong = 0;
+    session.answered = false;
+    session.userAnswers = new Array(session.questions.length).fill(null);
+    const count = session.questions.length;
+    const titleEl = document.getElementById(prefix + 'QuizTitle');
+    if(titleEl) titleEl.textContent = setLabel(session.setKey, count);
+    const resultCard = document.getElementById(prefix + 'ResultCard');
+    if(resultCard) resultCard.style.display = 'none';
+    const qWrap = document.getElementById(prefix + 'QuestionWrap');
+    if(qWrap) qWrap.style.display = '';
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(ansGrid) ansGrid.style.display = '';
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    updateStats();
+    renderQuestion();
+    showCalcPage(prefix);
+  }
+  function updateStats(){
+    const c = document.getElementById(prefix + 'StatCorrect');
+    const w = document.getElementById(prefix + 'StatWrong');
+    const p = document.getElementById(prefix + 'StatProgress');
+    if(c) c.textContent = session.correct;
+    if(w) w.textContent = session.wrong;
+    if(p) p.textContent = 'Q ' + Math.min(session.index + 1, session.questions.length) + '/' + session.questions.length;
+  }
+  function nextTopRowEl(){
+    const btn = document.getElementById(prefix + 'NextBtnTop');
+    return btn ? btn.closest('.calcNextTopRow') : null;
+  }
+  function renderQuestion(){
+    const q = session.questions[session.index];
+    if(!q){ endQuiz(); return; }
+    session.answered = false;
+    const langObj = (session.lang === 'en' ? q.en : q.hi) || q.hi;
+    const badgeEl = document.getElementById(prefix + 'ExamBadge');
+    if(badgeEl) badgeEl.textContent = icon + ' ' + label + ' · Q' + (q.qn != null ? q.qn : (session.index + 1)) + (q.exam ? ' · ' + q.exam : '');
+    const wordEl = document.getElementById(prefix + 'WordText');
+    if(wordEl){
+      const lines = (langObj.prompt || []);
+      wordEl.innerHTML = lines.map((ln, i) =>
+        '<div class="' + (i === 0 ? 'dsStatementLine' : 'dsItemLine') + '">' + mathify(ln) + '</div>'
+      ).join('');
+    }
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(!ansGrid) return;
+    ansGrid.innerHTML = '';
+    (langObj.options || []).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'calcAnsBtn';
+      btn.innerHTML = mathify(opt);
+      btn.addEventListener('click', () => selectAnswer(i));
+      ansGrid.appendChild(btn);
+    });
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'none';
+    updateStats();
+  }
+  function selectAnswer(i){
+    if(session.answered) return;
+    session.answered = true;
+    const q = session.questions[session.index];
+    const correct = i === q.answer;
+    session.userAnswers[session.index] = i;
+    if(correct) session.correct++; else session.wrong++;
+    document.querySelectorAll('#' + prefix + 'AnsGrid .calcAnsBtn').forEach((b, idx) => {
+      b.classList.add('disabled');
+      if(idx === q.answer) b.classList.add('correct');
+      else if(idx === i) b.classList.add('wrong');
+    });
+    updateStats();
+    const langObj = (session.lang === 'en' ? q.en : q.hi) || q.hi;
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    const solText = document.getElementById(prefix + 'SolutionText');
+    if(solText){
+      const verdict = correct ? '✅ Sahi Jawaab!' : '❌ Galat Jawaab.';
+      solText.innerHTML =
+        '<div style="font-size:17px;font-weight:700;color:var(--quiz-text);">' + verdict + '</div>' +
+        (langObj.solution
+          ? '<div class="dsSolBlock"><div class="dsSolText">' + mathify(langObj.solution) + '</div></div>'
+          : '');
+    }
+    if(solCard) solCard.style.display = 'block';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'flex';
+  }
+  function goToNext(){
+    session.index++;
+    if(session.index < session.questions.length) renderQuestion();
+    else endQuiz();
+  }
+  function endQuiz(){
+    const total = session.correct + session.wrong;
+    const acc = total ? Math.round((session.correct / total) * 100) : 0;
+    const qWrap = document.getElementById(prefix + 'QuestionWrap');
+    if(qWrap) qWrap.style.display = 'none';
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(ansGrid) ansGrid.style.display = 'none';
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const titleResult = document.getElementById(prefix + 'ResultTitle');
+    if(titleResult) titleResult.textContent = '🎉 Quiz Complete!';
+    const statsEl = document.getElementById(prefix + 'ResultStats');
+    if(statsEl){
+      statsEl.innerHTML =
+        '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
+        '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
+        '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
+    }
+    const resultCard = document.getElementById(prefix + 'ResultCard');
+    if(resultCard) resultCard.style.display = 'block';
+    const titleEl2 = document.getElementById(prefix + 'QuizTitle');
+    logQuizActivity(titleEl2 ? titleEl2.textContent : label, session.correct, total);
+    markQuizSetAttempted(prefix, session.setKey);
+    if(session.setKey !== 'saved'){
+      saveQuizAttemptDetail(prefix, session.setKey, {
+        correct: session.correct, wrong: session.wrong, total, acc,
+        items: buildReviewItems(session.questions, session.userAnswers, session.lang)
+      });
+    }
+    ensureResultTopReattemptBtn(resultCard, () => startQuiz(session.lang));
+    renderSetMenu();
+  }
+  function init(){
+    renderSetMenu();
+    const mainBtn = document.getElementById(mainBtnId);
+    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage(prefix + 'menu'); });
+    const menuBackBtn = document.getElementById(prefix + 'MenuBackBtn');
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage(menuBackPage || 'reasoningchapters'));
+    const langBackBtn = document.getElementById(prefix + 'LangBackBtn');
+    if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+    const langHindiBtn = document.getElementById(prefix + 'LangHindiBtn');
+    if(langHindiBtn) langHindiBtn.addEventListener('click', () => startQuiz('hi'));
+    const langEnglishBtn = document.getElementById(prefix + 'LangEnglishBtn');
+    if(langEnglishBtn) langEnglishBtn.addEventListener('click', () => startQuiz('en'));
+    const backBtn = document.getElementById(prefix + 'BackBtn');
+    if(backBtn) backBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+    const nextBtn = document.getElementById(prefix + 'NextBtn');
+    if(nextBtn) nextBtn.addEventListener('click', goToNext);
+    const nextBtnTop = document.getElementById(prefix + 'NextBtnTop');
+    if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
+    attachQuizSwipeNext('calcPage-' + prefix, goToNext);
+    const againBtn = document.getElementById(prefix + 'ResultAgainBtn');
+    if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
+    const resBackBtn = document.getElementById(prefix + 'ResultBackBtn');
+    if(resBackBtn) resBackBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+  }
+  return { init, startQuiz };
+}
+
+
 
 
 // ===== Math PYQ Chapterwise Quiz (Learn/Calc tab) =====
@@ -11677,6 +11912,19 @@ function makeMathPyqQuiz(){
 }
 const mathPyqQuiz = makeMathPyqQuiz();
 
+// ===== Reasoning Chapterwise (directory page) =====
+// Ek hi jagah se saare reasoning quizzes (Odd One Out se lekar Word
+// Formation tak) chapter-list ki tarah dikhte hain — bilkul Math
+// Chapterwise jaisa. Har row apna original quiz hi kholta hai (koi data/
+// logic duplicate nahi hua), bas entry point + un sab ka "back" ab yahi
+// list page par wapas aata hai, root menu par seedha nahi.
+(function initReasoningChaptersPage(){
+  const openBtn = document.getElementById('calcReasoningChaptersBtn');
+  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('reasoningchapters'));
+  const backBtn = document.getElementById('reasoningChaptersBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
+
 
 
 // ===== Phrasal Verbs Quiz (Learn/Calc tab) =====
@@ -11765,6 +12013,36 @@ function redistributeSetsAcrossPool(SETS){
   });
 }
 redistributeSetsAcrossPool(PREPOSITION_SETS);
+
+// ===== New bilingual reasoning categories (Seating, Order & Ranking,
+// Letter Analogy, Letter/Word Position Analysis, Inequality & Word
+// Formation) — all built on the shared makeBilingualSetQuiz engine above. =====
+const seatingQuiz = makeBilingualSetQuiz('seating', SEATING_SETS, 'Seating Arrangement', '🪑', 'calcSeatingBtn');
+const orderrankingQuiz = makeBilingualSetQuiz('orderranking', ORDERRANKING_SETS, 'Order & Ranking', '📶', 'calcOrderRankingBtn');
+const letteranalogyQuiz = makeBilingualSetQuiz('letteranalogy', LETTERANALOGY_SETS, 'Letter Analogy', '🔤', 'calcLetterAnalogyBtn');
+const letterwordQuiz = makeBilingualSetQuiz('letterword', LETTERWORD_SETS, 'Letter/Word Position', '🧩', 'calcLetterWordBtn');
+const logicmixQuiz = makeBilingualSetQuiz('logicmix', LOGICMIX_SETS, 'Inequality & Word Formation', '🔣', 'calcLogicMixBtn');
+const bloodrelationsQuiz = makeBilingualSetQuiz('bloodrelations', BLOODREL_SETS, 'Blood Relations', '🧬', 'calcBloodRelationsBtn');
+const numberanalogyQuiz = makeBilingualSetQuiz('numberanalogy', NUMANALOGY_SETS, 'Number Analogy', '🔢', 'calcNumberAnalogyBtn');
+const alphanumericQuiz = makeBilingualSetQuiz('alphanumeric', ALPHANUM_SETS, 'Alphanumeric Series', '🔡', 'calcAlphanumericBtn');
+const syllogismQuiz = makeBilingualSetQuiz('syllogism', SYLLOGISM_SETS, 'Syllogism', '🧷', 'calcSyllogismBtn');
+const clockioQuiz = makeBilingualSetQuiz('clockio', CLOCKIO_SETS, 'Clock & Input-Output', '🕐', 'calcClockIOBtn');
+const wordanalogyQuiz = makeBilingualSetQuiz('wordanalogy', WORDANALOGY_SETS, 'Word Analogy', '🔠', 'calcWordAnalogyBtn');
+const letterseriesdsQuiz = makeBilingualSetQuiz('letterseriesds', LETTERSERIESDS_SETS, 'Letter Series (Digit-Sum)', '🔡', 'calcLetterSeriesDSBtn');
+const dictorderQuiz = makeBilingualSetQuiz('dictorder', DICTORDER_SETS, 'Dictionary / Alphabetical Order', '📖', 'calcDictOrderBtn');
+const calendarreasoningQuiz = makeBilingualSetQuiz('calendarreasoning', CALENDARREASONING_SETS, 'Calendar Reasoning', '📅', 'calcCalendarReasoningBtn');
+const wordformationQuiz = makeBilingualSetQuiz('wordformation', WORDFORMATION_SETS, 'Word Formation', '🧱', 'calcWordFormationBtn');
+const seatinghardQuiz = makeBilingualSetQuiz('seatinghard', SEATINGHARD_SETS, 'Seating Arrangement (Hard)', '🎯', 'calcSeatingHardBtn');
+const directiondistanceQuiz = makeBilingualSetQuiz('directiondistance', DIRECTIONDISTANCE_SETS, 'Direction & Distance', '🧭', 'calcDirectionDistanceBtn');
+const reasoninghardmixQuiz = makeBilingualSetQuiz('reasoninghardmix', REASONINGHARDMIX_SETS, 'Order, Analogy & Puzzle (Hard Mix)', '🧠', 'calcReasoningHardMixBtn');
+const statementconclusionQuiz = makeBilingualSetQuiz('statementconclusion', STATEMENTCONCLUSION_SETS, 'Statement, Conclusion & Data Sufficiency', '📜', 'calcStatementConclusionBtn');
+const wordarrangeageQuiz = makeBilingualSetQuiz('wordarrangeage', WORDARRANGEAGE_SETS, 'Word Arrangement & Age (Hard)', '🧓', 'calcWordArrangeAgeBtn');
+
+// Reasoning Mock — 25-Q sectional mocks mixed across all reasoning chapters
+// (Letter Series + Decision Making trimmed to their top-100 hard/tricky Qs,
+// every other chapter used in full). Mirrors Math Mock's structure; its
+// "back" goes to the root menu (not the chapter list), same as Math Mock.
+const reasoningmockQuiz = makeBilingualSetQuiz('reasoningmock', REASONINGMOCK_SETS, 'Reasoning Mock', '🧠', 'calcReasoningMockBtn', 'Mock', 'menu');
 
 
 
@@ -11862,6 +12140,27 @@ function initCalcNav(){
   unitdigitQuiz.init();
   statementQuiz.init();
   decisionmakingQuiz.init();
+  seatingQuiz.init();
+  orderrankingQuiz.init();
+  letteranalogyQuiz.init();
+  letterwordQuiz.init();
+  logicmixQuiz.init();
+  bloodrelationsQuiz.init();
+  numberanalogyQuiz.init();
+  alphanumericQuiz.init();
+  syllogismQuiz.init();
+  clockioQuiz.init();
+  wordanalogyQuiz.init();
+  letterseriesdsQuiz.init();
+  dictorderQuiz.init();
+  calendarreasoningQuiz.init();
+  wordformationQuiz.init();
+  seatinghardQuiz.init();
+  directiondistanceQuiz.init();
+  reasoninghardmixQuiz.init();
+  statementconclusionQuiz.init();
+  wordarrangeageQuiz.init();
+  reasoningmockQuiz.init();
   mathPyqQuiz.init();
   mathPyqQuiz.initExamMode();
   initPhrasalQuiz();
