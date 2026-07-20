@@ -10076,8 +10076,9 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage){
 const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'reasoningchapters');
 const seriesQuiz = makeReasoningQuiz('series', SERIES_SETS, 'Series', 'reasoningchapters');
 const codingQuiz = makeReasoningQuiz('coding', CODING_SETS, 'Coding-Decoding', 'reasoningchapters');
-const oddoneSsc2025Quiz = makeReasoningQuiz('oddonessc2025', ODDONE_SSC2025_SETS, 'Odd One Out — SSC 2025', 'reasoningchapters');
-const seriesSsc2025Quiz = makeReasoningQuiz('seriesssc2025', SERIES_SSC2025_SETS, 'Number Series — SSC 2025', 'reasoningchapters');
+// Note: the old standalone "Odd One Out — SSC 2025" and "Number Series — SSC
+// 2025" quizzes/buttons were merged into ODDONE_SETS / SERIES_SETS above (as
+// extra sets) so all practice for the same topic lives under one button.
 
 // [data moved to data/digitalsum_sets.js]
 
@@ -12552,13 +12553,6 @@ function initReasoningQuiz(){
   oddoneQuiz.init();
   seriesQuiz.init();
   codingQuiz.init();
-
-  const oddOneSsc2025Btn = document.getElementById('calcOddOneSsc2025Btn');
-  if(oddOneSsc2025Btn) oddOneSsc2025Btn.addEventListener('click', () => showCalcPage('oddonessc2025menu'));
-  const seriesSsc2025Btn = document.getElementById('calcSeriesSsc2025Btn');
-  if(seriesSsc2025Btn) seriesSsc2025Btn.addEventListener('click', () => showCalcPage('seriesssc2025menu'));
-  oddoneSsc2025Quiz.init();
-  seriesSsc2025Quiz.init();
 }
 
 function initPhrasalQuiz(){
