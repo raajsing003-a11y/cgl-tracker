@@ -9825,6 +9825,34 @@ function initGrammarQuiz(){
 // [data moved to data/coding_sets.js]
 
 
+// Splits a { topicKey: [ ...bigQuestionArray ] } SETS object into fixed-size
+// (default 10) chunks so long topics/chapters show up as multiple bite-size
+// "Topic - Set 1 (10 Qs)", "Topic - Set 2 (10 Qs)"... cards instead of one
+// giant N-question card. Topics already <= chunkSize stay a single card.
+// Works for any makeReasoningQuiz() caller (English topic-wise, Math/
+// Reasoning chapterwise, etc.) — wrap the SETS + topicMeta before passing in.
+function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
+  chunkSize = chunkSize || 10;
+  const chunkedSets = {};
+  const chunkedMeta = {};
+  Object.keys(SETS).forEach(topicKey => {
+    const arr = SETS[topicKey] || [];
+    const baseMeta = (topicMeta && topicMeta[topicKey]) || { label: topicKey, icon: '\ud83e\udde0' };
+    if(arr.length <= chunkSize){
+      chunkedSets[topicKey] = arr;
+      chunkedMeta[topicKey] = baseMeta;
+      return;
+    }
+    const totalChunks = Math.ceil(arr.length / chunkSize);
+    for(let i = 0; i < totalChunks; i++){
+      const chunkKey = topicKey + '__set' + (i + 1);
+      chunkedSets[chunkKey] = arr.slice(i * chunkSize, (i + 1) * chunkSize);
+      chunkedMeta[chunkKey] = { label: baseMeta.label + ' - Set ' + (i + 1), icon: baseMeta.icon };
+    }
+  });
+  return { chunkedSets, chunkedMeta };
+}
+
 function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta){
   const session = { setKey: null, questions: [], index: 0, correct: 0, wrong: 0, answered: false, userAnswers: [] };
   const SAVED_KEY = 'cgl50-' + prefix + '-saved';
@@ -10112,7 +10140,11 @@ const ENGLISH_TOPICWISE_TOPIC_META = {
 // question bank, topic-wise. Reuses the same reasoning-quiz engine (single
 // language, MCQ + explanation) with topic-specific labels/icons via
 // ENGLISH_TOPICWISE_TOPIC_META instead of generic "Set N" numbering.
-const englishTopicwiseQuiz = makeReasoningQuiz('englishtopicwise', ENGLISH_TOPICWISE_SETS, 'English Topic-wise', 'menu', ENGLISH_TOPICWISE_TOPIC_META);
+// Topics here range from 1 Q (Articles) to 551 Qs (Fill in the Blanks), so we
+// chunk every topic into 10-question sets (e.g. "Para Jumbles - Set 1 (10
+// Qs)", "Set 2 (10 Qs)"...) instead of one huge N-question card per topic.
+const ENGLISH_TOPICWISE_CHUNKED = chunkSetsIntoTens(ENGLISH_TOPICWISE_SETS, ENGLISH_TOPICWISE_TOPIC_META, 10);
+const englishTopicwiseQuiz = makeReasoningQuiz('englishtopicwise', ENGLISH_TOPICWISE_CHUNKED.chunkedSets, 'English Topic-wise', 'menu', ENGLISH_TOPICWISE_CHUNKED.chunkedMeta);
 // Note: the old standalone "Odd One Out — SSC 2025" and "Number Series — SSC
 // 2025" quizzes/buttons were merged into ODDONE_SETS / SERIES_SETS above (as
 // extra sets) so all practice for the same topic lives under one button.
