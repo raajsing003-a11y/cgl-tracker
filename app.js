@@ -11514,6 +11514,28 @@ function makeMathPyqQuiz(){
     // (not shuffled) so revision feels sequential/predictable.
     return set.slice();
   }
+  // Chunked keys look like "geometry__set1"; this recovers the underlying
+  // chapter key ("geometry") so sets can be grouped back under one chapter
+  // button in the Chapters view. Un-chunked chapters (<=10 Qs) keep their
+  // key as-is and are their own "chapter".
+  function baseChapterKey(key){
+    const idx = key.indexOf('__set');
+    return idx === -1 ? key : key.slice(0, idx);
+  }
+  // "chapters" view has two levels now: null = chapter picker, else = the
+  // chapter's own set list (drilled in). Reset whenever the top-level
+  // Chapters/Mocks toggle or entry buttons are used.
+  let mathpyqChapterSel = null;
+  function chapterOrder(){
+    const seen = [];
+    const seenSet = {};
+    Object.keys(SETS).forEach(key => {
+      if(key.indexOf('mock') === 0) return;
+      const base = baseChapterKey(key);
+      if(!seenSet[base]){ seenSet[base] = true; seen.push(base); }
+    });
+    return seen;
+  }
   function renderSetMenu(){
     const grid = document.getElementById('mathpyqSetGrid');
     if(!grid) return;
@@ -11523,36 +11545,80 @@ function makeMathPyqQuiz(){
     if(chapBtn) chapBtn.classList.toggle('onbPrimary', mathpyqView === 'chapters');
     if(mockBtn) mockBtn.classList.toggle('onbPrimary', mathpyqView === 'mocks');
     const menuTitleEl = document.getElementById('mathpyqMenuTitle');
-    if(menuTitleEl) menuTitleEl.textContent = mathpyqView === 'mocks' ? 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)' : 'Math PYQ — Choose a Chapter';
-    Object.keys(SETS).filter(key => mathpyqView === 'mocks' ? key.indexOf('mock') === 0 : key.indexOf('mock') !== 0).forEach(key => {
+
+    if(mathpyqView === 'mocks'){
+      if(menuTitleEl) menuTitleEl.textContent = 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)';
+      Object.keys(SETS).filter(key => key.indexOf('mock') === 0).forEach(key => {
+        const count = SETS[key].length;
+        const meta = CHUNKED_META[key];
+        const saved = getMockAttempt(key);
+        if(saved){
+          // Already submitted: tapping the card opens the FULL saved
+          // solution review again (nothing lost). A separate small button
+          // lets them start a fresh attempt without losing the old one
+          // until they actually submit the new attempt.
+          const card = document.createElement('div');
+          card.className = 'calcCard';
+          card.style.cursor = 'pointer';
+          card.innerHTML =
+            '<span class="calcIcon">' + (meta ? meta.icon : '📐') + '</span>' +
+            '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
+            '<span style="font-size:11px;color:var(--muted);font-weight:600;">✅ Score: ' + examFormatMarks(saved.marks) + ' · Tap to review</span></span>' +
+            '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">🔁</button>';
+          card.addEventListener('click', (e) => {
+            if(e.target.closest('.mockCardReattemptBtn')) return;
+            viewSavedMockAttempt(key);
+          });
+          const reBtn = card.querySelector('.mockCardReattemptBtn');
+          if(reBtn) reBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openLangChoice(key);
+          });
+          grid.appendChild(card);
+          return;
+        }
+        const btn = document.createElement('button');
+        btn.className = 'calcCard';
+        btn.innerHTML =
+          '<span class="calcIcon">' + (meta ? meta.icon : '📐') + '</span>' +
+          '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span></span>' +
+          (isQuizSetAttempted(prefix, key) ? '<span class="calcDoneBadge">✅</span>' : '') +
+          '<span class="calcArrow">&#8250;</span>';
+        btn.addEventListener('click', () => openLangChoice(key));
+        grid.appendChild(btn);
+      });
+      return;
+    }
+
+    // ===== chapters view =====
+    if(!mathpyqChapterSel){
+      // Level 1: chapter picker — one button per chapter, sets grouped inside.
+      if(menuTitleEl) menuTitleEl.textContent = 'Math PYQ — Choose a Chapter';
+      chapterOrder().forEach(base => {
+        const meta = TOPIC_META[base] || { en: base, icon: '📐' };
+        const setKeys = Object.keys(SETS).filter(k => k.indexOf('mock') !== 0 && baseChapterKey(k) === base);
+        const totalQs = setKeys.reduce((sum, k) => sum + (SETS[k] || []).length, 0);
+        const doneCount = setKeys.filter(k => isQuizSetAttempted(prefix, k)).length;
+        const subLine = setKeys.length + (setKeys.length > 1 ? ' sets · ' : ' set · ') + totalQs + ' Qs' + (doneCount ? ' · ' + doneCount + '/' + setKeys.length + ' done' : '');
+        const btn = document.createElement('button');
+        btn.className = 'calcCard';
+        btn.innerHTML =
+          '<span class="calcIcon">' + (meta.icon || '📐') + '</span>' +
+          '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(meta.en) + '</span>' +
+          '<span style="font-size:11px;color:var(--muted);font-weight:600;">' + subLine + '</span></span>' +
+          (doneCount === setKeys.length ? '<span class="calcDoneBadge">✅</span>' : '') +
+          '<span class="calcArrow">&#8250;</span>';
+        btn.addEventListener('click', () => { mathpyqChapterSel = base; renderSetMenu(); });
+        grid.appendChild(btn);
+      });
+      return;
+    }
+    // Level 2: sets inside the chosen chapter.
+    const chapMeta = TOPIC_META[mathpyqChapterSel];
+    if(menuTitleEl) menuTitleEl.textContent = 'Math PYQ — ' + (chapMeta ? chapMeta.en : mathpyqChapterSel);
+    Object.keys(SETS).filter(key => key.indexOf('mock') !== 0 && baseChapterKey(key) === mathpyqChapterSel).forEach(key => {
       const count = SETS[key].length;
       const meta = CHUNKED_META[key];
-      const saved = mathpyqView === 'mocks' ? getMockAttempt(key) : null;
-      if(saved){
-        // Already submitted: tapping the card opens the FULL saved
-        // solution review again (nothing lost). A separate small button
-        // lets them start a fresh attempt without losing the old one
-        // until they actually submit the new attempt.
-        const card = document.createElement('div');
-        card.className = 'calcCard';
-        card.style.cursor = 'pointer';
-        card.innerHTML =
-          '<span class="calcIcon">' + (meta ? meta.icon : '📐') + '</span>' +
-          '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
-          '<span style="font-size:11px;color:var(--muted);font-weight:600;">✅ Score: ' + examFormatMarks(saved.marks) + ' · Tap to review</span></span>' +
-          '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">🔁</button>';
-        card.addEventListener('click', (e) => {
-          if(e.target.closest('.mockCardReattemptBtn')) return;
-          viewSavedMockAttempt(key);
-        });
-        const reBtn = card.querySelector('.mockCardReattemptBtn');
-        if(reBtn) reBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openLangChoice(key);
-        });
-        grid.appendChild(card);
-        return;
-      }
       const btn = document.createElement('button');
       btn.className = 'calcCard';
       btn.innerHTML =
@@ -11699,15 +11765,24 @@ function makeMathPyqQuiz(){
   function init(){
     renderSetMenu();
     const mainBtn = document.getElementById('calcMathPyqBtn');
-    if(mainBtn) mainBtn.addEventListener('click', () => { mathpyqView = 'mocks'; renderSetMenu(); showCalcPage('mathpyqmenu'); });
+    if(mainBtn) mainBtn.addEventListener('click', () => { mathpyqView = 'mocks'; mathpyqChapterSel = null; renderSetMenu(); showCalcPage('mathpyqmenu'); });
     const chapterwiseBtn = document.getElementById('calcMathChapterwiseBtn');
-    if(chapterwiseBtn) chapterwiseBtn.addEventListener('click', () => { mathpyqView = 'chapters'; renderSetMenu(); showCalcPage('mathpyqmenu'); });
+    if(chapterwiseBtn) chapterwiseBtn.addEventListener('click', () => { mathpyqView = 'chapters'; mathpyqChapterSel = null; renderSetMenu(); showCalcPage('mathpyqmenu'); });
     const menuBackBtn = document.getElementById('mathpyqMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => {
+      // If drilled into a chapter's set list, back goes up to the chapter
+      // picker first; only exits the page once already at a top level.
+      if(mathpyqView === 'chapters' && mathpyqChapterSel){
+        mathpyqChapterSel = null;
+        renderSetMenu();
+        return;
+      }
+      showCalcPage('menu');
+    });
     const viewChaptersBtn = document.getElementById('mathpyqViewChaptersBtn');
-    if(viewChaptersBtn) viewChaptersBtn.addEventListener('click', () => { mathpyqView = 'chapters'; renderSetMenu(); });
+    if(viewChaptersBtn) viewChaptersBtn.addEventListener('click', () => { mathpyqView = 'chapters'; mathpyqChapterSel = null; renderSetMenu(); });
     const viewMocksBtn = document.getElementById('mathpyqViewMocksBtn');
-    if(viewMocksBtn) viewMocksBtn.addEventListener('click', () => { mathpyqView = 'mocks'; renderSetMenu(); });
+    if(viewMocksBtn) viewMocksBtn.addEventListener('click', () => { mathpyqView = 'mocks'; mathpyqChapterSel = null; renderSetMenu(); });
     const langBackBtn = document.getElementById('mathpyqLangBackBtn');
     if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('mathpyqmenu'));
     const langHindiBtn = document.getElementById('mathpyqLangHindiBtn');
