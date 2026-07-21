@@ -9853,16 +9853,9 @@ function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
   return { chunkedSets, chunkedMeta };
 }
 
-function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupConfig){
+function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta){
   const session = { setKey: null, questions: [], index: 0, correct: 0, wrong: 0, answered: false, userAnswers: [] };
   const SAVED_KEY = 'cgl50-' + prefix + '-saved';
-  // groupConfig (optional) = { originalSets, topicMeta, gridId, pageId }
-  // When present, this quiz gets a two-level menu: a topic list first
-  // (e.g. "Synonyms (107 Qs)", "Antonyms (63 Qs)"...), and tapping a topic
-  // opens the existing Set-grid filtered to just that topic's chunks
-  // (e.g. "Synonyms - Set 1", "Synonyms - Set 2"...) instead of dumping
-  // every topic's every set into one long flat list.
-  let selectedTopicKey = null;
 
   function setLabel(key, count){
     if(topicMeta && topicMeta[key]){
@@ -9929,15 +9922,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
     const grid = document.getElementById(prefix + 'SetGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    const titleEl = document.getElementById(prefix + 'MenuTitle');
-    if(titleEl && groupConfig){
-      const topicMetaForTitle = (groupConfig.topicMeta && selectedTopicKey && groupConfig.topicMeta[selectedTopicKey]);
-      titleEl.textContent = topicMetaForTitle ? ('📚 ' + topicMetaForTitle.label) : ('📚 ' + label);
-    }
-    Object.keys(SETS).filter(key => {
-      if(!groupConfig || !selectedTopicKey) return true;
-      return key === selectedTopicKey || key.indexOf(selectedTopicKey + '__set') === 0;
-    }).forEach(key => {
+    Object.keys(SETS).forEach(key => {
       const count = SETS[key].length;
       const setLbl = setLabel(key, count);
       const icon = topicIcon(key);
@@ -9949,28 +9934,6 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
         '<span class="calcLabel">' + escapeHtml(setLbl) + '</span>' +
         '<span class="calcArrow">&#8250;</span>';
       btn.addEventListener('click', () => startQuiz(key));
-      grid.appendChild(btn);
-    });
-  }
-  function renderTopicMenu(){
-    if(!groupConfig) return;
-    const grid = document.getElementById(groupConfig.gridId);
-    if(!grid) return;
-    grid.innerHTML = '';
-    Object.keys(groupConfig.originalSets).forEach(topicKey => {
-      const meta = (groupConfig.topicMeta && groupConfig.topicMeta[topicKey]) || { label: topicKey, icon: '\ud83e\udde0' };
-      const count = (groupConfig.originalSets[topicKey] || []).length;
-      const btn = document.createElement('button');
-      btn.className = 'calcCard';
-      btn.innerHTML =
-        '<span class="calcIcon">' + meta.icon + '</span>' +
-        '<span class="calcLabel">' + escapeHtml(meta.label) + ' (' + count + ' Qs)</span>' +
-        '<span class="calcArrow">&#8250;</span>';
-      btn.addEventListener('click', () => {
-        selectedTopicKey = topicKey;
-        renderSetMenu();
-        showCalcPage(prefix + 'menu');
-      });
       grid.appendChild(btn);
     });
   }
@@ -10117,14 +10080,9 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
   }
   function init(){
     renderSetMenu();
-    if(groupConfig){
-      renderTopicMenu();
-      const topicsBackBtn = document.getElementById(prefix + 'TopicsBackBtn');
-      if(topicsBackBtn) topicsBackBtn.addEventListener('click', () => showCalcPage(menuBackPage || 'menu'));
-    }
     updateSavedMenuBtn();
     const menuBackBtn = document.getElementById(prefix + 'MenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage(groupConfig ? groupConfig.pageId : (menuBackPage || 'reasoningmenu')));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage(menuBackPage || 'reasoningmenu'));
     const backBtn = document.getElementById(prefix + 'BackBtn');
     if(backBtn) backBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
     const nextBtn = document.getElementById(prefix + 'NextBtn');
@@ -10147,7 +10105,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       updateSavedMenuBtn();
     });
   }
-  return { init, startQuiz, renderTopicMenu };
+  return { init, startQuiz };
 }
 
 const oddoneQuiz = makeReasoningQuiz('oddone', ODDONE_SETS, 'Odd One Out', 'reasoningchapters');
@@ -10186,16 +10144,7 @@ const ENGLISH_TOPICWISE_TOPIC_META = {
 // chunk every topic into 10-question sets (e.g. "Para Jumbles - Set 1 (10
 // Qs)", "Set 2 (10 Qs)"...) instead of one huge N-question card per topic.
 const ENGLISH_TOPICWISE_CHUNKED = chunkSetsIntoTens(ENGLISH_TOPICWISE_SETS, ENGLISH_TOPICWISE_TOPIC_META, 10);
-// Two-level nav: tap "English Topic-wise" -> topic list (Synonyms, Antonyms,
-// Idioms & Phrases...) -> tap a topic -> just THAT topic's Set 1/Set 2/...
-// cards, instead of all 15 topics' sets dumped into one long flat list.
-const ENGLISH_TOPICWISE_GROUP = {
-  originalSets: ENGLISH_TOPICWISE_SETS,
-  topicMeta: ENGLISH_TOPICWISE_TOPIC_META,
-  gridId: 'englishtopicwiseTopicGrid',
-  pageId: 'englishtopicwisetopics'
-};
-const englishTopicwiseQuiz = makeReasoningQuiz('englishtopicwise', ENGLISH_TOPICWISE_CHUNKED.chunkedSets, 'English Topic-wise', 'menu', ENGLISH_TOPICWISE_CHUNKED.chunkedMeta, ENGLISH_TOPICWISE_GROUP);
+const englishTopicwiseQuiz = makeReasoningQuiz('englishtopicwise', ENGLISH_TOPICWISE_CHUNKED.chunkedSets, 'English Topic-wise', 'menu', ENGLISH_TOPICWISE_CHUNKED.chunkedMeta);
 // Note: the old standalone "Odd One Out — SSC 2025" and "Number Series — SSC
 // 2025" quizzes/buttons were merged into ODDONE_SETS / SERIES_SETS above (as
 // extra sets) so all practice for the same topic lives under one button.
@@ -11357,42 +11306,10 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
 // the underlying math doesn't change with language.
 // [data moved to data/math_pyq_sets.js]
 
-// Splits each non-mock chapter of MATH_PYQ_SETS into fixed-size (default 10)
-// chunks — same idea as chunkSetsIntoTens() used for English Topic-wise, but
-// bilingual (hi/en) since Math PYQ labels/meta carry both languages. Mocks
-// (mock01..mock44) are left untouched since those are already ~25-Q full
-// tests, not chapters. So "Geometry (123 Qs)" becomes "Geometry - Set 1
-// (10 Qs)", "Geometry - Set 2 (10 Qs)"... etc.
-function chunkMathPyqChapters(rawSets, meta, chunkSize){
-  chunkSize = chunkSize || 10;
-  const chunkedSets = {};
-  const chunkedMeta = {};
-  Object.keys(rawSets).forEach(key => {
-    const arr = rawSets[key] || [];
-    const baseMeta = meta[key] || { hi: key, en: key, icon: '📐' };
-    if(key.indexOf('mock') === 0 || arr.length <= chunkSize){
-      chunkedSets[key] = arr;
-      chunkedMeta[key] = baseMeta;
-      return;
-    }
-    const totalChunks = Math.ceil(arr.length / chunkSize);
-    for(let i = 0; i < totalChunks; i++){
-      const chunkKey = key + '__set' + (i + 1);
-      chunkedSets[chunkKey] = arr.slice(i * chunkSize, (i + 1) * chunkSize);
-      chunkedMeta[chunkKey] = {
-        hi: baseMeta.hi + ' - सेट ' + (i + 1),
-        en: baseMeta.en + ' - Set ' + (i + 1),
-        icon: baseMeta.icon
-      };
-    }
-  });
-  return { chunkedSets, chunkedMeta };
-}
-
 function makeMathPyqQuiz(){
   const prefix = 'mathpyq';
-  let SETS = MATH_PYQ_SETS; // reassigned to the chunked version once TOPIC_META is defined below
-  let mathpyqView = 'mocks'; // 'chapters' | 'mocks'
+  const SETS = MATH_PYQ_SETS;
+  let mathpyqView = 'mocks'; // 'chapters' | 'mocks' (chapterwise view disabled — mocks only)
 
   // ===== Saved Mock Attempts (localStorage) =====
   // Jab ek mock "Submit Test" hota hai, uska poora snapshot (questions,
@@ -11496,15 +11413,8 @@ function makeMathPyqQuiz(){
     coordinategeometry: { hi: "निर्देशांक ज्यामिति", en: "Co-ordinate Geometry", icon: "📍" }
   };
 
-  // Chapters with 10+ Qs (Geometry-123, Time&Work-110, Algebra-62, etc.) get
-  // split into "Chapter - Set 1/2/3..." chunks, same as English Topic-wise;
-  // mocks are left as full-length tests.
-  const MATH_PYQ_CHUNKED = chunkMathPyqChapters(MATH_PYQ_SETS, TOPIC_META, 10);
-  SETS = MATH_PYQ_CHUNKED.chunkedSets;
-  const CHUNKED_META = MATH_PYQ_CHUNKED.chunkedMeta;
-
   function setLabel(key, count){
-    const meta = CHUNKED_META[key];
+    const meta = TOPIC_META[key];
     const name = meta ? meta.en : key;
     return name + ' (' + count + ' Qs)';
   }
@@ -11526,7 +11436,7 @@ function makeMathPyqQuiz(){
     if(menuTitleEl) menuTitleEl.textContent = mathpyqView === 'mocks' ? 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)' : 'Math PYQ — Choose a Chapter';
     Object.keys(SETS).filter(key => mathpyqView === 'mocks' ? key.indexOf('mock') === 0 : key.indexOf('mock') !== 0).forEach(key => {
       const count = SETS[key].length;
-      const meta = CHUNKED_META[key];
+      const meta = TOPIC_META[key];
       const saved = mathpyqView === 'mocks' ? getMockAttempt(key) : null;
       if(saved){
         // Already submitted: tapping the card opens the FULL saved
@@ -13242,7 +13152,7 @@ function initEnglishTopicwiseQuiz(){
   // tap the main card -> chapter list (calcPage-englishtopicwisemenu),
   // tap a chapter -> quiz starts straight away (calcPage-englishtopicwise).
   const btn = document.getElementById('calcEnglishTopicwiseBtn');
-  if(btn) btn.addEventListener('click', () => showCalcPage('englishtopicwisetopics'));
+  if(btn) btn.addEventListener('click', () => showCalcPage('englishtopicwisemenu'));
   englishTopicwiseQuiz.init();
 }
 
