@@ -2338,7 +2338,7 @@
      into horizontal scroll. Shrink paddings/fonts here so everything fits
      without needing to scroll sideways; tablets/desktop keep full size. ===== */
   @media (max-width:759px){
-    #calcPage-mathpyqexam, #calcPage-reasoningmockexam{overflow-x:hidden;max-width:100%;}
+    #calcPage-mathpyqexam, #calcPage-reasoningmockexam, #calcPage-englishmockexam{overflow-x:hidden;max-width:100%;}
     .examTopBar{gap:6px;padding:10px 8px;}
     .examTopBar .calcBackBtn{width:30px;height:30px;min-width:30px;font-size:18px;}
     .examTopBar .calcSubTitle{font-size:12px;}
@@ -3163,6 +3163,18 @@
         </button>
       </div>
 
+      <div class="grid-label" style="margin-top:0;">📘 English Mock</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard calcCard-statement" id="calcEnglishMockBtn" data-calc="englishmock">
+          <span class="calcIcon calcIcon-statement">📘</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">English Mock</span>
+            <span class="calcSub">68 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+
       <div class="grid-label" style="margin-top:0;">📚 English Vocab</div>
       <div class="calcGrid calcGrid-2col">
         <button class="calcCard calcCard-vocab" id="calcVocabBtn" data-calc="vocab">
@@ -3258,6 +3270,18 @@
           <span class="calcLabelCol">
             <span class="calcLabel">Reasoning Chapterwise</span>
             <span class="calcSub">27 chapters · SSC PYQs · Hindi + English</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+
+      <div class="grid-label" style="margin-top:0;">📚 English Topic-wise</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard calcCard-statement" id="calcEnglishTopicwiseBtn" data-calc="englishtopicwise">
+          <span class="calcIcon calcIcon-statement">📚</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">English Topic-wise</span>
+            <span class="calcSub">15 topics · 1683 Qs · SSC CGL/CHSL merged bank</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -3510,6 +3534,106 @@
       <div class="examNavRow" style="padding-bottom:20px;">
         <button type="button" class="nav-btn" id="reasoningmockResultPrevBtn">⬅️ Previous</button>
         <button type="button" class="nav-btn onbPrimary" id="reasoningmockResultNextBtn">Next ➜</button>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-englishmockmenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="englishmockMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">English Mock — Choose a Mock (25 Qs mixed, all topics)</div>
+      </div>
+      <div class="calcGrid calcGrid-1col" id="englishmockSetGrid"></div>
+    </div>
+
+    <!-- ===== English Mock — Testbook-style Exam Interface (mirrors Math Mock) ===== -->
+    <div class="calcPage" id="calcPage-englishmockexam">
+      <div class="examTopBar">
+        <button class="calcBackBtn" id="englishmockExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
+        <div class="calcSubTitle" id="englishmockExamTitle">Mock</div>
+        <div class="examTimerPill" id="englishmockExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examPauseBtn" id="englishmockExamPauseBtn" title="Pause Test">⏸</button>
+        <button type="button" class="examSubmitBtn" id="englishmockExamSubmitBtn">Submit Test</button>
+      </div>
+
+      <div class="examNavRow examNavRowTop">
+        <button type="button" class="nav-btn" id="englishmockExamMarkBtn">🚩 Mark for Review</button>
+        <button type="button" class="nav-btn" id="englishmockExamClearBtn">Clear Response</button>
+        <button type="button" class="nav-btn onbPrimary" id="englishmockExamSaveNextBtn">Save &amp; Next ➜</button>
+      </div>
+
+      <div class="examBodyRow">
+        <div class="examMainCol">
+          <div class="examQNo" id="englishmockExamQNo">Question No. 1</div>
+
+          <div class="calcQuestionWrap" id="englishmockExamQuestionWrap" style="padding:6px 2px 14px;text-align:left;">
+            <div class="dsExamBadge" id="englishmockExamExamBadge">📘 Topic</div>
+            <div class="calcQuestion" id="englishmockExamWordText" style="font-size:clamp(19px,5.4vw,24px);line-height:1.5;text-align:left;">—</div>
+            <img id="englishmockExamQuestionImg" class="quizFigureImg" style="display:none;" alt="Question figure">
+          </div>
+
+          <div class="examOptList" id="englishmockExamOptList"></div>
+
+          <div class="examNavRow examNavRowBottom">
+            <button type="button" class="nav-btn onbPrimary" id="englishmockExamSaveNextBtnBottom">Save &amp; Next ➜</button>
+          </div>
+        </div>
+
+        <div class="examPaletteWrap">
+          <div class="examPaletteLegend">
+            <span><span class="examLegendDot" style="background:var(--gain);"></span>Answered</span>
+            <span><span class="examLegendDot" style="background:#7a2f2f;"></span>Not Answered</span>
+            <span><span class="examLegendDot" style="background:#3a3742;"></span>Not Visited</span>
+            <span><span class="examLegendDot" style="background:var(--purple);"></span>Marked for Review</span>
+          </div>
+          <div class="examPaletteGrid" id="englishmockExamPaletteGrid"></div>
+        </div>
+
+        <div class="examPauseOverlay" id="englishmockExamPauseOverlay">
+          <div class="pauseMsg">⏸ Test Paused</div>
+          <button type="button" class="nav-btn onbPrimary" id="englishmockExamResumeBtn">▶ Resume Test</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== English Mock — Result + Solution Review ===== -->
+    <div class="calcPage" id="calcPage-englishmockresult">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="englishmockResultBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="englishmockResultTitle">Mock Result</div>
+        <button type="button" class="nav-btn" id="englishmockResultReattemptBtn" style="flex:0 0 auto;padding:8px 12px;font-size:12.5px;">🔁 Reattempt</button>
+      </div>
+
+      <div class="examResultSummary" id="englishmockExamResultSummary"></div>
+
+      <div class="calcStatsRow" style="padding:0 14px 6px;">
+        <div class="calcStatPill" style="color:var(--muted);">Solutions</div>
+      </div>
+
+      <div class="examPaletteWrap" style="border-top:none;padding-top:0;">
+        <div class="examPaletteGrid" id="englishmockResultPaletteGrid"></div>
+      </div>
+
+      <div class="examQNo" id="englishmockResultQNo">Question No. 1</div>
+      <div id="englishmockResultTagWrap"></div>
+
+      <div class="calcQuestionWrap" id="englishmockResultQuestionWrap" style="padding:6px 2px 14px;text-align:left;cursor:pointer;">
+        <div class="dsExamBadge" id="englishmockResultExamBadge">📘 Topic</div>
+        <div class="calcQuestion" id="englishmockResultWordText" style="font-size:clamp(19px,5.4vw,24px);line-height:1.5;text-align:left;">—</div>
+        <img id="englishmockResultQuestionImg" class="quizFigureImg" style="display:none;" alt="Question figure">
+      </div>
+
+      <div class="examOptList" id="englishmockResultOptList" style="cursor:pointer;"></div>
+
+      <div class="calcResultCard" id="englishmockResultSolutionCard" style="display:none;text-align:left;padding:14px;margin:4px 14px 18px;">
+        <div class="dsSolBlock" style="margin-top:0;padding-top:0;border-top:none;">
+          <div class="dsSolLabel">Solution</div>
+          <div id="englishmockResultSolutionText"></div>
+        </div>
+      </div>
+
+      <div class="examNavRow" style="padding-bottom:20px;">
+        <button type="button" class="nav-btn" id="englishmockResultPrevBtn">⬅️ Previous</button>
+        <button type="button" class="nav-btn onbPrimary" id="englishmockResultNextBtn">Next ➜</button>
       </div>
     </div>
 
@@ -4315,6 +4439,61 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="oddoneResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="oddoneResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== English Topic-wise ===== -->
+    <div class="calcPage" id="calcPage-englishtopicwisemenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="englishtopicwiseMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">📚 English Topic-wise</div>
+      </div>
+      <button type="button" class="calcCard calcCard-saved" id="englishtopicwiseSavedBtn">
+        <span class="calcIcon">⭐</span>
+        <span class="calcLabelCol">
+          <span class="calcLabel">Saved Questions</span>
+          <span class="calcSub" id="englishtopicwiseSavedCountLabel">0 saved</span>
+        </span>
+        <span class="calcArrow">&#8250;</span>
+      </button>
+      <div class="calcGrid calcGrid-1col" id="englishtopicwiseSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-englishtopicwise">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="englishtopicwiseBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="englishtopicwiseQuizTitle">English Topic-wise</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="englishtopicwiseStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="englishtopicwiseStatWrong">0</span></div>
+        <div class="calcStatPill" id="englishtopicwiseStatProgress" style="margin-left:auto;color:var(--muted);">Q 1/1</div>
+        <button type="button" class="calcCtrlBtn calcFlagBtn" id="englishtopicwiseSaveBtn" aria-label="Save this question">☆</button>
+      </div>
+
+      <div class="calcQuestionWrap" id="englishtopicwiseQuestionWrap">
+        <div class="calcQuestion" id="englishtopicwiseWordText" style="font-size:clamp(17px,4.8vw,21px);line-height:1.45;">—</div>
+      </div>
+
+      <div class="calcNextTopRow">
+        <button type="button" class="calcCtrlBtn calcNextTopBtn" id="englishtopicwiseNextBtnTop" aria-label="Next Question" title="Next Question">⏭</button>
+      </div>
+
+      <div class="calcAnsGrid calcAnsGrid-list" id="englishtopicwiseAnsGrid"></div>
+
+      <div class="calcResultCard" id="englishtopicwiseSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="englishtopicwiseSolutionText" style="font-size:17px;line-height:1.6;color:var(--text);font-weight:600;overflow-wrap:break-word;word-break:break-word;"></div>
+        <button class="nav-btn onbPrimary" id="englishtopicwiseNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="englishtopicwiseResultCard" style="display:none;">
+        <div class="calcResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="englishtopicwiseResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="englishtopicwiseResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="englishtopicwiseResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -6597,6 +6776,8 @@
 })();
 </script>
 <script defer src="./data/all-quiz-data.js"></script>
+<script defer src="./data/english_topicwise_sets.js"></script>
+<script defer src="./data/english_mock_sets.js"></script>
 
 <script defer src="./app.js"></script>
 </body>
