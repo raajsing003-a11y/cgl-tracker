@@ -9835,6 +9835,11 @@ function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
   chunkSize = chunkSize || 10;
   const chunkedSets = {};
   const chunkedMeta = {};
+  // Chunks created via .slice() are copies, disconnected from the lazy
+  // placeholder array they were sliced from — chunkPlan remembers how to
+  // re-slice them once real data lands, so lazy-loading still works after
+  // chunking (see registerLazyChunkRefill below).
+  const chunkPlan = [];
   Object.keys(SETS).forEach(topicKey => {
     const arr = SETS[topicKey] || [];
     const baseMeta = (topicMeta && topicMeta[topicKey]) || { label: topicKey, icon: '\ud83e\udde0' };
@@ -9848,9 +9853,37 @@ function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
       const chunkKey = topicKey + '__set' + (i + 1);
       chunkedSets[chunkKey] = arr.slice(i * chunkSize, (i + 1) * chunkSize);
       chunkedMeta[chunkKey] = { label: baseMeta.label + ' - Set ' + (i + 1), icon: baseMeta.icon };
+      chunkPlan.push({ topicKey: topicKey, chunkKey: chunkKey, start: i * chunkSize, end: (i + 1) * chunkSize });
     }
   });
+  registerLazyChunkRefill(SETS, chunkedSets, chunkPlan);
   return { chunkedSets, chunkedMeta };
+}
+
+// Shared by chunkSetsIntoTens()/chunkMathPyqChapters(): tags the chunked
+// object with the same __topicId as its source SETS (so startQuiz's
+// `ensureTopicReady(SETS)` call still knows which data/topics/*.json file
+// to lazy-fetch), and — if any chunk was produced via .slice() (a copy) —
+// registers a post-fill hook that re-slices the now-real source array into
+// each of those chunk placeholders once the topic's real data has loaded.
+function registerLazyChunkRefill(sourceSets, chunkedSets, chunkPlan){
+  const topicId = sourceSets && sourceSets.__topicId;
+  if(!topicId) return;
+  Object.defineProperty(chunkedSets, '__topicId', { value: topicId, enumerable: false, configurable: true });
+  if(!chunkPlan.length) return;
+  const refill = function(){
+    chunkPlan.forEach(function(plan){
+      const real = (sourceSets[plan.topicKey] || []).slice(plan.start, plan.end);
+      const target = chunkedSets[plan.chunkKey];
+      if(Array.isArray(target)){
+        target.length = 0;
+        Array.prototype.push.apply(target, real);
+      }
+    });
+  };
+  window.__topicPostFill = window.__topicPostFill || {};
+  const prev = window.__topicPostFill[topicId];
+  window.__topicPostFill[topicId] = prev ? function(){ prev(); refill(); } : refill;
 }
 
 function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupConfig){
@@ -9974,11 +10007,12 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       grid.appendChild(btn);
     });
   }
-  function startQuiz(setKey){
+  async function startQuiz(setKey){
     if(!setKey) setKey = session.setKey;
     if(!setKey) return;
     const isSavedRun = setKey === 'saved';
     if(!isSavedRun && !SETS[setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.setKey = setKey;
     session.questions = isSavedRun ? buildSavedPool() : buildSetPool(setKey);
     if(isSavedRun && session.questions.length === 0){
@@ -10256,9 +10290,10 @@ function makeDigitalSumQuiz(){
     if(titleEl) titleEl.textContent = 'Digital Sum — ' + setLabel(setKey, count);
     showCalcPage('digitalsumlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10465,9 +10500,10 @@ function makeUnitDigitQuiz(){
     if(titleEl) titleEl.textContent = 'Unit Digit — ' + setLabel(setKey, count);
     showCalcPage('unitdigitlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10724,9 +10760,10 @@ function makeStatementQuiz(){
     if(titleEl) titleEl.textContent = 'Statement Reasoning — ' + setLabel(setKey, count);
     showCalcPage('statementlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10958,9 +10995,10 @@ function makeDecisionMakingQuiz(){
     if(titleEl) titleEl.textContent = 'Decision Making — ' + setLabel(setKey, count);
     showCalcPage('decisionmakinglang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11182,9 +11220,10 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
     if(titleEl) titleEl.textContent = label + ' — ' + setLabel(setKey, count);
     showCalcPage(prefix + 'lang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11367,6 +11406,7 @@ function chunkMathPyqChapters(rawSets, meta, chunkSize){
   chunkSize = chunkSize || 10;
   const chunkedSets = {};
   const chunkedMeta = {};
+  const chunkPlan = [];
   Object.keys(rawSets).forEach(key => {
     const arr = rawSets[key] || [];
     const baseMeta = meta[key] || { hi: key, en: key, icon: '📐' };
@@ -11384,8 +11424,10 @@ function chunkMathPyqChapters(rawSets, meta, chunkSize){
         en: baseMeta.en + ' - Set ' + (i + 1),
         icon: baseMeta.icon
       };
+      chunkPlan.push({ topicKey: key, chunkKey: chunkKey, start: i * chunkSize, end: (i + 1) * chunkSize });
     }
   });
+  registerLazyChunkRefill(rawSets, chunkedSets, chunkPlan);
   return { chunkedSets, chunkedMeta };
 }
 
@@ -11637,9 +11679,10 @@ function makeMathPyqQuiz(){
     if(titleEl) titleEl.textContent = 'Math PYQ — ' + setLabel(setKey, count);
     showCalcPage('mathpyqlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11822,9 +11865,10 @@ function makeMathPyqQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(lang){
+  async function startExamQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -12301,7 +12345,20 @@ function redistributeSetsAcrossPool(SETS){
     idx += sizes[i];
   });
 }
-redistributeSetsAcrossPool(PREPOSITION_SETS);
+// Needs the real 619 questions in hand to shuffle/redistribute them, so it
+// can't run at top-level anymore (PREPOSITION_SETS is still empty
+// placeholders at this point, pre-fetch) — instead it runs once, right
+// after PREPOSITION_SETS's real data lands, via the same lazy-load
+// post-fill hook mechanism chunked topics use (see registerLazyChunkRefill
+// / ensureTopicLoaded in data/loader.js).
+(function registerPrepositionRedistribute(){
+  const topicId = PREPOSITION_SETS.__topicId;
+  if(!topicId){ redistributeSetsAcrossPool(PREPOSITION_SETS); return; }
+  window.__topicPostFill = window.__topicPostFill || {};
+  const prev = window.__topicPostFill[topicId];
+  const run = function(){ redistributeSetsAcrossPool(PREPOSITION_SETS); };
+  window.__topicPostFill[topicId] = prev ? function(){ prev(); run(); } : run;
+})();
 
 // ===== New bilingual reasoning categories (Seating, Order & Ranking,
 // Letter Analogy, Letter/Word Position Analysis, Inequality & Word
@@ -12459,9 +12516,10 @@ function makeReasoningMockQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(lang){
+  async function startExamQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -12934,9 +12992,10 @@ function makeEnglishMockQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(setKey){
+  async function startExamQuiz(setKey){
     if(setKey) session.setKey = setKey;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.questions = buildSetPool(session.setKey);
     const n = examSession.questions.length;
