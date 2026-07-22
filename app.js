@@ -1326,6 +1326,19 @@ function hasVal(v){ return v!==undefined && v!==null && v!=='' && !isNaN(parseFl
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Shared marking scheme for EVERY quiz/mock in the app: +2 per correct
+// answer, -0.5 per wrong answer (skipped/unattempted = 0). Used on every
+// result screen so marks stay consistent across all quiz types, not just
+// the Testbook-style Exam Mode mocks (which already used this scheme).
+const QUIZ_MARKS_CORRECT = 2;
+const QUIZ_MARKS_WRONG = -0.5;
+function calcQuizMarks(correct, wrong){
+  const m = (correct * QUIZ_MARKS_CORRECT) + (wrong * QUIZ_MARKS_WRONG);
+  return Math.round(m * 100) / 100;
+}
+function quizMarksResultLine(correct, wrong){
+  return '<div>\ud83d\udcdd Marks: <b>' + calcQuizMarks(correct, wrong) + '</b></div>';
+}
 // Converts plain-text math notation into real HTML so it actually displays
 // correctly instead of showing raw "^"/backslash-command text — e.g.
 // "(-2)^3" -> "(-2)<sup>3</sup>", "\\frac{2}{5}" -> a proper fraction,
@@ -8647,6 +8660,7 @@ function endVocabQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + vocabSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + vocabSession.wrong + '</b></div>' +
+      quizMarksResultLine(vocabSession.correct, vocabSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('vocabResultCard');
@@ -9010,6 +9024,7 @@ function endSpellingQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + spellingSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + spellingSession.wrong + '</b></div>' +
+      quizMarksResultLine(spellingSession.correct, spellingSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('spellingResultCard');
@@ -9515,6 +9530,7 @@ function endIdiomQuiz(){
     statsEl.innerHTML =
       '<div>\u2705 Correct: <b>' + idiomSession.correct + '</b></div>' +
       '<div>\u274c Wrong: <b>' + idiomSession.wrong + '</b></div>' +
+      quizMarksResultLine(idiomSession.correct, idiomSession.wrong) +
       '<div>\ud83c\udfaf Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('idiomResultCard');
@@ -9758,6 +9774,7 @@ function endGrammarQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + grammarSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + grammarSession.wrong + '</b></div>' +
+      quizMarksResultLine(grammarSession.correct, grammarSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('grammarResultCard');
@@ -10099,6 +10116,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       statsEl.innerHTML =
         '<div>\u2705 Correct: <b>' + session.correct + '</b></div>' +
         '<div>\u274c Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>\ud83c\udfaf Accuracy: <b>' + acc + '%</b></div>';
     }
     const resultCard = document.getElementById(prefix + 'ResultCard');
@@ -10369,6 +10387,7 @@ function makeDigitalSumQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -10584,6 +10603,7 @@ function makeUnitDigitQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -10843,6 +10863,7 @@ function makeStatementQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11073,6 +11094,7 @@ function makeDecisionMakingQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11297,6 +11319,7 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11752,6 +11775,7 @@ function makeMathPyqQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
