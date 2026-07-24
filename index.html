@@ -2414,22 +2414,21 @@
   /* ===== Screen Pen / Scratchpad ===== */
   #scratchCanvas{position:fixed;inset:0;z-index:9998;touch-action:none;pointer-events:none;}
   #scratchCanvas.drawing{pointer-events:auto;}
-  #scratchFab{position:fixed;right:14px;bottom:170px;z-index:10000;width:38px;height:38px;border-radius:50%;
+  #scratchFab{position:fixed;right:14px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:10000;width:38px;height:38px;border-radius:50%;
     background:rgba(10,132,255,0.38);color:#fff;border:none;font-size:15px;display:flex;align-items:center;justify-content:center;
     box-shadow:0 4px 14px rgba(0,0,0,0.25);opacity:0.55;backdrop-filter:blur(2px);transition:opacity 0.2s,background 0.2s;}
   #scratchFab:active,#scratchFab.active{opacity:0.95;background:rgba(248,113,113,0.55);}
-  #scratchToolbar{position:fixed;right:14px;bottom:214px;z-index:10000;display:none;flex-direction:column;gap:6px;
-    width:112px;background:rgba(28,28,30,0.45);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;
-    box-shadow:0 6px 20px rgba(0,0,0,0.25);backdrop-filter:blur(6px);opacity:0.65;transition:opacity 0.2s;}
-  #scratchToolbar:hover,#scratchToolbar:active,#scratchToolbar:focus-within{opacity:0.96;}
+  /* Anchored full-width to the very bottom of the screen (just above the
+     tab bar) instead of floating mid-screen on the right — this way it
+     never sits on top of the question text, in portrait OR landscape,
+     since it always hugs the bottom edge regardless of screen width. */
+  #scratchToolbar{position:fixed;left:10px;right:10px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:10000;display:none;
+    flex-direction:row;gap:8px;justify-content:center;
+    background:rgba(28,28,30,0.88);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.35);backdrop-filter:blur(10px);}
   #scratchToolbar.show{display:flex;}
-  .scratchRow{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
-  .scratchRow:not(#scratchColorRow){flex-direction:column;align-items:stretch;}
-  .scratchSwatch{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.5);padding:0;
-    background-color:transparent;opacity:0.85;}
-  .scratchSwatch.selected{border-color:#fff;box-shadow:0 0 0 2px var(--accent,#0a84ff);opacity:1;}
-  .scratchBtn{background:rgba(44,44,46,0.55);color:var(--white,#fff);border:1px solid rgba(255,255,255,0.12);
-    border-radius:8px;padding:6px 8px;font-size:12.5px;white-space:nowrap;width:100%;text-align:center;}
+  .scratchBtn{background:rgba(44,44,46,0.7);color:var(--white,#fff);border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;padding:11px 8px;font-size:14px;font-weight:600;white-space:nowrap;flex:1;text-align:center;}
   .scratchBtn.selected{background:rgba(10,132,255,0.75);color:#fff;}
 </style>
 </head>
@@ -6665,20 +6664,9 @@
 <canvas id="scratchCanvas"></canvas>
 <button id="scratchFab" title="Pen">✏️</button>
 <div id="scratchToolbar">
-  <div class="scratchRow" id="scratchColorRow"></div>
-  <div class="scratchRow">
-    <button class="scratchBtn" data-size="3">Thin</button>
-    <button class="scratchBtn" data-size="6">Med</button>
-    <button class="scratchBtn" data-size="12">Thick</button>
-  </div>
-  <div class="scratchRow">
-    <button class="scratchBtn" id="scratchEraserBtn">🧹 Eraser</button>
-    <button class="scratchBtn" id="scratchUndoBtn">↩️ Undo</button>
-  </div>
-  <div class="scratchRow">
-    <button class="scratchBtn" id="scratchClearBtn">🗑 Clear</button>
-    <button class="scratchBtn" id="scratchDoneBtn">✅ Done</button>
-  </div>
+  <button class="scratchBtn" id="scratchUndoBtn">↩️ Undo</button>
+  <button class="scratchBtn" id="scratchClearBtn">🗑 Clear</button>
+  <button class="scratchBtn" id="scratchDoneBtn">✅ Done</button>
 </div>
 <script>
 (function(){
@@ -6686,16 +6674,15 @@
   const ctx = canvas.getContext('2d');
   const fab = document.getElementById('scratchFab');
   const toolbar = document.getElementById('scratchToolbar');
-  const colorRow = document.getElementById('scratchColorRow');
-  const eraserBtn = document.getElementById('scratchEraserBtn');
   const undoBtn = document.getElementById('scratchUndoBtn');
   const clearBtn = document.getElementById('scratchClearBtn');
   const doneBtn = document.getElementById('scratchDoneBtn');
 
-  const colors = ['#ff453a','#0a84ff','#34c759','#111111','#ffffff'];
-  let currentColor = colors[0];
-  let currentSize = 6;
-  let erasing = false;
+  // Pen is fixed to red + thin now (the only combo actually used) — no
+  // color/size pickers needed, which keeps the toolbar tiny.
+  const currentColor = '#ff453a';
+  const currentSize = 3;
+  const erasing = false;
   let drawing = false;
   let drawMode = false;
   const undoStack = [];
@@ -6713,34 +6700,6 @@
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   window.addEventListener('orientationchange', resizeCanvas);
-
-  colors.forEach((c, i) => {
-    const b = document.createElement('button');
-    b.className = 'scratchSwatch' + (i === 0 ? ' selected' : '');
-    b.style.background = c;
-    b.addEventListener('click', () => {
-      currentColor = c;
-      erasing = false;
-      eraserBtn.classList.remove('selected');
-      colorRow.querySelectorAll('.scratchSwatch').forEach(el => el.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-    colorRow.appendChild(b);
-  });
-
-  toolbar.querySelectorAll('[data-size]').forEach(btn => {
-    if(btn.dataset.size === '6') btn.classList.add('selected');
-    btn.addEventListener('click', () => {
-      currentSize = parseInt(btn.dataset.size, 10);
-      toolbar.querySelectorAll('[data-size]').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    });
-  });
-
-  eraserBtn.addEventListener('click', () => {
-    erasing = !erasing;
-    eraserBtn.classList.toggle('selected', erasing);
-  });
 
   function pushUndo(){
     try{
