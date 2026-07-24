@@ -1,28 +1,17 @@
-// Lazy data loader (true lazy loading version).
+// Instant-start + quiet-background data loader.
 //
-// Old behaviour: fetched all-quiz-data.json + english_topicwise_sets.json +
-// english_mock_sets.json (~12MB combined) *before* app.js even started, so
-// the whole question bank sat in memory before the menu ever painted.
-//
-// New behaviour:
-//   1. Fetch ONLY data/index.json — a tiny {topicName: {file, sets:{key:count}}}
-//      map (~15KB). This is enough to render every menu (topic names + Qs
-//      counts) instantly.
-//   2. For every topic name in the index (VOCAB_SETS, MATH_PYQ_SETS, ...),
-//      create window.<TOPIC_NAME> as a plain object whose keys are the set
-//      keys (set1, set2, ...), each holding a placeholder Array whose
-//      .length already equals the real question count. app.js reads
-//      Object.keys(SETS) / SETS[key].length for menus — both already work
-//      correctly against these placeholders, so app.js needs *no* changes
-//      for menu rendering.
-//   3. The *contents* of a topic's arrays (the actual question objects) are
-//      only fetched from data/topics/<slug>.json the first time that topic
-//      is actually opened, via window.ensureTopicReady(SETS) — added at
-//      each quiz's startQuiz()/startExamQuiz() in app.js. Once fetched, the
-//      real questions are spliced into the SAME placeholder array objects
-//      (so every existing reference to SETS[key] updates automatically —
-//      no re-render/rebuild needed elsewhere) and the topic is marked
-//      loaded, so a second visit reuses the in-memory copy (no re-fetch).
+// 1. Fetch ONLY data/index.json (tiny) → install placeholders → load
+//    app.js IMMEDIATELY. Menu paints as fast as possible, no blocking
+//    overlay/progress bar for the question data.
+// 2. Right after app.js is running, silently start fetching every
+//    data/topics/<slug>.json in the background (a few at a time, so it
+//    doesn't hog the connection), filling in the real questions as each
+//    one arrives. No spinner, no popup — user never sees this happening.
+// 3. If the user opens a quiz whose topic hasn't finished background-
+//    loading yet, `ensureTopicReady` (called by app.js at every
+//    startQuiz()/startExamQuiz()) joins that SAME in-flight fetch (no
+//    duplicate request) and shows a short "Loading questions..." spinner
+//    only for that one topic until it lands.
 
 (function () {
   const INDEX_URL = './data/index.json';
@@ -114,14 +103,17 @@
   }
 
   // Fetches + fills a topic's real question data exactly once; concurrent
-  // callers (e.g. rapid double-tap) share the same in-flight Promise.
+  // callers (background prefetch + a user tapping the same topic, or rapid
+  // double-tap) all share the same in-flight Promise — never a duplicate
+  // request. No UI here on purpose: this is called silently by the
+  // background prefetcher AND by ensureTopicReady, so the UI decision
+  // belongs to the caller, not this function.
   window.ensureTopicLoaded = function (topicName) {
     if (!topicName) return Promise.resolve();
     if (window.__topicLoaded[topicName]) return Promise.resolve();
     if (window.__topicLoadPromises[topicName]) return window.__topicLoadPromises[topicName];
     const topic = window.__topicIndex && window.__topicIndex.topics[topicName];
     if (!topic) return Promise.resolve(); // unknown topic id — nothing to do
-    beginTopicLoadingUI();
     const p = fetch(topic.file, { cache: 'default' })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load ' + topic.file + ': ' + res.status);
@@ -132,19 +124,22 @@
         window.__topicLoaded[topicName] = true;
       })
       .finally(() => {
-        endTopicLoadingUI();
         delete window.__topicLoadPromises[topicName];
       });
     window.__topicLoadPromises[topicName] = p;
     return p;
   };
 
-  // Convenience wrapper for app.js call sites: awaits the load and turns a
-  // failure into a friendly alert + `false` return instead of an uncaught
-  // rejection, so a flaky connection can't leave the quiz half-started.
+  // Convenience wrapper for app.js call sites: shows a spinner ONLY if the
+  // topic isn't already sitting in memory (i.e. background prefetch hasn't
+  // reached it yet), awaits the load, and turns a failure into a friendly
+  // alert + `false` return instead of an uncaught rejection, so a flaky
+  // connection can't leave the quiz half-started.
   window.ensureTopicReady = async function (SETS) {
     const topicId = SETS && SETS.__topicId;
     if (!topicId) return true;
+    if (window.__topicLoaded[topicId]) return true; // already there — instant, no spinner
+    beginTopicLoadingUI();
     try {
       await window.ensureTopicLoaded(topicId);
       return true;
@@ -152,8 +147,29 @@
       console.error('Topic load failed:', topicId, err);
       alert('Questions load nahi ho paaye. Internet check karke dobara try karein.');
       return false;
+    } finally {
+      endTopicLoadingUI();
     }
   };
+
+  // Background prefetch: works through every topic a few at a time so it
+  // doesn't compete too hard with anything the user is actively doing.
+  // Runs silently — no overlay, no progress bar. If the user opens a topic
+  // before this loop reaches it, ensureTopicReady() above grabs it out of
+  // turn via the shared __topicLoadPromises map, so nothing is fetched
+  // twice and nothing is delayed by this loop.
+  function backgroundPrefetchAll(indexData, concurrency) {
+    const queue = Object.keys(indexData.topics);
+    let i = 0;
+    function next() {
+      if (i >= queue.length) return Promise.resolve();
+      const topicName = queue[i++];
+      return window.ensureTopicLoaded(topicName).catch(() => {}).then(next);
+    }
+    const workers = [];
+    for (let w = 0; w < concurrency; w++) workers.push(next());
+    return Promise.all(workers);
+  }
 
   function loadAppScript() {
     return new Promise((resolve, reject) => {
@@ -174,8 +190,16 @@
     .then((indexData) => {
       window.__topicIndex = indexData;
       installPlaceholders(indexData);
-      return loadAppScript();
+      // Start app.js right away — menus render instantly off the
+      // placeholders (correct names + question counts already).
+      return loadAppScript().then(() => indexData);
     })
-    .then(hideOverlay)
+    .then((indexData) => {
+      hideOverlay();
+      // Now, quietly, fetch every topic's real questions in the
+      // background so quizzes are ready to tap into by the time the user
+      // gets to them. 4 at a time keeps this gentle on mobile data.
+      backgroundPrefetchAll(indexData, 4);
+    })
     .catch(showError);
 })();
