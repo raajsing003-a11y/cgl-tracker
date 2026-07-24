@@ -1326,19 +1326,6 @@ function hasVal(v){ return v!==undefined && v!==null && v!=='' && !isNaN(parseFl
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-// Shared marking scheme for EVERY quiz/mock in the app: +2 per correct
-// answer, -0.5 per wrong answer (skipped/unattempted = 0). Used on every
-// result screen so marks stay consistent across all quiz types, not just
-// the Testbook-style Exam Mode mocks (which already used this scheme).
-const QUIZ_MARKS_CORRECT = 2;
-const QUIZ_MARKS_WRONG = -0.5;
-function calcQuizMarks(correct, wrong){
-  const m = (correct * QUIZ_MARKS_CORRECT) + (wrong * QUIZ_MARKS_WRONG);
-  return Math.round(m * 100) / 100;
-}
-function quizMarksResultLine(correct, wrong){
-  return '<div>\ud83d\udcdd Marks: <b>' + calcQuizMarks(correct, wrong) + '</b></div>';
-}
 // Converts plain-text math notation into real HTML so it actually displays
 // correctly instead of showing raw "^"/backslash-command text — e.g.
 // "(-2)^3" -> "(-2)<sup>3</sup>", "\\frac{2}{5}" -> a proper fraction,
@@ -7556,7 +7543,18 @@ function hideDailyCountdownModal(){
 // welcome/help popups for the same instant on screen.
 function maybeShowDailyCountdownPopup(){
   if(dailyCountdownPopupShownToday()) return;
-  setTimeout(showDailyCountdownModal, 1800);
+  // Same fix as maybeShowHelpModalOnce() above — don't let a delayed
+  // auto-popup silently eat a tap that's already in-flight elsewhere.
+  cancelableAutoPopup(showDailyCountdownModal, 1800);
+}
+// Shared by every delayed auto-popup (help modal, daily countdown, ...):
+// schedules fn after delayMs, but cancels it the instant the person taps
+// anything before then. A popup that fires mid-navigation sits on top of
+// whatever the person was tapping and silently absorbs that tap — this
+// makes sure an auto-popup only ever appears while the person is idle.
+function cancelableAutoPopup(fn, delayMs){
+  const t = setTimeout(fn, delayMs);
+  document.addEventListener('pointerdown', () => clearTimeout(t), { once: true, capture: true });
 }
 {
   const dcCloseBtn = document.getElementById('dailyCountdownCloseBtn');
@@ -8530,13 +8528,14 @@ function renderVocabSetMenu(){
   });
 }
 
-function startVocabQuiz(setKey){
+async function startVocabQuiz(setKey){
   // "Practice Again" button se dobara call hone par setKey nahi milta —
   // us case mein pichhle wale set (ya 'saved') ko hi reuse kar lo.
   if(!setKey) setKey = vocabSession.setKey;
   if(!setKey) return;
   const isSaved = setKey === 'saved';
   if(!isSaved && !VOCAB_SETS[setKey]) return;
+  if(!(await window.ensureTopicReady(VOCAB_SETS))) return;
   vocabSession.setKey = setKey;
   vocabSession.questions = isSaved ? buildVocabSavedPool() : buildVocabSetPool(setKey);
   if(isSaved && vocabSession.questions.length === 0){
@@ -8660,7 +8659,6 @@ function endVocabQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + vocabSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + vocabSession.wrong + '</b></div>' +
-      quizMarksResultLine(vocabSession.correct, vocabSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('vocabResultCard');
@@ -8890,11 +8888,12 @@ function renderSpellingSetMenu(){
   });
 }
 
-function startSpellingQuiz(setKey){
+async function startSpellingQuiz(setKey){
   if(!setKey) setKey = spellingSession.setKey;
   if(!setKey) return;
   const isSaved = setKey === 'saved';
   if(!isSaved && !SPELLING_SETS[setKey]) return;
+  if(!(await window.ensureTopicReady(SPELLING_SETS))) return;
   spellingSession.setKey = setKey;
   spellingSession.questions = isSaved ? buildSpellingSavedPool() : buildSpellingSetPool(setKey);
   if(isSaved && spellingSession.questions.length === 0){
@@ -9024,7 +9023,6 @@ function endSpellingQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + spellingSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + spellingSession.wrong + '</b></div>' +
-      quizMarksResultLine(spellingSession.correct, spellingSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('spellingResultCard');
@@ -9401,11 +9399,12 @@ function renderIdiomSetSubMenu(g){
   });
 }
 
-function startIdiomQuiz(setKey){
+async function startIdiomQuiz(setKey){
   if(!setKey) setKey = idiomSession.setKey;
   if(!setKey) return;
   const isSaved = setKey === 'saved';
   if(!isSaved && !IDIOM_SETS[setKey]) return;
+  if(!(await window.ensureTopicReady(IDIOM_SETS))) return;
   idiomSession.setKey = setKey;
   idiomSession.questions = isSaved ? buildIdiomSavedPool() : buildIdiomSetPool(setKey);
   if(isSaved && idiomSession.questions.length === 0){
@@ -9530,7 +9529,6 @@ function endIdiomQuiz(){
     statsEl.innerHTML =
       '<div>\u2705 Correct: <b>' + idiomSession.correct + '</b></div>' +
       '<div>\u274c Wrong: <b>' + idiomSession.wrong + '</b></div>' +
-      quizMarksResultLine(idiomSession.correct, idiomSession.wrong) +
       '<div>\ud83c\udfaf Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('idiomResultCard');
@@ -9648,11 +9646,12 @@ function renderGrammarSetMenu(){
   });
 }
 
-function startGrammarQuiz(setKey){
+async function startGrammarQuiz(setKey){
   if(!setKey) setKey = grammarSession.setKey;
   if(!setKey) return;
   const isSaved = setKey === 'saved';
   if(!isSaved && !GRAMMAR_SETS[setKey]) return;
+  if(!(await window.ensureTopicReady(GRAMMAR_SETS))) return;
   grammarSession.setKey = setKey;
   grammarSession.questions = isSaved ? buildGrammarSavedPool() : buildGrammarSetPool(setKey);
   if(isSaved && grammarSession.questions.length === 0){
@@ -9774,7 +9773,6 @@ function endGrammarQuiz(){
     statsEl.innerHTML =
       '<div>✅ Correct: <b>' + grammarSession.correct + '</b></div>' +
       '<div>❌ Wrong: <b>' + grammarSession.wrong + '</b></div>' +
-      quizMarksResultLine(grammarSession.correct, grammarSession.wrong) +
       '<div>🎯 Accuracy: <b>' + acc + '%</b></div>';
   }
   const resultCard = document.getElementById('grammarResultCard');
@@ -9852,6 +9850,11 @@ function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
   chunkSize = chunkSize || 10;
   const chunkedSets = {};
   const chunkedMeta = {};
+  // Chunks created via .slice() are copies, disconnected from the lazy
+  // placeholder array they were sliced from — chunkPlan remembers how to
+  // re-slice them once real data lands, so lazy-loading still works after
+  // chunking (see registerLazyChunkRefill below).
+  const chunkPlan = [];
   Object.keys(SETS).forEach(topicKey => {
     const arr = SETS[topicKey] || [];
     const baseMeta = (topicMeta && topicMeta[topicKey]) || { label: topicKey, icon: '\ud83e\udde0' };
@@ -9865,9 +9868,37 @@ function chunkSetsIntoTens(SETS, topicMeta, chunkSize){
       const chunkKey = topicKey + '__set' + (i + 1);
       chunkedSets[chunkKey] = arr.slice(i * chunkSize, (i + 1) * chunkSize);
       chunkedMeta[chunkKey] = { label: baseMeta.label + ' - Set ' + (i + 1), icon: baseMeta.icon };
+      chunkPlan.push({ topicKey: topicKey, chunkKey: chunkKey, start: i * chunkSize, end: (i + 1) * chunkSize });
     }
   });
+  registerLazyChunkRefill(SETS, chunkedSets, chunkPlan);
   return { chunkedSets, chunkedMeta };
+}
+
+// Shared by chunkSetsIntoTens()/chunkMathPyqChapters(): tags the chunked
+// object with the same __topicId as its source SETS (so startQuiz's
+// `ensureTopicReady(SETS)` call still knows which data/topics/*.json file
+// to lazy-fetch), and — if any chunk was produced via .slice() (a copy) —
+// registers a post-fill hook that re-slices the now-real source array into
+// each of those chunk placeholders once the topic's real data has loaded.
+function registerLazyChunkRefill(sourceSets, chunkedSets, chunkPlan){
+  const topicId = sourceSets && sourceSets.__topicId;
+  if(!topicId) return;
+  Object.defineProperty(chunkedSets, '__topicId', { value: topicId, enumerable: false, configurable: true });
+  if(!chunkPlan.length) return;
+  const refill = function(){
+    chunkPlan.forEach(function(plan){
+      const real = (sourceSets[plan.topicKey] || []).slice(plan.start, plan.end);
+      const target = chunkedSets[plan.chunkKey];
+      if(Array.isArray(target)){
+        target.length = 0;
+        Array.prototype.push.apply(target, real);
+      }
+    });
+  };
+  window.__topicPostFill = window.__topicPostFill || {};
+  const prev = window.__topicPostFill[topicId];
+  window.__topicPostFill[topicId] = prev ? function(){ prev(); refill(); } : refill;
 }
 
 function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupConfig){
@@ -9991,11 +10022,12 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       grid.appendChild(btn);
     });
   }
-  function startQuiz(setKey){
+  async function startQuiz(setKey){
     if(!setKey) setKey = session.setKey;
     if(!setKey) return;
     const isSavedRun = setKey === 'saved';
     if(!isSavedRun && !SETS[setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.setKey = setKey;
     session.questions = isSavedRun ? buildSavedPool() : buildSetPool(setKey);
     if(isSavedRun && session.questions.length === 0){
@@ -10116,7 +10148,6 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       statsEl.innerHTML =
         '<div>\u2705 Correct: <b>' + session.correct + '</b></div>' +
         '<div>\u274c Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>\ud83c\udfaf Accuracy: <b>' + acc + '%</b></div>';
     }
     const resultCard = document.getElementById(prefix + 'ResultCard');
@@ -10274,9 +10305,10 @@ function makeDigitalSumQuiz(){
     if(titleEl) titleEl.textContent = 'Digital Sum — ' + setLabel(setKey, count);
     showCalcPage('digitalsumlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10387,7 +10419,6 @@ function makeDigitalSumQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -10484,9 +10515,10 @@ function makeUnitDigitQuiz(){
     if(titleEl) titleEl.textContent = 'Unit Digit — ' + setLabel(setKey, count);
     showCalcPage('unitdigitlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10603,7 +10635,6 @@ function makeUnitDigitQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -10744,9 +10775,10 @@ function makeStatementQuiz(){
     if(titleEl) titleEl.textContent = 'Statement Reasoning — ' + setLabel(setKey, count);
     showCalcPage('statementlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -10863,7 +10895,6 @@ function makeStatementQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -10979,9 +11010,10 @@ function makeDecisionMakingQuiz(){
     if(titleEl) titleEl.textContent = 'Decision Making — ' + setLabel(setKey, count);
     showCalcPage('decisionmakinglang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11094,7 +11126,6 @@ function makeDecisionMakingQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11204,9 +11235,10 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
     if(titleEl) titleEl.textContent = label + ' — ' + setLabel(setKey, count);
     showCalcPage(prefix + 'lang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11319,7 +11351,6 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11390,6 +11421,7 @@ function chunkMathPyqChapters(rawSets, meta, chunkSize){
   chunkSize = chunkSize || 10;
   const chunkedSets = {};
   const chunkedMeta = {};
+  const chunkPlan = [];
   Object.keys(rawSets).forEach(key => {
     const arr = rawSets[key] || [];
     const baseMeta = meta[key] || { hi: key, en: key, icon: '📐' };
@@ -11407,8 +11439,10 @@ function chunkMathPyqChapters(rawSets, meta, chunkSize){
         en: baseMeta.en + ' - Set ' + (i + 1),
         icon: baseMeta.icon
       };
+      chunkPlan.push({ topicKey: key, chunkKey: chunkKey, start: i * chunkSize, end: (i + 1) * chunkSize });
     }
   });
+  registerLazyChunkRefill(rawSets, chunkedSets, chunkPlan);
   return { chunkedSets, chunkedMeta };
 }
 
@@ -11660,9 +11694,10 @@ function makeMathPyqQuiz(){
     if(titleEl) titleEl.textContent = 'Math PYQ — ' + setLabel(setKey, count);
     showCalcPage('mathpyqlang');
   }
-  function startQuiz(lang){
+  async function startQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11775,7 +11810,6 @@ function makeMathPyqQuiz(){
       statsEl.innerHTML =
         '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
         '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
-        quizMarksResultLine(session.correct, session.wrong) +
         '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
         '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
     }
@@ -11846,9 +11880,10 @@ function makeMathPyqQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(lang){
+  async function startExamQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -12325,7 +12360,20 @@ function redistributeSetsAcrossPool(SETS){
     idx += sizes[i];
   });
 }
-redistributeSetsAcrossPool(PREPOSITION_SETS);
+// Needs the real 619 questions in hand to shuffle/redistribute them, so it
+// can't run at top-level anymore (PREPOSITION_SETS is still empty
+// placeholders at this point, pre-fetch) — instead it runs once, right
+// after PREPOSITION_SETS's real data lands, via the same lazy-load
+// post-fill hook mechanism chunked topics use (see registerLazyChunkRefill
+// / ensureTopicLoaded in data/loader.js).
+(function registerPrepositionRedistribute(){
+  const topicId = PREPOSITION_SETS.__topicId;
+  if(!topicId){ redistributeSetsAcrossPool(PREPOSITION_SETS); return; }
+  window.__topicPostFill = window.__topicPostFill || {};
+  const prev = window.__topicPostFill[topicId];
+  const run = function(){ redistributeSetsAcrossPool(PREPOSITION_SETS); };
+  window.__topicPostFill[topicId] = prev ? function(){ prev(); run(); } : run;
+})();
 
 // ===== New bilingual reasoning categories (Seating, Order & Ranking,
 // Letter Analogy, Letter/Word Position Analysis, Inequality & Word
@@ -12483,9 +12531,10 @@ function makeReasoningMockQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(lang){
+  async function startExamQuiz(lang){
     if(lang) session.lang = lang;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -12958,9 +13007,10 @@ function makeEnglishMockQuiz(){
     return (Math.round(m * 100) / 100).toString();
   }
 
-  function startExamQuiz(setKey){
+  async function startExamQuiz(setKey){
     if(setKey) session.setKey = setKey;
     if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
     examSession.setKey = session.setKey;
     examSession.questions = buildSetPool(session.setKey);
     const n = examSession.questions.length;
@@ -14148,7 +14198,16 @@ function maybeShowHelpModalOnce(){
   try{
     if(localStorage.getItem('cgl50-help-seen') === '1') return;
   }catch(e){}
-  setTimeout(showHelpModal, 1300);
+  // Bug fix: this used to fire unconditionally 1.3s after app open, no
+  // matter what the person was doing by then. With data now lazy-loaded
+  // (see data/loader.js), the app becomes interactive much faster than
+  // before, so a fast user can already be mid-tap (e.g. opening a quiz
+  // topic) exactly when this full-screen overlay pops up — the overlay
+  // silently swallows that tap (nothing visibly happens, topic never
+  // opens) since it sits on top of everything at z-index 500. Cancelling
+  // the popup the moment the person taps anything avoids stealing that
+  // tap; it'll just show next time they open the app instead.
+  cancelableAutoPopup(showHelpModal, 1300);
 }
 {
   const helpBtn = document.getElementById('helpBtn');

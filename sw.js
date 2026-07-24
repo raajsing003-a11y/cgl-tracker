@@ -12,7 +12,15 @@
 // Anything cross-origin (Firebase, APIs, etc.) is left alone (network only)
 // so live data/sync behaviour is unaffected.
 
-const CACHE_NAME = 'exam-tracker-v1';
+// Bumped v1 -> v2: the lazy-load rewrite changed which files exist (new
+// data/index.json + data/topics/*.json, restructured data/loader.js) and
+// removed old ones (all-quiz-data.json, english_mock_sets.json,
+// english_topicwise_sets.json). Anyone with the old v1 cache MUST get it
+// evicted (see activate handler below) or they'd keep being served a stale
+// mix of old-and-new files — which is exactly what caused broken/slow
+// loads after this rewrite shipped. Bump this version string again any
+// time file paths change in a future update.
+const CACHE_NAME = 'exam-tracker-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
