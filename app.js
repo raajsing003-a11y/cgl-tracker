@@ -1547,10 +1547,23 @@ async function kvdbCreateRoom(){
 // This matters a lot on patchy mobile data: without retries, a single
 // dropped request during app-open could look identical to "this player
 // has no data yet" and fall through to a blank/stale local copy.
+//
+// Firebase Realtime Database paths can NEVER contain . # $ [ or ] — but
+// encodeURIComponent leaves '.' completely untouched (it's a legal URI
+// character) and doesn't touch the other four either. So a player whose
+// name has a dot in it (e.g. "e. g. rohit", "Softy...") used to build an
+// invalid path that Firebase rejected on every single attempt — a
+// permanent failure that no amount of retrying could ever fix (that's the
+// exact "Sync pending" that never clears). This escapes exactly those five
+// characters to their %XX form on top of encodeURIComponent, so every
+// key/name is always guaranteed to be a legal Firebase path segment.
+function firebaseSafeKey(key){
+  return encodeURIComponent(key).replace(/[.#$\[\]]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+}
 async function kvdbGet(key){
   const room = getRoomCode();
   if(!room) return null;
-  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  const path = `rooms/${room}/${firebaseSafeKey(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
@@ -1569,7 +1582,7 @@ async function kvdbGet(key){
 async function kvdbSet(key, value){
   const room = getRoomCode();
   if(!room) return false;
-  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  const path = `rooms/${room}/${firebaseSafeKey(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
@@ -7281,7 +7294,6 @@ function renderTaskEditForm(){
             <span style="flex:1;font-size:13.5px;font-weight:600;">${escapeHtml(name)}</span>
           </div>
           <div class="taskEditBottom">
-            <span style="font-size:12px;color:var(--muted);">⏰ ${minToTimeInputStr(TASK_START_MIN[idx])}</span>
             <span style="font-size:12px;color:var(--muted);"><span class="icoClock" aria-hidden="true"></span> ${TASK_DURATIONS_MIN[idx]} min</span>
             <span class="tVal ${tier.cls}">${tier.emoji} ₹${Math.round(TASK_VALUES[idx]||0)}</span>
           </div>
@@ -7306,7 +7318,6 @@ function renderTaskEditForm(){
         <button class="teDel" data-task-idx="${idx}" title="Ye task hatao" ${taskEditDraft.length<=1?'disabled':''}>✕</button>
       </div>
       <div class="taskEditBottom">
-        <label>⏰ Start<input type="time" class="teStart" data-task-idx="${idx}" value="${minToTimeInputStr(t.start)}"></label>
         <label><span class="icoClock" aria-hidden="true"></span> Mins<input type="number" class="teDur" data-task-idx="${idx}" min="5" step="5" value="${t.duration}"></label>
         <span class="tVal ${tier.cls}" data-val-idx="${idx}">${tier.emoji} ₹${Math.round(draftValues[idx])}</span>
       </div>
@@ -7317,13 +7328,6 @@ function renderTaskEditForm(){
     inp.addEventListener('input', ()=>{
       const idx = parseInt(inp.getAttribute('data-task-idx'));
       taskEditDraft[idx].name = inp.value;
-    });
-  });
-  form.querySelectorAll('.teStart').forEach(inp=>{
-    inp.addEventListener('change', ()=>{
-      const idx = parseInt(inp.getAttribute('data-task-idx'));
-      const v = timeInputStrToMin(inp.value);
-      if(v!==null) taskEditDraft[idx].start = v;
     });
   });
   form.querySelectorAll('.teDur').forEach(inp=>{
