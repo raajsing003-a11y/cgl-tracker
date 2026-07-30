@@ -2611,6 +2611,37 @@
     border:2px solid rgba(167,139,250,0.35);box-shadow:0 6px 20px rgba(0,0,0,0.35);
     display:block;margin:0 auto;}
   .gkReaderContent .gkFigure figcaption{font-size:0.82em;color:var(--muted);margin-top:8px;font-style:italic;}
+
+  /* ===== Test Your Knowledge (flashcards) ===== */
+  .gkTykBtnWrap{margin:26px 0 10px;text-align:center;}
+  .gkTykBtn{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border:none;
+    border-radius:16px;background:linear-gradient(135deg,#7c3aed,#38bdf8);color:#fff;
+    font-size:0.98em;font-weight:800;box-shadow:0 8px 22px rgba(124,58,237,0.35);cursor:pointer;}
+  .gkTykOverlay{position:fixed;inset:0;z-index:300;background:rgba(6,7,10,0.88);display:none;
+    align-items:center;justify-content:center;padding:16px;}
+  .gkTykOverlay.open{display:flex;}
+  .gkTykCard{width:100%;max-width:420px;max-height:88vh;display:flex;flex-direction:column;
+    background:var(--panel,#14151c);border-radius:20px;padding:16px;box-sizing:border-box;}
+  .gkTykHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .gkTykHead span{font-size:0.85em;font-weight:700;color:var(--muted,#9aa0ac);}
+  .gkTykCloseBtn{width:32px;height:32px;border-radius:50%;background:var(--panel2,#1e1f27);
+    border:none;color:#fff;font-size:16px;cursor:pointer;}
+  .gkTykFlip{flex:1;min-height:220px;perspective:1200px;cursor:pointer;margin-bottom:14px;}
+  .gkTykFlipInner{position:relative;width:100%;height:100%;min-height:220px;
+    transition:transform 0.5s;transform-style:preserve-3d;}
+  .gkTykFlip.flipped .gkTykFlipInner{transform:rotateY(180deg);}
+  .gkTykFace{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:18px;box-sizing:border-box;font-size:1.02em;line-height:1.6;color:#fff;
+    overflow-y:auto;}
+  .gkTykFront{background:linear-gradient(135deg,#312e81,#7c3aed);}
+  .gkTykBack{background:linear-gradient(135deg,#0f766e,#38bdf8);transform:rotateY(180deg);}
+  .gkTykHint{position:absolute;bottom:8px;left:0;right:0;font-size:0.72em;opacity:0.75;}
+  .gkTykNav{display:flex;gap:8px;}
+  .gkTykNav button{flex:1;padding:12px;border-radius:14px;border:none;
+    background:var(--panel2,#1e1f27);color:#fff;font-weight:800;font-size:0.9em;cursor:pointer;}
+  .gkTykNav button:disabled{opacity:0.35;}
+  .gkTykNav .gkTykNextBtn{background:linear-gradient(135deg,#22c55e,#16a34a);}
 </style>
 
 </head>
@@ -4307,6 +4338,25 @@
       </div>
     </div>
 
+    <div class="gkTykOverlay" id="gkTykOverlay">
+      <div class="gkTykCard">
+        <div class="gkTykHead">
+          <span id="gkTykProgress">1 / 10</span>
+          <button class="gkTykCloseBtn" id="gkTykCloseBtn" aria-label="Close">&#10005;</button>
+        </div>
+        <div class="gkTykFlip" id="gkTykFlip">
+          <div class="gkTykFlipInner" id="gkTykFlipInner">
+            <div class="gkTykFace gkTykFront" id="gkTykFront"></div>
+            <div class="gkTykFace gkTykBack" id="gkTykBack"></div>
+          </div>
+          <div class="gkTykHint">Card ko tap karke answer dekho</div>
+        </div>
+        <div class="gkTykNav">
+          <button id="gkTykPrevBtn">&#8249; Prev</button>
+          <button class="gkTykNextBtn" id="gkTykNextBtn">Next &#8250;</button>
+        </div>
+      </div>
+    </div>
 
     <div class="calcPage" id="calcPage-vocabmenu">
       <div class="calcSubHead">

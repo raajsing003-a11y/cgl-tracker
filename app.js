@@ -12474,8 +12474,11 @@ const mathPyqQuiz = makeMathPyqQuiz();
     const contentEl = document.getElementById('gkReaderContent');
     if(contentEl){
       const bodyHtml = renderGkBlocks(blocks);
-      contentEl.innerHTML = `<div class="gkChapTitle">${escapeHtml(title)}</div>` + bodyHtml;
+      const tykBtnHtml = `<div class="gkTykBtnWrap"><button class="gkTykBtn" id="gkTykOpenBtn">🧠 Test Your Knowledge</button></div>`;
+      contentEl.innerHTML = `<div class="gkChapTitle">${escapeHtml(title)}</div>` + bodyHtml + tykBtnHtml;
       contentEl.scrollTop = 0;
+      const tykOpenBtn = document.getElementById('gkTykOpenBtn');
+      if(tykOpenBtn) tykOpenBtn.addEventListener('click', () => openTykFlashcards(blocks, title));
     }
     applyFontSize();
     const langBtn = document.getElementById('gkReaderLangBtn');
@@ -12698,6 +12701,122 @@ const mathPyqQuiz = makeMathPyqQuiz();
   });
 
   updateAutoScrollUI();
+
+  // ===== Test Your Knowledge (auto flashcards) =====
+  // Chapter ke blocks se automatically flashcards bana deta hai — chapter
+  // jitna bada, utne hi zyada cards (koi fixed/hardcoded question bank
+  // nahi chahiye). Do tarah ke cards banate hain:
+  //  1) Heading-based: h2/h3 ke baad wala text -> "Is bare mein bataiye"
+  //  2) Cloze (fill-in-blank): kisi bhi paragraph se sabse important
+  //     shabd/number nikaal ke blank kar dete hain.
+  let tykCards = [];
+  let tykIdx = 0;
+
+  function stripTags(s){ return String(s||'').replace(/<[^>]*>/g,'').trim(); }
+
+  function pickClozeWord(text){
+    const words = text.split(/\s+/).filter(w => w.replace(/[^\p{L}\p{N}]/gu,'').length >= 4);
+    if(!words.length) return null;
+    // number ya sabse lamba shabd ko priority do — usually key fact hota hai
+    let best = words.find(w => /\d/.test(w));
+    if(!best) best = words.reduce((a,b) => (b.replace(/[^\p{L}\p{N}]/gu,'').length > a.replace(/[^\p{L}\p{N}]/gu,'').length ? b : a));
+    return best;
+  }
+
+  function makeClozeCard(text){
+    const clean = stripTags(text);
+    if(clean.length < 12) return null;
+    const word = pickClozeWord(clean);
+    if(!word) return null;
+    const idx = clean.indexOf(word);
+    if(idx === -1) return null;
+    const masked = clean.slice(0, idx) + '_____' + clean.slice(idx + word.length);
+    return { q: masked, a: word, full: clean };
+  }
+
+  function generateFlashcards(blocks){
+    const cards = [];
+    let pendingHeading = null, pendingText = [];
+    function flushHeadingCard(){
+      if(pendingHeading && pendingText.length){
+        const answer = pendingText.join(' ');
+        cards.push({ q: `Is bare mein bataiye: "${stripTags(pendingHeading)}"`, a: stripTags(answer).slice(0, 320) });
+      }
+      pendingHeading = null; pendingText = [];
+    }
+    (blocks||[]).forEach(b => {
+      if(!b) return;
+      if(b.type === 'h2' || b.type === 'h3'){
+        flushHeadingCard();
+        pendingHeading = b.text;
+      } else if(!b.type || b.type === 'p'){
+        if(pendingHeading) pendingText.push(b.text||'');
+        const cloze = makeClozeCard(b.text||'');
+        if(cloze) cards.push(cloze);
+      } else if(b.type === 'table' && Array.isArray(b.rows)){
+        b.rows.forEach(row => {
+          if(row && row.length >= 2){
+            cards.push({ q: `${stripTags(String(row[0]))} — iske baare mein kya pata hai?`, a: row.slice(1).map(String).map(stripTags).join(', ') });
+          }
+        });
+      }
+    });
+    flushHeadingCard();
+    // Chapter length ke hisaab se auto scale: kam se kam 3, zyada se zyada 25
+    const maxCards = Math.max(3, Math.min(25, Math.round((blocks||[]).length * 0.8)));
+    // Shuffle karke variety do, phir cap lagao
+    for(let i = cards.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    return cards.slice(0, maxCards);
+  }
+
+  function renderTykCard(){
+    const total = tykCards.length;
+    const progressEl = document.getElementById('gkTykProgress');
+    const frontEl = document.getElementById('gkTykFront');
+    const backEl = document.getElementById('gkTykBack');
+    const flipEl = document.getElementById('gkTykFlip');
+    const prevBtn = document.getElementById('gkTykPrevBtn');
+    const nextBtn = document.getElementById('gkTykNextBtn');
+    if(!total || !frontEl || !backEl) return;
+    const card = tykCards[tykIdx];
+    if(flipEl) flipEl.classList.remove('flipped');
+    if(progressEl) progressEl.textContent = `${tykIdx + 1} / ${total}`;
+    if(frontEl) frontEl.textContent = card.q;
+    if(backEl) backEl.textContent = card.a + (card.full ? '' : '');
+    if(prevBtn) prevBtn.disabled = tykIdx <= 0;
+    if(nextBtn) nextBtn.textContent = (tykIdx >= total - 1) ? 'Finish ✓' : 'Next ›';
+  }
+
+  function openTykFlashcards(blocks, chapterTitle){
+    tykCards = generateFlashcards(blocks);
+    if(!tykCards.length){ alert('Is chapter ke liye flashcards nahi ban paaye.'); return; }
+    tykIdx = 0;
+    renderTykCard();
+    const ov = document.getElementById('gkTykOverlay');
+    if(ov) ov.classList.add('open');
+  }
+  function closeTykFlashcards(){
+    const ov = document.getElementById('gkTykOverlay');
+    if(ov) ov.classList.remove('open');
+  }
+  window.openTykFlashcards = openTykFlashcards;
+
+  const tykFlip = document.getElementById('gkTykFlip');
+  if(tykFlip) tykFlip.addEventListener('click', () => tykFlip.classList.toggle('flipped'));
+  const tykCloseBtn = document.getElementById('gkTykCloseBtn');
+  if(tykCloseBtn) tykCloseBtn.addEventListener('click', closeTykFlashcards);
+  const tykOverlayEl = document.getElementById('gkTykOverlay');
+  if(tykOverlayEl) tykOverlayEl.addEventListener('click', (e) => { if(e.target === tykOverlayEl) closeTykFlashcards(); });
+  const tykPrevBtn = document.getElementById('gkTykPrevBtn');
+  if(tykPrevBtn) tykPrevBtn.addEventListener('click', () => { if(tykIdx > 0){ tykIdx--; renderTykCard(); } });
+  const tykNextBtn = document.getElementById('gkTykNextBtn');
+  if(tykNextBtn) tykNextBtn.addEventListener('click', () => {
+    if(tykIdx < tykCards.length - 1){ tykIdx++; renderTykCard(); }
+    else closeTykFlashcards();
+  });
 })();
 
 

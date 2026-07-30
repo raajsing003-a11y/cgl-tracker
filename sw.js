@@ -31,7 +31,13 @@
 // auto-scroll engine, index.html gained the FAB markup/CSS). Old v3 cache
 // would keep serving the pre-auto-scroll app.js/index.html, so it must be
 // evicted too.
-const CACHE_NAME = 'exam-tracker-v4';
+//
+// Bumped v4 -> v5: added "Test Your Knowledge" auto-flashcards at the end
+// of every GK chapter (app.js gained flashcard generation/overlay logic,
+// index.html gained the flashcard overlay markup/CSS). Old v4 cache would
+// keep serving the app.js/index.html without this feature, so it must be
+// evicted too.
+const CACHE_NAME = 'exam-tracker-v5';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
