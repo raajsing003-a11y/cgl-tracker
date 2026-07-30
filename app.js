@@ -1547,23 +1547,10 @@ async function kvdbCreateRoom(){
 // This matters a lot on patchy mobile data: without retries, a single
 // dropped request during app-open could look identical to "this player
 // has no data yet" and fall through to a blank/stale local copy.
-//
-// Firebase Realtime Database paths can NEVER contain . # $ [ or ] — but
-// encodeURIComponent leaves '.' completely untouched (it's a legal URI
-// character) and doesn't touch the other four either. So a player whose
-// name has a dot in it (e.g. "e. g. rohit", "Softy...") used to build an
-// invalid path that Firebase rejected on every single attempt — a
-// permanent failure that no amount of retrying could ever fix (that's the
-// exact "Sync pending" that never clears). This escapes exactly those five
-// characters to their %XX form on top of encodeURIComponent, so every
-// key/name is always guaranteed to be a legal Firebase path segment.
-function firebaseSafeKey(key){
-  return encodeURIComponent(key).replace(/[.#$\[\]]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
-}
 async function kvdbGet(key){
   const room = getRoomCode();
   if(!room) return null;
-  const path = `rooms/${room}/${firebaseSafeKey(key)}`;
+  const path = `rooms/${room}/${encodeURIComponent(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
@@ -1582,7 +1569,7 @@ async function kvdbGet(key){
 async function kvdbSet(key, value){
   const room = getRoomCode();
   if(!room) return false;
-  const path = `rooms/${room}/${firebaseSafeKey(key)}`;
+  const path = `rooms/${room}/${encodeURIComponent(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
@@ -7294,6 +7281,7 @@ function renderTaskEditForm(){
             <span style="flex:1;font-size:13.5px;font-weight:600;">${escapeHtml(name)}</span>
           </div>
           <div class="taskEditBottom">
+            <span style="font-size:12px;color:var(--muted);">⏰ ${minToTimeInputStr(TASK_START_MIN[idx])}</span>
             <span style="font-size:12px;color:var(--muted);"><span class="icoClock" aria-hidden="true"></span> ${TASK_DURATIONS_MIN[idx]} min</span>
             <span class="tVal ${tier.cls}">${tier.emoji} ₹${Math.round(TASK_VALUES[idx]||0)}</span>
           </div>
@@ -7318,6 +7306,7 @@ function renderTaskEditForm(){
         <button class="teDel" data-task-idx="${idx}" title="Ye task hatao" ${taskEditDraft.length<=1?'disabled':''}>✕</button>
       </div>
       <div class="taskEditBottom">
+        <label>⏰ Start<input type="time" class="teStart" data-task-idx="${idx}" value="${minToTimeInputStr(t.start)}"></label>
         <label><span class="icoClock" aria-hidden="true"></span> Mins<input type="number" class="teDur" data-task-idx="${idx}" min="5" step="5" value="${t.duration}"></label>
         <span class="tVal ${tier.cls}" data-val-idx="${idx}">${tier.emoji} ₹${Math.round(draftValues[idx])}</span>
       </div>
@@ -7328,6 +7317,13 @@ function renderTaskEditForm(){
     inp.addEventListener('input', ()=>{
       const idx = parseInt(inp.getAttribute('data-task-idx'));
       taskEditDraft[idx].name = inp.value;
+    });
+  });
+  form.querySelectorAll('.teStart').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const idx = parseInt(inp.getAttribute('data-task-idx'));
+      const v = timeInputStrToMin(inp.value);
+      if(v!==null) taskEditDraft[idx].start = v;
     });
   });
   form.querySelectorAll('.teDur').forEach(inp=>{
@@ -12275,6 +12271,139 @@ const mathPyqQuiz = makeMathPyqQuiz();
   if(openBtn) openBtn.addEventListener('click', () => showCalcPage('reasoningchapters'));
   const backBtn = document.getElementById('reasoningChaptersBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
+
+// ===== GK Hub + Ancient History Reader =====
+// GK ka apna chota hub hai (abhi sirf "Ancient History", aage aur chapters
+// yahin add ho sakte hain). Ancient History bilingual (Hindi/English) notes
+// hai jo data/gk_ancient_history.json se lazy-load hote hain (sirf tab jab
+// user pehli baar GK > Ancient History kholta hai). Reader screen mein
+// language toggle, text-size +/- aur prev/next chapter navigation hai —
+// bilkul screenshot jaisa ek clean reading view.
+(function initGkAncientHistory(){
+  const DATA_URL = './data/gk_ancient_history.json';
+  const FONT_MIN = 14, FONT_MAX = 26, FONT_STEP = 2, FONT_DEFAULT = 17;
+
+  let data = null;          // { chapters:[{id,titleHi,titleEn,blocksHi,blocksEn}] }
+  let loadPromise = null;
+  let lang = (localStorage.getItem('gkReaderLang') === 'en') ? 'en' : 'hi';
+  let fontSize = parseInt(localStorage.getItem('gkReaderFontSize'), 10) || FONT_DEFAULT;
+  let currentChapterId = 1;
+
+  function ensureData(){
+    if(data) return Promise.resolve(data);
+    if(loadPromise) return loadPromise;
+    loadPromise = fetch(DATA_URL, {cache:'default'})
+      .then(res => { if(!res.ok) throw new Error('Failed to load ' + DATA_URL); return res.json(); })
+      .then(json => { data = json; return data; })
+      .catch(err => { console.error(err); alert('Ancient History data load nahi ho paaya. Internet check karke dobara try karein.'); throw err; })
+      .finally(() => { loadPromise = null; });
+    return loadPromise;
+  }
+
+  function renderChapterList(){
+    const wrap = document.getElementById('gkAncientChapterList');
+    if(!wrap || !data) return;
+    wrap.innerHTML = data.chapters.map(ch => {
+      const title = lang === 'hi' ? ch.titleHi : ch.titleEn;
+      return `<button class="gkChapterBtn" data-gk-chapter="${ch.id}">
+        <span class="gkChNum">${ch.id}</span>
+        <span class="gkChTitle">${escapeHtml(title)}</span>
+        <span class="gkChArrow">&#8250;</span>
+      </button>`;
+    }).join('');
+    wrap.querySelectorAll('[data-gk-chapter]').forEach(btn=>{
+      btn.addEventListener('click', () => openChapter(parseInt(btn.getAttribute('data-gk-chapter'), 10)));
+    });
+  }
+
+  function applyFontSize(){
+    const contentEl = document.getElementById('gkReaderContent');
+    if(contentEl) contentEl.style.fontSize = fontSize + 'px';
+  }
+
+  function renderReader(){
+    if(!data) return;
+    const ch = data.chapters.find(c => c.id === currentChapterId) || data.chapters[0];
+    if(!ch) return;
+    currentChapterId = ch.id;
+    const title = lang === 'hi' ? ch.titleHi : ch.titleEn;
+    const blocks = lang === 'hi' ? ch.blocksHi : ch.blocksEn;
+    const titleEl = document.getElementById('gkReaderTitle');
+    if(titleEl) titleEl.textContent = title;
+    const contentEl = document.getElementById('gkReaderContent');
+    if(contentEl){
+      const bodyHtml = blocks.map(b => {
+        if(b.type === 'h2') return `<div class="gkH2">${escapeHtml(b.text)}</div>`;
+        return `<p class="gkP">${escapeHtml(b.text)}</p>`;
+      }).join('');
+      contentEl.innerHTML = `<div class="gkChapTitle">${escapeHtml(title)}</div>` + bodyHtml;
+      contentEl.scrollTop = 0;
+    }
+    applyFontSize();
+    const langBtn = document.getElementById('gkReaderLangBtn');
+    if(langBtn) langBtn.textContent = lang === 'hi' ? 'हिंदी ➜ English' : 'English ➜ हिंदी';
+    const prevBtn = document.getElementById('gkReaderPrevBtn');
+    const nextBtn = document.getElementById('gkReaderNextBtn');
+    if(prevBtn) prevBtn.disabled = ch.id <= 1;
+    if(nextBtn) nextBtn.disabled = ch.id >= data.chapters.length;
+  }
+
+  function openChapter(id){
+    currentChapterId = id;
+    ensureData().then(() => {
+      showCalcPage('gkreader');
+      renderReader();
+    });
+  }
+
+  const menuBtn = document.getElementById('calcGkBtn');
+  if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('gkmenu'));
+  const gkMenuBackBtn = document.getElementById('gkMenuBackBtn');
+  if(gkMenuBackBtn) gkMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+
+  const ancientBtn = document.getElementById('calcGkAncientHistoryBtn');
+  if(ancientBtn) ancientBtn.addEventListener('click', () => {
+    ensureData().then(() => { renderChapterList(); showCalcPage('gkancientchapters'); });
+  });
+  const chaptersBackBtn = document.getElementById('gkAncientChaptersBackBtn');
+  if(chaptersBackBtn) chaptersBackBtn.addEventListener('click', () => showCalcPage('gkmenu'));
+
+  const readerBackBtn = document.getElementById('gkReaderBackBtn');
+  if(readerBackBtn) readerBackBtn.addEventListener('click', () => { renderChapterList(); showCalcPage('gkancientchapters'); });
+  const readerListBtn = document.getElementById('gkReaderListBtn');
+  if(readerListBtn) readerListBtn.addEventListener('click', () => { renderChapterList(); showCalcPage('gkancientchapters'); });
+
+  const langBtn = document.getElementById('gkReaderLangBtn');
+  if(langBtn) langBtn.addEventListener('click', () => {
+    lang = lang === 'hi' ? 'en' : 'hi';
+    localStorage.setItem('gkReaderLang', lang);
+    renderReader();
+  });
+
+  const fontIncBtn = document.getElementById('gkFontIncBtn');
+  if(fontIncBtn) fontIncBtn.addEventListener('click', () => {
+    fontSize = Math.min(FONT_MAX, fontSize + FONT_STEP);
+    localStorage.setItem('gkReaderFontSize', fontSize);
+    applyFontSize();
+  });
+  const fontDecBtn = document.getElementById('gkFontDecBtn');
+  if(fontDecBtn) fontDecBtn.addEventListener('click', () => {
+    fontSize = Math.max(FONT_MIN, fontSize - FONT_STEP);
+    localStorage.setItem('gkReaderFontSize', fontSize);
+    applyFontSize();
+  });
+
+  const prevBtn = document.getElementById('gkReaderPrevBtn');
+  if(prevBtn) prevBtn.addEventListener('click', () => {
+    if(!data) return;
+    if(currentChapterId > 1){ currentChapterId -= 1; renderReader(); }
+  });
+  const nextBtn = document.getElementById('gkReaderNextBtn');
+  if(nextBtn) nextBtn.addEventListener('click', () => {
+    if(!data) return;
+    if(currentChapterId < data.chapters.length){ currentChapterId += 1; renderReader(); }
+  });
 })();
 
 
