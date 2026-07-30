@@ -12273,36 +12273,112 @@ const mathPyqQuiz = makeMathPyqQuiz();
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
 
-// ===== GK Hub + Ancient History Reader =====
-// GK ka apna chota hub hai (abhi sirf "Ancient History", aage aur chapters
-// yahin add ho sakte hain). Ancient History bilingual (Hindi/English) notes
-// hai jo data/gk_ancient_history.json se lazy-load hote hain (sirf tab jab
-// user pehli baar GK > Ancient History kholta hai). Reader screen mein
-// language toggle, text-size +/- aur prev/next chapter navigation hai —
-// bilkul screenshot jaisa ek clean reading view.
-(function initGkAncientHistory(){
-  const DATA_URL = './data/gk_ancient_history.json';
+// ===== GK Hub + Chapterwise Notes Reader (Ancient History, Medieval History, ...) =====
+// GK ka apna chota hub hai. Har subject (Ancient History, Medieval History,
+// aage aur bhi) bilingual (Hindi/English) notes hai jo apni JSON file se
+// lazy-load hoti hai (sirf tab jab user pehli baar us subject ko kholta
+// hai). Reader screen mein language toggle, text-size +/- aur prev/next
+// chapter navigation hai — bilkul screenshot jaisa ek clean reading view.
+// Naya subject add karna ho to bas GK_SUBJECTS mein ek entry badha do +
+// index.html mein matching menu card / chapters page.
+(function initGkReader(){
   const FONT_MIN = 14, FONT_MAX = 26, FONT_STEP = 2, FONT_DEFAULT = 17;
 
-  let data = null;          // { chapters:[{id,titleHi,titleEn,blocksHi,blocksEn}] }
-  let loadPromise = null;
-  let lang = (localStorage.getItem('gkReaderLang') === 'en') ? 'en' : 'hi';
-  let fontSize = parseInt(localStorage.getItem('gkReaderFontSize'), 10) || FONT_DEFAULT;
-  let currentChapterId = 1;
-
-  function ensureData(){
-    if(data) return Promise.resolve(data);
-    if(loadPromise) return loadPromise;
-    loadPromise = fetch(DATA_URL, {cache:'default'})
-      .then(res => { if(!res.ok) throw new Error('Failed to load ' + DATA_URL); return res.json(); })
-      .then(json => { data = json; return data; })
-      .catch(err => { console.error(err); alert('Ancient History data load nahi ho paaya. Internet check karke dobara try karein.'); throw err; })
-      .finally(() => { loadPromise = null; });
-    return loadPromise;
+  // renderGkBlock(): turns ONE content block from a GK chapter JSON into
+  // HTML. Naya subject/chapter jab bhi is JSON format mein aata hai
+  // (chahe koi bhi ho — Ancient, Medieval, ya aage koi aur), yeh function
+  // automatically sahi tareeke se render kar deta hai — koi extra CSS ya
+  // JS tweak nahi chahiye. Supported block shapes:
+  //   { type:'h2'|'h3', text }                                  -> heading
+  //   { type:'p', text }                                        -> paragraph card
+  //   { type:'table', headers:[...], rows:[[...],[...]] }       -> scrollable table
+  //   { type:'image', src, alt?, caption? }                     -> figure with caption
+  // Unknown/missing type safely falls back to a plain paragraph so bad
+  // data never breaks the reader.
+  function renderGkBlock(b){
+    if(!b) return '';
+    if(b.type === 'h2') return `<div class="gkH2">${escapeHtml(b.text||'')}</div>`;
+    if(b.type === 'h3') return `<div class="gkH3">${escapeHtml(b.text||'')}</div>`;
+    if(b.type === 'table' && Array.isArray(b.rows)){
+      const headers = Array.isArray(b.headers) ? b.headers : [];
+      const theadHtml = headers.length ? `<thead><tr>${headers.map(h=>`<th>${escapeHtml(String(h))}</th>`).join('')}</tr></thead>` : '';
+      const tbodyHtml = `<tbody>${b.rows.map(row=>`<tr>${row.map(cell=>`<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+      return `<div class="gkTableWrap"><table class="gkTable">${theadHtml}${tbodyHtml}</table></div>`;
+    }
+    if(b.type === 'image' && b.src){
+      const captionHtml = b.caption ? `<figcaption>${escapeHtml(b.caption)}</figcaption>` : '';
+      return `<figure class="gkFigure"><img src="${escapeHtml(b.src)}" alt="${escapeHtml(b.alt||b.caption||'')}" loading="lazy">${captionHtml}</figure>`;
+    }
+    return `<p class="gkP">${escapeHtml(b.text||'')}</p>`;
   }
 
-  function renderChapterList(){
-    const wrap = document.getElementById('gkAncientChapterList');
+  // renderGkBlocks(): renders a whole chapter's block array, grouping any
+  // run of consecutive paragraph ('p') blocks into ONE real bulleted
+  // <ul> list (each paragraph becomes a <li> with a bullet dot) instead
+  // of separate stacked cards. Headings/tables/images break the current
+  // list group and render standalone via renderGkBlock(). This runs for
+  // every subject automatically — no per-chapter markup needed.
+  function renderGkBlocks(blocks){
+    let html = '';
+    let listBuffer = [];
+    function flushList(){
+      if(listBuffer.length){
+        html += `<ul class="gkList">${listBuffer.map(b=>`<li class="gkLi">${escapeHtml(b.text||'')}</li>`).join('')}</ul>`;
+        listBuffer = [];
+      }
+    }
+    (blocks||[]).forEach(b=>{
+      if(!b) return;
+      if(!b.type || b.type === 'p'){ listBuffer.push(b); return; }
+      flushList();
+      html += renderGkBlock(b);
+    });
+    flushList();
+    return html;
+  }
+
+  const GK_SUBJECTS = {
+    ancient: {
+      dataUrl: './data/gk_ancient_history.json',
+      listElId: 'gkAncientChapterList',
+      chaptersPage: 'gkancientchapters',
+      menuBtnId: 'calcGkAncientHistoryBtn',
+      chaptersBackBtnId: 'gkAncientChaptersBackBtn',
+      loadErrorMsg: 'Ancient History data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+    medieval: {
+      dataUrl: './data/gk_medieval_history.json',
+      listElId: 'gkMedievalChapterList',
+      chaptersPage: 'gkmedievalchapters',
+      menuBtnId: 'calcGkMedievalHistoryBtn',
+      chaptersBackBtnId: 'gkMedievalChaptersBackBtn',
+      loadErrorMsg: 'Medieval History data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+  };
+
+  const dataCache = {};     // subject -> { chapters:[{id,titleHi,titleEn,blocksHi,blocksEn}] }
+  const loadPromises = {};  // subject -> in-flight promise
+  let lang = (localStorage.getItem('gkReaderLang') === 'en') ? 'en' : 'hi';
+  let fontSize = parseInt(localStorage.getItem('gkReaderFontSize'), 10) || FONT_DEFAULT;
+  let currentSubject = 'ancient';
+  let currentChapterId = 1;
+
+  function ensureData(subject){
+    if(dataCache[subject]) return Promise.resolve(dataCache[subject]);
+    if(loadPromises[subject]) return loadPromises[subject];
+    const cfg = GK_SUBJECTS[subject];
+    loadPromises[subject] = fetch(cfg.dataUrl, {cache:'default'})
+      .then(res => { if(!res.ok) throw new Error('Failed to load ' + cfg.dataUrl); return res.json(); })
+      .then(json => { dataCache[subject] = json; return json; })
+      .catch(err => { console.error(err); alert(cfg.loadErrorMsg); throw err; })
+      .finally(() => { delete loadPromises[subject]; });
+    return loadPromises[subject];
+  }
+
+  function renderChapterList(subject){
+    const cfg = GK_SUBJECTS[subject];
+    const data = dataCache[subject];
+    const wrap = document.getElementById(cfg.listElId);
     if(!wrap || !data) return;
     wrap.innerHTML = data.chapters.map(ch => {
       const title = lang === 'hi' ? ch.titleHi : ch.titleEn;
@@ -12313,7 +12389,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
       </button>`;
     }).join('');
     wrap.querySelectorAll('[data-gk-chapter]').forEach(btn=>{
-      btn.addEventListener('click', () => openChapter(parseInt(btn.getAttribute('data-gk-chapter'), 10)));
+      btn.addEventListener('click', () => openChapter(subject, parseInt(btn.getAttribute('data-gk-chapter'), 10)));
     });
   }
 
@@ -12323,6 +12399,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
   }
 
   function renderReader(){
+    const data = dataCache[currentSubject];
     if(!data) return;
     const ch = data.chapters.find(c => c.id === currentChapterId) || data.chapters[0];
     if(!ch) return;
@@ -12333,10 +12410,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(titleEl) titleEl.textContent = title;
     const contentEl = document.getElementById('gkReaderContent');
     if(contentEl){
-      const bodyHtml = blocks.map(b => {
-        if(b.type === 'h2') return `<div class="gkH2">${escapeHtml(b.text)}</div>`;
-        return `<p class="gkP">${escapeHtml(b.text)}</p>`;
-      }).join('');
+      const bodyHtml = renderGkBlocks(blocks);
       contentEl.innerHTML = `<div class="gkChapTitle">${escapeHtml(title)}</div>` + bodyHtml;
       contentEl.scrollTop = 0;
     }
@@ -12349,9 +12423,10 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(nextBtn) nextBtn.disabled = ch.id >= data.chapters.length;
   }
 
-  function openChapter(id){
+  function openChapter(subject, id){
+    currentSubject = subject;
     currentChapterId = id;
-    ensureData().then(() => {
+    ensureData(subject).then(() => {
       showCalcPage('gkreader');
       renderReader();
     });
@@ -12362,17 +12437,21 @@ const mathPyqQuiz = makeMathPyqQuiz();
   const gkMenuBackBtn = document.getElementById('gkMenuBackBtn');
   if(gkMenuBackBtn) gkMenuBackBtn.addEventListener('click', () => showCalcPage('menu'));
 
-  const ancientBtn = document.getElementById('calcGkAncientHistoryBtn');
-  if(ancientBtn) ancientBtn.addEventListener('click', () => {
-    ensureData().then(() => { renderChapterList(); showCalcPage('gkancientchapters'); });
+  Object.keys(GK_SUBJECTS).forEach(subject => {
+    const cfg = GK_SUBJECTS[subject];
+    const openSubjectBtn = document.getElementById(cfg.menuBtnId);
+    if(openSubjectBtn) openSubjectBtn.addEventListener('click', () => {
+      currentSubject = subject;
+      ensureData(subject).then(() => { renderChapterList(subject); showCalcPage(cfg.chaptersPage); });
+    });
+    const chaptersBackBtn = document.getElementById(cfg.chaptersBackBtnId);
+    if(chaptersBackBtn) chaptersBackBtn.addEventListener('click', () => showCalcPage('gkmenu'));
   });
-  const chaptersBackBtn = document.getElementById('gkAncientChaptersBackBtn');
-  if(chaptersBackBtn) chaptersBackBtn.addEventListener('click', () => showCalcPage('gkmenu'));
 
   const readerBackBtn = document.getElementById('gkReaderBackBtn');
-  if(readerBackBtn) readerBackBtn.addEventListener('click', () => { renderChapterList(); showCalcPage('gkancientchapters'); });
+  if(readerBackBtn) readerBackBtn.addEventListener('click', () => { renderChapterList(currentSubject); showCalcPage(GK_SUBJECTS[currentSubject].chaptersPage); });
   const readerListBtn = document.getElementById('gkReaderListBtn');
-  if(readerListBtn) readerListBtn.addEventListener('click', () => { renderChapterList(); showCalcPage('gkancientchapters'); });
+  if(readerListBtn) readerListBtn.addEventListener('click', () => { renderChapterList(currentSubject); showCalcPage(GK_SUBJECTS[currentSubject].chaptersPage); });
 
   const langBtn = document.getElementById('gkReaderLangBtn');
   if(langBtn) langBtn.addEventListener('click', () => {
@@ -12396,11 +12475,12 @@ const mathPyqQuiz = makeMathPyqQuiz();
 
   const prevBtn = document.getElementById('gkReaderPrevBtn');
   if(prevBtn) prevBtn.addEventListener('click', () => {
-    if(!data) return;
+    if(!dataCache[currentSubject]) return;
     if(currentChapterId > 1){ currentChapterId -= 1; renderReader(); }
   });
   const nextBtn = document.getElementById('gkReaderNextBtn');
   if(nextBtn) nextBtn.addEventListener('click', () => {
+    const data = dataCache[currentSubject];
     if(!data) return;
     if(currentChapterId < data.chapters.length){ currentChapterId += 1; renderReader(); }
   });
