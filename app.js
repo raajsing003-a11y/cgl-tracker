@@ -12714,12 +12714,43 @@ const mathPyqQuiz = makeMathPyqQuiz();
 
   function stripTags(s){ return String(s||'').replace(/<[^>]*>/g,'').trim(); }
 
+  // Ye filler/helper shabd kabhi bhi blank ke liye select nahi hone chahiye —
+  // inhe blank karne se question ajeeb/meaningless ban jaata hai (SSC jaisa
+  // fact-based question nahi lagta).
+  const TYK_STOPWORDS = new Set([
+    'जाता','जाती','जाते','किया','किए','गया','गई','गए','सकता','सकती','सकते',
+    'होता','होती','होते','रहा','रही','रहे','अपने','इसके','उसके','जिसके',
+    'इसकी','उसकी','जिसकी','इसका','उसका','जिसका','जिसमें','इसमें','उसमें',
+    'क्योंकि','हालांकि','इसलिए','साथ','बारे','माना','जाना','होने',
+    'करने','करता','करती','करते','दिया','दिए','मिला','मिली','मिले','अलावा',
+    'लगभग','दौरान','द्वारा','अनुसार','जैसे','यानी','अर्थात','उपलब्ध'
+  ]);
+
+  function cleanWordLen(w){ return w.replace(/[^\p{L}\p{N}]/gu,'').length; }
+
   function pickClozeWord(text){
-    const words = text.split(/\s+/).filter(w => w.replace(/[^\p{L}\p{N}]/gu,'').length >= 4);
+    const words = text.split(/\s+/).filter(w => cleanWordLen(w) >= 4);
     if(!words.length) return null;
-    // number ya sabse lamba shabd ko priority do — usually key fact hota hai
-    let best = words.find(w => /\d/.test(w));
-    if(!best) best = words.reduce((a,b) => (b.replace(/[^\p{L}\p{N}]/gu,'').length > a.replace(/[^\p{L}\p{N}]/gu,'').length ? b : a));
+
+    // 1) Priority: saal/varsh (4-digit year) — SSC questions mein date sabse
+    //    common fact hoti hai
+    let best = words.find(w => /\d{4}/.test(w));
+    if(best) return best;
+
+    // 2) Priority: angrezi/glossary term brackets mein — jaise "(Neolithic)"
+    //    ye hamesha ek concrete fact hota hai, filler nahi
+    best = words.find(w => /\(([A-Za-z][A-Za-z\s-]{2,})\)/.test(w) || /^[A-Za-z]{3,}[.,)]*$/.test(w));
+    if(best) return best;
+
+    // 3) Proper-noun jaisa shabd jo turant baad "ने" (subject marker) se
+    //    jud़ा ho — usually ek naam (vyakti/sthaan) hota hai
+    const neIdx = words.findIndex((w, i) => words[i+1] === 'ने' && cleanWordLen(w) >= 3);
+    if(neIdx !== -1) return words[neIdx];
+
+    // 4) Fallback: sabse lamba non-filler shabd
+    const candidates = words.filter(w => !TYK_STOPWORDS.has(w.replace(/[^\p{L}\p{N}]/gu,'')));
+    const pool = candidates.length ? candidates : words;
+    best = pool.reduce((a,b) => (cleanWordLen(b) > cleanWordLen(a) ? b : a));
     return best;
   }
 
@@ -12730,8 +12761,68 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(!word) return null;
     const idx = clean.indexOf(word);
     if(idx === -1) return null;
-    const masked = clean.slice(0, idx) + '_____' + clean.slice(idx + word.length);
-    return { q: masked, a: word, full: clean };
+
+    // Answer word ke aas-paas ki punctuation (jaise brackets, comma) hata do
+    const answer = word.replace(/^[(",]+|[)",.।]+$/g, '');
+    if(!answer) return null;
+
+    // Blank ki jagah seedha WH-question banate hain (fill-in-blank nahi) —
+    // word ke type ke hisaab se sahi prashnvachak (question word) chunte hain
+    let qWord = 'क्या';
+    let isYear = false;
+    const words = clean.split(/\s+/);
+    const wIdx = words.indexOf(word);
+    if(/\d{4}/.test(word)){ qWord = 'किस वर्ष'; isYear = true; }
+    else if(wIdx !== -1 && words[wIdx+1] === 'ने') qWord = 'किसने';
+    else if(wIdx > 0 && words[wIdx-1] === 'ने') qWord = 'किसने';
+
+    let before = clean.slice(0, idx).trim();
+    let after = clean.slice(idx + word.length).trim();
+    // Saal wale case mein "वर्ष/सन्/साल" jaisa marker word pehle se hi
+    // present hota hai — usse hata do warna "वर्ष किस वर्ष?" jaisa dohrav ho
+    if(isYear) before = before.replace(/(वर्ष|सन्|साल|सन)\s*$/u, '').trim();
+
+    // Balance brackets — agar blank ke kaaran ek taraf ka bracket khul kar
+    // reh gaya ho to use hata do taaki sawaal saaf dikhe
+    const balanceParens = (s) => {
+      let out = '';
+      let depth = 0;
+      for(const ch of s){
+        if(ch === '(') depth++;
+        else if(ch === ')'){ if(depth <= 0) continue; depth--; }
+        out += ch;
+      }
+      // trailing unmatched '(' hata do
+      if(depth > 0) out = out.replace(/\([^(]*$/, '').trim();
+      return out;
+    };
+    before = balanceParens(before);
+    after = balanceParens(after);
+
+    // Vaakya ke ant mein pehle se hi koi kriya (verb) ho (jaise "की", "हुई",
+    // "बनाया", "स्थित") to dobara "था/थी" jodne ki zaroorat nahi
+    const endsWithVerb = /(की|किया|हुई|हुआ|बनाया|बनाई|स्थित|गई|गया|रखा|रखी)\s*$/u;
+    const stripEndPunct = (s) => s.replace(/[।.]+\s*$/u, '').trim();
+
+    // Jitna context chahiye utna hi rakho — bahut lambi statement se sawaal
+    // uljhan bhara na ho isliye ek hi taraf ka context istemaal karte hain
+    let sentence;
+    if(before.length >= after.length || !after){
+      before = stripEndPunct(before);
+      sentence = endsWithVerb.test(before) ? `${before} ${qWord}?` : `${before} ${qWord} था/थी?`;
+      sentence = sentence.replace(/\s+/g, ' ').trim();
+    } else {
+      after = stripEndPunct(after);
+      sentence = `${qWord} ${after}`.replace(/\s+/g, ' ').trim();
+      sentence = stripEndPunct(sentence);
+      sentence += '?';
+    }
+    // Safety: agar context bahut chota reh gaya ya answer khud hi sentence
+    // mein reh gaya to poora vaakya use karo
+    if(stripTags(sentence).replace(/[^\p{L}\p{N}]/gu,'').length < 8 || sentence.includes(word)){
+      sentence = `${balanceParens(clean.replace(word, qWord))}?`.replace(/\s+/g, ' ').trim();
+    }
+    return { q: sentence, a: answer, full: clean };
   }
 
   function generateFlashcards(blocks){
