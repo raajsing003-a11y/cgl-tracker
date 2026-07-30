@@ -12461,6 +12461,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
   }
 
   function renderReader(){
+    stopAutoScroll(false); // naya chapter/language khulte hi auto-scroll ruk jaana chahiye
     const data = dataCache[currentSubject];
     if(!data) return;
     const ch = data.chapters.find(c => c.id === currentChapterId) || data.chapters[0];
@@ -12584,6 +12585,118 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(!data) return;
     if(currentChapterId < data.chapters.length){ currentChapterId += 1; renderReader(); }
   });
+
+  // ===== Auto-Scroll (Reading Mode) =====
+  // Continuous rAF-driven scroll (no setInterval "jumps") — a fractional
+  // logical scrollTop accumulates every frame so the motion stays
+  // pixel-smooth at any speed. Pauses instantly on any user touch/scroll,
+  // holds a Screen Wake Lock while playing (mobile screen won't sleep),
+  // and auto-stops + resets the Play button when it hits the bottom.
+  const AUTOSCROLL_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const AUTOSCROLL_BASE_PX_PER_SEC = 24; // 1x pace, tuned for comfortable reading
+  let autoScrollOn = false;
+  let autoScrollSpeedIdx = 2; // default 1x
+  let autoScrollRafId = null;
+  let autoScrollLastTs = null;
+  let autoScrollLogicalTop = 0;
+  let autoScrollWakeLock = null;
+
+  function getReaderScrollEl(){ return document.getElementById('calcPage-gkreader'); }
+
+  function updateAutoScrollUI(){
+    const playBtn = document.getElementById('gkAutoScrollPlayBtn');
+    const speedBtn = document.getElementById('gkAutoScrollSpeedBtn');
+    if(playBtn){
+      playBtn.innerHTML = autoScrollOn ? '&#10074;&#10074;' : '&#9654;';
+      playBtn.setAttribute('aria-label', autoScrollOn ? 'Pause auto scroll' : 'Play auto scroll');
+      playBtn.classList.toggle('gkAutoScrollPlaying', autoScrollOn);
+    }
+    if(speedBtn) speedBtn.textContent = AUTOSCROLL_SPEEDS[autoScrollSpeedIdx] + 'x';
+  }
+
+  async function requestAutoScrollWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        autoScrollWakeLock = await navigator.wakeLock.request('screen');
+        autoScrollWakeLock.addEventListener('release', () => { autoScrollWakeLock = null; });
+      }
+    }catch(e){ /* wake lock not available/denied — scrolling still works fine */ }
+  }
+  function releaseAutoScrollWakeLock(){
+    if(autoScrollWakeLock){ autoScrollWakeLock.release().catch(()=>{}); autoScrollWakeLock = null; }
+  }
+
+  function autoScrollFrame(ts){
+    if(!autoScrollOn) return;
+    const el = getReaderScrollEl();
+    if(!el){ stopAutoScroll(false); return; }
+    if(autoScrollLastTs == null) autoScrollLastTs = ts;
+    const dt = ts - autoScrollLastTs;
+    autoScrollLastTs = ts;
+    const pxPerMs = (AUTOSCROLL_BASE_PX_PER_SEC * AUTOSCROLL_SPEEDS[autoScrollSpeedIdx]) / 1000;
+    autoScrollLogicalTop += pxPerMs * dt;
+    el.scrollTop = autoScrollLogicalTop;
+    const atBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 2);
+    if(atBottom){ stopAutoScroll(true); return; }
+    autoScrollRafId = requestAnimationFrame(autoScrollFrame);
+  }
+
+  function startAutoScroll(){
+    const el = getReaderScrollEl();
+    if(!el) return;
+    autoScrollOn = true;
+    autoScrollLastTs = null;
+    autoScrollLogicalTop = el.scrollTop;
+    updateAutoScrollUI();
+    requestAutoScrollWakeLock();
+    autoScrollRafId = requestAnimationFrame(autoScrollFrame);
+  }
+
+  function stopAutoScroll(reachedEnd){
+    autoScrollOn = false;
+    if(autoScrollRafId){ cancelAnimationFrame(autoScrollRafId); autoScrollRafId = null; }
+    autoScrollLastTs = null;
+    releaseAutoScrollWakeLock();
+    updateAutoScrollUI();
+  }
+
+  function toggleAutoScroll(){
+    if(autoScrollOn) stopAutoScroll(false);
+    else startAutoScroll();
+  }
+
+  function cycleAutoScrollSpeed(){
+    autoScrollSpeedIdx = (autoScrollSpeedIdx + 1) % AUTOSCROLL_SPEEDS.length;
+    updateAutoScrollUI();
+  }
+
+  const autoScrollPlayBtn = document.getElementById('gkAutoScrollPlayBtn');
+  if(autoScrollPlayBtn) autoScrollPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleAutoScroll(); });
+  const autoScrollSpeedBtn = document.getElementById('gkAutoScrollSpeedBtn');
+  if(autoScrollSpeedBtn) autoScrollSpeedBtn.addEventListener('click', (e) => { e.stopPropagation(); cycleAutoScrollSpeed(); });
+
+  // Pause the instant the user touches/scrolls anywhere in the reader —
+  // but not when the touch is on the FAB itself (that's a deliberate tap).
+  const autoScrollScrollEl = getReaderScrollEl();
+  if(autoScrollScrollEl){
+    ['touchstart','mousedown','wheel'].forEach(evt => {
+      autoScrollScrollEl.addEventListener(evt, (e) => {
+        if(!autoScrollOn) return;
+        if(e.target && e.target.closest && e.target.closest('.gkAutoScrollFab')) return;
+        stopAutoScroll(false);
+      }, {passive:true});
+    });
+  }
+
+  // A backgrounded/locked tab auto-releases the Wake Lock — silently
+  // re-acquire it once the reader is visible again, if still playing.
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && autoScrollOn && !autoScrollWakeLock){
+      requestAutoScrollWakeLock();
+    }
+  });
+
+  updateAutoScrollUI();
 })();
 
 

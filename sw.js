@@ -26,7 +26,12 @@
 // changed (GK reader header + floating font buttons restructured). Old v2
 // cache would keep serving the stale Hindi-as-English data and old header
 // markup, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v3';
+//
+// Bumped v3 -> v4: added Auto-Scroll to Reading Mode (app.js gained the
+// auto-scroll engine, index.html gained the FAB markup/CSS). Old v3 cache
+// would keep serving the pre-auto-scroll app.js/index.html, so it must be
+// evicted too.
+const CACHE_NAME = 'exam-tracker-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
