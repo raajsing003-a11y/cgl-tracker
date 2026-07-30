@@ -20,7 +20,7 @@
 // mix of old-and-new files — which is exactly what caused broken/slow
 // loads after this rewrite shipped. Bump this version string again any
 // time file paths change in a future update.
-const CACHE_NAME = 'exam-tracker-v2';
+const CACHE_NAME = 'exam-tracker-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
