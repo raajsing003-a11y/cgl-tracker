@@ -2436,9 +2436,9 @@
   /* ===== Screen Pen / Scratchpad ===== */
   #scratchCanvas{position:fixed;inset:0;z-index:9998;touch-action:none;pointer-events:none;}
   #scratchCanvas.drawing{pointer-events:auto;}
-  #scratchFab{position:fixed;right:14px;bottom:170px;z-index:10000;width:38px;height:38px;border-radius:50%;
-    background:rgba(10,132,255,0.38);color:#fff;border:none;font-size:15px;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 4px 14px rgba(0,0,0,0.25);opacity:0.55;backdrop-filter:blur(2px);transition:opacity 0.2s,background 0.2s;}
+  #scratchFab{position:fixed;right:14px;bottom:420px;z-index:10000;width:28px;height:28px;border-radius:50%;
+    background:rgba(10,132,255,0.38);color:#fff;border:none;font-size:11px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);opacity:0.55;backdrop-filter:blur(2px);transition:opacity 0.2s,background 0.2s;touch-action:none;}
   #scratchFab:active,#scratchFab.active{opacity:0.95;background:rgba(248,113,113,0.55);}
   #scratchToolbar{position:fixed;right:14px;bottom:214px;z-index:10000;display:none;flex-direction:column;gap:6px;
     width:112px;background:rgba(28,28,30,0.45);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;
@@ -7125,8 +7125,77 @@
     fab.textContent = drawMode ? '👁️' : '✏️';
   }
 
-  fab.addEventListener('click', () => setDrawMode(!drawMode));
+  fab.addEventListener('click', () => { if(!fabDragged) setDrawMode(!drawMode); });
   doneBtn.addEventListener('click', () => setDrawMode(false));
+
+  // ===== Drag to reposition the pen FAB anywhere on screen =====
+  const FAB_POS_KEY = 'cgl50-scratchFab-pos';
+  let fabDragged = false;
+  (function initFabPosition(){
+    try{
+      const raw = localStorage.getItem(FAB_POS_KEY);
+      if(raw){
+        const pos = JSON.parse(raw);
+        if(pos && typeof pos.left === 'number' && typeof pos.top === 'number'){
+          fab.style.left = pos.left + 'px';
+          fab.style.top = pos.top + 'px';
+          fab.style.right = 'auto';
+          fab.style.bottom = 'auto';
+        }
+      }
+    }catch(e){}
+  })();
+
+  let dragPointerId = null;
+  let dragStartX = 0, dragStartY = 0;
+  let fabStartLeft = 0, fabStartTop = 0;
+  const DRAG_THRESHOLD = 6;
+
+  fab.addEventListener('pointerdown', (e) => {
+    dragPointerId = e.pointerId;
+    fabDragged = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const rect = fab.getBoundingClientRect();
+    fabStartLeft = rect.left;
+    fabStartTop = rect.top;
+  });
+
+  fab.addEventListener('pointermove', (e) => {
+    if(dragPointerId !== e.pointerId) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    if(!fabDragged && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    if(!fabDragged){
+      fabDragged = true;
+      try{ fab.setPointerCapture(dragPointerId); }catch(err){}
+    }
+    let newLeft = fabStartLeft + dx;
+    let newTop = fabStartTop + dy;
+    const w = fab.offsetWidth, h = fab.offsetHeight;
+    newLeft = Math.max(2, Math.min(window.innerWidth - w - 2, newLeft));
+    newTop = Math.max(2, Math.min(window.innerHeight - h - 2, newTop));
+    fab.style.left = newLeft + 'px';
+    fab.style.top = newTop + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  });
+
+  function endFabDrag(e){
+    if(dragPointerId !== e.pointerId) return;
+    if(fabDragged){
+      try{
+        const rect = fab.getBoundingClientRect();
+        localStorage.setItem(FAB_POS_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
+      }catch(err){}
+      try{ fab.releasePointerCapture(dragPointerId); }catch(err){}
+    }
+    dragPointerId = null;
+    // slight delay so the click event (fired right after pointerup) sees fabDragged
+    setTimeout(() => { fabDragged = false; }, 50);
+  }
+  fab.addEventListener('pointerup', endFabDrag);
+  fab.addEventListener('pointercancel', endFabDrag);
 
   function getPos(e){
     return { x: e.clientX, y: e.clientY };

@@ -12524,6 +12524,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
     ensureData(subject).then(() => {
       showCalcPage('gkreader');
       renderReader();
+      startAutoScroll(); // chapter khulte hi auto-scroll khud-ba-khud shuru ho jaaye
     });
   }
 
