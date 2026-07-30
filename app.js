@@ -7730,13 +7730,22 @@ function initTabs(){
 // Android/back-gesture support: instead of closing the installed app the
 // instant back is pressed, step back through previously visited tabs first.
 window.addEventListener('popstate', (e)=>{
-  if(e.state && e.state.cgl50Tab){
+  if(e.state && e.state.calcPage){
+    switchTab('calc', true);
+    showCalcPage(e.state.calcPage, true);
+  } else if(e.state && e.state.cgl50Tab){
     switchTab(e.state.cgl50Tab, true);
+    showCalcPage('menu', true);
   }
 });
 
 // ===== Calc tab — sub-page navigation (menu <-> operation pages) =====
-function showCalcPage(name){
+// _fromPopState=true means we're reacting to the Android/browser back button
+// (via popstate below) — same rule as switchTab(): don't push a new history
+// entry in that case, or every back-press would just re-push itself.
+function showCalcPage(name, _fromPopState){
+  const prevActive = document.querySelector('.calcPage.active');
+  const prevName = prevActive ? prevActive.id.replace('calcPage-', '') : null;
   document.querySelectorAll('.calcPage').forEach(el=>{
     el.classList.toggle('active', el.id === 'calcPage-' + name);
   });
@@ -7748,6 +7757,15 @@ function showCalcPage(name){
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
   if(name === 'idiommenu') safeRun(updateIdiomSavedMenuBtn, 'updateIdiomSavedMenuBtn');
+  // Calc tab ke andar ke sub-pages (topic/quiz/set/result screens) pehle
+  // history mein register hi nahi hote the, isliye Android/gesture back
+  // button in par kaam nahi karta tha — seedha tab se bahar nikal jaata
+  // (ya kuch nahi hota) instead of stepping back one screen. Ab har
+  // sub-page apna history entry pushata hai taaki back button expected
+  // tareeke se ek-ek screen peeche jaaye.
+  if(!_fromPopState && name !== prevName){
+    try{ history.pushState({cgl50Tab:'calc', calcPage:name}, '', location.href); }catch(e){}
+  }
 }
 
 // ===== Swipe-left-to-advance for quiz pages =====
