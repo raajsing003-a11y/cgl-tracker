@@ -12827,32 +12827,34 @@ const mathPyqQuiz = makeMathPyqQuiz();
 
   function generateFlashcards(blocks){
     const cards = [];
-    let pendingHeading = null, pendingText = [];
-    function flushHeadingCard(){
-      if(pendingHeading && pendingText.length){
-        const answer = pendingText.join(' ');
-        cards.push({ q: `Is bare mein bataiye: "${stripTags(pendingHeading)}"`, a: stripTags(answer).slice(0, 320) });
-      }
-      pendingHeading = null; pendingText = [];
-    }
     (blocks||[]).forEach(b => {
       if(!b) return;
-      if(b.type === 'h2' || b.type === 'h3'){
-        flushHeadingCard();
-        pendingHeading = b.text;
-      } else if(!b.type || b.type === 'p'){
-        if(pendingHeading) pendingText.push(b.text||'');
+      if(!b.type || b.type === 'p'){
+        // Sirf fact-based cloze cards banao — heading se "iske bare mein
+        // bataiye" jaisa generic/essay-type sawaal SSC format nahi hota,
+        // isliye headings se card nahi banate.
         const cloze = makeClozeCard(b.text||'');
         if(cloze) cards.push(cloze);
-      } else if(b.type === 'table' && Array.isArray(b.rows)){
+      } else if(b.type === 'table' && Array.isArray(b.headers) && Array.isArray(b.rows)){
+        const headers = b.headers.map(h => stripTags(String(h||'')));
         b.rows.forEach(row => {
-          if(row && row.length >= 2){
-            cards.push({ q: `${stripTags(String(row[0]))} — iske baare mein kya pata hai?`, a: row.slice(1).map(String).map(stripTags).join(', ') });
+          if(!row || row.length < 2) return;
+          const subject = stripTags(String(row[0]||''));
+          if(!subject) return;
+          // Har extra column ke liye alag one-liner SSC-style sawaal —
+          // ek fact = ek sawaal, jaise "X — Y kya hai?"
+          for(let i = 1; i < row.length; i++){
+            const val = stripTags(String(row[i]||''));
+            if(!val || val === '—' || val === '-') continue;
+            const label = headers[i] || '';
+            const q = label
+              ? `'${subject}' — ${label} kya hai?`
+              : `'${subject}' ke baare mein kya sahi hai?`;
+            cards.push({ q, a: val });
           }
         });
       }
     });
-    flushHeadingCard();
     // Chapter length ke hisaab se auto scale: kam se kam 3, zyada se zyada 25
     const maxCards = Math.max(3, Math.min(25, Math.round((blocks||[]).length * 0.8)));
     // Shuffle karke variety do, phir cap lagao
