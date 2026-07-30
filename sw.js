@@ -20,7 +20,13 @@
 // mix of old-and-new files — which is exactly what caused broken/slow
 // loads after this rewrite shipped. Bump this version string again any
 // time file paths change in a future update.
-const CACHE_NAME = 'exam-tracker-v2';
+//
+// Bumped v2 -> v3: gk_modernhistory.json got its real English content
+// (blocksEn/titleEn were previously Hindi placeholders), and index.html
+// changed (GK reader header + floating font buttons restructured). Old v2
+// cache would keep serving the stale Hindi-as-English data and old header
+// markup, so it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
