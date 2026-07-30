@@ -12423,6 +12423,38 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(nextBtn) nextBtn.disabled = ch.id >= data.chapters.length;
   }
 
+  function renderReaderListSheet(subject){
+    const data = dataCache[subject];
+    const wrap = document.getElementById('gkReaderListSheetGrid');
+    if(!wrap || !data) return;
+    wrap.innerHTML = data.chapters.map(ch => {
+      const title = lang === 'hi' ? ch.titleHi : ch.titleEn;
+      const activeStyle = ch.id === currentChapterId ? 'border-color:var(--accent,#0a84ff);' : '';
+      return `<button class="gkChapterBtn" data-gk-reader-chapter="${ch.id}" style="${activeStyle}">
+        <span class="gkChNum">${ch.id}</span>
+        <span class="gkChTitle">${escapeHtml(title)}</span>
+        <span class="gkChArrow">&#8250;</span>
+      </button>`;
+    }).join('');
+    wrap.querySelectorAll('[data-gk-reader-chapter]').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        currentChapterId = parseInt(btn.getAttribute('data-gk-reader-chapter'), 10);
+        renderReader();
+        closeReaderListOverlay();
+      });
+    });
+  }
+
+  function openReaderListOverlay(){
+    renderReaderListSheet(currentSubject);
+    const ov = document.getElementById('gkReaderListOverlay');
+    if(ov) ov.classList.add('open');
+  }
+  function closeReaderListOverlay(){
+    const ov = document.getElementById('gkReaderListOverlay');
+    if(ov) ov.classList.remove('open');
+  }
+
   function openChapter(subject, id){
     currentSubject = subject;
     currentChapterId = id;
@@ -12449,9 +12481,15 @@ const mathPyqQuiz = makeMathPyqQuiz();
   });
 
   const readerBackBtn = document.getElementById('gkReaderBackBtn');
-  if(readerBackBtn) readerBackBtn.addEventListener('click', () => { renderChapterList(currentSubject); showCalcPage(GK_SUBJECTS[currentSubject].chaptersPage); });
+  if(readerBackBtn) readerBackBtn.addEventListener('click', () => { closeReaderListOverlay(); renderChapterList(currentSubject); showCalcPage(GK_SUBJECTS[currentSubject].chaptersPage); });
   const readerListBtn = document.getElementById('gkReaderListBtn');
-  if(readerListBtn) readerListBtn.addEventListener('click', () => { renderChapterList(currentSubject); showCalcPage(GK_SUBJECTS[currentSubject].chaptersPage); });
+  if(readerListBtn) readerListBtn.addEventListener('click', () => openReaderListOverlay());
+  const readerListCloseBtn = document.getElementById('gkReaderListCloseBtn');
+  if(readerListCloseBtn) readerListCloseBtn.addEventListener('click', () => closeReaderListOverlay());
+  const readerListOverlay = document.getElementById('gkReaderListOverlay');
+  if(readerListOverlay) readerListOverlay.addEventListener('click', (e) => {
+    if(e.target === readerListOverlay) closeReaderListOverlay();
+  });
 
   const langBtn = document.getElementById('gkReaderLangBtn');
   if(langBtn) langBtn.addEventListener('click', () => {

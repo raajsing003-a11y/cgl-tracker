@@ -20,11 +20,7 @@
 // mix of old-and-new files — which is exactly what caused broken/slow
 // loads after this rewrite shipped. Bump this version string again any
 // time file paths change in a future update.
-// Bumped v2 -> v3: added GK > Medieval History (new data/gk_medieval_history.json)
-// plus the richer GK reader (headings/tables/images/bullet-list rendering
-// in app.js + index.html). Old v2 cache would keep serving the previous
-// app.js/index.html without the new reader code, so it must be evicted.
-const CACHE_NAME = 'exam-tracker-v3';
+const CACHE_NAME = 'exam-tracker-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
