@@ -12354,6 +12354,46 @@ const mathPyqQuiz = makeMathPyqQuiz();
       chaptersBackBtnId: 'gkMedievalChaptersBackBtn',
       loadErrorMsg: 'Medieval History data load nahi ho paaya. Internet check karke dobara try karein.',
     },
+    modernhistory: {
+      dataUrl: './data/gk_modernhistory.json',
+      listElId: 'gkModernHistoryChapterList',
+      chaptersPage: 'gkmodernhistorychapters',
+      menuBtnId: 'calcGkModernHistoryBtn',
+      chaptersBackBtnId: 'gkModernHistoryChaptersBackBtn',
+      loadErrorMsg: 'Modern History data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+    polity: {
+      dataUrl: './data/gk_polity.json',
+      listElId: 'gkPolityChapterList',
+      chaptersPage: 'gkpolitychapters',
+      menuBtnId: 'calcGkPolityBtn',
+      chaptersBackBtnId: 'gkPolityChaptersBackBtn',
+      loadErrorMsg: 'Polity data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+    geography: {
+      dataUrl: './data/gk_geography.json',
+      listElId: 'gkGeographyChapterList',
+      chaptersPage: 'gkgeographychapters',
+      menuBtnId: 'calcGkGeographyBtn',
+      chaptersBackBtnId: 'gkGeographyChaptersBackBtn',
+      loadErrorMsg: 'Geography data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+    economy: {
+      dataUrl: './data/gk_economy.json',
+      listElId: 'gkEconomyChapterList',
+      chaptersPage: 'gkeconomychapters',
+      menuBtnId: 'calcGkEconomyBtn',
+      chaptersBackBtnId: 'gkEconomyChaptersBackBtn',
+      loadErrorMsg: 'Economy data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
+    science: {
+      dataUrl: './data/gk_science.json',
+      listElId: 'gkScienceChapterList',
+      chaptersPage: 'gksciencechapters',
+      menuBtnId: 'calcGkScienceBtn',
+      chaptersBackBtnId: 'gkScienceChaptersBackBtn',
+      loadErrorMsg: 'Science data load nahi ho paaya. Internet check karke dobara try karein.',
+    },
   };
 
   const dataCache = {};     // subject -> { chapters:[{id,titleHi,titleEn,blocksHi,blocksEn}] }
