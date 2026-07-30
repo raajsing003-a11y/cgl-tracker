@@ -2454,79 +2454,148 @@
     border-radius:8px;padding:6px 8px;font-size:12.5px;white-space:nowrap;width:100%;text-align:center;}
   .scratchBtn.selected{background:rgba(10,132,255,0.75);color:#fff;}
 
-  /* ===== GK Reader (Ancient History etc.) ===== */
+  /* ===== Reading Mode — fullscreen takeover ===== */
+  /* Jab reader khula ho, poori app chrome (top bar, tab bar, view bar,
+     floating study button) chhup jaati hai — sirf reading mode ke apne
+     controls dikhte hain. */
+  body.gkReaderFullscreen .topbar,
+  body.gkReaderFullscreen .viewbar,
+  body.gkReaderFullscreen .tabbar,
+  body.gkReaderFullscreen .quickStudyBtn{display:none !important;}
+  #calcPage-gkreader.active{
+    display:block;position:fixed;inset:0;z-index:200;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:
+      radial-gradient(900px 500px at 8% -8%, rgba(56,189,248,0.16), transparent 60%),
+      radial-gradient(800px 480px at 100% 0%, rgba(244,114,182,0.14), transparent 55%),
+      radial-gradient(700px 600px at 0% 100%, rgba(167,139,250,0.13), transparent 55%),
+      var(--bg,#0f1115);
+  }
+
+  /* ===== GK Reader (Ancient History etc.) — chapter list cards ===== */
   .gkCatGrid{display:flex;flex-direction:column;gap:10px;}
   .gkChapterBtn{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1.5px solid var(--border);
     border-radius:12px;padding:13px 14px;width:100%;text-align:left;color:var(--text);}
-  .gkChapterBtn .gkChNum{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--panel);
-    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--accent);}
+  .gkChapterBtn .gkChNum{flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,#38bdf8,#a78bfa);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#0b0c10;}
   .gkChapterBtn .gkChTitle{flex:1;font-size:15px;font-weight:600;line-height:1.3;}
   .gkChapterBtn .gkChArrow{color:var(--muted);font-size:18px;}
-  .gkReaderStickyTop{position:sticky;top:0;z-index:5;background:var(--bg,#0f1115);padding-bottom:6px;}
-  .gkReaderHeader{display:flex;align-items:center;gap:8px;padding:6px 2px;}
-  .gkReaderBackBtn{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--panel2);
-    border:1px solid var(--border);color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;}
-  .gkReaderTitle{flex:1;font-size:14.5px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-  .gkReaderToolBtn{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--panel2);
-    border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;}
-  .gkReaderLangBtn{flex:0 0 auto;padding:7px 11px;border-radius:16px;background:var(--panel2);
-    border:1.5px solid var(--accent,#0a84ff);color:var(--accent,#0a84ff);font-size:11.5px;font-weight:700;white-space:nowrap;}
-  .gkFontBtn{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom));z-index:20;
-    width:40px;height:40px;border-radius:50%;background:var(--panel2);border:1.5px solid var(--border-strong);
-    color:var(--text);font-size:15px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,0.4);
+
+  /* ===== Reading Mode — footer controls ===== */
+  /* Reader controls ab ek hi sticky/glass footer bar mein hain (top header
+     ki jagah), do rows mein: upar back/lang/font-size, neeche
+     prev-chapter/menu/next-chapter. Chapter ka naam yahaan jaanbujh kar
+     nahi dikhaya gaya hai. */
+  .gkReaderFooter{position:fixed;left:0;right:0;bottom:0;z-index:210;
+    display:flex;flex-direction:column;gap:9px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(15,17,21,0.4) 0%, rgba(15,17,21,0.92) 30%, #0f1115 100%);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-top:1.5px solid rgba(255,255,255,0.08);
+    box-shadow:0 -8px 28px rgba(0,0,0,0.45);}
+  .gkReaderFooterRow{display:flex;align-items:center;gap:8px;}
+  .gkReaderBackBtn{flex:0 0 auto;width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,#1f2430,#141821);
+    border:1.5px solid rgba(255,255,255,0.14);color:#fff;font-size:19px;font-weight:700;
     display:flex;align-items:center;justify-content:center;}
-  .gkFontBtn-inc{right:14px;}
-  .gkFontBtn-dec{left:14px;}
-  .gkReaderListOverlay{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,0.55);display:none;
-    align-items:flex-end;}
+  .gkReaderTitle{flex:1;font-size:14.5px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .gkReaderToolBtn{flex:0 0 auto;width:44px;height:44px;border-radius:14px;
+    background:linear-gradient(135deg,#8b5cf6,#ec4899);
+    border:none;color:#fff;font-size:18px;font-weight:700;
+    box-shadow:0 4px 16px rgba(139,92,246,0.4);
+    display:flex;align-items:center;justify-content:center;}
+  .gkReaderLangBtn{flex:0 0 auto;padding:8px 13px;border-radius:18px;
+    background:linear-gradient(135deg, rgba(56,189,248,0.18), rgba(167,139,250,0.18));
+    border:1.5px solid #38bdf8;color:#7dd3fc;font-size:11.5px;font-weight:800;white-space:nowrap;
+    letter-spacing:0.2px;}
+  .gkFontBtn{position:static;flex:0 0 auto;z-index:auto;
+    width:38px;height:38px;border-radius:50%;
+    background:linear-gradient(135deg,#fbbf24,#f97316);
+    border:none;color:#1a1404;font-size:14px;font-weight:900;
+    box-shadow:0 3px 10px rgba(251,191,36,0.35);
+    display:flex;align-items:center;justify-content:center;}
+  .gkFontBtn-dec{background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#062033;
+    box-shadow:0 3px 10px rgba(56,189,248,0.35);}
+  .gkReaderNav{gap:8px;}
+  .gkReaderNav button{flex:1;padding:12px;border-radius:14px;
+    background:linear-gradient(135deg,#10b981,#0ea5a4);
+    border:none;color:#04241d;font-size:13.5px;font-weight:800;
+    box-shadow:0 4px 14px rgba(16,185,129,0.3);}
+  .gkReaderNav button:last-of-type{background:linear-gradient(135deg,#fb7185,#f43f5e);
+    color:#2c0410;box-shadow:0 4px 14px rgba(244,63,94,0.32);}
+  .gkReaderNav button:disabled{opacity:0.35;box-shadow:none;}
+  .gkReaderNav .gkReaderToolBtn{flex:0 0 auto;}
+
+  /* z-index above the fullscreen reader page so the sheet is fully
+     visible/interactive and its own scroll isn't intercepted by anything. */
+  .gkReaderListOverlay{position:fixed;inset:0;z-index:260;background:rgba(6,7,10,0.7);display:none;
+    align-items:flex-end;backdrop-filter:blur(2px);}
   .gkReaderListOverlay.open{display:flex;}
-  .gkReaderListSheet{width:100%;max-height:75vh;overflow-y:auto;background:var(--bg,#0f1115);
-    border-radius:18px 18px 0 0;border-top:1.5px solid var(--border-strong);padding:14px 14px calc(14px + env(safe-area-inset-bottom));
-    box-shadow:0 -6px 24px rgba(0,0,0,0.5);}
+  .gkReaderListSheet{width:100%;max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;touch-action:pan-y;
+    background:linear-gradient(180deg,#161822,#0f1115);
+    border-radius:20px 20px 0 0;border-top:1.5px solid rgba(167,139,250,0.35);
+    padding:16px 14px calc(16px + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 32px rgba(0,0,0,0.55);}
   .gkReaderListSheetHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .gkReaderListSheetHead span{font-size:15px;font-weight:800;color:var(--white);}
+  .gkReaderListSheetHead span{font-size:16px;font-weight:800;
+    background:linear-gradient(135deg,#38bdf8,#a78bfa,#f472b6);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
   .gkReaderListCloseBtn{width:32px;height:32px;border-radius:50%;background:var(--panel2);
     border:1px solid var(--border);color:var(--text);font-size:16px;display:flex;align-items:center;justify-content:center;}
-  .gkReaderContent{padding:2px 2px 90px;color:var(--text);line-height:1.7;}
-  .gkReaderContent .gkChapTitle{font-size:1.28em;font-weight:800;color:var(--white);margin:0 0 16px;
-    padding-bottom:12px;border-bottom:1.5px solid var(--border);}
-  .gkReaderContent .gkH2{font-size:1.14em;font-weight:800;color:var(--accent,#0a84ff);
-    margin:26px 0 10px;padding-top:14px;border-top:1px solid var(--border);
+
+  /* ===== Reading Mode — chapter content ===== */
+  .gkReaderContent{padding:18px 14px 160px;color:var(--text);line-height:1.7;
+    animation:gkFadeIn .35s ease;}
+  @keyframes gkFadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .gkReaderContent .gkChapTitle{font-size:1.4em;font-weight:900;margin:0 0 18px;
+    padding-bottom:14px;border-bottom:2px solid transparent;
+    border-image:linear-gradient(90deg,#38bdf8,#a78bfa,#f472b6) 1;
+    background:linear-gradient(120deg,#7dd3fc,#c4b5fd,#f9a8d4);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    line-height:1.35;}
+  .gkReaderContent .gkH2{font-size:1.12em;font-weight:800;color:#fff;
+    margin:28px 0 12px;padding:10px 14px;border-radius:12px;
+    background:linear-gradient(90deg, rgba(56,189,248,0.16), rgba(167,139,250,0.10) 60%, transparent);
+    border-left:4px solid #38bdf8;
     display:flex;align-items:center;gap:8px;}
-  .gkReaderContent .gkH2:first-child{margin-top:0;padding-top:0;border-top:none;}
-  .gkReaderContent .gkH2::before{content:"";flex:0 0 auto;width:5px;height:18px;border-radius:3px;
-    background:var(--accent,#0a84ff);}
-  .gkReaderContent .gkH3{font-size:1.0em;font-weight:800;color:var(--white);margin:16px 0 8px;
-    opacity:0.92;}
-  .gkReaderContent .gkP{margin:0 0 12px;padding:9px 12px 9px 26px;background:var(--panel2);
-    border-radius:10px;font-size:0.98em;line-height:1.65;position:relative;}
-  .gkReaderContent .gkP::before{content:"";position:absolute;left:12px;top:19px;width:6px;height:6px;
-    border-radius:50%;background:var(--accent,#0a84ff);}
+  .gkReaderContent .gkH2:first-child{margin-top:0;}
+  .gkReaderContent .gkH2::before{content:"✦";flex:0 0 auto;font-size:0.85em;color:#38bdf8;}
+  .gkReaderContent .gkH3{font-size:1.02em;font-weight:800;margin:18px 0 10px;
+    color:#5eead4;display:flex;align-items:center;gap:6px;}
+  .gkReaderContent .gkH3::before{content:"▸";color:#5eead4;font-size:0.9em;}
+  .gkReaderContent .gkP{margin:0 0 12px;padding:10px 13px 10px 28px;
+    background:linear-gradient(135deg, rgba(167,139,250,0.09), rgba(255,255,255,0.02));
+    border:1px solid rgba(167,139,250,0.16);
+    border-radius:12px;font-size:0.98em;line-height:1.65;position:relative;}
+  .gkReaderContent .gkP::before{content:"";position:absolute;left:13px;top:19px;width:7px;height:7px;
+    border-radius:50%;background:linear-gradient(135deg,#a78bfa,#f472b6);}
   .gkReaderContent .gkList{list-style:none;margin:0 0 16px;padding:0;}
-  .gkReaderContent .gkLi{position:relative;padding:8px 12px 8px 26px;margin:0 0 8px;
-    background:var(--panel2);border-radius:10px;font-size:0.98em;line-height:1.65;}
+  .gkReaderContent .gkLi{position:relative;padding:9px 13px 9px 28px;margin:0 0 8px;
+    background:linear-gradient(135deg, rgba(56,189,248,0.09), rgba(255,255,255,0.02));
+    border:1px solid rgba(56,189,248,0.16);
+    border-radius:12px;font-size:0.98em;line-height:1.65;}
   .gkReaderContent .gkList .gkLi:last-child{margin-bottom:0;}
-  .gkReaderContent .gkLi::before{content:"";position:absolute;left:12px;top:18px;width:6px;height:6px;
-    border-radius:50%;background:var(--accent,#0a84ff);}
-  .gkReaderContent .gkTableWrap{margin:6px 0 16px;overflow-x:auto;border:1px solid var(--border);
-    border-radius:10px;-webkit-overflow-scrolling:touch;}
+  .gkReaderContent .gkLi::before{content:"";position:absolute;left:13px;top:18px;width:7px;height:7px;
+    border-radius:50%;background:linear-gradient(135deg,#38bdf8,#5eead4);}
+  .gkReaderContent .gkTableWrap{margin:8px 0 18px;overflow-x:auto;border:1.5px solid rgba(167,139,250,0.3);
+    border-radius:14px;-webkit-overflow-scrolling:touch;box-shadow:0 4px 16px rgba(0,0,0,0.25);}
   .gkReaderContent .gkTable{border-collapse:collapse;width:100%;min-width:100%;font-size:0.92em;}
-  .gkReaderContent .gkTable th,.gkReaderContent .gkTable td{padding:9px 12px;text-align:left;
+  .gkReaderContent .gkTable th,.gkReaderContent .gkTable td{padding:10px 12px;text-align:left;
     border-bottom:1px solid var(--border);white-space:normal;}
-  .gkReaderContent .gkTable th{background:var(--panel2);color:var(--accent,#0a84ff);font-weight:800;
+  .gkReaderContent .gkTable th{background:linear-gradient(135deg,#312e81,#7c3aed);color:#fff;font-weight:800;
     position:sticky;top:0;white-space:nowrap;}
   .gkReaderContent .gkTable tr:last-child td{border-bottom:none;}
-  .gkReaderContent .gkTable tbody tr:nth-child(even){background:rgba(255,255,255,0.03);}
-  .gkReaderContent .gkFigure{margin:8px 0 16px;text-align:center;}
-  .gkReaderContent .gkFigure img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border);
+  .gkReaderContent .gkTable tbody tr:nth-child(even){background:rgba(167,139,250,0.06);}
+  .gkReaderContent .gkTable tbody tr:nth-child(odd){background:rgba(56,189,248,0.04);}
+  .gkReaderContent .gkFigure{margin:10px 0 18px;text-align:center;}
+  .gkReaderContent .gkFigure img{max-width:100%;height:auto;border-radius:14px;
+    border:2px solid rgba(167,139,250,0.35);box-shadow:0 6px 20px rgba(0,0,0,0.35);
     display:block;margin:0 auto;}
-  .gkReaderContent .gkFigure figcaption{font-size:0.82em;color:var(--muted);margin-top:6px;font-style:italic;}
-  .gkReaderNav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
-    background:linear-gradient(0deg,var(--bg,#0f1115) 60%,transparent);z-index:6;}
-  .gkReaderNav button{flex:1;padding:11px;border-radius:12px;background:var(--panel2);border:1.5px solid var(--border);
-    color:var(--text);font-size:13.5px;font-weight:700;}
-  .gkReaderNav button:disabled{opacity:0.4;}
+  .gkReaderContent .gkFigure figcaption{font-size:0.82em;color:var(--muted);margin-top:8px;font-style:italic;}
 </style>
+
 </head>
 <body>
 <style>
@@ -4188,17 +4257,24 @@
     </div>
 
     <div class="calcPage" id="calcPage-gkreader">
-      <div class="gkReaderStickyTop">
-        <div class="gkReaderHeader">
+      <!-- gkReaderTitle kept in DOM (JS sets its text) but visually hidden —
+           chapter name should not show in the footer bar anymore. -->
+      <div class="gkReaderTitle" id="gkReaderTitle" style="display:none;">&nbsp;</div>
+      <div class="gkReaderContent" id="gkReaderContent"></div>
+      <div class="gkReaderFooter">
+        <div class="gkReaderFooterRow gkReaderFooterRow-top">
           <button class="gkReaderBackBtn" id="gkReaderBackBtn" aria-label="Back">&#8249;</button>
-          <div class="gkReaderTitle" id="gkReaderTitle">&nbsp;</div>
           <button class="gkReaderLangBtn" id="gkReaderLangBtn">हिंदी/EN</button>
+          <div style="flex:1;"></div>
+          <button class="gkFontBtn gkFontBtn-dec" id="gkFontDecBtn" aria-label="Decrease text size">A&minus;</button>
+          <button class="gkFontBtn gkFontBtn-inc" id="gkFontIncBtn" aria-label="Increase text size">A+</button>
+        </div>
+        <div class="gkReaderFooterRow gkReaderNav">
+          <button id="gkReaderPrevBtn">&#8249; Prev</button>
           <button class="gkReaderToolBtn" id="gkReaderListBtn" title="Chapter list">&#9776;</button>
+          <button id="gkReaderNextBtn">Next &#8250;</button>
         </div>
       </div>
-      <div class="gkReaderContent" id="gkReaderContent"></div>
-      <button class="gkFontBtn gkFontBtn-dec" id="gkFontDecBtn" aria-label="Decrease text size">A&minus;</button>
-      <button class="gkFontBtn gkFontBtn-inc" id="gkFontIncBtn" aria-label="Increase text size">A+</button>
       <div class="gkReaderListOverlay" id="gkReaderListOverlay">
         <div class="gkReaderListSheet">
           <div class="gkReaderListSheetHead">
@@ -4207,10 +4283,6 @@
           </div>
           <div class="gkCatGrid" id="gkReaderListSheetGrid"></div>
         </div>
-      </div>
-      <div class="gkReaderNav">
-        <button id="gkReaderPrevBtn">&#8249; Prev Chapter</button>
-        <button id="gkReaderNextBtn">Next Chapter &#8250;</button>
       </div>
     </div>
 
