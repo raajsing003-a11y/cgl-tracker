@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Exam - pundits</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1e40af;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #d1d5db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        .welcome-screen.hidden {
+            display: none;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-info {
+            margin-bottom: 25px;
+        }
+        
+        .section-info h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .section-table th,
+        .section-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .subsec-container {
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+        
+        .subsec-row {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .welcome-instructions {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-instructions h3 {
+            color: var(--warning);
+            margin-bottom: 12px;
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #1e3a8a;
+        }
+        
+        .channel-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .channel-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* CBT Exam Interface */
+        .exam-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .exam-container.active {
+            display: flex;
+        }
+        
+        /* Top Header */
+        .exam-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* Candidate Info Bar */
+        .candidate-bar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .candidate-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+        
+        .candidate-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .candidate-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .candidate-id {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .section-badge {
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Area - FIXED LAYOUT */
+        .exam-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Question Area with separate scroll */
+        .question-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+        
+        .question-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 6px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg);
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .question-marks {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .lang-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .comprehension {
+            background: #eff6ff;
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .comprehension h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .option:hover:not(.submitted) {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+        
+        .option.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+        
+        .option-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .option.selected .option-indicator {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .option.correct .option-indicator {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .option.wrong .option-indicator {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .solution-box {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .solution-box.show {
+            display: block;
+        }
+        
+        .solution-header {
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .solution-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation Controls - FIXED AT BOTTOM OF QUESTION AREA */
+        .navigation-bar {
+            background: white;
+            padding: 15px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-prev {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-next {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-review {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-review.marked {
+            background: #92400e;
+        }
+        
+        .btn-submit {
+            background: var(--success);
+            color: white;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        /* Question Navigator Sidebar - SEPARATE SCROLL */
+        .navigator-sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .navigator-header {
+            padding: 15px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+        
+        .navigator-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .nav-question {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .nav-question:hover {
+            background: var(--bg);
+        }
+        
+        .nav-question.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-question.answered {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .nav-question.review {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .nav-question.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .nav-question.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .navigator-legend {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            flex-shrink: 0;
+            background: white;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Mobile Navigator Panel */
+        .mobile-navigator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+        
+        .mobile-navigator.open {
+            transform: translateY(0);
+        }
+        
+        .mobile-nav-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Result Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .result-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .result-stat {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .result-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .result-stat.correct .result-stat-value {
+            color: var(--success);
+        }
+        
+        .result-stat.incorrect .result-stat-value {
+            color: var(--danger);
+        }
+        
+        .section-results {
+            margin-bottom: 25px;
+        }
+        
+        .section-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-results-table th,
+        .section-results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-results-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+        
+        .section-results-table .subsection-row {
+            background: #f9fafb;
+            font-size: 13px;
+        }
+        
+        .section-results-table .subsection-row td:first-child {
+            padding-left: 30px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .result-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-close {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-review-ans {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 1024px) {
+            .navigator-sidebar {
+                display: flex;
+            }
+            
+            .mobile-only {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .question-scroll {
+                padding: 15px;
+            }
+            
+            .question-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .exam-header {
+                padding: 10px 15px;
+            }
+            
+            .exam-title {
+                font-size: 14px;
+            }
+            
+            .timer-box {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+            
+            .candidate-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .navigator-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .result-container {
+                padding: 20px;
+            }
+            
+            .section-results-table {
+                font-size: 13px;
+            }
+            
+            .section-results-table th,
+            .section-results-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .exam-header,
+            .candidate-bar,
+            .navigation-bar,
+            .navigator-sidebar,
+            .mobile-navigator {
+                display: none !important;
+            }
+            
+            .question-scroll {
+                padding: 0;
+            }
+            
+            .question-card {
+                page-break-inside: avoid;
+                margin-bottom: 30px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--border);
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1><i class="fas fa-graduation-cap"></i> pundits</h1>
+                <p>Computer Based Test</p>
+            </div>
+            
+            <div class="test-details">
+                <div class="detail-item">
+                    <div class="detail-label">Test ID</div>
+                    <div class="detail-value">84221</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Questions</div>
+                    <div class="detail-value">25</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Marks</div>
+                    <div class="detail-value">50.0</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value">15 mins</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Marking Scheme</div>
+                    <div class="detail-value">+2.0 / -0.5</div>
+                </div>
+            </div>
+            
+            
+        <div class="welcome-instructions">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You can mark questions for review and come back later</li>
+                <li>The timer will automatically submit the test when time is up</li>
+                <li>Negative marking applies for wrong answers</li>
+            </ul>
+        </div>
+        
+            
+            <div class="welcome-actions">
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start Test
+                </button>
+                <a href="https://t.me/mocks_wallah_again" target="_blank" class="channel-link">
+                    <i class="fab fa-telegram"></i> Join Channel
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Exam Interface -->
+    <div class="exam-container" id="examContainer">
+        <!-- Top Header -->
+        <div class="exam-header">
+            <div class="exam-title">pundits</div>
+            <div class="exam-timer">
+                <div class="timer-box" id="mainTimer">15:00</div>
+                <button class="nav-btn btn-submit mobile-only" id="submitBtn">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Candidate Info Bar -->
+        <div class="candidate-bar">
+            <div class="candidate-info">
+                <div class="candidate-photo">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="candidate-details">
+                    <div class="candidate-name">Candidate</div>
+                    <div class="candidate-id">Test ID: 84221</div>
+                </div>
+            </div>
+            <div class="section-badge" id="sectionBadge">
+                <span id="sectionName"></span>
+                <span id="sectionTimer"></span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="exam-main">
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-scroll">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div>
+                                <div class="question-number" id="questionNum">Question 1 of 25</div>
+                                <div class="question-marks" id="questionMarks">Marks: 2.0</div>
+                            </div>
+                            <div class="lang-toggle">
+                                <button class="lang-btn active" id="engBtn">English</button>
+                                <button class="lang-btn" id="hinBtn">हिंदी</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comprehension" id="comprehension" style="display:none;">
+                            <h4><i class="fas fa-book-open"></i> Comprehension</h4>
+                            <div id="comprehensionText"></div>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-list" id="optionsList"></div>
+                        
+                        <div class="solution-box" id="solutionBox">
+                            <div class="solution-header">
+                                <i class="fas fa-lightbulb"></i> Solution
+                            </div>
+                            <div class="solution-stats" id="solutionStats"></div>
+                            <div id="solutionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar inside Question Area -->
+                <div class="navigation-bar">
+                    <button class="nav-btn btn-prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="progress-info">
+                        <div id="progressText">Question 1 of 25</div>
+                        <div style="font-size:11px;margin-top:4px">
+                            Answered: <span id="answeredCount">0</span> | 
+                            <a href="https://t.me/mocks_wallah_again" style="color:var(--primary)">Mocks Wallah</a>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn btn-review" id="reviewBtn">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                    
+                    <button class="nav-btn mobile-only" id="navigatorBtn">
+                        <i class="fas fa-th"></i> Questions
+                    </button>
+                    
+                    <button class="nav-btn btn-submit desktop-only" id="submitBtnDesktop">Submit</button>
+                    
+                    <button class="nav-btn btn-next" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigator Sidebar -->
+            <div class="navigator-sidebar desktop-only">
+                <div class="navigator-header">Question Navigator</div>
+                <div class="navigator-grid" id="desktopNav"></div>
+                <div class="navigator-legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--success)"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--warning)"></div>
+                        <span>Marked for Review</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--danger)"></div>
+                        <span>Incorrect</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Navigator Panel -->
+    <div class="mobile-navigator" id="mobileNav">
+        <div class="mobile-nav-header">
+            <h3>Question Navigator</h3>
+            <button class="close-nav" id="closeNav">&times;</button>
+        </div>
+        <div class="navigator-grid" id="mobileNavGrid"></div>
+        <div class="navigator-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--success)"></div>
+                <span>Answered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--warning)"></div>
+                <span>Marked for Review</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--danger)"></div>
+                <span>Incorrect</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                <span>Not Visited</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-container">
+            <div class="result-header">
+                <h2>Test Completed!</h2>
+                <div class="result-score" id="resultScore">0/50.0</div>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-stat correct">
+                    <div class="result-stat-value" id="correctCount">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat incorrect">
+                    <div class="result-stat-value" id="incorrectCount">0</div>
+                    <div class="result-stat-label">Incorrect</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="unattemptedCount">0</div>
+                    <div class="result-stat-label">Unattempted</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="timeTaken">0</div>
+                    <div class="result-stat-label">Minutes</div>
+                </div>
+            </div>
+            
+            <div class="section-results" id="sectionResults" style="display:none;">
+                <h3>Section-wise Performance</h3>
+                <table class="section-results-table" id="sectionResultsTable">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionResultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="result-actions">
+                <button class="result-btn btn-close" id="closeResult">Close</button>
+                <button class="result-btn btn-review-ans" id="reviewAnswers">Review Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “despite”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Despite\t\t\treceiving repeated warnings from the committee, the contractor\t\t\tcontinued using substandard materials during the construction of\t\t\tthe bridge.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “despite”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Despite\t\t\treceiving repeated warnings from the committee, the contractor\t\t\tcontinued using substandard materials during the construction of\t\t\tthe bridge.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>Preposition</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_Xd0Lff6l\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>preposition</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis a word that shows the relationship of a noun or pronoun with\t\t\tanother word in the sentence. Prepositions are usually </font><font size=\"4\" style=\"font-size: 14pt\"><b>followed\t\t\tby a noun, pronoun, or gerund (-ing form).</b></font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“despite”</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis followed by the phrase “receiving repeated warnings.” It\t\t\tshows contrast between the warnings and the contractor’s\t\t\tactions. Therefore, “despite” functions as a preposition.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>Preposition</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>preposition</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis a word that shows the relationship of a noun or pronoun with\t\t\tanother word in the sentence. Prepositions are usually </font><font size=\"4\" style=\"font-size: 14pt\"><b>followed\t\t\tby a noun, pronoun, or gerund (-ing form).</b></font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“despite”</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis followed by the phrase “receiving repeated warnings.” It\t\t\tshows contrast between the warnings and the contractor’s\t\t\tactions. Therefore, “despite” functions as a preposition.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “that”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tproposal that the senior researchers submitted after months of\t\t\tfieldwork was finally approved by the international review board.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “that”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tproposal that the senior researchers submitted after months of\t\t\tfieldwork was finally approved by the international review board.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>A)\t\t\tRelative Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_bN9nvigK\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation: </b></font><font size=\"4\" style=\"font-size: 14pt\">A\t\t\trelative pronoun is a pronoun that introduces a relative clause\t\t\tand refers back to a noun mentioned earlier in the sentence.\t\t\tCommon relative pronouns are </font><font size=\"4\" style=\"font-size: 14pt\"><b>who,\t\t\twhom, whose, which, and that.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_KpP56aF5\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “that” refers\t\t\tback to the noun “proposal” and introduces the clause: </font>\t\t\t</p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_IC6f6Wz9\"></a>\t\t\t“<font size=\"4\" style=\"font-size: 14pt\">that the senior\t\t\tresearchers submitted after months of fieldwork”. </font>\t\t\t</p>\t\t\t<p align=\"justify\"><a name=\"_Int_zk6c5g0v\"></a><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tclause gives additional information about the proposal. Since\t\t\t“that” both refers to the noun and connects the clause, it is\t\t\ta relative pronoun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>A)\t\t\tRelative Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_zWM4qO4S\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation: </b></font><font size=\"4\" style=\"font-size: 14pt\">A\t\t\trelative pronoun is a pronoun that introduces a relative clause\t\t\tand refers back to a noun mentioned earlier in the sentence.\t\t\tCommon relative pronouns are </font><font size=\"4\" style=\"font-size: 14pt\"><b>who,\t\t\twhom, whose, which, and that.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_XmbDdb89\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “that” refers\t\t\tback to the noun “proposal” and introduces the clause: </font>\t\t\t</p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_R1gtRoJb\"></a>\t\t\t“<font size=\"4\" style=\"font-size: 14pt\">that the senior\t\t\tresearchers submitted after months of fieldwork”. </font>\t\t\t</p>\t\t\t<p align=\"justify\"><a name=\"_Int_zqLRzN0e\"></a><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tclause gives additional information about the proposal. Since\t\t\t“that” both refers to the noun and connects the clause, it is\t\t\ta relative pronoun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “before”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\taudience had already left the auditorium before the organizers\t\t\tcould announce the results of the competition.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “before”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\taudience had already left the auditorium before the organizers\t\t\tcould announce the results of the competition.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tConjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA conjunction is a word that joins words, phrases, or clauses.\t\t\tWhen a word connects two clauses, it functions as a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“before” connects these two clauses:</font></p>\t\t\t<ol>\t\t\t\t<li><p align=\"justify\" style=\"margin-bottom: 0in\"><font size=\"4\" style=\"font-size: 14pt\">The\t\t\t\taudience had already left the auditorium</font></p></li>\t\t\t\t<li><p align=\"justify\" style=\"margin-bottom: 0in\"><font size=\"4\" style=\"font-size: 14pt\">the\t\t\t\torganizers could announce the results</font></p></li>\t\t\t</ol>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tjoins two clauses together, “before” is a subordinating\t\t\tconjunction.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tConjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA conjunction is a word that joins words, phrases, or clauses.\t\t\tWhen a word connects two clauses, it functions as a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“before” connects these two clauses:</font></p>\t\t\t<ol start=\"3\">\t\t\t\t<li><p align=\"justify\" style=\"margin-bottom: 0in\"><font size=\"4\" style=\"font-size: 14pt\">The\t\t\t\taudience had already left the auditorium</font></p></li>\t\t\t\t<li><p align=\"justify\" style=\"margin-bottom: 0in\"><font size=\"4\" style=\"font-size: 14pt\">the\t\t\t\torganizers could announce the results</font></p></li>\t\t\t</ol>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tjoins two clauses together, “before” is a subordinating\t\t\tconjunction.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “well”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tdiplomat spoke so well during the negotiations that even the\t\t\topposing delegates acknowledged his remarkable clarity and\t\t\tconfidence.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “well”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tdiplomat spoke so well during the negotiations that even the\t\t\topposing delegates acknowledged his remarkable clarity and\t\t\tconfidence.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAdverb</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An adverb is a\t\t\tword that modifies a verb, adjective, or another adverb. It often\t\t\ttells us how, when, where, or to what extent something happens.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“well” modifies the verb “spoke” and tells us how the\t\t\tdiplomat spoke.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>spoke\t\t\thow? → well </b></font>\t\t\t</p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“well” is an adverb.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAdverb</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An adverb is a\t\t\tword that modifies a verb, adjective, or another adverb. It often\t\t\ttells us how, when, where, or to what extent something happens.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“well” modifies the verb “spoke” and tells us how the\t\t\tdiplomat spoke.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>spoke\t\t\thow? → well </b></font>\t\t\t</p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“well” is an adverb.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “working”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Several\t\t\tworking professionals enrolled in the evening program to improve\t\t\ttheir communication and leadership skills.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “working”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Several\t\t\tworking professionals enrolled in the evening program to improve\t\t\ttheir communication and leadership skills.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Verb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Verb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Gerund</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Gerund</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Participle/Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Participle/Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Noun</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tParticiple/Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_ZMy95pb4\"></a><a name=\"_Int_f2YN1aoq\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation: </b></font><font size=\"4\" style=\"font-size: 14pt\">A\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>participle</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis a verb form that </font><font size=\"4\" style=\"font-size: 14pt\"><b>functions\t\t\tas an adjective.</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tPresent participles usually end in -ing and describe a noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“working”</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>describes the\t\t\tnoun “professionals.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tkind of professionals? → working professionals</font></p>\t\t\t<p align=\"justify\"><a name=\"_Int_OfQMP9c1\"></a><font size=\"4\" style=\"font-size: 14pt\">Since\t\t\tit is describing a noun rather than showing action, “working”\t\t\tfunctions as a participle (adjectival participle), not as a main\t\t\tverb or gerund.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tParticiple/Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_RKuKfQA8\"></a><a name=\"_Int_o8Vx2oqU\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation: </b></font><font size=\"4\" style=\"font-size: 14pt\">A\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>participle</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tis a verb form that </font><font size=\"4\" style=\"font-size: 14pt\"><b>functions\t\t\tas an adjective.</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tPresent participles usually end in -ing and describe a noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“working”</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>describes the\t\t\tnoun “professionals.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tkind of professionals? → working professionals</font></p>\t\t\t<p align=\"justify\"><a name=\"_Int_8bZiA3Z5\"></a><font size=\"4\" style=\"font-size: 14pt\">Since\t\t\tit is describing a noun rather than showing action, “working”\t\t\tfunctions as a participle (adjectival participle), not as a main\t\t\tverb or gerund.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “since”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Since\t\t\tthe weather conditions had deteriorated significantly during the\t\t\tnight, the rescue team decided to postpone the expedition until\t\t\tfurther notice.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “since”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Since\t\t\tthe weather conditions had deteriorated significantly during the\t\t\tnight, the rescue team decided to postpone the expedition until\t\t\tfurther notice.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tConjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>conjunction </b></font><font size=\"4\" style=\"font-size: 14pt\">is\t\t\ta word that joins words, phrases, or clauses. A </font><font size=\"4\" style=\"font-size: 14pt\"><b>subordinating\t\t\tconjunction</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tconnects a dependent clause with an independent clause.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“since” introduces the dependent clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">Since\t\t\tthe weather conditions had deteriorated significantly during the\t\t\tnight”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">It gives\t\t\tthe reason for postponing the expedition. Since it connects two\t\t\tclauses, “since” functions as a subordinating conjunction.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tConjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>conjunction </b></font><font size=\"4\" style=\"font-size: 14pt\">is\t\t\ta word that joins words, phrases, or clauses. A </font><font size=\"4\" style=\"font-size: 14pt\"><b>subordinating\t\t\tconjunction</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tconnects a dependent clause with an independent clause.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“since” introduces the dependent clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">Since\t\t\tthe weather conditions had deteriorated significantly during the\t\t\tnight”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">It gives\t\t\tthe reason for postponing the expedition. Since it connects two\t\t\tclauses, “since” functions as a subordinating conjunction.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “much”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tcommittee showed much interest in the proposal despite the\t\t\tfinancial risks associated with the project.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “much”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tcommittee showed much interest in the proposal despite the\t\t\tfinancial risks associated with the project.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interjection</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tAdjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adjective is a word that describes or modifies a noun or\t\t\tpronoun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“much”\t\t\tmodifies the noun “interest.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">much\t\t\tinterest → tells us the quantity or degree of interest</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tdescribes the noun “interest,” “much” functions as an\t\t\tadjective.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tAdjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adjective is a word that describes or modifies a noun or\t\t\tpronoun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“much”\t\t\tmodifies the noun “interest.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">much\t\t\tinterest → tells us the quantity or degree of interest</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tdescribes the noun “interest,” “much” functions as an\t\t\tadjective.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “what”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>What\t\t\tthe principal stated during the meeting surprised even the senior\t\t\tfaculty members of the institution.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “what”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>What\t\t\tthe principal stated during the meeting surprised even the senior\t\t\tfaculty members of the institution.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Adjective</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tRelative Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>relative\t\t\tpronoun</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tintroduces a clause and connects it to the rest of the sentence.\t\t\tWords like </font><font size=\"4\" style=\"font-size: 14pt\"><b>who,\t\t\twhich, that, and what can function as relative pronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“what” introduces the clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">What\t\t\tthe principal stated during the meeting”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tentire clause acts as the subject of the sentence. “What” also\t\t\tstands for “the thing which.” Therefore, it functions as a\t\t\trelative pronoun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tRelative Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA </font><font size=\"4\" style=\"font-size: 14pt\"><b>relative\t\t\tpronoun</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tintroduces a clause and connects it to the rest of the sentence.\t\t\tWords like </font><font size=\"4\" style=\"font-size: 14pt\"><b>who,\t\t\twhich, that, and what can function as relative pronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“what” introduces the clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">What\t\t\tthe principal stated during the meeting”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tentire clause acts as the subject of the sentence. “What” also\t\t\tstands for “the thing which.” Therefore, it functions as a\t\t\trelative pronoun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “around”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tjournalists gathered around the minister immediately after the\t\t\tconference ended.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “around”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tjournalists gathered around the minister immediately after the\t\t\tconference ended.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Preposition</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adjective</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>A)\t\t\tPreposition</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA preposition shows the relationship between a noun/pronoun and\t\t\tanother word in the sentence.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“around” is followed by the noun phrase “the minister.”\t\t\taround the minister</font></p>\t\t\t<p align=\"justify\"><a name=\"_Int_qT9pX3S9\"></a><font size=\"4\" style=\"font-size: 14pt\">It\t\t\tshows position or direction in relation to the minister.\t\t\tTherefore, “around” functions as a preposition.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>A)\t\t\tPreposition</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA preposition shows the relationship between a noun/pronoun and\t\t\tanother word in the sentence.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“around” is followed by the noun phrase “the minister.”\t\t\taround the minister</font></p>\t\t\t<p align=\"justify\"><a name=\"_Int_6sAafsae\"></a><font size=\"4\" style=\"font-size: 14pt\">It\t\t\tshows position or direction in relation to the minister.\t\t\tTherefore, “around” functions as a preposition.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “trained”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Only\t\t\thighly trained officials were allowed to access the confidential\t\t\trecords stored in the digital archive.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the part of speech of the word “trained”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Only\t\t\thighly trained officials were allowed to access the confidential\t\t\trecords stored in the digital archive.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Main Verb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Main Verb</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Gerund</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Gerund</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Participle/Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Participle/Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tParticiple/Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA participle is a verb form that functions as an adjective. Past\t\t\tparticiples often end in -ed, -en, or irregular forms.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“trained”\t\t\tdescribes the noun “officials.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tkind of officials? → highly trained officials</font></p>\t\t\t<p align=\"justify\"><a name=\"_Int_LRahuA9x\"></a><font size=\"4\" style=\"font-size: 14pt\">Since\t\t\tit describes the noun rather than acting as the main verb,\t\t\t“trained” functions as a participle (adjectival participle).</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tParticiple/Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA participle is a verb form that functions as an adjective. Past\t\t\tparticiples often end in -ed, -en, or irregular forms.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>“trained”\t\t\tdescribes the noun “officials.”</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tkind of officials? → highly trained officials</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tdescribes the noun rather than acting as the main verb, “trained”\t\t\tfunctions as a participle (adjectival participle).</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of noun of the word “childhood”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Many\t\t\tsuccessful leaders often attribute their discipline and\t\t\tdetermination to the hardships they experienced during childhood.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of noun of the word “childhood”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Many\t\t\tsuccessful leaders often attribute their discipline and\t\t\tdetermination to the hardships they experienced during childhood.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Proper Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Proper Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Collective Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Collective Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Abstract Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Abstract Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Material Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Material Noun</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAbstract Noun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn abstract noun refers to an idea, quality, condition, emotion,\t\t\tor state that cannot be seen or touched physically.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“childhood” refers to a stage or condition of life, not to a\t\t\tphysical object.</font></p>\t\t\t<p><font size=\"4\" style=\"font-size: 14pt\">Since it names a state\t\t\tor condition, “childhood” is an abstract noun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAbstract Noun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn abstract noun refers to an idea, quality, condition, emotion,\t\t\tor state that cannot be seen or touched physically.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“childhood” refers to a stage or condition of life, not to a\t\t\tphysical object.</font></p>\t\t\t<p><font size=\"4\" style=\"font-size: 14pt\">Since it names a state\t\t\tor condition, “childhood” is an abstract noun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of pronoun of the word “whoever”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Whoever\t\t\tsubmitted the anonymous complaint to the authorities clearly\t\t\tpossessed detailed knowledge of the internal operations of the\t\t\tcompany.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of pronoun of the word “whoever”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Whoever\t\t\tsubmitted the anonymous complaint to the authorities clearly\t\t\tpossessed detailed knowledge of the internal operations of the\t\t\tcompany.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Indefinite Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Indefinite Pronoun</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>D)\t\t\tIndefinite Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn indefinite pronoun refers to a person or thing in a\t\t\tnon-specific or indefinite way.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>someone,\t\t\tanyone, everybody, whoever, and whatever are indefinite pronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_okYsmPco\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “whoever” does\t\t\tnot refer to any particular person. It means “any person who.”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“whoever” is an indefinite pronoun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>D)\t\t\tIndefinite Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn indefinite pronoun refers to a person or thing in a\t\t\tnon-specific or indefinite way.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>someone,\t\t\tanyone, everybody, whoever, and whatever are indefinite pronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_86WyMU5H\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “whoever” does\t\t\tnot refer to any particular person. It means “any person who.”</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“whoever” is an indefinite pronoun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adjective of the word “several”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Several\t\t\tcandidates who appeared for the interview possessed exceptional\t\t\tcommunication and leadership skills.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adjective of the word “several”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Several\t\t\tcandidates who appeared for the interview possessed exceptional\t\t\tcommunication and leadership skills.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Possessive Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Possessive Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Indefinite Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Indefinite Adjective</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tD) Indefinite Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An indefinite\t\t\tadjective gives an indefinite or non-specific quantity or number.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>some, many,\t\t\tfew, several, and any</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>indefinite\t\t\tadjectives.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“several” modifies the noun “candidates” but does not\t\t\tspecify the exact number.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“several” is an indefinite adjective.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tD) Indefinite Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An indefinite\t\t\tadjective gives an indefinite or non-specific quantity or number.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>some, many,\t\t\tfew, several, and any</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>indefinite\t\t\tadjectives.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“several” modifies the noun “candidates” but does not\t\t\tspecify the exact number.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“several” is an indefinite adjective.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adverb of the word “carefully”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tscientist carefully examined the data before presenting the final\t\t\tconclusions to the research committee.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adverb of the word “carefully”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tscientist carefully examined the data before presenting the final\t\t\tconclusions to the research committee.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Time</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Time</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Place</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Place</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Manner</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Manner</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Degree</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Degree</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAdverb of Manner</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adverb of manner tells us </font><font size=\"4\" style=\"font-size: 14pt\"><b>how\t\t\tan action is performed.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“carefully” modifies the verb “examined.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">examined\t\t\thow? → carefully</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tdescribes the manner in which the scientist examined the data, it\t\t\tis an adverb of manner.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAdverb of Manner</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adverb of manner tells us </font><font size=\"4\" style=\"font-size: 14pt\"><b>how\t\t\tan action is performed.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“carefully” modifies the verb “examined.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">examined\t\t\thow? → carefully</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tdescribes the manner in which the scientist examined the data, it\t\t\tis an adverb of manner.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of conjunction of the word “although”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Although\t\t\tthe organization faced severe financial difficulties during the\t\t\tprevious year, it continued funding educational programs in rural\t\t\tareas.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of conjunction of the word “although”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Although\t\t\tthe organization faced severe financial difficulties during the\t\t\tprevious year, it continued funding educational programs in rural\t\t\tareas.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Coordinating Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Coordinating Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Correlative Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Correlative Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Subordinating Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Subordinating Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Compound Conjunction</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Compound Conjunction</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tC) Subordinating Conjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA subordinating conjunction </font><font size=\"4\" style=\"font-size: 14pt\"><b>joins\t\t\ta dependent clause to an independent clause.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“although” introduces the dependent clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">Although\t\t\tthe organization faced severe financial difficulties during the\t\t\tprevious year”</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tclause cannot stand alone and depends on the main clause for\t\t\tcomplete meaning.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“although” is a subordinating conjunction.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tC) Subordinating Conjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA subordinating conjunction </font><font size=\"4\" style=\"font-size: 14pt\"><b>joins\t\t\ta dependent clause to an independent clause.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“although” introduces the dependent clause:</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\">“<font size=\"4\" style=\"font-size: 14pt\">Although\t\t\tthe organization faced severe financial difficulties during the\t\t\tprevious year”</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">This\t\t\tclause cannot stand alone and depends on the main clause for\t\t\tcomplete meaning.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“although” is a subordinating conjunction.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of pronoun of the word “each”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Each\t\t\tof the participants who attended the advanced leadership workshop\t\t\twas asked to submit an individual assessment report by the end of\t\t\tthe week.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of pronoun of the word “each”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Each\t\t\tof the participants who attended the advanced leadership workshop\t\t\twas asked to submit an individual assessment report by the end of\t\t\tthe week.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Relative Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Distributive Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Reflexive Pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Reflexive Pronoun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Emphatic pronoun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Emphatic pronoun</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tB) Distributive Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA distributive pronoun </font><font size=\"4\" style=\"font-size: 14pt\"><b>refers</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tto persons or </font><font size=\"4\" style=\"font-size: 14pt\"><b>things\t\t\tone at a time individually</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\trather than collectively.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_ApzVDwB2\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words like </font><font size=\"4\" style=\"font-size: 14pt\"><b>each,\t\t\teither, and neither</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>distributive\t\t\tpronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_1AfYERCw\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “each” refers to\t\t\tevery participant separately, not to the group as a whole.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“each” is a distributive pronoun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tB) Distributive Pronoun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA distributive pronoun </font><font size=\"4\" style=\"font-size: 14pt\"><b>refers</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tto persons or </font><font size=\"4\" style=\"font-size: 14pt\"><b>things\t\t\tone at a time individually</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\trather than collectively.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_xXupF6g3\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words like </font><font size=\"4\" style=\"font-size: 14pt\"><b>each,\t\t\teither, and neither</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>distributive\t\t\tpronouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_ai4TY7HW\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “each” refers to\t\t\tevery participant separately, not to the group as a whole.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“each” is a distributive pronoun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adjective of the word “those”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Those\t\t\temployees who consistently exceeded their monthly targets were\t\t\trewarded with additional incentives and promotions.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adjective of the word “those”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>Those\t\t\temployees who consistently exceeded their monthly targets were\t\t\trewarded with additional incentives and promotions.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Demonstrative Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Possessive Adjective</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Possessive Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Interrogative Adjective</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Quantitative Adjective</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Quantitative Adjective</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tA) Demonstrative Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA demonstrative adjective points out or indicates a specific noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>this, that,\t\t\tthese, and those</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>demonstrative\t\t\tadjectives when they modify nouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“those” modifies the noun “employees” and points toward a\t\t\tparticular group.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“those” is a demonstrative adjective.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tA) Demonstrative Adjective</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA demonstrative adjective points out or indicates a specific noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Words\t\t\tlike </font><font size=\"4\" style=\"font-size: 14pt\"><b>this, that,\t\t\tthese, and those</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tare </font><font size=\"4\" style=\"font-size: 14pt\"><b>demonstrative\t\t\tadjectives when they modify nouns.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“those” modifies the noun “employees” and points toward a\t\t\tparticular group.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“those” is a demonstrative adjective.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of noun of the word “honesty”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tmanager believed that honesty and consistency were more valuable\t\t\tthan temporary success achieved through unfair practices.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of noun of the word “honesty”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tmanager believed that honesty and consistency were more valuable\t\t\tthan temporary success achieved through unfair practices.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Proper Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Proper Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Material Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Material Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Abstract Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Abstract Noun</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Collective Noun</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Collective Noun</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAbstract Noun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn abstract noun names a quality, idea, feeling, or state that\t\t\tcannot be physically touched or seen.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“honesty” refers to a quality or virtue rather than a physical\t\t\tobject.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tnames a quality, “honesty” is an abstract noun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tAbstract Noun</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn abstract noun names a quality, idea, feeling, or state that\t\t\tcannot be physically touched or seen.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“honesty” refers to a quality or virtue rather than a physical\t\t\tobject.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Since it\t\t\tnames a quality, “honesty” is an abstract noun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adverb of the word “yesterday”.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tofficials unexpectedly cancelled the public meeting that had been\t\t\tscheduled for yesterday.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of adverb of the word “yesterday”.</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tofficials unexpectedly cancelled the public meeting that had been\t\t\tscheduled for yesterday.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Degree</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Degree</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Time</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Time</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Manner</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Manner</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Frequency</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Adverb of Frequency</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tAdverb of Time</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn </font><font size=\"4\" style=\"font-size: 14pt\"><b>adverb of time</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\ttells us </font><font size=\"4\" style=\"font-size: 14pt\"><b>when an\t\t\taction takes place.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“yesterday” tells us the time related to the scheduled\t\t\tmeeting.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">scheduled\t\t\tfor when? → yesterday</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“yesterday” is an adverb of time.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tAdverb of Time</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn </font><font size=\"4\" style=\"font-size: 14pt\"><b>adverb of time</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\ttells us </font><font size=\"4\" style=\"font-size: 14pt\"><b>when an\t\t\taction takes place.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">Here,\t\t\t“yesterday” tells us the time related to the scheduled\t\t\tmeeting.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">scheduled\t\t\tfor when? → yesterday</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“yesterday” is an adverb of time.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of conjunction used in “not only...but also”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tresearcher not only published groundbreaking studies in\t\t\tinternational journals but also mentored several young scientists\t\t\tduring her career.</b></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">In the sentence below,\t\t\tidentify the type of conjunction used in “not only...but also”:</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tresearcher not only published groundbreaking studies in\t\t\tinternational journals but also mentored several young scientists\t\t\tduring her career.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Coordinating Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Coordinating Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Correlative Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Correlative Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Subordinating Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Subordinating Conjunction</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Compound Conjunction</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Compound Conjunction</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tCorrelative Conjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tCorrelative conjunctions are pairs of conjunctions that work\t\t\ttogether to </font><font size=\"4\" style=\"font-size: 14pt\"><b>connect\t\t\tequal words, phrases, or clauses.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Common\t\t\texamples</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tinclude:</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">either...or</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">neither...nor</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">not only...but also</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “not only...but\t\t\talso” connects two related actions:</font></p>\t\t\t<ol>\t\t\t\t<li><p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t\t<font size=\"4\" style=\"font-size: 14pt\">published groundbreaking\t\t\t\tstudies</font></p></li>\t\t\t\t<li><p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t\t<font size=\"4\" style=\"font-size: 14pt\">mentored several young\t\t\t\tscientists</font></p></li>\t\t\t</ol>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\tit is a correlative conjunction.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tCorrelative Conjunction</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tCorrelative conjunctions are pairs of conjunctions that work\t\t\ttogether to </font><font size=\"4\" style=\"font-size: 14pt\"><b>connect\t\t\tequal words, phrases, or clauses.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Common\t\t\texamples</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tinclude:</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">either...or</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">neither...nor</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">not only...but also</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Here, “not only...but\t\t\talso” connects two related actions:</font></p>\t\t\t<ol start=\"3\">\t\t\t\t<li><p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t\t<font size=\"4\" style=\"font-size: 14pt\">published groundbreaking\t\t\t\tstudies</font></p></li>\t\t\t\t<li><p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t\t<font size=\"4\" style=\"font-size: 14pt\">mentored several young\t\t\t\tscientists</font></p></li>\t\t\t</ol>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\tit is a correlative conjunction.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “light” is used as an adjective.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “light” is used as an adjective.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Please light the candles\t\t\tbefore the guests arrive.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Please light the candles\t\t\tbefore the guests arrive.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The box became light after\t\t\tthe books were removed.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The box became light after\t\t\tthe books were removed.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A bright light appeared\t\t\tsuddenly in the distance.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A bright light appeared\t\t\tsuddenly in the distance.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The guards light the\t\t\tcorridor every evening.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The guards light the\t\t\tcorridor every evening.</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tThe box became light after the books were removed.</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adjective modifies or describes a noun or pronoun.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"> <font size=\"4\" style=\"font-size: 14pt\">In\t\t\t</font><font size=\"4\" style=\"font-size: 14pt\"><b>option B,</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\t“light” describes the noun “box” and means “not heavy.”</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"> <font size=\"4\" style=\"font-size: 14pt\">What\t\t\tkind of box? → light box</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"> <font size=\"4\" style=\"font-size: 14pt\">Therefore,</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\t“light” is used as an adjective here.</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Why\t\t\tother options are incorrect:</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">A)\t\t\t“light” is used as a verb because it shows action. light what?\t\t\t→ the candles</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">C)\t\t\t“light” is used as a noun because it names a thing. A bright\t\t\tlight appeared.</font></p>\t\t\t<p style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“light” is again used as a verb because it means “to\t\t\tilluminate.” The guards light the corridor.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>B)\t\t\tThe box became light after the books were removed.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tAn adjective modifies or describes a noun or pronoun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t <font size=\"4\" style=\"font-size: 14pt\">In </font><font size=\"4\" style=\"font-size: 14pt\"><b>option\t\t\tB,</b></font><font size=\"4\" style=\"font-size: 14pt\"> “light”\t\t\tdescribes the noun “box” and means “not heavy.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><a name=\"_Int_9ObZPjYJ\"></a>\t\t\t <font size=\"4\" style=\"font-size: 14pt\">What kind of box? →\t\t\tlight box</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t <font size=\"4\" style=\"font-size: 14pt\">Therefore,</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\t“light” is used as an adjective here.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t <font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t <font size=\"4\" style=\"font-size: 14pt\">A) “light” is used as\t\t\ta verb because it shows action. light what? → the candles</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t <font size=\"4\" style=\"font-size: 14pt\">C) “light” is used as\t\t\ta noun because it names a thing. A bright light appeared.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"> <font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“light” is again used as a verb because it means “to\t\t\tilluminate.” The guards light the corridor.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “since” is used as a preposition.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “since” is used as a preposition.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Since the roads were\t\t\tflooded, the buses could not operate normally.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Since the roads were\t\t\tflooded, the buses could not operate normally.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">I have not spoken to her\t\t\tsince Monday.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">I have not spoken to her\t\t\tsince Monday.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Since you insist, I will\t\t\treconsider the proposal.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Since you insist, I will\t\t\treconsider the proposal.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p align=\"justify\"><a name=\"_Int_aoh3Kg4C\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The company has expanded\t\t\trapidly since it changed its management.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\"><a name=\"_Int_6IgUDlzc\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The company has expanded\t\t\trapidly since it changed its management.</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tB) I have not spoken to her since Monday.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA preposition is followed by a noun or pronoun and shows its\t\t\trelationship with another word.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">In\t\t\toption B, “since” is followed by the noun “Monday.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">since Monday</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, </font><font size=\"4\" style=\"font-size: 14pt\"><b>“since”\t\t\tfunctions as a preposition.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A) “since” joins two\t\t\tclauses: Since the roads were flooded + the buses could not\t\t\toperate normally. Hence, it is a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">C) “since” introduces\t\t\tthe clause “you insist.” Therefore, it is a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“since” connects two clauses: The company has expanded rapidly\t\t\t+ it changed its management. Hence, it is a conjunction.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tB) I have not spoken to her since Monday.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tA preposition is followed by a noun or pronoun and shows its\t\t\trelationship with another word.</font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\">In\t\t\toption B, “since” is followed by the noun “Monday.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">since Monday</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, </font><font size=\"4\" style=\"font-size: 14pt\"><b>“since”\t\t\tfunctions as a preposition.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A) “since” joins two\t\t\tclauses: Since the roads were flooded + the buses could not\t\t\toperate normally. Hence, it is a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">C) “since” introduces\t\t\tthe clause “you insist.” Therefore, it is a conjunction.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“since” connects two clauses: The company has expanded rapidly\t\t\t+ it changed its management. Hence, it is a conjunction.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “fast” is used as an adverb.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Identify the sentence in\t\t\twhich the word “fast” is used as an adverb.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The fast train reached the\t\t\tstation ahead of schedule.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The fast train reached the\t\t\tstation ahead of schedule.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">He remained fast friends\t\t\twith his childhood classmates.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">He remained fast friends\t\t\twith his childhood classmates.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The athlete ran fast\t\t\tdespite suffering from a minor injury.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The athlete ran fast\t\t\tdespite suffering from a minor injury.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p><a name=\"_Int_INafninj\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Many people observe a fast\t\t\tduring religious festivals.</font></p>\t\t</span><span class=\"hqt\"><p><a name=\"_Int_S3MefXZv\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Many people observe a fast\t\t\tduring religious festivals.</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tThe athlete ran fast despite suffering from a minor injury.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An adverb\t\t\tmodifies a verb, adjective, or another adverb.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">In\t\t\toption C, </font><font size=\"4\" style=\"font-size: 14pt\"><b>“fast”\t\t\tmodifies the verb “ran.”</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">ran\t\t\thow? → fast</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“fast” is used as an adverb.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Why\t\t\tother options are incorrect:</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">A)\t\t\t“fast” describes the noun “train.” What kind of train? →\t\t\tfast train. So, it is an adjective.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">B)\t\t\t“fast” describes “friends” and means “close/loyal.”\t\t\tThus, it is an adjective.</font></p>\t\t\t<p style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“fast” names a religious act of not eating food. Hence, it is\t\t\ta noun.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tThe athlete ran fast despite suffering from a minor injury.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-bottom: 0.14in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:\t\t\t</b></font><font size=\"4\" style=\"font-size: 14pt\">An adverb\t\t\tmodifies a verb, adjective, or another adverb.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">In\t\t\toption C, </font><font size=\"4\" style=\"font-size: 14pt\"><b>“fast”\t\t\tmodifies the verb “ran.”</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">ran\t\t\thow? → fast</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">Therefore,\t\t\t“fast” is used as an adverb.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>Why\t\t\tother options are incorrect:</b></font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">A)\t\t\t“fast” describes the noun “train.” What kind of train? →\t\t\tfast train. So, it is an adjective.</font></p>\t\t\t<p style=\"margin-top: 0.17in; margin-bottom: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">B)\t\t\t“fast” describes “friends” and means “close/loyal.”\t\t\tThus, it is an adjective.</font></p>\t\t\t<p style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“fast” names a religious act of not eating food. Hence, it is\t\t\ta noun.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_zgpkLpPk\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What is the grammatical\t\t\tfunction of the underlined word in the sentence ?</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tincredibly </b></font><font size=\"4\" style=\"font-size: 14pt\"><u><b>talented</b></u></font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tmusician received a standing ovation from the audience.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\"><a name=\"_Int_nr9Ycm37\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What is the grammatical\t\t\tfunction of the underlined word in the sentence ?</font></p>\t\t\t<p align=\"justify\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tincredibly </b></font><font size=\"4\" style=\"font-size: 14pt\"><u><b>talented</b></u></font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tmusician received a standing ovation from the audience.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It modifies a noun.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It modifies a noun.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It joins two clauses.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It joins two clauses.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p><a name=\"_Int_GJEmY7LN\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It replaces a noun.</font></p>\t\t</span><span class=\"hqt\"><p><a name=\"_Int_gwDf2Png\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It replaces a noun.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It shows possession.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It shows possession.</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tA) It modifies a noun.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tThe underlined word “talented” </font><font size=\"4\" style=\"font-size: 14pt\"><b>describes</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tthe noun “musician.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What kind of musician? →\t\t\ttalented musician</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words that modify or\t\t\tdescribe nouns function as adjectives.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, its grammatical\t\t\tfunction is to modify a noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">B) “talented” does not\t\t\tconnect clauses. Conjunctions perform that function.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">C) “talented” does not\t\t\treplace a noun. Pronouns replace nouns.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“talented” does not show ownership or possession. Possessive\t\t\twords like “his,” “their,” or “Ravi’s” show\t\t\tpossession.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer:</font><font size=\"4\" style=\"font-size: 14pt\"><b>\t\t\tA) It modifies a noun.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tThe underlined word “talented” </font><font size=\"4\" style=\"font-size: 14pt\"><b>describes</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tthe noun “musician.”</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What kind of musician? →\t\t\ttalented musician</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words that modify or\t\t\tdescribe nouns function as adjectives.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, its grammatical\t\t\tfunction is to modify a noun.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">B) “talented” does not\t\t\tconnect clauses. Conjunctions perform that function.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">C) “talented” does not\t\t\treplace a noun. Pronouns replace nouns.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“talented” does not show ownership or possession. Possessive\t\t\twords like “his,” “their,” or “Ravi’s” show\t\t\tpossession.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What is the grammatical\t\t\tfunction of the underlined word in the sentence?</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tcommittee finally approved the </b></font><font size=\"4\" style=\"font-size: 14pt\"><u><b>proposal\t\t\t</b></u></font><font size=\"4\" style=\"font-size: 14pt\"><b>after\t\t\tseveral rounds of discussion.</b></font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">What is the grammatical\t\t\tfunction of the underlined word in the sentence?</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\"><b>The\t\t\tcommittee finally approved the </b></font><font size=\"4\" style=\"font-size: 14pt\"><u><b>proposal\t\t\t</b></u></font><font size=\"4\" style=\"font-size: 14pt\"><b>after\t\t\tseveral rounds of discussion.</b></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It modifies a verb.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It modifies a verb.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It connects clauses.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It connects clauses.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It names a person, place,\t\t\tor thing.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It names a person, place,\t\t\tor thing.</font></p>\t\t</span>",
+      "<span class=\"eqt\"><p><a name=\"_Int_t5ACC3o4\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It replaces a noun.</font></p>\t\t</span><span class=\"hqt\"><p><a name=\"_Int_zqgD6NwK\"></a>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">It replaces a noun.</font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tIt names a person, place, or thing.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tThe underlined word “proposal” is the name of a thing.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words that name a person,\t\t\tplace, thing, or idea are nouns.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, </font><font size=\"4\" style=\"font-size: 14pt\"><b>its\t\t\tgrammatical function is naming a thing.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A) “proposal” does not\t\t\tmodify a verb, so it is not acting as an adverb.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">B) “proposal” does not\t\t\tconnect clauses. Conjunctions perform that role.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“proposal” does not replace another noun. Pronouns replace\t\t\tnouns.</font></p>\t\t</span><span class=\"hqt\"><p align=\"justify\" style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Answer: </font><font size=\"4\" style=\"font-size: 14pt\"><b>C)\t\t\tIt names a person, place, or thing.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Explanation:</b></font><font size=\"4\" style=\"font-size: 14pt\">\t\t\tThe underlined word “proposal” is the name of a thing.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Words that name a person,\t\t\tplace, thing, or idea are nouns.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Therefore, </font><font size=\"4\" style=\"font-size: 14pt\"><b>its\t\t\tgrammatical function is naming a thing.</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\"><b>Why other options are\t\t\tincorrect:</b></font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">A) “proposal” does not\t\t\tmodify a verb, so it is not acting as an adverb.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in; margin-bottom: 0.17in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">B) “proposal” does not\t\t\tconnect clauses. Conjunctions perform that role.</font></p>\t\t\t<p align=\"justify\" style=\"margin-top: 0.17in\"><font size=\"4\" style=\"font-size: 14pt\">D)\t\t\t“proposal” does not replace another noun. Pronouns replace\t\t\tnouns.</font></p>\t\t</span>",
+    "marks": 2,
+    "section": "English\n\t\t\tComprehension",
+    "series_name": "ProMocks - Parts of Speech Quiz"
+  }
+];
+        const sectionsData = null;
+        const marksPerQ = 2.0;
+        const negMarks = 0.5;
+        const totalDuration = 15;
+        
+        class CBTExam {
+            constructor() {
+                this.questions = questions;
+                this.sections = sectionsData;
+                this.currentQuestion = 0;
+                this.answers = new Array(this.questions.length).fill(null);
+                this.markedForReview = new Array(this.questions.length).fill(false);
+                this.timeSpent = new Array(this.questions.length).fill(0);
+                this.isEnglish = true;
+                this.isSubmitted = false;
+                this.startTime = null;
+                this.lastQuestionTime = null;
+                this.mainTimer = null;
+                this.sectionTimer = null;
+                this.currentSection = this.sections ? 0 : null;
+                this.totalTimeLeft = totalDuration * 60;
+                
+                this.initElements();
+                this.setupWelcomeScreen();
+                this.setupBeforeUnload();
+            }
+            
+            initElements() {
+                this.els = {
+                    welcomeScreen: document.getElementById('welcomeScreen'),
+                    examContainer: document.getElementById('examContainer'),
+                    mainTimer: document.getElementById('mainTimer'),
+                    sectionBadge: document.getElementById('sectionBadge'),
+                    sectionName: document.getElementById('sectionName'),
+                    sectionTimer: document.getElementById('sectionTimer'),
+                    questionNum: document.getElementById('questionNum'),
+                    questionMarks: document.getElementById('questionMarks'),
+                    questionText: document.getElementById('questionText'),
+                    comprehension: document.getElementById('comprehension'),
+                    comprehensionText: document.getElementById('comprehensionText'),
+                    optionsList: document.getElementById('optionsList'),
+                    solutionBox: document.getElementById('solutionBox'),
+                    solutionStats: document.getElementById('solutionStats'),
+                    solutionText: document.getElementById('solutionText'),
+                    progressText: document.getElementById('progressText'),
+                    answeredCount: document.getElementById('answeredCount'),
+                    desktopNav: document.getElementById('desktopNav'),
+                    mobileNav: document.getElementById('mobileNav'),
+                    mobileNavGrid: document.getElementById('mobileNavGrid'),
+                    resultModal: document.getElementById('resultModal'),
+                    resultScore: document.getElementById('resultScore'),
+                    correctCount: document.getElementById('correctCount'),
+                    incorrectCount: document.getElementById('incorrectCount'),
+                    unattemptedCount: document.getElementById('unattemptedCount'),
+                    timeTaken: document.getElementById('timeTaken'),
+                    sectionResults: document.getElementById('sectionResults'),
+                    sectionResultsBody: document.getElementById('sectionResultsBody')
+                };
+            }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.els.welcomeScreen.classList.add('hidden');
+                    this.els.examContainer.classList.add('active');
+                    setTimeout(() => this.startExam(), 100);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.isSubmitted) {
+                        e.preventDefault();
+                        e.returnValue = 'Your test is in progress. Are you sure you want to leave?';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            startExam() {
+                this.startTime = Date.now();
+                this.lastQuestionTime = this.startTime;
+                this.createNavigator();
+                this.startMainTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                }
+                this.loadQuestion(0);
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('engBtn').onclick = () => this.setLanguage(true);
+                document.getElementById('hinBtn').onclick = () => this.setLanguage(false);
+                document.getElementById('prevBtn').onclick = () => this.navigate(-1);
+                document.getElementById('nextBtn').onclick = () => this.navigate(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('submitBtn').onclick = () => this.confirmSubmit();
+                document.getElementById('submitBtnDesktop').onclick = () => this.confirmSubmit();
+                document.getElementById('navigatorBtn').onclick = () => this.openMobileNav();
+                document.getElementById('closeNav').onclick = () => this.closeMobileNav();
+                document.getElementById('closeResult').onclick = () => this.closeResultModal();
+                document.getElementById('reviewAnswers').onclick = () => this.reviewAnswers();
+            }
+            
+            createNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    container.innerHTML = '';
+                    this.questions.forEach((_, i) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'nav-question';
+                        btn.textContent = i + 1;
+                        btn.onclick = () => this.goToQuestion(i);
+                        container.appendChild(btn);
+                    });
+                });
+            }
+            
+            extractText(html, isEng) {
+                if (!html) return '';
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                const langSpans = temp.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                    }
+                });
+                
+                return temp.innerHTML;
+            }
+            
+            getQuestionMarks(qIdx) {
+                if (!this.sections) return marksPerQ;
+                
+                for (const section of this.sections) {
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                if (qIdx >= subsec.start && qIdx <= subsec.end) {
+                                    return subsec.marks_per_q;
+                                }
+                            }
+                        }
+                        return marksPerQ;
+                    }
+                }
+                return marksPerQ;
+            }
+            
+            loadQuestion(idx) {
+                if (this.currentQuestion !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                    this.lastQuestionTime = now;
+                }
+                
+                this.currentQuestion = idx;
+                const q = this.questions[idx];
+                const qMarks = this.getQuestionMarks(idx);
+                
+                this.els.questionNum.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.els.questionMarks.textContent = `Marks: ${qMarks}`;
+                this.els.progressText.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.updateAnsweredCount();
+                this.updateNavigator();
+                this.updateNavigationButtons();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.comprehension.style.display = 'block';
+                    this.els.comprehensionText.innerHTML = this.extractText(q.comp, this.isEnglish);
+                } else {
+                    this.els.comprehension.style.display = 'none';
+                }
+                
+                this.els.questionText.innerHTML = this.extractText(q.question, this.isEnglish);
+                this.loadOptions(q, idx);
+                
+                if (this.isSubmitted && q.solution) {
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const mins = Math.floor(timeSpent / 60);
+                    const secs = timeSpent % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    
+                    this.els.solutionStats.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    this.els.solutionText.innerHTML = this.extractText(q.solution, this.isEnglish);
+                    this.els.solutionBox.classList.add('show');
+                } else {
+                    this.els.solutionBox.classList.remove('show');
+                }
+            }
+            
+            loadOptions(q, qIdx) {
+                this.els.optionsList.innerHTML = '';
+                const userAnswer = this.answers[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                if (!q.options || !Array.isArray(q.options)) return;
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let className = 'option';
+                    
+                    if (this.isSubmitted) className += ' submitted';
+                    if (userAnswer === i) className += ' selected';
+                    
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            className += ' correct';
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            className += ' wrong';
+                        }
+                    }
+                    
+                    div.className = className;
+                    
+                    let indicator = '';
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            indicator = '✓';
+                        } else if (userAnswer === i) {
+                            indicator = '✗';
+                        }
+                    } else if (userAnswer === i) {
+                        indicator = '✓';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="option-indicator">${indicator}</div>
+                        <div class="option-text">${this.extractText(opt, this.isEnglish)}</div>
+                    `;
+                    
+                    if (!this.isSubmitted) {
+                        div.onclick = () => this.selectOption(i, qIdx);
+                    }
+                    
+                    this.els.optionsList.appendChild(div);
+                });
+            }
+            
+            selectOption(optIdx, qIdx) {
+                if (this.isSubmitted) return;
+                this.answers[qIdx] = this.answers[qIdx] === optIdx ? null : optIdx;
+                this.loadOptions(this.questions[qIdx], qIdx);
+                this.updateAnsweredCount();
+                this.updateNavigator();
+            }
+            
+            toggleReview() {
+                if (this.isSubmitted) return;
+                this.markedForReview[this.currentQuestion] = !this.markedForReview[this.currentQuestion];
+                this.updateNavigator();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = document.getElementById('reviewBtn');
+                if (this.markedForReview[this.currentQuestion]) {
+                    btn.classList.add('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Marked';
+                } else {
+                    btn.classList.remove('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Mark for Review';
+                }
+            }
+            
+            navigate(dir) {
+                const newIdx = this.currentQuestion + dir;
+                
+                if (this.isSubmitted) {
+                    if (newIdx >= 0 && newIdx < this.questions.length) {
+                        this.loadQuestion(newIdx);
+                    }
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                if (newIdx >= 0 && newIdx < this.questions.length) {
+                    this.loadQuestion(newIdx);
+                }
+            }
+            
+            goToQuestion(idx) {
+                if (this.isSubmitted) {
+                    this.loadQuestion(idx);
+                    this.closeMobileNav();
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (idx < currentSection.start || idx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                this.loadQuestion(idx);
+                this.closeMobileNav();
+            }
+            
+            updateNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    const btns = container.querySelectorAll('.nav-question');
+                    btns.forEach((btn, i) => {
+                        btn.className = 'nav-question';
+                        
+                        if (i === this.currentQuestion) {
+                            btn.classList.add('current');
+                        } else if (this.isSubmitted) {
+                            if (this.answers[i] !== null && this.questions[i].correct_option_id !== undefined) {
+                                if (this.answers[i] === this.questions[i].correct_option_id) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.add('wrong');
+                                }
+                            }
+                        } else {
+                            if (this.markedForReview[i]) {
+                                btn.classList.add('review');
+                            } else if (this.answers[i] !== null) {
+                                btn.classList.add('answered');
+                            }
+                            
+                            if (this.sections) {
+                                const currentSection = this.sections[this.currentSection];
+                                if (i < currentSection.start || i > currentSection.end) {
+                                    btn.classList.add('disabled');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const reviewBtn = document.getElementById('reviewBtn');
+                
+                prevBtn.disabled = this.currentQuestion === 0;
+                nextBtn.disabled = this.currentQuestion === this.questions.length - 1;
+                
+                if (this.isSubmitted) {
+                    reviewBtn.style.display = 'none';
+                } else {
+                    reviewBtn.style.display = 'inline-flex';
+                }
+                
+                if (this.sections && !this.isSubmitted) {
+                    const currentSection = this.sections[this.currentSection];
+                    prevBtn.disabled = prevBtn.disabled || (this.currentQuestion === currentSection.start);
+                    nextBtn.disabled = nextBtn.disabled || (this.currentQuestion === currentSection.end);
+                }
+            }
+            
+            updateAnsweredCount() {
+                const count = this.answers.filter(a => a !== null).length;
+                this.els.answeredCount.textContent = count;
+            }
+            
+            setLanguage(isEng) {
+                this.isEnglish = isEng;
+                document.getElementById('engBtn').classList.toggle('active', isEng);
+                document.getElementById('hinBtn').classList.toggle('active', !isEng);
+                this.loadQuestion(this.currentQuestion);
+            }
+            
+            startMainTimer() {
+                this.mainTimer = setInterval(() => {
+                    this.totalTimeLeft--;
+                    if (this.totalTimeLeft <= 0) {
+                        clearInterval(this.mainTimer);
+                        this.submitTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.totalTimeLeft / 60);
+                    const secs = this.totalTimeLeft % 60;
+                    this.els.mainTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer;
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    const mins = Math.floor(section.time_left / 60);
+                    const secs = section.time_left % 60;
+                    this.els.sectionTimer.textContent = ` | ${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitSection();
+                    }
+                }, 1000);
+            }
+            
+            updateSectionInfo() {
+                if (!this.sections) return;
+                const section = this.sections[this.currentSection];
+                this.els.sectionName.textContent = section.name;
+                this.els.sectionBadge.style.display = 'block';
+            }
+            
+            submitSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                    this.loadQuestion(this.sections[nextSectionIdx].start);
+                } else {
+                    this.submitTest();
+                }
+                
+                this.updateNavigator();
+            }
+            
+            confirmSubmit() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.answers.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions in this section. Submit anyway?`
+                        : 'Submit this section?';
+                    
+                    if (confirm(msg)) this.submitSection();
+                } else {
+                    const unanswered = this.answers.filter(a => a === null).length;
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions. Submit test?`
+                        : 'Submit test?';
+                    
+                    if (confirm(msg)) this.submitTest();
+                }
+            }
+            
+            submitTest() {
+                if (this.isSubmitted) return;
+                
+                const now = Date.now();
+                this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                
+                this.isSubmitted = true;
+                clearInterval(this.mainTimer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('submitBtnDesktop').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                
+                if (this.sections) {
+                    this.els.sectionBadge.style.display = 'none';
+                }
+                
+                const results = this.calculateResults();
+                this.showResults(results);
+                this.loadQuestion(this.currentQuestion);
+                this.updateNavigator();
+            }
+            
+            calculateResults() {
+                const timeTaken = Math.round((Date.now() - this.startTime) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                const sectionResults = [];
+                
+                if (this.sections) {
+                    for (const section of this.sections) {
+                        let secCorrect = 0, secIncorrect = 0, secUnattempted = 0, secScore = 0;
+                        const subsecResults = [];
+                        
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                let subCorrect = 0, subIncorrect = 0, subUnattempted = 0, subScore = 0;
+                                
+                                for (let i = subsec.start; i <= subsec.end; i++) {
+                                    const userAns = this.answers[i];
+                                    const correctAns = this.questions[i].correct_option_id;
+                                    
+                                    if (userAns === null) {
+                                        subUnattempted++;
+                                    } else if (correctAns !== undefined && userAns === correctAns) {
+                                        subCorrect++;
+                                        subScore += subsec.marks_per_q;
+                                    } else {
+                                        subIncorrect++;
+                                        subScore -= negMarks;
+                                    }
+                                }
+                                
+                                subsecResults.push({
+                                    name: subsec.name,
+                                    attempted: subCorrect + subIncorrect,
+                                    correct: subCorrect,
+                                    incorrect: subIncorrect,
+                                    unattempted: subUnattempted,
+                                    score: Math.max(0, subScore)
+                                });
+                                
+                                secCorrect += subCorrect;
+                                secIncorrect += subIncorrect;
+                                secUnattempted += subUnattempted;
+                                secScore += subScore;
+                            }
+                        } else {
+                            for (let i = section.start; i <= section.end; i++) {
+                                const userAns = this.answers[i];
+                                const correctAns = this.questions[i].correct_option_id;
+                                
+                                if (userAns === null) {
+                                    secUnattempted++;
+                                } else if (correctAns !== undefined && userAns === correctAns) {
+                                    secCorrect++;
+                                    secScore += marksPerQ;
+                                } else {
+                                    secIncorrect++;
+                                    secScore -= negMarks;
+                                }
+                            }
+                        }
+                        
+                        sectionResults.push({
+                            name: section.name,
+                            attempted: secCorrect + secIncorrect,
+                            correct: secCorrect,
+                            incorrect: secIncorrect,
+                            unattempted: secUnattempted,
+                            score: Math.max(0, secScore),
+                            subsections: subsecResults.length > 0 ? subsecResults : null
+                        });
+                        
+                        correct += secCorrect;
+                        incorrect += secIncorrect;
+                        unattempted += secUnattempted;
+                        score += secScore;
+                    }
+                } else {
+                    this.questions.forEach((q, i) => {
+                        const userAns = this.answers[i];
+                        const correctAns = q.correct_option_id;
+                        
+                        if (userAns === null) {
+                            unattempted++;
+                        } else if (correctAns !== undefined && userAns === correctAns) {
+                            correct++;
+                            score += marksPerQ;
+                        } else {
+                            incorrect++;
+                            score -= negMarks;
+                        }
+                    });
+                }
+                
+                return {
+                    score: Math.max(0, score),
+                    correct,
+                    incorrect,
+                    unattempted,
+                    timeTaken,
+                    sectionResults: sectionResults.length > 0 ? sectionResults : null
+                };
+            }
+            
+            showResults(results) {
+                this.els.resultScore.textContent = `${results.score.toFixed(2)}/${this.questions.length * marksPerQ}`;
+                this.els.correctCount.textContent = results.correct;
+                this.els.incorrectCount.textContent = results.incorrect;
+                this.els.unattemptedCount.textContent = results.unattempted;
+                this.els.timeTaken.textContent = results.timeTaken;
+                
+                if (results.sectionResults) {
+                    this.els.sectionResults.style.display = 'block';
+                    this.els.sectionResultsBody.innerHTML = '';
+                    
+                    results.sectionResults.forEach(section => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${section.name}</strong></td>
+                            <td>${section.attempted}</td>
+                            <td>${section.correct}</td>
+                            <td>${section.incorrect}</td>
+                            <td><strong>${section.score.toFixed(2)}</strong></td>
+                        `;
+                        this.els.sectionResultsBody.appendChild(row);
+                        
+                        if (section.subsections) {
+                            section.subsections.forEach(subsec => {
+                                const subRow = document.createElement('tr');
+                                subRow.className = 'subsection-row';
+                                subRow.innerHTML = `
+                                    <td>${subsec.name}</td>
+                                    <td>${subsec.attempted}</td>
+                                    <td>${subsec.correct}</td>
+                                    <td>${subsec.incorrect}</td>
+                                    <td>${subsec.score.toFixed(2)}</td>
+                                `;
+                                this.els.sectionResultsBody.appendChild(subRow);
+                            });
+                        }
+                    });
+                } else {
+                    this.els.sectionResults.style.display = 'none';
+                }
+                
+                this.els.resultModal.classList.add('show');
+            }
+            
+            closeResultModal() {
+                this.els.resultModal.classList.remove('show');
+            }
+            
+            reviewAnswers() {
+                this.closeResultModal();
+                this.loadQuestion(0);
+            }
+            
+            openMobileNav() {
+                this.els.mobileNav.classList.add('open');
+            }
+            
+            closeMobileNav() {
+                this.els.mobileNav.classList.remove('open');
+            }
+        }
+        
+        // Initialize the exam
+        document.addEventListener('DOMContentLoaded', () => {
+            new CBTExam();
+        });
+    </script>
+</body>
+</html>

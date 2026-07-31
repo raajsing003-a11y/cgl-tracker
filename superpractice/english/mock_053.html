@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">37652 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">15 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">15:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage carefully and answer the questions that follow.</p><p>In China, there once lived a father, his four sons, and three daughters-in-law. His three older sons had married within a few months of each other and all with young women from the same village. Recently, these three new daughters-in-law had been brought into the house. Their new father-in-law's wife had died a few years before and having no mother-in-law with them in their new home, and being lonesome and homesick for their former families, they constantly asked the old man for permission to visit their former village. For you see, those were the days when young women, after they married and moved into the homes of their new husbands, needed permission to leave the household. Annoyed by the continual pleas of his three new daughters-in-law, the old father thought of a way to put an end to it. </p><p>He gave the young women permission in this way, saying, \"You are always begging me to allow you to go and visit your mothers, and you think I am very hard-hearted for not letting you go. Now you may go, but only upon this condition. When you come back, you must each bring me something that I want. One of you must bring me some fire in paper, the other must bring me some wind in paper, and the third must bring me some music in wind. Unless you promise to bring me this, you are never to ask me to let you go home. And if you go and fail to get these for me, you are never to come back.\" The old man did not suppose that these conditions would be accepted. Of course, they were hard to understand, much less to fulfil. But the girls were young and thoughtless, and in their anxiety to get away did not consider any of that. So, they promised and made ready with speed. In great glee, they started off on foot to visit their mothers.</p>",
+    "question": "<p>Which of the following questions cannot be answered on the basis of the above passage?</p>",
+    "options": [
+      "How many sons did the old man have?",
+      "Which son did not get married?",
+      "Where did the old man's daughters-in-law want to go?",
+      "Why did one of his sons not marry?"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The answer of option (a) is four (as given in the first paragraph of the passage). </p><p>The answer of option (b) is  -  the youngest one, as it's mentioned in the first paragraph of the passage that the three older sons were married. </p><p>The answer of option (c) is  -  their former village (as given in the first paragraph of the passage). </p><p>There's nowhere mentioned the reason why the youngest son wasn't married. Hence, (d) is the correct answer. </p>",
+    "question_index": 0
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage carefully and answer the questions that follow.</p><p>In China, there once lived a father, his four sons, and three daughters-in-law. His three older sons had married within a few months of each other and all with young women from the same village. Recently, these three new daughters-in-law had been brought into the house. Their new father-in-law's wife had died a few years before and having no mother-in-law with them in their new home, and being lonesome and homesick for their former families, they constantly asked the old man for permission to visit their former village. For you see, those were the days when young women, after they married and moved into the homes of their new husbands, needed permission to leave the household. Annoyed by the continual pleas of his three new daughters-in-law, the old father thought of a way to put an end to it. </p><p>He gave the young women permission in this way, saying, \"You are always begging me to allow you to go and visit your mothers, and you think I am very hard-hearted for not letting you go. Now you may go, but only upon this condition. When you come back, you must each bring me something that I want. One of you must bring me some fire in paper, the other must bring me some wind in paper, and the third must bring me some music in wind. Unless you promise to bring me this, you are never to ask me to let you go home. And if you go and fail to get these for me, you are never to come back.\" The old man did not suppose that these conditions would be accepted. Of course, they were hard to understand, much less to fulfil. But the girls were young and thoughtless, and in their anxiety to get away did not consider any of that. So, they promised and made ready with speed. In great glee, they started off on foot to visit their mothers.</p>",
+    "question": "<p>Which of the following sentences is TRUE as per the passage?</p>",
+    "options": [
+      "All the newlywed women were from the same village.",
+      "Two of the daughters-in-law were from one village and the third one was from another village.",
+      "All three daughters-in-law were cousins before marriage.",
+      "The old man had two wives."
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The following sentence from the first paragraph of the given passage states that \"His three older sons had married within a few months of each other and all with young women from the same village.\" Hence, (a) is the correct answer. </p><p>Other options are incorrect as per the passage. </p>",
+    "question_index": 1
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage carefully and answer the questions that follow.</p><p>In China, there once lived a father, his four sons, and three daughters-in-law. His three older sons had married within a few months of each other and all with young women from the same village. Recently, these three new daughters-in-law had been brought into the house. Their new father-in-law's wife had died a few years before and having no mother-in-law with them in their new home, and being lonesome and homesick for their former families, they constantly asked the old man for permission to visit their former village. For you see, those were the days when young women, after they married and moved into the homes of their new husbands, needed permission to leave the household. Annoyed by the continual pleas of his three new daughters-in-law, the old father thought of a way to put an end to it. </p><p>He gave the young women permission in this way, saying, \"You are always begging me to allow you to go and visit your mothers, and you think I am very hard-hearted for not letting you go. Now you may go, but only upon this condition. When you come back, you must each bring me something that I want. One of you must bring me some fire in paper, the other must bring me some wind in paper, and the third must bring me some music in wind. Unless you promise to bring me this, you are never to ask me to let you go home. And if you go and fail to get these for me, you are never to come back.\" The old man did not suppose that these conditions would be accepted. Of course, they were hard to understand, much less to fulfil. But the girls were young and thoughtless, and in their anxiety to get away did not consider any of that. So, they promised and made ready with speed. In great glee, they started off on foot to visit their mothers.</p>",
+    "question": "<p>What did the old man ask for in return after permitting his daughters-in-law to visit their respective parents?</p>",
+    "options": [
+      "The old man asked for nothing in return.",
+      "He asked for a sack full of gold coins.",
+      "He asked that they bring a lot of sweets from home.",
+      "He wanted the fulfilment of his three wishes."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The following sentences from the second paragraph of the given passage state \"When you come back, you must each bring me something that I want. One of you must bring me some fire in paper, the other must bring me some wind in paper, and the third must bring me some music in wind.\" Hence, (d) is the correct answer. </p>",
+    "question_index": 2
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage carefully and answer the questions that follow.</p><p>In China, there once lived a father, his four sons, and three daughters-in-law. His three older sons had married within a few months of each other and all with young women from the same village. Recently, these three new daughters-in-law had been brought into the house. Their new father-in-law's wife had died a few years before and having no mother-in-law with them in their new home, and being lonesome and homesick for their former families, they constantly asked the old man for permission to visit their former village. For you see, those were the days when young women, after they married and moved into the homes of their new husbands, needed permission to leave the household. Annoyed by the continual pleas of his three new daughters-in-law, the old father thought of a way to put an end to it. </p><p>He gave the young women permission in this way, saying, \"You are always begging me to allow you to go and visit your mothers, and you think I am very hard-hearted for not letting you go. Now you may go, but only upon this condition. When you come back, you must each bring me something that I want. One of you must bring me some fire in paper, the other must bring me some wind in paper, and the third must bring me some music in wind. Unless you promise to bring me this, you are never to ask me to let you go home. And if you go and fail to get these for me, you are never to come back.\" The old man did not suppose that these conditions would be accepted. Of course, they were hard to understand, much less to fulfil. But the girls were young and thoughtless, and in their anxiety to get away did not consider any of that. So, they promised and made ready with speed. In great glee, they started off on foot to visit their mothers.</p>",
+    "question": "<p>Why did the daughters-in-law leave in hurry as per the passage?</p>",
+    "options": [
+      "They were too concerned about the agreement between them and their father-in-law.",
+      "They were worried that their father-in-law would change his mind.",
+      "They were too eager to meet their mothers.",
+      "They didn't want to face their husbands."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The following sentence from the second paragraph of the given passage states that \"In great glee, they started off on foot to visit their mothers.\" Hence, (c) is the correct answer. </p>",
+    "question_index": 3
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the passage carefully and answer the questions that follow.</p><p>Jenna had just moved into a new apartment in the heart of the city. She had spent the entire day unpacking and arranging her stuff in her new home. She was exhausted, so she decided to take a break and explore the neighbourhood. She wandered down the bustling streets, taking in the sights and sounds of the city. As she was walking, she noticed an antique shop tucked away in a quiet alley. Curiosity got the best of her, and she decided to go in and take a look around. The shop was filled with all sorts of unique items, but one caught Jenna's eye - an ornate key with intricate designs etched into it. Jenna knew she had to have it. She purchased the key and brought it back to her apartment. She tried it in every lock in her new home, but none of them seemed to fit. Frustrated, she put the key down and went to bed. The next morning, Jenna woke up to find that the key was missing. She searched high and low, but it was nowhere to be found. She retraced her steps from the previous day, but no one had seen it. Days turned into weeks, and Jenna was starting to lose hope of ever finding the key again. That is until she received a package in the mail. Inside was a note that read, \"I found your key. Meet me at the antique shop where you purchased it.\" Jenna rushed to the antique shop, and there she found an elderly man waiting for her. He handed her the key and explained that it had been passed down through generations of his family. He wanted her to have it, as he believed she was meant to find it. Jenna was overwhelmed with gratitude and felt a sense of belonging in her new home. The key may have been lost for a time, but it ultimately led her to a meaningful connection with the past. </p>",
+    "question": "<p>What does the word \"belonging\" mean in the context of the passage?</p>",
+    "options": [
+      "Feeling at home in a place",
+      "Owning something",
+      "Having a sense of superiority",
+      "Losing something"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The passage mentions that Jenna felt a sense of belonging in her new home after receiving the key and connecting with the past. So, option (a) will be the appropriate choice here.</p><p>Hence, option (a) is correct.</p>",
+    "question_index": 4
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the passage carefully and answer the questions that follow.</p><p>Jenna had just moved into a new apartment in the heart of the city. She had spent the entire day unpacking and arranging her stuff in her new home. She was exhausted, so she decided to take a break and explore the neighbourhood. She wandered down the bustling streets, taking in the sights and sounds of the city. As she was walking, she noticed an antique shop tucked away in a quiet alley. Curiosity got the best of her, and she decided to go in and take a look around. The shop was filled with all sorts of unique items, but one caught Jenna's eye - an ornate key with intricate designs etched into it. Jenna knew she had to have it. She purchased the key and brought it back to her apartment. She tried it in every lock in her new home, but none of them seemed to fit. Frustrated, she put the key down and went to bed. The next morning, Jenna woke up to find that the key was missing. She searched high and low, but it was nowhere to be found. She retraced her steps from the previous day, but no one had seen it. Days turned into weeks, and Jenna was starting to lose hope of ever finding the key again. That is until she received a package in the mail. Inside was a note that read, \"I found your key. Meet me at the antique shop where you purchased it.\" Jenna rushed to the antique shop, and there she found an elderly man waiting for her. He handed her the key and explained that it had been passed down through generations of his family. He wanted her to have it, as he believed she was meant to find it. Jenna was overwhelmed with gratitude and felt a sense of belonging in her new home. The key may have been lost for a time, but it ultimately led her to a meaningful connection with the past. </p>",
+    "question": "<p>What did Jenna do when she found out that the key was missing?</p>",
+    "options": [
+      "She gave up and stopped looking for the key",
+      "She bought a new key",
+      "She asked the antique shop owner for a refund",
+      "She backtracked her course of action from the previous day"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>It is mentioned in the passage that 'The next morning, Jenna woke up to find that the key was missing. She searched high and low, but it was nowhere to be found. She retraced her steps from the previous day, but no one had seen it.'</p><p>Hence, option (d) is correct.</p>",
+    "question_index": 5
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the passage carefully and answer the questions that follow.</p><p>Jenna had just moved into a new apartment in the heart of the city. She had spent the entire day unpacking and arranging her stuff in her new home. She was exhausted, so she decided to take a break and explore the neighbourhood. She wandered down the bustling streets, taking in the sights and sounds of the city. As she was walking, she noticed an antique shop tucked away in a quiet alley. Curiosity got the best of her, and she decided to go in and take a look around. The shop was filled with all sorts of unique items, but one caught Jenna's eye - an ornate key with intricate designs etched into it. Jenna knew she had to have it. She purchased the key and brought it back to her apartment. She tried it in every lock in her new home, but none of them seemed to fit. Frustrated, she put the key down and went to bed. The next morning, Jenna woke up to find that the key was missing. She searched high and low, but it was nowhere to be found. She retraced her steps from the previous day, but no one had seen it. Days turned into weeks, and Jenna was starting to lose hope of ever finding the key again. That is until she received a package in the mail. Inside was a note that read, \"I found your key. Meet me at the antique shop where you purchased it.\" Jenna rushed to the antique shop, and there she found an elderly man waiting for her. He handed her the key and explained that it had been passed down through generations of his family. He wanted her to have it, as he believed she was meant to find it. Jenna was overwhelmed with gratitude and felt a sense of belonging in her new home. The key may have been lost for a time, but it ultimately led her to a meaningful connection with the past. </p>",
+    "question": "<p>Select the most appropriate ANTONYM of the word 'invigorated' from the passage.</p>",
+    "options": [
+      "Overwhelmed",
+      "Exhausted",
+      "Gratitude",
+      "Frustrated"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>'Invigorated' means to give energy or strength to someone or something, to make someone or something feel livelier, or to refresh and revitalize.</p><p>The most appropriate antonym from the passage is 'exhausted' which means very tired.</p><p>Refer to the sentence 'She was exhausted, so she decided to take a break and explore the neighbourhood' from the passage that uses the word 'exhausted'.</p><p>Hence, option (b) is correct. </p>",
+    "question_index": 6
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the passage carefully and answer the questions that follow.</p><p>Jenna had just moved into a new apartment in the heart of the city. She had spent the entire day unpacking and arranging her stuff in her new home. She was exhausted, so she decided to take a break and explore the neighbourhood. She wandered down the bustling streets, taking in the sights and sounds of the city. As she was walking, she noticed an antique shop tucked away in a quiet alley. Curiosity got the best of her, and she decided to go in and take a look around. The shop was filled with all sorts of unique items, but one caught Jenna's eye - an ornate key with intricate designs etched into it. Jenna knew she had to have it. She purchased the key and brought it back to her apartment. She tried it in every lock in her new home, but none of them seemed to fit. Frustrated, she put the key down and went to bed. The next morning, Jenna woke up to find that the key was missing. She searched high and low, but it was nowhere to be found. She retraced her steps from the previous day, but no one had seen it. Days turned into weeks, and Jenna was starting to lose hope of ever finding the key again. That is until she received a package in the mail. Inside was a note that read, \"I found your key. Meet me at the antique shop where you purchased it.\" Jenna rushed to the antique shop, and there she found an elderly man waiting for her. He handed her the key and explained that it had been passed down through generations of his family. He wanted her to have it, as he believed she was meant to find it. Jenna was overwhelmed with gratitude and felt a sense of belonging in her new home. The key may have been lost for a time, but it ultimately led her to a meaningful connection with the past. </p>",
+    "question": "<p>What was the tone of the package note that Jenna received?</p>",
+    "options": [
+      "Grateful",
+      "Suspicious",
+      "Hostile",
+      "Sympathetic"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The passage is empathetic towards Jenna's experience with the lost key and is filled with moments of kindness and generosity, such as the elderly man returning the key to Jenna and sharing the story behind it. The note expresses sympathy for Jenna's lost key and offers to return it to her, indicating a sympathetic tone.</p><p><b>Grateful:</b> A grateful tone is a tone in writing that conveys a sense of appreciation or thankfulness towards someone or something. It can be characterized by language that expresses gratitude, such as the use of words like \"thank you,\" \"appreciate,\" or \"grateful.\" A grateful tone can be used to convey positive emotions and build a sense of connection or community.</p><p><b>Suspicious:</b> A suspicious tone is a tone in writing that suggests a lack of trust or doubt in someone or something. It may convey a sense of scepticism, caution, or wariness towards a situation, person, or object. This tone can be characterized by language that implies distrust or uncertainty, such as the use of questions, hypothetical scenarios, or conditional statements.</p><p><b>Hostile:</b> A hostile tone, on the other hand, is a tone in writing that conveys a sense of anger or aggression towards someone or something. It can be characterized by language that expresses negative emotions, such as the use of words like \"hate,\" \"dislike,\" or \"angry.\" A hostile tone can be used to create tension or conflict in a narrative or to express a strong opinion or disagreement.</p><p><b>Sympathetic: </b>A sympathetic tone is a tone in writing that conveys a sense of understanding, empathy, or compassion towards someone or something. It can be characterized by language that expresses care or concern, such as the use of words like \"sorry,\" \"understand,\" or \"feel for.\" A sympathetic tone can be used to convey positive emotions and build a sense of connection or support. It can also be used to comfort or console someone who is going through a difficult time or to express a sense of solidarity with a particular group or cause.</p><p>Hence, option (d) is correct.</p>",
+    "question_index": 7
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b> Read the given passage and answer the questions that follow.</p><p>I sat motionless in the passenger seat, feeling trapped in my tight seat belt while Mom sang along with her tapes and pointed at everything she spotted on the roadside. \"Oh, Mary, please don't be moody, not today. I told Harry all about how polite and intelligent and cheerful you are,\" she said. Harry was my mother's new boyfriend, her \"significant other,\" she called him. She'd met him at a business meeting when her company bought the company Harry worked for, and since then she'd been driving over the border to Canada every weekend to see him, leaving me at Dad's. Don't get me wrong, I loved staying with Dad, but I missed my Mom-weekends. We used to make popcorn and watch late-night TV, then sleep in and eat cold breakfast cereal together. Now, when she came to pick me up on Sunday afternoons, she always looked glowing and energetic - and much happier than she ever looked after a weekend spent with me. Last Monday she said something about her and Harry getting married, and that this trip might be the time when he pops the question. The only obstacle before him was meeting me. \"I'll be sugar and spice and everything nice, I promise,\" I said sarcastically, staring out at the Canadian countryside. It pretty much resembled the American countryside only . . . it was more Canadian, somehow. Bigger and emptier, just as I imagined Harry; bigger than Dad, with an enormous head with lots of empty space inside.</p>",
+    "question": "<p>According to the passage, which of the following is the correct synonym of the word 'pick up' in the passage?</p>",
+    "options": [
+      "begin",
+      "pull",
+      "lift",
+      "fetch"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The given passage states that \"Now, when she came to pick me up on Sunday afternoons...\". In the given sentence, the phrasal verb 'pick up' means 'go somewhere to collect someone, typically in one's car.' </p><p>Begin: perform or undergo the first part of (an action or activity).</p><p>Pull: exert force on (someone or something) so as to cause movement towards oneself.</p><p>Lift: raise to a higher position or level.</p><p>Fetch: go for and then bring back (someone or something) for someone.</p><p>Among the given options, 'fetch' is the most appropriate synonym of the given phrasal verb. </p><p>Hence, option (d) is the correct answer. </p><p><b>Note:</b></p><p><b>Phrasal verb: </b>A phrase that consists of a verb with a preposition or adverb or both, the meaning of which is different from the meaning of its separate parts. Example: She has always <b>looked down on</b> me. Here, the phrasal verb <b>'to look down on someone</b>' doesn't mean that you are looking down from a higher place at someone who is below you; it means that you think that you are better than someone.</p>",
+    "question_index": 8
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b> Read the given passage and answer the questions that follow.</p><p>I sat motionless in the passenger seat, feeling trapped in my tight seat belt while Mom sang along with her tapes and pointed at everything she spotted on the roadside. \"Oh, Mary, please don't be moody, not today. I told Harry all about how polite and intelligent and cheerful you are,\" she said. Harry was my mother's new boyfriend, her \"significant other,\" she called him. She'd met him at a business meeting when her company bought the company Harry worked for, and since then she'd been driving over the border to Canada every weekend to see him, leaving me at Dad's. Don't get me wrong, I loved staying with Dad, but I missed my Mom-weekends. We used to make popcorn and watch late-night TV, then sleep in and eat cold breakfast cereal together. Now, when she came to pick me up on Sunday afternoons, she always looked glowing and energetic - and much happier than she ever looked after a weekend spent with me. Last Monday she said something about her and Harry getting married, and that this trip might be the time when he pops the question. The only obstacle before him was meeting me. \"I'll be sugar and spice and everything nice, I promise,\" I said sarcastically, staring out at the Canadian countryside. It pretty much resembled the American countryside only . . . it was more Canadian, somehow. Bigger and emptier, just as I imagined Harry; bigger than Dad, with an enormous head with lots of empty space inside.</p>",
+    "question": "<p>Why did Mary's mother advise her not to be moody that particular day?</p>",
+    "options": [
+      "She was going to propose to Harry that day.",
+      "Mary was going to meet Harry for the first time.",
+      "Mary was going to meet her mother's boyfriend.",
+      "Both (b) and (c)"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The passage states that \"Oh, Mary, please don't be moody, not today. I told Harry all about how polite and intelligent and cheerful you are,\" she said. From this statement, it is clear that Mary and her mother were going to see Harry. Mary's mother told Harry that Mary is polite and intelligent. So, we can infer that Harry hasn't met Marry yet. So, both options (b) and (c) are correct.</p><p>Hence, option (d) is the correct answer.</p>",
+    "question_index": 9
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b> Read the given passage and answer the questions that follow.</p><p>I sat motionless in the passenger seat, feeling trapped in my tight seat belt while Mom sang along with her tapes and pointed at everything she spotted on the roadside. \"Oh, Mary, please don't be moody, not today. I told Harry all about how polite and intelligent and cheerful you are,\" she said. Harry was my mother's new boyfriend, her \"significant other,\" she called him. She'd met him at a business meeting when her company bought the company Harry worked for, and since then she'd been driving over the border to Canada every weekend to see him, leaving me at Dad's. Don't get me wrong, I loved staying with Dad, but I missed my Mom-weekends. We used to make popcorn and watch late-night TV, then sleep in and eat cold breakfast cereal together. Now, when she came to pick me up on Sunday afternoons, she always looked glowing and energetic - and much happier than she ever looked after a weekend spent with me. Last Monday she said something about her and Harry getting married, and that this trip might be the time when he pops the question. The only obstacle before him was meeting me. \"I'll be sugar and spice and everything nice, I promise,\" I said sarcastically, staring out at the Canadian countryside. It pretty much resembled the American countryside only . . . it was more Canadian, somehow. Bigger and emptier, just as I imagined Harry; bigger than Dad, with an enormous head with lots of empty space inside.</p>",
+    "question": "<p>Where did Mary's mother first encounter Harry?</p>",
+    "options": [
+      "In her office.",
+      "During her visit to Canada.",
+      "At a park.",
+      "At a business meeting."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The passage states that \"She'd met him at a business meeting when her company bought the company...\" According to this, option (d) is the correct answer. </p>",
+    "question_index": 10
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b> Read the given passage and answer the questions that follow.</p><p>I sat motionless in the passenger seat, feeling trapped in my tight seat belt while Mom sang along with her tapes and pointed at everything she spotted on the roadside. \"Oh, Mary, please don't be moody, not today. I told Harry all about how polite and intelligent and cheerful you are,\" she said. Harry was my mother's new boyfriend, her \"significant other,\" she called him. She'd met him at a business meeting when her company bought the company Harry worked for, and since then she'd been driving over the border to Canada every weekend to see him, leaving me at Dad's. Don't get me wrong, I loved staying with Dad, but I missed my Mom-weekends. We used to make popcorn and watch late-night TV, then sleep in and eat cold breakfast cereal together. Now, when she came to pick me up on Sunday afternoons, she always looked glowing and energetic - and much happier than she ever looked after a weekend spent with me. Last Monday she said something about her and Harry getting married, and that this trip might be the time when he pops the question. The only obstacle before him was meeting me. \"I'll be sugar and spice and everything nice, I promise,\" I said sarcastically, staring out at the Canadian countryside. It pretty much resembled the American countryside only . . . it was more Canadian, somehow. Bigger and emptier, just as I imagined Harry; bigger than Dad, with an enormous head with lots of empty space inside.</p>",
+    "question": "<p>Why did Mary's mother find that trip special? </p>",
+    "options": [
+      "Harry was going to introduce her to his family.",
+      "She was going to be married that weekend.",
+      "She was going to meet Harry after a long time.",
+      "She thought Harry was going to propose to her."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The passage states that \"Last Monday she said something about her and Harry getting married, and that this trip might be the time when he pops the question.\" According to this, option (d) is the correct answer. </p>",
+    "question_index": 11
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>With cracked plaster and peeling paint, I considered what I could say. Water damage would've been the easy answer, but I opted for the truth: \"My phone rang.\" As expected, these words settled somewhere beyond her reach, so she gave my comment its only sensible response: \"Maybe you should turn down the ringer.\" \"Come here, let me explain why I hate phones, and why my father is to blame. He was a troubled man,\" I said, because that's how it had been said to me. She listened with attentive eyes, but I knew she'd be confused by what I said next: \"And he'd play Nulla in Mundo Pax Sincera. Over and over.\" She lowered her head in search of a link and looked up when she found one. \"Is that solitaire?\" This time I allowed a smile. \"Sometimes he'd conduct an invisible orchestra, waving arms in an erratic fashion, and sometimes he'd sit and listen. But Nulla in Mundo Pax Sincera, that one commanded a different reaction. From the start, he stood at full attention, motionless until the end. It went like this for a long time, then he left.\"</p><p>\"I soon became his replacement. I'd sit in the study and listen to his music. One evening mother said he wanted to talk to me. I asked if I was going to see him and she said that he'd call. I asked if I could use the phone in his study and she said I could.\" At this point my companion, attentive as ever, offered her second assumption of the evening, and though more likely than the first, it was just as wrong: \"And he never called and that's why you hate phones.\" No, that's not why. \"When mother told me he was on the line, I rushed to the study and dropped the needle on Nulla in Mundo Pax Sincera, then picked up the phone. He didn't say hello or ask how I was, he only said that there's no peace in the world. He'd looked, it wasn't there, not for him.\" With her final assumption, she came closer to the truth: \"So phones remind you of your father, and that's why you hate them.\"</p><p>\"That's part of it,\" I said, \"but there's more. He said he could hear Vivaldi in the background and told me to keep listening, that aria was on to something. Then he said goodbye to me and mother and everyone else. Forever. He found his peace.\" The music prevented a silence that would've felt more comfortable, then it finally stopped and I let the silence prevail. And there we sat, speaking without speaking, until the silence was shattered by a ring. I stood and walked to the phone, picked it up, not just the receiver, but all of it, and paused to admire the artistry.</p>",
+    "question": "<p>What caused the speaker to sabotage his/her phone?</p>",
+    "options": [
+      "The speaker didn't like the ringtone.",
+      "Because their father didn't call, the speaker ruined the phone.",
+      "The speaker had found comfort in silence since their father's departure.",
+      "The behaviour of the speaker's father made them hate music."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The last paragraph of the passage states that the speaker found console in silence and escaped the memories of her father. So, option (c) is the correct choice. </p>",
+    "question_index": 12
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>With cracked plaster and peeling paint, I considered what I could say. Water damage would've been the easy answer, but I opted for the truth: \"My phone rang.\" As expected, these words settled somewhere beyond her reach, so she gave my comment its only sensible response: \"Maybe you should turn down the ringer.\" \"Come here, let me explain why I hate phones, and why my father is to blame. He was a troubled man,\" I said, because that's how it had been said to me. She listened with attentive eyes, but I knew she'd be confused by what I said next: \"And he'd play Nulla in Mundo Pax Sincera. Over and over.\" She lowered her head in search of a link and looked up when she found one. \"Is that solitaire?\" This time I allowed a smile. \"Sometimes he'd conduct an invisible orchestra, waving arms in an erratic fashion, and sometimes he'd sit and listen. But Nulla in Mundo Pax Sincera, that one commanded a different reaction. From the start, he stood at full attention, motionless until the end. It went like this for a long time, then he left.\"</p><p>\"I soon became his replacement. I'd sit in the study and listen to his music. One evening mother said he wanted to talk to me. I asked if I was going to see him and she said that he'd call. I asked if I could use the phone in his study and she said I could.\" At this point my companion, attentive as ever, offered her second assumption of the evening, and though more likely than the first, it was just as wrong: \"And he never called and that's why you hate phones.\" No, that's not why. \"When mother told me he was on the line, I rushed to the study and dropped the needle on Nulla in Mundo Pax Sincera, then picked up the phone. He didn't say hello or ask how I was, he only said that there's no peace in the world. He'd looked, it wasn't there, not for him.\" With her final assumption, she came closer to the truth: \"So phones remind you of your father, and that's why you hate them.\"</p><p>\"That's part of it,\" I said, \"but there's more. He said he could hear Vivaldi in the background and told me to keep listening, that aria was on to something. Then he said goodbye to me and mother and everyone else. Forever. He found his peace.\" The music prevented a silence that would've felt more comfortable, then it finally stopped and I let the silence prevail. And there we sat, speaking without speaking, until the silence was shattered by a ring. I stood and walked to the phone, picked it up, not just the receiver, but all of it, and paused to admire the artistry.</p>",
+    "question": "<p>According to the passage, what is Nulla in Mundo Pax Sincera? </p>",
+    "options": [
+      "A kind of game",
+      "A kind of music",
+      "A kind of drama",
+      "A kind of movie"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The passage conveys the father's passion for music. The first paragraph states that \"Sometimes he'd conduct an invisible orchestra, waving arms in an erratic fashion, and sometimes he'd sit and listen. But Nulla in Mundo Pax Sincera, that one commanded a different reaction.\" From this part, we can conclude that Nulla in Mundo Pax Sincera is a kind of music. </p><p>Hence, option (b) is the correct answer. </p>",
+    "question_index": 13
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>With cracked plaster and peeling paint, I considered what I could say. Water damage would've been the easy answer, but I opted for the truth: \"My phone rang.\" As expected, these words settled somewhere beyond her reach, so she gave my comment its only sensible response: \"Maybe you should turn down the ringer.\" \"Come here, let me explain why I hate phones, and why my father is to blame. He was a troubled man,\" I said, because that's how it had been said to me. She listened with attentive eyes, but I knew she'd be confused by what I said next: \"And he'd play Nulla in Mundo Pax Sincera. Over and over.\" She lowered her head in search of a link and looked up when she found one. \"Is that solitaire?\" This time I allowed a smile. \"Sometimes he'd conduct an invisible orchestra, waving arms in an erratic fashion, and sometimes he'd sit and listen. But Nulla in Mundo Pax Sincera, that one commanded a different reaction. From the start, he stood at full attention, motionless until the end. It went like this for a long time, then he left.\"</p><p>\"I soon became his replacement. I'd sit in the study and listen to his music. One evening mother said he wanted to talk to me. I asked if I was going to see him and she said that he'd call. I asked if I could use the phone in his study and she said I could.\" At this point my companion, attentive as ever, offered her second assumption of the evening, and though more likely than the first, it was just as wrong: \"And he never called and that's why you hate phones.\" No, that's not why. \"When mother told me he was on the line, I rushed to the study and dropped the needle on Nulla in Mundo Pax Sincera, then picked up the phone. He didn't say hello or ask how I was, he only said that there's no peace in the world. He'd looked, it wasn't there, not for him.\" With her final assumption, she came closer to the truth: \"So phones remind you of your father, and that's why you hate them.\"</p><p>\"That's part of it,\" I said, \"but there's more. He said he could hear Vivaldi in the background and told me to keep listening, that aria was on to something. Then he said goodbye to me and mother and everyone else. Forever. He found his peace.\" The music prevented a silence that would've felt more comfortable, then it finally stopped and I let the silence prevail. And there we sat, speaking without speaking, until the silence was shattered by a ring. I stood and walked to the phone, picked it up, not just the receiver, but all of it, and paused to admire the artistry.</p>",
+    "question": "<p>What is the tone of the passage? </p>",
+    "options": [
+      "Optimistic",
+      "Cynical",
+      "Dispirited",
+      "Romantic"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The passage talks about the gloomy past of the speaker. </p><p>Optimistic: When writing in an optimistic tone, you're conveying a sense of hope and a positive outlook for the future.</p><p>Cynical: The cynical tone is when the author conveys a doubtful nature.</p><p>Dispirited: low in spirit or enthusiasm; downhearted or depressed; discouraged.</p><p>Romantic: This kind of tone is, as you might anticipate, fantastical and exaggerated. These sentences could seem entertaining to read, yet the content is implausible.</p><p>After reading the passage it can be said that the tone of the passage is 'Dispirited'. </p><p>Hence, option (c) is the correct answer. </p>",
+    "question_index": 14
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>With cracked plaster and peeling paint, I considered what I could say. Water damage would've been the easy answer, but I opted for the truth: \"My phone rang.\" As expected, these words settled somewhere beyond her reach, so she gave my comment its only sensible response: \"Maybe you should turn down the ringer.\" \"Come here, let me explain why I hate phones, and why my father is to blame. He was a troubled man,\" I said, because that's how it had been said to me. She listened with attentive eyes, but I knew she'd be confused by what I said next: \"And he'd play Nulla in Mundo Pax Sincera. Over and over.\" She lowered her head in search of a link and looked up when she found one. \"Is that solitaire?\" This time I allowed a smile. \"Sometimes he'd conduct an invisible orchestra, waving arms in an erratic fashion, and sometimes he'd sit and listen. But Nulla in Mundo Pax Sincera, that one commanded a different reaction. From the start, he stood at full attention, motionless until the end. It went like this for a long time, then he left.\"</p><p>\"I soon became his replacement. I'd sit in the study and listen to his music. One evening mother said he wanted to talk to me. I asked if I was going to see him and she said that he'd call. I asked if I could use the phone in his study and she said I could.\" At this point my companion, attentive as ever, offered her second assumption of the evening, and though more likely than the first, it was just as wrong: \"And he never called and that's why you hate phones.\" No, that's not why. \"When mother told me he was on the line, I rushed to the study and dropped the needle on Nulla in Mundo Pax Sincera, then picked up the phone. He didn't say hello or ask how I was, he only said that there's no peace in the world. He'd looked, it wasn't there, not for him.\" With her final assumption, she came closer to the truth: \"So phones remind you of your father, and that's why you hate them.\"</p><p>\"That's part of it,\" I said, \"but there's more. He said he could hear Vivaldi in the background and told me to keep listening, that aria was on to something. Then he said goodbye to me and mother and everyone else. Forever. He found his peace.\" The music prevented a silence that would've felt more comfortable, then it finally stopped and I let the silence prevail. And there we sat, speaking without speaking, until the silence was shattered by a ring. I stood and walked to the phone, picked it up, not just the receiver, but all of it, and paused to admire the artistry.</p>",
+    "question": "<p>What did the speaker do after learning that the father was on the line? </p>",
+    "options": [
+      "She/he went inside to dress up.",
+      "The speaker played the father's favourite piece of music.",
+      "She/he went to the room to stop the music so that she/he could listen to the father.",
+      "She/he went outside to avoid calls."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The second paragraph states that \"When mother told me he was on the line, I rushed to the study and dropped the needle on Nulla in Mundo Pax Sincera, then picked up the phone.\" So, option (c) is the correct choice. </p>",
+    "question_index": 15
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b><b> </b>Read the given passage and answer the questions that follow.</p><p>Once upon a time, in a grand estate perched on a hill, there lived an arrogant woman named Victoria. Victoria had recently married a wealthy widower, becoming the stepmother to his young son, Thomas. Her arrival brought an air of entitlement and superiority that cast a shadow over their once happy home. Victoria saw Thomas as an obstacle to her new life of luxury. She resented his presence, considering him an inconvenience that stood in the way of her ambitions. Thomas, despite his tender age, possessed a resilient spirit. He yearned for his father's love and acceptance, but Victoria's coldness only incited his determination to rise above her contemptuous behaviour. He sought solace in his own imagination, finding refuge in books and daydreams that transported him far away from the reality of their toxic household.</p><p>Victoria's arrogance began to crumble as she witnessed the positive impact Thomas had on others. She saw his unwavering kindness and the light he brought into their home. Slowly, her heart softened, and she realized the error of her ways. Regret filled her as she reflected on the years of mistreatment and the missed opportunities to build a genuine bond with Thomas. In a moment of vulnerability, Victoria approached Thomas, seeking forgiveness for her past actions. With tears in her eyes, she expressed her remorse and acknowledged the hurt she had caused. Thomas, in a display of grace beyond his years, embraced her with forgiveness, understanding that everyone deserves a chance to change.</p><p>From that day forward, Victoria and Thomas worked to rebuild their relationship. Their story became a testament to the transformative power of humility and forgiveness. Victoria learned that true strength lies not in arrogance, but in the ability to acknowledge one's mistakes and grow from them. And Thomas, through his resilience and capacity for forgiveness, showed that love can prevail, even in the face of adversity. In the end, their journey together taught them both valuable lessons about the importance of compassion, empathy, and the capacity for change.</p>",
+    "question": "<p>What kind of passage is it?</p>",
+    "options": [
+      "Expository",
+      "Persuasive",
+      "Narrative",
+      "Reflective"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Expository Passage: This passage provides information or explains a concept or idea. It presents facts, evidence, or arguments in a logical and organized manner to educate or inform the reader.</p><p>Persuasive Passage: This passage aims to convince or persuade the reader to adopt a particular viewpoint or take a specific action. It often utilizes rhetorical devices, emotional appeals, and logical reasoning to make a persuasive argument.</p><p>Narrative Passage: This passage tells a story or recounts a sequence of events. It typically includes characters, and a plot, and may have a specific narrative structure, such as an introduction, rising action, climax, and resolution.</p><p>Reflective Passage: This passage involves introspection or personal reflection on experiences, thoughts, or emotions. It delves into the writer's inner thoughts and feelings, often offering insights or lessons learned.</p><p>This passage incorporates elements of character development, conflict, and a moral lesson, which are all typical of a fictional narrative.</p><p>Hence, option (c) is correct.</p>",
+    "question_index": 16
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b><b> </b>Read the given passage and answer the questions that follow.</p><p>Once upon a time, in a grand estate perched on a hill, there lived an arrogant woman named Victoria. Victoria had recently married a wealthy widower, becoming the stepmother to his young son, Thomas. Her arrival brought an air of entitlement and superiority that cast a shadow over their once happy home. Victoria saw Thomas as an obstacle to her new life of luxury. She resented his presence, considering him an inconvenience that stood in the way of her ambitions. Thomas, despite his tender age, possessed a resilient spirit. He yearned for his father's love and acceptance, but Victoria's coldness only incited his determination to rise above her contemptuous behaviour. He sought solace in his own imagination, finding refuge in books and daydreams that transported him far away from the reality of their toxic household.</p><p>Victoria's arrogance began to crumble as she witnessed the positive impact Thomas had on others. She saw his unwavering kindness and the light he brought into their home. Slowly, her heart softened, and she realized the error of her ways. Regret filled her as she reflected on the years of mistreatment and the missed opportunities to build a genuine bond with Thomas. In a moment of vulnerability, Victoria approached Thomas, seeking forgiveness for her past actions. With tears in her eyes, she expressed her remorse and acknowledged the hurt she had caused. Thomas, in a display of grace beyond his years, embraced her with forgiveness, understanding that everyone deserves a chance to change.</p><p>From that day forward, Victoria and Thomas worked to rebuild their relationship. Their story became a testament to the transformative power of humility and forgiveness. Victoria learned that true strength lies not in arrogance, but in the ability to acknowledge one's mistakes and grow from them. And Thomas, through his resilience and capacity for forgiveness, showed that love can prevail, even in the face of adversity. In the end, their journey together taught them both valuable lessons about the importance of compassion, empathy, and the capacity for change.</p>",
+    "question": "<p>What caused Victoria's arrogance to crumble?</p>",
+    "options": [
+      "Thomas started behaving badly.",
+      "She witnessed the positive impact Thomas had on others.",
+      "Her friends criticized her for mistreating Thomas.",
+      "She received a large inheritance."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>It is mentioned in the second paragraph of the passage that 'Victoria's arrogance began to crumble as she witnessed the positive impact Thomas had on others. She saw his unwavering kindness and the light he brought into their home. Slowly, her heart softened, and she realized the error of her ways.'</p><p>Hence, option (b) is correct.</p>",
+    "question_index": 17
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b><b> </b>Read the given passage and answer the questions that follow.</p><p>Once upon a time, in a grand estate perched on a hill, there lived an arrogant woman named Victoria. Victoria had recently married a wealthy widower, becoming the stepmother to his young son, Thomas. Her arrival brought an air of entitlement and superiority that cast a shadow over their once happy home. Victoria saw Thomas as an obstacle to her new life of luxury. She resented his presence, considering him an inconvenience that stood in the way of her ambitions. Thomas, despite his tender age, possessed a resilient spirit. He yearned for his father's love and acceptance, but Victoria's coldness only incited his determination to rise above her contemptuous behaviour. He sought solace in his own imagination, finding refuge in books and daydreams that transported him far away from the reality of their toxic household.</p><p>Victoria's arrogance began to crumble as she witnessed the positive impact Thomas had on others. She saw his unwavering kindness and the light he brought into their home. Slowly, her heart softened, and she realized the error of her ways. Regret filled her as she reflected on the years of mistreatment and the missed opportunities to build a genuine bond with Thomas. In a moment of vulnerability, Victoria approached Thomas, seeking forgiveness for her past actions. With tears in her eyes, she expressed her remorse and acknowledged the hurt she had caused. Thomas, in a display of grace beyond his years, embraced her with forgiveness, understanding that everyone deserves a chance to change.</p><p>From that day forward, Victoria and Thomas worked to rebuild their relationship. Their story became a testament to the transformative power of humility and forgiveness. Victoria learned that true strength lies not in arrogance, but in the ability to acknowledge one's mistakes and grow from them. And Thomas, through his resilience and capacity for forgiveness, showed that love can prevail, even in the face of adversity. In the end, their journey together taught them both valuable lessons about the importance of compassion, empathy, and the capacity for change.</p>",
+    "question": "<p>What is the main idea of the passage?</p>",
+    "options": [
+      "The power of imagination and escapism in challenging circumstances.",
+      "The importance of wealth and luxury in finding happiness.",
+      "The struggles of a blended family and the impact of a stepmother's arrogance.",
+      "The transformative power of forgiveness and humility in rebuilding relationships."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The main idea of the passage is the transformative power of forgiveness and humility in rebuilding relationships. Throughout the passage, we see the initial conflict between Victoria, the arrogant stepmother, and Thomas, the young stepson. Victoria's arrogance and mistreatment of Thomas created a toxic environment in their home. However, as the story progresses, Victoria begins to witness Thomas's unwavering kindness and the positive impact he has on others. This leads to a change of heart in Victoria, and she realizes the error of her ways. In a vulnerable moment, she approaches Thomas, seeking forgiveness for her past actions.</p><p>Therefore, the main idea of the passage is that forgiveness and humility have the power to heal wounds, mend relationships, and bring about positive change in individuals and families.</p><p>Hence, option (d) is correct. </p>",
+    "question_index": 18
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b><b> </b>Read the given passage and answer the questions that follow.</p><p>Once upon a time, in a grand estate perched on a hill, there lived an arrogant woman named Victoria. Victoria had recently married a wealthy widower, becoming the stepmother to his young son, Thomas. Her arrival brought an air of entitlement and superiority that cast a shadow over their once happy home. Victoria saw Thomas as an obstacle to her new life of luxury. She resented his presence, considering him an inconvenience that stood in the way of her ambitions. Thomas, despite his tender age, possessed a resilient spirit. He yearned for his father's love and acceptance, but Victoria's coldness only incited his determination to rise above her contemptuous behaviour. He sought solace in his own imagination, finding refuge in books and daydreams that transported him far away from the reality of their toxic household.</p><p>Victoria's arrogance began to crumble as she witnessed the positive impact Thomas had on others. She saw his unwavering kindness and the light he brought into their home. Slowly, her heart softened, and she realized the error of her ways. Regret filled her as she reflected on the years of mistreatment and the missed opportunities to build a genuine bond with Thomas. In a moment of vulnerability, Victoria approached Thomas, seeking forgiveness for her past actions. With tears in her eyes, she expressed her remorse and acknowledged the hurt she had caused. Thomas, in a display of grace beyond his years, embraced her with forgiveness, understanding that everyone deserves a chance to change.</p><p>From that day forward, Victoria and Thomas worked to rebuild their relationship. Their story became a testament to the transformative power of humility and forgiveness. Victoria learned that true strength lies not in arrogance, but in the ability to acknowledge one's mistakes and grow from them. And Thomas, through his resilience and capacity for forgiveness, showed that love can prevail, even in the face of adversity. In the end, their journey together taught them both valuable lessons about the importance of compassion, empathy, and the capacity for change.</p>",
+    "question": "<p>Which term can be used to describe Victoria's initial behaviour?</p>",
+    "options": [
+      "Haughty",
+      "Resilient",
+      "Respectful",
+      "Courteous"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>'Haughty' means arrogantly superior and disdainful. It is distinctly mentioned in the first paragraph of the passage that she was an arrogant woman so 'haughty' is the right word here.</p><p>'Resilient' means strong.</p><p>'Courteous' means polite and respectful.</p><p>Hence, option (a) is correct. </p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 15 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

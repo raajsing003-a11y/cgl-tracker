@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Exam - pundits</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1e40af;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #d1d5db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        .welcome-screen.hidden {
+            display: none;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-info {
+            margin-bottom: 25px;
+        }
+        
+        .section-info h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .section-table th,
+        .section-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .subsec-container {
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+        
+        .subsec-row {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .welcome-instructions {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-instructions h3 {
+            color: var(--warning);
+            margin-bottom: 12px;
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #1e3a8a;
+        }
+        
+        .channel-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .channel-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* CBT Exam Interface */
+        .exam-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .exam-container.active {
+            display: flex;
+        }
+        
+        /* Top Header */
+        .exam-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* Candidate Info Bar */
+        .candidate-bar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .candidate-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+        
+        .candidate-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .candidate-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .candidate-id {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .section-badge {
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Area - FIXED LAYOUT */
+        .exam-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Question Area with separate scroll */
+        .question-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+        
+        .question-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 6px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg);
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .question-marks {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .lang-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .comprehension {
+            background: #eff6ff;
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .comprehension h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .option:hover:not(.submitted) {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+        
+        .option.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+        
+        .option-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .option.selected .option-indicator {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .option.correct .option-indicator {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .option.wrong .option-indicator {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .solution-box {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .solution-box.show {
+            display: block;
+        }
+        
+        .solution-header {
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .solution-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation Controls - FIXED AT BOTTOM OF QUESTION AREA */
+        .navigation-bar {
+            background: white;
+            padding: 15px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-prev {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-next {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-review {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-review.marked {
+            background: #92400e;
+        }
+        
+        .btn-submit {
+            background: var(--success);
+            color: white;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        /* Question Navigator Sidebar - SEPARATE SCROLL */
+        .navigator-sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .navigator-header {
+            padding: 15px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+        
+        .navigator-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .nav-question {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .nav-question:hover {
+            background: var(--bg);
+        }
+        
+        .nav-question.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-question.answered {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .nav-question.review {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .nav-question.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .nav-question.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .navigator-legend {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            flex-shrink: 0;
+            background: white;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Mobile Navigator Panel */
+        .mobile-navigator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+        
+        .mobile-navigator.open {
+            transform: translateY(0);
+        }
+        
+        .mobile-nav-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Result Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .result-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .result-stat {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .result-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .result-stat.correct .result-stat-value {
+            color: var(--success);
+        }
+        
+        .result-stat.incorrect .result-stat-value {
+            color: var(--danger);
+        }
+        
+        .section-results {
+            margin-bottom: 25px;
+        }
+        
+        .section-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-results-table th,
+        .section-results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-results-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+        
+        .section-results-table .subsection-row {
+            background: #f9fafb;
+            font-size: 13px;
+        }
+        
+        .section-results-table .subsection-row td:first-child {
+            padding-left: 30px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .result-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-close {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-review-ans {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 1024px) {
+            .navigator-sidebar {
+                display: flex;
+            }
+            
+            .mobile-only {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .question-scroll {
+                padding: 15px;
+            }
+            
+            .question-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .exam-header {
+                padding: 10px 15px;
+            }
+            
+            .exam-title {
+                font-size: 14px;
+            }
+            
+            .timer-box {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+            
+            .candidate-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .navigator-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .result-container {
+                padding: 20px;
+            }
+            
+            .section-results-table {
+                font-size: 13px;
+            }
+            
+            .section-results-table th,
+            .section-results-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .exam-header,
+            .candidate-bar,
+            .navigation-bar,
+            .navigator-sidebar,
+            .mobile-navigator {
+                display: none !important;
+            }
+            
+            .question-scroll {
+                padding: 0;
+            }
+            
+            .question-card {
+                page-break-inside: avoid;
+                margin-bottom: 30px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--border);
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1><i class="fas fa-graduation-cap"></i> pundits</h1>
+                <p>Computer Based Test</p>
+            </div>
+            
+            <div class="test-details">
+                <div class="detail-item">
+                    <div class="detail-label">Test ID</div>
+                    <div class="detail-value">84638</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Questions</div>
+                    <div class="detail-value">20</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Marks</div>
+                    <div class="detail-value">40.0</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value">15 mins</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Marking Scheme</div>
+                    <div class="detail-value">+2.0 / -0.5</div>
+                </div>
+            </div>
+            
+            
+        <div class="welcome-instructions">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You can mark questions for review and come back later</li>
+                <li>The timer will automatically submit the test when time is up</li>
+                <li>Negative marking applies for wrong answers</li>
+            </ul>
+        </div>
+        
+            
+            <div class="welcome-actions">
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start Test
+                </button>
+                <a href="https://t.me/mocks_wallah_again" target="_blank" class="channel-link">
+                    <i class="fab fa-telegram"></i> Join Channel
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Exam Interface -->
+    <div class="exam-container" id="examContainer">
+        <!-- Top Header -->
+        <div class="exam-header">
+            <div class="exam-title">pundits</div>
+            <div class="exam-timer">
+                <div class="timer-box" id="mainTimer">15:00</div>
+                <button class="nav-btn btn-submit mobile-only" id="submitBtn">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Candidate Info Bar -->
+        <div class="candidate-bar">
+            <div class="candidate-info">
+                <div class="candidate-photo">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="candidate-details">
+                    <div class="candidate-name">Candidate</div>
+                    <div class="candidate-id">Test ID: 84638</div>
+                </div>
+            </div>
+            <div class="section-badge" id="sectionBadge">
+                <span id="sectionName"></span>
+                <span id="sectionTimer"></span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="exam-main">
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-scroll">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div>
+                                <div class="question-number" id="questionNum">Question 1 of 20</div>
+                                <div class="question-marks" id="questionMarks">Marks: 2.0</div>
+                            </div>
+                            <div class="lang-toggle">
+                                <button class="lang-btn active" id="engBtn">English</button>
+                                <button class="lang-btn" id="hinBtn">हिंदी</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comprehension" id="comprehension" style="display:none;">
+                            <h4><i class="fas fa-book-open"></i> Comprehension</h4>
+                            <div id="comprehensionText"></div>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-list" id="optionsList"></div>
+                        
+                        <div class="solution-box" id="solutionBox">
+                            <div class="solution-header">
+                                <i class="fas fa-lightbulb"></i> Solution
+                            </div>
+                            <div class="solution-stats" id="solutionStats"></div>
+                            <div id="solutionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar inside Question Area -->
+                <div class="navigation-bar">
+                    <button class="nav-btn btn-prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="progress-info">
+                        <div id="progressText">Question 1 of 20</div>
+                        <div style="font-size:11px;margin-top:4px">
+                            Answered: <span id="answeredCount">0</span> | 
+                            <a href="https://t.me/mocks_wallah_again" style="color:var(--primary)">Mocks Wallah</a>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn btn-review" id="reviewBtn">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                    
+                    <button class="nav-btn mobile-only" id="navigatorBtn">
+                        <i class="fas fa-th"></i> Questions
+                    </button>
+                    
+                    <button class="nav-btn btn-submit desktop-only" id="submitBtnDesktop">Submit</button>
+                    
+                    <button class="nav-btn btn-next" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigator Sidebar -->
+            <div class="navigator-sidebar desktop-only">
+                <div class="navigator-header">Question Navigator</div>
+                <div class="navigator-grid" id="desktopNav"></div>
+                <div class="navigator-legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--success)"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--warning)"></div>
+                        <span>Marked for Review</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--danger)"></div>
+                        <span>Incorrect</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Navigator Panel -->
+    <div class="mobile-navigator" id="mobileNav">
+        <div class="mobile-nav-header">
+            <h3>Question Navigator</h3>
+            <button class="close-nav" id="closeNav">&times;</button>
+        </div>
+        <div class="navigator-grid" id="mobileNavGrid"></div>
+        <div class="navigator-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--success)"></div>
+                <span>Answered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--warning)"></div>
+                <span>Marked for Review</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--danger)"></div>
+                <span>Incorrect</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                <span>Not Visited</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-container">
+            <div class="result-header">
+                <h2>Test Completed!</h2>
+                <div class="result-score" id="resultScore">0/40.0</div>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-stat correct">
+                    <div class="result-stat-value" id="correctCount">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat incorrect">
+                    <div class="result-stat-value" id="incorrectCount">0</div>
+                    <div class="result-stat-label">Incorrect</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="unattemptedCount">0</div>
+                    <div class="result-stat-label">Unattempted</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="timeTaken">0</div>
+                    <div class="result-stat-label">Minutes</div>
+                </div>
+            </div>
+            
+            <div class="section-results" id="sectionResults" style="display:none;">
+                <h3>Section-wise Performance</h3>
+                <table class="section-results-table" id="sectionResultsTable">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionResultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="result-actions">
+                <button class="result-btn btn-close" id="closeResult">Close</button>
+                <button class="result-btn btn-review-ans" id="reviewAnswers">Review Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Which\t\t\tcountry has recently legalised cryptocurrency mining and\t\t\texchanges?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">हाल\t\t\tही में किस देश ने क्रिप्टो\t\t\tमुद्रा के खनन और विनिमय को\t\t\tवैध किया है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Kazakhstan</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कज़ाख़स्तान</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Turkmenistan</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">तुर्कमेनिस्तान</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Kyrgyzstan</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">किर्गिज़स्तान</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Tajikistan</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ताजिकिस्तान</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Turkmenistan\t\t\thas officially legalised cryptocurrency mining and exchanges,\t\t\tmarking a major policy shift in its tightly controlled and\t\t\tgas-dependent economy; the law was signed by President Serdar\t\t\tBerdimuhamedov.</font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">तुर्कमेनिस्तान\t\t\tने आधिकारिक रूप से क्रिप्टो\t\t\tमुद्रा के खनन और विनिमय को\t\t\tवैध घोषित किया है। यह उसके\t\t\tकड़े नियंत्रण वाली तथा गैस\t\t\tपर आधारित अर्थव्यवस्था में\t\t\tएक महत्वपूर्ण नीतिगत परिवर्तन\t\t\tमाना जा रहा है। इस कानून पर\t\t\tराष्ट्रपति सरदार बरदिमुहामेदोव\t\t\tने हस्ताक्षर किए।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Tamil\t\t\tNadu’s first Jallikattu event of 2026 was inaugurated at which\t\t\tplace?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वर्ष\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">2026\t\t\t</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tतमिलनाडु के पहले जल्लीकट्टू\t\t\tआयोजन का उद्घाटन किस स्थान\t\t\tपर किया गया</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Thatchankurichi</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">थाचनकुरिची</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Avaniapuram</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अवनियापुरम</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Chennai</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">चेन्नई</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Madurai</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मदुरै</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Tamil Nadu’s first\t\t\tJallikattu event of 2026 was inaugurated at Thatchankurichi near\t\t\tGandharvakottai, marking the traditional start of the Jallikattu\t\t\tseason in the State.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वर्ष\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">2026\t\t\t</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tतमिलनाडु के पहले जल्लीकट्टू\t\t\tआयोजन का उद्घाटन गांधर्वकोट्टई\t\t\tके निकट स्थित थाचनकुरिची\t\t\tमें किया गया। इसके साथ ही\t\t\tराज्य में जल्लीकट्टू के\t\t\tपारंपरिक मौसम की शुरुआत\t\t\tहुई।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">The\t\t\tIndian Army has declared 2026 as which special year to enhance\t\t\tconnectivity, decision-making, and combat effectiveness?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tसेना ने संपर्क</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">निर्णय\t\t\tक्षमता तथा युद्धक प्रभावशीलता\t\t\tको बढ़ाने के लिए वर्ष </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">को\t\t\tकिस विशेष वर्ष के रूप में\t\t\tघोषित किया है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Year\t\t\tof Modernization</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">आधुनिकीकरण\t\t\tवर्ष</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Year\t\t\tof Indigenous Weapons</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">स्वदेशी\t\t\tहथियार वर्ष</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Year\t\t\tof Networking &amp; Data Centricity</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">नेटवर्किंग\t\t\tएवं आँकड़ा</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केंद्रितता\t\t\tवर्ष</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Year\t\t\tof Strategic Mobility</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सामरिक\t\t\tगतिशीलता वर्ष</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The Indian Army has\t\t\tannounced 2026 as the Year of Networking &amp; Data Centricity to\t\t\tfocus on enhancing connectivity, real-time decision-making, and\t\t\tcombat effectiveness. <br><br>General Dwivedi emphasised the\t\t\tgrowing role of indigenous systems, data-driven operations, and\t\t\tenhanced networking, making the Army more agile and future-ready.&nbsp;\t\t\tThe initiative aims to strengthen resilience, improve operational\t\t\tefficiency, and enable a modern, technology-driven force prepared\t\t\tfor future challenges.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tसेना ने संपर्क व्यवस्था</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">त्वरित\t\t\tनिर्णय क्षमता तथा युद्धक\t\t\tप्रभावशीलता को सुदृढ़ करने\t\t\tके उद्देश्य से वर्ष </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">को\t\t\t“नेटवर्किंग एवं आँकड़ा</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केंद्रितता\t\t\tवर्ष” घोषित किया है।</span></font></font></span></font></p>\t\t\t<p><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनरल\t\t\tद्विवेदी ने स्वदेशी प्रणालियों</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">आँकड़ा</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">आधारित\t\t\tअभियानों तथा उन्नत नेटवर्किंग\t\t\tकी बढ़ती भूमिका पर बल दिया।\t\t\tइस पहल का उद्देश्य सेना को\t\t\tअधिक चुस्त</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सक्षम\t\t\tतथा भविष्य की चुनौतियों के\t\t\tलिए तकनीक</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">संचालित\t\t\tबनाना है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Who\t\t\twill be the chief guests at India’s Republic Day celebrations in\t\t\t2026?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारत\t\t\tके गणतंत्र दिवस समारोह </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tमुख्य अतिथि कौन होंगे</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Emmanuel\t\t\tMacron and Olaf Scholz</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">इमैनुएल\t\t\tमैक्रों और ओलाफ शोल्त्स</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Ursula\t\t\tvon der Leyen and António Costa</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">उर्सुला\t\t\tफ़ॉन डेर लेयेन और अन्तोनियो\t\t\tकोस्ता</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Charles\t\t\tMichel and Josep Borrell</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">चार्ल्स\t\t\tमिशेल और जोसेप बोरेल</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Angela\t\t\tMerkel and Jean-Claude Juncker</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">एंजेला\t\t\tमर्केल और जाँ</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">क्लोद\t\t\tयुंकर</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">European Union leaders\t\t\tUrsula von der Leyen and António Costa will be the chief guests\t\t\tat India’s Republic Day 2026 celebrations on January 26, 2026,\t\t\tmarking a significant diplomatic moment for the event.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यूरोपीय\t\t\tसंघ के नेता उर्सुला फ़ॉन\t\t\tडेर लेयेन और अन्तोनियो\t\t\tकोस्ता </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">26\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनवरी</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t2026 </span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">को\t\t\tभारत के गणतंत्र दिवस समारोह\t\t\tमें मुख्य अतिथि होंगे। यह\t\t\tअवसर एक महत्वपूर्ण कूटनीतिक\t\t\tघटना माना जा रहा है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">SAMPANN\t\t\tis an integrated online pension management system for Department\t\t\tof Telecommunications (DoT) pensioners, enabling end-to-end\t\t\tprocessing, sanctioning and direct bank transfer of pensions.&nbsp;\t\t\tWhat is the full form of SAMPANN in the context of pension\t\t\tmanagement?</font></font></font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\" style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">SAMPANN\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">दूरसंचार\t\t\tविभाग के पेंशनभोगियों के\t\t\tलिए एक एकीकृत ऑनलाइन पेंशन\t\t\tप्रबंधन प्रणाली है</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">,\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">जो\t\t\tपेंशन की संपूर्ण प्रक्रिया</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">,\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">स्वीकृति\t\t\tतथा सीधे बैंक खाते में\t\t\tहस्तांतरण की सुविधा प्रदान\t\t\tकरती है।</font></font></span></font></font></p>\t\t\t<p lang=\"en-IN\" style=\"margin-top: 0.19in\"><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tप्रबंधन के संदर्भ में </font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">SAMPANN\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">का\t\t\tपूर्ण रूप क्या है</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">?</font></font></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">System\t\t\tfor Accounting and Monitoring of Pension Network</font></font></font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\">\t\t\t<font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tनेटवर्क के लेखांकन एवं\t\t\tनिगरानी हेतु प्रणाली</font></font></span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Scheme\t\t\tfor Automated Management of Pension and Nominations</font></font></font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\">\t\t\t<font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tएवं नामांकन के स्वचालित\t\t\tप्रबंधन हेतु योजना</font></font></span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">System\t\t\tfor Accounting and Management of Pension</font></font></font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\">\t\t\t<font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tके लेखांकन एवं प्रबंधन हेतु\t\t\tप्रणाली</font></font></span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Software\t\t\tfor Allocation and Management of Pension Network</font></font></font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\">\t\t\t<font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tनेटवर्क के आवंटन एवं प्रबंधन\t\t\tहेतु सॉफ़्टवेयर</font></font></span></font></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">SAMPANN (System for\t\t\tAccounting and Management of Pension) Is an integrated online\t\t\tpension management system for Department of Telecommunications\t\t\t(DoT) pensioners, enabling end-to-end processing, sanctioning and\t\t\tdirect bank transfer of pensions.</font></p>\t\t</span><span class=\"hqt\"><p lang=\"en-IN\">\t\t\t<font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">SAMPANN\t\t\t(</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">पेंशन\t\t\tके लेखांकन एवं प्रबंधन हेतु\t\t\tप्रणाली</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">)\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">दूरसंचार\t\t\tविभाग के पेंशनभोगियों के\t\t\tलिए एक एकीकृत ऑनलाइन पेंशन\t\t\tप्रबंधन प्रणाली है</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">,\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">जो\t\t\tपेंशन की संपूर्ण प्रक्रिया</font></font></span></font></font><font face=\"Times New Roman, serif\"><font size=\"3\" style=\"font-size: 12pt\"><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">,\t\t\t</font></font></font></font><font face=\"Times New Roman\"><font size=\"3\" style=\"font-size: 12pt\"><span lang=\"hi-IN\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">स्वीकृति\t\t\tतथा सीधे बैंक खाते में\t\t\tहस्तांतरण की सुविधा प्रदान\t\t\tकरती है।</font></font></span></font></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">In\t\t\tJanuary 2026, Justice A. Muhamed Mustaque was sworn in as the\t\t\tChief Justice of which High Court?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनवरी\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tन्यायमूर्ति ए</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">.\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मुहम्मद\t\t\tमुस्ताक ने किस उच्च न्यायालय\t\t\tके मुख्य न्यायाधीश के रूप\t\t\tमें शपथ ग्रहण की</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Sikkim\t\t\tHigh Court</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सिक्किम\t\t\tउच्च न्यायालय</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Kerala\t\t\tHigh Court</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केरल\t\t\tउच्च न्यायालय</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Calcutta\t\t\tHigh Court</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कलकत्ता\t\t\tउच्च न्यायालय</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Gauhati\t\t\tHigh Court</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">गुवाहाटी\t\t\tउच्च न्यायालय</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Justice A. Muhamed Mustaque\t\t\twas sworn in as the 24th Chief Justice”of the High Court of\t\t\tSikkim at Ashirwad Hall, Lok Bhawan, with Governor Om Prakash\t\t\tMathur administering the oath of office.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">न्यायमूर्ति\t\t\tए</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">.\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मुहम्मद\t\t\tमुस्ताक ने लोक भवन के आशीर्वाद\t\t\tसभागार में सिक्किम उच्च\t\t\tन्यायालय के </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">24</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वें\t\t\tमुख्य न्यायाधीश के रूप में\t\t\tशपथ ग्रहण की। राज्यपाल ओम\t\t\tप्रकाश माथुर ने उन्हें पद\t\t\tकी शपथ दिलाई।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Which\t\t\ttwo departments signed an MoU to create a pan-India logistics\t\t\tframework for transporting agricultural samples?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कृषि\t\t\tनमूनों के परिवहन हेतु अखिल\t\t\tभारतीय रसद ढाँचा तैयार करने\t\t\tके लिए किन दो विभागों ने\t\t\tसमझौता ज्ञापन पर हस्ताक्षर\t\t\tकिए</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Ministry\t\t\tof Communications and Ministry of Environment</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">संचार\t\t\tमंत्रालय और पर्यावरण मंत्रालय</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Department\t\t\tof Biotechnology and DA&amp;FW</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जैव\t\t\tप्रौद्योगिकी विभाग और कृषि\t\t\tएवं किसान कल्याण विभाग</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Ministry\t\t\tof Commerce and Department of Posts</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वाणिज्य\t\t\tमंत्रालय और डाक विभाग</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Department\t\t\tof Agriculture &amp; Farmers Welfare and Department of Posts</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कृषि\t\t\tएवं किसान कल्याण विभाग और\t\t\tडाक विभाग</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The Department of\t\t\tAgriculture &amp; Farmers Welfare (DA&amp;FW) and the Department\t\t\tof Posts (DoP) signed an MoU to create a pan-India logistics\t\t\tframework for transporting pesticide, seed, and fertiliser samples\t\t\tto testing labs.</font></p>\t\t\t<p><font size=\"4\" style=\"font-size: 14pt\">India Post will provide\t\t\tend-to-end logistics, including QR code-based address masking,\t\t\tspecialised packaging, monitored temperature transport for\t\t\tsensitive samples, and digital tracking for transparency and\t\t\ttraceability.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कृषि\t\t\tएवं किसान कल्याण विभाग तथा\t\t\tडाक विभाग ने कीटनाशक</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">बीज\t\t\tऔर उर्वरक नमूनों को परीक्षण\t\t\tप्रयोगशालाओं तक पहुँचाने\t\t\tके लिए अखिल भारतीय रसद ढाँचा\t\t\tविकसित करने हेतु समझौता\t\t\tज्ञापन पर हस्ताक्षर किए।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tडाक द्वारा संपूर्ण रसद\t\t\tसुविधा प्रदान की जाएगी</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जिसमें\t\t\tक्यूआर कोड आधारित पता\t\t\tगोपनीयता</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विशेष\t\t\tपैकेजिंग</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">संवेदनशील\t\t\tनमूनों के लिए नियंत्रित\t\t\tतापमान में परिवहन तथा\t\t\tपारदर्शिता और अनुरेखण हेतु\t\t\tडिजिटल निगरानी शामिल है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tis the theme of World Hindi Day 2026?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विश्व\t\t\tहिंदी दिवस </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">का\t\t\tविषय क्या है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Hindi\t\t\tin Media</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मीडिया\t\t\tमें हिंदी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Hindi\t\t\tLiterature Celebration</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">हिंदी\t\t\tसाहित्य उत्सव</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Promoting\t\t\tHindi on Global Platforms</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वैश्विक\t\t\tमंचों पर हिंदी का प्रचार</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Hindi\t\t\tin Education</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">शिक्षा\t\t\tमें हिंदी</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">World Hindi Day is observed\t\t\tevery year on 10th January to promote the Hindi language globally.\t\t\tTheme 2026 - Promoting Hindi on Global Platforms.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विश्व\t\t\tहिंदी दिवस प्रत्येक वर्ष\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">10\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनवरी\t\t\tको हिंदी भाषा के वैश्विक\t\t\tप्रचार</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\">-</font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">प्रसार\t\t\tके उद्देश्य से मनाया जाता\t\t\tहै।</span></font></font></span></font></p>\t\t\t<p><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वर्ष\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">का\t\t\tविषय —</span></font></font><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\">\t\t\t</font></font><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\"><b>वैश्विक\t\t\tमंचों पर हिंदी का प्रचार</b></span></font></font><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Who\t\t\tinaugurated the 9th edition of Indusfood 2026 at Greater Noida?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ग्रेटर\t\t\tनोएडा में इंडसफूड </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">9</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वें\t\t\tसंस्करण का उद्घाटन किसने\t\t\tकिया</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Piyush\t\t\tGoyal</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पीयूष\t\t\tगोयल</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Nitin\t\t\tGadkari</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">नितिन\t\t\tगडकरी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Chirag\t\t\tPaswan</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">चिराग\t\t\tपासवान</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Smriti\t\t\tIrani</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">स्मृति\t\t\tईरानी</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Union Minister Chirag\t\t\tPaswan of the Ministry of Food Processing Industries inaugurated\t\t\tthe 9th edition of Indusfood 2026 at the India Expo Centre and\t\t\tMart, Greater Noida, Uttar Pradesh. The event was organised by the\t\t\tTrade Promotion Council of India (TPCI) under the Ministry of\t\t\tCommerce and Industry</font>.</p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">खाद्य\t\t\tप्रसंस्करण उद्योग मंत्रालय\t\t\tके केंद्रीय मंत्री चिराग\t\t\tपासवान ने उत्तर प्रदेश के\t\t\tग्रेटर नोएडा स्थित इंडिया\t\t\tएक्सपो सेंटर एंड मार्ट में\t\t\tइंडसफूड </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">9</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वें\t\t\tसंस्करण का उद्घाटन किया।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">इस\t\t\tआयोजन का संचालन वाणिज्य\t\t\tएवं उद्योग मंत्रालय के\t\t\tअंतर्गत भारतीय व्यापार\t\t\tसंवर्धन परिषद द्वारा किया\t\t\tगया।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">What\t\t\tis the new name of the Aralam Wildlife Sanctuary in Kerala?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केरल\t\t\tस्थित अरलम वन्यजीव अभयारण्य\t\t\tका नया नाम क्या है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Aralam\t\t\tEco Park</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अरलम\t\t\tपारिस्थितिकी उद्यान</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Aralam\t\t\tInsect Sanctuary</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अरलम\t\t\tकीट अभयारण्य</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Aralam\t\t\tBird Sanctuary</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अरलम\t\t\tपक्षी अभयारण्य</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Aralam\t\t\tButterfly Sanctuary</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अरलम\t\t\tतितली अभयारण्य</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Aralam Wildlife Sanctuary\t\t\tIn Kerala has been officially renamed as Aralam Butterfly\t\t\tSanctuary, making It the first butterfly-specific sanctuary in the\t\t\tstate</font>.</p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केरल\t\t\tके अरलम वन्यजीव अभयारण्य\t\t\tका आधिकारिक रूप से नाम बदलकर\t\t\tअरलम तितली अभयारण्य कर दिया\t\t\tगया है। यह राज्य का पहला\t\t\tतितली</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विशिष्ट\t\t\tअभयारण्य बन गया है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Bamanwas\t\t\tKankar gram panchayat, recently in news for sustainable\t\t\tagriculture, is located in which district of Rajasthan?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सतत\t\t\tकृषि के लिए हाल ही में चर्चा\t\t\tमें रही बामनवास कांकर ग्राम\t\t\tपंचायत राजस्थान के किस जिले\t\t\tमें स्थित है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Kotputli–Behror</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कोटपूतली–बहरोड़</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Sikar</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सीकर</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Jaipur</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जयपुर</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Alwar</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अलवर</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Bamanwas Kankar gram\t\t\tpanchayat in Rajasthan has become the State’s first fully\t\t\torganic certified village body, located in the newly formed\t\t\tKotputli–Behror district. The shift towards organic farming\t\t\tbegan after villagers collectively addressed declining soil\t\t\tfertility, falling groundwater levels, rising input costs, and\t\t\thealth issues linked to chemical-based agriculture, focusing on\t\t\tlong-term sustainability. The panchayat has adopted chemical-free\t\t\tfarming and ecological livestock practices, including crop\t\t\trotation, mulching, biological pest control, vermicompost use, and\t\t\tenvironmentally responsible animal husbandry.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">राजस्थान\t\t\tकी बामनवास कांकर ग्राम\t\t\tपंचायत राज्य की पहली पूर्णतः\t\t\tजैविक प्रमाणित ग्राम पंचायत\t\t\tबन गई है। यह नवगठित कोटपूतली–बहरोड़\t\t\tजिले में स्थित है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ग्रामीणों\t\t\tने मिट्टी की उर्वरता में\t\t\tकमी</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भूजल\t\t\tस्तर में गिरावट</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">बढ़ती\t\t\tलागत तथा रासायनिक खेती से\t\t\tजुड़ी स्वास्थ्य समस्याओं\t\t\tको देखते हुए सामूहिक रूप\t\t\tसे जैविक खेती अपनाई। पंचायत\t\t\tने रसायन</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मुक्त\t\t\tकृषि</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">फसल\t\t\tचक्र</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मल्चिंग</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जैविक\t\t\tकीट नियंत्रण</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केंचुआ\t\t\tखाद तथा पर्यावरण</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अनुकूल\t\t\tपशुपालन जैसी पद्धतियों को\t\t\tअपनाया है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Who\t\t\thas been appointed as the Director General (DG) of the Border\t\t\tSecurity Force (BSF)?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सीमा\t\t\tसुरक्षा बल के महानिदेशक के\t\t\tरूप में किसे नियुक्त किया\t\t\tगया है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Shatrujeet\t\t\tSingh Kapoor</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">शत्रुजीत\t\t\tसिंह कपूर</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Rakesh\t\t\tAggarwal</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">राकेश\t\t\tअग्रवाल</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Praveen\t\t\tKumar</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">प्रवीण\t\t\tकुमार</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Y.S.\t\t\tPuram Kumar</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वाई</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">.\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">एस</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">.\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पुरम\t\t\tकुमार</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Praveen Kumar, a 1993-batch\t\t\tIPS officer of the West Bengal cadre who was serving as Director\t\t\tGeneral of the ITBP, has been appointed as the Director General of\t\t\tthe Border Security Force (BSF).</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पश्चिम\t\t\tबंगाल संवर्ग के वर्ष </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1993\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">बैच\t\t\tके भारतीय पुलिस सेवा अधिकारी\t\t\tप्रवीण कुमार को सीमा सुरक्षा\t\t\tबल का महानिदेशक नियुक्त\t\t\tकिया गया है। इससे पूर्व वे\t\t\tभारत</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">तिब्बत\t\t\tसीमा पुलिस के महानिदेशक के\t\t\tरूप में कार्यरत थे।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">The\t\t\tNational Highways Authority of India (NHAI) has extended its\t\t\tcitizencentric ‘Clean Toilet Picture Challenge’ initiative\t\t\ttill </font></font></font><font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\"><i>__</i></font></font></font><font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">___,\t\t\tto improve cleanliness and user experience at toilet facilities\t\t\talong National Highways.</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tराष्ट्रीय राजमार्ग प्राधिकरण\t\t\tने राष्ट्रीय राजमार्गों\t\t\tके किनारे स्थित शौचालय\t\t\tसुविधाओं में स्वच्छता तथा\t\t\tउपयोगकर्ता अनुभव को बेहतर\t\t\tबनाने के लिए नागरिक</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केंद्रित\t\t\t‘स्वच्छ शौचालय चित्र चुनौती’\t\t\tपहल को </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">_____\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">तक\t\t\tबढ़ा दिया है।</span></font></font></span></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">30\t\t\tSeptember</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">30\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सितंबर</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">30\t\t\tAugust</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">30\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अगस्त</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">31\t\t\tJuly</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">31\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जुलाई</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">30\t\t\tJune</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">30\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जून</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The National Highways\t\t\tAuthority of India (NHAI) has extended its citizen-centric ‘Clean\t\t\tToilet Picture Challenge’ initiative till 30 June, to improve\t\t\tcleanliness and user experience at toilet facilities along\t\t\tNational Highways.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tराष्ट्रीय राजमार्ग प्राधिकरण\t\t\tने राष्ट्रीय राजमार्गों\t\t\tके किनारे स्थित शौचालय\t\t\tसुविधाओं में स्वच्छता तथा\t\t\tउपयोगकर्ता अनुभव को बेहतर\t\t\tबनाने के उद्देश्य से\t\t\tनागरिक</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केंद्रित\t\t\t‘स्वच्छ शौचालय चित्र चुनौती’\t\t\tपहल को </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">30\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जून\t\t\tतक बढ़ा दिया है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Who\t\t\twas named ICC Women’s Player of the Month for December 2025?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">दिसंबर\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2025\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\tलिए आईसीसी महिला खिलाड़ी\t\t\tऑफ द मंथ किसे नामित किया\t\t\tगया</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Smriti\t\t\tMandhana</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">स्मृति\t\t\tमंधाना</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Laura\t\t\tWolvaardt</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">लॉरा\t\t\tवोलवार्ड्ट</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Ellyse\t\t\tPerry</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">एलिस\t\t\tपेरी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Shafali\t\t\tVerma</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">शेफाली\t\t\tवर्मा</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Mitchell Starc has been\t\t\tnamed ICC Men’s Player of the Month for December 2025. South\t\t\tAfrica’s Laura Wolvaardt was named ICC Women’s Player of the\t\t\tMonth.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">दिसंबर\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2025\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\tलिए दक्षिण अफ्रीका की लॉरा\t\t\tवोलवार्ड्ट को आईसीसी महिला\t\t\tखिलाड़ी ऑफ द मंथ नामित किया\t\t\tगया। वहीं</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पुरुष\t\t\tवर्ग में मिशेल स्टार्क को\t\t\tआईसीसी पुरुष खिलाड़ी ऑफ द\t\t\tमंथ चुना गया।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Which\t\t\tscientist has won the Tyler Prize for Environmental Achievement\t\t\tfor her work on fungal networks?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">किस\t\t\tवैज्ञानिक को कवकीय जालों\t\t\tपर उनके कार्य के लिए पर्यावरणीय\t\t\tउपलब्धि हेतु टायलर पुरस्कार\t\t\tप्रदान किया गया है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Toby\t\t\tKiers</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">टोबी\t\t\tकियर्स</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Jane\t\t\tGoodall</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जेन\t\t\tगुडॉल</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Sylvia\t\t\tEarle</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सिल्विया\t\t\tअर्ल</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Vandana\t\t\tShiva</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वंदना\t\t\tशिवा</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">American evolutionary\t\t\tbiologist Toby Kiers has won the Tyler Prize for Environmental\t\t\tAchievement, often referred to as the “Nobel for the\t\t\tenvironment,” for her pioneering research on underground fungal\t\t\tnetworks. She led efforts to map the global distribution of\t\t\tmycorrhizal fungi through a worldwide Underground Atlas, bringing\t\t\tattention to hidden below-ground biodiversity.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अमेरिकी\t\t\tविकासवादी जीवविज्ञानी टोबी\t\t\tकियर्स को भूमिगत कवकीय जालों\t\t\tपर उनके अग्रणी अनुसंधान के\t\t\tलिए पर्यावरणीय उपलब्धि\t\t\tहेतु टायलर पुरस्कार प्रदान\t\t\tकिया गया है। इस पुरस्कार\t\t\tको प्रायः “पर्यावरण का\t\t\tनोबेल” कहा जाता है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">उन्होंने\t\t\tविश्वव्यापी भूमिगत एटलस\t\t\tके माध्यम से माइकोराइज़ल\t\t\tकवकों के वैश्विक वितरण का\t\t\tमानचित्रण करने में महत्वपूर्ण\t\t\tभूमिका निभाई तथा भूमिगत\t\t\tजैव विविधता की ओर वैश्विक\t\t\tध्यान आकर्षित किया।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">The\t\t\tDirectorate General of Civil Aviation (DGCA) has imposed a penalty\t\t\tof </font></font></font><font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\"><i>___</i></font></font></font><font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">__on\t\t\tIndiGo for major flight disruptions witnessed in December 2025.</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">नागर\t\t\tविमानन महानिदेशालय ने दिसंबर\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2025\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tहुई बड़ी उड़ान अव्यवस्थाओं\t\t\tके लिए इंडिगो पर </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">_____\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">का\t\t\tजुर्माना लगाया है।</span></font></font></span></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\">₹<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">24.2\t\t\tCrore</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t₹<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">24.2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">करोड़</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\">₹<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">23.2\t\t\tCrore</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t₹<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">23.2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">करोड़</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\">₹<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">22.2\t\t\tCrore</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t₹<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">22.2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">करोड़</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\">₹<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">21.2\t\t\tCrore</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-left: -0.03in\">\t\t\t₹<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">21.2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">करोड़</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">The Directorate General of\t\t\tCivil Aviation (DGCA) has imposed a penalty of ₹22.2 crore on\t\t\tIndiGo for major flight disruptions witnessed in December 2025.\t\t\t<br><br>The regulator stated that the disruptions were\t\t\tprimarily caused by overstretching of flight crew, resulting in\t\t\twidespread delays and cancellations.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">नागर\t\t\tविमानन महानिदेशालय ने दिसंबर\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2025\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tहुई बड़ी उड़ान अव्यवस्थाओं\t\t\tके लिए इंडिगो पर ₹</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">22.2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">करोड़\t\t\tका जुर्माना लगाया है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">नियामक\t\t\tके अनुसार</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ये\t\t\tअव्यवस्थाएँ मुख्य रूप से\t\t\tउड़ान दल पर अत्यधिक कार्यभार\t\t\tके कारण हुईं</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जिससे\t\t\tव्यापक स्तर पर उड़ानों में\t\t\tविलंब तथा रद्दीकरण देखने\t\t\tको मिला।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Which\t\t\tglobal bank is setting up a branch in India’s GIFT City to trade\t\t\tequities and other financial instruments?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कौन</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सा\t\t\tवैश्विक बैंक भारत के गिफ्ट\t\t\tसिटी में शेयरों तथा अन्य\t\t\tवित्तीय साधनों के व्यापार\t\t\tके लिए शाखा स्थापित कर रहा\t\t\tहै</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">HSBC\t\t\tHoldings Plc</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">एचएसबीसी\t\t\tहोल्डिंग्स पीएलसी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">JPMorgan\t\t\tChase &amp; Co.</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जेपीमॉर्गन\t\t\tचेस एंड कंपनी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Standard\t\t\tChartered Plc</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">स्टैंडर्ड\t\t\tचार्टर्ड पीएलसी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Citibank</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सिटीबैंक</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">JPMorgan Chase &amp; Co. Is\t\t\tsetting up a branch in Gujarat International Finance TecCity (GIFT\t\t\tCity) to trade equities, derivatives, and other financial\t\t\tinstruments, leveraging India’s low-tax financial hub.</font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जेपीमॉर्गन\t\t\tचेस एंड कंपनी गुजरात\t\t\tअंतरराष्ट्रीय वित्तीय\t\t\tटेक</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सिटी\t\t\tमें शेयरों</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">व्युत्पन्न\t\t\tसाधनों तथा अन्य वित्तीय\t\t\tउपकरणों के व्यापार हेतु\t\t\tशाखा स्थापित कर रही है। यह\t\t\tभारत के कम</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कर\t\t\tवाले वित्तीय केंद्र का लाभ\t\t\tउठाने की दिशा में महत्वपूर्ण\t\t\tकदम माना जा रहा है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">India’s\t\t\tfirst Vande Bharat Sleeper Train was launched in January 2026 on\t\t\twhich route?</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारत\t\t\tकी पहली वंदे भारत स्लीपर\t\t\tरेलगाड़ी जनवरी </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tकिस मार्ग पर प्रारंभ की गई</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Mumbai\t\t\t– Ahmedabad</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मुंबई\t\t\t– अहमदाबाद</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Kolkata–\t\t\tGuwahati</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कोलकाता\t\t\t– गुवाहाटी</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Chennai\t\t\t– Bengaluru</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">चेन्नई\t\t\t– बेंगलुरु</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Delhi\t\t\t– Mumbai</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">दिल्ली\t\t\t– मुंबई</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font size=\"4\" style=\"font-size: 14pt\">India’s first Vande\t\t\tBharat Sleeper Train was launched on January 17, 2026, on the\t\t\tKolkata (Howrah) – Guwahati (Kamakhya) route. Flagged off by\t\t\tPrime Minister Narendra Modi from Malda Town in West Bengal, the\t\t\ttrain represents a significant upgrade from the previous chair-car\t\t\tmodels by introducing long-distance, overnight sleeper berths.</font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारत\t\t\tकी पहली वंदे भारत स्लीपर\t\t\tरेलगाड़ी </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">17\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनवरी</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t2026 </span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">को\t\t\tकोलकाता </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">(</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">हावड़ा</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">)\t\t\t– </span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">गुवाहाटी\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">(</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कामाख्या</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">)\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मार्ग\t\t\tपर प्रारंभ की गई।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">प्रधानमंत्री\t\t\tनरेंद्र मोदी ने पश्चिम बंगाल\t\t\tके मालदा टाउन से इस रेलगाड़ी\t\t\tको हरी झंडी दिखाई। यह रेलगाड़ी\t\t\tपूर्व की चेयर</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कार\t\t\tव्यवस्था की तुलना में लंबी\t\t\tदूरी की रात्रिकालीन यात्रा\t\t\tहेतु स्लीपर सुविधा प्रदान\t\t\tकरती है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">With\t\t\treference to 'Granth Kutir', inaugurated in January 2026, consider\t\t\tthe following statements: <br><br>1. It is a dedicated\t\t\trepository established at Rashtrapati Bhavan to preserve and\t\t\tshowcase manuscripts and books in India's 11 classical languages.\t\t\t<br>2. The initiative provides support to the 'Gyan Bharatam\t\t\tMission' and aims to promote digital access to India's manuscript\t\t\theritage for researchers. <br><br>Which of the statements\t\t\tgiven above is/are correct?</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जनवरी\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">में\t\t\tउद्घाटित ‘ग्रंथ कुटीर’ के\t\t\tसंदर्भ में निम्नलिखित कथनों\t\t\tपर विचार कीजिए</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:</span></font></font></p>\t\t\t<ol>\t\t\t\t<li><p style=\"margin-top: 0.19in; margin-bottom: 0in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यह\t\t\t\tभारत की </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">11\t\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">शास्त्रीय\t\t\t\tभाषाओं में पांडुलिपियों\t\t\t\tतथा पुस्तकों के संरक्षण\t\t\t\tऔर प्रदर्शन हेतु राष्ट्रपति\t\t\t\tभवन में स्थापित एक समर्पित\t\t\t\tभंडार है।</span></font></font></span></font></p></li>\t\t\t\t<li><p style=\"margin-bottom: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यह\t\t\t\tपहल ‘ज्ञान भारतम् मिशन’\t\t\t\tको समर्थन प्रदान करती है\t\t\t\tतथा शोधकर्ताओं के लिए भारत\t\t\t\tकी पांडुलिपि विरासत की\t\t\t\tडिजिटल पहुँच को बढ़ावा देने\t\t\t\tका उद्देश्य रखती है।</span></font></font></span></font></p></li>\t\t\t</ol>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">उपरोक्त\t\t\tकथनों में से कौन</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सा</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">/</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">से\t\t\tसही है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">/</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">हैं</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Both\t\t\t1 and 2</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">और\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">दोनों</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">None</font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कोई\t\t\tनहीं</span></font></font></span></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Only\t\t\t1</font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केवल\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1</span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Only\t\t\t2</font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केवल\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2</span></font></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p style=\"margin-bottom: 0.14in\">\t\t\t<font size=\"4\" style=\"font-size: 14pt\">Statement 1 is correct:\t\t\tGranth Kutir was inaugurated by President Droupadi Murmu at\t\t\tRashtrapati Bhavan. It houses a collection of approximately 2,300\t\t\tbooks and 50 manuscripts spanning all 11 classical languages of\t\t\tIndia (Tamil, Sanskrit, Kannada, Telugu, Malayalam, Odia, Marathi,\t\t\tPali, Prakrit, Assamese, and Bengali). <br><br>Statement 2 is\t\t\tcorrect: It supports the 'Gyan Bharatam Mission,' which focuses on\t\t\tthe preservation, digitisation, and dissemination of India’s\t\t\tvast manuscript heritage. While physical works are available on\t\t\tthe Rashtrapati Bhavan circuit, digital access is provided via an\t\t\tonline portal for scholars.</font></p>\t\t\t<p><br>\t\t\t</p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कथन\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सही\t\t\tहै </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ग्रंथ\t\t\tकुटीर का उद्घाटन राष्ट्रपति\t\t\tद्रौपदी मुर्मु द्वारा\t\t\tराष्ट्रपति भवन में किया\t\t\tगया। इसमें भारत की सभी </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">11\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">शास्त्रीय\t\t\tभाषाओं — तमिल</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">संस्कृत</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कन्नड़</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">तेलुगु</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मलयालम</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">ओड़िया</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">मराठी</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पाली</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">प्राकृत</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">असमिया\t\t\tऔर बांग्ला — से संबंधित लगभग\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2300\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पुस्तकों\t\t\tतथा </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">50\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">पांडुलिपियों\t\t\tका संग्रह रखा गया है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कथन\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सही\t\t\tहै </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यह\t\t\t‘ज्ञान भारतम् मिशन’ को\t\t\tसमर्थन प्रदान करता है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जिसका\t\t\tउद्देश्य भारत की विशाल\t\t\tपांडुलिपि विरासत का संरक्षण</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">डिजिटलीकरण\t\t\tतथा प्रसार करना है। भौतिक\t\t\tसामग्री राष्ट्रपति भवन\t\t\tपरिसर में उपलब्ध है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जबकि\t\t\tविद्वानों के लिए डिजिटल\t\t\tपहुँच ऑनलाइन पोर्टल के\t\t\tमाध्यम से प्रदान की गई है।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">With\t\t\treference to 'Wings India 2026', consider the following\t\t\tstatements: <br><br>1. It is Asia’s largest civil aviation\t\t\tand aerospace exhibition, organized jointly by the Ministry of\t\t\tCivil Aviation, Airports Authority of India (AAI), and FICCI. <br><br>2.\t\t\tThe event is held annually at the Begumpet Airport in Hyderabad to\t\t\tshowcase India's aviation market. <br><br>3. The theme for the\t\t\t2026 edition emphasizes a transition from 'Design to Deployment'\t\t\tand 'Manufacturing to Maintenance'. <br><br>Which of the\t\t\tstatements given above are correct?</font></font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t‘<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विंग्स\t\t\tइंडिया </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026’\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\tसंदर्भ में निम्नलिखित कथनों\t\t\tपर विचार कीजिए</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:</span></font></font></p>\t\t\t<ol>\t\t\t\t<li><p style=\"margin-top: 0.19in; margin-bottom: 0in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यह\t\t\t\tएशिया का सबसे बड़ा नागरिक\t\t\t\tउड्डयन एवं अंतरिक्ष प्रदर्शनी\t\t\t\tआयोजन है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">जिसका\t\t\t\tसंयुक्त रूप से आयोजन नागरिक\t\t\t\tउड्डयन मंत्रालय</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\t\tविमानपत्तन प्राधिकरण तथा\t\t\t\tभारतीय उद्योग एवं वाणिज्य\t\t\t\tमहासंघ द्वारा किया जाता\t\t\t\tहै।</span></font></font></span></font></p></li>\t\t\t\t<li><p style=\"margin-bottom: 0in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारत\t\t\t\tके विमानन बाज़ार को प्रदर्शित\t\t\t\tकरने हेतु यह आयोजन प्रतिवर्ष\t\t\t\tहैदराबाद के बेगमपेट हवाई\t\t\t\tअड्डे पर आयोजित किया जाता\t\t\t\tहै।</span></font></font></span></font></p></li>\t\t\t\t<li><p style=\"margin-bottom: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वर्ष\t\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">के\t\t\t\tसंस्करण का विषय ‘अभिकल्पना\t\t\t\tसे तैनाती’ तथा ‘निर्माण\t\t\t\tसे अनुरक्षण’ की ओर संक्रमण\t\t\t\tपर आधारित है।</span></font></font></span></font></p></li>\t\t\t</ol>\t\t\t<p style=\"margin-top: 0.19in\"><a name=\"_GoBack\"></a><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">उपरोक्त\t\t\tकथनों में से कौन</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">-</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">से\t\t\tसही हैं</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">?</span></font></font></p>\t\t</span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Only\t\t\t1, 2 and 3</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केवल\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1,\t\t\t2 </span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">और\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">3</span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Only\t\t\t2 and 3</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केवल\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">और\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">3</span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Only\t\t\t1 and 3</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">केवल\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">और\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">3</span></font></font></p>\t\t</span>",
+      "<span class=\"eqt\"><p>\t\t\t<font color=\"#000000\"><font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">NOTA</font></font></font></p>\t\t</span><span class=\"hqt\"><p>\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">इनमें\t\t\tसे कोई नहीं</span></font></font></span></font></p>\t\t</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p>\t\t\t<font face=\"Cambria Math, serif\"><font size=\"4\" style=\"font-size: 14pt\">Statement\t\t\t1 is correct: Wings India is indeed recognized as Asia’s largest\t\t\tcivil aviation event. It is a collaborative flagship effort of the\t\t\tMinistry of Civil Aviation, AAI, and FICCI. <br><br>Statement\t\t\t2 is incorrect: While the venue (Begumpet Airport, Hyderabad) is\t\t\tcorrect, Wings India is a biennial event (held once every two\t\t\tyears), not an annual one. <br><br>Statement 3 is correct: The\t\t\t2026 theme is comprehensive: \"Indian Aviation: Paving the\t\t\tFuture – From Design to Deployment, Manufacturing to\t\t\tMaintenance, Inclusivity to Innovation and Safety to\t\t\tSustainability.\" It highlights India's shift toward becoming\t\t\ta manufacturing and MRO (Maintenance, Repair, and Overhaul) hub.</font></font></p>\t\t</span><span class=\"hqt\"><p style=\"margin-bottom: 0.19in\">\t\t\t<font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कथन\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">1\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सही\t\t\tहै </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">विंग्स\t\t\tइंडिया एशिया का सबसे बड़ा\t\t\tनागरिक उड्डयन आयोजन माना\t\t\tजाता है। इसका आयोजन नागरिक\t\t\tउड्डयन मंत्रालय</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भारतीय\t\t\tविमानपत्तन प्राधिकरण तथा\t\t\tभारतीय उद्योग एवं वाणिज्य\t\t\tमहासंघ द्वारा संयुक्त रूप\t\t\tसे किया जाता है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in; margin-bottom: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कथन\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">गलत\t\t\tहै </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">यद्यपि\t\t\tइसका आयोजन स्थल हैदराबाद\t\t\tका बेगमपेट हवाई अड्डा है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">परंतु\t\t\tयह वार्षिक नहीं बल्कि\t\t\tद्विवार्षिक आयोजन है</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">अर्थात्\t\t\tइसका आयोजन प्रत्येक दो वर्ष\t\t\tमें एक बार किया जाता है।</span></font></font></span></font></p>\t\t\t<p style=\"margin-top: 0.19in\"><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">कथन\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">3\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">सही\t\t\tहै </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">वर्ष\t\t\t</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">2026\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">का\t\t\tविषय — “भारतीय विमानन </span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">:\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">भविष्य\t\t\tका मार्ग प्रशस्त करना —\t\t\tअभिकल्पना से तैनाती</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">निर्माण\t\t\tसे अनुरक्षण</span></font></font></span></font><font face=\"Nirmala UI, serif\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"en-IN\">,\t\t\t</span></font></font><font face=\"Mangal\"><span lang=\"ar-SA\"><font face=\"Nirmala UI\"><font size=\"4\" style=\"font-size: 14pt\"><span lang=\"hi-IN\">समावेशन\t\t\tसे नवाचार तथा सुरक्षा से\t\t\tसततता” — भारत को विनिर्माण\t\t\tतथा अनुरक्षण केंद्र के रूप\t\t\tमें विकसित करने पर बल देता\t\t\tहै।</span></font></font></span></font></p>\t\t</span>",
+    "marks": 2,
+    "section": "General\n\t\t\tAwareness",
+    "series_name": "Quiz 125 - Jan 2026 Current"
+  }
+];
+        const sectionsData = null;
+        const marksPerQ = 2.0;
+        const negMarks = 0.5;
+        const totalDuration = 15;
+        
+        class CBTExam {
+            constructor() {
+                this.questions = questions;
+                this.sections = sectionsData;
+                this.currentQuestion = 0;
+                this.answers = new Array(this.questions.length).fill(null);
+                this.markedForReview = new Array(this.questions.length).fill(false);
+                this.timeSpent = new Array(this.questions.length).fill(0);
+                this.isEnglish = true;
+                this.isSubmitted = false;
+                this.startTime = null;
+                this.lastQuestionTime = null;
+                this.mainTimer = null;
+                this.sectionTimer = null;
+                this.currentSection = this.sections ? 0 : null;
+                this.totalTimeLeft = totalDuration * 60;
+                
+                this.initElements();
+                this.setupWelcomeScreen();
+                this.setupBeforeUnload();
+            }
+            
+            initElements() {
+                this.els = {
+                    welcomeScreen: document.getElementById('welcomeScreen'),
+                    examContainer: document.getElementById('examContainer'),
+                    mainTimer: document.getElementById('mainTimer'),
+                    sectionBadge: document.getElementById('sectionBadge'),
+                    sectionName: document.getElementById('sectionName'),
+                    sectionTimer: document.getElementById('sectionTimer'),
+                    questionNum: document.getElementById('questionNum'),
+                    questionMarks: document.getElementById('questionMarks'),
+                    questionText: document.getElementById('questionText'),
+                    comprehension: document.getElementById('comprehension'),
+                    comprehensionText: document.getElementById('comprehensionText'),
+                    optionsList: document.getElementById('optionsList'),
+                    solutionBox: document.getElementById('solutionBox'),
+                    solutionStats: document.getElementById('solutionStats'),
+                    solutionText: document.getElementById('solutionText'),
+                    progressText: document.getElementById('progressText'),
+                    answeredCount: document.getElementById('answeredCount'),
+                    desktopNav: document.getElementById('desktopNav'),
+                    mobileNav: document.getElementById('mobileNav'),
+                    mobileNavGrid: document.getElementById('mobileNavGrid'),
+                    resultModal: document.getElementById('resultModal'),
+                    resultScore: document.getElementById('resultScore'),
+                    correctCount: document.getElementById('correctCount'),
+                    incorrectCount: document.getElementById('incorrectCount'),
+                    unattemptedCount: document.getElementById('unattemptedCount'),
+                    timeTaken: document.getElementById('timeTaken'),
+                    sectionResults: document.getElementById('sectionResults'),
+                    sectionResultsBody: document.getElementById('sectionResultsBody')
+                };
+            }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.els.welcomeScreen.classList.add('hidden');
+                    this.els.examContainer.classList.add('active');
+                    setTimeout(() => this.startExam(), 100);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.isSubmitted) {
+                        e.preventDefault();
+                        e.returnValue = 'Your test is in progress. Are you sure you want to leave?';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            startExam() {
+                this.startTime = Date.now();
+                this.lastQuestionTime = this.startTime;
+                this.createNavigator();
+                this.startMainTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                }
+                this.loadQuestion(0);
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('engBtn').onclick = () => this.setLanguage(true);
+                document.getElementById('hinBtn').onclick = () => this.setLanguage(false);
+                document.getElementById('prevBtn').onclick = () => this.navigate(-1);
+                document.getElementById('nextBtn').onclick = () => this.navigate(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('submitBtn').onclick = () => this.confirmSubmit();
+                document.getElementById('submitBtnDesktop').onclick = () => this.confirmSubmit();
+                document.getElementById('navigatorBtn').onclick = () => this.openMobileNav();
+                document.getElementById('closeNav').onclick = () => this.closeMobileNav();
+                document.getElementById('closeResult').onclick = () => this.closeResultModal();
+                document.getElementById('reviewAnswers').onclick = () => this.reviewAnswers();
+            }
+            
+            createNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    container.innerHTML = '';
+                    this.questions.forEach((_, i) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'nav-question';
+                        btn.textContent = i + 1;
+                        btn.onclick = () => this.goToQuestion(i);
+                        container.appendChild(btn);
+                    });
+                });
+            }
+            
+            extractText(html, isEng) {
+                if (!html) return '';
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                const langSpans = temp.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                    }
+                });
+                
+                return temp.innerHTML;
+            }
+            
+            getQuestionMarks(qIdx) {
+                if (!this.sections) return marksPerQ;
+                
+                for (const section of this.sections) {
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                if (qIdx >= subsec.start && qIdx <= subsec.end) {
+                                    return subsec.marks_per_q;
+                                }
+                            }
+                        }
+                        return marksPerQ;
+                    }
+                }
+                return marksPerQ;
+            }
+            
+            loadQuestion(idx) {
+                if (this.currentQuestion !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                    this.lastQuestionTime = now;
+                }
+                
+                this.currentQuestion = idx;
+                const q = this.questions[idx];
+                const qMarks = this.getQuestionMarks(idx);
+                
+                this.els.questionNum.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.els.questionMarks.textContent = `Marks: ${qMarks}`;
+                this.els.progressText.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.updateAnsweredCount();
+                this.updateNavigator();
+                this.updateNavigationButtons();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.comprehension.style.display = 'block';
+                    this.els.comprehensionText.innerHTML = this.extractText(q.comp, this.isEnglish);
+                } else {
+                    this.els.comprehension.style.display = 'none';
+                }
+                
+                this.els.questionText.innerHTML = this.extractText(q.question, this.isEnglish);
+                this.loadOptions(q, idx);
+                
+                if (this.isSubmitted && q.solution) {
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const mins = Math.floor(timeSpent / 60);
+                    const secs = timeSpent % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    
+                    this.els.solutionStats.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    this.els.solutionText.innerHTML = this.extractText(q.solution, this.isEnglish);
+                    this.els.solutionBox.classList.add('show');
+                } else {
+                    this.els.solutionBox.classList.remove('show');
+                }
+            }
+            
+            loadOptions(q, qIdx) {
+                this.els.optionsList.innerHTML = '';
+                const userAnswer = this.answers[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                if (!q.options || !Array.isArray(q.options)) return;
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let className = 'option';
+                    
+                    if (this.isSubmitted) className += ' submitted';
+                    if (userAnswer === i) className += ' selected';
+                    
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            className += ' correct';
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            className += ' wrong';
+                        }
+                    }
+                    
+                    div.className = className;
+                    
+                    let indicator = '';
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            indicator = '✓';
+                        } else if (userAnswer === i) {
+                            indicator = '✗';
+                        }
+                    } else if (userAnswer === i) {
+                        indicator = '✓';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="option-indicator">${indicator}</div>
+                        <div class="option-text">${this.extractText(opt, this.isEnglish)}</div>
+                    `;
+                    
+                    if (!this.isSubmitted) {
+                        div.onclick = () => this.selectOption(i, qIdx);
+                    }
+                    
+                    this.els.optionsList.appendChild(div);
+                });
+            }
+            
+            selectOption(optIdx, qIdx) {
+                if (this.isSubmitted) return;
+                this.answers[qIdx] = this.answers[qIdx] === optIdx ? null : optIdx;
+                this.loadOptions(this.questions[qIdx], qIdx);
+                this.updateAnsweredCount();
+                this.updateNavigator();
+            }
+            
+            toggleReview() {
+                if (this.isSubmitted) return;
+                this.markedForReview[this.currentQuestion] = !this.markedForReview[this.currentQuestion];
+                this.updateNavigator();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = document.getElementById('reviewBtn');
+                if (this.markedForReview[this.currentQuestion]) {
+                    btn.classList.add('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Marked';
+                } else {
+                    btn.classList.remove('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Mark for Review';
+                }
+            }
+            
+            navigate(dir) {
+                const newIdx = this.currentQuestion + dir;
+                
+                if (this.isSubmitted) {
+                    if (newIdx >= 0 && newIdx < this.questions.length) {
+                        this.loadQuestion(newIdx);
+                    }
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                if (newIdx >= 0 && newIdx < this.questions.length) {
+                    this.loadQuestion(newIdx);
+                }
+            }
+            
+            goToQuestion(idx) {
+                if (this.isSubmitted) {
+                    this.loadQuestion(idx);
+                    this.closeMobileNav();
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (idx < currentSection.start || idx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                this.loadQuestion(idx);
+                this.closeMobileNav();
+            }
+            
+            updateNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    const btns = container.querySelectorAll('.nav-question');
+                    btns.forEach((btn, i) => {
+                        btn.className = 'nav-question';
+                        
+                        if (i === this.currentQuestion) {
+                            btn.classList.add('current');
+                        } else if (this.isSubmitted) {
+                            if (this.answers[i] !== null && this.questions[i].correct_option_id !== undefined) {
+                                if (this.answers[i] === this.questions[i].correct_option_id) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.add('wrong');
+                                }
+                            }
+                        } else {
+                            if (this.markedForReview[i]) {
+                                btn.classList.add('review');
+                            } else if (this.answers[i] !== null) {
+                                btn.classList.add('answered');
+                            }
+                            
+                            if (this.sections) {
+                                const currentSection = this.sections[this.currentSection];
+                                if (i < currentSection.start || i > currentSection.end) {
+                                    btn.classList.add('disabled');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const reviewBtn = document.getElementById('reviewBtn');
+                
+                prevBtn.disabled = this.currentQuestion === 0;
+                nextBtn.disabled = this.currentQuestion === this.questions.length - 1;
+                
+                if (this.isSubmitted) {
+                    reviewBtn.style.display = 'none';
+                } else {
+                    reviewBtn.style.display = 'inline-flex';
+                }
+                
+                if (this.sections && !this.isSubmitted) {
+                    const currentSection = this.sections[this.currentSection];
+                    prevBtn.disabled = prevBtn.disabled || (this.currentQuestion === currentSection.start);
+                    nextBtn.disabled = nextBtn.disabled || (this.currentQuestion === currentSection.end);
+                }
+            }
+            
+            updateAnsweredCount() {
+                const count = this.answers.filter(a => a !== null).length;
+                this.els.answeredCount.textContent = count;
+            }
+            
+            setLanguage(isEng) {
+                this.isEnglish = isEng;
+                document.getElementById('engBtn').classList.toggle('active', isEng);
+                document.getElementById('hinBtn').classList.toggle('active', !isEng);
+                this.loadQuestion(this.currentQuestion);
+            }
+            
+            startMainTimer() {
+                this.mainTimer = setInterval(() => {
+                    this.totalTimeLeft--;
+                    if (this.totalTimeLeft <= 0) {
+                        clearInterval(this.mainTimer);
+                        this.submitTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.totalTimeLeft / 60);
+                    const secs = this.totalTimeLeft % 60;
+                    this.els.mainTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer;
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    const mins = Math.floor(section.time_left / 60);
+                    const secs = section.time_left % 60;
+                    this.els.sectionTimer.textContent = ` | ${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitSection();
+                    }
+                }, 1000);
+            }
+            
+            updateSectionInfo() {
+                if (!this.sections) return;
+                const section = this.sections[this.currentSection];
+                this.els.sectionName.textContent = section.name;
+                this.els.sectionBadge.style.display = 'block';
+            }
+            
+            submitSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                    this.loadQuestion(this.sections[nextSectionIdx].start);
+                } else {
+                    this.submitTest();
+                }
+                
+                this.updateNavigator();
+            }
+            
+            confirmSubmit() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.answers.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions in this section. Submit anyway?`
+                        : 'Submit this section?';
+                    
+                    if (confirm(msg)) this.submitSection();
+                } else {
+                    const unanswered = this.answers.filter(a => a === null).length;
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions. Submit test?`
+                        : 'Submit test?';
+                    
+                    if (confirm(msg)) this.submitTest();
+                }
+            }
+            
+            submitTest() {
+                if (this.isSubmitted) return;
+                
+                const now = Date.now();
+                this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                
+                this.isSubmitted = true;
+                clearInterval(this.mainTimer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('submitBtnDesktop').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                
+                if (this.sections) {
+                    this.els.sectionBadge.style.display = 'none';
+                }
+                
+                const results = this.calculateResults();
+                this.showResults(results);
+                this.loadQuestion(this.currentQuestion);
+                this.updateNavigator();
+            }
+            
+            calculateResults() {
+                const timeTaken = Math.round((Date.now() - this.startTime) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                const sectionResults = [];
+                
+                if (this.sections) {
+                    for (const section of this.sections) {
+                        let secCorrect = 0, secIncorrect = 0, secUnattempted = 0, secScore = 0;
+                        const subsecResults = [];
+                        
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                let subCorrect = 0, subIncorrect = 0, subUnattempted = 0, subScore = 0;
+                                
+                                for (let i = subsec.start; i <= subsec.end; i++) {
+                                    const userAns = this.answers[i];
+                                    const correctAns = this.questions[i].correct_option_id;
+                                    
+                                    if (userAns === null) {
+                                        subUnattempted++;
+                                    } else if (correctAns !== undefined && userAns === correctAns) {
+                                        subCorrect++;
+                                        subScore += subsec.marks_per_q;
+                                    } else {
+                                        subIncorrect++;
+                                        subScore -= negMarks;
+                                    }
+                                }
+                                
+                                subsecResults.push({
+                                    name: subsec.name,
+                                    attempted: subCorrect + subIncorrect,
+                                    correct: subCorrect,
+                                    incorrect: subIncorrect,
+                                    unattempted: subUnattempted,
+                                    score: Math.max(0, subScore)
+                                });
+                                
+                                secCorrect += subCorrect;
+                                secIncorrect += subIncorrect;
+                                secUnattempted += subUnattempted;
+                                secScore += subScore;
+                            }
+                        } else {
+                            for (let i = section.start; i <= section.end; i++) {
+                                const userAns = this.answers[i];
+                                const correctAns = this.questions[i].correct_option_id;
+                                
+                                if (userAns === null) {
+                                    secUnattempted++;
+                                } else if (correctAns !== undefined && userAns === correctAns) {
+                                    secCorrect++;
+                                    secScore += marksPerQ;
+                                } else {
+                                    secIncorrect++;
+                                    secScore -= negMarks;
+                                }
+                            }
+                        }
+                        
+                        sectionResults.push({
+                            name: section.name,
+                            attempted: secCorrect + secIncorrect,
+                            correct: secCorrect,
+                            incorrect: secIncorrect,
+                            unattempted: secUnattempted,
+                            score: Math.max(0, secScore),
+                            subsections: subsecResults.length > 0 ? subsecResults : null
+                        });
+                        
+                        correct += secCorrect;
+                        incorrect += secIncorrect;
+                        unattempted += secUnattempted;
+                        score += secScore;
+                    }
+                } else {
+                    this.questions.forEach((q, i) => {
+                        const userAns = this.answers[i];
+                        const correctAns = q.correct_option_id;
+                        
+                        if (userAns === null) {
+                            unattempted++;
+                        } else if (correctAns !== undefined && userAns === correctAns) {
+                            correct++;
+                            score += marksPerQ;
+                        } else {
+                            incorrect++;
+                            score -= negMarks;
+                        }
+                    });
+                }
+                
+                return {
+                    score: Math.max(0, score),
+                    correct,
+                    incorrect,
+                    unattempted,
+                    timeTaken,
+                    sectionResults: sectionResults.length > 0 ? sectionResults : null
+                };
+            }
+            
+            showResults(results) {
+                this.els.resultScore.textContent = `${results.score.toFixed(2)}/${this.questions.length * marksPerQ}`;
+                this.els.correctCount.textContent = results.correct;
+                this.els.incorrectCount.textContent = results.incorrect;
+                this.els.unattemptedCount.textContent = results.unattempted;
+                this.els.timeTaken.textContent = results.timeTaken;
+                
+                if (results.sectionResults) {
+                    this.els.sectionResults.style.display = 'block';
+                    this.els.sectionResultsBody.innerHTML = '';
+                    
+                    results.sectionResults.forEach(section => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${section.name}</strong></td>
+                            <td>${section.attempted}</td>
+                            <td>${section.correct}</td>
+                            <td>${section.incorrect}</td>
+                            <td><strong>${section.score.toFixed(2)}</strong></td>
+                        `;
+                        this.els.sectionResultsBody.appendChild(row);
+                        
+                        if (section.subsections) {
+                            section.subsections.forEach(subsec => {
+                                const subRow = document.createElement('tr');
+                                subRow.className = 'subsection-row';
+                                subRow.innerHTML = `
+                                    <td>${subsec.name}</td>
+                                    <td>${subsec.attempted}</td>
+                                    <td>${subsec.correct}</td>
+                                    <td>${subsec.incorrect}</td>
+                                    <td>${subsec.score.toFixed(2)}</td>
+                                `;
+                                this.els.sectionResultsBody.appendChild(subRow);
+                            });
+                        }
+                    });
+                } else {
+                    this.els.sectionResults.style.display = 'none';
+                }
+                
+                this.els.resultModal.classList.add('show');
+            }
+            
+            closeResultModal() {
+                this.els.resultModal.classList.remove('show');
+            }
+            
+            reviewAnswers() {
+                this.closeResultModal();
+                this.loadQuestion(0);
+            }
+            
+            openMobileNav() {
+                this.els.mobileNav.classList.add('open');
+            }
+            
+            closeMobileNav() {
+                this.els.mobileNav.classList.remove('open');
+            }
+        }
+        
+        // Initialize the exam
+        document.addEventListener('DOMContentLoaded', () => {
+            new CBTExam();
+        });
+    </script>
+</body>
+</html>

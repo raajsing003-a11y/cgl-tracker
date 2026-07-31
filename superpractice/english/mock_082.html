@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">40156 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">20 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">20:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "question": "<p>In the following question, the first part of the sentence is fixed and the remaining three are jumbled. Rearrange the parts in the correct order so as to form a grammatically correct and meaningful sentence and mark the answer accordingly.</p><p>The company mainly</p><p>P. single-borrower corporate segment,</p><p>Q. which is riskier than the retail segment</p><p>R. operates in the large</p>",
+    "options": [
+      "RQP",
+      "PQR",
+      "RPQ",
+      "PRQ"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>R is the best choice for the second part as it completes the idea (operates) of what the company does. P follows R as the adjective 'large' correctly qualifies the noun 'single-borrower'. Thus, Q is the last part. RPQ is the correct arrangement.</p><p>The final sentence is: The company mainly operates in the large single-borrower corporate segment, which is riskier than the retail segment.</p><p>Hence, (c) is correct.</p>",
+    "question_index": 0
+  },
+  {
+    "question": "<p>Select the most appropriate order of the segments in the options that will fill in the blanks and make a coherent sentence.</p><p>Though Rahul prefers eating at home, __________ / __________ / __________ / __________.</p>",
+    "options": [
+      "he decided to try a new restaurant yesterday / so much so that / and to his delight, the food was exceptional / he plans to visit it again this weekend",
+      "and to his delight, the food was exceptional / so much so that / he decided to try a new restaurant yesterday / he plans to visit it again this weekend",
+      "he decided to try a new restaurant yesterday / and to his delight, the food was exceptional / so much so that / he plans to visit it again this weekend",
+      "so much so that / he plans to visit it again this weekend / he decided to try a new restaurant yesterday / and to his delight, the food was exceptional"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The correct coherent sentence is:</p><p>\"Though Rahul prefers eating at home, he decided to try a new restaurant yesterday, and to his delight, the food was exceptional, so much so that he plans to visit it again this weekend.\"</p><p>First Segment: \"He decided to try a new restaurant yesterday\" introduces the action Rahul took.</p><p>Second Segment: \"And to his delight, the food was exceptional\" describes his reaction to the experience.</p><p>Third Segment: \"So much so that\" connects the previous statement to the consequence.</p><p>Fourth Segment: \"He plans to visit it again this weekend\" provides the conclusion of the narrative.</p><p>Option a): Incorrect because \"so much so that\" appears before \"and to his delight, the food was exceptional,\" disrupting the logical flow.</p><p>Option b): Incorrect because \"and to his delight, the food was exceptional\" precedes \"he decided to try a new restaurant yesterday,\" which disrupts the sequence of events.</p><p>Option d): Incorrect because \"so much so that\" comes at the beginning, which lacks proper context and makes the sentence illogical.</p><p>Hence, the correct answer is option (c).</p>",
+    "question_index": 1
+  },
+  {
+    "question": "<p>Select the correct option to form a meaningful sentence.</p><p>supporting (a)/ philanthropy contributes (b)/ opportunities for (c)/ and fostering (d)/ to alleviating global (e)/ innovative solutions (f)/ economic (g)/ disadvantaged (h)/ poverty by (i)/ communities (j)</p>",
+    "options": [
+      "b, e, i, a, f, d, g, c, h, j",
+      "b, a, g, e, f, j, d, h, i, c",
+      "b, c, f, j, i, a, g, h, e, d",
+      "b, g, d, i, a, j, c, f, e, h"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The correct option is option a): b, e, i, a, f, d, g, c, h, j</p><p>The sentence formed is: \"Philanthropy contributes to alleviating global poverty by supporting innovative solutions and fostering economic opportunities for disadvantaged communities.\"</p><p><b>b) Philanthropy contributes</b> - The subject (\"Philanthropy\") and the verb (\"contributes\") are introduced, starting the sentence.</p><p><b>e) to alleviating global</b> - The preposition \"to\" introduces the action of alleviating global poverty, following the verb \"contributes.\"</p><p><b>i) poverty by</b> - This phrase completes the action by specifying what philanthropy contributes to, which is alleviating global poverty.</p><p><b>a) supporting</b> - This verb shows one way in which philanthropy helps to alleviate poverty.</p><p><b>f) innovative solutions</b> - This phrase follows and explains what is being supported: innovative solutions to global poverty.</p><p><b>d) and fostering</b>  -  'And' connects the two ways philanthropy helps alleviate poverty: supporting solutions and fostering something else.</p><p><b>g) economic</b> - This word is part of the phrase that explains what is being fostered: economic opportunities.</p><p><b>c) opportunities for</b> - This phrase specifies that the fostering is of opportunities, namely economic opportunities.</p><p><b>h) disadvantaged</b> - This adjective describes the communities for which economic opportunities are being fostered.</p><p><b>j) communities</b> - This is the object of the sentence, specifying which communities are being helped: disadvantaged communities.</p><p>This sequence provides a clear and coherent sentence.</p>",
+    "question_index": 2
+  },
+  {
+    "question": "<p>Parts of a sentence are given below. While the first and the last parts (A and F) are in the correct order, the parts in between are jumbled up. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p></p><p>A. Scientists</p><p>B. have developed</p><p>C. that</p><p>D. could revolutionize</p><p>E. a groundbreaking technology</p><p>F. renewable energy production.</p>",
+    "options": [
+      "B, C, E, D",
+      "E, C, B, D",
+      "C, B, E, D",
+      "B, E, C, D"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>A. Scientists - This introduces the subject of the sentence, which refers to a group of scientists.</p><p>B. have developed - This shows the action taken by the scientists, indicating that they have created or invented something.</p><p>E. a groundbreaking technology - This describes what the scientists have developed, emphasizing that it is an innovative and revolutionary technology.</p><p>C. that - This introduces a relative clause, indicating that what follows will provide additional information about the technology.</p><p>D. could revolutionize - This specifies the potential impact of the technology, suggesting that it has the capacity to bring about a significant change or transformation.</p><p>F. renewable energy production. - This specifies the particular area or field to which the technology's potential impact is related, indicating that it is in the realm of renewable energy production.</p><p>Therefore, the correct order is ABECDF.</p><p>Hence, option (d) is the correct answer. </p><p>The rearranged sentence is: Scientists have developed a groundbreaking technology that could revolutionize renewable energy production.</p><p><b>Note:</b></p><p><b>Relative Clause</b>: A relative clause is one that's connected to the main clause of the sentence by a word such as who, whom, which, that, or whose.</p><p>Example: He adopted a puppy that <b>had brown eyes and black fur.</b> The highlighted part is the relative clause.</p>",
+    "question_index": 3
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful sentence.</p><p></p><p>A. routines as the gold standard for spending our time</p><p>B. hacks and packing the most into every day</p><p>C. that we often think of long-term, consistent</p><p>D. society has become so focused on productivity</p>",
+    "options": [
+      "DBCA",
+      "CBDA",
+      "BACD",
+      "DCAB"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Part D has to come first because it describes the premise of the sentence and event that acts as a lead to the remaining parts. It is followed by part B in which the things that are too much focused by society are mentioned and how far they have penetrated our daily lives and how intricate things have become due to productivity routines are mentioned in the pair CA. So, it follows part B. Thus, the final order of the parts of the given sentence is DBCA.</p><p>The complete sentence is: Society has become so focused on productivity hacks and packing the most into every day that we often think of long-term, consistent routines as the gold standard for spending our time.</p><p>Hence, the correct answer is option (a).</p>",
+    "question_index": 4
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful sentence.</p><p></p><p>A. her wild subjects with an open</p><p>B. degree in science, Goodall says she observed</p><p>C. a secretarial student without an undergraduate</p><p>D. mind and without preconceptions</p>",
+    "options": [
+      "CBAD",
+      "DBCA",
+      "DACB",
+      "CADB"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Parts CB make a pair and it describes the subject, 'Goodall'. This has to come first so that the remaining parts make a meaningful order. The pair is followed by part A which denotes the thing that the subject observes in the sentence and the manner in which she does is given in part D. So, it is the last part. Thus, the final order of the parts of the given sentence is CBAD.</p><p>The complete sentence is: A secretarial student without an undergraduate degree in science, Goodall says she observed her wild subjects with an open mind and without preconceptions.</p><p>Hence, the correct answer is option (a).</p>",
+    "question_index": 5
+  },
+  {
+    "question": "<p>Parts of a sentence are given below. While the first and the last parts (S1 and S6) are in the correct order, the parts in between are jumbled up. Arrange the parts in the correct order to form a meaningful and coherent sentence. </p><p></p><p>S1) A fasting glucose tolerance test </p><p>A) from an impairment of sugar metabolism, </p><p>B) about decreased tolerance to sugar </p><p>C) in persons suffering </p><p>D) can convey important information </p><p>S6) such as diabetes mellitus.</p>",
+    "options": [
+      "CBAD",
+      "BACD",
+      "DBCA",
+      "DCAB"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The correct order to form a coherent paragraph/sentence is DBCA. S1 introduces the topic of the fasting glucose tolerance test. Part D follows the introduction of the test and emphasises the significance of the test by highlighting its ability to provide important information. Part B logically follows, explaining one of the key aspects evaluated during the test - decreased tolerance to sugar. Part C provides context by specifying that the test applies to individuals who are suffering from a certain condition. Part A follows part C as it names the condition (an impairment of sugar metabolism). Finally, S6 concludes the paragraph by giving an example of the condition that the fasting glucose tolerance test can detect - diabetes mellitus. </p><p>Part A (\"from an impairment of sugar metabolism\") and S6 (\"such as diabetes mellitus\") form a logical pair because they complement each other. Part A names a condition/health issue and S6 gives an example of that condition. In option (c), part A is placed at last to form a pair with S6. Hence, (c) is the correct answer.</p><p>The sentence formed is: A fasting glucose tolerance test can convey important information about decreased tolerance to sugar in persons suffering from an impairment of sugar metabolism, such as diabetes mellitus.</p>",
+    "question_index": 6
+  },
+  {
+    "question": "<p>Rearrange the parts of the sentence in correct order.</p><p>Jobseekers are not</p><p>P. being unemployed are a test of faith</p><p>Q. self-purification, where the difficulties of</p><p>R. relentlessly to a pilgrimage of</p><p>S. fatalistic but reapply themselves</p>",
+    "options": [
+      "SPQR",
+      "PQSR",
+      "SRQP",
+      "RPSQ"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The correct order is SRQP.</p><p>The phrase P mentions the plural verb 'are'. Therefore, it must agree with a plural noun. Q mentions the plural noun 'difficulties'. The pair QP is grammatically and contextually correct. Phrase R mentions the adverb 'relentlessly' (in an unceasingly intense or harsh way). It should qualify a verb/adjective/adverb. It can be used to qualify the verb 'reapply'. Therefore, the pair SR is grammatically and contextually correct. Using these pairs, we can conclude that option (c) is the correct answer.</p><p><b>The correct sentence after rearrangement is:</b> Jobseekers are not fatalistic but reapply themselves relentlessly to a pilgrimage of self-purification, where the difficulties of being unemployed are a test of faith.</p>",
+    "question_index": 7
+  },
+  {
+    "question": "<p>Rearrange the parts of the sentence in correct order.</p><p>We have been</p><p>P. able to identify certain patterns in</p><p>Q. the microbiome and immune response</p><p>R. that are clearly linked to the progression and</p><p>S. severity of brain injury</p>",
+    "options": [
+      "PQSR",
+      "QPSR",
+      "RSPQ",
+      "PQRS"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The given parts of the sentence are correctly arranged in the order they are given [PQRS] and do not require any rearrangement.</p><p>The correct sentence is: We have been able to identify certain patterns in the microbiome and immune response that are clearly linked to the progression and severity of brain injury.</p><p>Hence, option (d) is the answer.</p>",
+    "question_index": 8
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in correct order to form a meaningful sentence. </p><p>Our customers comfortable / endeavour to make / it will be the company's.</p>",
+    "options": [
+      "Endeavour to make our customers comfortable it will be the company's.",
+      "It will be the company's our customers comfortable endeavour to make.",
+      "Endeavour to make it will be the company's our customers comfortable.",
+      "It will be the company's endeavour to make our customers comfortable."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>Option (d) represents the correct sentence. The third part ends with the possessive noun \"company's\" which requires a noun after it. Only the second part can follow this as it starts with the noun 'endeavour'. The first part follows this as it conveys what the company's endeavour is. </p><p>Hence, option (d) is the correct answer. </p><p><b>The correct sentence is</b>: It will be the company's endeavour to make our customers comfortable.</p>",
+    "question_index": 9
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful sentence.</p><p></p><p>a) around the city.</p><p>b) sailing, swimming, jet skiing,</p><p>c) all available activities</p><p>d) parasailing and hiking are</p>",
+    "options": [
+      "b,a,d,c",
+      "d,c,a,b",
+      "c,a,b,d",
+      "b,d,c,a"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The sentence talks about adventure activities. 'b' is the opening part of the sentence as it introduces the various activities which continue in part 'd' as well; so, 'd' will be the next part of the sentence. Part 'c' talks more about the availability of these activities and the place where they are done is mentioned in part 'a', so 'c' and 'a' would be the third and fourth parts of the sentence, respectively. </p><p>The correct sequence of the parts of the sentence is b,d,c,a.</p><p>The sentence is  - <i> <b>\"Sailing, swimming, jet skiing, parasailing and hiking are all available activities around the city.\"</b></i></p><p>Hence, option (d) is correct.</p>",
+    "question_index": 10
+  },
+  {
+    "question": "<p>Parts of a sentence are given below. While the first and the last parts (S1 and S6) are in the correct order, the parts in between are jumbled up. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p></p><p>S1. In today's interconnected world, </p><p>A. and unparalleled access to a vast array </p><p>B. communication, global information exchange </p><p>C. of knowledge, transforming the way</p><p>D. the internet facilitates instant </p><p>S6. we live and interreact. </p>",
+    "options": [
+      "DBAC",
+      "ABDC",
+      "BDAC",
+      "CABD"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>S1 introduces the context of the interconnected world and sets the tone for the paragraph. <b>Part D </b>provides a specific aspect of the interconnected world, focusing on the internet's role in enabling instant communication. Part D is followed by <b>part B</b> because it elaborates on the idea of communication introduced in part D. Also, 'instant' in part D is an adjective and would appropriately be followed by the noun 'communication' in part B. So, DB is a mandatory pair. Part B mentions the global exchange of information, further expanding on the topic. Part B leads to <b>part A</b> as it provides additional information about the global exchange of information, which includes unparalleled access to a wide variety of knowledge. Part A naturally flows into <b>part C</b> as it talks about unparalleled access to knowledge. Part C then discusses how this access to knowledge is transforming the way things work. The sentence concludes with S6, which summarizes the overall impact of the interconnected world on the way we live and interact. Rearranging parts in the order of DBAC forms a coherent sentence. Hence, (a) is the correct answer. </p><p>The final sentence would be: In today's interconnected world, the internet facilitates instant communication, global information exchange, and unparalleled access to a vast array of knowledge, transforming the way we live and interact. </p>",
+    "question_index": 11
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p>A. Consumption of food prepared</p><p>B. An important food-related </p><p>C. Is the increase in </p><p>D. Lifestyle change of the past two decades </p><p>E. Away from home</p>",
+    "options": [
+      "BDCAE",
+      "DECBA",
+      "DBCEA",
+      "EACDB"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The correct order to form a meaningful and coherent sentence is BDCAE. Part B comes first as it sets the context that the sentence will discuss something related to food. Part D follows logically because it specifies what kind of change or trend related to food is being discussed. It introduces the main topic of the sentence, which is the change in lifestyle over the past two decades (Accordingly, BD forms a logical pair). Part C logically follows D because it continues the thought about the lifestyle change introduced in D. It suggests that there has been an increase in something related to this change. Part A then specifies what has increased (consumption of food) as mentioned in C. It talks about the consumption of food that is prepared in a certain manner or location. Part E concludes the sentence by specifying where the food is prepared (away from home). Hence, (a) is the correct answer. </p><p><b>The complete sentence is: </b>An important food-related lifestyle change of the past two decades is the increase in consumption of food prepared away from home.</p>",
+    "question_index": 12
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p>With an alternative vision / properly and go to students / the teachers have to coordinate</p>",
+    "options": [
+      "With an alternative vision the teachers have to coordinate properly and go to students.",
+      "The teachers have to coordinate with an alternative vision properly and go to students.",
+      "The teachers have to coordinate properly and go to students with an alternative vision.",
+      "Properly and go to students with an alternative vision the teachers have to coordinate."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>'Properly' is an adverb which is used to qualify a verb. In the given sentence 'coordinate' is a verb. Option (d) is eliminated as the sentence is grammatically incorrect. In other options, the adverb qualifies the verb. The phrase 'with an alternative solution' cannot be at the beginning of the sentence. So, option (a) is also eliminated. Option (b) is eliminated as the phrase 'coordinate with an alternative vision' doesn't provide a coherent meaning. Among the given options, option (c) represents the correct sentence.</p><p>Hence, option (c) is the correct sentence.</p><p><b>The correct sentence is</b>: The teachers have to coordinate properly and go to students with an alternative vision.</p>",
+    "question_index": 13
+  },
+  {
+    "question": "<p>Parts of a sentence are given below. While the first and the last parts (A and F) are in the correct order, the parts in between are jumbled up. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p></p><p>A. Climate change</p><p>B. to global food security</p><p>C. poses</p><p>D. according to</p><p>E. significant challenges</p><p>F. a recent report.</p>",
+    "options": [
+      "D, C, B, E",
+      "C, E, B, D",
+      "B, D, C, E",
+      "E, C, B, D"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>A. Climate change - This introduces the subject of the sentence, specifying the phenomenon being referred to.</p><p>C. poses - This indicates the action or effect caused by climate change, suggesting that it presents challenges or difficulties.</p><p>E. significant challenges - This describes the specific impact of climate change, emphasizing that they are substantial or noteworthy challenges.</p><p>B. to global food security - This specifies the domain or field to which the challenges are related, indicating that they affect the security or availability of food on a global scale.</p><p>D. according to - This introductory phrase indicates the source or reference from which the information is derived.</p><p>F. a recent report. - This specifies the specific source of information, namely a report that was recently published.</p><p>Therefore, the correct order is ACEBDF.</p><p>Hence, option (b) is the correct answer. </p><p>The rearranged sentence is: Climate change poses significant challenges to global food security, according to a recent report.</p>",
+    "question_index": 14
+  },
+  {
+    "question": "<p>Some parts of a sentence have been jumbled up, and labelled P, Q, R and S. Select the option that gives the correct sequence in which these parts can be rearranged to form a meaningful and grammatically correct sentence.</p><p>Embracing acceptance </p><p>P) cultivates a culture of openness and tolerance </p><p>Q) for who they are, </p><p>R) that fosters a community </p><p>S) where people are embraced </p><p>regardless of their background, beliefs, or identity.</p>",
+    "options": [
+      "PRSQ",
+      "SPRQ",
+      "QSPR",
+      "RSPQ"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The correct sequence to form a meaningful and grammatically correct sentence is PRSQ. Part P introduces the result or outcome of \"Embracing acceptance.\" It describes what happens as a consequence of embracing acceptance, which is the development of a culture characterised by openness and tolerance. Part R connects to the previous part by explaining the purpose or impact of the culture of openness and tolerance mentioned earlier. It states that this culture serves as a foundation or environment that supports the creation or development of a community. Parts S and Q further explain the nature of the community. They describe that in the community, people are welcomed or accepted for who they are. This implies that people are accepted as it is, regardless of their background, beliefs, or identity. The correct sequence (PRSQ) maintains a logical flow in the sentence structure by first introducing the result of embracing acceptance (cultivating openness and tolerance), explaining how this culture fosters a community, and finally describing the inclusive nature of that community where individuals are embraced regardless of their background or beliefs. This arrangement forms a coherent and meaningful sentence describing the positive effects of embracing acceptance. </p><p>The sentence formed is: Embracing acceptance cultivates a culture of openness and tolerance that fosters a community where people are embraced for who they are, regardless of their background, beliefs, or identity.</p><p>Hence, (a) is the correct answer. </p>",
+    "question_index": 15
+  },
+  {
+    "question": "<p>Rearrange the parts of the sentence in correct order.</p><p>The continuous</p><p>P. the growing sales of sneakers</p><p>Q. dominance of the athleisure trend</p><p>R. along with the pursuit of comfort</p><p>S. has had a significant impact on</p>",
+    "options": [
+      "PSRQ",
+      "RPSQ",
+      "QRPS",
+      "QSPR"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The adjective 'continuous' will be followed by a noun. Only part Q contains the noun 'dominance'. So, the first phrase after 'the continuous' would be Q. Only two options have 'Q' at the start of the sequence. Part 'S' ends with the preposition 'on'. So, it cannot come in the end. 'S' comes after 'Q' and implies that there is some significant impact of the 'athleisure trend'. PR forms a pair and mentions the things impacted by the athleisure trend.</p><p>So, the correct order is <b>QSPR</b>.</p><p>Hence, the correct sentence after rearrangement is: The continuous dominance of the athleisure trend has had a significant impact on the growing sales of sneakers along with the pursuit of comfort.</p><p>Hence, option (d) is the answer.</p>",
+    "question_index": 16
+  },
+  {
+    "question": "<p>Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful and coherent sentence.</p><p>A. or their actual behaviours</p><p>B. women with marginalized identities</p><p>C. they receive are due to bias</p><p>D. often wonder whether the reactions</p>",
+    "options": [
+      "DCAB",
+      "ACDB",
+      "BDCA",
+      "BADC"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Part B introduces the subject of the sentence, which is about 'marginalized women', so it comes as the first part. It is followed by part D which indicates the concern exhibited by 'marginalized women'. Parts C and A make a pair and they denote the actual factors or reasons that contribute to the concerns faced by marginalized women. So, the correct order of the given parts of a sentence is BDCA.</p><p>The arranged sentence is: Women with marginalized identities often wonder whether the reactions they receive are due to bias or their actual behaviours.</p><p>Hence, the correct answer is option (c).</p>",
+    "question_index": 17
+  },
+  {
+    "question": "<p><b> </b>Some parts of a sentence are jumbled up and labelled P, Q, R and S. Select the option that gives the correct sequence in which these parts can be rearranged to form a meaningful and grammatically correct sentence. </p><p>Despite facing numerous challenges, </p><p>P. demonstrating that strength can emerge </p><p>Q. of life with resilience and optimism, </p><p>R. determination, navigating the complexities</p><p>S. she persevered with unwavering</p><p>even in the face of adversity.</p>",
+    "options": [
+      "SRPQ",
+      "SRQP",
+      "SQRP",
+      "SPQR"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>After reading all the parts thoroughly, we can say that S and R form a pair as S introduces the main idea of the sentence, setting the context by stating that there were numerous challenges and R follows, explaining how \"she\" faced these challenges with unwavering determination. Q comes next, providing details about how she navigated the complexities of life with resilience and optimism. P concludes the sentence, emphasizing the overall message that her actions demonstrated that strength can emerge even in the face of adversity. Hence, (b) is the correct answer.</p><p>Upon rearrangement, the final sentence becomes: Despite facing numerous challenges, she persevered with unwavering determination, navigating the complexities of life with resilience and optimism, demonstrating that strength can emerge even in the face of adversity. </p>",
+    "question_index": 18
+  },
+  {
+    "question": "<p> Parts of a sentence are given below in jumbled order. Arrange the parts in the correct order to form a meaningful sentence.</p><p></p><p>a) several authors justify </p><p>b) the probability postulates </p><p>c) of sleeping pills without relying </p><p>d) on the arguments</p>",
+    "options": [
+      "b,d,a,c",
+      "d,c,b,a",
+      "c,b,d,a",
+      "a,b,c,d"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The opening part should be the one mentioned in 'a' as it talks about the opinion of authors. 'b-c' is a pair as 'b' talks of 'postulates' and the subject of postulates 'sleeping pills' is mentioned in 'c'. What these authors do not want to rely on is mentioned in 'd' which makes it the last part of the sentence.</p><p>The correct sequence of the part of sentence is a,b,c,d.</p><p>The sentence is  - <i> </i><b><i>Several authors justify the probability postulates of sleeping pills without relying on the arguments.</i></b></p><p>Hence, option (d) is correct.</p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 20 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

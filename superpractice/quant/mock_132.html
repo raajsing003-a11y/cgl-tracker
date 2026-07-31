@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">41050 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">20 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">20:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "question": "<span class=\"eqt\"><p>The concentrations of three acids, A, B, and C are specified as 25%, 40%, and 75%, respectively. They are blended in a ratio of 4:5: a, yielding a solution with a concentration of 60%. What is the value of 'a'?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2340;&#2368;&#2344; &#2309;&#2350;&#2381;&#2354;&#2379;&#2306;, A, B, &#2324;&#2352; C &#2325;&#2368; &#2360;&#2366;&#2306;&#2342;&#2381;&#2352;&#2340;&#2366; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 25%, 40%, &#2324;&#2352; 75% &#2325;&#2375; &#2352;&#2370;&#2346; &#2350;&#2375;&#2306; &#2344;&#2367;&#2352;&#2381;&#2342;&#2367;&#2359;&#2381;&#2335; &#2325;&#2368; &#2327;&#2312; &#2361;&#2376;&#2404; &#2313;&#2344;&#2381;&#2361;&#2375;&#2306; 4:5: a &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2350;&#2367;&#2358;&#2381;&#2352;&#2367;&#2340; &#2325;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;, &#2332;&#2367;&#2360;&#2360;&#2375; 60% &#2360;&#2366;&#2306;&#2342;&#2381;&#2352;&#2340;&#2366; &#2357;&#2366;&#2354;&#2366; &#2328;&#2379;&#2354; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2361;&#2379;&#2340;&#2366; &#2361;&#2376;&#2404; 'a' &#2325;&#2366; &#2350;&#2366;&#2344; &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">12</span><span class=\"hqt\" style=\"display:none\">12</span>",
+      "<span class=\"eqt\">16</span><span class=\"hqt\" style=\"display:none\">16</span>",
+      "<span class=\"eqt\">10</span><span class=\"hqt\" style=\"display:none\">10</span>",
+      "<span class=\"eqt\">14</span><span class=\"hqt\" style=\"display:none\">14</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Concentration of solutions A, B, and C = (4 + 5 + a) * 60/100</p><p>4 * 25/100 + 5 * 40/100 + a * 75/100 = 5.4 + 0.45a</p><p>1 + 2 + 0.75a = 5.4 + 0.6a </p><p>0.15a = 2.4 </p><p>a = 16 </p>",
+    "question_index": 0
+  },
+  {
+    "question": "<span class=\"eqt\"><p>240 litres of a mixture of spirit and water in the ratio 7: 5 is present in a container A. 30 litres of the mixture is transferred to another container B. Then container A is filled with 30 litres of water. Then 144 litres of the mixture is again transferred to container B. The final ratio of spirit to water of the mixture in container B is equal to:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; A &#2350;&#2375;&#2306; 7:5 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2360;&#2381;&#2346;&#2381;&#2352;&#2367;&#2335; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; 240 &#2354;&#2368;&#2335;&#2352; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2380;&#2332;&#2370;&#2342; &#2361;&#2376;&#2404; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2366; 30 &#2354;&#2368;&#2335;&#2352; &#2342;&#2370;&#2360;&#2352;&#2375; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; B &#2350;&#2375;&#2306; &#2360;&#2381;&#2341;&#2366;&#2344;&#2366;&#2306;&#2340;&#2352;&#2367;&#2340; &#2325;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2347;&#2367;&#2352; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; A &#2325;&#2379; 30 &#2354;&#2368;&#2335;&#2352; &#2346;&#2366;&#2344;&#2368; &#2360;&#2375; &#2349;&#2352; &#2342;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2347;&#2367;&#2352; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2366; 144 &#2354;&#2368;&#2335;&#2352; &#2347;&#2367;&#2352; &#2360;&#2375; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; B &#2350;&#2375;&#2306; &#2360;&#2381;&#2341;&#2366;&#2344;&#2366;&#2306;&#2340;&#2352;&#2367;&#2340; &#2325;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; B &#2350;&#2375;&#2306; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2375; &#2360;&#2381;&#2346;&#2381;&#2352;&#2367;&#2335; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2306;&#2340;&#2367;&#2350; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2348;&#2352;&#2366;&#2348;&#2352; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">99: 87</span><span class=\"hqt\" style=\"display:none\">99: 87</span>",
+      "<span class=\"eqt\">91: 87</span><span class=\"hqt\" style=\"display:none\">91: 87</span>",
+      "<span class=\"eqt\">99: 83</span><span class=\"hqt\" style=\"display:none\">99: 83</span>",
+      "<span class=\"eqt\">91: 83</span><span class=\"hqt\" style=\"display:none\">91: 83</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>Final amount of spirit = 240 * 7/12 = 140 l</p><p>Final amount of water = 240  -  140 = 100 l </p><p>Spirit transfer = 30 * 7/12 = 17.5 l</p><p>Water transfer = 30  -  17.5 = 12.5 l</p><p>The ratio of spirit to water after mixing 30 l water = (140  -  17.5)/(100  -  12.5 + 30) </p><p>= 122.5/117.5</p><p>= 49/47</p><p>Spirit transfer 2nd time = 144 * 49/96 = 73.5 l</p><p>Water transfer 2nd time = 144  -  73.5 = 70.5 l</p><p>Hence, the required ratio = (17.5 + 73.5)/ (12.5 + 70.5) </p><p>= 91/83</p>",
+    "question_index": 1
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A 180 litres solution of acid and water contains 40% acid. How much water (in litres) must be added to get a solution to having 25% acid? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2309;&#2350;&#2381;&#2354; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2375; 180 &#2354;&#2368;&#2335;&#2352; &#2328;&#2379;&#2354; &#2350;&#2375;&#2306; 40% &#2309;&#2350;&#2381;&#2354; &#2361;&#2376;&#2404; 25% &#2309;&#2350;&#2381;&#2354; &#2357;&#2366;&#2354;&#2366; &#2328;&#2379;&#2354; &#2348;&#2344;&#2366;&#2344;&#2375; &#2325;&#2375; &#2354;&#2367;&#2319; &#2325;&#2367;&#2340;&#2344;&#2366; &#2346;&#2366;&#2344;&#2368; (&#2354;&#2368;&#2335;&#2352; &#2350;&#2375;&#2306;) &#2350;&#2367;&#2354;&#2366;&#2344;&#2366; &#2361;&#2379;&#2327;&#2366;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">108 l</span><span class=\"hqt\" style=\"display:none\">108 &#2354;&#2368;</span>",
+      "<span class=\"eqt\">96 l</span><span class=\"hqt\" style=\"display:none\">96 &#2319;&#2354;</span>",
+      "<span class=\"eqt\">112 l</span><span class=\"hqt\" style=\"display:none\">112 &#2319;&#2354;</span>",
+      "<span class=\"eqt\">90 l</span><span class=\"hqt\" style=\"display:none\">90 &#2354;&#2368;</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Acid = 180 * 40/100 = 72 l </p><p>Water = 180  -  72 = 108 l</p><p>Let the quantity of water added be 'X' l</p><p>(180 + X) * 25/100 = 72 </p><p>180 + X = 288 </p><p>X = 108 l </p>",
+    "question_index": 2
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In alloys A and B, the ratio of lead to tin is 7: 4 and 4: 5, respectively. 220 kg of alloy A and 270 kg of alloy B are mixed to form a new alloy. What is the amount of tin (in kg) in the new alloy?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; A &#2324;&#2352; B &#2350;&#2375;&#2306;, &#2360;&#2368;&#2360;&#2375; &#2324;&#2352; &#2335;&#2367;&#2344; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 7:4 &#2324;&#2352; 4:5 &#2361;&#2376;&#2404; 220 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; A &#2324;&#2352; 270 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; B &#2325;&#2379; &#2350;&#2367;&#2354;&#2366;&#2325;&#2352; &#2319;&#2325; &#2344;&#2351;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2348;&#2344;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306; &#2335;&#2367;&#2344; &#2325;&#2368; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; (&#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2350;&#2375;&#2306;) &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">210 kg</span><span class=\"hqt\" style=\"display:none\">210 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>",
+      "<span class=\"eqt\">270 kg</span><span class=\"hqt\" style=\"display:none\">270 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>",
+      "<span class=\"eqt\">230 kg</span><span class=\"hqt\" style=\"display:none\">230 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>",
+      "<span class=\"eqt\">250 kg</span><span class=\"hqt\" style=\"display:none\">250 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Tin in alloy A = 220 * 4/(7 + 4) = 80 kg</p><p>Tin in alloy B = 270 * 5/(4 + 5) = 150 kg</p><p>Hence, the required amount = 80 + 150 = 230 kg</p>",
+    "question_index": 3
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A vessel contains 108 litres mixture of milk and water in a ratio 5: 7. If 10 litres of milk is added to the vessel, then how much water (in litres) should be added to the vessel to have milk and water in the ratio 11: 16?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2348;&#2352;&#2381;&#2340;&#2344; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; 108 &#2354;&#2368;&#2335;&#2352; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; 5: 7 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; &#2348;&#2352;&#2381;&#2340;&#2344; &#2350;&#2375;&#2306; 10 &#2354;&#2368;&#2335;&#2352; &#2342;&#2370;&#2343; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;, &#2340;&#2379; &#2348;&#2352;&#2381;&#2340;&#2344; &#2350;&#2375;&#2306; &#2325;&#2367;&#2340;&#2344;&#2366; &#2346;&#2366;&#2344;&#2368; (&#2354;&#2368;&#2335;&#2352; &#2350;&#2375;&#2306;) &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2344;&#2366; &#2330;&#2366;&#2361;&#2367;&#2319; &#2340;&#2366;&#2325;&#2367; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 11: 16 &#2361;&#2379; &#2332;&#2366;&#2319;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">17 l</span><span class=\"hqt\" style=\"display:none\">17 &#2319;&#2354;</span>",
+      "<span class=\"eqt\">13 l</span><span class=\"hqt\" style=\"display:none\">13 &#2319;&#2354;</span>",
+      "<span class=\"eqt\">23 l</span><span class=\"hqt\" style=\"display:none\">23 &#2319;&#2354;</span>",
+      "<span class=\"eqt\">19 l</span><span class=\"hqt\" style=\"display:none\">19 &#2319;&#2354;</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Initial quantity of milk = 108 * 5/(5 + 7) = 45 l</p><p>Initial quantity of water = 108  -  45 = 63 l </p><p>Let the amount of water added be 'X' l</p><p>(45 + 10)/(63 + X) = 11/16 </p><p>55/(63 + X) = 11/16 </p><p>80 = 63 + X </p><p>X = 17 l</p>",
+    "question_index": 4
+  },
+  {
+    "question": "<span class=\"eqt\"><p>An alloy contains the metals gold, silver, and zinc in the ratio 9: 5: 7, and another contains the metals silver, zinc, and tin in the ratio 11: 18: 13. If equal weights of each alloys are mixed to form a third alloy, then how many parts of the metal zinc is in the new alloy?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306; &#2360;&#2379;&#2344;&#2366;, &#2330;&#2366;&#2306;&#2342;&#2368; &#2324;&#2352; &#2332;&#2360;&#2381;&#2340;&#2366; &#2343;&#2366;&#2340;&#2369;&#2319;&#2306; 9: 5: 7 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2306;, &#2324;&#2352; &#2319;&#2325; &#2309;&#2344;&#2381;&#2351; &#2350;&#2375;&#2306; &#2330;&#2366;&#2306;&#2342;&#2368;, &#2332;&#2360;&#2381;&#2340;&#2366; &#2324;&#2352; &#2335;&#2367;&#2344; &#2343;&#2366;&#2340;&#2369;&#2319;&#2306; 11: 18: 13 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2306;&#2404; &#2351;&#2342;&#2367; &#2346;&#2381;&#2352;&#2340;&#2381;&#2351;&#2375;&#2325; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2325;&#2375; &#2348;&#2352;&#2366;&#2348;&#2352; &#2357;&#2332;&#2344; &#2325;&#2379; &#2350;&#2367;&#2354;&#2366;&#2325;&#2352; &#2319;&#2325; &#2340;&#2368;&#2360;&#2352;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2348;&#2344;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;, &#2340;&#2379; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306; &#2332;&#2360;&#2381;&#2340;&#2366; &#2343;&#2366;&#2340;&#2369; &#2325;&#2366; &#2325;&#2367;&#2340;&#2344;&#2366; &#2349;&#2366;&#2327; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">13/84 kg</span><span class=\"hqt\" style=\"display:none\">13/84 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>",
+      "<span class=\"eqt\">9/84 kg</span><span class=\"hqt\" style=\"display:none\">9/84 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>",
+      "<span class=\"eqt\">8/21 kg</span><span class=\"hqt\" style=\"display:none\">8/21 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>",
+      "<span class=\"eqt\">9/42 kg</span><span class=\"hqt\" style=\"display:none\">9/42 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Gold: Silver: Zinc = 9: 7: 5</p><p>Silver: Zinc: tin = 11: 18: 13</p><p>Let the quantity mixed from both alloys be '42' kg</p><p>Zinc in alloy 1<sup>st</sup> = 42 * 7/(9 + 7 + 5) = 14 kg</p><p>Zinc in alloy 2<sup>nd</sup> = 42 * 18/(11 + 18 + 13) = 18 kg</p><p>Hence, zinc in 3<sup>rd</sup> alloy = (14 + 18)/(42 + 42) = 8/21 kg</p>",
+    "question_index": 5
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Vessel A contains milk and water in a ratio of 23: 13. Vessel B contains milk and water in a ratio of 11: 13. If 'x' litres of mixture of A is mixed with 'y' litres of mixture of B, then the ratio of milk to water in the mixture becomes 5: 3. Find the ratio x: y.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2348;&#2352;&#2381;&#2340;&#2344; A &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 23:13 &#2361;&#2376;&#2404; &#2348;&#2352;&#2381;&#2340;&#2344; B &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 11:13 &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; A &#2325;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2375; 'x' &#2354;&#2368;&#2335;&#2352; &#2325;&#2379; B &#2325;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2375; 'y' &#2354;&#2368;&#2335;&#2352; &#2325;&#2375; &#2360;&#2366;&#2341; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;, &#2340;&#2379; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 5:3 &#2361;&#2379; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; x: y &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">12: 1</span><span class=\"hqt\" style=\"display:none\">12: 1</span>",
+      "<span class=\"eqt\">9: 4</span><span class=\"hqt\" style=\"display:none\">9: 4</span>",
+      "<span class=\"eqt\">7: 2</span><span class=\"hqt\" style=\"display:none\">7: 2</span>",
+      "<span class=\"eqt\">5: 2</span><span class=\"hqt\" style=\"display:none\">5: 2</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p><img width=288 height=108 id=\"Picture 7\" src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27152/image001.png\"></p><p>4/24 1/72</p><p>Hence, x/y = (4/24)/ (1/72) = 12: 1 </p>",
+    "question_index": 6
+  },
+  {
+    "question": "<span class=\"eqt\"><p>There are 280 litres of pure milk in a container. One-fifth of the milk is replaced by water in the container. Again one-fifth of the mixture is extracted and an equal amount of water is added. What is the ratio of milk to water in the new mixture?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; &#2350;&#2375;&#2306; 280 &#2354;&#2368;&#2335;&#2352; &#2358;&#2369;&#2342;&#2381;&#2343; &#2342;&#2370;&#2343; &#2361;&#2376;&#2404; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2325;&#2366; &#2346;&#2366;&#2306;&#2330;&#2357;&#2366;&#2306; &#2361;&#2367;&#2360;&#2381;&#2360;&#2366; &#2346;&#2366;&#2344;&#2368; &#2360;&#2375; &#2348;&#2342;&#2354; &#2342;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2347;&#2367;&#2352; &#2360;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2366; &#2346;&#2366;&#2306;&#2330;&#2357;&#2366;&#2306; &#2361;&#2367;&#2360;&#2381;&#2360;&#2366; &#2344;&#2367;&#2325;&#2366;&#2354; &#2354;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376; &#2324;&#2352; &#2348;&#2352;&#2366;&#2348;&#2352; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; &#2350;&#2375;&#2306; &#2346;&#2366;&#2344;&#2368; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">13: 10</span><span class=\"hqt\" style=\"display:none\">13: 10</span>",
+      "<span class=\"eqt\">11: 8</span><span class=\"hqt\" style=\"display:none\">11: 8</span>",
+      "<span class=\"eqt\">16: 9</span><span class=\"hqt\" style=\"display:none\">16: 9</span>",
+      "<span class=\"eqt\">9: 4</span><span class=\"hqt\" style=\"display:none\">9: 4</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>a = Initial amount of milk</p><p>b = amount removed </p><p>n = number of times </p><p>The final amount of milk = a * (1  -  b/a)<sup>n</sup></p><p>= 280 (1  -  1/5)<sup>2</sup></p><p>= 280 * 4/5 * 4/5</p><p>= 179.2 l</p><p>Water = 280  -  179.2 = 100.8 l</p><p>Hence, the required ratio = 179.2/100.8 = 16: 9 </p>",
+    "question_index": 7
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In an alloy, silver, and copper are in the ratio 7/11. In the second alloy, the same elements are in the ratio of 13: 11. If these two alloys are mixed to form a new alloy in which two elements are in the ratio of 7:8, the ratio of these two alloys in the new alloy is:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306;, &#2330;&#2366;&#2306;&#2342;&#2368; &#2324;&#2352; &#2340;&#2366;&#2306;&#2348;&#2366; 7/11 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2306;&#2404; &#2342;&#2370;&#2360;&#2352;&#2368; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306;, &#2357;&#2361;&#2368; &#2340;&#2340;&#2381;&#2357; 13:11 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2306;&#2404; &#2351;&#2342;&#2367; &#2311;&#2344; &#2342;&#2379; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369;&#2323;&#2306; &#2325;&#2379; &#2350;&#2367;&#2354;&#2366;&#2325;&#2352; &#2319;&#2325; &#2344;&#2312; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2348;&#2344;&#2366;&#2312; &#2332;&#2366;&#2319; &#2332;&#2367;&#2360;&#2350;&#2375;&#2306; &#2342;&#2379; &#2340;&#2340;&#2381;&#2357; 7:8 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2379;&#2306;, &#2340;&#2379; &#2344;&#2312; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2350;&#2375;&#2306; &#2311;&#2344; &#2342;&#2379; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369;&#2323;&#2306; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2325;&#2381;&#2351;&#2366; &#2361;&#2379;&#2327;&#2366;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">27: 28</span><span class=\"hqt\" style=\"display:none\">27: 28</span>",
+      "<span class=\"eqt\">31: 30</span><span class=\"hqt\" style=\"display:none\">31: 30</span>",
+      "<span class=\"eqt\">27: 26</span><span class=\"hqt\" style=\"display:none\">27: 26</span>",
+      "<span class=\"eqt\">29: 26</span><span class=\"hqt\" style=\"display:none\">29: 26</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p><img width=313 height=108 id=\"Picture 6\" src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27152/image003.png\"></p><p>9/120 7/90</p><p>Hence, the required ratio = (9/120)/(7/90) = 27: 28</p>",
+    "question_index": 8
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Shivangi has lent some money to Shivani at 21.5% p.a. and Shweta at 28% p.a. At the end of the year, he has gained an overall interest at the rate of 24%. In what ratio has he lent the money to Shivani and Shweta?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2358;&#2367;&#2357;&#2366;&#2306;&#2327;&#2368; &#2344;&#2375; &#2358;&#2367;&#2357;&#2366;&#2344;&#2368; &#2325;&#2379; 21.5% &#2346;&#2381;&#2352;&#2340;&#2367; &#2357;&#2352;&#2381;&#2359; &#2324;&#2352; &#2358;&#2381;&#2357;&#2375;&#2340;&#2366; &#2325;&#2379; 28% &#2346;&#2381;&#2352;&#2340;&#2367; &#2357;&#2352;&#2381;&#2359; &#2325;&#2368; &#2342;&#2352; &#2360;&#2375; &#2325;&#2369;&#2331; &#2346;&#2376;&#2360;&#2375; &#2313;&#2343;&#2366;&#2352; &#2342;&#2367;&#2319; &#2361;&#2376;&#2306;&#2404; &#2357;&#2352;&#2381;&#2359; &#2325;&#2375; &#2309;&#2306;&#2340; &#2350;&#2375;&#2306;, &#2313;&#2360;&#2375; 24% &#2325;&#2368; &#2342;&#2352; &#2360;&#2375; &#2325;&#2369;&#2354; &#2348;&#2381;&#2351;&#2366;&#2332; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2361;&#2369;&#2310; &#2361;&#2376;&#2404; &#2313;&#2360;&#2344;&#2375; &#2358;&#2367;&#2357;&#2366;&#2344;&#2368; &#2324;&#2352; &#2358;&#2381;&#2357;&#2375;&#2340;&#2366; &#2325;&#2379; &#2325;&#2367;&#2360; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2346;&#2376;&#2360;&#2375; &#2313;&#2343;&#2366;&#2352; &#2342;&#2367;&#2319; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">5: 3</span><span class=\"hqt\" style=\"display:none\">5: 3</span>",
+      "<span class=\"eqt\">9: 7</span><span class=\"hqt\" style=\"display:none\">9: 7</span>",
+      "<span class=\"eqt\">8: 5</span><span class=\"hqt\" style=\"display:none\">8: 5</span>",
+      "<span class=\"eqt\">7: 4</span><span class=\"hqt\" style=\"display:none\">7: 4</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p><img width=298 height=105 id=\"Picture 5\" src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27152/image005.png\"></p><p>4% 2.5%</p><p>8 5</p><p>Hence, the required ratio is 8: 5.</p>",
+    "question_index": 9
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Two alloy types possess gold and silver in the ratio of 5:14 and 17:21. In what ratio should these alloys be mixed to have a new alloy in which gold and silver would exist in the ratio of 23:34?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2342;&#2379; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369;&#2323;&#2306; &#2350;&#2375;&#2306; &#2360;&#2379;&#2344;&#2366; &#2324;&#2352; &#2330;&#2366;&#2306;&#2342;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 5:14 &#2324;&#2352; 17:21 &#2361;&#2376;&#2404; &#2311;&#2344; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369;&#2323;&#2306; &#2325;&#2379; &#2325;&#2367;&#2360; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2344;&#2366; &#2330;&#2366;&#2361;&#2367;&#2319; &#2340;&#2366;&#2325;&#2367; &#2319;&#2325; &#2344;&#2351;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2343;&#2366;&#2340;&#2369; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2361;&#2379; &#2332;&#2367;&#2360;&#2350;&#2375;&#2306; &#2360;&#2379;&#2344;&#2366; &#2324;&#2352; &#2330;&#2366;&#2306;&#2342;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 23:34 &#2361;&#2379;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">5: 16</span><span class=\"hqt\" style=\"display:none\">5: 16</span>",
+      "<span class=\"eqt\">5: 4</span><span class=\"hqt\" style=\"display:none\">5: 4</span>",
+      "<span class=\"eqt\">7: 9</span><span class=\"hqt\" style=\"display:none\">7: 9</span>",
+      "<span class=\"eqt\">8: 11</span><span class=\"hqt\" style=\"display:none\">8: 11</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p><img width=313 height=104 src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27135/image001.png\"></p><p>5/114 8/57 </p><p>Hence, the required ratio = (5/114)/(8/57) = 5: 16</p>",
+    "question_index": 10
+  },
+  {
+    "question": "<span class=\"eqt\"><p>14700 students appeared in an exam. 45% of the boys and 80% of the girls cleared the examination. If the total percentage of students qualifying is 65%, how many boys appeared in the exam? </p></span><span class=\"hqt\" style=\"display:none\"><p>14700 &#2331;&#2366;&#2340;&#2381;&#2352; &#2319;&#2325; &#2346;&#2352;&#2368;&#2325;&#2381;&#2359;&#2366; &#2350;&#2375;&#2306; &#2358;&#2366;&#2350;&#2367;&#2354; &#2361;&#2369;&#2319;&#2404; 45% &#2354;&#2337;&#2364;&#2325;&#2375; &#2324;&#2352; 80% &#2354;&#2337;&#2364;&#2325;&#2367;&#2351;&#2366;&#2305; &#2346;&#2352;&#2368;&#2325;&#2381;&#2359;&#2366; &#2350;&#2375;&#2306; &#2360;&#2347;&#2354; &#2361;&#2369;&#2319;&#2404; &#2351;&#2342;&#2367; &#2313;&#2340;&#2381;&#2340;&#2368;&#2352;&#2381;&#2339; &#2331;&#2366;&#2340;&#2381;&#2352;&#2379;&#2306; &#2325;&#2366; &#2325;&#2369;&#2354; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; 65% &#2361;&#2376;, &#2340;&#2379; &#2325;&#2367;&#2340;&#2344;&#2375; &#2354;&#2337;&#2364;&#2325;&#2375; &#2346;&#2352;&#2368;&#2325;&#2381;&#2359;&#2366; &#2350;&#2375;&#2306; &#2358;&#2366;&#2350;&#2367;&#2354; &#2361;&#2369;&#2319;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">8400</span><span class=\"hqt\" style=\"display:none\">8400</span>",
+      "<span class=\"eqt\">4200</span><span class=\"hqt\" style=\"display:none\">4200</span>",
+      "<span class=\"eqt\">6300</span><span class=\"hqt\" style=\"display:none\">6300</span>",
+      "<span class=\"eqt\">2100</span><span class=\"hqt\" style=\"display:none\">2100</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p><img width=310 height=106 id=\"Picture 6\" src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27135/image003.png\"></p><p>15% 20% </p><p>So, the ratio of boys to girls = 15/20 = 3/4 </p><p>Hence, the total number of boys = 14700 * 3/(3 + 4) = 6300</p>",
+    "question_index": 11
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The ratio of spirit and water in two mixtures of 120 litres and 75 litres is 13:7 and 7:8 respectively. Both the mixtures are mixed. Now the ratio of the spirit and water in the new mixture is:</p></span><span class=\"hqt\" style=\"display:none\"><p>120 &#2354;&#2368;&#2335;&#2352; &#2324;&#2352; 75 &#2354;&#2368;&#2335;&#2352; &#2325;&#2375; &#2342;&#2379; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339;&#2379;&#2306; &#2350;&#2375;&#2306; &#2360;&#2381;&#2346;&#2381;&#2352;&#2367;&#2335; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 13:7 &#2324;&#2352; 7:8 &#2361;&#2376;&#2404; &#2342;&#2379;&#2344;&#2379;&#2306; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339;&#2379;&#2306; &#2325;&#2379; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2309;&#2348; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2360;&#2381;&#2346;&#2381;&#2352;&#2367;&#2335; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">113: 82</span><span class=\"hqt\" style=\"display:none\">113: 82</span>",
+      "<span class=\"eqt\">119: 76</span><span class=\"hqt\" style=\"display:none\">119: 76</span>",
+      "<span class=\"eqt\">117: 78</span><span class=\"hqt\" style=\"display:none\">117: 78</span>",
+      "<span class=\"eqt\">111: 84</span><span class=\"hqt\" style=\"display:none\">111: 84</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Sprit in 1<sup>st</sup> mixture = 120 * 13/(13 + 7) = 78 l</p><p>Water in 1<sup>st</sup> mixture = 120  -  78 = 42 l</p><p>Sprit in 2<sup>nd</sup> mixture = 75 * 7/(7 + 8) = 35 l</p><p>Water in 2<sup>nd</sup> mixture = 75  -  35 = 40 l</p><p>Hence, the required ratio = (78 + 35)/ (42 + 40) = 113/82 </p>",
+    "question_index": 12
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A container contains 240 kg of milk. From this container, 20 kg of milk was taken out and replaced with water. This process was repeated further two times. The (approx.) amount of milk left in the container is: </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; &#2350;&#2375;&#2306; 240 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2342;&#2370;&#2343; &#2361;&#2376;&#2404; &#2311;&#2360; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; &#2360;&#2375; 20 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2342;&#2370;&#2343; &#2344;&#2367;&#2325;&#2366;&#2354;&#2325;&#2352; &#2313;&#2360;&#2325;&#2368; &#2332;&#2327;&#2361; &#2346;&#2366;&#2344;&#2368; &#2337;&#2366;&#2354;&#2366; &#2327;&#2351;&#2366;&#2404; &#2311;&#2360; &#2346;&#2381;&#2352;&#2325;&#2381;&#2352;&#2367;&#2351;&#2366; &#2325;&#2379; &#2342;&#2379; &#2348;&#2366;&#2352; &#2324;&#2352; &#2342;&#2379;&#2361;&#2352;&#2366;&#2351;&#2366; &#2327;&#2351;&#2366;&#2404; &#2325;&#2306;&#2335;&#2375;&#2344;&#2352; &#2350;&#2375;&#2306; &#2348;&#2330;&#2366; &#2361;&#2369;&#2310; &#2342;&#2370;&#2343; (&#2354;&#2327;&#2349;&#2327;) &#2325;&#2367;&#2340;&#2344;&#2366; &#2361;&#2376;: </p></span>",
+    "options": [
+      "<span class=\"eqt\">192.86 l</span><span class=\"hqt\" style=\"display:none\">192.86 &#2354;&#2368;</span>",
+      "<span class=\"eqt\">188.86 l</span><span class=\"hqt\" style=\"display:none\">188.86 &#2354;&#2368;</span>",
+      "<span class=\"eqt\">184.86 l</span><span class=\"hqt\" style=\"display:none\">184.86 &#2354;&#2368;</span>",
+      "<span class=\"eqt\">196. 86 l</span><span class=\"hqt\" style=\"display:none\">196. 86 &#2319;&#2354;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>a = Initial quantity </p><p>b = amount removed and replaced </p><p>n = number of times </p><p>Final Quantity = a * (1  -  b/a)<sup>n</sup></p><p>= 240 * (1  -  20/240)<sup>3</sup></p><p>= 240 * 11/12 * 11/12 * 11/12 </p><p>= 184.86 l</p>",
+    "question_index": 13
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Three vessels whose capacities are in the ratio of 6: 5: 8 are filled with milk mixed with water. The ratio of milk and water in the mixture of vessels is 1: 1, 2: 3, and 5: 3 respectively. Taking 1/3 of the first, 1/2 of the second, and 1/2 of the third mixtures, a new mixture kept in a new vessel is prepared. The percentage of water in the new mixture is:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2340;&#2368;&#2344; &#2348;&#2352;&#2381;&#2340;&#2344; &#2332;&#2367;&#2344;&#2325;&#2368; &#2325;&#2381;&#2359;&#2350;&#2340;&#2366; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 6: 5: 8 &#2361;&#2376;, &#2313;&#2344;&#2381;&#2361;&#2375;&#2306; &#2346;&#2366;&#2344;&#2368; &#2350;&#2367;&#2354;&#2375; &#2342;&#2370;&#2343; &#2360;&#2375; &#2349;&#2352;&#2366; &#2327;&#2351;&#2366; &#2361;&#2376;&#2404; &#2348;&#2352;&#2381;&#2340;&#2344;&#2379;&#2306; &#2325;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 1: 1, 2: 3 &#2324;&#2352; 5: 3 &#2361;&#2376;&#2404; &#2346;&#2361;&#2354;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2366; 1/3, &#2342;&#2370;&#2360;&#2352;&#2375; &#2325;&#2366; 1/2 &#2324;&#2352; &#2340;&#2368;&#2360;&#2352;&#2375; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2366; 1/2 &#2354;&#2375;&#2325;&#2352;, &#2319;&#2325; &#2344;&#2319; &#2348;&#2352;&#2381;&#2340;&#2344; &#2350;&#2375;&#2306; &#2352;&#2326;&#2366; &#2327;&#2351;&#2366; &#2344;&#2351;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2340;&#2376;&#2351;&#2366;&#2352; &#2325;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">800/17%</span><span class=\"hqt\" style=\"display:none\">800/17%</span>",
+      "<span class=\"eqt\">750/17%</span><span class=\"hqt\" style=\"display:none\">750/17%</span>",
+      "<span class=\"eqt\">950/17%</span><span class=\"hqt\" style=\"display:none\">950/17%</span>",
+      "<span class=\"eqt\">900/17%</span><span class=\"hqt\" style=\"display:none\">900/17%</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Let the quantity of mixture in three vessels be 6x, 5x, and 8x </p><p>Vessel 1:</p><p>Mixture taken out = 6x * 1/3 = 2x </p><p>Water removed = 2x * 1/2 = x</p><p>Vessel 2: </p><p>Mixture taken out = 5x * 1/2 = 5x/2 </p><p>Water removed = 5x/2 * 3/5 = 3x/2 </p><p>Vessel 3: </p><p>Mixture taken out = 8x * 1/2 = 4x </p><p>Water removed = 4x * 3/8 = 3x/2 </p><p>Total mixture = 2x + 5x/2 + 4x = 17x/2</p><p>Total Water = x + 3x/2 + 3x/2 = 4x </p><p>Hence, the required percentage = (4x * 100)/(17x/2)</p><p>= 800/17% </p>",
+    "question_index": 14
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The ratio in which two sugar solutions of the concentrations 24% and 48% are to be mixed to get a solution of concentration 32% is:</p></span><span class=\"hqt\" style=\"display:none\"><p>24% &#2324;&#2352; 48% &#2360;&#2366;&#2306;&#2342;&#2381;&#2352;&#2340;&#2366; &#2357;&#2366;&#2354;&#2375; &#2342;&#2379; &#2330;&#2368;&#2344;&#2368; &#2357;&#2367;&#2354;&#2351;&#2344;&#2379;&#2306; &#2325;&#2379; &#2325;&#2367;&#2360; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2319; &#2325;&#2367; 32% &#2360;&#2366;&#2306;&#2342;&#2381;&#2352;&#2340;&#2366; &#2357;&#2366;&#2354;&#2366; &#2357;&#2367;&#2354;&#2351;&#2344; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2361;&#2379;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">9: 8</span><span class=\"hqt\" style=\"display:none\">9: 8</span>",
+      "<span class=\"eqt\">7: 6</span><span class=\"hqt\" style=\"display:none\">7: 6</span>",
+      "<span class=\"eqt\">2: 1</span><span class=\"hqt\" style=\"display:none\">2: 1</span>",
+      "<span class=\"eqt\">5: 4</span><span class=\"hqt\" style=\"display:none\">5: 4</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p><img width=308 height=106 src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27135/image005.png\"></p><p>16% 8%</p><p>Hence, the required ratio = 16/8 = 2: 1</p>",
+    "question_index": 15
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Two vessels contain a mixture of petrol and kerosene in the ratio of 17:13 and 21:23 respectively. The ratio of the volumes of the quantities from the two vessels to be mixed so that the new mixture may contain the same volume of petrol and kerosene is:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2342;&#2379; &#2348;&#2352;&#2381;&#2340;&#2344;&#2379;&#2306; &#2350;&#2375;&#2306; &#2346;&#2375;&#2335;&#2381;&#2352;&#2379;&#2354; &#2324;&#2352; &#2325;&#2375;&#2352;&#2379;&#2360;&#2367;&#2344; &#2325;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 17:13 &#2324;&#2352; 21:23 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2404; &#2342;&#2379;&#2344;&#2379;&#2306; &#2348;&#2352;&#2381;&#2340;&#2344;&#2379;&#2306; &#2360;&#2375; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366;&#2323;&#2306; &#2325;&#2375; &#2310;&#2351;&#2340;&#2344; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2311;&#2360; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &#2361;&#2376; &#2325;&#2367; &#2344;&#2319; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2346;&#2375;&#2335;&#2381;&#2352;&#2379;&#2354; &#2324;&#2352; &#2325;&#2375;&#2352;&#2379;&#2360;&#2367;&#2344; &#2325;&#2368; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; &#2360;&#2350;&#2366;&#2344; &#2361;&#2379;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">15: 44</span><span class=\"hqt\" style=\"display:none\">15: 44</span>",
+      "<span class=\"eqt\">13: 22</span><span class=\"hqt\" style=\"display:none\">13: 22</span>",
+      "<span class=\"eqt\">17: 22</span><span class=\"hqt\" style=\"display:none\">17: 22</span>",
+      "<span class=\"eqt\">19: 44</span><span class=\"hqt\" style=\"display:none\">19: 44</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>If the volume of petrol and kerosene same, then the ratio of petrol to kerosene = 1: 1</p><p><img width=318 height=106 src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27135/image007.png\"></p><p>1/44 2/30 </p><p>Hence, the required ratio = (1/44)/(2/30) = 15: 44</p>",
+    "question_index": 16
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In a 10 kg mixture of silver and gold, 45% is silver. How much gold powder should be added to the mixture so that the quantity of silver becomes 30%?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2330;&#2366;&#2305;&#2342;&#2368; &#2324;&#2352; &#2360;&#2379;&#2344;&#2375; &#2325;&#2375; 10 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; 45% &#2330;&#2366;&#2305;&#2342;&#2368; &#2361;&#2376;&#2404; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2325;&#2367;&#2340;&#2344;&#2366; &#2360;&#2379;&#2344;&#2375; &#2325;&#2366; &#2346;&#2366;&#2313;&#2337;&#2352; &#2350;&#2367;&#2354;&#2366;&#2351;&#2366; &#2332;&#2366;&#2344;&#2366; &#2330;&#2366;&#2361;&#2367;&#2319; &#2340;&#2366;&#2325;&#2367; &#2330;&#2366;&#2305;&#2342;&#2368; &#2325;&#2368; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; 30% &#2361;&#2379; &#2332;&#2366;&#2319;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">4 kg</span><span class=\"hqt\" style=\"display:none\">4 &#2325;&#2367;&#2354;&#2379;</span>",
+      "<span class=\"eqt\">4.5 kg</span><span class=\"hqt\" style=\"display:none\">4.5 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>",
+      "<span class=\"eqt\">5 kg</span><span class=\"hqt\" style=\"display:none\">5 &#2325;&#2367;&#2354;&#2379;</span>",
+      "<span class=\"eqt\">5.5 kg</span><span class=\"hqt\" style=\"display:none\">5.5 &#2325;&#2367;&#2327;&#2381;&#2352;&#2366;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>silver = 10 * 45/100 = 4.5 kg</p><p>gold = 10  -  4.5 = 5.5 kg </p><p>Let the quantity of gold be 'X' kg </p><p>(10 + X) * 30/100 = 4.5 </p><p>10 + X = 15 </p><p>X = 5 kg</p>",
+    "question_index": 17
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A vessel contains 1600 litres of milk. 320 litres of milk was taken out from it and replaced with water. Then again from the mixture, 320 litres is taken out and replaced with water. The ratio of milk and water in the resultant mixture is:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2348;&#2352;&#2381;&#2340;&#2344; &#2350;&#2375;&#2306; 1600 &#2354;&#2368;&#2335;&#2352; &#2342;&#2370;&#2343; &#2361;&#2376;&#2404; &#2311;&#2360;&#2350;&#2375;&#2306; &#2360;&#2375; 320 &#2354;&#2368;&#2335;&#2352; &#2342;&#2370;&#2343; &#2344;&#2367;&#2325;&#2366;&#2354;&#2325;&#2352; &#2313;&#2360;&#2325;&#2368; &#2332;&#2327;&#2361; &#2346;&#2366;&#2344;&#2368; &#2337;&#2366;&#2354; &#2342;&#2367;&#2351;&#2366; &#2327;&#2351;&#2366;&#2404; &#2347;&#2367;&#2352; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2360;&#2375; 320 &#2354;&#2368;&#2335;&#2352; &#2342;&#2370;&#2343; &#2344;&#2367;&#2325;&#2366;&#2354;&#2325;&#2352; &#2313;&#2360;&#2325;&#2368; &#2332;&#2327;&#2361; &#2346;&#2366;&#2344;&#2368; &#2337;&#2366;&#2354; &#2342;&#2367;&#2351;&#2366; &#2327;&#2351;&#2366;&#2404; &#2346;&#2352;&#2367;&#2339;&#2366;&#2350;&#2368; &#2350;&#2367;&#2358;&#2381;&#2352;&#2339; &#2350;&#2375;&#2306; &#2342;&#2370;&#2343; &#2324;&#2352; &#2346;&#2366;&#2344;&#2368; &#2325;&#2366; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">16: 9</span><span class=\"hqt\" style=\"display:none\">16: 9</span>",
+      "<span class=\"eqt\">9: 5</span><span class=\"hqt\" style=\"display:none\">9: 5</span>",
+      "<span class=\"eqt\">12: 11</span><span class=\"hqt\" style=\"display:none\">12: 11</span>",
+      "<span class=\"eqt\">15: 13</span><span class=\"hqt\" style=\"display:none\">15: 13</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>a = Initial quantity </p><p>b = amount removed and replaced </p><p>n = number of times </p><p>Final Quantity = a * (1  -  b/a)<sup>n</sup></p><p>= 1600 * (1  -  320/1600)<sup>2</sup></p><p>= 1600 * 4/5 * 4/5</p><p>= 1024 l</p><p>Water = 1600  -  1024 = 576 l</p><p>Hence, the required ratio = 1024/576 = 16:9</p>",
+    "question_index": 18
+  },
+  {
+    "question": "<span class=\"eqt\"><p>An alloy is made by mixing metal A costing Rs 800/kg and metal B costing Rs 650/kg in the ratio A: B = 9: 13. What is the cost (in Rs) of 44 kilograms of this alloy?</p></span><span class=\"hqt\" style=\"display:none\"><p>800 &#2352;&#2369;&#2346;&#2351;&#2375;/&#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2357;&#2366;&#2354;&#2368; &#2343;&#2366;&#2340;&#2369; A &#2324;&#2352; 650 &#2352;&#2369;&#2346;&#2351;&#2375;/&#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2357;&#2366;&#2354;&#2368; &#2343;&#2366;&#2340;&#2369; B &#2325;&#2379; A: B = 9: 13 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2350;&#2367;&#2354;&#2366;&#2325;&#2352; &#2319;&#2325; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2348;&#2344;&#2366;&#2312; &#2332;&#2366;&#2340;&#2368; &#2361;&#2376;&#2404; &#2311;&#2360; &#2350;&#2367;&#2358;&#2381;&#2352; &#2343;&#2366;&#2340;&#2369; &#2325;&#2375; 44 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2325;&#2368; &#2325;&#2368;&#2350;&#2340; (&#2352;&#2369;&#2346;&#2351;&#2375; &#2350;&#2375;&#2306;) &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Rs. 32600</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 32600</span>",
+      "<span class=\"eqt\">Rs. 36400</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 36400</span>",
+      "<span class=\"eqt\">Rs. 31300</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 31300</span>",
+      "<span class=\"eqt\">Rs. 38200</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 38200</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Weight of metal A in 44 kg of alloy = 44 * 9/22 = 18 kgs </p><p>Weight of metal B in 44 kg in alloy = 44  -  18 = 26 kgs </p><p>Hence, the cost of alloy = 800 * 18 + 650 * 26 </p><p>= 14400 + 16900 </p><p>= Rs. 31300 </p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 20 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

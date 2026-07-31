@@ -13021,9 +13021,27 @@ function makeReasoningMockQuiz(){
 
   const session = { setKey: null, lang: 'hi' };
 
+  const SET_PREFIX_LABELS = {
+    mock: 'Mock',
+    spreasoning: 'Super Practice Reasoning',
+    spenglish: 'Super Practice English',
+    spquant: 'Super Practice Quant',
+    spgk: 'Super Practice GK',
+    spcomputer: 'Super Practice Computer',
+    p75reasoning: '75-Day Reasoning',
+    p75english: '75-Day English',
+    p75quant: '75-Day Quant',
+    p75gk: '75-Day GK',
+    cglpre: 'CGL Pre',
+    cpopre: 'CPO Pre',
+    mainsfull: 'Mains Full',
+    mainssectional: 'Mains Sectional'
+  };
   function setLabel(key, count){
     const num = (key.match(/\d+/) || [key])[0];
-    return 'Mock ' + num + ' (' + count + ' Qs)';
+    const prefix = key.replace(/\d+$/, '');
+    const nice = SET_PREFIX_LABELS[prefix] || 'Mock';
+    return nice + ' ' + num + ' (' + count + ' Qs)';
   }
   function buildSetPool(setKey){
     const set = SETS[setKey] || [];

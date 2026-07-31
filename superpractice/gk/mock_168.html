@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">42069 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">20 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">20:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "question": "<span class=\"eqt\"><p>The Earth is surrounded by a huge blanket of air called:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2330;&#2366;&#2352;&#2379;&#2306; &#2323;&#2352; &#2360;&#2375; &#2361;&#2357;&#2366; &#2325;&#2375; &#2319;&#2325; &#2357;&#2367;&#2358;&#2366;&#2354; &#2310;&#2357;&#2352;&#2339; &#2360;&#2375; &#2328;&#2367;&#2352;&#2368; &#2361;&#2369;&#2312; &#2361;&#2376; &#2332;&#2367;&#2360;&#2375; &#2325;&#2361;&#2340;&#2375; &#2361;&#2376;&#2306;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">Biosphere</span><span class=\"hqt\" style=\"display:none\">&#2348;&#2368;&#2323;&#2360;&#2381;&#2347;&#2367;&#2309;</span>",
+      "<span class=\"eqt\">Atmosphere</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354;</span>",
+      "<span class=\"eqt\">Hydrosphere</span><span class=\"hqt\" style=\"display:none\">&#2361;&#2368;&#2337;&#2381;&#2352;&#2366;&#2360;&#2381;&#2347;&#2368;&#2351;&#2352;</span>",
+      "<span class=\"eqt\">Lithosphere</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2354;&#2350;&#2306;&#2337;&#2354;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The Earth is enveloped by a large blanket of air known as the atmosphere. This layer of gases surrounds our planet and is essential for supporting life.</p><p>In contrast:</p><p>&#8226; The biosphere includes all living organisms and the ecosystems they inhabit</p><p>&#8226; The hydrosphere comprises all water bodies on Earth</p><p>&#8226; The lithosphere refers to the solid outer layer of the Earth, including the crust and upper mantle</p>",
+    "question_index": 0
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which two gases make up the bulk of the atmosphere?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2325;&#2366; &#2309;&#2343;&#2367;&#2325;&#2366;&#2306;&#2358; &#2349;&#2366;&#2327; &#2325;&#2380;&#2344; &#2360;&#2368; &#2342;&#2379; &#2327;&#2376;&#2360;&#2379;&#2306; &#2360;&#2375; &#2348;&#2344;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Oxygen and Carbon dioxide</span><span class=\"hqt\" style=\"display:none\">&#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344; &#2324;&#2352; &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337;</span>",
+      "<span class=\"eqt\">Nitrogen and Carbon dioxide</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2324;&#2352; &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337;</span>",
+      "<span class=\"eqt\">Nitrogen and Oxygen</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2324;&#2352; &#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Helium and Hydrogen</span><span class=\"hqt\" style=\"display:none\">&#2361;&#2368;&#2354;&#2367;&#2351;&#2350; &#2324;&#2352; &#2361;&#2366;&#2311;&#2337;&#2381;&#2352;&#2379;&#2332;&#2344;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Nitrogen and oxygen are the two primary gases present in the atmosphere. Nitrogen accounts for about 78% while oxygen makes up approximately 21%.</p><p>In contrast:</p><p>&#8226; Carbon dioxide is present in very small amounts</p><p>&#8226; Helium and hydrogen exist in trace amounts and are not significant components of the atmosphere</p>",
+    "question_index": 1
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which of the following gases is found in lesser quantities in the atmosphere?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344; &#2360;&#2368; &#2327;&#2376;&#2360; &#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2350;&#2375;&#2306; &#2325;&#2350; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; &#2350;&#2375;&#2306; &#2346;&#2366;&#2312; &#2332;&#2366;&#2340;&#2368; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Nitrogen</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Oxygen</span><span class=\"hqt\" style=\"display:none\">&#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Carbon dioxide</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2312;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337;</span>",
+      "<span class=\"eqt\">The bulk of the atmosphere is not made of Carbon dioxide.</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2325;&#2366; &#2309;&#2343;&#2367;&#2325;&#2366;&#2306;&#2358; &#2349;&#2366;&#2327; &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337; &#2360;&#2375; &#2344;&#2361;&#2368;&#2306; &#2348;&#2344;&#2366; &#2361;&#2376;&#2404;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Carbon dioxide is found in much smaller amounts compared to nitrogen and oxygen. Other trace gases include helium, ozone, argon, and hydrogen.</p><p>In contrast:</p><p>&#8226; Nitrogen and oxygen are the dominant gases in the atmosphere</p><p>&#8226; Option 4 is a restatement rather than a direct answer</p>",
+    "question_index": 2
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Plants cannot take which gas directly from the air?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2380;&#2343;&#2375; &#2325;&#2380;&#2344; &#2360;&#2368; &#2327;&#2376;&#2360; &#2360;&#2368;&#2343;&#2375; &#2361;&#2357;&#2366; &#2360;&#2375; &#2344;&#2361;&#2368;&#2306; &#2354;&#2375; &#2360;&#2325;&#2340;&#2375;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Oxygen</span><span class=\"hqt\" style=\"display:none\">&#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Carbon dioxide</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2312;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337;</span>",
+      "<span class=\"eqt\">Nitrogen</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">All gases can be directly taken by plants.</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2349;&#2368; &#2327;&#2376;&#2360;&#2375;&#2306; &#2346;&#2380;&#2343;&#2379;&#2306; &#2342;&#2381;&#2357;&#2366;&#2352;&#2366; &#2360;&#2368;&#2343;&#2375; &#2354;&#2368; &#2332;&#2366; &#2360;&#2325;&#2340;&#2368; &#2361;&#2376;&#2306;&#2404;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Although nitrogen is essential for plant growth, plants cannot absorb it directly from the air. It must first be converted into usable forms by bacteria in the soil.</p><p>In contrast:</p><p>&#8226; Carbon dioxide is absorbed by plants during photosynthesis</p><p>&#8226; Oxygen is used by plants for respiration</p>",
+    "question_index": 3
+  },
+  {
+    "question": "<span class=\"eqt\"><p>What role do bacteria in the soil and roots of some plants play in the nitrogen cycle?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2350;&#2367;&#2335;&#2381;&#2335;&#2368; &#2350;&#2375;&#2306; &#2346;&#2366;&#2319; &#2332;&#2366;&#2344;&#2375; &#2357;&#2366;&#2354;&#2375; &#2348;&#2376;&#2325;&#2381;&#2335;&#2368;&#2352;&#2367;&#2351;&#2366; &#2324;&#2352; &#2325;&#2369;&#2331; &#2346;&#2380;&#2343;&#2379;&#2306; &#2325;&#2368; &#2332;&#2337;&#2364;&#2375;&#2306; &#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2330;&#2325;&#2381;&#2352; &#2350;&#2375;&#2306; &#2325;&#2381;&#2351;&#2366; &#2349;&#2370;&#2350;&#2367;&#2325;&#2366; &#2344;&#2367;&#2349;&#2366;&#2340;&#2368; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">They release nitrogen into the air.</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2375; &#2361;&#2357;&#2366; &#2350;&#2375;&#2306; &#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2331;&#2379;&#2337;&#2364;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404;</span>",
+      "<span class=\"eqt\">They help animals absorb nitrogen.</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2375; &#2346;&#2358;&#2369;&#2323;&#2306; &#2325;&#2379; &#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2309;&#2357;&#2358;&#2379;&#2359;&#2367;&#2340; &#2325;&#2352;&#2344;&#2375; &#2350;&#2375;&#2306; &#2350;&#2342;&#2342; &#2325;&#2352;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404;</span>",
+      "<span class=\"eqt\">They take nitrogen from the air and change its form so that plants can use it.</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2375; &#2361;&#2357;&#2366; &#2360;&#2375; &#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2354;&#2375;&#2340;&#2375; &#2361;&#2376;&#2306; &#2324;&#2352; &#2313;&#2360;&#2325;&#2366; &#2352;&#2370;&#2346; &#2348;&#2342;&#2354; &#2342;&#2375;&#2340;&#2375; &#2361;&#2376;&#2306; &#2340;&#2366;&#2325;&#2367; &#2346;&#2380;&#2343;&#2375; &#2313;&#2360;&#2325;&#2366; &#2313;&#2346;&#2351;&#2379;&#2327; &#2325;&#2352; &#2360;&#2325;&#2375;&#2306;&#2404;</span>",
+      "<span class=\"eqt\">They use nitrogen to produce oxygen.</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2375; &#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344; &#2313;&#2340;&#2381;&#2346;&#2344;&#2381;&#2344; &#2325;&#2352;&#2344;&#2375; &#2325;&#2375; &#2354;&#2367;&#2319; &#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344; &#2325;&#2366; &#2313;&#2346;&#2351;&#2379;&#2327; &#2325;&#2352;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Soil bacteria, especially those in the roots of legumes, convert atmospheric nitrogen into nitrates and other compounds that plants can absorb and use.</p><p>In contrast:</p><p>&#8226; Option 1 is incorrect as bacteria convert nitrogen for use, not release it</p><p>&#8226; Option 2 and 4 are unrelated to the nitrogen fixation process</p>",
+    "question_index": 4
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Match the atmospheric layers with their characteristics:</p><table style=\"border-collapse:collapse;\"><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Atmospheric Layer</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Characteristic</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(i) Troposphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">a. Contains the ozone layer</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(ii) Stratosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">b. Meteorites burn up here</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iii) Mesosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">c. Most weather phenomena occur here</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iv)Thermosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">d.Helps in radio transmission</td></tr></table></span><span class=\"hqt\" style=\"display:none\"><p>&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354;&#2368;&#2351; &#2346;&#2352;&#2340;&#2379;&#2306; &#2325;&#2366; &#2313;&#2344;&#2325;&#2368; &#2357;&#2367;&#2358;&#2375;&#2359;&#2340;&#2366;&#2323;&#2306; &#2325;&#2375; &#2360;&#2366;&#2341; &#2350;&#2367;&#2354;&#2366;&#2344; &#2325;&#2352;&#2375;&#2306;:</p><table style=\"border-collapse:collapse;\"><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354;&#2368;&#2351; &#2346;&#2352;&#2340;</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">&#2357;&#2367;&#2358;&#2375;&#2359;&#2340;&#2366;</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(i) &#2325;&#2381;&#2359;&#2379;&#2349;&#2350;&#2306;&#2337;&#2354;</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">a. &#2323;&#2332;&#2379;&#2344; &#2346;&#2352;&#2340; &#2358;&#2366;&#2350;&#2367;&#2354; &#2361;&#2376;</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(ii) &#2360;&#2350;&#2340;&#2366;&#2346; &#2350;&#2306;&#2337;&#2354;</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">b. &#2313;&#2354;&#2381;&#2325;&#2366;&#2346;&#2367;&#2306;&#2337; &#2351;&#2361;&#2366;&#2305; &#2332;&#2354;&#2340;&#2375; &#2361;&#2376;&#2306;</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iii) &#2350;&#2343;&#2381;&#2351;&#2350;&#2306;&#2337;&#2354;</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">c. &#2309;&#2343;&#2367;&#2325;&#2366;&#2306;&#2358; &#2350;&#2380;&#2360;&#2350; &#2360;&#2306;&#2348;&#2306;&#2343;&#2368; &#2328;&#2335;&#2344;&#2366;&#2319;&#2306; &#2351;&#2361;&#2368;&#2306; &#2361;&#2379;&#2340;&#2368; &#2361;&#2376;&#2306;</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iv) &#2341;&#2352;&#2381;&#2350;&#2379;&#2360;&#2381;&#2347;&#2368;&#2351;&#2352;</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">d.&#2352;&#2375;&#2337;&#2367;&#2351;&#2379; &#2346;&#2381;&#2352;&#2360;&#2366;&#2352;&#2339; &#2350;&#2375;&#2306; &#2350;&#2342;&#2342; &#2325;&#2352;&#2340;&#2366; &#2361;&#2376;</td></tr></table></span>",
+    "options": [
+      "<span class=\"eqt\">i - c, ii - a, iii - b, iv - d</span><span class=\"hqt\" style=\"display:none\">i - c, ii - a, iii - b, iv - d</span>",
+      "<span class=\"eqt\">i - a, ii - c, iii - d, iv - b</span><span class=\"hqt\" style=\"display:none\">i - a, ii - c, iii - d, iv - b</span>",
+      "<span class=\"eqt\">i - b, ii - d, iii - a, iv - c</span><span class=\"hqt\" style=\"display:none\">i - b, ii - d, iii - a, iv - c</span>",
+      "<span class=\"eqt\">i - d, ii - b, iii - c, iv - a</span><span class=\"hqt\" style=\"display:none\">i - d, ii - b, iii - c, iv - a</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<table style=\"border-collapse:collapse;\"><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Atmospheric Layer</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Characteristic</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Key Facts</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(i) Troposphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(c) Most weather phenomena occur here</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Lowest layer (0 - 12 km); contains clouds, rain, storms.</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(ii) Stratosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(a) Contains the ozone layer</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">Extends up to 50 km; ozone absorbs UV radiation.</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iii) Mesosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(b) Meteorites burn up here</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">50 - 85 km; \"middle layer\" where space debris vaporizes.</td></tr><tr><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(iv)Thermosphere</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">(d)Helps in radio transmission</td><td align=\"left\" style=\"border:1px solid black;padding:5px;\">85 - 600 km; ionized gases reflect radio waves.</td></tr></table><p>The K&#225;rm&#225;n line (100 km above sea level, in the thermosphere) marks the boundary between Earth and space.</p>",
+    "question_index": 5
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which gas creates the greenhouse effect by trapping heat radiated from the Earth?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2325;&#2380;&#2344; &#2360;&#2368; &#2327;&#2376;&#2360; &#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2360;&#2375; &#2344;&#2367;&#2325;&#2354;&#2344;&#2375; &#2357;&#2366;&#2354;&#2368; &#2314;&#2359;&#2381;&#2350;&#2366; &#2325;&#2379; &#2352;&#2379;&#2325;&#2325;&#2352; &#2327;&#2381;&#2352;&#2368;&#2344;&#2361;&#2366;&#2313;&#2360; &#2346;&#2381;&#2352;&#2349;&#2366;&#2357; &#2346;&#2376;&#2342;&#2366; &#2325;&#2352;&#2340;&#2368; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Nitrogen</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2366;&#2311;&#2335;&#2381;&#2352;&#2379;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Oxygen</span><span class=\"hqt\" style=\"display:none\">&#2321;&#2325;&#2381;&#2360;&#2368;&#2332;&#2344;</span>",
+      "<span class=\"eqt\">Carbon dioxide</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2312;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337;</span>",
+      "<span class=\"eqt\">Ozone</span><span class=\"hqt\" style=\"display:none\">&#2323;&#2332;&#2379;&#2344;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Carbon dioxide is a greenhouse gas that traps heat in the Earth's atmosphere, contributing to the greenhouse effect and global warming.</p><p>In contrast:</p><p>&#8226; Nitrogen and oxygen do not have significant greenhouse effects</p><p>&#8226; Ozone has a minor greenhouse effect but is primarily known for blocking harmful UV radiation</p>",
+    "question_index": 6
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Consider the following statements about the greenhouse effect and global warming. </p><p>Which of the statements given above is/are correct?</p><p>a. Carbon dioxide is a greenhouse gas essential for making the Earth liveable. </p><p>b. An increase in greenhouse gases like carbon dioxide leads to a decrease in the Earth's temperature. </p><p>c. Burning of fuels like coal and oil adds billions of tons of carbon dioxide into the atmosphere each year.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2327;&#2381;&#2352;&#2368;&#2344;&#2361;&#2366;&#2313;&#2360; &#2346;&#2381;&#2352;&#2349;&#2366;&#2357; &#2324;&#2352; &#2327;&#2381;&#2354;&#2379;&#2348;&#2354; &#2357;&#2366;&#2352;&#2381;&#2350;&#2367;&#2306;&#2327; &#2325;&#2375; &#2348;&#2366;&#2352;&#2375; &#2350;&#2375;&#2306; &#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2325;&#2341;&#2344;&#2379;&#2306; &#2346;&#2352; &#2357;&#2367;&#2330;&#2366;&#2352; &#2325;&#2352;&#2375;&#2306;&#2404;</p><p>&#2314;&#2346;&#2352; &#2342;&#2367;&#2319; &#2327;&#2319; &#2325;&#2341;&#2344;&#2379;&#2306; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344; &#2360;&#2366;/&#2360;&#2375; &#2360;&#2361;&#2368; &#2361;&#2376;/&#2361;&#2376;&#2306;?</p><p>a. &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337; &#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2325;&#2379; &#2352;&#2361;&#2344;&#2375; &#2351;&#2379;&#2327;&#2381;&#2351; &#2348;&#2344;&#2366;&#2344;&#2375; &#2325;&#2375; &#2354;&#2367;&#2319; &#2310;&#2357;&#2358;&#2381;&#2351;&#2325; &#2327;&#2381;&#2352;&#2368;&#2344;&#2361;&#2366;&#2313;&#2360; &#2327;&#2376;&#2360; &#2361;&#2376;&#2404;</p><p>b. &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337; &#2332;&#2376;&#2360;&#2368; &#2327;&#2381;&#2352;&#2368;&#2344;&#2361;&#2366;&#2313;&#2360; &#2327;&#2376;&#2360;&#2379;&#2306; &#2350;&#2375;&#2306; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2360;&#2375; &#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2325;&#2375; &#2340;&#2366;&#2346;&#2350;&#2366;&#2344; &#2350;&#2375;&#2306; &#2325;&#2350;&#2368; &#2310;&#2340;&#2368; &#2361;&#2376;&#2404;</p><p>c. &#2325;&#2379;&#2351;&#2354;&#2366; &#2324;&#2352; &#2340;&#2375;&#2354; &#2332;&#2376;&#2360;&#2375; &#2312;&#2306;&#2343;&#2344;&#2379;&#2306; &#2325;&#2375; &#2332;&#2354;&#2344;&#2375; &#2360;&#2375; &#2361;&#2352; &#2360;&#2366;&#2354; &#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2350;&#2375;&#2306; &#2309;&#2352;&#2348;&#2379;&#2306; &#2335;&#2344; &#2325;&#2366;&#2352;&#2381;&#2348;&#2344; &#2337;&#2366;&#2311;&#2321;&#2325;&#2381;&#2360;&#2366;&#2311;&#2337; &#2332;&#2369;&#2337;&#2364;&#2340;&#2366; &#2361;&#2376;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">Only a</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; a</span>",
+      "<span class=\"eqt\">Only a and c</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; a &#2324;&#2352; c</span>",
+      "<span class=\"eqt\">Only b and c</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; b &#2324;&#2352; c</span>",
+      "<span class=\"eqt\">All of the above</span><span class=\"hqt\" style=\"display:none\">&#2314;&#2346;&#2352; &#2325;&#2375; &#2360;&#2349;&#2368;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>&#183; <b>Carbon dioxide is a greenhouse gas essential for making the Earth liveable is Correct</b>  -  CO&#8322; is a natural greenhouse gas that traps heat, keeping Earth warm enough to sustain life. Without it, the planet would be too cold.</p><p>&#183; <b>Burning of fuels like coal and oil adds billions of tons of carbon dioxide into the atmosphere each year is Correct</b>  -  Fossil fuel combustion is the primary human-made source of CO&#8322; emissions, significantly increasing atmospheric greenhouse gases.</p><p>&#183; <b>An increase in greenhouse gases like carbon dioxide leads to a decrease in the Earth's temperature </b>is <b>Incorrect</b>  -  More greenhouse gases <b>trap more heat</b>, causing <b>global warming</b>, not cooling.</p>",
+    "question_index": 7
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The atmosphere is divided into how many layers starting from the Earth's surface?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2325;&#2368; &#2360;&#2340;&#2361; &#2360;&#2375; &#2358;&#2369;&#2352;&#2370; &#2361;&#2379;&#2325;&#2352; &#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2325;&#2367;&#2340;&#2344;&#2368; &#2346;&#2352;&#2340;&#2379;&#2306; &#2350;&#2375;&#2306; &#2357;&#2367;&#2349;&#2366;&#2332;&#2367;&#2340; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Three</span><span class=\"hqt\" style=\"display:none\">&#2340;&#2368;&#2344;</span>",
+      "<span class=\"eqt\">Four</span><span class=\"hqt\" style=\"display:none\">&#2330;&#2366;&#2352;</span>",
+      "<span class=\"eqt\">Five</span><span class=\"hqt\" style=\"display:none\">&#2346;&#2366;&#2305;&#2330;</span>",
+      "<span class=\"eqt\">Six</span><span class=\"hqt\" style=\"display:none\">&#2331;&#2361;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The atmosphere is divided into <b>five</b> layers starting from the Earth's surface. These layers are:</p><p>&#183; <b>Troposphere</b>  -  The lowest layer where we live and where weather occurs.</p><p>&#183; <b>Stratosphere</b>  -  Contains the ozone layer, which absorbs and scatters ultraviolet solar radiation.</p><p>&#183; <b>Mesosphere</b>  -  The layer where most meteorites burn up upon entering Earth's atmosphere.</p><p>&#183; <b>Thermosphere</b>  -  A layer where solar activity creates phenomena like the auroras.</p><p>&#183; <b>Exosphere</b>  -  The outermost layer, where atmospheric particles are extremely sparse and gradually fade into space.</p>",
+    "question_index": 8
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which is the most important layer of the atmosphere where the air we breathe exists?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354; &#2325;&#2368; &#2360;&#2348;&#2360;&#2375; &#2350;&#2361;&#2340;&#2381;&#2357;&#2346;&#2370;&#2352;&#2381;&#2339; &#2346;&#2352;&#2340; &#2325;&#2380;&#2344; &#2360;&#2368; &#2361;&#2376; &#2332;&#2361;&#2366;&#2306; &#2361;&#2350; &#2360;&#2366;&#2306;&#2360; &#2354;&#2375;&#2340;&#2375; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Stratosphere</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2335;&#2381;&#2352;&#2376;&#2335;&#2379;&#2360;&#2381;&#2347;&#2367;&#2351;&#2352;</span>",
+      "<span class=\"eqt\">Mesosphere</span><span class=\"hqt\" style=\"display:none\">&#2350;&#2368;&#2360;&#2379;&#2360;&#2381;&#2347;&#2368;&#2351;&#2352;</span>",
+      "<span class=\"eqt\">Troposphere</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2381;&#2359;&#2379;&#2349; &#2350;&#2306;&#2337;&#2354;</span>",
+      "<span class=\"eqt\">Thermosphere</span><span class=\"hqt\" style=\"display:none\">&#2341;&#2352;&#2381;&#2350;&#2379;&#2360;&#2381;&#2347;&#2368;&#2351;&#2352;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The most important layer of the atmosphere where the air we breathe exists is the <b>troposphere</b>.</p><p>The troposphere is the lowest layer of the atmosphere, extending from the Earth's surface up to about 8 to 15 kilometers (5 to 9 miles) high, depending on the location. It contains most of the atmosphere's mass, including the oxygen we breathe, and is where weather phenomena occur.</p><p>In contrast:</p><p>&#8226; Stratosphere, mesosphere, and thermosphere are higher layers and do not contain breathable air in significant amounts</p>",
+    "question_index": 9
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which of the following statements regarding air pressure is/are correct?</p><p>a. Air pressure is highest at sea level and decreases with height.</p><p>b. In areas where temperature is high, air gets heated and rises, creating a low-pressure area.</p><p>c. Air always moves from low-pressure areas to high-pressure areas.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2357;&#2366;&#2351;&#2369; &#2342;&#2366;&#2348; &#2325;&#2375; &#2360;&#2306;&#2348;&#2306;&#2343; &#2350;&#2375;&#2306; &#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344; &#2360;&#2366;/&#2360;&#2375; &#2325;&#2341;&#2344; &#2360;&#2361;&#2368; &#2361;&#2376;/&#2361;&#2376;&#2306;?</p><p>a. &#2360;&#2350;&#2369;&#2342;&#2381;&#2352; &#2340;&#2354; &#2346;&#2352; &#2357;&#2366;&#2351;&#2369; &#2342;&#2366;&#2348; &#2360;&#2348;&#2360;&#2375; &#2309;&#2343;&#2367;&#2325; &#2361;&#2379;&#2340;&#2366; &#2361;&#2376; &#2324;&#2352; &#2314;&#2306;&#2330;&#2366;&#2312; &#2325;&#2375; &#2360;&#2366;&#2341; &#2328;&#2335;&#2340;&#2366; &#2361;&#2376;&#2404;</p><p>b. &#2332;&#2367;&#2344; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352;&#2379;&#2306; &#2350;&#2375;&#2306; &#2340;&#2366;&#2346;&#2350;&#2366;&#2344; &#2309;&#2343;&#2367;&#2325; &#2361;&#2379;&#2340;&#2366; &#2361;&#2376;, &#2357;&#2361;&#2366;&#2306; &#2361;&#2357;&#2366; &#2327;&#2352;&#2381;&#2350; &#2361;&#2379;&#2325;&#2352; &#2314;&#2346;&#2352; &#2313;&#2336;&#2340;&#2368; &#2361;&#2376;, &#2332;&#2367;&#2360;&#2360;&#2375; &#2325;&#2350; &#2342;&#2348;&#2366;&#2357; &#2325;&#2366; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352; &#2348;&#2344;&#2340;&#2366; &#2361;&#2376;&#2404;</p><p>c. &#2361;&#2357;&#2366; &#2361;&#2350;&#2375;&#2358;&#2366; &#2325;&#2350; &#2342;&#2348;&#2366;&#2357; &#2357;&#2366;&#2354;&#2375; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352;&#2379;&#2306; &#2360;&#2375; &#2313;&#2330;&#2381;&#2330; &#2342;&#2348;&#2366;&#2357; &#2357;&#2366;&#2354;&#2375; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352;&#2379;&#2306; &#2325;&#2368; &#2323;&#2352; &#2330;&#2354;&#2340;&#2368; &#2361;&#2376;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">Only a</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; a</span>",
+      "<span class=\"eqt\">Only a and b</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; a &#2324;&#2352; b</span>",
+      "<span class=\"eqt\">Only b and c</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; b &#2324;&#2352; c</span>",
+      "<span class=\"eqt\">All of the above</span><span class=\"hqt\" style=\"display:none\">&#2314;&#2346;&#2352; &#2325;&#2375; &#2360;&#2349;&#2368;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p><b>Air pressure is highest at sea level and decreases with height.</b></p><p>This statement is <b>correct</b>. Air pressure is highest at sea level due to the weight of the atmosphere above. As you go higher, the air pressure decreases because there is less air above exerting pressure.</p><p><b>In areas where temperature is high, air gets heated and rises, creating a low-pressure area.</b></p><p>This statement is <b>correct</b>. When air is heated, it expands and becomes less dense, causing it to rise. As it rises, it creates a low-pressure area. This is why warm regions tend to have lower air pressure.</p><p><b>Air always moves from low-pressure areas to high-pressure areas.</b></p><p>This statement is <b>incorrect</b>. Air actually moves from high-pressure areas to low-pressure areas. The movement is driven by the pressure difference, and it works to equalize the pressure.</p>",
+    "question_index": 10
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Low pressure is associated with:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2344;&#2367;&#2350;&#2381;&#2344; &#2342;&#2366;&#2348; &#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2360;&#2375; &#2360;&#2306;&#2348;&#2306;&#2343;&#2367;&#2340; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">Clear and sunny skies</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2366;&#2347;&#2364; &#2324;&#2352; &#2343;&#2370;&#2346; &#2357;&#2366;&#2354;&#2366; &#2310;&#2360;&#2350;&#2366;&#2344;</span>",
+      "<span class=\"eqt\">Cold and dry weather</span><span class=\"hqt\" style=\"display:none\">&#2336;&#2306;&#2337;&#2366; &#2324;&#2352; &#2358;&#2369;&#2359;&#2381;&#2325; &#2350;&#2380;&#2360;&#2350;</span>",
+      "<span class=\"eqt\">Cloudy skies and wet weather</span><span class=\"hqt\" style=\"display:none\">&#2348;&#2366;&#2342;&#2354; &#2331;&#2366;&#2319; &#2352;&#2361;&#2375;&#2306;&#2327;&#2375; &#2324;&#2352; &#2350;&#2380;&#2360;&#2350; &#2327;&#2368;&#2354;&#2366; &#2352;&#2361;&#2375;&#2327;&#2366;</span>",
+      "<span class=\"eqt\">Calm winds</span><span class=\"hqt\" style=\"display:none\">&#2358;&#2366;&#2306;&#2340; &#2361;&#2357;&#2366;&#2319;&#2306;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>&#183; <b>Low-pressure systems</b> occur when warm, moist air rises, cools, and condenses, forming <b>clouds and precipitation</b>.</p><p>&#183; These systems are associated with <b>stormy, rainy, or snowy weather</b> (e.g., cyclones, hurricanes).</p><p><b>Why Not the Others?</b></p><p>&#183; <b>Clear and sunny skies</b>  -  High-pressure systems (descending air prevents cloud formation).</p><p>&#183; <b>Cold and dry weather</b>  -  Typically high pressure (stable air masses, like in winter anticyclones).</p><p>&#183; <b>Calm winds</b>  -  More common in high-pressure zones (low pressure often brings strong, gusty winds).</p>",
+    "question_index": 11
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The movement of air from high pressure areas to low pressure areas is called:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2313;&#2330;&#2381;&#2330; &#2342;&#2366;&#2348; &#2357;&#2366;&#2354;&#2375; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352;&#2379;&#2306; &#2360;&#2375; &#2344;&#2367;&#2350;&#2381;&#2344; &#2342;&#2366;&#2348; &#2357;&#2366;&#2354;&#2375; &#2325;&#2381;&#2359;&#2375;&#2340;&#2381;&#2352;&#2379;&#2306; &#2325;&#2368; &#2323;&#2352; &#2357;&#2366;&#2351;&#2369; &#2325;&#2368; &#2327;&#2340;&#2367; &#2325;&#2379; &#2325;&#2361;&#2340;&#2375; &#2361;&#2376;&#2306;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">Air pressure</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2351;&#2369; &#2342;&#2366;&#2348;</span>",
+      "<span class=\"eqt\">Wind</span><span class=\"hqt\" style=\"display:none\">&#2361;&#2357;&#2366;</span>",
+      "<span class=\"eqt\">Convection</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2306;&#2357;&#2375;&#2325;&#2381;&#2358;&#2344;</span>",
+      "<span class=\"eqt\">Precipitation</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2352;&#2381;&#2359;&#2339;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Wind is defined as the horizontal movement of air from areas of high pressure to areas of low pressure. This movement occurs because air naturally flows from regions where pressure is higher toward regions where pressure is lower.</p><p>The other options refer to different meteorological concepts:</p><p>&#183; Air pressure: The force exerted by the weight of air molecules above a given point</p><p>&#183; Convection: The vertical movement of air due to heating and cooling (a process that can create winds)</p><p>&#183; Precipitation: The release of water from clouds in the form of rain, snow, sleet, or hail</p>",
+    "question_index": 12
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Winds that blow constantly throughout the year in a particular direction are called:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2332;&#2379; &#2361;&#2357;&#2366;&#2319;&#2306; &#2346;&#2370;&#2352;&#2375; &#2357;&#2352;&#2381;&#2359; &#2319;&#2325; &#2357;&#2367;&#2358;&#2375;&#2359; &#2342;&#2367;&#2358;&#2366; &#2350;&#2375;&#2306; &#2354;&#2327;&#2366;&#2340;&#2366;&#2352; &#2348;&#2361;&#2340;&#2368; &#2361;&#2376;&#2306; &#2313;&#2344;&#2381;&#2361;&#2375;&#2306; &#2325;&#2381;&#2351;&#2366; &#2325;&#2361;&#2340;&#2375; &#2361;&#2376;&#2306;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">Local winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2344;&#2368;&#2351; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Seasonal winds</span><span class=\"hqt\" style=\"display:none\">&#2350;&#2380;&#2360;&#2350;&#2368; &#2361;&#2357;&#2366;&#2319;&#2305;</span>",
+      "<span class=\"eqt\">Permanent winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2351;&#2368; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Variable winds</span><span class=\"hqt\" style=\"display:none\">&#2346;&#2352;&#2367;&#2357;&#2352;&#2381;&#2340;&#2344;&#2358;&#2368;&#2354; &#2361;&#2357;&#2366;&#2319;&#2306;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Permanent winds are wind systems that blow consistently throughout the year in a particular direction, maintaining a relatively constant pattern regardless of season. These include:</p><p>&#183; Trade winds</p><p>&#183; Westerlies</p><p>&#183; Polar easterlies</p><p>The other options refer to different types of wind patterns:</p><p>&#183; Local winds: Small-scale winds that are influenced by local geographic features (like mountain and valley breezes)</p><p>&#183; Seasonal winds: Winds that change direction with the seasons (like monsoons)</p><p>&#183; Variable winds: Winds that frequently change direction and speed</p>",
+    "question_index": 13
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Monsoon winds in India are an example of which type of wind?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2349;&#2366;&#2352;&#2340; &#2350;&#2375;&#2306; &#2350;&#2366;&#2344;&#2360;&#2370;&#2344;&#2368; &#2361;&#2357;&#2366;&#2319;&#2305; &#2325;&#2367;&#2360; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &#2325;&#2368; &#2361;&#2357;&#2366; &#2325;&#2366; &#2313;&#2342;&#2366;&#2361;&#2352;&#2339; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Permanent winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2351;&#2368; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Seasonal winds</span><span class=\"hqt\" style=\"display:none\">&#2350;&#2380;&#2360;&#2350;&#2368; &#2361;&#2357;&#2366;&#2319;&#2305;</span>",
+      "<span class=\"eqt\">Local winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2344;&#2368;&#2351; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Trade winds</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2381;&#2351;&#2366;&#2346;&#2366;&#2352;&#2367;&#2325; &#2361;&#2357;&#2366;&#2319;&#2306;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Monsoon winds in India are a classic example of seasonal winds because they:</p><p>&#183; Change direction with the seasons (southwest in summer, northeast in winter)</p><p>&#183; Are driven by the differential heating of land and sea across seasons</p><p>&#183; Occur with a predictable annual pattern</p><p>&#183; Bring distinct wet and dry seasons to the Indian subcontinent</p><p>The other options are different types of wind systems:</p><p>&#183; Permanent winds: Winds that blow consistently throughout the year in a particular direction</p><p>&#183; Local winds: Small-scale winds affected by local geographic features (like land and sea breezes)</p><p>&#183; Trade winds: Permanent winds that blow from subtropical high-pressure areas toward the equator</p>",
+    "question_index": 14
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Land and sea breezes are examples of which type of wind?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2360;&#2381;&#2341;&#2354;&#2368;&#2351; &#2324;&#2352; &#2360;&#2350;&#2369;&#2342;&#2381;&#2352;&#2368; &#2361;&#2357;&#2366;&#2319;&#2306; &#2325;&#2367;&#2360; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &#2325;&#2368; &#2361;&#2357;&#2366; &#2325;&#2375; &#2313;&#2342;&#2366;&#2361;&#2352;&#2339; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Permanent winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2351;&#2368; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Seasonal winds</span><span class=\"hqt\" style=\"display:none\">&#2350;&#2380;&#2360;&#2350;&#2368; &#2361;&#2357;&#2366;&#2319;&#2305;</span>",
+      "<span class=\"eqt\">Local winds</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2381;&#2341;&#2366;&#2344;&#2368;&#2351; &#2361;&#2357;&#2366;&#2319;&#2306;</span>",
+      "<span class=\"eqt\">Westerlies</span><span class=\"hqt\" style=\"display:none\">&#2346;&#2330;&#2381;&#2331;&#2350;&#2368; &#2361;&#2357;&#2366;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Land and sea breezes are classified as local winds because they:</p><p>&#183; Occur on a small geographical scale</p><p>&#183; Are caused by local temperature differences between land and sea</p><p>&#183; Follow a daily cycle (diurnal pattern)</p><p>&#183; Affect only coastal areas</p><p>The other options are different types of wind systems:</p><p>&#183; Permanent winds: Consistent wind patterns that blow throughout the year in a particular direction (like trade winds)</p><p>&#183; Seasonal winds: Winds that change direction with the seasons (like monsoons)</p><p>&#183; Westerlies: Prevailing winds that blow from west to east in the middle latitudes</p>",
+    "question_index": 15
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The amount of water vapour in the air at any time is known as:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2325;&#2367;&#2360;&#2368; &#2349;&#2368; &#2360;&#2350;&#2351; &#2361;&#2357;&#2366; &#2350;&#2375;&#2306; &#2332;&#2354;&#2357;&#2366;&#2359;&#2381;&#2346; &#2325;&#2368; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; &#2325;&#2379; &#2311;&#2360; &#2352;&#2370;&#2346; &#2350;&#2375;&#2306; &#2332;&#2366;&#2344;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;:</p></span>",
+    "options": [
+      "<span class=\"eqt\">Precipitation</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2352;&#2381;&#2359;&#2339;</span>",
+      "<span class=\"eqt\">Humidity</span><span class=\"hqt\" style=\"display:none\">&#2344;&#2350;&#2368;</span>",
+      "<span class=\"eqt\">Condensation</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2359;&#2381;&#2346;&#2368;&#2325;&#2352;&#2339;</span>",
+      "<span class=\"eqt\">Evaporation</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2359;&#2381;&#2346;&#2368;&#2325;&#2352;&#2339;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Humidity refers to the amount of water vapor present in the air at a given time. It's a measure of how much moisture is in the atmosphere.</p><p>The other options refer to different water cycle processes:</p><p>&#183; Precipitation: The process where water falls from clouds to the Earth's surface (as rain, snow, etc.)</p><p>&#183; Condensation: The process where water vapor changes into liquid water.</p><p>&#183; Evaporation: The process where liquid water changes into water vapor.</p>",
+    "question_index": 16
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Precipitation that comes down to the Earth in liquid form is called:</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2340;&#2352;&#2354; &#2352;&#2370;&#2346; &#2350;&#2375;&#2306; &#2346;&#2371;&#2341;&#2381;&#2357;&#2368; &#2346;&#2352; &#2310;&#2344;&#2375; &#2357;&#2366;&#2354;&#2368; &#2357;&#2352;&#2381;&#2359;&#2366; &#2325;&#2379; &#2325;&#2381;&#2351;&#2366; &#2325;&#2361;&#2340;&#2375; &#2361;&#2376;&#2306;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Snow</span><span class=\"hqt\" style=\"display:none\">&#2348;&#2352;&#2381;&#2347;</span>",
+      "<span class=\"eqt\">Hail</span><span class=\"hqt\" style=\"display:none\">&#2323;&#2354;&#2379;&#2306;</span>",
+      "<span class=\"eqt\">Rain</span><span class=\"hqt\" style=\"display:none\">&#2348;&#2366;&#2352;&#2367;&#2358;</span>",
+      "<span class=\"eqt\">Sleet</span><span class=\"hqt\" style=\"display:none\">&#2323;&#2354;&#2375; &#2325;&#2375; &#2360;&#2366;&#2341; &#2357;&#2352;&#2381;&#2359;&#2366;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Rain is the form of precipitation that reaches the Earth in liquid form.</p><p>&#183; <b>Rain</b> is the precipitation that falls to the Earth in liquid form, typically in the form of water droplets.</p><p>&#183; <b>Snow</b> is frozen precipitation that falls as ice crystals.</p><p>&#183; <b>Hail</b> consists of frozen balls of ice that form during thunderstorms.</p><p>&#183; <b>Sleet</b> is a mix of rain and snow, consisting of ice pellets.</p>",
+    "question_index": 17
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which of the following instruments measures atmospheric pressure?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344; &#2360;&#2366; &#2313;&#2346;&#2325;&#2352;&#2339; &#2357;&#2366;&#2351;&#2369;&#2350;&#2306;&#2337;&#2354;&#2368;&#2351; &#2342;&#2348;&#2366;&#2357; &#2325;&#2379; &#2350;&#2366;&#2346;&#2340;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Thermometer</span><span class=\"hqt\" style=\"display:none\">&#2341;&#2352;&#2381;&#2350;&#2366;&#2350;&#2368;&#2335;&#2352;</span>",
+      "<span class=\"eqt\">Rain Gauge</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2352;&#2381;&#2359;&#2366;&#2350;&#2366;&#2346;&#2368;</span>",
+      "<span class=\"eqt\">Barometer</span><span class=\"hqt\" style=\"display:none\">&#2348;&#2376;&#2352;&#2379;&#2350;&#2368;&#2335;&#2352;</span>",
+      "<span class=\"eqt\">Wind Vane</span><span class=\"hqt\" style=\"display:none\">&#2357;&#2366;&#2340; &#2342;&#2367;&#2327;&#2381;&#2342;&#2352;&#2381;&#2358;&#2325;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>A barometer is the instrument used to measure atmospheric pressure.</p><p>&#183; A <b>barometer</b> measures <b>atmospheric pressure</b> (e.g., mercury barometer, aneroid barometer).</p><p>&#183; Used in weather forecasting to predict changes (high pressure = fair weather, low pressure = storms).</p><p>Further information:</p><p>&#183; <b>Thermometer</b>  -  Measures <b>temperature</b>.</p><p>&#183; <b>Rain Gauge</b>  -  Measures <b>rainfall amount</b>.</p><p>&#183; <b>Wind Vane</b>  -  Shows <b>wind direction</b>.</p>",
+    "question_index": 18
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Identify the type of rainfall in the figure below.</p><p><img width=208 height=160 src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27651/image001.png\" ></p></span><span class=\"hqt\" style=\"display:none\"><p>&#2344;&#2368;&#2330;&#2375; &#2342;&#2367;&#2319; &#2327;&#2319; &#2330;&#2367;&#2340;&#2381;&#2352; &#2350;&#2375;&#2306; &#2357;&#2352;&#2381;&#2359;&#2366; &#2325;&#2375; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &#2325;&#2379; &#2346;&#2361;&#2330;&#2366;&#2344;&#2375;&#2306;&#2404;</p><p><img width=208 height=160 src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27651/image001.png\" ></p></span>",
+    "options": [
+      "<span class=\"eqt\">Cyclonic rainfall</span><span class=\"hqt\" style=\"display:none\">&#2330;&#2325;&#2381;&#2352;&#2357;&#2366;&#2340;&#2368; &#2357;&#2352;&#2381;&#2359;&#2366;</span>",
+      "<span class=\"eqt\">Convectional rainfall</span><span class=\"hqt\" style=\"display:none\">&#2360;&#2306;&#2357;&#2361;&#2344;&#2368;&#2351; &#2357;&#2352;&#2381;&#2359;&#2366;</span>",
+      "<span class=\"eqt\">Relief rainfall</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2366;&#2361;&#2340; &#2357;&#2352;&#2381;&#2359;&#2366;</span>",
+      "<span class=\"eqt\">Orographic rainfall</span><span class=\"hqt\" style=\"display:none\">&#2346;&#2352;&#2381;&#2357;&#2340;&#2368;&#2351; &#2357;&#2352;&#2381;&#2359;&#2366;</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The image shows cyclonic rainfall.</p><p><b>Cyclonic (Frontal) Rainfall</b></p><p>&#183; Occurs when two air masses (cold and warm) meet, forming a <b>weather front</b>.</p><p>&#183; The warm, moist air rises over the colder air, cools, condenses, and forms clouds, leading to prolonged rainfall.</p><p>&#183; Common in <b>temperate regions</b> (e.g., UK, USA) and associated with <b>depressions</b> or cyclones.</p><p><img width=654 height=201 id=\"Picture 1\" src=\"https://u1.oliveboard.in/exams/solution/oliveimg/p27651/image002.png\"></p><p><b>Convectional Rainfall</b></p><p>&#183; Caused by <b>intense heating of the ground</b>, making warm air rise rapidly.</p><p>&#183; As the air rises, it cools, condenses, and forms <b>cumulonimbus clouds</b>, leading to heavy, short-lived rain with thunderstorms.</p><p>&#183; Common in <b>tropical regions</b> (e.g., Amazon Basin, Congo) and during summer afternoons.</p><p><b>Relief (Orographic) Rainfall</b></p><p>&#183; Occurs when moist air is forced to rise over <b>mountains or hills</b>.</p><p>&#183; As air ascends, it cools, condenses, and rains on the <b>windward side</b> of the mountain.</p><p>&#183; The <b>leeward side</b> remains dry, creating a <b>rain shadow desert</b> (e.g., Eastern Himalayas, Andes).</p><p><b>Orographic Rainfall (Same as Relief Rainfall)</b></p><p>&#183; Another term for <b>relief rainfall</b>, emphasizing the role of terrain (mountains) in causing precipitation.</p><p><b>Summary:</b></p><p>&#183; <b>Cyclonic</b>: Frontal collision (temperate zones).</p><p>&#183; <b>Convectional</b>: Local heating (tropics, summer).</p><p>&#183; <b>Relief/Orographic</b>: Mountain-induced (windward wet, leeward dry).</p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 20 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">37838 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">15 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">15:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "question": "<span class=\"eqt\"><p>Fresh and dry orange contains 78% and 36% water. Find the quantity of dry fruit can be obtained from 800 kg of fresh orange.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2340;&#2366;&#2332;&#2364;&#2375; &#2324;&#2352; &#2360;&#2370;&#2326;&#2375; &#2360;&#2306;&#2340;&#2352;&#2375; &#2350;&#2375;&#2306; 78% &#2324;&#2352; 36% &#2346;&#2366;&#2344;&#2368; &#2361;&#2379;&#2340;&#2366; &#2361;&#2376;&#2404; 800 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2340;&#2366;&#2332;&#2375; &#2360;&#2306;&#2340;&#2352;&#2375; &#2360;&#2375; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2361;&#2379;&#2344;&#2375; &#2357;&#2366;&#2354;&#2375; &#2360;&#2370;&#2326;&#2375; &#2350;&#2375;&#2357;&#2375; &#2325;&#2368; &#2350;&#2366;&#2340;&#2381;&#2352;&#2366; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">290 kg</span><span class=\"hqt\" style=\"display:none\">290 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>",
+      "<span class=\"eqt\">285 kg</span><span class=\"hqt\" style=\"display:none\">285 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>",
+      "<span class=\"eqt\">280 kg</span><span class=\"hqt\" style=\"display:none\">280 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>",
+      "<span class=\"eqt\">275 kg</span><span class=\"hqt\" style=\"display:none\">275 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350;</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>Pulp content in both the fresh fruit and dry fruit is same </p><p>Let weight of dry fruit be x kg </p><p>Fresh fruit 78% water and 22% pulp</p><p>Dry fruit 36% water and 64% pulp</p><p>22% of 800 = 64% of x</p><p>x = (22 * 800)/64 = 275 kg</p>",
+    "question_index": 0
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The number of males in coaches A and B, are in the ratio of 3: 2. The number of males in coach C is 20% more than the sum of number of males in coaches A and B. If the number of males in coaches B and C together is 400, then find the number of males in coach A.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2325;&#2379;&#2330; A &#2324;&#2352; B &#2350;&#2375;&#2306; &#2346;&#2369;&#2352;&#2369;&#2359;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; 3: 2 &#2325;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; &#2350;&#2375;&#2306; &#2361;&#2376;&#2404; &#2325;&#2379;&#2330; C &#2350;&#2375;&#2306; &#2346;&#2369;&#2352;&#2369;&#2359;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2379;&#2330; A &#2324;&#2352; B &#2350;&#2375;&#2306; &#2346;&#2369;&#2352;&#2369;&#2359;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2375; &#2351;&#2379;&#2327; &#2360;&#2375; 20% &#2309;&#2343;&#2367;&#2325; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; &#2325;&#2379;&#2330; B &#2324;&#2352; C &#2350;&#2375;&#2306; &#2346;&#2369;&#2352;&#2369;&#2359;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; 400 &#2361;&#2376;, &#2340;&#2379; &#2325;&#2379;&#2330; A &#2350;&#2375;&#2306; &#2346;&#2369;&#2352;&#2369;&#2359;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">150</span><span class=\"hqt\" style=\"display:none\">150</span>",
+      "<span class=\"eqt\">120</span><span class=\"hqt\" style=\"display:none\">120</span>",
+      "<span class=\"eqt\">160</span><span class=\"hqt\" style=\"display:none\">160</span>",
+      "<span class=\"eqt\">140</span><span class=\"hqt\" style=\"display:none\">140</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Let number of males in coaches A and B be 3x and 2x respectively.</p><p>Then,</p><p>Number of males in coach C = 5x * 120/100 = 6x</p><p>Given,</p><p>2x + 6x = 400</p><p>8x = 400</p><p>x = 50</p><p>Therefore,</p><p>Number of males in coach A = 3x = 3 * 50 = 150</p>",
+    "question_index": 1
+  },
+  {
+    "question": "<span class=\"eqt\"><p>64% of the first's number equals 70% of the second's number. If the second number is increased by 960 and the first number is decreased by 200, then the ratio of the second number to the first number becomes 6: 5. What is the value of the first number? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2361;&#2354;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2366; 64% &#2342;&#2370;&#2360;&#2352;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2375; 70% &#2325;&#2375; &#2348;&#2352;&#2366;&#2348;&#2352; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; &#2342;&#2370;&#2360;&#2352;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2350;&#2375;&#2306; 960 &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2325;&#2368; &#2332;&#2366;&#2319; &#2340;&#2341;&#2366; &#2346;&#2361;&#2354;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2350;&#2375;&#2306; 200 &#2325;&#2368; &#2325;&#2350;&#2368; &#2325;&#2368; &#2332;&#2366;&#2319;, &#2340;&#2379; &#2342;&#2370;&#2360;&#2352;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2366; &#2346;&#2361;&#2354;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2360;&#2375; &#2309;&#2344;&#2369;&#2346;&#2366;&#2340; 6:5 &#2361;&#2379; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376;&#2404; &#2346;&#2361;&#2354;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2325;&#2366; &#2350;&#2366;&#2344; &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">4200</span><span class=\"hqt\" style=\"display:none\">4200</span>",
+      "<span class=\"eqt\">3840</span><span class=\"hqt\" style=\"display:none\">3840</span>",
+      "<span class=\"eqt\">4000</span><span class=\"hqt\" style=\"display:none\">4000</span>",
+      "<span class=\"eqt\">4800</span><span class=\"hqt\" style=\"display:none\">4800</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The first number * 64/100 = the second number * 70/100 </p><p>The first number/ The second number = 35/32 </p><p>Let the first number and the second number be '35X' and '32X' respectively. </p><p>A/Q</p><p>(The second number + 960)/ (The first number  -  200) = 6/5 </p><p>(32X + 960)/ (35X  -  200) = 6/5</p><p>160X + 4800 = 210X  -  1200 </p><p>50X = 6000 </p><p>X = 120 </p><p>Hence, the first number = 35 * 120 = 4200 </p>",
+    "question_index": 2
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In a city with a disease outbreak, the city lost 16 % of its total population. Out of the remaining population, 30 % moved to another city. If the present population of the city is 3822, then find the initial population of the city. </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2358;&#2361;&#2352; &#2350;&#2375;&#2306; &#2348;&#2368;&#2350;&#2366;&#2352;&#2368; &#2347;&#2376;&#2354;&#2344;&#2375; &#2360;&#2375; &#2358;&#2361;&#2352; &#2325;&#2368; &#2325;&#2369;&#2354; &#2310;&#2348;&#2366;&#2342;&#2368; &#2325;&#2366; 16% &#2361;&#2367;&#2360;&#2381;&#2360;&#2366; &#2326;&#2340;&#2381;&#2350; &#2361;&#2379; &#2327;&#2351;&#2366;&#2404; &#2348;&#2330;&#2368; &#2361;&#2369;&#2312; &#2310;&#2348;&#2366;&#2342;&#2368; &#2350;&#2375;&#2306; &#2360;&#2375; 30% &#2354;&#2379;&#2327; &#2342;&#2370;&#2360;&#2352;&#2375; &#2358;&#2361;&#2352; &#2330;&#2354;&#2375; &#2327;&#2319;&#2404; &#2351;&#2342;&#2367; &#2358;&#2361;&#2352; &#2325;&#2368; &#2357;&#2352;&#2381;&#2340;&#2350;&#2366;&#2344; &#2332;&#2344;&#2360;&#2306;&#2326;&#2381;&#2351;&#2366; 3822 &#2361;&#2376;, &#2340;&#2379; &#2358;&#2361;&#2352; &#2325;&#2368; &#2310;&#2352;&#2306;&#2349;&#2367;&#2325; &#2332;&#2344;&#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">7500</span><span class=\"hqt\" style=\"display:none\">7500</span>",
+      "<span class=\"eqt\">5000</span><span class=\"hqt\" style=\"display:none\">5000</span>",
+      "<span class=\"eqt\">6500</span><span class=\"hqt\" style=\"display:none\">6500</span>",
+      "<span class=\"eqt\">7000</span><span class=\"hqt\" style=\"display:none\">7000</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Let the total population of a city be '100X'</p><p>The population of the city after disease outbreak = 100X * 84/100 = 84X </p><p>The current population of the village = 84X * 70/100 </p><p>3822 = 84X * 70/100 </p><p>X = 3822 * 100/ (70 * 84) </p><p>X = 65</p><p>Hence, the initial population of the city = 6500</p>",
+    "question_index": 3
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The price of petrol increases by 45 %, by what percentage should a bike owner reduce his petrol consumption to ensure that his expenditure on petrol does not increase? (correct up to two decimal places) </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2375;&#2335;&#2381;&#2352;&#2379;&#2354; &#2325;&#2368; &#2325;&#2368;&#2350;&#2340; 45% &#2348;&#2338;&#2364; &#2332;&#2366;&#2340;&#2368; &#2361;&#2376;, &#2319;&#2325; &#2348;&#2366;&#2311;&#2325; &#2350;&#2366;&#2354;&#2367;&#2325; &#2325;&#2379; &#2309;&#2346;&#2344;&#2375; &#2346;&#2375;&#2335;&#2381;&#2352;&#2379;&#2354; &#2325;&#2368; &#2326;&#2346;&#2340; &#2325;&#2379; &#2325;&#2367;&#2340;&#2344;&#2375; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2340;&#2325; &#2325;&#2350; &#2325;&#2352;&#2344;&#2366; &#2330;&#2366;&#2361;&#2367;&#2319; &#2340;&#2366;&#2325;&#2367; &#2351;&#2361; &#2360;&#2369;&#2344;&#2367;&#2358;&#2381;&#2330;&#2367;&#2340; &#2361;&#2379; &#2360;&#2325;&#2375; &#2325;&#2367; &#2346;&#2375;&#2335;&#2381;&#2352;&#2379;&#2354; &#2346;&#2352; &#2313;&#2360;&#2325;&#2366; &#2326;&#2352;&#2381;&#2330; &#2344; &#2348;&#2338;&#2364;&#2375;? (&#2342;&#2379; &#2342;&#2358;&#2350;&#2354;&#2357; &#2360;&#2381;&#2341;&#2366;&#2344;&#2379;&#2306; &#2340;&#2325; &#2360;&#2361;&#2368;) </p></span>",
+    "options": [
+      "<span class=\"eqt\">68.96%</span><span class=\"hqt\" style=\"display:none\">68.96%</span>",
+      "<span class=\"eqt\">70.42%</span><span class=\"hqt\" style=\"display:none\">70.42%</span>",
+      "<span class=\"eqt\">29.57%</span><span class=\"hqt\" style=\"display:none\">29.57%</span>",
+      "<span class=\"eqt\">31.03%</span><span class=\"hqt\" style=\"display:none\">31.03%</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>Let the initial price of petrol per Liter and initial consumption of petrol be '100' and '100' respectively.</p><p>Initial expenditure = 100 x 100</p><p>The new price of petrol = 100 * 45/100 = 145</p><p>The final consumption of the petrol = 100 * 100/ 145</p><p>= 68.96</p><p>Hence, the required value = (100  -  68.96) * 100/100 = 31.03%</p>",
+    "question_index": 4
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A reduction of 18% in the cost price of rice enables a shopkeeper to purchase 36 kg more for a total of Rs. 8200 than he could previously buy. If he wants to make a profit of 38.8 % on the pre-reduction cost price, at what price per kg should the rice be sold? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2330;&#2366;&#2357;&#2354; &#2325;&#2375; &#2325;&#2381;&#2352;&#2351; &#2350;&#2370;&#2354;&#2381;&#2351; &#2350;&#2375;&#2306; 18% &#2325;&#2368; &#2325;&#2350;&#2368; &#2360;&#2375; &#2319;&#2325; &#2342;&#2369;&#2325;&#2366;&#2344;&#2342;&#2366;&#2352; 36 &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2330;&#2366;&#2357;&#2354; &#2309;&#2343;&#2367;&#2325; &#2326;&#2352;&#2368;&#2342; &#2346;&#2366;&#2340;&#2366; &#2361;&#2376;, &#2332;&#2367;&#2360;&#2325;&#2368; &#2325;&#2369;&#2354; &#2325;&#2368;&#2350;&#2340; 8200 &#2352;&#2369;&#2346;&#2351;&#2375; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; &#2357;&#2361; &#2325;&#2335;&#2380;&#2340;&#2368; &#2360;&#2375; &#2346;&#2361;&#2354;&#2375; &#2325;&#2375; &#2325;&#2381;&#2352;&#2351; &#2350;&#2370;&#2354;&#2381;&#2351; &#2346;&#2352; 38.8% &#2325;&#2366; &#2354;&#2366;&#2349; &#2325;&#2350;&#2366;&#2344;&#2366; &#2330;&#2366;&#2361;&#2340;&#2366; &#2361;&#2376;, &#2340;&#2379; &#2313;&#2360;&#2375; &#2346;&#2381;&#2352;&#2340;&#2367; &#2325;&#2367;&#2354;&#2379;&#2327;&#2381;&#2352;&#2366;&#2350; &#2330;&#2366;&#2357;&#2354; &#2325;&#2367;&#2360; &#2325;&#2368;&#2350;&#2340; &#2346;&#2352; &#2348;&#2375;&#2330;&#2344;&#2366; &#2330;&#2366;&#2361;&#2367;&#2319;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Rs. 69.4</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 69.4</span>",
+      "<span class=\"eqt\">Rs. 56.908</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 56.908</span>",
+      "<span class=\"eqt\">Rs. 62.46</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 62.46</span>",
+      "<span class=\"eqt\">Rs. 76.34</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 76.34</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Reduction in price = 18% = 9/50 [Here 9 shows the units of purchase increased due to reduction in price]</p><p>9 units = 36 kg</p><p>1 unit = 4 kg</p><p>Therefore,</p><p>original consumption = 4 x (50 - 9) = 41 x 4 kg</p><p>Original price of rice = 8200/(41 x 4) = Rs.50</p><p>Hence, the selling price of rice = 50 * 138.8/100 = Rs. 69.4</p>",
+    "question_index": 5
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Last month, Anju's monthly saving was Rs. 2500 and Varun's monthly saving was Rs. 3200. This month, Anju's monthly saving is Rs 2900. and Varun's monthly saving is Rs. 3800. Find the value of [(Y  -  X) * 100/Y)], where X% is the percentage increase in Varun's monthly saving this month over last month and Y% is the percentage increase in Anju's monthly saving this month over last month.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2346;&#2367;&#2331;&#2354;&#2375; &#2350;&#2361;&#2368;&#2344;&#2375;, &#2309;&#2306;&#2332;&#2370; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; 2500 &#2352;&#2369;&#2346;&#2351;&#2375; &#2341;&#2368; &#2324;&#2352; &#2357;&#2352;&#2369;&#2339; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; 3200 &#2352;&#2369;&#2346;&#2351;&#2375; &#2341;&#2368;&#2404; &#2311;&#2360; &#2350;&#2361;&#2368;&#2344;&#2375;, &#2309;&#2306;&#2332;&#2370; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; 2900 &#2352;&#2369;&#2346;&#2351;&#2375; &#2361;&#2376; &#2324;&#2352; &#2357;&#2352;&#2369;&#2339; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; 3800 &#2352;&#2369;&#2346;&#2351;&#2375; &#2361;&#2376;&#2404; [(Y - X) * 100/Y)] &#2325;&#2366; &#2350;&#2366;&#2344; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;, &#2332;&#2361;&#2366;&#2305; X% &#2346;&#2367;&#2331;&#2354;&#2375; &#2350;&#2361;&#2368;&#2344;&#2375; &#2325;&#2368; &#2340;&#2369;&#2354;&#2344;&#2366; &#2350;&#2375;&#2306; &#2311;&#2360; &#2350;&#2361;&#2368;&#2344;&#2375; &#2357;&#2352;&#2369;&#2339; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; &#2350;&#2375;&#2306; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2376; &#2324;&#2352; Y% &#2346;&#2367;&#2331;&#2354;&#2375; &#2350;&#2361;&#2368;&#2344;&#2375; &#2325;&#2368; &#2340;&#2369;&#2354;&#2344;&#2366; &#2350;&#2375;&#2306; &#2311;&#2360; &#2350;&#2361;&#2368;&#2344;&#2375; &#2309;&#2306;&#2332;&#2370; &#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; &#2350;&#2375;&#2306; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2376;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">17.1845</span><span class=\"hqt\" style=\"display:none\">17.1845</span>",
+      "<span class=\"eqt\">17.1875</span><span class=\"hqt\" style=\"display:none\">17.1875</span>",
+      "<span class=\"eqt\">17.1895</span><span class=\"hqt\" style=\"display:none\">17.1895</span>",
+      "<span class=\"eqt\">17.1825</span><span class=\"hqt\" style=\"display:none\">17.1825</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Anju's monthly saving last month = Rs. 2500</p><p>Anju's monthly saving this month = Rs. 2900</p><p>Y = (2900  -  2500) * 100/2500 = 16%</p><p>Varun's monthly saving last month = Rs. 3200</p><p>Varun's monthly saving this month = Rs. 3800</p><p>X = (3800  -  3200) * 100/3200 = 18.75</p><p>Hence, [(Y  -  X) * 100/Y] = [(18.75  -  16) * 100/16] = 17.1875</p>",
+    "question_index": 6
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Aman used to spend 60% of his income and his income increased by 40% and his expenditure increased by 35%. If his initial savings were X and his new savings were Y, then find the value of 'X' is what percent more/less than Y. </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2309;&#2350;&#2344; &#2309;&#2346;&#2344;&#2368; &#2310;&#2351; &#2325;&#2366; 60% &#2326;&#2352;&#2381;&#2330; &#2325;&#2352;&#2340;&#2366; &#2341;&#2366; &#2324;&#2352; &#2313;&#2360;&#2325;&#2368; &#2310;&#2351; &#2350;&#2375;&#2306; 40% &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2369;&#2312; &#2340;&#2341;&#2366; &#2313;&#2360;&#2325;&#2375; &#2357;&#2381;&#2351;&#2351; &#2350;&#2375;&#2306; 35% &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2369;&#2312;&#2404; &#2351;&#2342;&#2367; &#2313;&#2360;&#2325;&#2368; &#2346;&#2381;&#2352;&#2366;&#2352;&#2306;&#2349;&#2367;&#2325; &#2348;&#2330;&#2340; X &#2341;&#2368; &#2340;&#2341;&#2366; &#2313;&#2360;&#2325;&#2368; &#2344;&#2312; &#2348;&#2330;&#2340; Y &#2341;&#2368;, &#2340;&#2379; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319; &#2325;&#2367; 'X' &#2325;&#2366; &#2350;&#2366;&#2344; Y &#2360;&#2375; &#2325;&#2367;&#2340;&#2344;&#2375; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2309;&#2343;&#2367;&#2325;/&#2325;&#2350; &#2361;&#2376;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">42.5% more</span><span class=\"hqt\" style=\"display:none\">42.5% &#2309;&#2343;&#2367;&#2325;</span>",
+      "<span class=\"eqt\">37.5% less</span><span class=\"hqt\" style=\"display:none\">37.5% &#2325;&#2350;</span>",
+      "<span class=\"eqt\">47.5% less</span><span class=\"hqt\" style=\"display:none\">47.5% &#2325;&#2350;</span>",
+      "<span class=\"eqt\">32.5% more</span><span class=\"hqt\" style=\"display:none\">32.5% &#2309;&#2343;&#2367;&#2325;</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Let Aman's initial income be Rs. '100'</p><p>Aman's initial expenditure = 100 * 60/100 = 60</p><p>Aman's initial saving = 100  -  60 = 40 </p><p>Aman's new income = 100 * 140/100 = 140 </p><p>Aman's new expenditure = 60 * 135/100 = 81 </p><p>Aman's new saving = 140  -  81 = 59 </p><p>Hence, [(Y  -  X) * 100/X] = [(59  -  40) * 100/40] = 47.5 less</p>",
+    "question_index": 7
+  },
+  {
+    "question": "<span class=\"eqt\"><p>There were two candidates A and B. During an election, 12% of voters in the voter list did not vote, and 360 voters cast blank ballot papers. If the winner A was supported by 52% of all voters in the list and obtained 1384 more votes than B, then find the total number of voters in the voter list. </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2342;&#2379; &#2313;&#2350;&#2381;&#2350;&#2368;&#2342;&#2357;&#2366;&#2352; A &#2324;&#2352; B &#2341;&#2375;&#2404; &#2319;&#2325; &#2330;&#2369;&#2344;&#2366;&#2357; &#2325;&#2375; &#2342;&#2380;&#2352;&#2366;&#2344;, &#2350;&#2340;&#2342;&#2366;&#2340;&#2366; &#2360;&#2370;&#2330;&#2368; &#2350;&#2375;&#2306; 12% &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2344;&#2375; &#2350;&#2340;&#2342;&#2366;&#2344; &#2344;&#2361;&#2368;&#2306; &#2325;&#2367;&#2351;&#2366;, &#2324;&#2352; 360 &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2344;&#2375; &#2326;&#2366;&#2354;&#2368; &#2350;&#2340;&#2346;&#2340;&#2381;&#2352; &#2337;&#2366;&#2354;&#2375;&#2404; &#2351;&#2342;&#2367; &#2357;&#2367;&#2332;&#2375;&#2340;&#2366; A &#2325;&#2379; &#2360;&#2370;&#2330;&#2368; &#2350;&#2375;&#2306; &#2360;&#2349;&#2368; &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2325;&#2375; 52% &#2325;&#2366; &#2360;&#2350;&#2352;&#2381;&#2341;&#2344; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2341;&#2366; &#2324;&#2352; &#2313;&#2360;&#2344;&#2375; B &#2360;&#2375; 1384 &#2309;&#2343;&#2367;&#2325; &#2357;&#2379;&#2335; &#2346;&#2381;&#2352;&#2366;&#2346;&#2381;&#2340; &#2325;&#2367;&#2319;, &#2340;&#2379; &#2350;&#2340;&#2342;&#2366;&#2340;&#2366; &#2360;&#2370;&#2330;&#2368; &#2350;&#2375;&#2306; &#2325;&#2369;&#2354; &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">8000</span><span class=\"hqt\" style=\"display:none\">8000</span>",
+      "<span class=\"eqt\">7500</span><span class=\"hqt\" style=\"display:none\">7500</span>",
+      "<span class=\"eqt\">9500</span><span class=\"hqt\" style=\"display:none\">9500</span>",
+      "<span class=\"eqt\">6400</span><span class=\"hqt\" style=\"display:none\">6400</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>Let the total number of voters in the voter list be '100X'</p><p>The total number of voters who did not vote = 100X * 12/100 = 12X</p><p>The total number of voters who supported A = 100X * 52/100 = 52X</p><p>The total number of voters who supported B = 52X  -  1384</p><p>A/Q</p><p>52X + 52X  -  1384 + 360 = 100X  -  12X</p><p>16X = 1024</p><p>X = 64</p><p>Hence, the required voters = 64 * 100 = 6400</p>",
+    "question_index": 8
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In an election, the winner received 56% of the total voters in the list and 1800 got votes more than his only rival. 20% of voters did not cast their votes, and 480 voters cast their ballots blank. How many voters were on the list? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2330;&#2369;&#2344;&#2366;&#2357; &#2350;&#2375;&#2306;, &#2357;&#2367;&#2332;&#2375;&#2340;&#2366; &#2325;&#2379; &#2360;&#2370;&#2330;&#2368; &#2350;&#2375;&#2306; &#2325;&#2369;&#2354; &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2350;&#2375;&#2306; &#2360;&#2375; 56% &#2357;&#2379;&#2335; &#2350;&#2367;&#2354;&#2375; &#2324;&#2352; 1800 &#2357;&#2379;&#2335; &#2313;&#2360;&#2325;&#2375; &#2319;&#2325;&#2350;&#2366;&#2340;&#2381;&#2352; &#2346;&#2381;&#2352;&#2340;&#2367;&#2342;&#2381;&#2357;&#2306;&#2342;&#2381;&#2357;&#2368; &#2360;&#2375; &#2332;&#2364;&#2381;&#2351;&#2366;&#2342;&#2366; &#2350;&#2367;&#2354;&#2375;&#2404; 20% &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2344;&#2375; &#2309;&#2346;&#2344;&#2366; &#2357;&#2379;&#2335; &#2344;&#2361;&#2368;&#2306; &#2337;&#2366;&#2354;&#2366; &#2324;&#2352; 480 &#2350;&#2340;&#2342;&#2366;&#2340;&#2366;&#2323;&#2306; &#2344;&#2375; &#2309;&#2346;&#2344;&#2375; &#2350;&#2340;&#2346;&#2340;&#2381;&#2352; &#2326;&#2366;&#2354;&#2368; &#2337;&#2366;&#2354;&#2375;&#2404; &#2360;&#2370;&#2330;&#2368; &#2350;&#2375;&#2306; &#2325;&#2367;&#2340;&#2344;&#2375; &#2350;&#2340;&#2342;&#2366;&#2340;&#2366; &#2341;&#2375;? </p></span>",
+    "options": [
+      "<span class=\"eqt\">4125</span><span class=\"hqt\" style=\"display:none\">4125</span>",
+      "<span class=\"eqt\">4575</span><span class=\"hqt\" style=\"display:none\">4575</span>",
+      "<span class=\"eqt\">4875</span><span class=\"hqt\" style=\"display:none\">4875</span>",
+      "<span class=\"eqt\">4425</span><span class=\"hqt\" style=\"display:none\">4425</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Let the total number of voters in the voter list be '100X'</p><p>The total number of voters who did not vote = 100X * 20/100 = 20X </p><p>The total number of voters who supported A = 100X * 56/100 = 56X</p><p>The total number of voters who supported B = 56X  -  1800 </p><p>A/Q</p><p>56X + 56X  -  1800 + 480 = 100X  -  20X </p><p>32X = 1320</p><p>X = 41.25</p><p>Hence, the required votes = 41.25 * 100 = 4125</p>",
+    "question_index": 9
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In an election between A and B, every fourth vote polled was marked as invalid by the machine. In the remaining votes, B wins the election with a margin of 2400 votes or 5% of the total votes polled over A. If 80% of the invalid votes would have been in favor of A, then which of the following would have been the result of the election? </p></span><span class=\"hqt\" style=\"display:none\"><p>A &#2324;&#2352; B &#2325;&#2375; &#2348;&#2368;&#2330; &#2361;&#2369;&#2319; &#2330;&#2369;&#2344;&#2366;&#2357; &#2350;&#2375;&#2306;, &#2361;&#2352; &#2330;&#2380;&#2341;&#2375; &#2357;&#2379;&#2335; &#2325;&#2379; &#2350;&#2358;&#2368;&#2344; &#2342;&#2381;&#2357;&#2366;&#2352;&#2366; &#2309;&#2357;&#2376;&#2343; &#2328;&#2379;&#2359;&#2367;&#2340; &#2325;&#2352; &#2342;&#2367;&#2351;&#2366; &#2327;&#2351;&#2366;&#2404; &#2358;&#2375;&#2359; &#2357;&#2379;&#2335;&#2379;&#2306; &#2350;&#2375;&#2306;, B, A &#2346;&#2352; &#2337;&#2366;&#2354;&#2375; &#2327;&#2319; &#2325;&#2369;&#2354; &#2357;&#2379;&#2335;&#2379;&#2306; &#2325;&#2375; 5% &#2351;&#2366; 2400 &#2357;&#2379;&#2335;&#2379;&#2306; &#2325;&#2375; &#2309;&#2306;&#2340;&#2352; &#2360;&#2375; &#2330;&#2369;&#2344;&#2366;&#2357; &#2332;&#2368;&#2340;&#2340;&#2366; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; 80% &#2309;&#2357;&#2376;&#2343; &#2357;&#2379;&#2335; A &#2325;&#2375; &#2346;&#2325;&#2381;&#2359; &#2350;&#2375;&#2306; &#2361;&#2379;&#2340;&#2375;, &#2340;&#2379; &#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344; &#2360;&#2366; &#2330;&#2369;&#2344;&#2366;&#2357; &#2325;&#2366; &#2346;&#2352;&#2367;&#2339;&#2366;&#2350; &#2361;&#2379;&#2340;&#2366;? </p></span>",
+    "options": [
+      "<span class=\"eqt\">B would have won by 7.25%</span><span class=\"hqt\" style=\"display:none\">B 7.25% &#2360;&#2375; &#2332;&#2368;&#2340; &#2332;&#2366;&#2340;&#2366;</span>",
+      "<span class=\"eqt\">A would have won by 15%</span><span class=\"hqt\" style=\"display:none\">A 15% &#2360;&#2375; &#2332;&#2368;&#2340; &#2332;&#2366;&#2340;&#2366;</span>",
+      "<span class=\"eqt\">B would have won by 6%</span><span class=\"hqt\" style=\"display:none\">B 6% &#2360;&#2375; &#2332;&#2368;&#2340; &#2332;&#2366;&#2340;&#2366;</span>",
+      "<span class=\"eqt\">A would have won by 17.25%</span><span class=\"hqt\" style=\"display:none\">A 17.25% &#2360;&#2375; &#2332;&#2368;&#2340; &#2332;&#2366;&#2340;&#2366;</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The total number of votes polled = 2400 * 100/5 = 48000</p><p>Total number of invalid votes = 48000/4 = 12000</p><p>Total number of valid votes = 36000</p><p>Let the total valid votes got to A be 'X'</p><p>The total valid votes got to B be 'X + 2400'</p><p>A/Q</p><p>X + X + 2400 = 36000</p><p>X = 16800</p><p>Number of valid votes B gets = 16800 + 2400 = 19200</p><p>80% of invalid votes = 12000 * 80/100 = 9600</p><p>Total votes A get = 16800 + 9600 = 26400</p><p>So, A would have won by = (26400 - 19200) * 100/48000 = 15%</p><p></p>",
+    "question_index": 10
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A, B, and C are invested in the same schemes, and the investments of A and B are the same. A, B, and C withdraw 18%, 13% and 21% respectively of their investments. If the difference between the withdrawal of A and B is Rs. 275 and the withdrawal of A and B together is 319 more than that of C, then find the original investment of C. </p></span><span class=\"hqt\" style=\"display:none\"><p>A, B &#2324;&#2352; C &#2319;&#2325; &#2361;&#2368; &#2351;&#2379;&#2332;&#2344;&#2366; &#2350;&#2375;&#2306; &#2344;&#2367;&#2357;&#2375;&#2358;&#2367;&#2340; &#2361;&#2376;&#2306;, &#2340;&#2341;&#2366; A &#2324;&#2352; B &#2325;&#2375; &#2344;&#2367;&#2357;&#2375;&#2358; &#2360;&#2350;&#2366;&#2344; &#2361;&#2376;&#2306;&#2404; A, B &#2324;&#2352; C &#2309;&#2346;&#2344;&#2375; &#2344;&#2367;&#2357;&#2375;&#2358; &#2325;&#2366; &#2325;&#2381;&#2352;&#2350;&#2358;&#2307; 18%, 13% &#2324;&#2352; 21% &#2344;&#2367;&#2325;&#2366;&#2354;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404; &#2351;&#2342;&#2367; A &#2324;&#2352; B &#2325;&#2368; &#2344;&#2367;&#2325;&#2366;&#2360;&#2368; &#2325;&#2375; &#2348;&#2368;&#2330; &#2325;&#2366; &#2309;&#2306;&#2340;&#2352; 275 &#2352;&#2369;&#2346;&#2351;&#2375; &#2361;&#2376; &#2340;&#2341;&#2366; A &#2324;&#2352; B &#2325;&#2368; &#2325;&#2369;&#2354; &#2344;&#2367;&#2325;&#2366;&#2360;&#2368; C &#2325;&#2368; &#2340;&#2369;&#2354;&#2344;&#2366; &#2350;&#2375;&#2306; 319 &#2309;&#2343;&#2367;&#2325; &#2361;&#2376;, &#2340;&#2379; C &#2325;&#2366; &#2350;&#2370;&#2354; &#2344;&#2367;&#2357;&#2375;&#2358; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">Rs. 5500</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 5500</span>",
+      "<span class=\"eqt\">Rs. 6000</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 6000</span>",
+      "<span class=\"eqt\">Rs. 6600</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 6600</span>",
+      "<span class=\"eqt\">Rs. 5000</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 5000</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Let the investment of A or B be '100X'</p><p>The difference between the withdrawal of A and B = 100X * (18  -  13)/100 </p><p>275 = 5X </p><p>X = 55 </p><p>Investment of A or B = Rs. 5500 </p><p>Let the investment of C be '100Y'.</p><p>The withdrawal of A and B  -  319 = Withdrawal of C</p><p>5500 * (18 + 13)/100  -  319 = 100Y * 21/100 </p><p>1705  -  319 = 21Y </p><p>21Y = 1386 </p><p>Y = 66 </p><p>Hence, the original investment of C = Rs. 6600</p>",
+    "question_index": 11
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The monthly expenses of a person are 400/3% more than his monthly savings. If his monthly income increases by 60% and her monthly expenses increases by 40%, then there is an increase of Rs. 1024 in his monthly savings. What is the initial expenditure? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2325;&#2367;&#2360;&#2368; &#2357;&#2381;&#2351;&#2325;&#2381;&#2340;&#2367; &#2325;&#2366; &#2350;&#2366;&#2360;&#2367;&#2325; &#2326;&#2352;&#2381;&#2330; &#2313;&#2360;&#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; &#2360;&#2375; 400/3% &#2309;&#2343;&#2367;&#2325; &#2361;&#2376;&#2404; &#2351;&#2342;&#2367; &#2313;&#2360;&#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2310;&#2351; &#2350;&#2375;&#2306; 60% &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2379;&#2340;&#2368; &#2361;&#2376; &#2324;&#2352; &#2313;&#2360;&#2325;&#2375; &#2350;&#2366;&#2360;&#2367;&#2325; &#2326;&#2352;&#2381;&#2330; &#2350;&#2375;&#2306; 40% &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2379;&#2340;&#2368; &#2361;&#2376;, &#2340;&#2379; &#2313;&#2360;&#2325;&#2368; &#2350;&#2366;&#2360;&#2367;&#2325; &#2348;&#2330;&#2340; &#2350;&#2375;&#2306; 1024 &#2352;&#2369;&#2346;&#2351;&#2375; &#2325;&#2368; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2361;&#2379;&#2340;&#2368; &#2361;&#2376;&#2404; &#2346;&#2381;&#2352;&#2366;&#2352;&#2306;&#2349;&#2367;&#2325; &#2357;&#2381;&#2351;&#2351; &#2325;&#2381;&#2351;&#2366; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">Rs. 3136</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 3136</span>",
+      "<span class=\"eqt\">Rs. 3200</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 3200</span>",
+      "<span class=\"eqt\">Rs. 960</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 960</span>",
+      "<span class=\"eqt\">Rs. 2240</span><span class=\"hqt\" style=\"display:none\">&#2352;&#2369;. 2240</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>400/3% more = 7/3</p><p>let expenditure be Rs.7 and savings be Rs.3.</p><p>Then total income = Rs.10</p><p>New total income = 10 X 1.6 = Rs.16</p><p>New Expenditure = 7 X 1.4 = 9.8</p><p>New Savings = Rs.6.2</p><p>Given,</p><p>(6.2 - 3=) 3.2 units = Rs.1024</p><p>1 unit = Rs.320</p><p>7 units = 320 * 7 = Rs.2240</p><p></p>",
+    "question_index": 12
+  },
+  {
+    "question": "<span class=\"eqt\"><p>If 30% of (A + B) = 37.5% of (2A  -  B), then what percentage of B is equal to A? </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2351;&#2342;&#2367; (A + B) &#2325;&#2366; 30% = (2A - B) &#2325;&#2366; 37.5% &#2361;&#2376;, &#2340;&#2379; B &#2325;&#2366; &#2325;&#2367;&#2340;&#2344;&#2366; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; A &#2325;&#2375; &#2348;&#2352;&#2366;&#2348;&#2352; &#2361;&#2376;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">150%</span><span class=\"hqt\" style=\"display:none\">150%</span>",
+      "<span class=\"eqt\">100%</span><span class=\"hqt\" style=\"display:none\">100%</span>",
+      "<span class=\"eqt\">200%</span><span class=\"hqt\" style=\"display:none\">200%</span>",
+      "<span class=\"eqt\">125%</span><span class=\"hqt\" style=\"display:none\">125%</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>(A + B) * 30/100 = (2A  -  B) * 37.5/100 </p><p>(A + B) * 3/10 = (2A  -  B) * 3/8</p><p>(A + B) * 1/5 = (2A  -  B) * 1/4</p><p>4A + 4B = 10A  -  5B </p><p>9B = 6A </p><p>3B = 2A </p><p>B/A = 2/3</p><p>Hence, the required percentage = 3 * 100/2 = 150% </p>",
+    "question_index": 13
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The number of employees in a company increases and decreases every alternate year by 25%. If it started with an increase in 2022, then the total number of employees at the end of 2024, as compared to that of 2022, had (correct to two decimal places). </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2325;&#2367;&#2360;&#2368; &#2325;&#2306;&#2346;&#2344;&#2368; &#2350;&#2375;&#2306; &#2325;&#2352;&#2381;&#2350;&#2330;&#2366;&#2352;&#2367;&#2351;&#2379;&#2306; &#2325;&#2368; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; &#2361;&#2352; &#2342;&#2370;&#2360;&#2352;&#2375; &#2360;&#2366;&#2354; 25% &#2348;&#2338;&#2364;&#2340;&#2368; &#2324;&#2352; &#2328;&#2335;&#2340;&#2368; &#2361;&#2376;&#2404; &#2309;&#2327;&#2352; 2022 &#2350;&#2375;&#2306; &#2311;&#2360;&#2350;&#2375;&#2306; &#2357;&#2371;&#2342;&#2381;&#2343;&#2367; &#2358;&#2369;&#2352;&#2370; &#2361;&#2369;&#2312;, &#2340;&#2379; 2022 &#2325;&#2368; &#2340;&#2369;&#2354;&#2344;&#2366; &#2350;&#2375;&#2306; 2024 &#2325;&#2375; &#2309;&#2306;&#2340; &#2350;&#2375;&#2306; &#2325;&#2352;&#2381;&#2350;&#2330;&#2366;&#2352;&#2367;&#2351;&#2379;&#2306; &#2325;&#2368; &#2325;&#2369;&#2354; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; (&#2342;&#2379; &#2342;&#2358;&#2350;&#2354;&#2357; &#2360;&#2381;&#2341;&#2366;&#2344;&#2379;&#2306; &#2340;&#2325; &#2360;&#2361;&#2368;) &#2361;&#2379; &#2327;&#2312; &#2361;&#2379;&#2327;&#2368;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">19.45%</span><span class=\"hqt\" style=\"display:none\">19.45%</span>",
+      "<span class=\"eqt\">17.18%</span><span class=\"hqt\" style=\"display:none\">17.18%</span>",
+      "<span class=\"eqt\">27.31%</span><span class=\"hqt\" style=\"display:none\">27.31%</span>",
+      "<span class=\"eqt\">18.62%</span><span class=\"hqt\" style=\"display:none\">18.62%</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>Let the total number of employees in the office be '100'</p><p>The total number of employees in 2022 = 100 * 125/100 = 125</p><p>The total number of employees in 2023 = 125 * 75/100 = 93.75</p><p>The total number of employees in 2024 = 93.75 * 125/100 = 117.1875</p><p>Hence, the required percentage = (117.1875  -  100) * 100/100 = 17.1875% = 17.18%</p>",
+    "question_index": 14
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A bus starts from stop P with 'n' number of passengers. At stop Q, 20% of the total passengers get down and 40 new passengers get in. At stop R, 45% of the passengers get down and 75 new passengers get in. If a total of 295 passengers are left on the bus, find the value of 'n'. </p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2348;&#2360; &#2360;&#2381;&#2335;&#2377;&#2346; P &#2360;&#2375; 'n' &#2351;&#2366;&#2340;&#2381;&#2352;&#2367;&#2351;&#2379;&#2306; &#2325;&#2375; &#2360;&#2366;&#2341; &#2358;&#2369;&#2352;&#2370; &#2361;&#2379;&#2340;&#2368; &#2361;&#2376;&#2404; &#2360;&#2381;&#2335;&#2377;&#2346; Q &#2346;&#2352;, &#2325;&#2369;&#2354; &#2351;&#2366;&#2340;&#2381;&#2352;&#2367;&#2351;&#2379;&#2306; &#2350;&#2375;&#2306; &#2360;&#2375; 20% &#2313;&#2340;&#2352;&#2340;&#2375; &#2361;&#2376;&#2306; &#2324;&#2352; 40 &#2344;&#2319; &#2351;&#2366;&#2340;&#2381;&#2352;&#2368; &#2330;&#2338;&#2364;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404; &#2360;&#2381;&#2335;&#2377;&#2346; R &#2346;&#2352;, 45% &#2351;&#2366;&#2340;&#2381;&#2352;&#2368; &#2313;&#2340;&#2352;&#2340;&#2375; &#2361;&#2376;&#2306; &#2324;&#2352; 75 &#2344;&#2319; &#2351;&#2366;&#2340;&#2381;&#2352;&#2368; &#2330;&#2338;&#2364;&#2340;&#2375; &#2361;&#2376;&#2306;&#2404; &#2351;&#2342;&#2367; &#2348;&#2360; &#2350;&#2375;&#2306; &#2325;&#2369;&#2354; 295 &#2351;&#2366;&#2340;&#2381;&#2352;&#2368; &#2348;&#2330;&#2375; &#2361;&#2376;&#2306;, &#2340;&#2379; 'n' &#2325;&#2366; &#2350;&#2366;&#2344; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">400</span><span class=\"hqt\" style=\"display:none\">400</span>",
+      "<span class=\"eqt\">500</span><span class=\"hqt\" style=\"display:none\">500</span>",
+      "<span class=\"eqt\">450</span><span class=\"hqt\" style=\"display:none\">450</span>",
+      "<span class=\"eqt\">550</span><span class=\"hqt\" style=\"display:none\">550</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The total passengers left after stop Q = n * 80/100 + 40 = 4n/5 + 40</p><p>The total passengers left after stop R = (4n/5 + 40) * 55/100 + 75 </p><p>295 = (4n/5 + 40) * 11/20 + 75 </p><p>220 = (4n + 200)/5 * 11/20 </p><p>220 = 44n/100 + 22</p><p>198 = 11n/25 </p><p>n = 450 </p>",
+    "question_index": 15
+  },
+  {
+    "question": "<span class=\"eqt\"><p>If 12% of 75% of 80% of a = 18, then which of the following is true?</p><p>I. 4% of 18% of a = 2.4</p><p>II. 30% of a% of 1200 = 720</p><p>III. 6% of a = 21</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2351;&#2342;&#2367; 12% of 75% of 80% of a = 18 &#2361;&#2376;, &#2340;&#2379; &#2344;&#2367;&#2350;&#2381;&#2344;&#2354;&#2367;&#2326;&#2367;&#2340; &#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2380;&#2344;-&#2360;&#2366; &#2360;&#2340;&#2381;&#2351; &#2361;&#2376;?</p><p>I. 4% of 18% of a = 2.4</p><p>II. 30% of a% of 1200 = 720</p><p>III. 6% of a = 21</p></span>",
+    "options": [
+      "<span class=\"eqt\">Only I</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; I</span>",
+      "<span class=\"eqt\">Only III</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; III</span>",
+      "<span class=\"eqt\">Only II</span><span class=\"hqt\" style=\"display:none\">&#2325;&#2375;&#2357;&#2354; II</span>",
+      "<span class=\"eqt\">None of these</span><span class=\"hqt\" style=\"display:none\">&#2311;&#2344;&#2350;&#2375;&#2306; &#2360;&#2375; &#2325;&#2379;&#2312; &#2344;&#2361;&#2368;&#2306;</span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>12% of 75% of 80% of a = 18</p><p>(12/100) * (75/100) * (80/100) * a = 18</p><p>a = 250</p><p><b>From I: </b>4% of 18% of a</p><p>= (4/100) * (18/100) * 250</p><p>= 1.8 &#8800; 2.4</p><p><b>From II:</b> 30% of a% of 1200</p><p>= (30/100) * (250/100) * 1200</p><p>= 900 &#8800; 720</p><p><b>From III: </b>6% of a</p><p>= (6/100) * 250</p><p>= 15 &#8800; 21</p><p>Hence, option (d) is the correct answer.</p>",
+    "question_index": 16
+  },
+  {
+    "question": "<span class=\"eqt\"><p>A number 190 is divided into two positive numbers x and y such that y% of x is 30 less than twice of y. Find the difference between x and y?</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366; 190 &#2325;&#2379; &#2342;&#2379; &#2343;&#2344;&#2366;&#2340;&#2381;&#2350;&#2325; &#2360;&#2306;&#2326;&#2381;&#2351;&#2366;&#2323;&#2306; x &#2324;&#2352; y &#2350;&#2375;&#2306; &#2311;&#2360; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &#2357;&#2367;&#2349;&#2366;&#2332;&#2367;&#2340; &#2325;&#2367;&#2351;&#2366; &#2332;&#2366;&#2340;&#2366; &#2361;&#2376; &#2325;&#2367; x &#2325;&#2366; y%, y &#2325;&#2375; &#2342;&#2379;&#2327;&#2369;&#2344;&#2375; &#2360;&#2375; 30 &#2325;&#2350; &#2361;&#2376;&#2404; x &#2324;&#2352; y &#2325;&#2375; &#2348;&#2368;&#2330; &#2325;&#2366; &#2309;&#2306;&#2340;&#2352; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;?</p></span>",
+    "options": [
+      "<span class=\"eqt\">80</span><span class=\"hqt\" style=\"display:none\">80</span>",
+      "<span class=\"eqt\">90</span><span class=\"hqt\" style=\"display:none\">90</span>",
+      "<span class=\"eqt\">110</span><span class=\"hqt\" style=\"display:none\">110</span>",
+      "<span class=\"eqt\">120</span><span class=\"hqt\" style=\"display:none\">120</span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<br><img src=\"https://u1.oliveboard.in/exams/solution/oliveimg/imgpm/quessol1509012131.png\" max_width=\"500px\">",
+    "question_index": 17
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Rajan spent 10% of his salary on rent. He spent 20% of the remaining part of the salary on transport. After which he spent 40% of the balance of the salary on food. Further, he spent 80% of the balance on various bills. He deposits &#8377; 5000 in the bank and kept the remaining &#8377; 1480 for his own petty expenditure. Find his monthly salary (in &#8377;).</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2352;&#2366;&#2332;&#2344; &#2344;&#2375; &#2309;&#2346;&#2344;&#2375; &#2357;&#2375;&#2340;&#2344; &#2325;&#2366; 10% &#2325;&#2367;&#2352;&#2366;&#2319; &#2346;&#2352; &#2326;&#2352;&#2381;&#2330; &#2325;&#2367;&#2351;&#2366;&#2404; &#2313;&#2360;&#2344;&#2375; &#2358;&#2375;&#2359; &#2357;&#2375;&#2340;&#2344; &#2325;&#2366; 20% &#2346;&#2352;&#2367;&#2357;&#2361;&#2344; &#2346;&#2352; &#2326;&#2352;&#2381;&#2330; &#2325;&#2367;&#2351;&#2366;&#2404; &#2332;&#2367;&#2360;&#2325;&#2375; &#2348;&#2366;&#2342; &#2313;&#2360;&#2344;&#2375; &#2309;&#2346;&#2344;&#2375; &#2358;&#2375;&#2359; &#2357;&#2375;&#2340;&#2344; &#2325;&#2366; 40% &#2349;&#2379;&#2332;&#2344; &#2346;&#2352; &#2326;&#2352;&#2381;&#2330; &#2325;&#2352; &#2342;&#2367;&#2351;&#2366;&#2404; &#2311;&#2360;&#2325;&#2375; &#2309;&#2354;&#2366;&#2357;&#2366;, &#2313;&#2344;&#2381;&#2361;&#2379;&#2306;&#2344;&#2375; &#2358;&#2375;&#2359; &#2343;&#2344;&#2352;&#2366;&#2358;&#2367; &#2325;&#2366; 80% &#2357;&#2367;&#2349;&#2367;&#2344;&#2381;&#2344; &#2348;&#2367;&#2354;&#2379;&#2306; &#2346;&#2352; &#2326;&#2352;&#2381;&#2330; &#2325;&#2367;&#2351;&#2366;&#2404; &#2357;&#2361; 5000 &#2352;&#2369;&#2346;&#2351;&#2375; &#2348;&#2376;&#2306;&#2325; &#2350;&#2375;&#2306; &#2332;&#2350;&#2366; &#2325;&#2352;&#2340;&#2366; &#2361;&#2376; &#2324;&#2352; &#2358;&#2375;&#2359; 1480 &#2352;&#2369;&#2346;&#2351;&#2375; &#2309;&#2346;&#2344;&#2375; &#2331;&#2379;&#2335;&#2375;-&#2350;&#2379;&#2335;&#2375; &#2326;&#2352;&#2381;&#2330; &#2325;&#2375; &#2354;&#2367;&#2319; &#2352;&#2326; &#2354;&#2375;&#2340;&#2366; &#2361;&#2376;&#2404; &#2313;&#2360;&#2325;&#2366; &#2350;&#2366;&#2360;&#2367;&#2325; &#2357;&#2375;&#2340;&#2344; (&#2352;&#2369;&#2346;&#2351;&#2375; &#2350;&#2375;&#2306;) &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">75000</span><span class=\"hqt\" style=\"display:none\">75000</span>",
+      "<span class=\"eqt\">80000</span><span class=\"hqt\" style=\"display:none\">80000</span>",
+      "<span class=\"eqt\">64800</span><span class=\"hqt\" style=\"display:none\">64800</span>",
+      "<span class=\"eqt\">82500</span><span class=\"hqt\" style=\"display:none\">82500</span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Let total salary be Rs. 100x</p><p>Salary spent on rent = 10% of Rs. 100x = (100x * 10/100) = Rs.10x</p><p>Remaining salary spent on transport = 20% of 90x = 90x * (20/100) = Rs.18x</p><p>Remaining salary spent on food = 40% of 72x = 72x * (40/100) = Rs.28.8x</p><p>Remaining salary spent on various bills = 80% of 43.2x = 43.2x * (80/100) = Rs.34.56x</p><p>Remaining salary = 100x  -  (10 + 18 + 28.8 + 34.56)x = (100  -  91.36)x = Rs.8.64x</p><p>Money deposited in the bank and saved for his own petty expenditure = Rs. (5000 + 1480) = Rs. 6480</p><p>Now, as per the question,</p><p>8.64x = 6480</p><p>100x = (6480/8.64)* 100 = 75,000</p>",
+    "question_index": 18
+  },
+  {
+    "question": "<span class=\"eqt\"><p>In a school, 30% are boys and rest are girls. If 60% of boys and 80% of girls are present on a certain day, then find the percentage of students absent on that day.</p></span><span class=\"hqt\" style=\"display:none\"><p>&#2319;&#2325; &#2360;&#2381;&#2325;&#2370;&#2354; &#2350;&#2375;&#2306; 30% &#2354;&#2337;&#2364;&#2325;&#2375; &#2361;&#2376;&#2306; &#2324;&#2352; &#2358;&#2375;&#2359; &#2354;&#2337;&#2364;&#2325;&#2367;&#2351;&#2366;&#2305; &#2361;&#2376;&#2306;&#2404; &#2351;&#2342;&#2367; &#2325;&#2367;&#2360;&#2368; &#2344;&#2367;&#2358;&#2381;&#2330;&#2367;&#2340; &#2342;&#2367;&#2344; 60% &#2354;&#2337;&#2364;&#2325;&#2375; &#2324;&#2352; 80% &#2354;&#2337;&#2364;&#2325;&#2367;&#2351;&#2366;&#2305; &#2313;&#2346;&#2360;&#2381;&#2341;&#2367;&#2340; &#2361;&#2376;&#2306;, &#2340;&#2379; &#2313;&#2360; &#2342;&#2367;&#2344; &#2309;&#2344;&#2369;&#2346;&#2360;&#2381;&#2341;&#2367;&#2340; &#2331;&#2366;&#2340;&#2381;&#2352;&#2379;&#2306; &#2325;&#2366; &#2346;&#2381;&#2352;&#2340;&#2367;&#2358;&#2340; &#2332;&#2381;&#2334;&#2366;&#2340; &#2325;&#2368;&#2332;&#2367;&#2319;&#2404;</p></span>",
+    "options": [
+      "<span class=\"eqt\">15%</span><span class=\"hqt\" style=\"display:none\">15%</span>",
+      "<span class=\"eqt\">30%</span><span class=\"hqt\" style=\"display:none\">30%</span>",
+      "<span class=\"eqt\">26%</span><span class=\"hqt\" style=\"display:none\">26%</span>",
+      "<span class=\"eqt\">18%</span><span class=\"hqt\" style=\"display:none\">18%</span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Let the number of students in the school = 100</p><p>Number of boys in the school = 30</p><p>Number of girls in the school = 70</p><p>Total number of absent students = (100 - 60)% of 30 + (100  -  80)% of 70</p><p>= 12 + 14</p><p>= 26</p><p>Hence, percentage of students absent on that day = 26%</p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 15 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

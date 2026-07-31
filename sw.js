@@ -75,7 +75,28 @@
 // app.js quiz engine (makeEnglishFullMockQuiz). Old v11 cache would keep
 // serving the old index.html/app.js/index.json without this feature, so
 // it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v12';
+// Bumped v12 -> v13: added the "Super Practice" feature — 660 pre-built
+// standalone mock-test HTML files under superpractice/<subject>/mock_NNN.html
+// (subject menu -> mock list -> iframe player), new index.html menu/pages,
+// new app.js module (initSuperPracticeQuiz). These mock files are NOT
+// precached (runtime stale-while-revalidate only, same as everything else)
+// so this bump does not bloat the install step. Old v12 cache would keep
+// serving the pre-Super-Practice index.html/app.js, so it must be evicted.
+// Bumped v13 -> v14: Super Practice mocks now show topic-based names
+// (e.g. "Trigonometry #2", "Analogy #1") instead of generic "Mock N" —
+// manifest.json gained topic/label fields (auto-detected from each mock's
+// question text via keyword matching), and a topic search box was added
+// to the mock list page. Old v13 cache would keep serving generic
+// "Mock N" names, so it must be evicted.
+// Bumped v14 -> v15: all 660 Super Practice mock files were patched so
+// answering a question now reveals correct/wrong + the solution INSTANTLY
+// (quiz mode) instead of only after the final "Submit Test" — each mock's
+// own TestApp class gained a per-question this.revealed[] flag alongside
+// the existing this.sub (whole-test-submitted) flag; loadOpts()/loadQ()/
+// selOpt() now check (this.sub || this.revealed[qIdx]) everywhere they
+// used to check this.sub alone. Old v14 cache would keep serving mocks
+// that only reveal answers after final submit, so it must be evicted.
+const CACHE_NAME = 'exam-tracker-v15';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

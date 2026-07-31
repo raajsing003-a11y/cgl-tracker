@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devgagan</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --p:#4F46E5;
+            --s:#10B981;
+            --d:#EF4444;
+            --w:#F59E0B;
+            --y:#FCD34D;
+            --bg:#F8FAFC;
+            --card:#FFF;
+            --txt:#1F2937;
+            --txtL:#6B7280;
+            --brd:#E5E7EB;
+            --shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius:12px;
+            --transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Dark mode variables */
+            --dark-bg:#1a1a2e;
+            --dark-card:#16213e;
+            --dark-txt:#e6e6e6;
+            --dark-txtL:#b8b8b8;
+            --dark-brd:#2a2a3a;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background:var(--bg);
+            color:var(--txt);
+            line-height:1.5;
+            padding-bottom:80px;
+            transition:var(--transition);
+        }
+        
+        body.dark-mode {
+            background:var(--dark-bg);
+            color:var(--dark-txt);
+        }
+        
+        /* Improved math expression and table styling */
+        .math-exp {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+            margin: 0 2px;
+        }
+        
+        .math-num {
+            text-align: center;
+            display: block;
+            padding: 0;
+        }
+        
+        .welcome-instructions {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .welcome-instructions {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .welcome-instructions h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-instructions li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .math-line {
+            display: block;
+            border-top: 1px solid;
+            padding: 0;
+            text-align: center;
+        }
+        
+        /* Table overflow container */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 12px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--brd);
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .dark-mode table, 
+        .dark-mode th, 
+        .dark-mode td {
+            border-color: var(--dark-brd);
+        }
+        
+        /* Image containment styles */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        
+        /* Ensure images don't overflow in any container */
+        .q-txt img, .opt-txt img, .sol img, .comp img {
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Specific image containers */
+        .img-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* Welcome screen styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--card);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        
+        .dark-mode .welcome-screen {
+            background: var(--dark-card);
+        }
+        
+        .welcome-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--p);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--p);
+        }
+        
+        .welcome-details {
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        
+        .dark-mode .welcome-details {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .welcome-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .welcome-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .welcome-detail-label {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .welcome-detail-label {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-detail-value {
+            font-weight: 500;
+        }
+        
+        .section-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dark-mode .section-info {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .section-info h3 {
+            margin-bottom: 12px;
+            color: var(--s);
+        }
+        
+        .section-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        
+        .section-list th, .section-list td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--brd);
+        }
+        
+        .dark-mode .section-list th, 
+        .dark-mode .section-list td {
+            border-bottom-color: var(--dark-brd);
+        }
+        
+        .section-list th {
+            font-weight: 600;
+            color: var(--txtL);
+        }
+        
+        .dark-mode .section-list th {
+            color: var(--dark-txtL);
+        }
+        
+        .welcome-button {
+            background: var(--p);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .join-channel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--p);
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            background: rgba(79, 70, 229, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dark-mode .join-channel {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .join-channel:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dark-mode .join-channel:hover {
+            background: rgba(79, 70, 229, 0.3);
+        }
+        
+        /* Section header styles */
+        .section-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .section-timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .hdr{
+            background:var(--card);
+            border-bottom:1px solid var(--brd);
+            padding:12px 16px;
+            display:grid;
+            grid-template-columns:1fr auto 1fr;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:100;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        
+        .dark-mode .hdr {
+            background:var(--dark-card);
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        
+        .hdr-l{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-self:start
+        }
+        .hdr-c{
+            text-align:center;
+            font-weight:600;
+            font-size:15px
+        }
+        .hdr-r{
+            display:flex;
+            justify-self:end;
+            align-items:center;
+            gap:8px
+        }
+        .q-info{
+            font-size:14px;
+            font-weight:600
+        }
+        .timer{
+            background:#FEF3C7;
+            color:#92400E;
+            padding:6px 12px;
+            border-radius:16px;
+            font-size:13px;
+            font-weight:600
+        }
+        .btn{
+            border:none;
+            border-radius:8px;
+            font-weight:500;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:13px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:6px;
+        }
+        .btn-sm{
+            padding:8px 12px
+        }
+        .btn-p{
+            background:var(--p);
+            color:white
+        }
+        .btn-o{
+            background:transparent;
+            border:1px solid var(--brd);
+            color:var(--txt)
+        }
+        .dark-mode .btn-o {
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .btn-w{
+            background:var(--y);
+            color:#78350F;
+            font-weight:600;
+        }
+        .btn-w.active{
+            background:var(--w);
+            color:white;
+        }
+        .btn:active{
+            transform:scale(.98)
+        }
+        .cont{
+            padding:16px;
+            max-width:100%;
+            overflow-x:hidden;
+        }
+        .dark-mode .cont {
+            background:var(--dark-bg);
+        }
+        .q-card{
+            background:var(--card);
+            border-radius:var(--radius);
+            padding:20px;
+            margin-bottom:16px;
+            border:1px solid var(--brd);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            transition:var(--transition);
+        }
+        .dark-mode .q-card {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .lang{
+            display:flex;
+            background:#F3F4F6;
+            border-radius:8px;
+            padding:2px;
+            margin-bottom:16px
+        }
+        .dark-mode .lang {
+            background:#2a2a3a;
+        }
+        .lang-btn{
+            flex:1;
+            padding:8px;
+            border:none;
+            background:transparent;
+            border-radius:6px;
+            font-size:13px;
+            cursor:pointer;
+            transition:var(--transition)
+        }
+        .lang-btn.active{
+            background:white;
+            color:var(--p);
+            box-shadow:0 1px 3px rgba(0,0,0,.1)
+        }
+        .dark-mode .lang-btn.active {
+            background:var(--dark-card);
+            color:var(--p);
+        }
+        .comp{
+            background:#F0F9FF;
+            border:1px solid #BAE6FD;
+            border-radius:8px;
+            padding:16px;
+            margin-bottom:20px;
+            overflow:hidden
+        }
+        .dark-mode .comp {
+            background:#1e3a8a;
+            border-color:#1e40af;
+        }
+        .comp h4{
+            color:#0369A1;
+            font-size:14px;
+            margin-bottom:8px
+        }
+        .dark-mode .comp h4 {
+            color:#93c5fd;
+        }
+        .q-txt{
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:20px;
+            color:var(--txt);
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .q-txt {
+            color:var(--dark-txt);
+        }
+        .opts{
+            display:flex;
+            flex-direction:column;
+            gap:12px
+        }
+        .opt{
+            display:flex;
+            align-items:center;
+            padding:16px;
+            background:var(--card);
+            border:2px solid var(--brd);
+            border-radius:12px;
+            cursor:pointer;
+            transition:var(--transition);
+            gap:12px;
+            overflow:hidden
+        }
+        .dark-mode .opt {
+            background:var(--dark-card);
+            border-color:var(--dark-brd);
+        }
+        .opt:hover:not(.submitted){
+            border-color:var(--p);
+            transform:translateY(-2px);
+            box-shadow:var(--shadow);
+        }
+        .opt.sel{
+            border-color:var(--p);
+            background:#F0F9FF
+        }
+        .dark-mode .opt.sel {
+            background:#1e3a8a;
+        }
+        .opt.correct{
+            border-color:var(--s);
+            background:#F0FDF4 !important
+        }
+        .dark-mode .opt.correct {
+            background:#064e3b !important;
+            border-color:#047857;
+        }
+        .opt.wrong{
+            border-color:var(--d);
+            background:#FEF2F2 !important
+        }
+        .dark-mode .opt.wrong {
+            background:#7f1d1d !important;
+            border-color:#b91c1c;
+        }
+        .opt.submitted{
+            cursor:default
+        }
+        .opt-radio{
+            width:20px;
+            height:20px;
+            border:2px solid var(--brd);
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0
+        }
+        .dark-mode .opt-radio {
+            border-color:var(--dark-brd);
+        }
+        .opt.sel .opt-radio{
+            border-color:var(--p);
+            background:var(--p)
+        }
+        .opt.sel .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.correct .opt-radio{
+            border-color:var(--s) !important;
+            background:var(--s) !important
+        }
+        .opt.correct .opt-radio::after{
+            content:'✓';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt.wrong .opt-radio{
+            border-color:var(--d) !important;
+            background:var(--d) !important
+        }
+        .opt.wrong .opt-radio::after{
+            content:'✗';
+            color:white;
+            font-size:12px;
+            font-weight:bold
+        }
+        .opt-txt{
+            flex:1;
+            font-size:15px;
+            overflow:hidden;
+            word-wrap:break-word
+        }
+        .dark-mode .opt-txt {
+            color:var(--dark-txt);
+        }
+        .sol{
+            background:#F0FDF4;
+            border:1px solid #BBF7D0;
+            border-radius:8px;
+            padding:16px;
+            margin-top:20px;
+            display:none;
+            overflow:hidden
+        }
+        .dark-mode .sol {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .sol.show{
+            display:block
+        }
+        .sol h4{
+            color:var(--s);
+            font-size:14px;
+            margin-bottom:8px;
+            display:flex;
+            align-items:center;
+            gap:6px
+        }
+        .dark-mode .sol h4 {
+            color:#34d399;
+        }
+        .sol-info{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+            font-size:13px;
+            color:var(--txtL);
+        }
+        .dark-mode .sol-info {
+            color:var(--dark-txtL);
+        }
+        .sol-info span{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            right:0;
+            background:var(--card);
+            border-top:1px solid var(--brd);
+            padding:12px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            z-index:100;
+            box-shadow:0 -2px 10px rgba(0,0,0,0.05);
+            transition:var(--transition);
+        }
+        .dark-mode .nav {
+            background:var(--dark-card);
+            border-top-color:var(--dark-brd);
+        }
+        .nav-btn{
+            padding:12px 20px;
+            border-radius:8px;
+            font-weight:600;
+            min-width:80px
+        }
+        .nav-btn:disabled{
+            opacity:.5;
+            cursor:not-allowed
+        }
+        .prog{
+            text-align:center;
+            font-size:13px;
+            color:var(--txtL)
+        }
+        .dark-mode .prog {
+            color:var(--dark-txtL);
+        }
+        .panel{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:var(--card);
+            z-index:200;
+            transform:translateY(100%);
+            transition:transform .3s ease;
+            overflow-y:auto;
+            display:none;
+        }
+        .dark-mode .panel {
+            background:var(--dark-card);
+        }
+        .panel.open{
+            transform:translateY(0);
+            display:block;
+        }
+        .panel-hdr{
+            background:var(--p);
+            color:white;
+            padding:16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            position:sticky;
+            top:0;
+            z-index:1;
+        }
+        .panel-close{
+            background:none;
+            border:none;
+            color:white;
+            font-size:18px;
+            cursor:pointer
+        }
+        .q-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            padding:20px
+        }
+        .q-num{
+            aspect-ratio:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F3F4F6;
+            border-radius:8px;
+            font-weight:600;
+            cursor:pointer;
+            transition:var(--transition);
+            font-size:14px
+        }
+        .dark-mode .q-num {
+            background:#2a2a3a;
+            color:var(--dark-txt);
+        }
+        .q-num.cur{
+            background:var(--p);
+            color:white
+        }
+        .q-num.ans{
+            background:var(--s);
+            color:white
+        }
+        .q-num.wrong{
+            background:var(--d);
+            color:white
+        }
+        .q-num.review{
+            background:var(--y);
+            color:#78350F;
+            font-weight:bold;
+        }
+        .q-num.unattempted {
+            background:#E5E7EB;
+            color:#6B7280;
+        }
+        .dark-mode .q-num.unattempted {
+            background:#4B5563;
+            color:#D1D5DB;
+        }
+        .q-num.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .q-num:hover{
+            transform:scale(1.05)
+        }
+        .modal{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            background:rgba(0,0,0,.5);
+            z-index:300;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px
+        }
+        .modal.show{
+            display:flex
+        }
+        .result{
+            background:var(--card);
+            border-radius:16px;
+            padding:24px;
+            width:100%;
+            max-width:400px;
+            text-align:center
+        }
+        .dark-mode .result {
+            background:var(--dark-card);
+        }
+        .score{
+            font-size:2rem;
+            font-weight:bold;
+            color:var(--p);
+            margin:16px 0
+        }
+        .stats{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+            margin:20px 0
+        }
+        .stat{
+            text-align:center;
+            padding:12px;
+            border-radius:8px;
+            border:1px solid var(--brd)
+        }
+        .dark-mode .stat {
+            border-color:var(--dark-brd);
+        }
+        .stat-val{
+            font-size:1.5rem;
+            font-weight:bold;
+            margin-bottom:4px
+        }
+        .stat-lbl{
+            font-size:12px;
+            color:var(--txtL)
+        }
+        .dark-mode .stat-lbl {
+            color:var(--dark-txtL);
+        }
+        .stat.c{
+            border-color:var(--s);
+            background:#F0FDF4
+        }
+        .dark-mode .stat.c {
+            background:#064e3b;
+            border-color:#047857;
+        }
+        .stat.w{
+            border-color:var(--d);
+            background:#FEF2F2
+        }
+        .dark-mode .stat.w {
+            background:#7f1d1d;
+            border-color:#b91c1c;
+        }
+        .stat.c .stat-val{
+            color:var(--s)
+        }
+        .dark-mode .stat.c .stat-val {
+            color:#34d399;
+        }
+        .stat.w .stat-val{
+            color:var(--d)
+        }
+        .dark-mode .stat.w .stat-val {
+            color:#f87171;
+        }
+        .modal-acts{
+            display:flex;
+            gap:12px;
+            margin-top:20px
+        }
+        .modal-btn{
+            flex:1;
+            padding:12px;
+            border-radius:8px;
+            font-weight:600
+        }
+        .print-btn{
+            position:fixed;
+            bottom:100px;
+            right:20px;
+            width:50px;
+            height:50px;
+            border-radius:50%;
+            background:var(--p);
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+            z-index:50;
+            cursor:pointer;
+            transition:var(--transition);
+            border:none;
+        }
+        .print-btn:hover{
+            transform:scale(1.1);
+        }
+        .dark-mode .print-btn {
+            background:var(--p);
+        }
+        .desktop-sidebar{
+            display:none;
+            position:fixed;
+            right:0;
+            top:0;
+            bottom:0;
+            width:300px;
+            background:var(--card);
+            border-left:1px solid var(--brd);
+            padding:20px;
+            overflow-y:auto;
+            z-index:90;
+            transition:var(--transition);
+        }
+        .dark-mode .desktop-sidebar {
+            background:var(--dark-card);
+            border-left-color:var(--dark-brd);
+        }
+        .desktop-sidebar h3{
+            margin-bottom:16px;
+            padding-bottom:12px;
+            border-bottom:1px solid var(--brd);
+            color:var(--txt);
+        }
+        .dark-mode .desktop-sidebar h3 {
+            border-bottom-color:var(--dark-brd);
+            color:var(--dark-txt);
+        }
+        .theme-toggle{
+            background:none;
+            border:none;
+            color:var(--txt);
+            font-size:18px;
+            cursor:pointer;
+            margin-left:8px;
+        }
+        .dark-mode .theme-toggle {
+            color:var(--dark-txt);
+        }
+        @media (min-width: 1024px) {
+            .cont{
+                padding-right:320px;
+            }
+            .desktop-sidebar{
+                display:block;
+            }
+            .panel{
+                display:none !important;
+            }
+        }
+        @media (max-width:375px){
+            .hdr{padding:10px 12px}
+            .cont{padding:12px}
+            .q-card{padding:16px}
+            .q-grid{grid-template-columns:repeat(4,1fr)}
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div class="welcome-screen" id="welcomeScreen">
+    <h1 class="welcome-title">Exam ID : SUPER_BATCH</h1>
+    
+    <div class="welcome-details">
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Test ID</span>
+            <span class="welcome-detail-value">37807 </span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Questions:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Total Marks:</span>
+            <span class="welcome-detail-value">20</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Duration:</span>
+            <span class="welcome-detail-value">15 minutes</span>
+        </div>
+        <div class="welcome-detail">
+            <span class="welcome-detail-label">Marking:</span>
+            <span class="welcome-detail-value">+1 / -0.25</span>
+        </div>
+    </div>
+    
+    <div class="welcome-instructions">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Read each question carefully before answering</li>
+            <li>You can mark questions for review and come back later</li>
+            <li>The timer will automatically submit the test when time is up</li>
+            <li>Negative marking applies for wrong answers</li>
+        </ul>
+    </div>
+    
+    <div class="welcome-buttons">
+        <button class="welcome-button" id="startTestBtn">
+            <i class="fas fa-play"></i> Start Test
+        </button>
+        
+        <a href="https://t.me/mocks_wallah" target="_blank" class="join-channel">
+            <i class="fab fa-telegram"></i> Join Our Channel
+        </a>
+    </div>
+ </div>
+
+    <!-- Main Test Interface (hidden initially) -->
+    <div style="display:none" id="mainTestInterface">
+        <div class="hdr">
+            <div class="hdr-l">
+                <div class="q-info" id="qInfo">Q1/20</div>
+                <div class="timer" id="timer">15:00</div>
+            </div>
+            <div class="hdr-c">Mocks Wallah</div>
+            <div class="hdr-r">
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="btn btn-o btn-sm" id="menuBtn"><i class="fas fa-th"></i></button>
+                <button class="btn btn-p btn-sm" id="subBtn">Submit</button>
+            </div>
+        </div>
+
+        <div class="cont">
+            
+            <div class="q-card">
+                <div class="lang">
+                    <button class="lang-btn active" id="engBtn">English</button>
+                    <button class="lang-btn" id="hinBtn">हिंदी</button>
+                </div>
+
+                <div id="compSec" class="comp" style="display:none">
+                    <h4><i class="fas fa-book"></i> Comprehension</h4>
+                    <div id="compCont"></div>
+                </div>
+
+                <div class="q-txt" id="qTxt"></div>
+                <div class="opts" id="opts"></div>
+
+                <div class="sol" id="sol">
+                    <div class="sol-info" id="solInfo"></div>
+                    <h4><i class="fas fa-lightbulb"></i> Solution</h4>
+                    <div id="solCont"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button class="btn btn-o nav-btn" id="prevBtn"><i class="fas fa-chevron-left"></i> Prev</button>
+            <button class="btn btn-w nav-btn" id="reviewBtn"><i class="fas fa-flag"></i> Review</button>
+            <div class="prog">
+                <div id="progTxt">1 of 20</div>
+                <div style="font-size:11px">Answered: <span id="ansCnt">0</span> | <a href="https://t.me/mocks_wallah">Mocks Wallah</a></div>
+            </div>
+            <button class="btn btn-p nav-btn" id="nextBtn">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="desktop-sidebar" id="desktopSidebar">
+            <h3>Questions Navigator</h3>
+            <div class="q-grid" id="desktopQGrid"></div>
+            <div style="margin-top:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="panel">
+            <div class="panel-hdr">
+                <h3>All Questions</h3>
+                <button class="panel-close" id="panelClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="q-grid" id="qGrid"></div>
+            <div style="padding:20px;font-size:12px;color:var(--txtL)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num ans" style="width:24px;height:24px">✓</div><span>Answered</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num review" style="width:24px;height:24px">!</div><span>Marked for Review</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <div class="q-num wrong" style="width:24px;height:24px">✗</div><span>Incorrect</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="q-num unattempted" style="width:24px;height:24px">?</div><span>Unattempted</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="print-btn" id="printBtn" style="display:none">
+            <i class="fas fa-print"></i>
+        </button>
+
+        <div class="modal" id="modalOver">
+            <div class="result">
+                <h2>Test Complete!</h2>
+                <div class="score" id="scoreDisp">0/20</div>
+                <div class="stats">
+                    <div class="stat c"><div class="stat-val" id="corrStat">0</div><div class="stat-lbl">Correct</div></div>
+                    <div class="stat w"><div class="stat-val" id="incStat">0</div><div class="stat-lbl">Incorrect</div></div>
+                    <div class="stat"><div class="stat-val" id="unaStat">0</div><div class="stat-lbl">Unattempted</div></div>
+                    <div class="stat"><div class="stat-val" id="timeStat">0</div><div class="stat-lbl">Minutes</div></div>
+                </div>
+                <div class="modal-acts">
+                    <button class="btn btn-o modal-btn" id="closeModal">Close</button>
+                    <button class="btn btn-p modal-btn" id="revBtn">Review</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TestApp {
+            constructor() {
+            this.qs = [
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the passage and answer the questions that follow.</p><p>In the part of Italy that is known as Umbria, there stands the little town of Assisi, built on the slopes of Monte Subasio. Assisi is a very old city - some say it dates as far back as 400 or 500 B.C. - and underneath its streets are long passages that come out far away in the hills, as if the citizens had used them in times of siege as a means of escape. If you studied its ruins of temples, theatres, and circuses, you would learn a great deal of history, not only of Assisi itself but of Rome as well. Totila, the Goth, halted there for a short time on his way to besiege the Eternal City. Charlemagne passed through it two hundred and fifty years later; while in the struggle for power between the pope and the emperor during the Middle Ages, the town sided first with one and then with the other. But, against one enemy, the people of Assisi never ceased fighting, and that was with the citizens of Perugia, which lay across the hills and could be seen plainly from the castle on the top. Among all the merchants of Assisi, none was so rich or well thought of as Bernadone, who carried on with France a large trade in silk and embroidered stuff. He had an only son, Giovanni, or John, born in 1182, and, as soon as the child was four or five years old, he had been taught French, so that by and by his father might send him across the sea to sell his goods to the noble ladies of the French court, and as no one in Assisi ever thought of learning any language but Italian, the boy was nicknamed \"Il Francesco,\" or \"the Frenchman.\" This nickname would become symbolic of a remarkable future. Giovanni would grow up to transform not only his own life but also the lives of countless others, embodying values of humility and compassion that continue to resonate around the world.</p>",
+    "question": "<p>What was Giovanni's intended future career as suggested by his early education?</p>",
+    "options": [
+      "A scholar",
+      "A diplomat",
+      "A trader in France",
+      "A military leader"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The passage mentions, 'He had an only son, Giovanni, or John, born in 1182, and, as soon as the child was four or five years old, he had been taught French, so that by and by his father might send him across the sea to sell his goods to the noble ladies of the French court'. This quote shows that Giovanni was taught French with the specific purpose of being sent to France to engage in trade. Therefore, the passage suggests that his intended future career was to be a trader in France. There is no indication in the passage that Giovanni was intended to be a scholar, diplomat or military leader. Hence, (c) is the correct answer. </p>",
+    "question_index": 0
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the passage and answer the questions that follow.</p><p>In the part of Italy that is known as Umbria, there stands the little town of Assisi, built on the slopes of Monte Subasio. Assisi is a very old city - some say it dates as far back as 400 or 500 B.C. - and underneath its streets are long passages that come out far away in the hills, as if the citizens had used them in times of siege as a means of escape. If you studied its ruins of temples, theatres, and circuses, you would learn a great deal of history, not only of Assisi itself but of Rome as well. Totila, the Goth, halted there for a short time on his way to besiege the Eternal City. Charlemagne passed through it two hundred and fifty years later; while in the struggle for power between the pope and the emperor during the Middle Ages, the town sided first with one and then with the other. But, against one enemy, the people of Assisi never ceased fighting, and that was with the citizens of Perugia, which lay across the hills and could be seen plainly from the castle on the top. Among all the merchants of Assisi, none was so rich or well thought of as Bernadone, who carried on with France a large trade in silk and embroidered stuff. He had an only son, Giovanni, or John, born in 1182, and, as soon as the child was four or five years old, he had been taught French, so that by and by his father might send him across the sea to sell his goods to the noble ladies of the French court, and as no one in Assisi ever thought of learning any language but Italian, the boy was nicknamed \"Il Francesco,\" or \"the Frenchman.\" This nickname would become symbolic of a remarkable future. Giovanni would grow up to transform not only his own life but also the lives of countless others, embodying values of humility and compassion that continue to resonate around the world.</p>",
+    "question": "<p>How did the town of Assisi align during the power struggle between the pope and the emperor in the Middle Ages?</p>",
+    "options": [
+      "It maintained an impartial stance throughout the conflict.",
+      "It alternated its support between the two opposing sides.",
+      "It consistently backed the papal authority.",
+      "It uniformly supported the imperial forces."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The passage mentions, 'while in the struggle for power between the pope and the emperor during the Middle Ages, the town sided first with one and then with the other.' This indicates that Assisi shifted its support between the pope and the emperor, rather than maintaining a consistent stance or uniformly supporting one side (options c and d). The passage explicitly suggests that Assisi did not maintain an impartial stance (option a). Hence, (b) is the correct answer. </p>",
+    "question_index": 1
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the passage and answer the questions that follow.</p><p>In the part of Italy that is known as Umbria, there stands the little town of Assisi, built on the slopes of Monte Subasio. Assisi is a very old city - some say it dates as far back as 400 or 500 B.C. - and underneath its streets are long passages that come out far away in the hills, as if the citizens had used them in times of siege as a means of escape. If you studied its ruins of temples, theatres, and circuses, you would learn a great deal of history, not only of Assisi itself but of Rome as well. Totila, the Goth, halted there for a short time on his way to besiege the Eternal City. Charlemagne passed through it two hundred and fifty years later; while in the struggle for power between the pope and the emperor during the Middle Ages, the town sided first with one and then with the other. But, against one enemy, the people of Assisi never ceased fighting, and that was with the citizens of Perugia, which lay across the hills and could be seen plainly from the castle on the top. Among all the merchants of Assisi, none was so rich or well thought of as Bernadone, who carried on with France a large trade in silk and embroidered stuff. He had an only son, Giovanni, or John, born in 1182, and, as soon as the child was four or five years old, he had been taught French, so that by and by his father might send him across the sea to sell his goods to the noble ladies of the French court, and as no one in Assisi ever thought of learning any language but Italian, the boy was nicknamed \"Il Francesco,\" or \"the Frenchman.\" This nickname would become symbolic of a remarkable future. Giovanni would grow up to transform not only his own life but also the lives of countless others, embodying values of humility and compassion that continue to resonate around the world.</p>",
+    "question": "<p>What was the likely purpose of the long passages underneath the streets of Assisi?</p>",
+    "options": [
+      "They were used for storing goods.",
+      "They functioned as aqueducts for water supply.",
+      "They were built as places of worship.",
+      "They provided a way to evade danger during sieges."
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>The passage states, 'Assisi is a very old city - some say it dates as far back as 400 or 500 B.C. - and underneath its streets are long passages that come out far away in the hills, as if the citizens had used them in times of siege as a means of escape.' This indicates that the passages were designed to help citizens escape or evade danger during times of siege, rather than for storage, aqueducts, or worship. Hence, (d) is the correct answer. </p>",
+    "question_index": 2
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the passage and answer the questions that follow.</p><p>In the part of Italy that is known as Umbria, there stands the little town of Assisi, built on the slopes of Monte Subasio. Assisi is a very old city - some say it dates as far back as 400 or 500 B.C. - and underneath its streets are long passages that come out far away in the hills, as if the citizens had used them in times of siege as a means of escape. If you studied its ruins of temples, theatres, and circuses, you would learn a great deal of history, not only of Assisi itself but of Rome as well. Totila, the Goth, halted there for a short time on his way to besiege the Eternal City. Charlemagne passed through it two hundred and fifty years later; while in the struggle for power between the pope and the emperor during the Middle Ages, the town sided first with one and then with the other. But, against one enemy, the people of Assisi never ceased fighting, and that was with the citizens of Perugia, which lay across the hills and could be seen plainly from the castle on the top. Among all the merchants of Assisi, none was so rich or well thought of as Bernadone, who carried on with France a large trade in silk and embroidered stuff. He had an only son, Giovanni, or John, born in 1182, and, as soon as the child was four or five years old, he had been taught French, so that by and by his father might send him across the sea to sell his goods to the noble ladies of the French court, and as no one in Assisi ever thought of learning any language but Italian, the boy was nicknamed \"Il Francesco,\" or \"the Frenchman.\" This nickname would become symbolic of a remarkable future. Giovanni would grow up to transform not only his own life but also the lives of countless others, embodying values of humility and compassion that continue to resonate around the world.</p>",
+    "question": "<p>Select the most appropriate antonym of the given word.</p><p>Ceased</p>",
+    "options": [
+      "Preferred",
+      "Continued",
+      "Desisted",
+      "Terminated"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>'Ceased' means to stop or come to an end. 'Continued' means to persist or keep going, which is the opposite of stopping or ending. 'Preferred' is not related to the concept of stopping or continuing. 'Desisted' is similar in meaning to 'ceased', as it also means to stop. 'Terminated' is a synonym for ceased, meaning to bring something to an end. Hence, (b) is the correct answer.</p>",
+    "question_index": 3
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>  Read the passage and answer the questions that follow.</p><p>The scenic hill town of Darjeeling is famous for its 3T's - Tea, Timber, and Tourists. Originally established as a British sanatorium, it quickly earned the nickname 'Queen of Hills' and has become a popular tourist spot. The charming town welcomes visitors with stunning landscapes, drifting clouds, and pleasant weather. However, the other side of this hill station is marked by the struggles of Darjeeling's residents, who face challenges with basic water and sanitation services. Darjeeling has become synonymous with water scarcity, still depending on the water supply system set up by the British government between 1910 and 1915 for just 10,000 residents. However, the city's current population is around 118,805. This unexpected growth has posed a major challenge in the proper planning and installation of crucial municipal services like water and sewage systems. The city presents a dual effect, offering increased options for accommodating tourists, while also raising concerns about the capacity of the city to absorb this rampant growth and the pressure it exerts on municipal services. Darjeeling is located on a landscape with uneven layers, leading most homes to depend on stacked stairs and narrow, slippery paths for access. The electric wires and water pipelines are intertwined, demonstrating a harmonious coexistence that highlights a symbiotic relationship between fire and water elements. In Darjeeling, people usually throw household waste into the jhoras (drains going down the hill). Jhoras are local stormwater drains or flood harvesting systems that play a vital role in managing excess water during storms. Similar to the Aahar Pynes in Bihar and Nullahs in the northern regions, these systems help to prevent flooding and protect the local environment. This drain, among others, leads to one of the most visited sites, RockVille Garden, a picturesque tourist location known for its natural waterfall. The mismanaged disposal of waste has further exacerbated the problem of solid waste, creating a mountain of waste amid the scenic Eastern Himalayan mountain range. </p>",
+    "question": "<p>What dual impact does Darjeeling experience as a destination for travellers?</p>",
+    "options": [
+      "Boost in local revenue and improved facilities",
+      "Increased tourism opportunities coupled with municipal strain",
+      "Higher land prices and job creation",
+      "Better infrastructure and reduced local employment"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The passage mentions, 'The city presents a dual effect, offering increased options for accommodating tourists, while also raising concerns about the capacity of the city to absorb this rampant growth and the pressure it exerts on municipal services.' This quote highlights that while Darjeeling benefits from tourism, the rapid growth of visitors and population creates significant challenges for municipal services, such as water and sewage systems. </p><p>(a)- The passage does not mention a direct boost in local revenue or improved facilities as a result of tourism. </p><p>(c)- The passage does not discuss land prices or job creation. </p><p>(d)- The passage actually highlights problems with infrastructure, such as outdated water supply systems and municipal strain. It does not mention improved infrastructure or reduced local employment. Hence, (b) is the correct answer. </p>",
+    "question_index": 4
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>  Read the passage and answer the questions that follow.</p><p>The scenic hill town of Darjeeling is famous for its 3T's - Tea, Timber, and Tourists. Originally established as a British sanatorium, it quickly earned the nickname 'Queen of Hills' and has become a popular tourist spot. The charming town welcomes visitors with stunning landscapes, drifting clouds, and pleasant weather. However, the other side of this hill station is marked by the struggles of Darjeeling's residents, who face challenges with basic water and sanitation services. Darjeeling has become synonymous with water scarcity, still depending on the water supply system set up by the British government between 1910 and 1915 for just 10,000 residents. However, the city's current population is around 118,805. This unexpected growth has posed a major challenge in the proper planning and installation of crucial municipal services like water and sewage systems. The city presents a dual effect, offering increased options for accommodating tourists, while also raising concerns about the capacity of the city to absorb this rampant growth and the pressure it exerts on municipal services. Darjeeling is located on a landscape with uneven layers, leading most homes to depend on stacked stairs and narrow, slippery paths for access. The electric wires and water pipelines are intertwined, demonstrating a harmonious coexistence that highlights a symbiotic relationship between fire and water elements. In Darjeeling, people usually throw household waste into the jhoras (drains going down the hill). Jhoras are local stormwater drains or flood harvesting systems that play a vital role in managing excess water during storms. Similar to the Aahar Pynes in Bihar and Nullahs in the northern regions, these systems help to prevent flooding and protect the local environment. This drain, among others, leads to one of the most visited sites, RockVille Garden, a picturesque tourist location known for its natural waterfall. The mismanaged disposal of waste has further exacerbated the problem of solid waste, creating a mountain of waste amid the scenic Eastern Himalayan mountain range. </p>",
+    "question": "<p>What role do jhoras play in Darjeeling's infrastructure?</p>",
+    "options": [
+      "They are used as community hubs for commerce.",
+      "They are used for channelling and managing surplus water.",
+      "They are historic residential structures.",
+      "They offer scenic attractions featuring natural landscapes."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The passage mentions, 'Jhoras are local stormwater drains or flood harvesting systems that play a vital role in managing excess water during storms.' This indicates that their primary function is to channel and manage surplus water, helping to prevent flooding. The passage does not describe jhoras as community hubs, residential structures or scenic attractions. Hence, (b) is the correct answer. </p>",
+    "question_index": 5
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>  Read the passage and answer the questions that follow.</p><p>The scenic hill town of Darjeeling is famous for its 3T's - Tea, Timber, and Tourists. Originally established as a British sanatorium, it quickly earned the nickname 'Queen of Hills' and has become a popular tourist spot. The charming town welcomes visitors with stunning landscapes, drifting clouds, and pleasant weather. However, the other side of this hill station is marked by the struggles of Darjeeling's residents, who face challenges with basic water and sanitation services. Darjeeling has become synonymous with water scarcity, still depending on the water supply system set up by the British government between 1910 and 1915 for just 10,000 residents. However, the city's current population is around 118,805. This unexpected growth has posed a major challenge in the proper planning and installation of crucial municipal services like water and sewage systems. The city presents a dual effect, offering increased options for accommodating tourists, while also raising concerns about the capacity of the city to absorb this rampant growth and the pressure it exerts on municipal services. Darjeeling is located on a landscape with uneven layers, leading most homes to depend on stacked stairs and narrow, slippery paths for access. The electric wires and water pipelines are intertwined, demonstrating a harmonious coexistence that highlights a symbiotic relationship between fire and water elements. In Darjeeling, people usually throw household waste into the jhoras (drains going down the hill). Jhoras are local stormwater drains or flood harvesting systems that play a vital role in managing excess water during storms. Similar to the Aahar Pynes in Bihar and Nullahs in the northern regions, these systems help to prevent flooding and protect the local environment. This drain, among others, leads to one of the most visited sites, RockVille Garden, a picturesque tourist location known for its natural waterfall. The mismanaged disposal of waste has further exacerbated the problem of solid waste, creating a mountain of waste amid the scenic Eastern Himalayan mountain range. </p>",
+    "question": "<p>Select the most appropriate synonym for the given word.</p><p>Rampant </p>",
+    "options": [
+      "Uncontrolled",
+      "Amiable",
+      "Placid",
+      "Hazardous"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>'Rampant' means widespread or unchecked. In the passage, \"rampant growth\" refers to growth that is spreading unchecked or uncontrolled. Therefore, \"uncontrolled\" accurately reflects this meaning. </p><p>'Amiable' means friendly or pleasant. </p><p>'Placid' means calm or peaceful. </p><p>'Hazardous' means dangerous. </p><p>Hence, (a) is the correct answer. </p>",
+    "question_index": 6
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>  Read the passage and answer the questions that follow.</p><p>The scenic hill town of Darjeeling is famous for its 3T's - Tea, Timber, and Tourists. Originally established as a British sanatorium, it quickly earned the nickname 'Queen of Hills' and has become a popular tourist spot. The charming town welcomes visitors with stunning landscapes, drifting clouds, and pleasant weather. However, the other side of this hill station is marked by the struggles of Darjeeling's residents, who face challenges with basic water and sanitation services. Darjeeling has become synonymous with water scarcity, still depending on the water supply system set up by the British government between 1910 and 1915 for just 10,000 residents. However, the city's current population is around 118,805. This unexpected growth has posed a major challenge in the proper planning and installation of crucial municipal services like water and sewage systems. The city presents a dual effect, offering increased options for accommodating tourists, while also raising concerns about the capacity of the city to absorb this rampant growth and the pressure it exerts on municipal services. Darjeeling is located on a landscape with uneven layers, leading most homes to depend on stacked stairs and narrow, slippery paths for access. The electric wires and water pipelines are intertwined, demonstrating a harmonious coexistence that highlights a symbiotic relationship between fire and water elements. In Darjeeling, people usually throw household waste into the jhoras (drains going down the hill). Jhoras are local stormwater drains or flood harvesting systems that play a vital role in managing excess water during storms. Similar to the Aahar Pynes in Bihar and Nullahs in the northern regions, these systems help to prevent flooding and protect the local environment. This drain, among others, leads to one of the most visited sites, RockVille Garden, a picturesque tourist location known for its natural waterfall. The mismanaged disposal of waste has further exacerbated the problem of solid waste, creating a mountain of waste amid the scenic Eastern Himalayan mountain range. </p>",
+    "question": "<p>Select the most appropriate title for the passage.</p>",
+    "options": [
+      "Darjeeling: A Blend of Beauty and Challenges",
+      "The Historical Significance of Darjeeling's Water Supply",
+      "Tourism and Tradition in the Queen of Hills",
+      "The Evolution of Municipal Services in Darjeeling"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>The title given in option (a) captures the essence of the passage, which describes both the picturesque beauty and the challenges faced by Darjeeling, including issues with municipal services and infrastructure amidst its appeal as a tourist destination.</p><p>(b)- The passage discusses the history of Darjeeling's water supply but also covers broader issues, such as the city's growth and its impact on infrastructure. This title is too narrow and focuses only on one aspect of the passage.</p><p>(c)- While tourism is a part of the passage, it doesn't emphasise \"tradition\" or focus solely on the tourism aspect. The passage is more about the blend of beauty and the associated challenges, rather than just tourism and tradition.</p><p>(d)- The passage touches on municipal services but does not delve deeply into their evolution. It discusses the current challenges and pressures on these services due to rapid growth rather than a historical evolution. Hence, (a) is the correct answer. </p>",
+    "question_index": 7
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>The introduction of African cheetahs to India was planned without considering their spatial ecology, according to researchers who warn that the released animals may come into conflict with people in the neighbouring villages. Spatial ecology addresses the fundamental effects of space on the movement of individual species and on the stability of multispecies communities. A total of 20 cheetahs from Namibia and South Africa were introduced to Kuno National Park in Madhya Pradesh last year to establish a free-ranging population - for the first time since their extinction in India 70 years ago. Scientists of the Cheetah Research Project of Leibniz-IZW in Namibia argue that in southern Africa, cheetahs live in a stable socio-spatial system with widely spread territories and densities of less than one individual per 100 square kilometres (km&#178;). The plan for cheetahs in Kuno National Park assumes that the high prey density will sustain high cheetah densities, even though there is no evidence for that, they said. In a letter published in the journal Conservation Science and Practice on Thursday, researchers noted that as Kuno National Park is small, it is likely that the released animals will move far beyond the park's boundaries and cause conflicts with neighbouring villages.</p><p>According to a calculation of the local prey density, it was calculated that 21 adult cheetahs could be sustained by the prey base in Kuno National Park - equivalent to a density of about three individuals per 100 km&#178;. Based on their research results from a long-term study of the spatial behaviour of cheetahs in Namibia, as well as comparable work in East Africa, scientists from the Leibniz Institute for Zoo and Leibniz-IZW warn against overestimating the carrying capacity of the area. The carrying capacity is usually between 0.2 and 1 adult per 100 km&#178; for cheetahs under natural conditions. This is true not only for Namibia but also for the ecologically very different conditions in the Serengeti ecosystem in East Africa which has a much higher density of prey, they said. The team formulated predictions about the spatial behaviour of cheetahs in their new habitat, identifying controversial issues and hidden core assumptions of the reintroduction plan. These assumptions ignore important aspects of the cheetah socio-spatial system.</p>",
+    "question": "<p>Read the statements given below.</p><p>A. The carrying capacity of 3 cheetahs per 100 km square is currently feasible in Kuno National Park.</p><p>B. The carrying capacity for cheetahs is different in Kuno national park when compared to carrying capacity of parks in Africa.</p>",
+    "options": [
+      "Both A and B are true but B is not the correct reason for A.",
+      "Both A and B are true and B is the correct reason for A.",
+      "A is false and B is true.",
+      "A is true and B is false."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Statement A is false. The first sentence of the second paragraph states that \"According to a calculation of the local prey density, it was calculated that 21 adult cheetahs could be sustained by the prey base in Kuno National Park - equivalent to a density of about three individuals per 100 km&#178;.\" According to this, the carrying capacity for Kuno National Park is 3 cheetahs per 100 km&#178;. The second paragraph also states that \"The carrying capacity is usually between 0.2 and 1 adult per 100 km&#178; for cheetahs under natural conditions.\" So, as per the passage, the current carrying capacity may not be feasible.</p><p>Statement B is true. The last sentence of the first paragraph suggests that Kuno National Park is small, and cheetahs might move far beyond the park's boundaries and cause conflicts with neighbouring villages. So, the carrying capacity of Kuno National Park is not the same as in Africa. The third and fourth sentences in the second paragraph corroborate this.</p><p>Hence, option (c) is the correct answer.</p>",
+    "question_index": 8
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>The introduction of African cheetahs to India was planned without considering their spatial ecology, according to researchers who warn that the released animals may come into conflict with people in the neighbouring villages. Spatial ecology addresses the fundamental effects of space on the movement of individual species and on the stability of multispecies communities. A total of 20 cheetahs from Namibia and South Africa were introduced to Kuno National Park in Madhya Pradesh last year to establish a free-ranging population - for the first time since their extinction in India 70 years ago. Scientists of the Cheetah Research Project of Leibniz-IZW in Namibia argue that in southern Africa, cheetahs live in a stable socio-spatial system with widely spread territories and densities of less than one individual per 100 square kilometres (km&#178;). The plan for cheetahs in Kuno National Park assumes that the high prey density will sustain high cheetah densities, even though there is no evidence for that, they said. In a letter published in the journal Conservation Science and Practice on Thursday, researchers noted that as Kuno National Park is small, it is likely that the released animals will move far beyond the park's boundaries and cause conflicts with neighbouring villages.</p><p>According to a calculation of the local prey density, it was calculated that 21 adult cheetahs could be sustained by the prey base in Kuno National Park - equivalent to a density of about three individuals per 100 km&#178;. Based on their research results from a long-term study of the spatial behaviour of cheetahs in Namibia, as well as comparable work in East Africa, scientists from the Leibniz Institute for Zoo and Leibniz-IZW warn against overestimating the carrying capacity of the area. The carrying capacity is usually between 0.2 and 1 adult per 100 km&#178; for cheetahs under natural conditions. This is true not only for Namibia but also for the ecologically very different conditions in the Serengeti ecosystem in East Africa which has a much higher density of prey, they said. The team formulated predictions about the spatial behaviour of cheetahs in their new habitat, identifying controversial issues and hidden core assumptions of the reintroduction plan. These assumptions ignore important aspects of the cheetah socio-spatial system.</p>",
+    "question": "<p>What is spatial ecology according to the passage? </p>",
+    "options": [
+      "It is the study of a species in a particular ecosystem and how it behaves around other species.",
+      "It is the study of multispecies communities and the stability of the species in an ecosystem.",
+      "It is the study of the movement of a species inside a space and the sustainability of other species in the space.",
+      "It is the study of the movement of a species with respect to its surroundings and the movements and eating habits of the species in the system."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The first paragraph states that \"Spatial ecology addresses the fundamental effects of space on the movement of individual species and on the stability of multispecies communities.\" According to this, the statement in option (c) is the most appropriate definition. </p><p>Hence, option (c) is the correct answer. </p>",
+    "question_index": 9
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>The introduction of African cheetahs to India was planned without considering their spatial ecology, according to researchers who warn that the released animals may come into conflict with people in the neighbouring villages. Spatial ecology addresses the fundamental effects of space on the movement of individual species and on the stability of multispecies communities. A total of 20 cheetahs from Namibia and South Africa were introduced to Kuno National Park in Madhya Pradesh last year to establish a free-ranging population - for the first time since their extinction in India 70 years ago. Scientists of the Cheetah Research Project of Leibniz-IZW in Namibia argue that in southern Africa, cheetahs live in a stable socio-spatial system with widely spread territories and densities of less than one individual per 100 square kilometres (km&#178;). The plan for cheetahs in Kuno National Park assumes that the high prey density will sustain high cheetah densities, even though there is no evidence for that, they said. In a letter published in the journal Conservation Science and Practice on Thursday, researchers noted that as Kuno National Park is small, it is likely that the released animals will move far beyond the park's boundaries and cause conflicts with neighbouring villages.</p><p>According to a calculation of the local prey density, it was calculated that 21 adult cheetahs could be sustained by the prey base in Kuno National Park - equivalent to a density of about three individuals per 100 km&#178;. Based on their research results from a long-term study of the spatial behaviour of cheetahs in Namibia, as well as comparable work in East Africa, scientists from the Leibniz Institute for Zoo and Leibniz-IZW warn against overestimating the carrying capacity of the area. The carrying capacity is usually between 0.2 and 1 adult per 100 km&#178; for cheetahs under natural conditions. This is true not only for Namibia but also for the ecologically very different conditions in the Serengeti ecosystem in East Africa which has a much higher density of prey, they said. The team formulated predictions about the spatial behaviour of cheetahs in their new habitat, identifying controversial issues and hidden core assumptions of the reintroduction plan. These assumptions ignore important aspects of the cheetah socio-spatial system.</p>",
+    "question": "<p>Why did the authorities think Cheetahs could sustain themselves in the small boundaries of Kuno National Park? </p>",
+    "options": [
+      "The meagreness of the prey could help the sustainability of cheetahs.",
+      "The availability of prey could sustain more cheetahs in a limited space.",
+      "High number of cheetahs could control the number of prey.",
+      "A large number of prey and food sources can only be reduced with a high number of cheetahs."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>The first paragraph states that \"The plan for cheetahs in Kuno National Park assumes that the high prey density will sustain high cheetah densities, even though there is no evidence for that, they said.\" According to this, the authorities thought that a large number of prey could help sustain a high density of cheetahs. </p><p>Hence, option (b) is the correct answer. </p>",
+    "question_index": 10
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>   Read the given passage and answer the questions that follow.</p><p>The introduction of African cheetahs to India was planned without considering their spatial ecology, according to researchers who warn that the released animals may come into conflict with people in the neighbouring villages. Spatial ecology addresses the fundamental effects of space on the movement of individual species and on the stability of multispecies communities. A total of 20 cheetahs from Namibia and South Africa were introduced to Kuno National Park in Madhya Pradesh last year to establish a free-ranging population - for the first time since their extinction in India 70 years ago. Scientists of the Cheetah Research Project of Leibniz-IZW in Namibia argue that in southern Africa, cheetahs live in a stable socio-spatial system with widely spread territories and densities of less than one individual per 100 square kilometres (km&#178;). The plan for cheetahs in Kuno National Park assumes that the high prey density will sustain high cheetah densities, even though there is no evidence for that, they said. In a letter published in the journal Conservation Science and Practice on Thursday, researchers noted that as Kuno National Park is small, it is likely that the released animals will move far beyond the park's boundaries and cause conflicts with neighbouring villages.</p><p>According to a calculation of the local prey density, it was calculated that 21 adult cheetahs could be sustained by the prey base in Kuno National Park - equivalent to a density of about three individuals per 100 km&#178;. Based on their research results from a long-term study of the spatial behaviour of cheetahs in Namibia, as well as comparable work in East Africa, scientists from the Leibniz Institute for Zoo and Leibniz-IZW warn against overestimating the carrying capacity of the area. The carrying capacity is usually between 0.2 and 1 adult per 100 km&#178; for cheetahs under natural conditions. This is true not only for Namibia but also for the ecologically very different conditions in the Serengeti ecosystem in East Africa which has a much higher density of prey, they said. The team formulated predictions about the spatial behaviour of cheetahs in their new habitat, identifying controversial issues and hidden core assumptions of the reintroduction plan. These assumptions ignore important aspects of the cheetah socio-spatial system.</p>",
+    "question": "<p>After reading the passage it can be inferred that it is:</p>",
+    "options": [
+      "an editorial",
+      "a magazine article",
+      "a news item",
+      "a government release"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>The passage talks about the recent introduction of African cheetahs and related issues. A news item discusses the current or recent news of either general interest or specific topics. So, we can say that the given passage is a news item.</p><p>Hence, option (c) is the correct answer.</p><p>An editorial is a statement of opinion by the management of a newspaper or magazine.</p><p>A magazine article is a specific text that can be found in a magazine or newspaper. It can be a report, a profile of an important person, an opinion piece, a discussion of a topic or a personal essay.</p><p>A government release is a means by which it notifies of all the important things to the public.</p>",
+    "question_index": 11
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>Dog trainers typically describe their training methods on their websites. The scientists analysed these training philosophies to identify the words and phrases used by trainers to indicate different methods. Because 56 percent were ambiguous, they also looked at the tools used and at reviews. They classified the trainers as non-aversive (i.e., reward-based) or aversive. 55 percent of the trainers were classed as aversive, meaning they used aversive methods at least some of the time. The results showed that some words or phrases were pretty much only used by one kind of trainer, and never or rarely by the other. The exception was sometimes when a non-aversive trainer mentioned that they did not use a particular method. Aversive trainers sometimes described a \"balanced approach\" while non-aversive trainers wrote about positive reinforcement. Some words were used by both types of trainers but in different ways; for example, when aversive trainers referred to \"tools\" they meant concrete things like shock collars, whereas non-aversive trainers more often used this word to describe skills or knowledge that the dog's guardian would develop. Some phrases seem to always indicate an aversive trainer: electronic or e-collar, pack leader, and mother nature. And phrases that indicated a non-aversive trainer were shock collar (as in, they don't use them) and science. The words \"electronic\" and \"shock\" give different impressions of the same device.</p>",
+    "question": "<p>What is the theme of the passage?</p>",
+    "options": [
+      "Impact of dog trainers",
+      "Types of dog trainers",
+      "Importance of dog training",
+      "Impact of dog training"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>From the following sentences from the passage, 'Dog trainers typically describe their training methods on their websites. The scientists analysed these training philosophies to identify the words and phrases used by trainers to indicate different methods', it can be noted that the passage talks about the methods incorporated by various dog trainers and how dog trainers are classified based on those types of training. Accordingly, the theme can be inferred as option (b), 'Types of dog trainers'.</p><p>Hence, the correct answer is option (b).</p>",
+    "question_index": 12
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>Dog trainers typically describe their training methods on their websites. The scientists analysed these training philosophies to identify the words and phrases used by trainers to indicate different methods. Because 56 percent were ambiguous, they also looked at the tools used and at reviews. They classified the trainers as non-aversive (i.e., reward-based) or aversive. 55 percent of the trainers were classed as aversive, meaning they used aversive methods at least some of the time. The results showed that some words or phrases were pretty much only used by one kind of trainer, and never or rarely by the other. The exception was sometimes when a non-aversive trainer mentioned that they did not use a particular method. Aversive trainers sometimes described a \"balanced approach\" while non-aversive trainers wrote about positive reinforcement. Some words were used by both types of trainers but in different ways; for example, when aversive trainers referred to \"tools\" they meant concrete things like shock collars, whereas non-aversive trainers more often used this word to describe skills or knowledge that the dog's guardian would develop. Some phrases seem to always indicate an aversive trainer: electronic or e-collar, pack leader, and mother nature. And phrases that indicated a non-aversive trainer were shock collar (as in, they don't use them) and science. The words \"electronic\" and \"shock\" give different impressions of the same device.</p>",
+    "question": "<p>Which of the following statements can be deduced from the results of the study made on dog trainers, from the passage?</p>",
+    "options": [
+      "Certain words or phrases were used by both types of trainers in the same way.",
+      "Some words created anger in dogs while training.",
+      "Certain words or phrases were used by one type of trainer while the other category never used those words at all.",
+      "Dogs showed emotions to certain specific words."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>According to the following sentence from the passage, 'The results showed that some words or phrases were pretty much only used by one kind of trainer, and never or rarely by the other', it can be noted that certain words were used only by one category of trainers while those words were never used by the other category of trainers. Accordingly, the correct answer is given in option (c), 'Certain words or phrases were used by one type of trainers while the other category never used those words at all'.</p><p>Hence, the correct answer is option (c).</p>",
+    "question_index": 13
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>Dog trainers typically describe their training methods on their websites. The scientists analysed these training philosophies to identify the words and phrases used by trainers to indicate different methods. Because 56 percent were ambiguous, they also looked at the tools used and at reviews. They classified the trainers as non-aversive (i.e., reward-based) or aversive. 55 percent of the trainers were classed as aversive, meaning they used aversive methods at least some of the time. The results showed that some words or phrases were pretty much only used by one kind of trainer, and never or rarely by the other. The exception was sometimes when a non-aversive trainer mentioned that they did not use a particular method. Aversive trainers sometimes described a \"balanced approach\" while non-aversive trainers wrote about positive reinforcement. Some words were used by both types of trainers but in different ways; for example, when aversive trainers referred to \"tools\" they meant concrete things like shock collars, whereas non-aversive trainers more often used this word to describe skills or knowledge that the dog's guardian would develop. Some phrases seem to always indicate an aversive trainer: electronic or e-collar, pack leader, and mother nature. And phrases that indicated a non-aversive trainer were shock collar (as in, they don't use them) and science. The words \"electronic\" and \"shock\" give different impressions of the same device.</p>",
+    "question": "<p>According to the passage, what or to whom does the word 'pack leader' relate to?</p>",
+    "options": [
+      "The leader of a group of dogs",
+      "A non-aversive trainer",
+      "Balanced approach",
+      "An aversive trainer"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>According to the following sentence from the passage, 'Some phrases seem to always indicate an aversive trainer: electronic or e-collar, pack leader, and mother nature', it can be noted that the word 'pack leader' is related to an aversive trainer.</p><p>Hence, the correct answer is option (d).</p>",
+    "question_index": 14
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>Dog trainers typically describe their training methods on their websites. The scientists analysed these training philosophies to identify the words and phrases used by trainers to indicate different methods. Because 56 percent were ambiguous, they also looked at the tools used and at reviews. They classified the trainers as non-aversive (i.e., reward-based) or aversive. 55 percent of the trainers were classed as aversive, meaning they used aversive methods at least some of the time. The results showed that some words or phrases were pretty much only used by one kind of trainer, and never or rarely by the other. The exception was sometimes when a non-aversive trainer mentioned that they did not use a particular method. Aversive trainers sometimes described a \"balanced approach\" while non-aversive trainers wrote about positive reinforcement. Some words were used by both types of trainers but in different ways; for example, when aversive trainers referred to \"tools\" they meant concrete things like shock collars, whereas non-aversive trainers more often used this word to describe skills or knowledge that the dog's guardian would develop. Some phrases seem to always indicate an aversive trainer: electronic or e-collar, pack leader, and mother nature. And phrases that indicated a non-aversive trainer were shock collar (as in, they don't use them) and science. The words \"electronic\" and \"shock\" give different impressions of the same device.</p>",
+    "question": "<p>Which of the following words is opposite in meaning to the word 'ambiguous'?</p>",
+    "options": [
+      "Clear",
+      "Redundant",
+      "Reserved",
+      "Faulty"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>Clear- leaving no doubt</p><p>Redundant- not or no longer needed or useful</p><p>Reserved- slow to reveal emotion or opinions</p><p>Faulty- not working or made correctly</p><p>The meaning of the word 'ambiguous' is 'not clear or decided'. Among the given options, the word that is opposite in meaning to the given word is option (a), 'clear'.</p><p>Hence, the correct answer is option (a).</p>",
+    "question_index": 15
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>The World Health Organisation (WHO) says these antibiotic-resistant \"superbug infections\" pose a major \"global threat\" to public health. Such resistance directly caused 1.27 million deaths worldwide in 2019, according to The Lancet, a medical journal. The toll is projected to rise to 10 million deaths per year by 2050, says the WHO. Antibiotics - which are considered to be the first line of defence against severe infections - did not work in most of these cases. India has the highest rate of human antibiotic use in the world. Antibiotic-resistant neonatal infections alone are responsible for the deaths of nearly 60,000 newborns each year. Researchers say the use of antibiotics was exacerbated during the Covid-19 pandemic. The weeks-long Kumbh Mela occurs in four Indian cities. The pilgrims take a holy dip in the river waters on the banks of the cities where the festival is held. The US-based researchers gathered data from some 70,000 patients who turned up at more than 40 clinics at two editions of the festival in 2013 and 2015 held in the cities of Prayagraj - also known as Allahabad - and Nashik.</p><p>More than 100 million pilgrims attended the two festivals. In Prayagraj in 2013, the patients had a median age of 46 years and most of them were men. Their common symptoms included fever, cough, runny nose, muscle pain, and diarrhoea. Researchers found that more than a third of patients at the clinics were prescribed antibiotics. In Prayagraj, nearly 69% of the patients reporting upper respiratory tract infections received antibiotics at the free state-run clinics at the festival site. \"This is an alarmingly high rate, given that the vast majority of upper respiratory tract infections are viral in nature,\" the researchers say in a recently published paper. Researchers found that entering a clinic at the Kumbh Mela for any reason carried a one-in-three likelihood of walking out with a prescription for antibiotics. If you sought help for a runny nose, the probability increased to two in three. \"When antibiotics were prescribed, there appeared to be little rhyme or reason to guide their selection,\" the researchers said. </p>",
+    "question": "<p>As per the passage, which of the following reasons has caused a global threat?</p>",
+    "options": [
+      "Gathering as a group.",
+      "Viral infections.",
+      "Superbug infections.",
+      "Respiratory tract infections."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>As per the following sentence from the first paragraph, \"The World Health Organisation (WHO) says these antibiotic-resistant \"superbug infections\" pose a major \"global threat\" to public health\", it can be noted that the disease caused by anti-biotic superbugs is a global threat as per the WHO.</p><p>Hence, the correct answer is option (c).</p>",
+    "question_index": 16
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>The World Health Organisation (WHO) says these antibiotic-resistant \"superbug infections\" pose a major \"global threat\" to public health. Such resistance directly caused 1.27 million deaths worldwide in 2019, according to The Lancet, a medical journal. The toll is projected to rise to 10 million deaths per year by 2050, says the WHO. Antibiotics - which are considered to be the first line of defence against severe infections - did not work in most of these cases. India has the highest rate of human antibiotic use in the world. Antibiotic-resistant neonatal infections alone are responsible for the deaths of nearly 60,000 newborns each year. Researchers say the use of antibiotics was exacerbated during the Covid-19 pandemic. The weeks-long Kumbh Mela occurs in four Indian cities. The pilgrims take a holy dip in the river waters on the banks of the cities where the festival is held. The US-based researchers gathered data from some 70,000 patients who turned up at more than 40 clinics at two editions of the festival in 2013 and 2015 held in the cities of Prayagraj - also known as Allahabad - and Nashik.</p><p>More than 100 million pilgrims attended the two festivals. In Prayagraj in 2013, the patients had a median age of 46 years and most of them were men. Their common symptoms included fever, cough, runny nose, muscle pain, and diarrhoea. Researchers found that more than a third of patients at the clinics were prescribed antibiotics. In Prayagraj, nearly 69% of the patients reporting upper respiratory tract infections received antibiotics at the free state-run clinics at the festival site. \"This is an alarmingly high rate, given that the vast majority of upper respiratory tract infections are viral in nature,\" the researchers say in a recently published paper. Researchers found that entering a clinic at the Kumbh Mela for any reason carried a one-in-three likelihood of walking out with a prescription for antibiotics. If you sought help for a runny nose, the probability increased to two in three. \"When antibiotics were prescribed, there appeared to be little rhyme or reason to guide their selection,\" the researchers said. </p>",
+    "question": "<p>Why are antibiotics so important?</p>",
+    "options": [
+      "Because they are a part of our immune system.",
+      "They are the protectors against infections.",
+      "Without them, medicines do not work.",
+      "They lead to less deaths."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>As per the following sentence from the first paragraph, \"Antibiotics - which are considered to be the first line of defence against severe infections - did not work on most of these cases\", it can be noted that antibiotics protect us from various infections, and which is why they are so important.</p><p>Hence, the correct answer is option (b).</p>",
+    "question_index": 17
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>The World Health Organisation (WHO) says these antibiotic-resistant \"superbug infections\" pose a major \"global threat\" to public health. Such resistance directly caused 1.27 million deaths worldwide in 2019, according to The Lancet, a medical journal. The toll is projected to rise to 10 million deaths per year by 2050, says the WHO. Antibiotics - which are considered to be the first line of defence against severe infections - did not work in most of these cases. India has the highest rate of human antibiotic use in the world. Antibiotic-resistant neonatal infections alone are responsible for the deaths of nearly 60,000 newborns each year. Researchers say the use of antibiotics was exacerbated during the Covid-19 pandemic. The weeks-long Kumbh Mela occurs in four Indian cities. The pilgrims take a holy dip in the river waters on the banks of the cities where the festival is held. The US-based researchers gathered data from some 70,000 patients who turned up at more than 40 clinics at two editions of the festival in 2013 and 2015 held in the cities of Prayagraj - also known as Allahabad - and Nashik.</p><p>More than 100 million pilgrims attended the two festivals. In Prayagraj in 2013, the patients had a median age of 46 years and most of them were men. Their common symptoms included fever, cough, runny nose, muscle pain, and diarrhoea. Researchers found that more than a third of patients at the clinics were prescribed antibiotics. In Prayagraj, nearly 69% of the patients reporting upper respiratory tract infections received antibiotics at the free state-run clinics at the festival site. \"This is an alarmingly high rate, given that the vast majority of upper respiratory tract infections are viral in nature,\" the researchers say in a recently published paper. Researchers found that entering a clinic at the Kumbh Mela for any reason carried a one-in-three likelihood of walking out with a prescription for antibiotics. If you sought help for a runny nose, the probability increased to two in three. \"When antibiotics were prescribed, there appeared to be little rhyme or reason to guide their selection,\" the researchers said. </p>",
+    "question": "<p>The following sentences are true, except</p>",
+    "options": [
+      "Data was collected from two Kumbh Mela festivals.",
+      "The median age of the patients from Pragyaraj is 69 years.",
+      "Researchers claim that the use of antibiotics aggravated during the pandemic.",
+      "Loss of taste was not a symptom of the patients who were enquired by the researchers."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>As per the following sentence from the second paragraph, \"In Prayagraj in 2013, the patients had a median age of 46 years and most of them were men\", it can be noted that the median age of the patients from Prgyaraj was 46 years and not 69 years. So, option (b), 'The median age of the patients from Pragyaraj is 69 years' is not true.</p><p>Hence, the correct answer is option (b).</p>",
+    "question_index": 18
+  },
+  {
+    "comp": "<p><b>Directions [Set of 4 Questions]:</b>Read the given passage and answer the questions that follow.</p><p>The World Health Organisation (WHO) says these antibiotic-resistant \"superbug infections\" pose a major \"global threat\" to public health. Such resistance directly caused 1.27 million deaths worldwide in 2019, according to The Lancet, a medical journal. The toll is projected to rise to 10 million deaths per year by 2050, says the WHO. Antibiotics - which are considered to be the first line of defence against severe infections - did not work in most of these cases. India has the highest rate of human antibiotic use in the world. Antibiotic-resistant neonatal infections alone are responsible for the deaths of nearly 60,000 newborns each year. Researchers say the use of antibiotics was exacerbated during the Covid-19 pandemic. The weeks-long Kumbh Mela occurs in four Indian cities. The pilgrims take a holy dip in the river waters on the banks of the cities where the festival is held. The US-based researchers gathered data from some 70,000 patients who turned up at more than 40 clinics at two editions of the festival in 2013 and 2015 held in the cities of Prayagraj - also known as Allahabad - and Nashik.</p><p>More than 100 million pilgrims attended the two festivals. In Prayagraj in 2013, the patients had a median age of 46 years and most of them were men. Their common symptoms included fever, cough, runny nose, muscle pain, and diarrhoea. Researchers found that more than a third of patients at the clinics were prescribed antibiotics. In Prayagraj, nearly 69% of the patients reporting upper respiratory tract infections received antibiotics at the free state-run clinics at the festival site. \"This is an alarmingly high rate, given that the vast majority of upper respiratory tract infections are viral in nature,\" the researchers say in a recently published paper. Researchers found that entering a clinic at the Kumbh Mela for any reason carried a one-in-three likelihood of walking out with a prescription for antibiotics. If you sought help for a runny nose, the probability increased to two in three. \"When antibiotics were prescribed, there appeared to be little rhyme or reason to guide their selection,\" the researchers said. </p>",
+    "question": "<p>Select the suitable word from the passage which means 'an area of ground on which a town, building, or monument is constructed'. </p>",
+    "options": [
+      "Base",
+      "Fence",
+      "Site",
+      "Border"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>Base- the lowest part or edge of something, especially the part on which it rests or is supported.</p><p>Fence- a barrier, railing, or other upright structure, typically of wood or wire, enclosing an area of ground to prevent or control access or escape.</p><p>Site- an area of ground on which a town, building, or monument is constructed.</p><p>Border- the edge or boundary of something, or the part near it.</p><p>Among the options, the word that matches the meaning of the given phrase in the sentence is option (c), 'site'.</p><p>Hence, the correct answer is option (c).</p>",
+    "question_index": 19
+  }
+];
+            this.sections = null;
+            this.curQ = 0;
+            this.ans = new Array(this.qs.length).fill(null);
+            this.reviewed = new Array(this.qs.length).fill(false);
+            this.revealed = new Array(this.qs.length).fill(false); // quiz-mode: instant answer reveal
+            this.startT = Date.now();
+            this.timeLeft = 15 * 60;
+            this.timeSpent = new Array(this.qs.length).fill(0);
+            this.lastQTime = this.startT;
+            this.sub = false;
+            this.eng = true;
+            this.darkMode = false;
+            this.timer = null;
+            this.sectionTimer = null;
+            this.currentSection = this.sections ? 0 : null;
+            this.initEls();
+            this.setupWelcomeScreen();
+            this.validateData();
+            this.setupBeforeUnload();
+        }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startTestBtn').addEventListener('click', () => {
+                    // Hide welcome screen
+                    document.getElementById('welcomeScreen').classList.add('hidden');
+                    
+                    // Show main test interface
+                    document.getElementById('mainTestInterface').style.display = '';
+                    
+                    // Initialize the test
+                    setTimeout(() => {
+                        this.init();
+                    }, 300);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.sub) {
+                        e.preventDefault();
+                        e.returnValue = 'Are you sure you want to leave? Your test progress will be lost.';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            validateData() {
+                console.log('Validating question data...');
+                this.qs.forEach((q, idx) => {
+                    if (q.correct_option_id !== undefined) {
+                        console.log(`Q${idx + 1}: correct_option_id = ${q.correct_option_id}, options count = ${q.options ? q.options.length : 0}`);
+                        
+                        if (q.options && (q.correct_option_id < 0 || q.correct_option_id >= q.options.length)) {
+                            console.warn(`Q${idx + 1}: Invalid correct_option_id ${q.correct_option_id} for ${q.options.length} options`);
+                        }
+                    }
+                });
+            }
+            
+            initEls() {
+                this.els = {
+                    qInfo: document.getElementById('qInfo'),
+                    progTxt: document.getElementById('progTxt'),
+                    ansCnt: document.getElementById('ansCnt'),
+                    timer: document.getElementById('timer'),
+                    qTxt: document.getElementById('qTxt'),
+                    compSec: document.getElementById('compSec'),
+                    compCont: document.getElementById('compCont'),
+                    opts: document.getElementById('opts'),
+                    sol: document.getElementById('sol'),
+                    solCont: document.getElementById('solCont'),
+                    solInfo: document.getElementById('solInfo'),
+                    qGrid: document.getElementById('qGrid'),
+                    desktopQGrid: document.getElementById('desktopQGrid'),
+                    panel: document.getElementById('panel'),
+                    modalOver: document.getElementById('modalOver'),
+                    scoreDisp: document.getElementById('scoreDisp'),
+                    corrStat: document.getElementById('corrStat'),
+                    incStat: document.getElementById('incStat'),
+                    unaStat: document.getElementById('unaStat'),
+                    timeStat: document.getElementById('timeStat'),
+                    printBtn: document.getElementById('printBtn'),
+                    desktopSidebar: document.getElementById('desktopSidebar'),
+                    reviewBtn: document.getElementById('reviewBtn'),
+                    themeToggle: document.getElementById('themeToggle'),
+                    sectionHeader: this.sections ? document.getElementById('sectionHeader') : null,
+                    sectionTitle: this.sections ? document.getElementById('sectionTitle') : null,
+                    sectionTimer: this.sections ? document.getElementById('sectionTimer') : null
+                };
+            }
+            
+            init() {
+                this.createGrid();
+                this.startTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                }
+                this.loadQ(0);
+                this.setupEvents();
+                this.updatePrintButton();
+                this.updateThemeToggleIcon();
+            }
+            
+            setupEvents() {
+                document.getElementById('menuBtn').onclick = () => this.togglePanel();
+                document.getElementById('subBtn').onclick = () => this.confirmSub();
+                document.getElementById('prevBtn').onclick = () => this.nav(-1);
+                document.getElementById('nextBtn').onclick = () => this.nav(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('engBtn').onclick = () => this.setLang(true);
+                document.getElementById('hinBtn').onclick = () => this.setLang(false);
+                document.getElementById('panelClose').onclick = () => this.closePanel();
+                document.getElementById('closeModal').onclick = () => this.closeModal();
+                document.getElementById('revBtn').onclick = () => this.review();
+                document.getElementById('printBtn').onclick = () => this.printTest();
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+            }
+            
+            // IMPROVED: Better handling of complex HTML content including math expressions
+            extractTxt(html, isEng) {
+                if (!html) return '';
+                
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Process math expressions - convert them to proper HTML structure
+                const mathExps = tempDiv.querySelectorAll('div[style*="inline-block"][style*="vertical-align: middle"]');
+                mathExps.forEach(mathExp => {
+                    // Create a new math expression container
+                    const newMathExp = document.createElement('div');
+                    newMathExp.className = 'math-exp';
+                    
+                    // Get numerator and denominator
+                    const spans = mathExp.querySelectorAll('span');
+                    if (spans.length >= 3) {
+                        const numerator = spans[0].cloneNode(true);
+                        const line = spans[1].cloneNode(true);
+                        const denominator = spans[2].cloneNode(true);
+                        
+                        // Clean up the numerator
+                        const numDiv = document.createElement('div');
+                        numDiv.className = 'math-num';
+                        numDiv.innerHTML = numerator.innerHTML;
+                        
+                        // Create the dividing line
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'math-line';
+                        
+                        // Clean up the denominator
+                        const denDiv = document.createElement('div');
+                        denDiv.className = 'math-num';
+                        denDiv.innerHTML = denominator.innerHTML;
+                        
+                        // Build the new math expression
+                        newMathExp.appendChild(numDiv);
+                        newMathExp.appendChild(lineDiv);
+                        newMathExp.appendChild(denDiv);
+                        
+                        // Replace the original with our new structure
+                        mathExp.parentNode.replaceChild(newMathExp, mathExp);
+                    }
+                });
+                
+                // Handle language selection - show/hide appropriate spans
+                const langSpans = tempDiv.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                        // Remove the class to prevent future hiding
+                        span.classList.remove('eqt', 'hqt');
+                    }
+                });
+                
+                // Clean up any remaining display:none styles
+                const hiddenElements = tempDiv.querySelectorAll('[style*="display:none"]');
+                hiddenElements.forEach(el => {
+                    if (el.style.display === 'none' && 
+                        !el.classList.contains('hqt') && 
+                        !el.classList.contains('eqt')) {
+                        el.style.display = '';
+                    }
+                });
+                
+                // Handle tables - wrap them in a scrollable container
+                const tables = tempDiv.querySelectorAll('table');
+                tables.forEach(table => {
+                    const container = document.createElement('div');
+                    container.className = 'table-container';
+                    table.parentNode.insertBefore(container, table);
+                    container.appendChild(table);
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            createGrid() {
+                this.els.qGrid.innerHTML = '';
+                this.els.desktopQGrid.innerHTML = '';
+                
+                this.qs.forEach((_, i) => {
+                    // Create mobile grid element
+                    const mobileDiv = document.createElement('div');
+                    mobileDiv.className = 'q-num';
+                    mobileDiv.textContent = i + 1;
+                    mobileDiv.onclick = () => this.goToQ(i);
+                    this.els.qGrid.appendChild(mobileDiv);
+                    
+                    // Create desktop grid element
+                    const desktopDiv = document.createElement('div');
+                    desktopDiv.className = 'q-num';
+                    desktopDiv.textContent = i + 1;
+                    desktopDiv.onclick = () => this.goToQ(i);
+                    this.els.desktopQGrid.appendChild(desktopDiv);
+                });
+            }
+            
+            loadQ(idx) {
+                // Update time spent on previous question
+                if (this.curQ !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                    this.lastQTime = now;
+                }
+                
+                this.curQ = idx;
+                const q = this.qs[idx];
+                
+                // Check if question is in current section (if sections exist)
+                if (this.sections) {
+                    const inCurrentSection = this.isInCurrentSection(idx);
+                    if (!inCurrentSection) {
+                        // Find the section this question belongs to
+                        const sectionIdx = this.findSectionForQuestion(idx);
+                        if (sectionIdx !== null && !this.sections[sectionIdx].submitted) {
+                            this.currentSection = sectionIdx;
+                            this.startSectionTimer();
+                            this.updateSectionHeader();
+                        }
+                    }
+                }
+                
+                this.els.qInfo.textContent = `Q${idx + 1}/${this.qs.length}`;
+                this.els.progTxt.textContent = `${idx + 1} of ${this.qs.length}`;
+                this.updateAnsCnt();
+                this.updateNav();
+                this.updateGrid();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.compSec.style.display = 'block';
+                    this.els.compCont.innerHTML = this.extractTxt(q.comp, this.eng);
+                } else {
+                    this.els.compSec.style.display = 'none';
+                }
+                
+                this.els.qTxt.innerHTML = this.extractTxt(q.question, this.eng);
+                this.loadOpts(q, idx);
+                
+                if ((this.sub || this.revealed[idx]) && q.solution) {
+                    // Show time spent on question in solution
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const minutes = Math.floor(timeSpent / 60);
+                    const seconds = timeSpent % 60;
+                    const timeStr = minutes > 0 
+                        ? `${minutes}m ${seconds}s` 
+                        : `${seconds}s`;
+                    
+                    this.els.solInfo.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time spent: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct answer: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    
+                    this.els.solCont.innerHTML = this.extractTxt(q.solution, this.eng);
+                    this.els.sol.classList.add('show');
+                } else {
+                    this.els.sol.classList.remove('show');
+                }
+            }
+            
+            loadOpts(q, qIdx) {
+                this.els.opts.innerHTML = '';
+                const userAnswer = this.ans[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                console.log(`Loading Q${qIdx + 1} options:`, {
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    submitted: this.sub,
+                    optionsCount: q.options ? q.options.length : 0
+                });
+                
+                if (!q.options || !Array.isArray(q.options)) {
+                    console.error(`Q${qIdx + 1}: No valid options array`);
+                    return;
+                }
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let cls = 'opt';
+                    
+                    if (this.sub || this.revealed[qIdx]) {
+                        cls += ' submitted';
+                    }
+                    
+                    if (userAnswer === i) {
+                        cls += ' sel';
+                        console.log(`Q${qIdx + 1}: User selected option ${i}`);
+                    }
+                    
+                    if ((this.sub || this.revealed[qIdx]) && correctAnswer !== undefined && correctAnswer !== null) {
+                        if (i === correctAnswer) {
+                            cls += ' correct';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as correct (is correct answer)`);
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            cls += ' wrong';
+                            console.log(`Q${qIdx + 1}: Option ${i} marked as wrong (user selected but incorrect)`);
+                        }
+                    }
+                    
+                    div.className = cls;
+                    div.innerHTML = `
+                        <div class="opt-radio"></div>
+                        <div class="opt-txt">${this.extractTxt(opt, this.eng)}</div>
+                    `;
+                    
+                    if (!this.sub && !this.revealed[qIdx]) {
+                        div.onclick = () => this.selOpt(i, qIdx);
+                    }
+                    
+                    this.els.opts.appendChild(div);
+                });
+            }
+            
+            selOpt(optIdx, qIdx) {
+                if (this.sub) return;
+                if (this.revealed[qIdx]) return; // already answered+revealed, lock it in
+                this.ans[qIdx] = optIdx;
+                this.revealed[qIdx] = true;
+                console.log(`Q${qIdx + 1}: Selected option ${optIdx}, answer array:`, this.ans[qIdx]);
+                this.loadOpts(this.qs[qIdx], qIdx);
+                this.updateAnsCnt();
+                this.updateGrid();
+                this.loadQ(qIdx); // re-run loadQ so the solution panel shows immediately
+            }
+            
+            toggleReview() {
+                if (this.sub) return;
+                this.reviewed[this.curQ] = !this.reviewed[this.curQ];
+                this.updateGrid();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = this.els.reviewBtn;
+                if (this.reviewed[this.curQ]) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+            }
+            
+           nav(dir) {
+            const newIdx = this.curQ + dir;
+            
+            // If test is submitted, allow free navigation for review
+            if (this.sub) {
+                if (newIdx >= 0 && newIdx < this.qs.length) {
+                    this.loadQ(newIdx);
+                }
+                return;
+            }
+            
+            // During test, enforce section boundaries
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                    return; // Don't allow navigation outside current section
+                }
+            }
+            
+            if (newIdx >= 0 && newIdx < this.qs.length) {
+                this.loadQ(newIdx);
+            }
+        }
+        
+        goToQ(idx) {
+            // Always allow navigation when reviewing after submission
+            if (this.sub) {
+                this.loadQ(idx);
+                this.closePanel();
+                return;
+            }
+            
+            // During test, only allow navigation within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                if (idx < currentSection.start || idx > currentSection.end) {
+                    return; // Block navigation outside current section
+                }
+            }
+            
+            this.loadQ(idx);
+            this.closePanel();
+        }
+        
+        updateGrid() {
+            const nums = this.els.qGrid.querySelectorAll('.q-num');
+            const desktopNums = this.els.desktopQGrid.querySelectorAll('.q-num');
+            
+            const updateNum = (el, i) => {
+                el.className = 'q-num';
+                
+                // Reset all special classes
+                el.classList.remove('cur', 'ans', 'wrong', 'review', 'unattempted', 'disabled');
+                
+                if (i === this.curQ) {
+                    el.classList.add('cur');
+                } else if (this.sub) {
+                    // After submission - prioritize correct/wrong over review status
+                    if (this.ans[i] !== null && this.qs[i].correct_option_id !== undefined) {
+                        if (this.ans[i] === this.qs[i].correct_option_id) {
+                            el.classList.add('ans');
+                        } else {
+                            el.classList.add('wrong');
+                        }
+                    } else if (this.ans[i] === null) {
+                        el.classList.add('unattempted');
+                    }
+                } else {
+                    // Before submission
+                    if (this.reviewed[i]) {
+                        el.classList.add('review');
+                    } else if (this.ans[i] !== null) {
+                        el.classList.add('ans');
+                    }
+                    
+                    // Disable questions from other sections (only if sections exist)
+                    if (this.sections) {
+                        const currentSection = this.sections[this.currentSection];
+                        if (i < currentSection.start || i > currentSection.end) {
+                            el.classList.add('disabled');
+                        }
+                    }
+                }
+            };
+            
+            nums.forEach(updateNum);
+            desktopNums.forEach(updateNum);
+        }
+        
+        updateNav() {
+            // Basic navigation limits
+            document.getElementById('prevBtn').disabled = this.curQ === 0;
+            document.getElementById('nextBtn').disabled = this.curQ === this.qs.length - 1;
+            document.getElementById('reviewBtn').style.display = this.sub ? 'none' : 'inline-flex';
+            
+            // Additional navigation restrictions for sections during test
+            if (this.sections && !this.sub) {
+                const currentSection = this.sections[this.currentSection];
+                document.getElementById('prevBtn').disabled = document.getElementById('prevBtn').disabled || 
+                    (this.curQ === currentSection.start);
+                document.getElementById('nextBtn').disabled = document.getElementById('nextBtn').disabled || 
+                    (this.curQ === currentSection.end);
+            }
+        }
+            
+            updateAnsCnt() {
+                const cnt = this.ans.filter(a => a !== null).length;
+                this.els.ansCnt.textContent = cnt;
+            }
+            
+            updatePrintButton() {
+                this.els.printBtn.style.display = this.sub ? 'flex' : 'none';
+            }
+            
+            updateThemeToggleIcon() {
+                const icon = this.darkMode ? 'fa-sun' : 'fa-moon';
+                this.els.themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+            }
+            
+            updateSectionHeader() {
+                if (!this.sections || !this.els.sectionHeader) return;
+                
+                const section = this.sections[this.currentSection];
+                this.els.sectionTitle.textContent = section.name;
+                this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                
+                // Show the section header if we have sections
+                this.els.sectionHeader.style.display = 'flex';
+            }
+            
+            setLang(eng) {
+                this.eng = eng;
+                document.getElementById('engBtn').classList.toggle('active', eng);
+                document.getElementById('hinBtn').classList.toggle('active', !eng);
+                this.loadQ(this.curQ);
+            }
+            
+            toggleTheme() {
+                this.darkMode = !this.darkMode;
+                document.body.classList.toggle('dark-mode', this.darkMode);
+                this.updateThemeToggleIcon();
+                this.loadQ(this.curQ); // Refresh to apply dark mode styles
+            }
+            
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timer);
+                        this.subTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.timeLeft / 60);
+                    const secs = this.timeLeft % 60;
+                    this.els.timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                // Clear any existing section timer
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer; // Reset to initial time
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    this.els.sectionTimer.textContent = this.formatTime(section.time_left);
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitCurrentSection();
+                    }
+                }, 1000);
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            stopTimers() {
+                if (this.timer) clearInterval(this.timer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+            }
+            
+            togglePanel() {
+                this.els.panel.classList.toggle('open');
+            }
+            
+            closePanel() {
+                this.els.panel.classList.remove('open');
+            }
+            
+            confirmSub() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.ans.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    const reviewed = this.reviewed.slice(section.start, section.end + 1)
+                        .filter(r => r).length;
+                    
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review in this section. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions in this section. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review in this section. Submit anyway?`;
+                    } else {
+                        msg = 'Submit this section?';
+                    }
+                    
+                    if (confirm(msg)) this.submitCurrentSection();
+                } else {
+                    const unanswered = this.ans.filter(a => a === null).length;
+                    const reviewed = this.reviewed.filter(r => r).length;
+                    let msg = '';
+                    
+                    if (unanswered > 0 && reviewed > 0) {
+                        msg = `You have ${unanswered} unanswered questions and ${reviewed} marked for review. Submit anyway?`;
+                    } else if (unanswered > 0) {
+                        msg = `You have ${unanswered} unanswered questions. Submit anyway?`;
+                    } else if (reviewed > 0) {
+                        msg = `You have ${reviewed} questions marked for review. Submit anyway?`;
+                    } else {
+                        msg = 'Submit test?';
+                    }
+                    
+                    if (confirm(msg)) this.subTest();
+                }
+            }
+            
+            submitCurrentSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                // Move to the next section if available
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionHeader();
+                    this.loadQ(this.sections[nextSectionIdx].start);
+                } else {
+                    // All sections completed
+                    this.subTest();
+                }
+                
+                this.updateGrid();
+            }
+            
+            subTest() {
+                if (this.sub) return;
+                
+                // Record time spent on current question
+                const now = Date.now();
+                this.timeSpent[this.curQ] += (now - this.lastQTime) / 1000;
+                
+                console.log('Submitting test. Final answers:', this.ans);
+                this.sub = true;
+                this.stopTimers();
+                document.getElementById('subBtn').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                const results = this.calcResults();
+                this.showResults(results);
+                this.loadQ(this.curQ);
+                this.updateGrid();
+                this.updatePrintButton();
+                
+                // Hide section header if it exists
+                if (this.els.sectionHeader) {
+                    this.els.sectionHeader.style.display = 'none';
+                }
+            }
+            
+            calcResults() {
+                const timeTaken = Math.round((Date.now() - this.startT) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                console.log('Calculating results...');
+                this.qs.forEach((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    
+                    console.log(`Q${i + 1}: user=${userAns}, correct=${correctAns}`);
+                    
+                    if (userAns === null || userAns === undefined) {
+                        unattempted++;
+                    } else if (correctAns !== undefined && correctAns !== null && userAns === correctAns) {
+                        correct++;
+                        score += 1;
+                        console.log(`Q${i + 1}: CORRECT (+1 marks)`);
+                    } else {
+                        incorrect++;
+                        score -= 0.25;
+                        console.log(`Q${i + 1}: INCORRECT (-0.25 marks)`);
+                    }
+                });
+                
+                const results = { 
+                    score: Math.max(0, score), 
+                    correct, 
+                    incorrect, 
+                    unattempted, 
+                    timeTaken,
+                    timePerQ: this.timeSpent.map(t => Math.round(t))
+                };
+                console.log('Final results:', results);
+                return results;
+            }
+            
+            showResults(results) {
+                this.els.scoreDisp.textContent = `${results.score}/20`;
+                this.els.corrStat.textContent = results.correct;
+                this.els.incStat.textContent = results.incorrect;
+                this.els.unaStat.textContent = results.unattempted;
+                this.els.timeStat.textContent = results.timeTaken;
+                this.els.modalOver.classList.add('show');
+            }
+            
+            closeModal() {
+                this.els.modalOver.classList.remove('show');
+            }
+            
+            review() {
+                this.closeModal();
+                this.loadQ(0);
+            }
+            
+            isNavigationAllowed(idx) {
+            // Always allow navigation after submission
+            if (this.sub) return true;
+            
+            // During test, only allow within current section
+            if (this.sections) {
+                const currentSection = this.sections[this.currentSection];
+                return idx >= currentSection.start && idx <= currentSection.end;
+            }
+            
+            // If no sections, allow all navigation
+            return true;
+            }
+            
+            printTest() {
+                const printWindow = window.open('', '_blank');
+                const testTitle = document.title;
+                const questionsHtml = this.qs.map((q, i) => {
+                    const userAns = this.ans[i];
+                    const correctAns = q.correct_option_id;
+                    const isCorrect = userAns !== null && correctAns !== undefined && userAns === correctAns;
+                    const timeSpent = Math.round(this.timeSpent[i]);
+                    const wasReviewed = this.reviewed[i];
+                    const sectionName = this.sections ? this.getSectionNameForQuestion(i) : '';
+                    
+                    return `
+                        <div style="page-break-inside:avoid;margin-bottom:30px;border-bottom:1px solid #eee;padding-bottom:20px">
+                            <h3 style="color:#4F46E5">Question ${i + 1} ${wasReviewed ? '<span style="color:#F59E0B">(Marked for Review)</span>' : ''}</h3>
+                            ${sectionName ? `<div style="font-size:14px;color:#6B7280;margin-bottom:8px">Section: ${sectionName}</div>` : ''}
+                            ${q.comp ? `<div>${q.comp}</div>` : ''}
+                            <div>${q.question}</div>
+                            <div style="margin-top:15px">
+                                ${q.options.map((opt, j) => `
+                                    <div style="margin:5px 0;padding:5px;border-left:3px solid ${ 
+                                        j === correctAns ? '#10B981' : 
+                                        j === userAns ? '#EF4444' : '#E5E7EB' 
+                                    }">
+                                        ${opt}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top:15px;font-size:14px;color:#666">
+                                <strong>Your answer:</strong> ${userAns !== null ? String.fromCharCode(65 + userAns) : 'Not attempted'}
+                                ${userAns !== null && correctAns !== undefined ? 
+                                    `(<span style="color:${isCorrect ? '#10B981' : '#EF4444'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>)` : ''}
+                                <br>
+                                <strong>Time spent:</strong> ${timeSpent} seconds
+                            </div>
+                            ${q.solution ? `
+                                <div style="margin-top:15px;background:#f0fdf4;padding:15px;border-radius:8px">
+                                    <h4 style="color:#10B981;margin-top:0">Solution</h4>
+                                    ${q.solution}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>${testTitle} - Results</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                            h2 { color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; }
+                            .math-exp { display: inline-block; vertical-align: middle; position: relative; margin: 0 2px; }
+                            .math-num { text-align: center; display: block; padding: 0; }
+                            .math-line { display: block; border-top: 1px solid; padding: 0; text-align: center; }
+                            .table-container { width: 100%; overflow-x: auto; margin: 12px 0; }
+                            table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                            table, th, td { border: 1px solid #E5E7EB; }
+                            th, td { padding: 8px 12px; text-align: left; }
+                            @media print {
+                                body { padding: 0; }
+                                .page-break { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Mocks Wallah - Analysis</h2>
+                        <div style="margin-bottom:30px">
+                            <div><strong>Score:</strong> ${this.els.scoreDisp.textContent}</div>
+                            <div><strong>Correct:</strong> ${this.els.corrStat.textContent}</div>
+                            <div><strong>Incorrect:</strong> ${this.els.incStat.textContent}</div>
+                            <div><strong>Unattempted:</strong> ${this.els.unaStat.textContent}</div>
+                            <div><strong>Time taken:</strong> ${this.els.timeStat.textContent} minutes</div>
+                        </div>
+                        ${questionsHtml}
+                        <script>
+                            setTimeout(() => { window.print(); }, 500);
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+            
+            // Section-related helper methods
+            isInCurrentSection(qIdx) {
+                if (!this.sections) return true;
+                const section = this.sections[this.currentSection];
+                return qIdx >= section.start && qIdx <= section.end;
+            }
+            
+            findSectionForQuestion(qIdx) {
+                if (!this.sections) return null;
+                for (let i = 0; i < this.sections.length; i++) {
+                    const section = this.sections[i];
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+            
+            getSectionNameForQuestion(qIdx) {
+                if (!this.sections) return '';
+                const sectionIdx = this.findSectionForQuestion(qIdx);
+                return sectionIdx !== null ? this.sections[sectionIdx].name : '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new TestApp());
+    </script>
+</body>
+</html>

@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Exam - pundits</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1e40af;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #d1d5db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        .welcome-screen.hidden {
+            display: none;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-info {
+            margin-bottom: 25px;
+        }
+        
+        .section-info h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .section-table th,
+        .section-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .subsec-container {
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+        
+        .subsec-row {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .welcome-instructions {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-instructions h3 {
+            color: var(--warning);
+            margin-bottom: 12px;
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #1e3a8a;
+        }
+        
+        .channel-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .channel-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* CBT Exam Interface */
+        .exam-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .exam-container.active {
+            display: flex;
+        }
+        
+        /* Top Header */
+        .exam-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* Candidate Info Bar */
+        .candidate-bar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .candidate-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+        
+        .candidate-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .candidate-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .candidate-id {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .section-badge {
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Area - FIXED LAYOUT */
+        .exam-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Question Area with separate scroll */
+        .question-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+        
+        .question-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 6px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg);
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .question-marks {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .lang-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .comprehension {
+            background: #eff6ff;
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .comprehension h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .option:hover:not(.submitted) {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+        
+        .option.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+        
+        .option-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .option.selected .option-indicator {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .option.correct .option-indicator {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .option.wrong .option-indicator {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .solution-box {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .solution-box.show {
+            display: block;
+        }
+        
+        .solution-header {
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .solution-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation Controls - FIXED AT BOTTOM OF QUESTION AREA */
+        .navigation-bar {
+            background: white;
+            padding: 15px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-prev {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-next {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-review {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-review.marked {
+            background: #92400e;
+        }
+        
+        .btn-submit {
+            background: var(--success);
+            color: white;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        /* Question Navigator Sidebar - SEPARATE SCROLL */
+        .navigator-sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .navigator-header {
+            padding: 15px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+        
+        .navigator-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .nav-question {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .nav-question:hover {
+            background: var(--bg);
+        }
+        
+        .nav-question.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-question.answered {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .nav-question.review {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .nav-question.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .nav-question.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .navigator-legend {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            flex-shrink: 0;
+            background: white;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Mobile Navigator Panel */
+        .mobile-navigator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+        
+        .mobile-navigator.open {
+            transform: translateY(0);
+        }
+        
+        .mobile-nav-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Result Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .result-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .result-stat {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .result-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .result-stat.correct .result-stat-value {
+            color: var(--success);
+        }
+        
+        .result-stat.incorrect .result-stat-value {
+            color: var(--danger);
+        }
+        
+        .section-results {
+            margin-bottom: 25px;
+        }
+        
+        .section-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-results-table th,
+        .section-results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-results-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+        
+        .section-results-table .subsection-row {
+            background: #f9fafb;
+            font-size: 13px;
+        }
+        
+        .section-results-table .subsection-row td:first-child {
+            padding-left: 30px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .result-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-close {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-review-ans {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 1024px) {
+            .navigator-sidebar {
+                display: flex;
+            }
+            
+            .mobile-only {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .question-scroll {
+                padding: 15px;
+            }
+            
+            .question-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .exam-header {
+                padding: 10px 15px;
+            }
+            
+            .exam-title {
+                font-size: 14px;
+            }
+            
+            .timer-box {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+            
+            .candidate-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .navigator-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .result-container {
+                padding: 20px;
+            }
+            
+            .section-results-table {
+                font-size: 13px;
+            }
+            
+            .section-results-table th,
+            .section-results-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .exam-header,
+            .candidate-bar,
+            .navigation-bar,
+            .navigator-sidebar,
+            .mobile-navigator {
+                display: none !important;
+            }
+            
+            .question-scroll {
+                padding: 0;
+            }
+            
+            .question-card {
+                page-break-inside: avoid;
+                margin-bottom: 30px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--border);
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1><i class="fas fa-graduation-cap"></i> pundits</h1>
+                <p>Computer Based Test</p>
+            </div>
+            
+            <div class="test-details">
+                <div class="detail-item">
+                    <div class="detail-label">Test ID</div>
+                    <div class="detail-value">77319</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Questions</div>
+                    <div class="detail-value">25</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Marks</div>
+                    <div class="detail-value">50.0</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value">15 mins</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Marking Scheme</div>
+                    <div class="detail-value">+2.0 / -0.5</div>
+                </div>
+            </div>
+            
+            
+        <div class="welcome-instructions">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You can mark questions for review and come back later</li>
+                <li>The timer will automatically submit the test when time is up</li>
+                <li>Negative marking applies for wrong answers</li>
+            </ul>
+        </div>
+        
+            
+            <div class="welcome-actions">
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start Test
+                </button>
+                <a href="https://t.me/mocks_wallah_again" target="_blank" class="channel-link">
+                    <i class="fab fa-telegram"></i> Join Channel
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Exam Interface -->
+    <div class="exam-container" id="examContainer">
+        <!-- Top Header -->
+        <div class="exam-header">
+            <div class="exam-title">pundits</div>
+            <div class="exam-timer">
+                <div class="timer-box" id="mainTimer">15:00</div>
+                <button class="nav-btn btn-submit mobile-only" id="submitBtn">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Candidate Info Bar -->
+        <div class="candidate-bar">
+            <div class="candidate-info">
+                <div class="candidate-photo">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="candidate-details">
+                    <div class="candidate-name">Candidate</div>
+                    <div class="candidate-id">Test ID: 77319</div>
+                </div>
+            </div>
+            <div class="section-badge" id="sectionBadge">
+                <span id="sectionName"></span>
+                <span id="sectionTimer"></span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="exam-main">
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-scroll">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div>
+                                <div class="question-number" id="questionNum">Question 1 of 25</div>
+                                <div class="question-marks" id="questionMarks">Marks: 2.0</div>
+                            </div>
+                            <div class="lang-toggle">
+                                <button class="lang-btn active" id="engBtn">English</button>
+                                <button class="lang-btn" id="hinBtn">हिंदी</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comprehension" id="comprehension" style="display:none;">
+                            <h4><i class="fas fa-book-open"></i> Comprehension</h4>
+                            <div id="comprehensionText"></div>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-list" id="optionsList"></div>
+                        
+                        <div class="solution-box" id="solutionBox">
+                            <div class="solution-header">
+                                <i class="fas fa-lightbulb"></i> Solution
+                            </div>
+                            <div class="solution-stats" id="solutionStats"></div>
+                            <div id="solutionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar inside Question Area -->
+                <div class="navigation-bar">
+                    <button class="nav-btn btn-prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="progress-info">
+                        <div id="progressText">Question 1 of 25</div>
+                        <div style="font-size:11px;margin-top:4px">
+                            Answered: <span id="answeredCount">0</span> | 
+                            <a href="https://t.me/mocks_wallah_again" style="color:var(--primary)">Mocks Wallah</a>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn btn-review" id="reviewBtn">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                    
+                    <button class="nav-btn mobile-only" id="navigatorBtn">
+                        <i class="fas fa-th"></i> Questions
+                    </button>
+                    
+                    <button class="nav-btn btn-submit desktop-only" id="submitBtnDesktop">Submit</button>
+                    
+                    <button class="nav-btn btn-next" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigator Sidebar -->
+            <div class="navigator-sidebar desktop-only">
+                <div class="navigator-header">Question Navigator</div>
+                <div class="navigator-grid" id="desktopNav"></div>
+                <div class="navigator-legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--success)"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--warning)"></div>
+                        <span>Marked for Review</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--danger)"></div>
+                        <span>Incorrect</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Navigator Panel -->
+    <div class="mobile-navigator" id="mobileNav">
+        <div class="mobile-nav-header">
+            <h3>Question Navigator</h3>
+            <button class="close-nav" id="closeNav">&times;</button>
+        </div>
+        <div class="navigator-grid" id="mobileNavGrid"></div>
+        <div class="navigator-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--success)"></div>
+                <span>Answered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--warning)"></div>
+                <span>Marked for Review</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--danger)"></div>
+                <span>Incorrect</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                <span>Not Visited</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-container">
+            <div class="result-header">
+                <h2>Test Completed!</h2>
+                <div class="result-score" id="resultScore">0/50.0</div>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-stat correct">
+                    <div class="result-stat-value" id="correctCount">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat incorrect">
+                    <div class="result-stat-value" id="incorrectCount">0</div>
+                    <div class="result-stat-label">Incorrect</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="unattemptedCount">0</div>
+                    <div class="result-stat-label">Unattempted</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="timeTaken">0</div>
+                    <div class="result-stat-label">Minutes</div>
+                </div>
+            </div>
+            
+            <div class="section-results" id="sectionResults" style="display:none;">
+                <h3>Section-wise Performance</h3>
+                <table class="section-results-table" id="sectionResultsTable">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionResultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="result-actions">
+                <button class="result-btn btn-close" id="closeResult">Close</button>
+                <button class="result-btn btn-review-ans" id="reviewAnswers">Review Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+  {
+    "question": "<span class=\"eqt\"><p>He is abhorrent ............ Dowry system.</p></span><span class=\"hqt\"><p>He is abhorrent ............ Dowry system.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>From</p></span><span class=\"hqt\"><p>From</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"88\" data-end=\"219\"><strong data-start=\"88\" data-end=\"101\">Abhorrent</strong> is an adjective that takes the preposition <strong data-start=\"145\" data-end=\"153\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"163\" data-end=\"216\">having strong hatred or repugnance toward something</em>.</p>\n<p data-start=\"221\" data-end=\"239\">✔ Correct usage:</p>\n<p></p>\n<ul data-start=\"240\" data-end=\"330\">\n<li data-start=\"240\" data-end=\"278\">\n<p data-start=\"242\" data-end=\"278\">He is abhorrent <strong data-start=\"258\" data-end=\"264\">to</strong> corruption.</p>\n</li>\n<li data-start=\"279\" data-end=\"330\">\n<p data-start=\"281\" data-end=\"330\">The practice is abhorrent <strong data-start=\"307\" data-end=\"313\">to</strong> modern values.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"88\" data-end=\"219\"><strong data-start=\"88\" data-end=\"101\">Abhorrent</strong> is an adjective that takes the preposition <strong data-start=\"145\" data-end=\"153\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"163\" data-end=\"216\">having strong hatred or repugnance toward something</em>.</p>\n<p data-start=\"221\" data-end=\"239\">✔ Correct usage:</p>\n<p></p>\n<ul data-start=\"240\" data-end=\"330\">\n<li data-start=\"240\" data-end=\"278\">\n<p data-start=\"242\" data-end=\"278\">He is abhorrent <strong data-start=\"258\" data-end=\"264\">to</strong> corruption.</p>\n</li>\n<li data-start=\"279\" data-end=\"330\">\n<p data-start=\"281\" data-end=\"330\">The practice is abhorrent <strong data-start=\"307\" data-end=\"313\">to</strong> modern values.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Which of the following are right?</p>\n<p>A) He has attraction to her.</p>\n<p>B)He has attraction for her.</p>\n<p>C)He was attracted to her.</p>\n<p>D)He was attracted for her.</p></span><span class=\"hqt\"><p>Which of the following are right?</p>\n<p>A) He has attraction to her.</p>\n<p>B)He has attraction for her.</p>\n<p>C)He was attracted to her.</p>\n<p>D)He was attracted for her.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>A and B</p></span><span class=\"hqt\"><p>A and B</p></span>",
+      "<span class=\"eqt\"><p>A and C</p></span><span class=\"hqt\"><p>A and C</p></span>",
+      "<span class=\"eqt\"><p>B and C</p></span><span class=\"hqt\"><p>B and C</p></span>",
+      "<span class=\"eqt\"><p>B and D</p></span><span class=\"hqt\"><p>B and D</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><ul data-start=\"454\" data-end=\"628\">\n<li data-start=\"454\" data-end=\"537\">\n<p data-start=\"456\" data-end=\"537\"><strong data-start=\"456\" data-end=\"483\">Attraction (noun) &rarr; FOR</strong><br data-start=\"483\" data-end=\"486\" />✔ attraction for music<br data-start=\"510\" data-end=\"513\" />✔ attraction for her</p>\n</li>\n<li data-start=\"539\" data-end=\"628\">\n<p data-start=\"541\" data-end=\"628\"><strong data-start=\"541\" data-end=\"576\">Attracted (verb/adjective) &rarr; TO</strong><br data-start=\"576\" data-end=\"579\" />✔ attracted to science<br data-start=\"603\" data-end=\"606\" />✔ attracted to her</p>\n</li>\n</ul></span><span class=\"hqt\"><ul data-start=\"454\" data-end=\"628\">\n<li data-start=\"454\" data-end=\"537\">\n<p data-start=\"456\" data-end=\"537\"><strong data-start=\"456\" data-end=\"483\">Attraction (noun) &rarr; FOR</strong><br data-start=\"483\" data-end=\"486\" />✔ attraction for music<br data-start=\"510\" data-end=\"513\" />✔ attraction for her</p>\n</li>\n<li data-start=\"539\" data-end=\"628\">\n<p data-start=\"541\" data-end=\"628\"><strong data-start=\"541\" data-end=\"576\">Attracted (verb/adjective) &rarr; TO</strong><br data-start=\"576\" data-end=\"579\" />✔ attracted to science<br data-start=\"603\" data-end=\"606\" />✔ attracted to her</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>He was admitted........... the room of the principal.</p></span><span class=\"hqt\"><p>He was admitted........... the room of the principal.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>Into</p></span><span class=\"hqt\"><p>Into</p></span>",
+      "<span class=\"eqt\"><p>On&nbsp;</p></span><span class=\"hqt\"><p>On&nbsp;</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p data-start=\"97\" data-end=\"223\">The verb <strong data-start=\"106\" data-end=\"115\">admit</strong> is followed by the preposition <strong data-start=\"147\" data-end=\"155\">&ldquo;to&rdquo;</strong> when it means <em data-start=\"170\" data-end=\"222\">to allow entry into a place, institution, or group</em>.</p>\n<p data-start=\"225\" data-end=\"244\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"245\" data-end=\"373\">\n<li data-start=\"245\" data-end=\"285\">\n<p data-start=\"247\" data-end=\"285\">He was admitted <strong data-start=\"263\" data-end=\"269\">to</strong> the hospital.</p>\n</li>\n<li data-start=\"286\" data-end=\"326\">\n<p data-start=\"288\" data-end=\"326\">She was admitted <strong data-start=\"305\" data-end=\"311\">to</strong> the college.</p>\n</li>\n<li data-start=\"327\" data-end=\"373\">\n<p data-start=\"329\" data-end=\"373\">He was admitted <strong data-start=\"345\" data-end=\"351\">to</strong> the principal&rsquo;s room.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"97\" data-end=\"223\">The verb <strong data-start=\"106\" data-end=\"115\">admit</strong> is followed by the preposition <strong data-start=\"147\" data-end=\"155\">&ldquo;to&rdquo;</strong> when it means <em data-start=\"170\" data-end=\"222\">to allow entry into a place, institution, or group</em>.</p>\n<p data-start=\"225\" data-end=\"244\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"245\" data-end=\"373\">\n<li data-start=\"245\" data-end=\"285\">\n<p data-start=\"247\" data-end=\"285\">He was admitted <strong data-start=\"263\" data-end=\"269\">to</strong> the hospital.</p>\n</li>\n<li data-start=\"286\" data-end=\"326\">\n<p data-start=\"288\" data-end=\"326\">She was admitted <strong data-start=\"305\" data-end=\"311\">to</strong> the college.</p>\n</li>\n<li data-start=\"327\" data-end=\"373\">\n<p data-start=\"329\" data-end=\"373\">He was admitted <strong data-start=\"345\" data-end=\"351\">to</strong> the principal&rsquo;s room.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Choose the right sentence.</p>\n<p>A) She did not answer my question.</p>\n<p>B) She did not give answer to my question.</p></span><span class=\"hqt\"><p>Choose the right sentence.</p>\n<p>A) She did not answer my question.</p>\n<p>B) She did not give answer to my question.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Both</p></span><span class=\"hqt\"><p>Both</p></span>",
+      "<span class=\"eqt\"><p>None of these</p></span><span class=\"hqt\"><p>None of these</p></span>",
+      "<span class=\"eqt\"><p>Only A</p></span><span class=\"hqt\"><p>Only A</p></span>",
+      "<span class=\"eqt\"><p>Only B</p></span><span class=\"hqt\"><p>Only B</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><h3 data-start=\"0\" data-end=\"29\"><span style=\"font-size: 12pt;\"><strong data-start=\"6\" data-end=\"27\">Correct Sentence:&nbsp;</strong><strong data-start=\"30\" data-end=\"68\">A) She did not answer my question.</strong></span></h3>\n<h3 data-start=\"75\" data-end=\"103\"><span style=\"font-size: 12pt;\">Why option B is wrong?</span></h3>\n<p data-start=\"105\" data-end=\"245\"><span style=\"font-size: 12pt;\"><strong data-start=\"105\" data-end=\"117\">&ldquo;Answer&rdquo;</strong> as a noun normally takes the article <strong data-start=\"155\" data-end=\"163\">&ldquo;an&rdquo;</strong> or <strong data-start=\"167\" data-end=\"176\">&ldquo;the&rdquo;</strong>.</span><br data-start=\"177\" data-end=\"180\" /><span style=\"font-size: 12pt;\"> Without an article, the sentence becomes grammatically incorrect.</span></p>\n<p></p>\n<p data-start=\"247\" data-end=\"371\"><span style=\"font-size: 12pt;\">❌ <em data-start=\"249\" data-end=\"290\">She did not give answer to my question.</em></span><br data-start=\"290\" data-end=\"293\" /><span style=\"font-size: 12pt;\"> ✔ <em data-start=\"295\" data-end=\"343\">She did not give <strong data-start=\"313\" data-end=\"319\">an</strong> answer to my question.</em> (correct, but less natural)</span></p></span><span class=\"hqt\"><h3 data-start=\"0\" data-end=\"29\"><span style=\"font-size: 12pt;\"><strong data-start=\"6\" data-end=\"27\">Correct Sentence:&nbsp;</strong><strong data-start=\"30\" data-end=\"68\">A) She did not answer my question.</strong></span></h3>\n<h3 data-start=\"75\" data-end=\"103\"><span style=\"font-size: 12pt;\">Why option B is wrong?</span></h3>\n<p data-start=\"105\" data-end=\"245\"><span style=\"font-size: 12pt;\"><strong data-start=\"105\" data-end=\"117\">&ldquo;Answer&rdquo;</strong> as a noun normally takes the article <strong data-start=\"155\" data-end=\"163\">&ldquo;an&rdquo;</strong> or <strong data-start=\"167\" data-end=\"176\">&ldquo;the&rdquo;</strong>.</span><br data-start=\"177\" data-end=\"180\" /><span style=\"font-size: 12pt;\"> Without an article, the sentence becomes grammatically incorrect.</span></p>\n<p></p>\n<p data-start=\"247\" data-end=\"371\"><span style=\"font-size: 12pt;\">❌ <em data-start=\"249\" data-end=\"290\">She did not give answer to my question.</em></span><br data-start=\"290\" data-end=\"293\" /><span style=\"font-size: 12pt;\"> ✔ <em data-start=\"295\" data-end=\"343\">She did not give <strong data-start=\"313\" data-end=\"319\">an</strong> answer to my question.</em> (correct, but less natural)</span></p></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>I have great antipathy........ wine</p></span><span class=\"hqt\"><p>I have great antipathy........ wine</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>To&nbsp;</p></span><span class=\"hqt\"><p>To&nbsp;</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"83\" data-end=\"190\"><strong data-start=\"83\" data-end=\"96\">Antipathy</strong> is a noun that is followed by the preposition <strong data-start=\"143\" data-end=\"151\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"161\" data-end=\"189\">strong dislike or aversion</em>.</p>\n<p data-start=\"192\" data-end=\"211\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"212\" data-end=\"287\">\n<li data-start=\"212\" data-end=\"248\">\n<p data-start=\"214\" data-end=\"248\">He has antipathy <strong data-start=\"231\" data-end=\"237\">to</strong> cruelty.</p>\n</li>\n<li data-start=\"249\" data-end=\"287\">\n<p data-start=\"251\" data-end=\"287\">She felt antipathy <strong data-start=\"270\" data-end=\"276\">to</strong> hypocrisy.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"83\" data-end=\"190\"><strong data-start=\"83\" data-end=\"96\">Antipathy</strong> is a noun that is followed by the preposition <strong data-start=\"143\" data-end=\"151\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"161\" data-end=\"189\">strong dislike or aversion</em>.</p>\n<p data-start=\"192\" data-end=\"211\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"212\" data-end=\"287\">\n<li data-start=\"212\" data-end=\"248\">\n<p data-start=\"214\" data-end=\"248\">He has antipathy <strong data-start=\"231\" data-end=\"237\">to</strong> cruelty.</p>\n</li>\n<li data-start=\"249\" data-end=\"287\">\n<p data-start=\"251\" data-end=\"287\">She felt antipathy <strong data-start=\"270\" data-end=\"276\">to</strong> hypocrisy.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Indian communists are affiliated.........the communist party of India.</p></span><span class=\"hqt\"><p>Indian communists are affiliated.........the communist party of India.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"138\" data-end=\"211\"><span style=\"font-size: 12pt;\"><strong data-start=\"138\" data-end=\"211\">Indian communists are affiliated <em data-start=\"173\" data-end=\"179\">with</em> the Communist Party of India.</strong></span></p>\n<h3 data-start=\"213\" data-end=\"235\"><span style=\"font-size: 12pt;\">Why the confusion?</span></h3>\n<p data-start=\"236\" data-end=\"281\"><span style=\"font-size: 12pt;\">Both are used, but in <strong data-start=\"258\" data-end=\"280\">different contexts</strong>:</span></p>\n<ul data-start=\"283\" data-end=\"432\">\n<li data-start=\"283\" data-end=\"367\">\n<p data-start=\"285\" data-end=\"367\"><span style=\"font-size: 12pt;\"><strong data-start=\"285\" data-end=\"304\">Affiliated with</strong> &rarr; <em data-start=\"307\" data-end=\"347\">neutral, formal, international English</em> (preferred today)</span></p>\n</li>\n<li data-start=\"368\" data-end=\"432\">\n<p data-start=\"370\" data-end=\"432\"><span style=\"font-size: 12pt;\"><strong data-start=\"370\" data-end=\"387\">Affiliated to</strong> &rarr; <em data-start=\"390\" data-end=\"432\">traditional / Indian exam-oriented usage</em></span></p>\n</li>\n</ul>\n<h3 data-start=\"434\" data-end=\"449\"><span style=\"font-size: 12pt;\">Comparison:</span></h3>\n<p></p>\n<p data-start=\"450\" data-end=\"572\"><span style=\"font-size: 12pt;\">✔ The NGO is affiliated <strong data-start=\"474\" data-end=\"482\">with</strong> the UN.</span><br data-start=\"490\" data-end=\"493\" /><span style=\"font-size: 12pt;\"> ✔ The college is affiliated <strong data-start=\"521\" data-end=\"527\">to</strong> the university. (common in SSC/Indian exams)</span></p></span><span class=\"hqt\"><p data-start=\"138\" data-end=\"211\"><span style=\"font-size: 12pt;\"><strong data-start=\"138\" data-end=\"211\">Indian communists are affiliated <em data-start=\"173\" data-end=\"179\">with</em> the Communist Party of India.</strong></span></p>\n<h3 data-start=\"213\" data-end=\"235\"><span style=\"font-size: 12pt;\">Why the confusion?</span></h3>\n<p data-start=\"236\" data-end=\"281\"><span style=\"font-size: 12pt;\">Both are used, but in <strong data-start=\"258\" data-end=\"280\">different contexts</strong>:</span></p>\n<ul data-start=\"283\" data-end=\"432\">\n<li data-start=\"283\" data-end=\"367\">\n<p data-start=\"285\" data-end=\"367\"><span style=\"font-size: 12pt;\"><strong data-start=\"285\" data-end=\"304\">Affiliated with</strong> &rarr; <em data-start=\"307\" data-end=\"347\">neutral, formal, international English</em> (preferred today)</span></p>\n</li>\n<li data-start=\"368\" data-end=\"432\">\n<p data-start=\"370\" data-end=\"432\"><span style=\"font-size: 12pt;\"><strong data-start=\"370\" data-end=\"387\">Affiliated to</strong> &rarr; <em data-start=\"390\" data-end=\"432\">traditional / Indian exam-oriented usage</em></span></p>\n</li>\n</ul>\n<h3 data-start=\"434\" data-end=\"449\"><span style=\"font-size: 12pt;\">Comparison:</span></h3>\n<p></p>\n<p data-start=\"450\" data-end=\"572\"><span style=\"font-size: 12pt;\">✔ The NGO is affiliated <strong data-start=\"474\" data-end=\"482\">with</strong> the UN.</span><br data-start=\"490\" data-end=\"493\" /><span style=\"font-size: 12pt;\"> ✔ The college is affiliated <strong data-start=\"521\" data-end=\"527\">to</strong> the university. (common in SSC/Indian exams)</span></p></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>There is no effective antidote..........this poison.</p></span><span class=\"hqt\"><p>There is no effective antidote..........this poison.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p data-start=\"98\" data-end=\"197\"><strong data-start=\"98\" data-end=\"110\">Antidote</strong> is followed by the preposition <strong data-start=\"142\" data-end=\"150\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"160\" data-end=\"196\">a remedy against something harmful</em>.</p>\n<p data-start=\"199\" data-end=\"218\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"219\" data-end=\"308\">\n<li data-start=\"219\" data-end=\"262\">\n<p data-start=\"221\" data-end=\"262\">There is no antidote <strong data-start=\"242\" data-end=\"248\">to</strong> corruption.</p>\n</li>\n<li data-start=\"263\" data-end=\"308\">\n<p data-start=\"265\" data-end=\"308\">Education is the antidote <strong data-start=\"291\" data-end=\"297\">to</strong> ignorance.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"98\" data-end=\"197\"><strong data-start=\"98\" data-end=\"110\">Antidote</strong> is followed by the preposition <strong data-start=\"142\" data-end=\"150\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"160\" data-end=\"196\">a remedy against something harmful</em>.</p>\n<p data-start=\"199\" data-end=\"218\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"219\" data-end=\"308\">\n<li data-start=\"219\" data-end=\"262\">\n<p data-start=\"221\" data-end=\"262\">There is no antidote <strong data-start=\"242\" data-end=\"248\">to</strong> corruption.</p>\n</li>\n<li data-start=\"263\" data-end=\"308\">\n<p data-start=\"265\" data-end=\"308\">Education is the antidote <strong data-start=\"291\" data-end=\"297\">to</strong> ignorance.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>He agreed.......all my views but his father did not.</p></span><span class=\"hqt\"><p>He agreed.......all my views but his father did not.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>By</p></span><span class=\"hqt\"><p>By</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"102\" data-end=\"171\">The verb <strong data-start=\"111\" data-end=\"120\">agree</strong> takes different prepositions depending on meaning:</p>\n<p></p>\n<ul data-start=\"173\" data-end=\"473\">\n<li data-start=\"173\" data-end=\"282\">\n<p data-start=\"175\" data-end=\"282\"><strong data-start=\"175\" data-end=\"187\">Agree to</strong> &rarr; accept a proposal, plan, or views<br data-start=\"223\" data-end=\"226\" />✔ agree <strong data-start=\"236\" data-end=\"242\">to</strong> my views<br data-start=\"251\" data-end=\"254\" />✔ agree <strong data-start=\"264\" data-end=\"270\">to</strong> the terms</p>\n</li>\n<li data-start=\"284\" data-end=\"395\">\n<p data-start=\"286\" data-end=\"395\"><strong data-start=\"286\" data-end=\"300\">Agree with</strong> &rarr; share the same opinion as a person<br data-start=\"337\" data-end=\"340\" />✔ agree <strong data-start=\"350\" data-end=\"358\">with</strong> me<br data-start=\"361\" data-end=\"364\" />✔ agree <strong data-start=\"374\" data-end=\"382\">with</strong> his father</p>\n</li>\n<li data-start=\"397\" data-end=\"473\">\n<p data-start=\"399\" data-end=\"473\"><strong data-start=\"399\" data-end=\"418\">Agree on / upon</strong> &rarr; reach a mutual decision<br data-start=\"444\" data-end=\"447\" />✔ agree <strong data-start=\"457\" data-end=\"463\">on</strong> a point</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"102\" data-end=\"171\">The verb <strong data-start=\"111\" data-end=\"120\">agree</strong> takes different prepositions depending on meaning:</p>\n<p></p>\n<ul data-start=\"173\" data-end=\"473\">\n<li data-start=\"173\" data-end=\"282\">\n<p data-start=\"175\" data-end=\"282\"><strong data-start=\"175\" data-end=\"187\">Agree to</strong> &rarr; accept a proposal, plan, or views<br data-start=\"223\" data-end=\"226\" />✔ agree <strong data-start=\"236\" data-end=\"242\">to</strong> my views<br data-start=\"251\" data-end=\"254\" />✔ agree <strong data-start=\"264\" data-end=\"270\">to</strong> the terms</p>\n</li>\n<li data-start=\"284\" data-end=\"395\">\n<p data-start=\"286\" data-end=\"395\"><strong data-start=\"286\" data-end=\"300\">Agree with</strong> &rarr; share the same opinion as a person<br data-start=\"337\" data-end=\"340\" />✔ agree <strong data-start=\"350\" data-end=\"358\">with</strong> me<br data-start=\"361\" data-end=\"364\" />✔ agree <strong data-start=\"374\" data-end=\"382\">with</strong> his father</p>\n</li>\n<li data-start=\"397\" data-end=\"473\">\n<p data-start=\"399\" data-end=\"473\"><strong data-start=\"399\" data-end=\"418\">Agree on / upon</strong> &rarr; reach a mutual decision<br data-start=\"444\" data-end=\"447\" />✔ agree <strong data-start=\"457\" data-end=\"463\">on</strong> a point</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>I had no alternative but to acquiesce..........his unfair demands.</p></span><span class=\"hqt\"><p>I had no alternative but to acquiesce..........his unfair demands.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>By</p></span><span class=\"hqt\"><p>By</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"112\" data-end=\"234\">The verb <strong data-start=\"121\" data-end=\"134\">acquiesce</strong> is followed by the preposition <strong data-start=\"166\" data-end=\"174\">&ldquo;in&rdquo;</strong>, meaning <em data-start=\"184\" data-end=\"233\">to accept something reluctantly without protest</em>.</p>\n<p data-start=\"236\" data-end=\"255\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"256\" data-end=\"348\">\n<li data-start=\"256\" data-end=\"297\">\n<p data-start=\"258\" data-end=\"297\">She acquiesced <strong data-start=\"273\" data-end=\"279\">in</strong> their decision.</p>\n</li>\n<li data-start=\"298\" data-end=\"348\">\n<p data-start=\"300\" data-end=\"348\">He acquiesced <strong data-start=\"314\" data-end=\"320\">in</strong> the authority of the court.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"112\" data-end=\"234\">The verb <strong data-start=\"121\" data-end=\"134\">acquiesce</strong> is followed by the preposition <strong data-start=\"166\" data-end=\"174\">&ldquo;in&rdquo;</strong>, meaning <em data-start=\"184\" data-end=\"233\">to accept something reluctantly without protest</em>.</p>\n<p data-start=\"236\" data-end=\"255\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"256\" data-end=\"348\">\n<li data-start=\"256\" data-end=\"297\">\n<p data-start=\"258\" data-end=\"297\">She acquiesced <strong data-start=\"273\" data-end=\"279\">in</strong> their decision.</p>\n</li>\n<li data-start=\"298\" data-end=\"348\">\n<p data-start=\"300\" data-end=\"348\">He acquiesced <strong data-start=\"314\" data-end=\"320\">in</strong> the authority of the court.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>I apprised him..........the serious food situation in the state.</p></span><span class=\"hqt\"><p>I apprised him..........the serious food situation in the state.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>About&nbsp;</p></span><span class=\"hqt\"><p>About&nbsp;</p></span>",
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p data-start=\"110\" data-end=\"193\">The verb <strong data-start=\"119\" data-end=\"130\">apprise</strong> means <em data-start=\"137\" data-end=\"148\">to inform</em> and is followed by the preposition <strong data-start=\"184\" data-end=\"193\">&ldquo;of.&rdquo;</strong></p>\n<p data-start=\"195\" data-end=\"214\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"215\" data-end=\"308\">\n<li data-start=\"215\" data-end=\"252\">\n<p data-start=\"217\" data-end=\"252\">He was apprised <strong data-start=\"233\" data-end=\"239\">of</strong> the facts.</p>\n</li>\n<li data-start=\"253\" data-end=\"308\">\n<p data-start=\"255\" data-end=\"308\">She apprised the committee <strong data-start=\"282\" data-end=\"288\">of</strong> the risks involved.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"110\" data-end=\"193\">The verb <strong data-start=\"119\" data-end=\"130\">apprise</strong> means <em data-start=\"137\" data-end=\"148\">to inform</em> and is followed by the preposition <strong data-start=\"184\" data-end=\"193\">&ldquo;of.&rdquo;</strong></p>\n<p data-start=\"195\" data-end=\"214\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"215\" data-end=\"308\">\n<li data-start=\"215\" data-end=\"252\">\n<p data-start=\"217\" data-end=\"252\">He was apprised <strong data-start=\"233\" data-end=\"239\">of</strong> the facts.</p>\n</li>\n<li data-start=\"253\" data-end=\"308\">\n<p data-start=\"255\" data-end=\"308\">She apprised the committee <strong data-start=\"282\" data-end=\"288\">of</strong> the risks involved.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>1. You must adept yourself to new situations.</p>\n<p>2. He is adept in the art of dancing.</p></span><span class=\"hqt\"><p>1. You must adept yourself to new situations.</p>\n<p>2. He is adept in the art of dancing.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Only 1st</p></span><span class=\"hqt\"><p>Only 1st</p></span>",
+      "<span class=\"eqt\"><p>Only 2nd</p></span><span class=\"hqt\"><p>Only 2nd</p></span>",
+      "<span class=\"eqt\"><p>Both</p></span><span class=\"hqt\"><p>Both</p></span>",
+      "<span class=\"eqt\"><p>None</p></span><span class=\"hqt\"><p>None</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><div class=\"pointer-events-none h-px w-px absolute bottom-0\" aria-hidden=\"true\" data-edge=\"true\"></div>\n<div class=\"flex flex-col text-sm @w-xl/main:pt-header-height pb-25\">\n<article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])>*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\" dir=\"auto\" tabindex=\"-1\" data-turn-id=\"request-WEB:d675616a-156d-4d24-8e8c-eb397f316c9e-13\" data-testid=\"conversation-turn-26\" data-scroll-anchor=\"true\" data-turn=\"assistant\">\n<div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\">\n<div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\">\n<div class=\"flex max-w-full flex-col grow\">\n<div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\" data-message-author-role=\"assistant\" data-message-id=\"8655f00b-7817-40ce-9331-8bc162cdc8d2\" data-message-model-slug=\"gpt-5-2\">\n<div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\">\n<div class=\"markdown prose dark:prose-invert w-full break-words light markdown-new-styling\">\n<p data-start=\"41\" data-end=\"156\"><strong data-start=\"41\" data-end=\"56\">Sentence 1: </strong>❌ <em data-start=\"61\" data-end=\"105\">You must adept yourself to new situations.</em><br data-start=\"105\" data-end=\"108\" />✔ <strong data-start=\"110\" data-end=\"156\">You must adapt yourself to new situations.</strong></p>\n<p data-start=\"158\" data-end=\"168\"><strong data-start=\"158\" data-end=\"166\">Why?</strong></p>\n<ul data-start=\"169\" data-end=\"254\">\n<li data-start=\"169\" data-end=\"216\">\n<p data-start=\"171\" data-end=\"216\"><strong data-start=\"171\" data-end=\"180\">Adept</strong> = adjective (skilled, proficient)</p>\n</li>\n<li data-start=\"217\" data-end=\"254\">\n<p data-start=\"219\" data-end=\"254\"><strong data-start=\"219\" data-end=\"228\">Adapt</strong> = verb (to adjust/change)</p>\n</li>\n</ul>\n<p data-start=\"256\" data-end=\"319\">You need a <strong data-start=\"267\" data-end=\"275\">verb</strong> here, so <strong data-start=\"285\" data-end=\"294\">adapt</strong> is correct, not <em data-start=\"311\" data-end=\"318\">adept</em>.</p>\n<p data-start=\"326\" data-end=\"386\"></p>\n<p data-start=\"326\" data-end=\"386\"><strong data-start=\"326\" data-end=\"341\">Sentence 2: </strong>✔ <strong data-start=\"346\" data-end=\"384\">He is adept in the art of dancing.</strong> ✅</p>\n<p data-start=\"388\" data-end=\"398\"><strong data-start=\"388\" data-end=\"396\">Why?</strong></p>\n<ul data-start=\"399\" data-end=\"538\">\n<li data-start=\"399\" data-end=\"472\">\n<p data-start=\"401\" data-end=\"472\"><strong data-start=\"401\" data-end=\"410\">Adept</strong> is correctly used as an adjective meaning <em data-start=\"453\" data-end=\"469\">highly skilled</em>.</p>\n</li>\n<li data-start=\"473\" data-end=\"538\">\n<p data-start=\"475\" data-end=\"538\">It is followed by <strong data-start=\"493\" data-end=\"499\">in</strong> (sometimes <strong data-start=\"511\" data-end=\"517\">at</strong> is also acceptable).</p>\n</li>\n</ul>\n<p data-start=\"540\" data-end=\"553\">✔ Examples:</p>\n<ul data-start=\"826\" data-end=\"904\" data-is-last-node=\"\" data-is-only-node=\"\">\n<li data-start=\"554\" data-end=\"590\">\n<p data-start=\"556\" data-end=\"590\">She is adept <strong data-start=\"569\" data-end=\"575\">in</strong> mathematics.</p>\n</li>\n<li data-start=\"591\" data-end=\"628\">\n<p data-start=\"593\" data-end=\"628\">He is adept <strong data-start=\"605\" data-end=\"611\">at</strong> handling crises.</p>\n</li>\n</ul>\n</div>\n</div>\n</div>\n</div>\n<div class=\"z-0 flex min-h-[46px] justify-start\"></div>\n<div class=\"mt-3 w-full empty:hidden\">\n<div class=\"text-center\"></div>\n</div>\n</div>\n</div>\n</article>\n</div></span><span class=\"hqt\"><div class=\"pointer-events-none h-px w-px absolute bottom-0\" aria-hidden=\"true\" data-edge=\"true\"></div>\n<div class=\"flex flex-col text-sm @w-xl/main:pt-header-height pb-25\">\n<article class=\"text-token-text-primary w-full focus:outline-none [--shadow-height:45px] has-data-writing-block:pointer-events-none has-data-writing-block:-mt-(--shadow-height) has-data-writing-block:pt-(--shadow-height) [&amp;:has([data-writing-block])>*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]\" dir=\"auto\" tabindex=\"-1\" data-turn-id=\"request-WEB:d675616a-156d-4d24-8e8c-eb397f316c9e-13\" data-testid=\"conversation-turn-26\" data-scroll-anchor=\"true\" data-turn=\"assistant\">\n<div class=\"text-base my-auto mx-auto pb-10 [--thread-content-margin:--spacing(4)] @w-sm/main:[--thread-content-margin:--spacing(6)] @w-lg/main:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)\">\n<div class=\"[--thread-content-max-width:40rem] @w-lg/main:[--thread-content-max-width:48rem] mx-auto max-w-(--thread-content-max-width) flex-1 group/turn-messages focus-visible:outline-hidden relative flex w-full min-w-0 flex-col agent-turn\">\n<div class=\"flex max-w-full flex-col grow\">\n<div class=\"min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-1\" data-message-author-role=\"assistant\" data-message-id=\"8655f00b-7817-40ce-9331-8bc162cdc8d2\" data-message-model-slug=\"gpt-5-2\">\n<div class=\"flex w-full flex-col gap-1 empty:hidden first:pt-[1px]\">\n<div class=\"markdown prose dark:prose-invert w-full break-words light markdown-new-styling\">\n<p data-start=\"41\" data-end=\"156\"><strong data-start=\"41\" data-end=\"56\">Sentence 1: </strong>❌ <em data-start=\"61\" data-end=\"105\">You must adept yourself to new situations.</em><br data-start=\"105\" data-end=\"108\" />✔ <strong data-start=\"110\" data-end=\"156\">You must adapt yourself to new situations.</strong></p>\n<p data-start=\"158\" data-end=\"168\"><strong data-start=\"158\" data-end=\"166\">Why?</strong></p>\n<ul data-start=\"169\" data-end=\"254\">\n<li data-start=\"169\" data-end=\"216\">\n<p data-start=\"171\" data-end=\"216\"><strong data-start=\"171\" data-end=\"180\">Adept</strong> = adjective (skilled, proficient)</p>\n</li>\n<li data-start=\"217\" data-end=\"254\">\n<p data-start=\"219\" data-end=\"254\"><strong data-start=\"219\" data-end=\"228\">Adapt</strong> = verb (to adjust/change)</p>\n</li>\n</ul>\n<p data-start=\"256\" data-end=\"319\">You need a <strong data-start=\"267\" data-end=\"275\">verb</strong> here, so <strong data-start=\"285\" data-end=\"294\">adapt</strong> is correct, not <em data-start=\"311\" data-end=\"318\">adept</em>.</p>\n<p data-start=\"326\" data-end=\"386\"></p>\n<p data-start=\"326\" data-end=\"386\"><strong data-start=\"326\" data-end=\"341\">Sentence 2: </strong>✔ <strong data-start=\"346\" data-end=\"384\">He is adept in the art of dancing.</strong> ✅</p>\n<p data-start=\"388\" data-end=\"398\"><strong data-start=\"388\" data-end=\"396\">Why?</strong></p>\n<ul data-start=\"399\" data-end=\"538\">\n<li data-start=\"399\" data-end=\"472\">\n<p data-start=\"401\" data-end=\"472\"><strong data-start=\"401\" data-end=\"410\">Adept</strong> is correctly used as an adjective meaning <em data-start=\"453\" data-end=\"469\">highly skilled</em>.</p>\n</li>\n<li data-start=\"473\" data-end=\"538\">\n<p data-start=\"475\" data-end=\"538\">It is followed by <strong data-start=\"493\" data-end=\"499\">in</strong> (sometimes <strong data-start=\"511\" data-end=\"517\">at</strong> is also acceptable).</p>\n</li>\n</ul>\n<p data-start=\"540\" data-end=\"553\">✔ Examples:</p>\n<ul data-start=\"826\" data-end=\"904\" data-is-last-node=\"\" data-is-only-node=\"\">\n<li data-start=\"554\" data-end=\"590\">\n<p data-start=\"556\" data-end=\"590\">She is adept <strong data-start=\"569\" data-end=\"575\">in</strong> mathematics.</p>\n</li>\n<li data-start=\"591\" data-end=\"628\">\n<p data-start=\"593\" data-end=\"628\">He is adept <strong data-start=\"605\" data-end=\"611\">at</strong> handling crises.</p>\n</li>\n</ul>\n</div>\n</div>\n</div>\n</div>\n<div class=\"z-0 flex min-h-[46px] justify-start\"></div>\n<div class=\"mt-3 w-full empty:hidden\">\n<div class=\"text-center\"></div>\n</div>\n</div>\n</div>\n</article>\n</div></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>I blush.........the vices of my son who has disgraced the family.</p></span><span class=\"hqt\"><p>I blush.........the vices of my son who has disgraced the family.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>At</p></span><span class=\"hqt\"><p>At</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>About</p></span><span class=\"hqt\"><p>About</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"113\" data-end=\"245\">The verb <strong data-start=\"122\" data-end=\"131\">blush</strong> is followed by the preposition <strong data-start=\"163\" data-end=\"172\">&ldquo;for&rdquo;</strong> when it means <em data-start=\"187\" data-end=\"244\">to feel shame or embarrassment on someone else&rsquo;s behalf</em>.</p>\n<p data-start=\"247\" data-end=\"266\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"267\" data-end=\"353\">\n<li data-start=\"267\" data-end=\"305\">\n<p data-start=\"269\" data-end=\"305\">I blush <strong data-start=\"277\" data-end=\"284\">for</strong> his rude behavior.</p>\n</li>\n<li data-start=\"306\" data-end=\"353\">\n<p data-start=\"308\" data-end=\"353\">She blushed <strong data-start=\"320\" data-end=\"327\">for</strong> her friend&rsquo;s foolishness.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"113\" data-end=\"245\">The verb <strong data-start=\"122\" data-end=\"131\">blush</strong> is followed by the preposition <strong data-start=\"163\" data-end=\"172\">&ldquo;for&rdquo;</strong> when it means <em data-start=\"187\" data-end=\"244\">to feel shame or embarrassment on someone else&rsquo;s behalf</em>.</p>\n<p data-start=\"247\" data-end=\"266\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"267\" data-end=\"353\">\n<li data-start=\"267\" data-end=\"305\">\n<p data-start=\"269\" data-end=\"305\">I blush <strong data-start=\"277\" data-end=\"284\">for</strong> his rude behavior.</p>\n</li>\n<li data-start=\"306\" data-end=\"353\">\n<p data-start=\"308\" data-end=\"353\">She blushed <strong data-start=\"320\" data-end=\"327\">for</strong> her friend&rsquo;s foolishness.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>India is beset........many problems these days.</p></span><span class=\"hqt\"><p>India is beset........many problems these days.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>About</p></span><span class=\"hqt\"><p>About</p></span>",
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>On</p></span><span class=\"hqt\"><p>On</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"97\" data-end=\"208\">The verb <strong data-start=\"106\" data-end=\"115\">beset</strong> is followed by the preposition <strong data-start=\"147\" data-end=\"157\">&ldquo;with&rdquo;</strong>, meaning <em data-start=\"167\" data-end=\"207\">to be troubled or plagued by something</em>.</p>\n<p data-start=\"210\" data-end=\"229\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"230\" data-end=\"330\">\n<li data-start=\"230\" data-end=\"277\">\n<p data-start=\"232\" data-end=\"277\">The project is beset <strong data-start=\"253\" data-end=\"261\">with</strong> difficulties.</p>\n</li>\n<li data-start=\"278\" data-end=\"330\">\n<p data-start=\"280\" data-end=\"330\">The country was beset <strong data-start=\"302\" data-end=\"310\">with</strong> internal conflicts.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"97\" data-end=\"208\">The verb <strong data-start=\"106\" data-end=\"115\">beset</strong> is followed by the preposition <strong data-start=\"147\" data-end=\"157\">&ldquo;with&rdquo;</strong>, meaning <em data-start=\"167\" data-end=\"207\">to be troubled or plagued by something</em>.</p>\n<p data-start=\"210\" data-end=\"229\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"230\" data-end=\"330\">\n<li data-start=\"230\" data-end=\"277\">\n<p data-start=\"232\" data-end=\"277\">The project is beset <strong data-start=\"253\" data-end=\"261\">with</strong> difficulties.</p>\n</li>\n<li data-start=\"278\" data-end=\"330\">\n<p data-start=\"280\" data-end=\"330\">The country was beset <strong data-start=\"302\" data-end=\"310\">with</strong> internal conflicts.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>There is no cure......AIDS.</p></span><span class=\"hqt\"><p>There is no cure......AIDS.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>About</p></span><span class=\"hqt\"><p>About</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"78\" data-end=\"176\">The noun <strong data-start=\"87\" data-end=\"95\">cure</strong> is followed by the preposition <strong data-start=\"127\" data-end=\"136\">&ldquo;for&rdquo;</strong> when referring to a disease or problem.</p>\n<p data-start=\"178\" data-end=\"197\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"198\" data-end=\"286\">\n<li data-start=\"198\" data-end=\"234\">\n<p data-start=\"200\" data-end=\"234\">There is no cure <strong data-start=\"217\" data-end=\"224\">for</strong> cancer.</p>\n</li>\n<li data-start=\"235\" data-end=\"286\">\n<p data-start=\"237\" data-end=\"286\">Scientists are searching for a cure <strong data-start=\"273\" data-end=\"280\">for</strong> AIDS.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"78\" data-end=\"176\">The noun <strong data-start=\"87\" data-end=\"95\">cure</strong> is followed by the preposition <strong data-start=\"127\" data-end=\"136\">&ldquo;for&rdquo;</strong> when referring to a disease or problem.</p>\n<p data-start=\"178\" data-end=\"197\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"198\" data-end=\"286\">\n<li data-start=\"198\" data-end=\"234\">\n<p data-start=\"200\" data-end=\"234\">There is no cure <strong data-start=\"217\" data-end=\"224\">for</strong> cancer.</p>\n</li>\n<li data-start=\"235\" data-end=\"286\">\n<p data-start=\"237\" data-end=\"286\">Scientists are searching for a cure <strong data-start=\"273\" data-end=\"280\">for</strong> AIDS.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The child was clinging.........his mother.</p></span><span class=\"hqt\"><p>The child was clinging.........his mother.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p>Cling to- Hold tight to (चिपकना)</p>\n<p data-start=\"89\" data-end=\"194\">The verb <strong data-start=\"98\" data-end=\"107\">cling</strong> is followed by the preposition <strong data-start=\"139\" data-end=\"147\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"157\" data-end=\"193\">to hold tightly or remain attached</em>.</p>\n<p data-start=\"196\" data-end=\"215\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"216\" data-end=\"298\">\n<li data-start=\"216\" data-end=\"261\">\n<p data-start=\"218\" data-end=\"261\">She clung <strong data-start=\"228\" data-end=\"234\">to</strong> hope in difficult times.</p>\n</li>\n<li data-start=\"262\" data-end=\"298\">\n<p data-start=\"264\" data-end=\"298\">The climber clung <strong data-start=\"282\" data-end=\"288\">to</strong> the rope.</p>\n</li>\n</ul></span><span class=\"hqt\"><p>Cling to- Hold tight to (चिपकना)</p>\n<p data-start=\"89\" data-end=\"194\">The verb <strong data-start=\"98\" data-end=\"107\">cling</strong> is followed by the preposition <strong data-start=\"139\" data-end=\"147\">&ldquo;to&rdquo;</strong>, meaning <em data-start=\"157\" data-end=\"193\">to hold tightly or remain attached</em>.</p>\n<p data-start=\"196\" data-end=\"215\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"216\" data-end=\"298\">\n<li data-start=\"216\" data-end=\"261\">\n<p data-start=\"218\" data-end=\"261\">She clung <strong data-start=\"228\" data-end=\"234\">to</strong> hope in difficult times.</p>\n</li>\n<li data-start=\"262\" data-end=\"298\">\n<p data-start=\"264\" data-end=\"298\">The climber clung <strong data-start=\"282\" data-end=\"288\">to</strong> the rope.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>You should never count....... unreliable persons.</p></span><span class=\"hqt\"><p>You should never count....... unreliable persons.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>On</p></span><span class=\"hqt\"><p>On</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"97\" data-end=\"169\">The phrasal verb <strong data-start=\"114\" data-end=\"126\">count on</strong> means <em data-start=\"133\" data-end=\"168\">to rely upon or depend on someone</em>.</p>\n<p data-start=\"171\" data-end=\"190\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"191\" data-end=\"262\">\n<li data-start=\"191\" data-end=\"226\">\n<p data-start=\"193\" data-end=\"226\">You can always count <strong data-start=\"214\" data-end=\"220\">on</strong> me.</p>\n</li>\n<li data-start=\"227\" data-end=\"262\">\n<p data-start=\"229\" data-end=\"262\">Do not count <strong data-start=\"242\" data-end=\"248\">on</strong> his promises.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"97\" data-end=\"169\">The phrasal verb <strong data-start=\"114\" data-end=\"126\">count on</strong> means <em data-start=\"133\" data-end=\"168\">to rely upon or depend on someone</em>.</p>\n<p data-start=\"171\" data-end=\"190\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"191\" data-end=\"262\">\n<li data-start=\"191\" data-end=\"226\">\n<p data-start=\"193\" data-end=\"226\">You can always count <strong data-start=\"214\" data-end=\"220\">on</strong> me.</p>\n</li>\n<li data-start=\"227\" data-end=\"262\">\n<p data-start=\"229\" data-end=\"262\">Do not count <strong data-start=\"242\" data-end=\"248\">on</strong> his promises.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>He was trying to cash in .........the opportunity.</p></span><span class=\"hqt\"><p>He was trying to cash in .........the opportunity.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>On</p></span><span class=\"hqt\"><p>On</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"96\" data-end=\"188\">The phrasal verb <strong data-start=\"113\" data-end=\"127\">cash in on</strong> means <em data-start=\"134\" data-end=\"187\">to take advantage of something for personal benefit</em>.</p>\n<p data-start=\"190\" data-end=\"209\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"210\" data-end=\"298\">\n<li data-start=\"210\" data-end=\"261\">\n<p data-start=\"212\" data-end=\"261\">Companies try to cash in <strong data-start=\"237\" data-end=\"243\">on</strong> festive demand.</p>\n</li>\n<li data-start=\"262\" data-end=\"298\">\n<p data-start=\"264\" data-end=\"298\">He cashed in <strong data-start=\"277\" data-end=\"283\">on</strong> the situation.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"96\" data-end=\"188\">The phrasal verb <strong data-start=\"113\" data-end=\"127\">cash in on</strong> means <em data-start=\"134\" data-end=\"187\">to take advantage of something for personal benefit</em>.</p>\n<p data-start=\"190\" data-end=\"209\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"210\" data-end=\"298\">\n<li data-start=\"210\" data-end=\"261\">\n<p data-start=\"212\" data-end=\"261\">Companies try to cash in <strong data-start=\"237\" data-end=\"243\">on</strong> festive demand.</p>\n</li>\n<li data-start=\"262\" data-end=\"298\">\n<p data-start=\"264\" data-end=\"298\">He cashed in <strong data-start=\"277\" data-end=\"283\">on</strong> the situation.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The dias of the PM was cordoned.........</p></span><span class=\"hqt\"><p>The dias of the PM was cordoned.........</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>Off</p></span><span class=\"hqt\"><p>Off</p></span>",
+      "<span class=\"eqt\"><p>On</p></span><span class=\"hqt\"><p>On</p></span>",
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"88\" data-end=\"187\">The phrasal verb <strong data-start=\"105\" data-end=\"119\">cordon off</strong> means <em data-start=\"126\" data-end=\"186\">to block or isolate an area for security or safety reasons</em>.</p>\n<p data-start=\"189\" data-end=\"208\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"209\" data-end=\"309\">\n<li data-start=\"209\" data-end=\"259\">\n<p data-start=\"211\" data-end=\"259\">The police cordoned <strong data-start=\"231\" data-end=\"238\">off</strong> the accident site.</p>\n</li>\n<li data-start=\"260\" data-end=\"309\">\n<p data-start=\"262\" data-end=\"309\">The area was cordoned <strong data-start=\"284\" data-end=\"291\">off</strong> for VIP movement.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"88\" data-end=\"187\">The phrasal verb <strong data-start=\"105\" data-end=\"119\">cordon off</strong> means <em data-start=\"126\" data-end=\"186\">to block or isolate an area for security or safety reasons</em>.</p>\n<p data-start=\"189\" data-end=\"208\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"209\" data-end=\"309\">\n<li data-start=\"209\" data-end=\"259\">\n<p data-start=\"211\" data-end=\"259\">The police cordoned <strong data-start=\"231\" data-end=\"238\">off</strong> the accident site.</p>\n</li>\n<li data-start=\"260\" data-end=\"309\">\n<p data-start=\"262\" data-end=\"309\">The area was cordoned <strong data-start=\"284\" data-end=\"291\">off</strong> for VIP movement.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The examination will commence..........Monday, ............10 o'clock,............ January.</p></span><span class=\"hqt\"><p>The examination will commence..........Monday, ............10 o'clock,............ January.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>At ,on,in</p></span><span class=\"hqt\"><p>At ,on,in</p></span>",
+      "<span class=\"eqt\"><p>In, at, on</p></span><span class=\"hqt\"><p>In, at, on</p></span>",
+      "<span class=\"eqt\"><p>On, at,in</p></span><span class=\"hqt\"><p>On, at,in</p></span>",
+      "<span class=\"eqt\"><p>On,in,at</p></span><span class=\"hqt\"><p>On,in,at</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"26\" data-end=\"103\"><span style=\"font-size: 12pt;\"><strong data-start=\"26\" data-end=\"103\">The examination will commence <em data-start=\"58\" data-end=\"62\">on</em> Monday, <em data-start=\"71\" data-end=\"75\">at</em> 10 o&rsquo;clock, <em data-start=\"88\" data-end=\"92\">in</em> January.</strong></span></p>\n<h3 data-start=\"105\" data-end=\"122\"><span style=\"font-size: 12pt;\">Explanation - </span><span style=\"font-size: 12pt;\">Use prepositions of time as follows:</span></h3>\n<p></p>\n<ul data-start=\"161\" data-end=\"308\">\n<li data-start=\"161\" data-end=\"204\">\n<p data-start=\"163\" data-end=\"204\"><span style=\"font-size: 12pt;\"><strong data-start=\"163\" data-end=\"169\">On</strong> &rarr; days and dates</span><br data-start=\"186\" data-end=\"189\" /><span style=\"font-size: 12pt;\"> ✔ on Monday</span></p>\n</li>\n<li data-start=\"206\" data-end=\"249\">\n<p data-start=\"208\" data-end=\"249\"><span style=\"font-size: 12pt;\"><strong data-start=\"208\" data-end=\"214\">At</strong> &rarr; exact time</span><br data-start=\"227\" data-end=\"230\" /><span style=\"font-size: 12pt;\"> ✔ at 10 o&rsquo;clock</span></p>\n</li>\n<li data-start=\"251\" data-end=\"308\">\n<p data-start=\"253\" data-end=\"308\"><span style=\"font-size: 12pt;\"><strong data-start=\"253\" data-end=\"259\">In</strong> &rarr; months, years, long periods</span><br data-start=\"289\" data-end=\"292\" /><span style=\"font-size: 12pt;\"> ✔ in January</span></p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"26\" data-end=\"103\"><span style=\"font-size: 12pt;\"><strong data-start=\"26\" data-end=\"103\">The examination will commence <em data-start=\"58\" data-end=\"62\">on</em> Monday, <em data-start=\"71\" data-end=\"75\">at</em> 10 o&rsquo;clock, <em data-start=\"88\" data-end=\"92\">in</em> January.</strong></span></p>\n<h3 data-start=\"105\" data-end=\"122\"><span style=\"font-size: 12pt;\">Explanation - </span><span style=\"font-size: 12pt;\">Use prepositions of time as follows:</span></h3>\n<p></p>\n<ul data-start=\"161\" data-end=\"308\">\n<li data-start=\"161\" data-end=\"204\">\n<p data-start=\"163\" data-end=\"204\"><span style=\"font-size: 12pt;\"><strong data-start=\"163\" data-end=\"169\">On</strong> &rarr; days and dates</span><br data-start=\"186\" data-end=\"189\" /><span style=\"font-size: 12pt;\"> ✔ on Monday</span></p>\n</li>\n<li data-start=\"206\" data-end=\"249\">\n<p data-start=\"208\" data-end=\"249\"><span style=\"font-size: 12pt;\"><strong data-start=\"208\" data-end=\"214\">At</strong> &rarr; exact time</span><br data-start=\"227\" data-end=\"230\" /><span style=\"font-size: 12pt;\"> ✔ at 10 o&rsquo;clock</span></p>\n</li>\n<li data-start=\"251\" data-end=\"308\">\n<p data-start=\"253\" data-end=\"308\"><span style=\"font-size: 12pt;\"><strong data-start=\"253\" data-end=\"259\">In</strong> &rarr; months, years, long periods</span><br data-start=\"289\" data-end=\"292\" /><span style=\"font-size: 12pt;\"> ✔ in January</span></p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>There is no cause...... anxiety.</p></span><span class=\"hqt\"><p>There is no cause...... anxiety.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>About</p></span><span class=\"hqt\"><p>About</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p data-start=\"82\" data-end=\"165\">The noun <strong data-start=\"91\" data-end=\"100\">cause</strong> is followed by the preposition <strong data-start=\"132\" data-end=\"141\">&ldquo;for&rdquo;</strong> when it means <em data-start=\"156\" data-end=\"164\">reason</em>.</p>\n<p data-start=\"167\" data-end=\"186\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"187\" data-end=\"260\">\n<li data-start=\"187\" data-end=\"223\">\n<p data-start=\"189\" data-end=\"223\">There is no cause <strong data-start=\"207\" data-end=\"214\">for</strong> alarm.</p>\n</li>\n<li data-start=\"224\" data-end=\"260\">\n<p data-start=\"226\" data-end=\"260\">He saw no cause <strong data-start=\"242\" data-end=\"249\">for</strong> complaint.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"82\" data-end=\"165\">The noun <strong data-start=\"91\" data-end=\"100\">cause</strong> is followed by the preposition <strong data-start=\"132\" data-end=\"141\">&ldquo;for&rdquo;</strong> when it means <em data-start=\"156\" data-end=\"164\">reason</em>.</p>\n<p data-start=\"167\" data-end=\"186\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"187\" data-end=\"260\">\n<li data-start=\"187\" data-end=\"223\">\n<p data-start=\"189\" data-end=\"223\">There is no cause <strong data-start=\"207\" data-end=\"214\">for</strong> alarm.</p>\n</li>\n<li data-start=\"224\" data-end=\"260\">\n<p data-start=\"226\" data-end=\"260\">He saw no cause <strong data-start=\"242\" data-end=\"249\">for</strong> complaint.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>I condoled.......my friend with the death of his father.</p></span><span class=\"hqt\"><p>I condoled.......my friend with the death of his father.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>For</p></span><span class=\"hqt\"><p>For</p></span>",
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p data-start=\"105\" data-end=\"189\">The verb <strong data-start=\"114\" data-end=\"125\">condole</strong> is followed by <strong data-start=\"141\" data-end=\"151\">&ldquo;with&rdquo;</strong> when expressing sympathy to a person.</p>\n<p data-start=\"191\" data-end=\"210\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"211\" data-end=\"299\">\n<li data-start=\"211\" data-end=\"255\">\n<p data-start=\"213\" data-end=\"255\">I condoled <strong data-start=\"224\" data-end=\"232\">with</strong> her <strong data-start=\"237\" data-end=\"243\">on</strong> her loss.</p>\n</li>\n<li data-start=\"256\" data-end=\"299\">\n<p data-start=\"258\" data-end=\"299\">We condoled <strong data-start=\"270\" data-end=\"278\">with</strong> the bereaved family.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"105\" data-end=\"189\">The verb <strong data-start=\"114\" data-end=\"125\">condole</strong> is followed by <strong data-start=\"141\" data-end=\"151\">&ldquo;with&rdquo;</strong> when expressing sympathy to a person.</p>\n<p data-start=\"191\" data-end=\"210\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"211\" data-end=\"299\">\n<li data-start=\"211\" data-end=\"255\">\n<p data-start=\"213\" data-end=\"255\">I condoled <strong data-start=\"224\" data-end=\"232\">with</strong> her <strong data-start=\"237\" data-end=\"243\">on</strong> her loss.</p>\n</li>\n<li data-start=\"256\" data-end=\"299\">\n<p data-start=\"258\" data-end=\"299\">We condoled <strong data-start=\"270\" data-end=\"278\">with</strong> the bereaved family.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>He is disposed....... Traveling abroad.</p></span><span class=\"hqt\"><p>He is disposed....... Traveling abroad.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>Off</p></span><span class=\"hqt\"><p>Off</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>With&nbsp;</p></span><span class=\"hqt\"><p>With&nbsp;</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"87\" data-end=\"172\"><strong data-start=\"87\" data-end=\"99\">Disposed</strong> (meaning <em data-start=\"109\" data-end=\"130\">inclined or willing</em>) is followed by the preposition <strong data-start=\"163\" data-end=\"172\">&ldquo;to.&rdquo;</strong></p>\n<p data-start=\"174\" data-end=\"193\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"194\" data-end=\"269\">\n<li data-start=\"194\" data-end=\"232\">\n<p data-start=\"196\" data-end=\"232\">He is disposed <strong data-start=\"211\" data-end=\"217\">to</strong> help others.</p>\n</li>\n<li data-start=\"233\" data-end=\"269\">\n<p data-start=\"235\" data-end=\"269\">She is disposed <strong data-start=\"251\" data-end=\"257\">to</strong> take risks.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"87\" data-end=\"172\"><strong data-start=\"87\" data-end=\"99\">Disposed</strong> (meaning <em data-start=\"109\" data-end=\"130\">inclined or willing</em>) is followed by the preposition <strong data-start=\"163\" data-end=\"172\">&ldquo;to.&rdquo;</strong></p>\n<p data-start=\"174\" data-end=\"193\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"194\" data-end=\"269\">\n<li data-start=\"194\" data-end=\"232\">\n<p data-start=\"196\" data-end=\"232\">He is disposed <strong data-start=\"211\" data-end=\"217\">to</strong> help others.</p>\n</li>\n<li data-start=\"233\" data-end=\"269\">\n<p data-start=\"235\" data-end=\"269\">She is disposed <strong data-start=\"251\" data-end=\"257\">to</strong> take risks.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>He entered.......my room</p></span><span class=\"hqt\"><p>He entered.......my room</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>In</p></span><span class=\"hqt\"><p>In</p></span>",
+      "<span class=\"eqt\"><p>Into&nbsp;</p></span><span class=\"hqt\"><p>Into&nbsp;</p></span>",
+      "<span class=\"eqt\"><p>Both</p></span><span class=\"hqt\"><p>Both</p></span>",
+      "<span class=\"eqt\"><p>No preposition&nbsp;</p></span><span class=\"hqt\"><p>No preposition&nbsp;</p></span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p data-start=\"69\" data-end=\"122\">The verb <strong data-start=\"78\" data-end=\"87\">enter</strong> does <strong data-start=\"93\" data-end=\"100\">not</strong> take any preposition.</p>\n<p data-start=\"124\" data-end=\"143\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"144\" data-end=\"208\">\n<li data-start=\"144\" data-end=\"169\">\n<p data-start=\"146\" data-end=\"169\">She entered the hall.</p>\n</li>\n<li data-start=\"170\" data-end=\"208\">\n<p data-start=\"172\" data-end=\"208\">The thief entered the house quietly.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"69\" data-end=\"122\">The verb <strong data-start=\"78\" data-end=\"87\">enter</strong> does <strong data-start=\"93\" data-end=\"100\">not</strong> take any preposition.</p>\n<p data-start=\"124\" data-end=\"143\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"144\" data-end=\"208\">\n<li data-start=\"144\" data-end=\"169\">\n<p data-start=\"146\" data-end=\"169\">She entered the hall.</p>\n</li>\n<li data-start=\"170\" data-end=\"208\">\n<p data-start=\"172\" data-end=\"208\">The thief entered the house quietly.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>Though it was their first meeting, he was enamored.......her talent.</p></span><span class=\"hqt\"><p>Though it was their first meeting, he was enamored.......her talent.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>",
+      "<span class=\"eqt\"><p>To</p></span><span class=\"hqt\"><p>To</p></span>",
+      "<span class=\"eqt\"><p>Of</p></span><span class=\"hqt\"><p>Of</p></span>",
+      "<span class=\"eqt\"><p>By</p></span><span class=\"hqt\"><p>By</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\"><p data-start=\"117\" data-end=\"212\"><strong data-start=\"117\" data-end=\"129\">Enamored</strong> is followed by the preposition <strong data-start=\"161\" data-end=\"169\">&ldquo;of&rdquo;</strong>, meaning <em data-start=\"179\" data-end=\"211\">filled with love or admiration</em>.</p>\n<p data-start=\"214\" data-end=\"233\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"234\" data-end=\"313\">\n<li data-start=\"234\" data-end=\"274\">\n<p data-start=\"236\" data-end=\"274\">She was enamored <strong data-start=\"253\" data-end=\"259\">of</strong> his honesty.</p>\n</li>\n<li data-start=\"275\" data-end=\"313\">\n<p data-start=\"277\" data-end=\"313\">He became enamored <strong data-start=\"296\" data-end=\"302\">of</strong> her voice.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"117\" data-end=\"212\"><strong data-start=\"117\" data-end=\"129\">Enamored</strong> is followed by the preposition <strong data-start=\"161\" data-end=\"169\">&ldquo;of&rdquo;</strong>, meaning <em data-start=\"179\" data-end=\"211\">filled with love or admiration</em>.</p>\n<p data-start=\"214\" data-end=\"233\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"234\" data-end=\"313\">\n<li data-start=\"234\" data-end=\"274\">\n<p data-start=\"236\" data-end=\"274\">She was enamored <strong data-start=\"253\" data-end=\"259\">of</strong> his honesty.</p>\n</li>\n<li data-start=\"275\" data-end=\"313\">\n<p data-start=\"277\" data-end=\"313\">He became enamored <strong data-start=\"296\" data-end=\"302\">of</strong> her voice.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  },
+  {
+    "question": "<span class=\"eqt\"><p>The spectators exulted......the defeat of Pakistan team.</p></span><span class=\"hqt\"><p>The spectators exulted......the defeat of Pakistan team.</p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p>At</p></span><span class=\"hqt\"><p>At</p></span>",
+      "<span class=\"eqt\"><p>Over</p></span><span class=\"hqt\"><p>Over</p></span>",
+      "<span class=\"eqt\"><p>On</p></span><span class=\"hqt\"><p>On</p></span>",
+      "<span class=\"eqt\"><p>With</p></span><span class=\"hqt\"><p>With</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p data-start=\"110\" data-end=\"220\">The verb <strong data-start=\"119\" data-end=\"128\">exult</strong> is followed by the preposition <strong data-start=\"160\" data-end=\"168\">&ldquo;at&rdquo;</strong>, meaning <em data-start=\"178\" data-end=\"219\">to feel or show great joy over an event</em>.</p>\n<p data-start=\"222\" data-end=\"241\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"242\" data-end=\"317\">\n<li data-start=\"242\" data-end=\"280\">\n<p data-start=\"244\" data-end=\"280\">They exulted <strong data-start=\"257\" data-end=\"263\">at</strong> their victory.</p>\n</li>\n<li data-start=\"281\" data-end=\"317\">\n<p data-start=\"283\" data-end=\"317\">The crowd exulted <strong data-start=\"301\" data-end=\"307\">at</strong> the news.</p>\n</li>\n</ul></span><span class=\"hqt\"><p data-start=\"110\" data-end=\"220\">The verb <strong data-start=\"119\" data-end=\"128\">exult</strong> is followed by the preposition <strong data-start=\"160\" data-end=\"168\">&ldquo;at&rdquo;</strong>, meaning <em data-start=\"178\" data-end=\"219\">to feel or show great joy over an event</em>.</p>\n<p data-start=\"222\" data-end=\"241\">✔ Correct usages:</p>\n<p></p>\n<ul data-start=\"242\" data-end=\"317\">\n<li data-start=\"242\" data-end=\"280\">\n<p data-start=\"244\" data-end=\"280\">They exulted <strong data-start=\"257\" data-end=\"263\">at</strong> their victory.</p>\n</li>\n<li data-start=\"281\" data-end=\"317\">\n<p data-start=\"283\" data-end=\"317\">The crowd exulted <strong data-start=\"301\" data-end=\"307\">at</strong> the news.</p>\n</li>\n</ul></span>",
+    "marks": 2,
+    "section": "Preposition",
+    "series_name": "ProMocks - Preposition Quiz"
+  }
+];
+        const sectionsData = null;
+        const marksPerQ = 2.0;
+        const negMarks = 0.5;
+        const totalDuration = 15;
+        
+        class CBTExam {
+            constructor() {
+                this.questions = questions;
+                this.sections = sectionsData;
+                this.currentQuestion = 0;
+                this.answers = new Array(this.questions.length).fill(null);
+                this.markedForReview = new Array(this.questions.length).fill(false);
+                this.timeSpent = new Array(this.questions.length).fill(0);
+                this.isEnglish = true;
+                this.isSubmitted = false;
+                this.startTime = null;
+                this.lastQuestionTime = null;
+                this.mainTimer = null;
+                this.sectionTimer = null;
+                this.currentSection = this.sections ? 0 : null;
+                this.totalTimeLeft = totalDuration * 60;
+                
+                this.initElements();
+                this.setupWelcomeScreen();
+                this.setupBeforeUnload();
+            }
+            
+            initElements() {
+                this.els = {
+                    welcomeScreen: document.getElementById('welcomeScreen'),
+                    examContainer: document.getElementById('examContainer'),
+                    mainTimer: document.getElementById('mainTimer'),
+                    sectionBadge: document.getElementById('sectionBadge'),
+                    sectionName: document.getElementById('sectionName'),
+                    sectionTimer: document.getElementById('sectionTimer'),
+                    questionNum: document.getElementById('questionNum'),
+                    questionMarks: document.getElementById('questionMarks'),
+                    questionText: document.getElementById('questionText'),
+                    comprehension: document.getElementById('comprehension'),
+                    comprehensionText: document.getElementById('comprehensionText'),
+                    optionsList: document.getElementById('optionsList'),
+                    solutionBox: document.getElementById('solutionBox'),
+                    solutionStats: document.getElementById('solutionStats'),
+                    solutionText: document.getElementById('solutionText'),
+                    progressText: document.getElementById('progressText'),
+                    answeredCount: document.getElementById('answeredCount'),
+                    desktopNav: document.getElementById('desktopNav'),
+                    mobileNav: document.getElementById('mobileNav'),
+                    mobileNavGrid: document.getElementById('mobileNavGrid'),
+                    resultModal: document.getElementById('resultModal'),
+                    resultScore: document.getElementById('resultScore'),
+                    correctCount: document.getElementById('correctCount'),
+                    incorrectCount: document.getElementById('incorrectCount'),
+                    unattemptedCount: document.getElementById('unattemptedCount'),
+                    timeTaken: document.getElementById('timeTaken'),
+                    sectionResults: document.getElementById('sectionResults'),
+                    sectionResultsBody: document.getElementById('sectionResultsBody')
+                };
+            }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.els.welcomeScreen.classList.add('hidden');
+                    this.els.examContainer.classList.add('active');
+                    setTimeout(() => this.startExam(), 100);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.isSubmitted) {
+                        e.preventDefault();
+                        e.returnValue = 'Your test is in progress. Are you sure you want to leave?';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            startExam() {
+                this.startTime = Date.now();
+                this.lastQuestionTime = this.startTime;
+                this.createNavigator();
+                this.startMainTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                }
+                this.loadQuestion(0);
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('engBtn').onclick = () => this.setLanguage(true);
+                document.getElementById('hinBtn').onclick = () => this.setLanguage(false);
+                document.getElementById('prevBtn').onclick = () => this.navigate(-1);
+                document.getElementById('nextBtn').onclick = () => this.navigate(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('submitBtn').onclick = () => this.confirmSubmit();
+                document.getElementById('submitBtnDesktop').onclick = () => this.confirmSubmit();
+                document.getElementById('navigatorBtn').onclick = () => this.openMobileNav();
+                document.getElementById('closeNav').onclick = () => this.closeMobileNav();
+                document.getElementById('closeResult').onclick = () => this.closeResultModal();
+                document.getElementById('reviewAnswers').onclick = () => this.reviewAnswers();
+            }
+            
+            createNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    container.innerHTML = '';
+                    this.questions.forEach((_, i) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'nav-question';
+                        btn.textContent = i + 1;
+                        btn.onclick = () => this.goToQuestion(i);
+                        container.appendChild(btn);
+                    });
+                });
+            }
+            
+            extractText(html, isEng) {
+                if (!html) return '';
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                const langSpans = temp.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                    }
+                });
+                
+                return temp.innerHTML;
+            }
+            
+            getQuestionMarks(qIdx) {
+                if (!this.sections) return marksPerQ;
+                
+                for (const section of this.sections) {
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                if (qIdx >= subsec.start && qIdx <= subsec.end) {
+                                    return subsec.marks_per_q;
+                                }
+                            }
+                        }
+                        return marksPerQ;
+                    }
+                }
+                return marksPerQ;
+            }
+            
+            loadQuestion(idx) {
+                if (this.currentQuestion !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                    this.lastQuestionTime = now;
+                }
+                
+                this.currentQuestion = idx;
+                const q = this.questions[idx];
+                const qMarks = this.getQuestionMarks(idx);
+                
+                this.els.questionNum.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.els.questionMarks.textContent = `Marks: ${qMarks}`;
+                this.els.progressText.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.updateAnsweredCount();
+                this.updateNavigator();
+                this.updateNavigationButtons();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.comprehension.style.display = 'block';
+                    this.els.comprehensionText.innerHTML = this.extractText(q.comp, this.isEnglish);
+                } else {
+                    this.els.comprehension.style.display = 'none';
+                }
+                
+                this.els.questionText.innerHTML = this.extractText(q.question, this.isEnglish);
+                this.loadOptions(q, idx);
+                
+                if (this.isSubmitted && q.solution) {
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const mins = Math.floor(timeSpent / 60);
+                    const secs = timeSpent % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    
+                    this.els.solutionStats.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    this.els.solutionText.innerHTML = this.extractText(q.solution, this.isEnglish);
+                    this.els.solutionBox.classList.add('show');
+                } else {
+                    this.els.solutionBox.classList.remove('show');
+                }
+            }
+            
+            loadOptions(q, qIdx) {
+                this.els.optionsList.innerHTML = '';
+                const userAnswer = this.answers[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                if (!q.options || !Array.isArray(q.options)) return;
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let className = 'option';
+                    
+                    if (this.isSubmitted) className += ' submitted';
+                    if (userAnswer === i) className += ' selected';
+                    
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            className += ' correct';
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            className += ' wrong';
+                        }
+                    }
+                    
+                    div.className = className;
+                    
+                    let indicator = '';
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            indicator = '✓';
+                        } else if (userAnswer === i) {
+                            indicator = '✗';
+                        }
+                    } else if (userAnswer === i) {
+                        indicator = '✓';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="option-indicator">${indicator}</div>
+                        <div class="option-text">${this.extractText(opt, this.isEnglish)}</div>
+                    `;
+                    
+                    if (!this.isSubmitted) {
+                        div.onclick = () => this.selectOption(i, qIdx);
+                    }
+                    
+                    this.els.optionsList.appendChild(div);
+                });
+            }
+            
+            selectOption(optIdx, qIdx) {
+                if (this.isSubmitted) return;
+                this.answers[qIdx] = this.answers[qIdx] === optIdx ? null : optIdx;
+                this.loadOptions(this.questions[qIdx], qIdx);
+                this.updateAnsweredCount();
+                this.updateNavigator();
+            }
+            
+            toggleReview() {
+                if (this.isSubmitted) return;
+                this.markedForReview[this.currentQuestion] = !this.markedForReview[this.currentQuestion];
+                this.updateNavigator();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = document.getElementById('reviewBtn');
+                if (this.markedForReview[this.currentQuestion]) {
+                    btn.classList.add('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Marked';
+                } else {
+                    btn.classList.remove('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Mark for Review';
+                }
+            }
+            
+            navigate(dir) {
+                const newIdx = this.currentQuestion + dir;
+                
+                if (this.isSubmitted) {
+                    if (newIdx >= 0 && newIdx < this.questions.length) {
+                        this.loadQuestion(newIdx);
+                    }
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                if (newIdx >= 0 && newIdx < this.questions.length) {
+                    this.loadQuestion(newIdx);
+                }
+            }
+            
+            goToQuestion(idx) {
+                if (this.isSubmitted) {
+                    this.loadQuestion(idx);
+                    this.closeMobileNav();
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (idx < currentSection.start || idx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                this.loadQuestion(idx);
+                this.closeMobileNav();
+            }
+            
+            updateNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    const btns = container.querySelectorAll('.nav-question');
+                    btns.forEach((btn, i) => {
+                        btn.className = 'nav-question';
+                        
+                        if (i === this.currentQuestion) {
+                            btn.classList.add('current');
+                        } else if (this.isSubmitted) {
+                            if (this.answers[i] !== null && this.questions[i].correct_option_id !== undefined) {
+                                if (this.answers[i] === this.questions[i].correct_option_id) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.add('wrong');
+                                }
+                            }
+                        } else {
+                            if (this.markedForReview[i]) {
+                                btn.classList.add('review');
+                            } else if (this.answers[i] !== null) {
+                                btn.classList.add('answered');
+                            }
+                            
+                            if (this.sections) {
+                                const currentSection = this.sections[this.currentSection];
+                                if (i < currentSection.start || i > currentSection.end) {
+                                    btn.classList.add('disabled');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const reviewBtn = document.getElementById('reviewBtn');
+                
+                prevBtn.disabled = this.currentQuestion === 0;
+                nextBtn.disabled = this.currentQuestion === this.questions.length - 1;
+                
+                if (this.isSubmitted) {
+                    reviewBtn.style.display = 'none';
+                } else {
+                    reviewBtn.style.display = 'inline-flex';
+                }
+                
+                if (this.sections && !this.isSubmitted) {
+                    const currentSection = this.sections[this.currentSection];
+                    prevBtn.disabled = prevBtn.disabled || (this.currentQuestion === currentSection.start);
+                    nextBtn.disabled = nextBtn.disabled || (this.currentQuestion === currentSection.end);
+                }
+            }
+            
+            updateAnsweredCount() {
+                const count = this.answers.filter(a => a !== null).length;
+                this.els.answeredCount.textContent = count;
+            }
+            
+            setLanguage(isEng) {
+                this.isEnglish = isEng;
+                document.getElementById('engBtn').classList.toggle('active', isEng);
+                document.getElementById('hinBtn').classList.toggle('active', !isEng);
+                this.loadQuestion(this.currentQuestion);
+            }
+            
+            startMainTimer() {
+                this.mainTimer = setInterval(() => {
+                    this.totalTimeLeft--;
+                    if (this.totalTimeLeft <= 0) {
+                        clearInterval(this.mainTimer);
+                        this.submitTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.totalTimeLeft / 60);
+                    const secs = this.totalTimeLeft % 60;
+                    this.els.mainTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer;
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    const mins = Math.floor(section.time_left / 60);
+                    const secs = section.time_left % 60;
+                    this.els.sectionTimer.textContent = ` | ${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitSection();
+                    }
+                }, 1000);
+            }
+            
+            updateSectionInfo() {
+                if (!this.sections) return;
+                const section = this.sections[this.currentSection];
+                this.els.sectionName.textContent = section.name;
+                this.els.sectionBadge.style.display = 'block';
+            }
+            
+            submitSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                    this.loadQuestion(this.sections[nextSectionIdx].start);
+                } else {
+                    this.submitTest();
+                }
+                
+                this.updateNavigator();
+            }
+            
+            confirmSubmit() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.answers.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions in this section. Submit anyway?`
+                        : 'Submit this section?';
+                    
+                    if (confirm(msg)) this.submitSection();
+                } else {
+                    const unanswered = this.answers.filter(a => a === null).length;
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions. Submit test?`
+                        : 'Submit test?';
+                    
+                    if (confirm(msg)) this.submitTest();
+                }
+            }
+            
+            submitTest() {
+                if (this.isSubmitted) return;
+                
+                const now = Date.now();
+                this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                
+                this.isSubmitted = true;
+                clearInterval(this.mainTimer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('submitBtnDesktop').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                
+                if (this.sections) {
+                    this.els.sectionBadge.style.display = 'none';
+                }
+                
+                const results = this.calculateResults();
+                this.showResults(results);
+                this.loadQuestion(this.currentQuestion);
+                this.updateNavigator();
+            }
+            
+            calculateResults() {
+                const timeTaken = Math.round((Date.now() - this.startTime) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                const sectionResults = [];
+                
+                if (this.sections) {
+                    for (const section of this.sections) {
+                        let secCorrect = 0, secIncorrect = 0, secUnattempted = 0, secScore = 0;
+                        const subsecResults = [];
+                        
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                let subCorrect = 0, subIncorrect = 0, subUnattempted = 0, subScore = 0;
+                                
+                                for (let i = subsec.start; i <= subsec.end; i++) {
+                                    const userAns = this.answers[i];
+                                    const correctAns = this.questions[i].correct_option_id;
+                                    
+                                    if (userAns === null) {
+                                        subUnattempted++;
+                                    } else if (correctAns !== undefined && userAns === correctAns) {
+                                        subCorrect++;
+                                        subScore += subsec.marks_per_q;
+                                    } else {
+                                        subIncorrect++;
+                                        subScore -= negMarks;
+                                    }
+                                }
+                                
+                                subsecResults.push({
+                                    name: subsec.name,
+                                    attempted: subCorrect + subIncorrect,
+                                    correct: subCorrect,
+                                    incorrect: subIncorrect,
+                                    unattempted: subUnattempted,
+                                    score: Math.max(0, subScore)
+                                });
+                                
+                                secCorrect += subCorrect;
+                                secIncorrect += subIncorrect;
+                                secUnattempted += subUnattempted;
+                                secScore += subScore;
+                            }
+                        } else {
+                            for (let i = section.start; i <= section.end; i++) {
+                                const userAns = this.answers[i];
+                                const correctAns = this.questions[i].correct_option_id;
+                                
+                                if (userAns === null) {
+                                    secUnattempted++;
+                                } else if (correctAns !== undefined && userAns === correctAns) {
+                                    secCorrect++;
+                                    secScore += marksPerQ;
+                                } else {
+                                    secIncorrect++;
+                                    secScore -= negMarks;
+                                }
+                            }
+                        }
+                        
+                        sectionResults.push({
+                            name: section.name,
+                            attempted: secCorrect + secIncorrect,
+                            correct: secCorrect,
+                            incorrect: secIncorrect,
+                            unattempted: secUnattempted,
+                            score: Math.max(0, secScore),
+                            subsections: subsecResults.length > 0 ? subsecResults : null
+                        });
+                        
+                        correct += secCorrect;
+                        incorrect += secIncorrect;
+                        unattempted += secUnattempted;
+                        score += secScore;
+                    }
+                } else {
+                    this.questions.forEach((q, i) => {
+                        const userAns = this.answers[i];
+                        const correctAns = q.correct_option_id;
+                        
+                        if (userAns === null) {
+                            unattempted++;
+                        } else if (correctAns !== undefined && userAns === correctAns) {
+                            correct++;
+                            score += marksPerQ;
+                        } else {
+                            incorrect++;
+                            score -= negMarks;
+                        }
+                    });
+                }
+                
+                return {
+                    score: Math.max(0, score),
+                    correct,
+                    incorrect,
+                    unattempted,
+                    timeTaken,
+                    sectionResults: sectionResults.length > 0 ? sectionResults : null
+                };
+            }
+            
+            showResults(results) {
+                this.els.resultScore.textContent = `${results.score.toFixed(2)}/${this.questions.length * marksPerQ}`;
+                this.els.correctCount.textContent = results.correct;
+                this.els.incorrectCount.textContent = results.incorrect;
+                this.els.unattemptedCount.textContent = results.unattempted;
+                this.els.timeTaken.textContent = results.timeTaken;
+                
+                if (results.sectionResults) {
+                    this.els.sectionResults.style.display = 'block';
+                    this.els.sectionResultsBody.innerHTML = '';
+                    
+                    results.sectionResults.forEach(section => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${section.name}</strong></td>
+                            <td>${section.attempted}</td>
+                            <td>${section.correct}</td>
+                            <td>${section.incorrect}</td>
+                            <td><strong>${section.score.toFixed(2)}</strong></td>
+                        `;
+                        this.els.sectionResultsBody.appendChild(row);
+                        
+                        if (section.subsections) {
+                            section.subsections.forEach(subsec => {
+                                const subRow = document.createElement('tr');
+                                subRow.className = 'subsection-row';
+                                subRow.innerHTML = `
+                                    <td>${subsec.name}</td>
+                                    <td>${subsec.attempted}</td>
+                                    <td>${subsec.correct}</td>
+                                    <td>${subsec.incorrect}</td>
+                                    <td>${subsec.score.toFixed(2)}</td>
+                                `;
+                                this.els.sectionResultsBody.appendChild(subRow);
+                            });
+                        }
+                    });
+                } else {
+                    this.els.sectionResults.style.display = 'none';
+                }
+                
+                this.els.resultModal.classList.add('show');
+            }
+            
+            closeResultModal() {
+                this.els.resultModal.classList.remove('show');
+            }
+            
+            reviewAnswers() {
+                this.closeResultModal();
+                this.loadQuestion(0);
+            }
+            
+            openMobileNav() {
+                this.els.mobileNav.classList.add('open');
+            }
+            
+            closeMobileNav() {
+                this.els.mobileNav.classList.remove('open');
+            }
+        }
+        
+        // Initialize the exam
+        document.addEventListener('DOMContentLoaded', () => {
+            new CBTExam();
+        });
+    </script>
+</body>
+</html>

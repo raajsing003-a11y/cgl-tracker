@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Exam - pundits</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1e40af;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #d1d5db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        .welcome-screen.hidden {
+            display: none;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-info {
+            margin-bottom: 25px;
+        }
+        
+        .section-info h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .section-table th,
+        .section-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .subsec-container {
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+        
+        .subsec-row {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .welcome-instructions {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-instructions h3 {
+            color: var(--warning);
+            margin-bottom: 12px;
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #1e3a8a;
+        }
+        
+        .channel-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .channel-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* CBT Exam Interface */
+        .exam-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .exam-container.active {
+            display: flex;
+        }
+        
+        /* Top Header */
+        .exam-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* Candidate Info Bar */
+        .candidate-bar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .candidate-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+        
+        .candidate-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .candidate-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .candidate-id {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .section-badge {
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Area - FIXED LAYOUT */
+        .exam-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Question Area with separate scroll */
+        .question-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+        
+        .question-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 6px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg);
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .question-marks {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .lang-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .comprehension {
+            background: #eff6ff;
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .comprehension h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .option:hover:not(.submitted) {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+        
+        .option.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+        
+        .option-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .option.selected .option-indicator {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .option.correct .option-indicator {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .option.wrong .option-indicator {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .solution-box {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .solution-box.show {
+            display: block;
+        }
+        
+        .solution-header {
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .solution-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation Controls - FIXED AT BOTTOM OF QUESTION AREA */
+        .navigation-bar {
+            background: white;
+            padding: 15px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-prev {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-next {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-review {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-review.marked {
+            background: #92400e;
+        }
+        
+        .btn-submit {
+            background: var(--success);
+            color: white;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        /* Question Navigator Sidebar - SEPARATE SCROLL */
+        .navigator-sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .navigator-header {
+            padding: 15px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+        
+        .navigator-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .nav-question {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .nav-question:hover {
+            background: var(--bg);
+        }
+        
+        .nav-question.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-question.answered {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .nav-question.review {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .nav-question.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .nav-question.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .navigator-legend {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            flex-shrink: 0;
+            background: white;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Mobile Navigator Panel */
+        .mobile-navigator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+        
+        .mobile-navigator.open {
+            transform: translateY(0);
+        }
+        
+        .mobile-nav-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Result Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .result-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .result-stat {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .result-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .result-stat.correct .result-stat-value {
+            color: var(--success);
+        }
+        
+        .result-stat.incorrect .result-stat-value {
+            color: var(--danger);
+        }
+        
+        .section-results {
+            margin-bottom: 25px;
+        }
+        
+        .section-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-results-table th,
+        .section-results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-results-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+        
+        .section-results-table .subsection-row {
+            background: #f9fafb;
+            font-size: 13px;
+        }
+        
+        .section-results-table .subsection-row td:first-child {
+            padding-left: 30px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .result-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-close {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-review-ans {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 1024px) {
+            .navigator-sidebar {
+                display: flex;
+            }
+            
+            .mobile-only {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .question-scroll {
+                padding: 15px;
+            }
+            
+            .question-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .exam-header {
+                padding: 10px 15px;
+            }
+            
+            .exam-title {
+                font-size: 14px;
+            }
+            
+            .timer-box {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+            
+            .candidate-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .navigator-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .result-container {
+                padding: 20px;
+            }
+            
+            .section-results-table {
+                font-size: 13px;
+            }
+            
+            .section-results-table th,
+            .section-results-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .exam-header,
+            .candidate-bar,
+            .navigation-bar,
+            .navigator-sidebar,
+            .mobile-navigator {
+                display: none !important;
+            }
+            
+            .question-scroll {
+                padding: 0;
+            }
+            
+            .question-card {
+                page-break-inside: avoid;
+                margin-bottom: 30px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--border);
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1><i class="fas fa-graduation-cap"></i> pundits</h1>
+                <p>Computer Based Test</p>
+            </div>
+            
+            <div class="test-details">
+                <div class="detail-item">
+                    <div class="detail-label">Test ID</div>
+                    <div class="detail-value">77145</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Questions</div>
+                    <div class="detail-value">12</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Marks</div>
+                    <div class="detail-value">24.0</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value">10 mins</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Marking Scheme</div>
+                    <div class="detail-value">+2.0 / -0.5</div>
+                </div>
+            </div>
+            
+            
+        <div class="welcome-instructions">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You can mark questions for review and come back later</li>
+                <li>The timer will automatically submit the test when time is up</li>
+                <li>Negative marking applies for wrong answers</li>
+            </ul>
+        </div>
+        
+            
+            <div class="welcome-actions">
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start Test
+                </button>
+                <a href="https://t.me/mocks_wallah_again" target="_blank" class="channel-link">
+                    <i class="fab fa-telegram"></i> Join Channel
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Exam Interface -->
+    <div class="exam-container" id="examContainer">
+        <!-- Top Header -->
+        <div class="exam-header">
+            <div class="exam-title">pundits</div>
+            <div class="exam-timer">
+                <div class="timer-box" id="mainTimer">10:00</div>
+                <button class="nav-btn btn-submit mobile-only" id="submitBtn">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Candidate Info Bar -->
+        <div class="candidate-bar">
+            <div class="candidate-info">
+                <div class="candidate-photo">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="candidate-details">
+                    <div class="candidate-name">Candidate</div>
+                    <div class="candidate-id">Test ID: 77145</div>
+                </div>
+            </div>
+            <div class="section-badge" id="sectionBadge">
+                <span id="sectionName"></span>
+                <span id="sectionTimer"></span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="exam-main">
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-scroll">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div>
+                                <div class="question-number" id="questionNum">Question 1 of 12</div>
+                                <div class="question-marks" id="questionMarks">Marks: 2.0</div>
+                            </div>
+                            <div class="lang-toggle">
+                                <button class="lang-btn active" id="engBtn">English</button>
+                                <button class="lang-btn" id="hinBtn">हिंदी</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comprehension" id="comprehension" style="display:none;">
+                            <h4><i class="fas fa-book-open"></i> Comprehension</h4>
+                            <div id="comprehensionText"></div>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-list" id="optionsList"></div>
+                        
+                        <div class="solution-box" id="solutionBox">
+                            <div class="solution-header">
+                                <i class="fas fa-lightbulb"></i> Solution
+                            </div>
+                            <div class="solution-stats" id="solutionStats"></div>
+                            <div id="solutionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar inside Question Area -->
+                <div class="navigation-bar">
+                    <button class="nav-btn btn-prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="progress-info">
+                        <div id="progressText">Question 1 of 12</div>
+                        <div style="font-size:11px;margin-top:4px">
+                            Answered: <span id="answeredCount">0</span> | 
+                            <a href="https://t.me/mocks_wallah_again" style="color:var(--primary)">Mocks Wallah</a>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn btn-review" id="reviewBtn">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                    
+                    <button class="nav-btn mobile-only" id="navigatorBtn">
+                        <i class="fas fa-th"></i> Questions
+                    </button>
+                    
+                    <button class="nav-btn btn-submit desktop-only" id="submitBtnDesktop">Submit</button>
+                    
+                    <button class="nav-btn btn-next" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigator Sidebar -->
+            <div class="navigator-sidebar desktop-only">
+                <div class="navigator-header">Question Navigator</div>
+                <div class="navigator-grid" id="desktopNav"></div>
+                <div class="navigator-legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--success)"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--warning)"></div>
+                        <span>Marked for Review</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--danger)"></div>
+                        <span>Incorrect</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Navigator Panel -->
+    <div class="mobile-navigator" id="mobileNav">
+        <div class="mobile-nav-header">
+            <h3>Question Navigator</h3>
+            <button class="close-nav" id="closeNav">&times;</button>
+        </div>
+        <div class="navigator-grid" id="mobileNavGrid"></div>
+        <div class="navigator-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--success)"></div>
+                <span>Answered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--warning)"></div>
+                <span>Marked for Review</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--danger)"></div>
+                <span>Incorrect</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                <span>Not Visited</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-container">
+            <div class="result-header">
+                <h2>Test Completed!</h2>
+                <div class="result-score" id="resultScore">0/24.0</div>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-stat correct">
+                    <div class="result-stat-value" id="correctCount">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat incorrect">
+                    <div class="result-stat-value" id="incorrectCount">0</div>
+                    <div class="result-stat-label">Incorrect</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="unattemptedCount">0</div>
+                    <div class="result-stat-label">Unattempted</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="timeTaken">0</div>
+                    <div class="result-stat-label">Minutes</div>
+                </div>
+            </div>
+            
+            <div class="section-results" id="sectionResults" style="display:none;">
+                <h3>Section-wise Performance</h3>
+                <table class="section-results-table" id="sectionResultsTable">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionResultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="result-actions">
+                <button class="result-btn btn-close" id="closeResult">Close</button>
+                <button class="result-btn btn-review-ans" id="reviewAnswers">Review Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'feel at home' is coded as '424', 'check the laundry' is coded as '537' and 'open the door' is coded as '434\". How will 'the kite is flying' be coded in that language? </span></span></span> </p></span><span class=\"hqt\"><p style=\"text-align: justify;\"><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कोड भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">,</span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> 'feel at home' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'424', 'check the laundry' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'537' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">तथा </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'open the door' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'434' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कोडित किया गया है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'the kite is flying' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार कोडित किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;2315</span></span></span></p></span><span class=\"hqt\"><p>2315</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;3251</span></span></span></p></span><span class=\"hqt\"><p>3251</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;4362&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>4362</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;3426</span></span></span></p></span><span class=\"hqt\"><p>3426</p></span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> No. of alphabets = code </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">feel&nbsp; &nbsp;at &nbsp;&nbsp;&nbsp;&nbsp;home </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">4&nbsp; &nbsp; &nbsp; &nbsp; 2&nbsp; &nbsp; &nbsp; &nbsp;4</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Similarly. </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">the&nbsp; &nbsp;kite &nbsp;&nbsp;&nbsp;&nbsp;is &nbsp;&nbsp;&nbsp;&nbsp;flying </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">3&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;4&nbsp; &nbsp; &nbsp; &nbsp;2&nbsp; &nbsp; &nbsp; &nbsp; 6 &rarr; 3426 &nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">अक्षरों की संख्या </span></span></span></span></span><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">= </span></span><span lang=\"ar-SA\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">कोड</span></span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">feel&nbsp; at &nbsp;&nbsp;&nbsp;&nbsp;home </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">4&nbsp; &nbsp; &nbsp; &nbsp;2&nbsp; &nbsp; &nbsp; &nbsp;4</span></span></span><br /><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">उसी प्रकार</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">. </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">the&nbsp; &nbsp;kite &nbsp;&nbsp;&nbsp;&nbsp;is &nbsp;&nbsp;&nbsp;&nbsp;flying</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">3&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;4&nbsp; &nbsp; &nbsp; &nbsp;2&nbsp; &nbsp; &nbsp; &nbsp; 6 &rarr; 3426&nbsp; &nbsp; &nbsp;</span></span></span></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'DOVE' is coded as '1122214' and 'CROW' is coded as '823311'. How will 'MYNA' be coded in that language? </span></span></span> </p></span><span class=\"hqt\"><p style=\"text-align: justify;\"><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'DOVE' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'1122214' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'CROW' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'823311' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कूटबद्ध किया जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'MYNA' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार कूटबद्ध किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1121512</span></span></span></p></span><span class=\"hqt\"><p>1121512</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1132512</span></span></span></p></span><span class=\"hqt\"><p>1132512</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1132412&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>1132412</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1132522</span></span></span></p></span><span class=\"hqt\"><p>1132522</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n</span></span></span>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880755e03634.71090551.jpg\" name=\"Picture 22\" align=\"bottom\" width=\"173\" height=\"145\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880756036250.90474685.jpg\" name=\"Picture 23\" align=\"bottom\" width=\"170\" height=\"168\" border=\"0\">\n</img><br/>\n<span style=\"color: #000000\">→ <span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">1132512</span></span></span><br/></span><span class=\"hqt\"><p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807562b08f5.49072364.jpg\" width=\"173\" height=\"145\" name=\"Image1\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880756509b13.37221804.jpg\" width=\"170\" height=\"168\" name=\"Image2\" align=\"bottom\" border=\"0\" /> <br /><span style=\"color: #000000;\">&rarr; <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">1132512</span></span></span></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, &lsquo;complete the drawing' is coded as '837', &lsquo;do not leave early' is coded as '2355' and &lsquo;we need break&rsquo; is coded as '245'. How will &lsquo;kindly stand straight&rsquo; be coded in that language? </span></span></span> </p></span><span class=\"hqt\"><p style=\"text-align: justify;\"><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">किसी निश्चित कोड भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, &lsquo;complete the drawing' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'837', &lsquo;do not leave early' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'2355' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">तथा </span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: Calibri;\"><span style=\"font-size: 19px;\">&lsquo;</span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">we need break' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'245' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कोडित किया गया है। उसी भाषा में </span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: Calibri;\"><span style=\"font-size: 19px;\">&lsquo;</span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">kindly stand straight&rsquo; </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार कोडित किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;856</span></span></span></p></span><span class=\"hqt\"><p>856</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;658</span></span></span></p></span><span class=\"hqt\"><p>658</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;456&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>456</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;769</span></span></span></p></span><span class=\"hqt\"><p>769</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> code = no. of alphabet in each letter </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">complete&nbsp; &nbsp;the &nbsp;&nbsp;&nbsp;&nbsp;drawing </span></span></span> <img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807566572e1.88635750.gif\" align=\"absmiddle\" /> <span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> 837</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">8&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;3&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;7</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Similarly&rarr;</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Kindly&nbsp; &nbsp;Stand &nbsp;&nbsp;&nbsp;&nbsp;Straight </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">6&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 5&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 8</span></span></span><br /><span style=\"color: #000000;\">&rarr; <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">658</span></span></span></p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">कोड</span></span></span></span> </span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">= </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">प्रत्येक अक्षर में वर्णमाला की संख्या</span></span></span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">complete&nbsp; &nbsp;the &nbsp;&nbsp;&nbsp;&nbsp;drawing </span></span></span> <img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075679e213.66210216.gif\" align=\"absmiddle\" /> <span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> 837</span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp; 8&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 3&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;7</span></span></span><br /><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">इसी प्रकार</span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: Calibri;\"><span style=\"font-size: 19px;\">&rarr;</span></span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Kindly Stand &nbsp;&nbsp;&nbsp;&nbsp;Straight </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp; 6&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 5&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 8</span></span></span><br /><span style=\"color: #000000;\">&rarr; <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">658</span></span></span></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'CABLES' is written as 'ECDUGN' and &lsquo;PHONES&rsquo; is written as &lsquo;RJQUGP&rsquo;. How will 'MOBILE' be written in that language? </span></span></span> </p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कोड भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'CABLES' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'ECDUGN' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'PHONES' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'RJQUGP' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">लिखा जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'MOBILE' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को कैसे लिखा जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;DQOKNG</span></span></span></p></span><span class=\"hqt\"><p>DQOKNG</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;OQDNKG</span></span></span></p></span><span class=\"hqt\"><p>OQDNKG</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;OQDKNG&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>OQDKNG</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;OQDGNK</span></span></span></p></span><span class=\"hqt\"><p>OQDGNK</p></span>"
+    ],
+    "correct_option_id": 3,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n</span></span></span>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880756a466d4.44690011.png\" name=\"Picture 11\" align=\"bottom\" width=\"287\" height=\"118\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880756b9aa42.61211937.jpg\" name=\"Picture 25\" align=\"bottom\" width=\"242\" height=\"109\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880756d1ae27.36455164.png\" width=\"287\" height=\"118\" name=\"Image3\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075703c3b0.91259116.jpg\" width=\"242\" height=\"109\" name=\"Image4\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'CLOUDS' is written as 'SBQAJM' and 'BRIGHT' is written as 'EFRZPG'. How will 'DREAMY' be written in that language? </span></span></span> </p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'CLOUDS' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'SBQAJM' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'BRIGHT' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'EFRZPG' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">लिखा जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'DREAMY' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार लिखा जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;YKWCBP</span></span></span></p></span><span class=\"hqt\"><p>YKWCBP</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;YKWBPC</span></span></span></p></span><span class=\"hqt\"><p>YKWBPC</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;YKXCPB&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>YKXCPB</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;WKXBPC</span></span></span></p></span><span class=\"hqt\"><p>WKXBPC</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n</span></span></span>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807572bd0d2.83867257.jpg\" name=\"Picture 26\" align=\"bottom\" width=\"238\" height=\"103\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807574a8b63.57869258.jpg\" name=\"Picture 27\" align=\"bottom\" width=\"241\" height=\"128\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757614d51.82407047.jpg\" width=\"238\" height=\"103\" name=\"Image5\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757890dc8.10784452.jpg\" width=\"241\" height=\"128\" name=\"Image6\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'RAIN' is written as '182915' and 'SUN' is written as '192214'. How will 'MOON' be written in that language? </span></span></span> </p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">किसी निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'RAIN' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'182915' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">तथा </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'SUN' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'192214' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">लिखा जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'MOON' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार लिखा जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;13161415</span></span></span></p></span><span class=\"hqt\"><p>13161415</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;13161616</span></span></span></p></span><span class=\"hqt\"><p>13161616</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;13161515&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>13161515</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;13161414</span></span></span></p></span><span class=\"hqt\"><p>13161414</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n</span></span></span>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757aa9f42.99633093.jpg\" name=\"Picture 28\" align=\"bottom\" width=\"168\" height=\"79\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757bd7f58.49021005.jpg\" name=\"Picture 29\" align=\"bottom\" width=\"112\" height=\"130\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757d31f09.79971278.png\" name=\"Picture 13\" align=\"bottom\" width=\"148\" height=\"93\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880757f22004.49071014.jpg\" width=\"168\" height=\"79\" name=\"Image7\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075816c3c4.77510921.jpg\" width=\"112\" height=\"130\" name=\"Image8\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880758296c27.25929772.png\" width=\"148\" height=\"93\" name=\"Image9\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">If in a certain code language, FEVERISH is coded as 29 and COUNSEL is coded as 98, then how will MUTATED be coded as in the same code language? </span></span></span> </p></span><span class=\"hqt\"><p style=\"text-align: justify;\"><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">यदि एक निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, FEVERISH </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">29 </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">COUNSEL </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">98 </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कूटबद्ध किया जाता है</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">, </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">तो समान कूट भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">MUTATED </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार कूटबद्ध किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;48</span></span></span></p></span><span class=\"hqt\"><p>48</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;80</span></span></span></p></span><span class=\"hqt\"><p>80</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;92&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>92</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;84</span></span></span></p></span><span class=\"hqt\"><p>84</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">F\n  E   V   E   R   I   S   H </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">6\n+ 5 + 22 + 5 + 18 + 9 + 19 + 8 = 92 </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">92\n↔ 29 </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">M\n  U   T   A   T   E   D  </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">13\n+ 21 + 20 + 1 + 20 + 5 + 4 = 84 </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">84\n↔ 48</span></span></span><br/></span><span class=\"hqt\"><p><span style=\"color: #000000;\"> <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">F E V E R I S H </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">6 + 5 + 22 + 5 + 18 + 9 + 19 + 8 = 92 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">92 &harr; 29 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">M U T A T E D </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">13 + 21 + 20 + 1 + 20 + 5 + 4 = 84 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">84 &harr; 48</span></span></span></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'WORSHIP' is written as '23418198316' and 'ROAD' is written as '18414'. How will 'REDUCE' be written in that language? </span></span></span> </p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'WORSHIP' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'23418198316' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'ROAD' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'18414' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">लिखा जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'REDUCE' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को कैसे लिखा जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1824532</span></span></span></p></span><span class=\"hqt\"><p>1824532</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1823132</span></span></span></p></span><span class=\"hqt\"><p>1823132</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;9546035&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>9546035</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;1854735</span></span></span></p></span><span class=\"hqt\"><p>1854735</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\"> Vowels are coded as </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">a = 1 &nbsp;&nbsp;&nbsp;&nbsp;e = 2 &nbsp;&nbsp;&nbsp;&nbsp;I = 3 &nbsp;&nbsp;&nbsp;&nbsp;o = 4 &nbsp;&nbsp;&nbsp;&nbsp;u = 5 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&amp; rest as place values </span></span></span> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807583d1197.11326244.jpg\" width=\"289\" height=\"81\" name=\"Picture 30\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807585bbe89.09034866.jpg\" width=\"153\" height=\"95\" name=\"Picture 32\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075874aa37.48168011.jpg\" width=\"238\" height=\"81\" name=\"Picture 33\" align=\"bottom\" border=\"0\" /> </p></span><span class=\"hqt\"><p><span style=\"color: #000000;\"> <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Vowels are coded as </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">a = 1 &nbsp;&nbsp;&nbsp;&nbsp;e = 2 &nbsp;&nbsp;&nbsp;&nbsp;I = 3 &nbsp;&nbsp;&nbsp;&nbsp;o = 4 &nbsp;&nbsp;&nbsp;&nbsp;u = 5 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&amp; rest as place values </span></span></span> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075888a593.83038259.jpg\" width=\"289\" height=\"81\" name=\"Image10\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807589cf405.30185827.jpg\" width=\"153\" height=\"95\" name=\"Image11\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880758b01c60.26446789.jpg\" width=\"238\" height=\"81\" name=\"Image12\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p style=\"text-align: justify;\"><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, 'REFUSAL' is coded as '2101239103' and 'POETRY' is coded as '1067927'. How will 'PROFIT' be coded in that language? </span></span></span> </p></span><span class=\"hqt\"><p style=\"text-align: justify;\"><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कोड भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, 'REFUSAL' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'2101239103' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'POETRY' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'1067927' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कोडित किया गया है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">'PROFIT' </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को कैसे कोडित किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;18216972</span></span></span></p></span><span class=\"hqt\"><p>18216972</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;12186792</span></span></span></p></span><span class=\"hqt\"><p>12186792</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;21671829&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>21671829</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;81217629</span></span></span></p></span><span class=\"hqt\"><p>81217629</p></span>"
+    ],
+    "correct_option_id": 1,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n R    E    F    U   S    A    L </span></span></span>\n<br/>\n<span style=\"color: #000000\">→ <span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">Arrange\nin alphabetical order and then </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">Alphabets\nwith place value of single digit = × 2</span></span></span><br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">Alphabets\nwith place value of double digit = Digital sum of place values</span></span></span><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880758d7bd04.46109618.png\" name=\"Picture 12\" align=\"bottom\" width=\"358\" height=\"153\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075901b6d4.14762997.jpg\" name=\"Picture 35\" align=\"bottom\" width=\"250\" height=\"154\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><span style=\"color: #000000;\"> <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">R E F U S A L </span></span></span> <br /><span style=\"color: #000000;\">&rarr; </span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">वर्णमाला क्रम में व्यवस्थित करें और फिर</span></span></span></span></span><br /><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एकल अंक के स्थानीय मान वाले अक्षर</span></span></span></span> </span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">= </span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&times; 2</span></span></span><br /><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">दोहरे अंक के स्थानीय मान वाले अक्षर </span></span></span></span></span><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">= </span></span><span lang=\"ar-SA\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">स्थानीय मानों का अंकीय योग</span></span></span></span></p>\n<p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807591773f0.75206327.png\" width=\"358\" height=\"153\" name=\"Image13\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807592d21a1.13290015.jpg\" width=\"250\" height=\"154\" name=\"Image14\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, ROCKET is written as BNQSDJ. How will NOTICE be written in that language? </span></span></span> </p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कूट भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, ROCKET </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">BNQSDJ </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">लिखा जाता है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">NOTICE </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को किस प्रकार लिखा जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;SNMDBH</span></span></span></p></span><span class=\"hqt\"><p>SNMDBH</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp; UPOFDJ</span></span></span></p></span><span class=\"hqt\"><p>UPOFDJ</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;SPMFBJ&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>SPMFBJ</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;NMHSDB</span></span></span></p></span><span class=\"hqt\"><p>NMHSDB</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\n</span></span></span>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807593fdc51.50452763.jpg\" name=\"Picture 36\" align=\"bottom\" width=\"259\" height=\"88\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880759652bb7.48895040.jpg\" name=\"Picture 37\" align=\"bottom\" width=\"259\" height=\"106\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807597a0bf3.95427971.jpg\" width=\"259\" height=\"88\" name=\"Image15\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_698807598d8127.83964430.jpg\" width=\"259\" height=\"106\" name=\"Image16\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">In a certain code language, INHALE is coded as 110 and DELAY is coded as 86. How will IGNORE be coded in that language?</span></span></span></p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">एक निश्चित कोड भाषा में</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">, INHALE </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">110 </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">और </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">DELAY </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">86 </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">के रूप में कोडित किया गया है। उसी भाषा में </span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">IGNORE </span></span></span><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">को कैसे कोडित किया जाएगा</span></span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;93</span></span></span></p></span><span class=\"hqt\"><p>93</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;95</span></span></span></p></span><span class=\"hqt\"><p>95</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;91&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>91</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;94</span></span></span></p></span><span class=\"hqt\"><p>94</p></span>"
+    ],
+    "correct_option_id": 2,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\nSum of opposite alphabet place value – No of vowels </span></span></span>\n<br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880759a1fd23.81057096.jpg\" name=\"Picture 40\" align=\"bottom\" width=\"241\" height=\"65\" border=\"0\">\n</img><br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">18\n+ 13 + 19 + 26 + 15 + 22 = 113 – 3 </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">=\n110 </span></span></span>\n<br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880759ba3d96.20155638.jpg\" name=\"Picture 41\" align=\"bottom\" width=\"237\" height=\"69\" border=\"0\">\n</img><br/>\n<span style=\"font-family: Cambria,serif\">18 + 20 + 13 + 12 + 9 + 22 = 94 – 3\n= 91</span><br/></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">विपरीत वर्णों के स्थानीय मान का योग </span></span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\">&ndash; </span></span></span><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">स्वरों की संख्या</span></span></span></span></span><br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880759d01d71.78368158.jpg\" width=\"241\" height=\"65\" name=\"Image17\" align=\"bottom\" border=\"0\" /> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">18 + 13 + 19 + 26 + 15 + 22 = 113 &ndash; 3 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">= 110 </span></span></span> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_69880759eb3b42.62142169.jpg\" width=\"237\" height=\"69\" name=\"Image18\" align=\"bottom\" border=\"0\" /> <br /><span style=\"font-family: Cambria,serif;\">18 + 20 + 13 + 12 + 9 + 22 = 94 &ndash; 3 = 91</span></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  },
+  {
+    "question": "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Select the option that is related to the third letter-cluster in the same way as the second letter-cluster is related to the first letter-cluster. </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">VOWEL:ZPAFP::FRICK: ?</span></span></span></p></span><span class=\"hqt\"><p><span lang=\"ar-SA\"><span style=\"color: #000000;\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">उस विकल्प का चयन कीजिए जो तीसरे अक्षर</span></span></span></span></span><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">-</span></span><span lang=\"ar-SA\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">समूह से उसी प्रकार संबंधित है जिस प्रकार दूसरा अक्षर</span></span></span></span><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">-</span></span><span lang=\"ar-SA\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">समूह पहले अक्षर</span></span></span></span><span style=\"font-family: 'Nirmala UI',serif;\"><span style=\"font-size: 19px;\">-</span></span><span lang=\"ar-SA\"><span style=\"font-family: 'Nirmala UI';\"><span style=\"font-size: 19px;\"><span lang=\"hi-IN\">समूह से संबंधित है।</span></span></span></span><br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">VOWEL:ZPAFP::FRICK: ?</span></span></span></p></span>",
+    "comp": "",
+    "options": [
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;JVJGO</span></span></span></p></span><span class=\"hqt\"><p>JVJGO</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;OGMVH</span></span></span></p></span><span class=\"hqt\"><p>OGMVH</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;JVMGO&nbsp;&nbsp;&nbsp;&nbsp;</span></span></span></p></span><span class=\"hqt\"><p>JVMGO</p></span>",
+      "<span class=\"eqt\"><p><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">&nbsp;&nbsp;&nbsp;&nbsp;JVGOK</span></span></span></p></span><span class=\"hqt\"><p>JVGOK</p></span>"
+    ],
+    "correct_option_id": 0,
+    "solution": "<span class=\"eqt\">\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">\nVowel → + 1 </span></span></span>\n<br/>\n<span style=\"color: #000000\"><span style=\"font-family: 'Cambria Math',serif\"><span style=\"font-size: 19px\">Consonant\n→ + 4 </span></span></span>\n<br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075a0ae3c7.56283936.jpg\" name=\"Picture 42\" align=\"bottom\" width=\"214\" height=\"70\" border=\"0\">\n</img><br/>\n<img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075a1e6602.81793582.jpg\" name=\"Picture 43\" align=\"bottom\" width=\"215\" height=\"96\" border=\"0\">\n</img><br/></span><span class=\"hqt\"><p><span style=\"color: #000000;\"> <span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Vowel &rarr; + 1 </span></span></span> <br /><span style=\"color: #000000;\"><span style=\"font-family: 'Cambria Math',serif;\"><span style=\"font-size: 19px;\">Consonant &rarr; + 4 </span></span></span> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075a405051.06483721.jpg\" width=\"214\" height=\"70\" name=\"Image19\" align=\"bottom\" border=\"0\" /> <br /><img src=\"https://www.thepunditsofficial.in/admin/uploads/questions/q_6988075a53f237.49869996.jpg\" width=\"215\" height=\"96\" name=\"Image20\" align=\"bottom\" border=\"0\" /></p></span>",
+    "marks": 2,
+    "section": "Coding decoding",
+    "series_name": "ProMocks Coding & Decoding - Quiz 3"
+  }
+];
+        const sectionsData = null;
+        const marksPerQ = 2.0;
+        const negMarks = 0.5;
+        const totalDuration = 10;
+        
+        class CBTExam {
+            constructor() {
+                this.questions = questions;
+                this.sections = sectionsData;
+                this.currentQuestion = 0;
+                this.answers = new Array(this.questions.length).fill(null);
+                this.markedForReview = new Array(this.questions.length).fill(false);
+                this.timeSpent = new Array(this.questions.length).fill(0);
+                this.isEnglish = true;
+                this.isSubmitted = false;
+                this.startTime = null;
+                this.lastQuestionTime = null;
+                this.mainTimer = null;
+                this.sectionTimer = null;
+                this.currentSection = this.sections ? 0 : null;
+                this.totalTimeLeft = totalDuration * 60;
+                
+                this.initElements();
+                this.setupWelcomeScreen();
+                this.setupBeforeUnload();
+            }
+            
+            initElements() {
+                this.els = {
+                    welcomeScreen: document.getElementById('welcomeScreen'),
+                    examContainer: document.getElementById('examContainer'),
+                    mainTimer: document.getElementById('mainTimer'),
+                    sectionBadge: document.getElementById('sectionBadge'),
+                    sectionName: document.getElementById('sectionName'),
+                    sectionTimer: document.getElementById('sectionTimer'),
+                    questionNum: document.getElementById('questionNum'),
+                    questionMarks: document.getElementById('questionMarks'),
+                    questionText: document.getElementById('questionText'),
+                    comprehension: document.getElementById('comprehension'),
+                    comprehensionText: document.getElementById('comprehensionText'),
+                    optionsList: document.getElementById('optionsList'),
+                    solutionBox: document.getElementById('solutionBox'),
+                    solutionStats: document.getElementById('solutionStats'),
+                    solutionText: document.getElementById('solutionText'),
+                    progressText: document.getElementById('progressText'),
+                    answeredCount: document.getElementById('answeredCount'),
+                    desktopNav: document.getElementById('desktopNav'),
+                    mobileNav: document.getElementById('mobileNav'),
+                    mobileNavGrid: document.getElementById('mobileNavGrid'),
+                    resultModal: document.getElementById('resultModal'),
+                    resultScore: document.getElementById('resultScore'),
+                    correctCount: document.getElementById('correctCount'),
+                    incorrectCount: document.getElementById('incorrectCount'),
+                    unattemptedCount: document.getElementById('unattemptedCount'),
+                    timeTaken: document.getElementById('timeTaken'),
+                    sectionResults: document.getElementById('sectionResults'),
+                    sectionResultsBody: document.getElementById('sectionResultsBody')
+                };
+            }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.els.welcomeScreen.classList.add('hidden');
+                    this.els.examContainer.classList.add('active');
+                    setTimeout(() => this.startExam(), 100);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.isSubmitted) {
+                        e.preventDefault();
+                        e.returnValue = 'Your test is in progress. Are you sure you want to leave?';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            startExam() {
+                this.startTime = Date.now();
+                this.lastQuestionTime = this.startTime;
+                this.createNavigator();
+                this.startMainTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                }
+                this.loadQuestion(0);
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('engBtn').onclick = () => this.setLanguage(true);
+                document.getElementById('hinBtn').onclick = () => this.setLanguage(false);
+                document.getElementById('prevBtn').onclick = () => this.navigate(-1);
+                document.getElementById('nextBtn').onclick = () => this.navigate(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('submitBtn').onclick = () => this.confirmSubmit();
+                document.getElementById('submitBtnDesktop').onclick = () => this.confirmSubmit();
+                document.getElementById('navigatorBtn').onclick = () => this.openMobileNav();
+                document.getElementById('closeNav').onclick = () => this.closeMobileNav();
+                document.getElementById('closeResult').onclick = () => this.closeResultModal();
+                document.getElementById('reviewAnswers').onclick = () => this.reviewAnswers();
+            }
+            
+            createNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    container.innerHTML = '';
+                    this.questions.forEach((_, i) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'nav-question';
+                        btn.textContent = i + 1;
+                        btn.onclick = () => this.goToQuestion(i);
+                        container.appendChild(btn);
+                    });
+                });
+            }
+            
+            extractText(html, isEng) {
+                if (!html) return '';
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                const langSpans = temp.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                    }
+                });
+                
+                return temp.innerHTML;
+            }
+            
+            getQuestionMarks(qIdx) {
+                if (!this.sections) return marksPerQ;
+                
+                for (const section of this.sections) {
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                if (qIdx >= subsec.start && qIdx <= subsec.end) {
+                                    return subsec.marks_per_q;
+                                }
+                            }
+                        }
+                        return marksPerQ;
+                    }
+                }
+                return marksPerQ;
+            }
+            
+            loadQuestion(idx) {
+                if (this.currentQuestion !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                    this.lastQuestionTime = now;
+                }
+                
+                this.currentQuestion = idx;
+                const q = this.questions[idx];
+                const qMarks = this.getQuestionMarks(idx);
+                
+                this.els.questionNum.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.els.questionMarks.textContent = `Marks: ${qMarks}`;
+                this.els.progressText.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.updateAnsweredCount();
+                this.updateNavigator();
+                this.updateNavigationButtons();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.comprehension.style.display = 'block';
+                    this.els.comprehensionText.innerHTML = this.extractText(q.comp, this.isEnglish);
+                } else {
+                    this.els.comprehension.style.display = 'none';
+                }
+                
+                this.els.questionText.innerHTML = this.extractText(q.question, this.isEnglish);
+                this.loadOptions(q, idx);
+                
+                if (this.isSubmitted && q.solution) {
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const mins = Math.floor(timeSpent / 60);
+                    const secs = timeSpent % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    
+                    this.els.solutionStats.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    this.els.solutionText.innerHTML = this.extractText(q.solution, this.isEnglish);
+                    this.els.solutionBox.classList.add('show');
+                } else {
+                    this.els.solutionBox.classList.remove('show');
+                }
+            }
+            
+            loadOptions(q, qIdx) {
+                this.els.optionsList.innerHTML = '';
+                const userAnswer = this.answers[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                if (!q.options || !Array.isArray(q.options)) return;
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let className = 'option';
+                    
+                    if (this.isSubmitted) className += ' submitted';
+                    if (userAnswer === i) className += ' selected';
+                    
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            className += ' correct';
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            className += ' wrong';
+                        }
+                    }
+                    
+                    div.className = className;
+                    
+                    let indicator = '';
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            indicator = '✓';
+                        } else if (userAnswer === i) {
+                            indicator = '✗';
+                        }
+                    } else if (userAnswer === i) {
+                        indicator = '✓';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="option-indicator">${indicator}</div>
+                        <div class="option-text">${this.extractText(opt, this.isEnglish)}</div>
+                    `;
+                    
+                    if (!this.isSubmitted) {
+                        div.onclick = () => this.selectOption(i, qIdx);
+                    }
+                    
+                    this.els.optionsList.appendChild(div);
+                });
+            }
+            
+            selectOption(optIdx, qIdx) {
+                if (this.isSubmitted) return;
+                this.answers[qIdx] = this.answers[qIdx] === optIdx ? null : optIdx;
+                this.loadOptions(this.questions[qIdx], qIdx);
+                this.updateAnsweredCount();
+                this.updateNavigator();
+            }
+            
+            toggleReview() {
+                if (this.isSubmitted) return;
+                this.markedForReview[this.currentQuestion] = !this.markedForReview[this.currentQuestion];
+                this.updateNavigator();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = document.getElementById('reviewBtn');
+                if (this.markedForReview[this.currentQuestion]) {
+                    btn.classList.add('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Marked';
+                } else {
+                    btn.classList.remove('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Mark for Review';
+                }
+            }
+            
+            navigate(dir) {
+                const newIdx = this.currentQuestion + dir;
+                
+                if (this.isSubmitted) {
+                    if (newIdx >= 0 && newIdx < this.questions.length) {
+                        this.loadQuestion(newIdx);
+                    }
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                if (newIdx >= 0 && newIdx < this.questions.length) {
+                    this.loadQuestion(newIdx);
+                }
+            }
+            
+            goToQuestion(idx) {
+                if (this.isSubmitted) {
+                    this.loadQuestion(idx);
+                    this.closeMobileNav();
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (idx < currentSection.start || idx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                this.loadQuestion(idx);
+                this.closeMobileNav();
+            }
+            
+            updateNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    const btns = container.querySelectorAll('.nav-question');
+                    btns.forEach((btn, i) => {
+                        btn.className = 'nav-question';
+                        
+                        if (i === this.currentQuestion) {
+                            btn.classList.add('current');
+                        } else if (this.isSubmitted) {
+                            if (this.answers[i] !== null && this.questions[i].correct_option_id !== undefined) {
+                                if (this.answers[i] === this.questions[i].correct_option_id) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.add('wrong');
+                                }
+                            }
+                        } else {
+                            if (this.markedForReview[i]) {
+                                btn.classList.add('review');
+                            } else if (this.answers[i] !== null) {
+                                btn.classList.add('answered');
+                            }
+                            
+                            if (this.sections) {
+                                const currentSection = this.sections[this.currentSection];
+                                if (i < currentSection.start || i > currentSection.end) {
+                                    btn.classList.add('disabled');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const reviewBtn = document.getElementById('reviewBtn');
+                
+                prevBtn.disabled = this.currentQuestion === 0;
+                nextBtn.disabled = this.currentQuestion === this.questions.length - 1;
+                
+                if (this.isSubmitted) {
+                    reviewBtn.style.display = 'none';
+                } else {
+                    reviewBtn.style.display = 'inline-flex';
+                }
+                
+                if (this.sections && !this.isSubmitted) {
+                    const currentSection = this.sections[this.currentSection];
+                    prevBtn.disabled = prevBtn.disabled || (this.currentQuestion === currentSection.start);
+                    nextBtn.disabled = nextBtn.disabled || (this.currentQuestion === currentSection.end);
+                }
+            }
+            
+            updateAnsweredCount() {
+                const count = this.answers.filter(a => a !== null).length;
+                this.els.answeredCount.textContent = count;
+            }
+            
+            setLanguage(isEng) {
+                this.isEnglish = isEng;
+                document.getElementById('engBtn').classList.toggle('active', isEng);
+                document.getElementById('hinBtn').classList.toggle('active', !isEng);
+                this.loadQuestion(this.currentQuestion);
+            }
+            
+            startMainTimer() {
+                this.mainTimer = setInterval(() => {
+                    this.totalTimeLeft--;
+                    if (this.totalTimeLeft <= 0) {
+                        clearInterval(this.mainTimer);
+                        this.submitTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.totalTimeLeft / 60);
+                    const secs = this.totalTimeLeft % 60;
+                    this.els.mainTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer;
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    const mins = Math.floor(section.time_left / 60);
+                    const secs = section.time_left % 60;
+                    this.els.sectionTimer.textContent = ` | ${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitSection();
+                    }
+                }, 1000);
+            }
+            
+            updateSectionInfo() {
+                if (!this.sections) return;
+                const section = this.sections[this.currentSection];
+                this.els.sectionName.textContent = section.name;
+                this.els.sectionBadge.style.display = 'block';
+            }
+            
+            submitSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                    this.loadQuestion(this.sections[nextSectionIdx].start);
+                } else {
+                    this.submitTest();
+                }
+                
+                this.updateNavigator();
+            }
+            
+            confirmSubmit() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.answers.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions in this section. Submit anyway?`
+                        : 'Submit this section?';
+                    
+                    if (confirm(msg)) this.submitSection();
+                } else {
+                    const unanswered = this.answers.filter(a => a === null).length;
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions. Submit test?`
+                        : 'Submit test?';
+                    
+                    if (confirm(msg)) this.submitTest();
+                }
+            }
+            
+            submitTest() {
+                if (this.isSubmitted) return;
+                
+                const now = Date.now();
+                this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                
+                this.isSubmitted = true;
+                clearInterval(this.mainTimer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('submitBtnDesktop').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                
+                if (this.sections) {
+                    this.els.sectionBadge.style.display = 'none';
+                }
+                
+                const results = this.calculateResults();
+                this.showResults(results);
+                this.loadQuestion(this.currentQuestion);
+                this.updateNavigator();
+            }
+            
+            calculateResults() {
+                const timeTaken = Math.round((Date.now() - this.startTime) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                const sectionResults = [];
+                
+                if (this.sections) {
+                    for (const section of this.sections) {
+                        let secCorrect = 0, secIncorrect = 0, secUnattempted = 0, secScore = 0;
+                        const subsecResults = [];
+                        
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                let subCorrect = 0, subIncorrect = 0, subUnattempted = 0, subScore = 0;
+                                
+                                for (let i = subsec.start; i <= subsec.end; i++) {
+                                    const userAns = this.answers[i];
+                                    const correctAns = this.questions[i].correct_option_id;
+                                    
+                                    if (userAns === null) {
+                                        subUnattempted++;
+                                    } else if (correctAns !== undefined && userAns === correctAns) {
+                                        subCorrect++;
+                                        subScore += subsec.marks_per_q;
+                                    } else {
+                                        subIncorrect++;
+                                        subScore -= negMarks;
+                                    }
+                                }
+                                
+                                subsecResults.push({
+                                    name: subsec.name,
+                                    attempted: subCorrect + subIncorrect,
+                                    correct: subCorrect,
+                                    incorrect: subIncorrect,
+                                    unattempted: subUnattempted,
+                                    score: Math.max(0, subScore)
+                                });
+                                
+                                secCorrect += subCorrect;
+                                secIncorrect += subIncorrect;
+                                secUnattempted += subUnattempted;
+                                secScore += subScore;
+                            }
+                        } else {
+                            for (let i = section.start; i <= section.end; i++) {
+                                const userAns = this.answers[i];
+                                const correctAns = this.questions[i].correct_option_id;
+                                
+                                if (userAns === null) {
+                                    secUnattempted++;
+                                } else if (correctAns !== undefined && userAns === correctAns) {
+                                    secCorrect++;
+                                    secScore += marksPerQ;
+                                } else {
+                                    secIncorrect++;
+                                    secScore -= negMarks;
+                                }
+                            }
+                        }
+                        
+                        sectionResults.push({
+                            name: section.name,
+                            attempted: secCorrect + secIncorrect,
+                            correct: secCorrect,
+                            incorrect: secIncorrect,
+                            unattempted: secUnattempted,
+                            score: Math.max(0, secScore),
+                            subsections: subsecResults.length > 0 ? subsecResults : null
+                        });
+                        
+                        correct += secCorrect;
+                        incorrect += secIncorrect;
+                        unattempted += secUnattempted;
+                        score += secScore;
+                    }
+                } else {
+                    this.questions.forEach((q, i) => {
+                        const userAns = this.answers[i];
+                        const correctAns = q.correct_option_id;
+                        
+                        if (userAns === null) {
+                            unattempted++;
+                        } else if (correctAns !== undefined && userAns === correctAns) {
+                            correct++;
+                            score += marksPerQ;
+                        } else {
+                            incorrect++;
+                            score -= negMarks;
+                        }
+                    });
+                }
+                
+                return {
+                    score: Math.max(0, score),
+                    correct,
+                    incorrect,
+                    unattempted,
+                    timeTaken,
+                    sectionResults: sectionResults.length > 0 ? sectionResults : null
+                };
+            }
+            
+            showResults(results) {
+                this.els.resultScore.textContent = `${results.score.toFixed(2)}/${this.questions.length * marksPerQ}`;
+                this.els.correctCount.textContent = results.correct;
+                this.els.incorrectCount.textContent = results.incorrect;
+                this.els.unattemptedCount.textContent = results.unattempted;
+                this.els.timeTaken.textContent = results.timeTaken;
+                
+                if (results.sectionResults) {
+                    this.els.sectionResults.style.display = 'block';
+                    this.els.sectionResultsBody.innerHTML = '';
+                    
+                    results.sectionResults.forEach(section => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${section.name}</strong></td>
+                            <td>${section.attempted}</td>
+                            <td>${section.correct}</td>
+                            <td>${section.incorrect}</td>
+                            <td><strong>${section.score.toFixed(2)}</strong></td>
+                        `;
+                        this.els.sectionResultsBody.appendChild(row);
+                        
+                        if (section.subsections) {
+                            section.subsections.forEach(subsec => {
+                                const subRow = document.createElement('tr');
+                                subRow.className = 'subsection-row';
+                                subRow.innerHTML = `
+                                    <td>${subsec.name}</td>
+                                    <td>${subsec.attempted}</td>
+                                    <td>${subsec.correct}</td>
+                                    <td>${subsec.incorrect}</td>
+                                    <td>${subsec.score.toFixed(2)}</td>
+                                `;
+                                this.els.sectionResultsBody.appendChild(subRow);
+                            });
+                        }
+                    });
+                } else {
+                    this.els.sectionResults.style.display = 'none';
+                }
+                
+                this.els.resultModal.classList.add('show');
+            }
+            
+            closeResultModal() {
+                this.els.resultModal.classList.remove('show');
+            }
+            
+            reviewAnswers() {
+                this.closeResultModal();
+                this.loadQuestion(0);
+            }
+            
+            openMobileNav() {
+                this.els.mobileNav.classList.add('open');
+            }
+            
+            closeMobileNav() {
+                this.els.mobileNav.classList.remove('open');
+            }
+        }
+        
+        // Initialize the exam
+        document.addEventListener('DOMContentLoaded', () => {
+            new CBTExam();
+        });
+    </script>
+</body>
+</html>
