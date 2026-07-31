@@ -32,12 +32,12 @@
 // would keep serving the pre-auto-scroll app.js/index.html, so it must be
 // evicted too.
 //
-// Bumped v4 -> v5: added "Test Your Knowledge" auto-flashcards at the end
-// of every GK chapter (app.js gained flashcard generation/overlay logic,
-// index.html gained the flashcard overlay markup/CSS). Old v4 cache would
-// keep serving the app.js/index.html without this feature, so it must be
-// evicted too.
-const CACHE_NAME = 'exam-tracker-v5';
+// Bumped v5 -> v6: gk_polity.json got corrected English content for
+// chapters 12-23 (blocksEn was previously a Hindi duplicate), and
+// gk_science.json got real English content for all 15 chapters (blocksEn
+// was previously a Hindi duplicate too). Old v5 cache would keep serving
+// the stale Hindi-as-English data, so it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
