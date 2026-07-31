@@ -96,7 +96,19 @@
 // selOpt() now check (this.sub || this.revealed[qIdx]) everywhere they
 // used to check this.sub alone. Old v14 cache would keep serving mocks
 // that only reveal answers after final submit, so it must be evicted.
-const CACHE_NAME = 'exam-tracker-v15';
+// Bumped v15 -> v16: Mains Mock (Sectional + Full) converted from the old
+// iframe-per-mock pattern to a native Testbook-style player, same as Super
+// Practice/EM Mocks — pre-extracted JSON at mainsmock/data/<sectional|full>/
+// mock_NNN.json, new calcPage-mmnative* pages in index.html, new app.js
+// module (openMainsMockNative/initMainsMockNative). Old v15 cache would
+// keep serving the old iframe player, so it must be evicted.
+// Bumped v16 -> v17: 75 Day Practice (Quant/English/GK/Reasoning, 384 mocks)
+// converted from the old iframe-per-mock pattern to a native Testbook-style
+// player, same as Mains Mock/Super Practice/EM Mocks — pre-extracted JSON at
+// practice75/data/<subject>/mock_NNN.json, new calcPage-p75native* pages in
+// index.html, new app.js module (openP75MockNative/initP75Native). Old v16
+// cache would keep serving the old iframe player, so it must be evicted.
+const CACHE_NAME = 'exam-tracker-v17';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

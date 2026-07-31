@@ -15157,12 +15157,332 @@ function filterSPMockGrid(query){
   renderSPMockGrid(filtered);
 }
 
-function openSPMock(key, file, label, entry){
-  const titleEl = document.getElementById('superpracticePlayerTitle');
-  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
-  const iframe = document.getElementById('superpracticeIframe');
-  if(iframe) iframe.src = 'superpractice/' + key + '/' + file;
-  showCalcPage('superpracticeplayer');
+// ===== Super Practice: native player =====
+// Pre-converted data lives at superpractice/data/<key>/mock_NNN.json (see
+// extract_sp.py), one JSON per original mock_NNN.html, schema:
+//   { title, duration_min, questions: [ { q_en, q_hi, options_en, options_hi,
+//     answer(0-based), solution_en, solution_hi, marks, neg } ] }
+// Same Testbook-style exam UI as EM Mocks (instructions -> timed exam with
+// palette/mark-for-review -> result+solution review), but with a live
+// EN/हिंदी toggle since Super Practice source files carry both languages
+// (unlike EM Mocks' already-English-only source).
+let spnativeLoaded = null;
+let spnativeMockLabel = '';
+let spnativeLang = 'en'; // 'en' | 'hi'
+const spnativeSession = {
+  questions: [], answers: [], marked: [], visited: [],
+  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
+};
+
+function spnativeQText(q){ return spnativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
+function spnativeOpts(q){ return spnativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
+function spnativeSolText(q){ return spnativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+
+function spnativeUpdateLangBtns(){
+  const label = spnativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
+  ['spnativeInfoLangBtn','spnativeExamLangBtn','spnativeResultLangBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.textContent = label;
+  });
+}
+function spnativeToggleLang(){
+  spnativeLang = spnativeLang === 'hi' ? 'en' : 'hi';
+  spnativeUpdateLangBtns();
+  // Re-render whichever screen is currently visible with the new language
+  const examPage = document.getElementById('calcPage-spnativeexam');
+  const resultPage = document.getElementById('calcPage-spnativeresult');
+  if(examPage && examPage.classList.contains('active')) spnativeRenderQuestion();
+  else if(resultPage && resultPage.classList.contains('active')) spnativeResultRenderQuestion();
+}
+
+async function openSPMock(key, file, label, entry){
+  spnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const jsonFile = file.replace(/\.html$/, '.json');
+  const infoTitleEl = document.getElementById('spnativeInfoTitle');
+  if(infoTitleEl) infoTitleEl.textContent = spnativeMockLabel;
+  spnativeUpdateLangBtns();
+  showCalcPage('spnativeinfo');
+  const qc = document.getElementById('spnativeInfoQCount'); if(qc) qc.textContent = '…';
+  let data;
+  try{
+    const res = await fetch('superpractice/data/' + key + '/' + jsonFile);
+    data = await res.json();
+  }catch(e){
+    alert('Ye mock load nahi ho paaya. Dobara try karein.');
+    showCalcPage('superpracticelist');
+    return;
+  }
+  if(!data || !data.questions || !data.questions.length){
+    alert('Ye mock abhi available nahi hai.');
+    showCalcPage('superpracticelist');
+    return;
+  }
+  spnativeLoaded = data;
+  const totalQ = data.questions.length;
+  const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
+  const firstQ = data.questions[0] || { marks: 1, neg: 0.25 };
+  if(qc) qc.textContent = totalQ;
+  const tm = document.getElementById('spnativeInfoMarks');
+  if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
+  const du = document.getElementById('spnativeInfoDuration');
+  if(du) du.textContent = (data.duration_min || 15) + ' minutes';
+  const mk = document.getElementById('spnativeInfoMarking');
+  if(mk) mk.textContent = '+' + firstQ.marks + ' / -' + firstQ.neg;
+}
+
+function spnativeFormatMarks(m){ return (Math.round(m * 100) / 100).toString(); }
+function spnativeFormatTime(sec){
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return (m < 10 ? '0' + m : m) + ':' + (r < 10 ? '0' + r : r);
+}
+
+function spnativeStartExam(){
+  if(!spnativeLoaded) return;
+  spnativeSession.questions = spnativeLoaded.questions;
+  const n = spnativeSession.questions.length;
+  spnativeSession.answers = new Array(n).fill(null);
+  spnativeSession.marked = new Array(n).fill(false);
+  spnativeSession.visited = new Array(n).fill(false);
+  spnativeSession.current = 0;
+  spnativeSession.timeLeft = (spnativeLoaded.duration_min || 15) * 60;
+  spnativeSession.submitted = false;
+  spnativeSession.paused = false;
+  const titleEl = document.getElementById('spnativeExamTitle');
+  if(titleEl) titleEl.textContent = spnativeMockLabel;
+  spnativeStopTimer();
+  spnativeStartTimer();
+  spnativeSetPausedUI(false);
+  spnativeRenderQuestion();
+  showCalcPage('spnativeexam');
+}
+
+function spnativeUpdateTimerDisplay(){
+  const el = document.getElementById('spnativeExamTimerPill');
+  if(!el) return;
+  el.textContent = '⏱ ' + spnativeFormatTime(spnativeSession.timeLeft);
+  el.classList.toggle('examTimerLow', spnativeSession.timeLeft <= 120);
+}
+function spnativeStartTimer(){
+  spnativeUpdateTimerDisplay();
+  spnativeSession.timerId = setInterval(() => {
+    spnativeSession.timeLeft--;
+    spnativeUpdateTimerDisplay();
+    if(spnativeSession.timeLeft <= 0){
+      spnativeStopTimer();
+      spnativeSubmit();
+    }
+  }, 1000);
+}
+function spnativeStopTimer(){
+  if(spnativeSession.timerId){ clearInterval(spnativeSession.timerId); spnativeSession.timerId = null; }
+}
+function spnativeSetPausedUI(paused){
+  const btn = document.getElementById('spnativeExamPauseBtn');
+  if(btn){
+    btn.textContent = paused ? '▶' : '⏸';
+    btn.title = paused ? 'Resume Test' : 'Pause Test';
+    btn.classList.toggle('paused', paused);
+  }
+  const overlay = document.getElementById('spnativeExamPauseOverlay');
+  if(overlay) overlay.style.display = paused ? 'flex' : 'none';
+  ['spnativeExamMarkBtn','spnativeExamClearBtn','spnativeExamSaveNextBtn','spnativeExamSaveNextBtnBottom','spnativeExamSubmitBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.disabled = paused;
+  });
+}
+function spnativeTogglePause(){
+  if(spnativeSession.submitted) return;
+  spnativeSession.paused = !spnativeSession.paused;
+  if(spnativeSession.paused) spnativeStopTimer(); else spnativeStartTimer();
+  spnativeSetPausedUI(spnativeSession.paused);
+}
+function spnativePaletteState(i){
+  const answered = spnativeSession.answers[i] !== null && spnativeSession.answers[i] !== undefined;
+  const marked = spnativeSession.marked[i];
+  if(marked && answered) return 'pAnsweredMarked';
+  if(marked) return 'pMarked';
+  if(answered) return 'pAnswered';
+  if(spnativeSession.visited[i]) return 'pNotAnswered';
+  return '';
+}
+function spnativeRenderPalette(){
+  const grid = document.getElementById('spnativeExamPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  spnativeSession.questions.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + spnativePaletteState(i) + (i === spnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => spnativeGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+function spnativeRenderQuestion(){
+  const q = spnativeSession.questions[spnativeSession.current];
+  if(!q) return;
+  spnativeSession.visited[spnativeSession.current] = true;
+  const qnoEl = document.getElementById('spnativeExamQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (spnativeSession.current + 1);
+  const wordEl = document.getElementById('spnativeExamWordText');
+  if(wordEl) wordEl.innerHTML = spnativeQText(q) || '—';
+  const optList = document.getElementById('spnativeExamOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const selected = spnativeSession.answers[spnativeSession.current];
+    (spnativeOpts(q) || []).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + opt + '</span>';
+      btn.addEventListener('click', () => spnativeSelectOption(i));
+      optList.appendChild(btn);
+    });
+  }
+  const markBtn = document.getElementById('spnativeExamMarkBtn');
+  if(markBtn) markBtn.textContent = spnativeSession.marked[spnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
+  spnativeRenderPalette();
+}
+function spnativeSelectOption(i){
+  spnativeSession.answers[spnativeSession.current] = i;
+  spnativeRenderQuestion();
+}
+function spnativeGoTo(idx){
+  if(idx < 0 || idx >= spnativeSession.questions.length) return;
+  spnativeSession.current = idx;
+  spnativeRenderQuestion();
+}
+function spnativeSaveNext(){
+  if(spnativeSession.current < spnativeSession.questions.length - 1) spnativeGoTo(spnativeSession.current + 1);
+  else spnativeRenderPalette();
+}
+function spnativeMarkForReview(){
+  spnativeSession.marked[spnativeSession.current] = !spnativeSession.marked[spnativeSession.current];
+  if(spnativeSession.current < spnativeSession.questions.length - 1) spnativeGoTo(spnativeSession.current + 1);
+  else spnativeRenderQuestion();
+}
+function spnativeClearResponse(){
+  spnativeSession.answers[spnativeSession.current] = null;
+  spnativeRenderQuestion();
+}
+function spnativeConfirmSubmit(){
+  const total = spnativeSession.questions.length;
+  const answered = spnativeSession.answers.filter(a => a !== null && a !== undefined).length;
+  const notAnswered = total - answered;
+  const ok = confirm('Answered: ' + answered + '\nNot Answered: ' + notAnswered + '\n\nSubmit test now? Ye action wapas nahi ho sakta.');
+  if(ok){ spnativeStopTimer(); spnativeSubmit(); }
+}
+function spnativeSubmit(){
+  if(spnativeSession.submitted) return;
+  spnativeSession.submitted = true;
+  spnativeStopTimer();
+  let correct = 0, wrong = 0, marks = 0;
+  spnativeSession.questions.forEach((q, i) => {
+    const a = spnativeSession.answers[i];
+    if(a === null || a === undefined) return;
+    if(a === q.answer){ correct++; marks += (q.marks || 0); }
+    else { wrong++; marks -= (q.neg || 0); }
+  });
+  const skipped = spnativeSession.questions.length - correct - wrong;
+  const attempted = correct + wrong;
+  const acc = attempted ? Math.round((correct / attempted) * 100) : 0;
+  const titleEl = document.getElementById('spnativeResultTitle');
+  if(titleEl) titleEl.textContent = spnativeMockLabel;
+  const summaryEl = document.getElementById('spnativeExamResultSummary');
+  if(summaryEl){
+    summaryEl.innerHTML =
+      '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + spnativeFormatMarks(marks) + '</div><div class="l">Total Marks</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + correct + '</div><div class="l">Correct</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + wrong + '</div><div class="l">Wrong</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + skipped + '</div><div class="l">Skipped</div></div>' +
+      '<div class="examSumCard"><div class="n">' + acc + '%</div><div class="l">Accuracy</div></div>' +
+      '<div class="examSumCard"><div class="n">' + spnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
+  }
+  logQuizActivity(spnativeMockLabel, correct, attempted);
+  spnativeResultRenderPalette();
+  spnativeResultGoTo(0);
+  showCalcPage('spnativeresult');
+}
+function spnativeResultQState(i){
+  const a = spnativeSession.answers[i];
+  const q = spnativeSession.questions[i];
+  if(a === null || a === undefined) return 'skipped';
+  return a === q.answer ? 'correct' : 'wrong';
+}
+function spnativeResultRenderPalette(){
+  const grid = document.getElementById('spnativeResultPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  spnativeSession.questions.forEach((q, i) => {
+    const st = spnativeResultQState(i);
+    const cls = st === 'correct' ? 'pAnswered' : st === 'wrong' ? 'pNotAnswered' : '';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + cls + (i === spnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => spnativeResultGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+let spnativeResultRevealed = false;
+function spnativeResultGoTo(idx){
+  if(idx < 0 || idx >= spnativeSession.questions.length) return;
+  spnativeSession.current = idx;
+  spnativeResultRevealed = false;
+  spnativeResultRenderQuestion();
+  spnativeResultRenderPalette();
+}
+function spnativeResultReveal(){
+  if(spnativeResultRevealed) return;
+  spnativeResultRevealed = true;
+  spnativeResultRenderQuestion();
+}
+function spnativeResultRenderQuestion(){
+  const i = spnativeSession.current;
+  const q = spnativeSession.questions[i];
+  if(!q) return;
+  const qnoEl = document.getElementById('spnativeResultQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (i + 1);
+  const st = spnativeResultQState(i);
+  const tagWrap = document.getElementById('spnativeResultTagWrap');
+  if(tagWrap){
+    if(spnativeResultRevealed){
+      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+    } else {
+      tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+    }
+  }
+  const wordEl = document.getElementById('spnativeResultWordText');
+  if(wordEl) wordEl.innerHTML = spnativeQText(q) || '—';
+  const optList = document.getElementById('spnativeResultOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const userAns = spnativeSession.answers[i];
+    (spnativeOpts(q) || []).forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      let cls = 'examOptBtn';
+      if(spnativeResultRevealed){
+        if(oi === q.answer) cls += ' correct';
+        else if(oi === userAns) cls += ' wrong';
+      } else if(oi === userAns){
+        cls += ' selected';
+      }
+      btn.className = cls;
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + oi) + '</span><span>' + opt + '</span>';
+      optList.appendChild(btn);
+    });
+  }
+  const solCard = document.getElementById('spnativeResultSolutionCard');
+  const solText = document.getElementById('spnativeResultSolutionText');
+  if(spnativeResultRevealed){
+    if(solText) solText.innerHTML = spnativeSolText(q) || 'Solution available soon.';
+    if(solCard) solCard.style.display = 'block';
+  } else if(solCard) solCard.style.display = 'none';
 }
 
 function initSuperPracticeQuiz(){
@@ -15173,14 +15493,54 @@ function initSuperPracticeQuiz(){
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('superpracticeListBackBtn');
   if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('superpracticemenu'));
-  const playerBackBtn = document.getElementById('superpracticePlayerBackBtn');
-  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
-    const iframe = document.getElementById('superpracticeIframe');
-    if(iframe) iframe.src = 'about:blank';
-    showCalcPage('superpracticelist');
-  });
   const searchBox = document.getElementById('superpracticeSearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterSPMockGrid(searchBox.value));
+
+  // Native instructions page
+  const infoBackBtn = document.getElementById('spnativeInfoBackBtn');
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  const startBtn = document.getElementById('spnativeStartBtn');
+  if(startBtn) startBtn.addEventListener('click', spnativeStartExam);
+  const infoLangBtn = document.getElementById('spnativeInfoLangBtn');
+  if(infoLangBtn) infoLangBtn.addEventListener('click', spnativeToggleLang);
+
+  // Native exam page
+  const examBackBtn = document.getElementById('spnativeExamBackBtn');
+  if(examBackBtn) examBackBtn.addEventListener('click', () => {
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); showCalcPage('superpracticelist'); }
+  });
+  const pauseBtn = document.getElementById('spnativeExamPauseBtn');
+  if(pauseBtn) pauseBtn.addEventListener('click', spnativeTogglePause);
+  const resumeBtn = document.getElementById('spnativeExamResumeBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', spnativeTogglePause);
+  const submitBtn = document.getElementById('spnativeExamSubmitBtn');
+  if(submitBtn) submitBtn.addEventListener('click', spnativeConfirmSubmit);
+  const markBtn = document.getElementById('spnativeExamMarkBtn');
+  if(markBtn) markBtn.addEventListener('click', spnativeMarkForReview);
+  const clearBtn = document.getElementById('spnativeExamClearBtn');
+  if(clearBtn) clearBtn.addEventListener('click', spnativeClearResponse);
+  const saveNextBtn = document.getElementById('spnativeExamSaveNextBtn');
+  if(saveNextBtn) saveNextBtn.addEventListener('click', spnativeSaveNext);
+  const saveNextBtnBottom = document.getElementById('spnativeExamSaveNextBtnBottom');
+  if(saveNextBtnBottom) saveNextBtnBottom.addEventListener('click', spnativeSaveNext);
+  const examLangBtn = document.getElementById('spnativeExamLangBtn');
+  if(examLangBtn) examLangBtn.addEventListener('click', spnativeToggleLang);
+
+  // Native result page
+  const resultBackBtn = document.getElementById('spnativeResultBackBtn');
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  const reattemptBtn = document.getElementById('spnativeResultReattemptBtn');
+  if(reattemptBtn) reattemptBtn.addEventListener('click', spnativeStartExam);
+  const resultQWrap = document.getElementById('spnativeResultQuestionWrap');
+  if(resultQWrap) resultQWrap.addEventListener('click', spnativeResultReveal);
+  const resultOptList = document.getElementById('spnativeResultOptList');
+  if(resultOptList) resultOptList.addEventListener('click', spnativeResultReveal);
+  const resultPrevBtn = document.getElementById('spnativeResultPrevBtn');
+  if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => spnativeResultGoTo(spnativeSession.current - 1));
+  const resultNextBtn = document.getElementById('spnativeResultNextBtn');
+  if(resultNextBtn) resultNextBtn.addEventListener('click', () => spnativeResultGoTo(spnativeSession.current + 1));
+  const resultLangBtn = document.getElementById('spnativeResultLangBtn');
+  if(resultLangBtn) resultLangBtn.addEventListener('click', spnativeToggleLang);
 }
 
 // ===== 75 Day Practice ===== (same pattern as Super Practice, separate pool)
@@ -15270,12 +15630,384 @@ function filterP75MockGrid(query){
   renderP75MockGrid(filtered);
 }
 
+// ===== 75 Day Practice: native player =====
+// Pre-converted data lives at superpractice/data/<key>/mock_NNN.json (see
+// extract_sp.py), one JSON per original mock_NNN.html, schema:
+//   { title, duration_min, questions: [ { q_en, q_hi, options_en, options_hi,
+//     answer(0-based), solution_en, solution_hi, marks, neg } ] }
+// Same Testbook-style exam UI as EM Mocks (instructions -> timed exam with
+// palette/mark-for-review -> result+solution review), but with a live
+// EN/हिंदी toggle since 75 Day Practice source files carry both languages
+// (unlike EM Mocks' already-English-only source).
+let p75nativeLoaded = null;
+let p75nativeMockLabel = '';
+let p75nativeLang = 'en'; // 'en' | 'hi'
+const p75nativeSession = {
+  questions: [], answers: [], marked: [], visited: [],
+  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
+};
+
+function p75nativeQText(q){ return p75nativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
+function p75nativeOpts(q){ return p75nativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
+function p75nativeSolText(q){ return p75nativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+
+function p75nativeUpdateLangBtns(){
+  const label = p75nativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
+  ['p75nativeInfoLangBtn','p75nativeExamLangBtn','p75nativeResultLangBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.textContent = label;
+  });
+}
+function p75nativeToggleLang(){
+  p75nativeLang = p75nativeLang === 'hi' ? 'en' : 'hi';
+  p75nativeUpdateLangBtns();
+  // Re-render whichever screen is currently visible with the new language
+  const examPage = document.getElementById('calcPage-p75nativeexam');
+  const resultPage = document.getElementById('calcPage-p75nativeresult');
+  if(examPage && examPage.classList.contains('active')) p75nativeRenderQuestion();
+  else if(resultPage && resultPage.classList.contains('active')) p75nativeResultRenderQuestion();
+}
+
+async function openP75MockNative(key, file, label, entry){
+  p75nativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const jsonFile = file.replace(/\.html$/, '.json');
+  const infoTitleEl = document.getElementById('p75nativeInfoTitle');
+  if(infoTitleEl) infoTitleEl.textContent = p75nativeMockLabel;
+  p75nativeUpdateLangBtns();
+  showCalcPage('p75nativeinfo');
+  const qc = document.getElementById('p75nativeInfoQCount'); if(qc) qc.textContent = '…';
+  let data;
+  try{
+    const res = await fetch('practice75/data/' + key + '/' + jsonFile);
+    data = await res.json();
+  }catch(e){
+    alert('Ye mock load nahi ho paaya. Dobara try karein.');
+    showCalcPage('75daylist');
+    return;
+  }
+  if(!data || !data.questions || !data.questions.length){
+    alert('Ye mock abhi available nahi hai.');
+    showCalcPage('75daylist');
+    return;
+  }
+  p75nativeLoaded = data;
+  const totalQ = data.questions.length;
+  const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
+  const firstQ = data.questions[0] || { marks: 1, neg: 0.25 };
+  if(qc) qc.textContent = totalQ;
+  const tm = document.getElementById('p75nativeInfoMarks');
+  if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
+  const du = document.getElementById('p75nativeInfoDuration');
+  if(du) du.textContent = (data.duration_min || 15) + ' minutes';
+  const mk = document.getElementById('p75nativeInfoMarking');
+  if(mk) mk.textContent = '+' + firstQ.marks + ' / -' + firstQ.neg;
+}
+
+function p75nativeFormatMarks(m){ return (Math.round(m * 100) / 100).toString(); }
+function p75nativeFormatTime(sec){
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return (m < 10 ? '0' + m : m) + ':' + (r < 10 ? '0' + r : r);
+}
+
+function p75nativeStartExam(){
+  if(!p75nativeLoaded) return;
+  p75nativeSession.questions = p75nativeLoaded.questions;
+  const n = p75nativeSession.questions.length;
+  p75nativeSession.answers = new Array(n).fill(null);
+  p75nativeSession.marked = new Array(n).fill(false);
+  p75nativeSession.visited = new Array(n).fill(false);
+  p75nativeSession.current = 0;
+  p75nativeSession.timeLeft = (p75nativeLoaded.duration_min || 15) * 60;
+  p75nativeSession.submitted = false;
+  p75nativeSession.paused = false;
+  const titleEl = document.getElementById('p75nativeExamTitle');
+  if(titleEl) titleEl.textContent = p75nativeMockLabel;
+  p75nativeStopTimer();
+  p75nativeStartTimer();
+  p75nativeSetPausedUI(false);
+  p75nativeRenderQuestion();
+  showCalcPage('p75nativeexam');
+}
+
+function p75nativeUpdateTimerDisplay(){
+  const el = document.getElementById('p75nativeExamTimerPill');
+  if(!el) return;
+  el.textContent = '⏱ ' + p75nativeFormatTime(p75nativeSession.timeLeft);
+  el.classList.toggle('examTimerLow', p75nativeSession.timeLeft <= 120);
+}
+function p75nativeStartTimer(){
+  p75nativeUpdateTimerDisplay();
+  p75nativeSession.timerId = setInterval(() => {
+    p75nativeSession.timeLeft--;
+    p75nativeUpdateTimerDisplay();
+    if(p75nativeSession.timeLeft <= 0){
+      p75nativeStopTimer();
+      p75nativeSubmit();
+    }
+  }, 1000);
+}
+function p75nativeStopTimer(){
+  if(p75nativeSession.timerId){ clearInterval(p75nativeSession.timerId); p75nativeSession.timerId = null; }
+}
+function p75nativeSetPausedUI(paused){
+  const btn = document.getElementById('p75nativeExamPauseBtn');
+  if(btn){
+    btn.textContent = paused ? '▶' : '⏸';
+    btn.title = paused ? 'Resume Test' : 'Pause Test';
+    btn.classList.toggle('paused', paused);
+  }
+  const overlay = document.getElementById('p75nativeExamPauseOverlay');
+  if(overlay) overlay.style.display = paused ? 'flex' : 'none';
+  ['p75nativeExamMarkBtn','p75nativeExamClearBtn','p75nativeExamSaveNextBtn','p75nativeExamSaveNextBtnBottom','p75nativeExamSubmitBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.disabled = paused;
+  });
+}
+function p75nativeTogglePause(){
+  if(p75nativeSession.submitted) return;
+  p75nativeSession.paused = !p75nativeSession.paused;
+  if(p75nativeSession.paused) p75nativeStopTimer(); else p75nativeStartTimer();
+  p75nativeSetPausedUI(p75nativeSession.paused);
+}
+function p75nativePaletteState(i){
+  const answered = p75nativeSession.answers[i] !== null && p75nativeSession.answers[i] !== undefined;
+  const marked = p75nativeSession.marked[i];
+  if(marked && answered) return 'pAnsweredMarked';
+  if(marked) return 'pMarked';
+  if(answered) return 'pAnswered';
+  if(p75nativeSession.visited[i]) return 'pNotAnswered';
+  return '';
+}
+function p75nativeRenderPalette(){
+  const grid = document.getElementById('p75nativeExamPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  p75nativeSession.questions.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + p75nativePaletteState(i) + (i === p75nativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => p75nativeGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+function p75nativeRenderQuestion(){
+  const q = p75nativeSession.questions[p75nativeSession.current];
+  if(!q) return;
+  p75nativeSession.visited[p75nativeSession.current] = true;
+  const qnoEl = document.getElementById('p75nativeExamQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (p75nativeSession.current + 1);
+  const wordEl = document.getElementById('p75nativeExamWordText');
+  if(wordEl) wordEl.innerHTML = p75nativeQText(q) || '—';
+  const optList = document.getElementById('p75nativeExamOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const selected = p75nativeSession.answers[p75nativeSession.current];
+    (p75nativeOpts(q) || []).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + opt + '</span>';
+      btn.addEventListener('click', () => p75nativeSelectOption(i));
+      optList.appendChild(btn);
+    });
+  }
+  const markBtn = document.getElementById('p75nativeExamMarkBtn');
+  if(markBtn) markBtn.textContent = p75nativeSession.marked[p75nativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
+  p75nativeRenderPalette();
+}
+function p75nativeSelectOption(i){
+  p75nativeSession.answers[p75nativeSession.current] = i;
+  p75nativeRenderQuestion();
+}
+function p75nativeGoTo(idx){
+  if(idx < 0 || idx >= p75nativeSession.questions.length) return;
+  p75nativeSession.current = idx;
+  p75nativeRenderQuestion();
+}
+function p75nativeSaveNext(){
+  if(p75nativeSession.current < p75nativeSession.questions.length - 1) p75nativeGoTo(p75nativeSession.current + 1);
+  else p75nativeRenderPalette();
+}
+function p75nativeMarkForReview(){
+  p75nativeSession.marked[p75nativeSession.current] = !p75nativeSession.marked[p75nativeSession.current];
+  if(p75nativeSession.current < p75nativeSession.questions.length - 1) p75nativeGoTo(p75nativeSession.current + 1);
+  else p75nativeRenderQuestion();
+}
+function p75nativeClearResponse(){
+  p75nativeSession.answers[p75nativeSession.current] = null;
+  p75nativeRenderQuestion();
+}
+function p75nativeConfirmSubmit(){
+  const total = p75nativeSession.questions.length;
+  const answered = p75nativeSession.answers.filter(a => a !== null && a !== undefined).length;
+  const notAnswered = total - answered;
+  const ok = confirm('Answered: ' + answered + '\nNot Answered: ' + notAnswered + '\n\nSubmit test now? Ye action wapas nahi ho sakta.');
+  if(ok){ p75nativeStopTimer(); p75nativeSubmit(); }
+}
+function p75nativeSubmit(){
+  if(p75nativeSession.submitted) return;
+  p75nativeSession.submitted = true;
+  p75nativeStopTimer();
+  let correct = 0, wrong = 0, marks = 0;
+  p75nativeSession.questions.forEach((q, i) => {
+    const a = p75nativeSession.answers[i];
+    if(a === null || a === undefined) return;
+    if(a === q.answer){ correct++; marks += (q.marks || 0); }
+    else { wrong++; marks -= (q.neg || 0); }
+  });
+  const skipped = p75nativeSession.questions.length - correct - wrong;
+  const attempted = correct + wrong;
+  const acc = attempted ? Math.round((correct / attempted) * 100) : 0;
+  const titleEl = document.getElementById('p75nativeResultTitle');
+  if(titleEl) titleEl.textContent = p75nativeMockLabel;
+  const summaryEl = document.getElementById('p75nativeExamResultSummary');
+  if(summaryEl){
+    summaryEl.innerHTML =
+      '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + p75nativeFormatMarks(marks) + '</div><div class="l">Total Marks</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + correct + '</div><div class="l">Correct</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + wrong + '</div><div class="l">Wrong</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + skipped + '</div><div class="l">Skipped</div></div>' +
+      '<div class="examSumCard"><div class="n">' + acc + '%</div><div class="l">Accuracy</div></div>' +
+      '<div class="examSumCard"><div class="n">' + p75nativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
+  }
+  logQuizActivity(p75nativeMockLabel, correct, attempted);
+  p75nativeResultRenderPalette();
+  p75nativeResultGoTo(0);
+  showCalcPage('p75nativeresult');
+}
+function p75nativeResultQState(i){
+  const a = p75nativeSession.answers[i];
+  const q = p75nativeSession.questions[i];
+  if(a === null || a === undefined) return 'skipped';
+  return a === q.answer ? 'correct' : 'wrong';
+}
+function p75nativeResultRenderPalette(){
+  const grid = document.getElementById('p75nativeResultPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  p75nativeSession.questions.forEach((q, i) => {
+    const st = p75nativeResultQState(i);
+    const cls = st === 'correct' ? 'pAnswered' : st === 'wrong' ? 'pNotAnswered' : '';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + cls + (i === p75nativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => p75nativeResultGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+let p75nativeResultRevealed = false;
+function p75nativeResultGoTo(idx){
+  if(idx < 0 || idx >= p75nativeSession.questions.length) return;
+  p75nativeSession.current = idx;
+  p75nativeResultRevealed = false;
+  p75nativeResultRenderQuestion();
+  p75nativeResultRenderPalette();
+}
+function p75nativeResultReveal(){
+  if(p75nativeResultRevealed) return;
+  p75nativeResultRevealed = true;
+  p75nativeResultRenderQuestion();
+}
+function p75nativeResultRenderQuestion(){
+  const i = p75nativeSession.current;
+  const q = p75nativeSession.questions[i];
+  if(!q) return;
+  const qnoEl = document.getElementById('p75nativeResultQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (i + 1);
+  const st = p75nativeResultQState(i);
+  const tagWrap = document.getElementById('p75nativeResultTagWrap');
+  if(tagWrap){
+    if(p75nativeResultRevealed){
+      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+    } else {
+      tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+    }
+  }
+  const wordEl = document.getElementById('p75nativeResultWordText');
+  if(wordEl) wordEl.innerHTML = p75nativeQText(q) || '—';
+  const optList = document.getElementById('p75nativeResultOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const userAns = p75nativeSession.answers[i];
+    (p75nativeOpts(q) || []).forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      let cls = 'examOptBtn';
+      if(p75nativeResultRevealed){
+        if(oi === q.answer) cls += ' correct';
+        else if(oi === userAns) cls += ' wrong';
+      } else if(oi === userAns){
+        cls += ' selected';
+      }
+      btn.className = cls;
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + oi) + '</span><span>' + opt + '</span>';
+      optList.appendChild(btn);
+    });
+  }
+  const solCard = document.getElementById('p75nativeResultSolutionCard');
+  const solText = document.getElementById('p75nativeResultSolutionText');
+  if(p75nativeResultRevealed){
+    if(solText) solText.innerHTML = p75nativeSolText(q) || 'Solution available soon.';
+    if(solCard) solCard.style.display = 'block';
+  } else if(solCard) solCard.style.display = 'none';
+}
+
+function initP75Native(){
+  // Native instructions page
+  const infoBackBtn = document.getElementById('p75nativeInfoBackBtn');
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  const startBtn = document.getElementById('p75nativeStartBtn');
+  if(startBtn) startBtn.addEventListener('click', p75nativeStartExam);
+  const infoLangBtn = document.getElementById('p75nativeInfoLangBtn');
+  if(infoLangBtn) infoLangBtn.addEventListener('click', p75nativeToggleLang);
+
+  // Native exam page
+  const examBackBtn = document.getElementById('p75nativeExamBackBtn');
+  if(examBackBtn) examBackBtn.addEventListener('click', () => {
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); showCalcPage('75daylist'); }
+  });
+  const pauseBtn = document.getElementById('p75nativeExamPauseBtn');
+  if(pauseBtn) pauseBtn.addEventListener('click', p75nativeTogglePause);
+  const resumeBtn = document.getElementById('p75nativeExamResumeBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', p75nativeTogglePause);
+  const submitBtn = document.getElementById('p75nativeExamSubmitBtn');
+  if(submitBtn) submitBtn.addEventListener('click', p75nativeConfirmSubmit);
+  const markBtn = document.getElementById('p75nativeExamMarkBtn');
+  if(markBtn) markBtn.addEventListener('click', p75nativeMarkForReview);
+  const clearBtn = document.getElementById('p75nativeExamClearBtn');
+  if(clearBtn) clearBtn.addEventListener('click', p75nativeClearResponse);
+  const saveNextBtn = document.getElementById('p75nativeExamSaveNextBtn');
+  if(saveNextBtn) saveNextBtn.addEventListener('click', p75nativeSaveNext);
+  const saveNextBtnBottom = document.getElementById('p75nativeExamSaveNextBtnBottom');
+  if(saveNextBtnBottom) saveNextBtnBottom.addEventListener('click', p75nativeSaveNext);
+  const examLangBtn = document.getElementById('p75nativeExamLangBtn');
+  if(examLangBtn) examLangBtn.addEventListener('click', p75nativeToggleLang);
+
+  // Native result page
+  const resultBackBtn = document.getElementById('p75nativeResultBackBtn');
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  const reattemptBtn = document.getElementById('p75nativeResultReattemptBtn');
+  if(reattemptBtn) reattemptBtn.addEventListener('click', p75nativeStartExam);
+  const resultQWrap = document.getElementById('p75nativeResultQuestionWrap');
+  if(resultQWrap) resultQWrap.addEventListener('click', p75nativeResultReveal);
+  const resultOptList = document.getElementById('p75nativeResultOptList');
+  if(resultOptList) resultOptList.addEventListener('click', p75nativeResultReveal);
+  const resultPrevBtn = document.getElementById('p75nativeResultPrevBtn');
+  if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => p75nativeResultGoTo(p75nativeSession.current - 1));
+  const resultNextBtn = document.getElementById('p75nativeResultNextBtn');
+  if(resultNextBtn) resultNextBtn.addEventListener('click', () => p75nativeResultGoTo(p75nativeSession.current + 1));
+  const resultLangBtn = document.getElementById('p75nativeResultLangBtn');
+  if(resultLangBtn) resultLangBtn.addEventListener('click', p75nativeToggleLang);
+}
+
 function openP75Mock(key, file, label, entry){
-  const titleEl = document.getElementById('p75PlayerTitle');
-  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
-  const iframe = document.getElementById('p75Iframe');
-  if(iframe) iframe.src = 'practice75/' + key + '/' + file;
-  showCalcPage('75dayplayer');
+  openP75MockNative(key, file, label, entry);
 }
 
 function initP75Quiz(){
@@ -15286,14 +16018,9 @@ function initP75Quiz(){
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('p75ListBackBtn');
   if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('75daymenu'));
-  const playerBackBtn = document.getElementById('p75PlayerBackBtn');
-  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
-    const iframe = document.getElementById('p75Iframe');
-    if(iframe) iframe.src = 'about:blank';
-    showCalcPage('75daylist');
-  });
   const searchBox = document.getElementById('p75SearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterP75MockGrid(searchBox.value));
+  initP75Native();
 }
 
 // ===== Mains Mock ===== (same iframe pattern as Super Practice / 75 Day Practice)
@@ -15382,12 +16109,384 @@ function filterMainsMockGrid(query){
   renderMainsMockGrid(filtered);
 }
 
+// ===== Mains Mock: native player =====
+// Pre-converted data lives at superpractice/data/<key>/mock_NNN.json (see
+// extract_sp.py), one JSON per original mock_NNN.html, schema:
+//   { title, duration_min, questions: [ { q_en, q_hi, options_en, options_hi,
+//     answer(0-based), solution_en, solution_hi, marks, neg } ] }
+// Same Testbook-style exam UI as EM Mocks (instructions -> timed exam with
+// palette/mark-for-review -> result+solution review), but with a live
+// EN/हिंदी toggle since Mains Mock source files carry both languages
+// (unlike EM Mocks' already-English-only source).
+let mmnativeLoaded = null;
+let mmnativeMockLabel = '';
+let mmnativeLang = 'en'; // 'en' | 'hi'
+const mmnativeSession = {
+  questions: [], answers: [], marked: [], visited: [],
+  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
+};
+
+function mmnativeQText(q){ return mmnativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
+function mmnativeOpts(q){ return mmnativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
+function mmnativeSolText(q){ return mmnativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+
+function mmnativeUpdateLangBtns(){
+  const label = mmnativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
+  ['mmnativeInfoLangBtn','mmnativeExamLangBtn','mmnativeResultLangBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.textContent = label;
+  });
+}
+function mmnativeToggleLang(){
+  mmnativeLang = mmnativeLang === 'hi' ? 'en' : 'hi';
+  mmnativeUpdateLangBtns();
+  // Re-render whichever screen is currently visible with the new language
+  const examPage = document.getElementById('calcPage-mmnativeexam');
+  const resultPage = document.getElementById('calcPage-mmnativeresult');
+  if(examPage && examPage.classList.contains('active')) mmnativeRenderQuestion();
+  else if(resultPage && resultPage.classList.contains('active')) mmnativeResultRenderQuestion();
+}
+
+async function openMainsMockNative(key, file, label, entry){
+  mmnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const jsonFile = file.replace(/\.html$/, '.json');
+  const infoTitleEl = document.getElementById('mmnativeInfoTitle');
+  if(infoTitleEl) infoTitleEl.textContent = mmnativeMockLabel;
+  mmnativeUpdateLangBtns();
+  showCalcPage('mmnativeinfo');
+  const qc = document.getElementById('mmnativeInfoQCount'); if(qc) qc.textContent = '…';
+  let data;
+  try{
+    const res = await fetch('mainsmock/data/' + key + '/' + jsonFile);
+    data = await res.json();
+  }catch(e){
+    alert('Ye mock load nahi ho paaya. Dobara try karein.');
+    showCalcPage('mainsmocklist');
+    return;
+  }
+  if(!data || !data.questions || !data.questions.length){
+    alert('Ye mock abhi available nahi hai.');
+    showCalcPage('mainsmocklist');
+    return;
+  }
+  mmnativeLoaded = data;
+  const totalQ = data.questions.length;
+  const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
+  const firstQ = data.questions[0] || { marks: 1, neg: 0.25 };
+  if(qc) qc.textContent = totalQ;
+  const tm = document.getElementById('mmnativeInfoMarks');
+  if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
+  const du = document.getElementById('mmnativeInfoDuration');
+  if(du) du.textContent = (data.duration_min || 15) + ' minutes';
+  const mk = document.getElementById('mmnativeInfoMarking');
+  if(mk) mk.textContent = '+' + firstQ.marks + ' / -' + firstQ.neg;
+}
+
+function mmnativeFormatMarks(m){ return (Math.round(m * 100) / 100).toString(); }
+function mmnativeFormatTime(sec){
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return (m < 10 ? '0' + m : m) + ':' + (r < 10 ? '0' + r : r);
+}
+
+function mmnativeStartExam(){
+  if(!mmnativeLoaded) return;
+  mmnativeSession.questions = mmnativeLoaded.questions;
+  const n = mmnativeSession.questions.length;
+  mmnativeSession.answers = new Array(n).fill(null);
+  mmnativeSession.marked = new Array(n).fill(false);
+  mmnativeSession.visited = new Array(n).fill(false);
+  mmnativeSession.current = 0;
+  mmnativeSession.timeLeft = (mmnativeLoaded.duration_min || 15) * 60;
+  mmnativeSession.submitted = false;
+  mmnativeSession.paused = false;
+  const titleEl = document.getElementById('mmnativeExamTitle');
+  if(titleEl) titleEl.textContent = mmnativeMockLabel;
+  mmnativeStopTimer();
+  mmnativeStartTimer();
+  mmnativeSetPausedUI(false);
+  mmnativeRenderQuestion();
+  showCalcPage('mmnativeexam');
+}
+
+function mmnativeUpdateTimerDisplay(){
+  const el = document.getElementById('mmnativeExamTimerPill');
+  if(!el) return;
+  el.textContent = '⏱ ' + mmnativeFormatTime(mmnativeSession.timeLeft);
+  el.classList.toggle('examTimerLow', mmnativeSession.timeLeft <= 120);
+}
+function mmnativeStartTimer(){
+  mmnativeUpdateTimerDisplay();
+  mmnativeSession.timerId = setInterval(() => {
+    mmnativeSession.timeLeft--;
+    mmnativeUpdateTimerDisplay();
+    if(mmnativeSession.timeLeft <= 0){
+      mmnativeStopTimer();
+      mmnativeSubmit();
+    }
+  }, 1000);
+}
+function mmnativeStopTimer(){
+  if(mmnativeSession.timerId){ clearInterval(mmnativeSession.timerId); mmnativeSession.timerId = null; }
+}
+function mmnativeSetPausedUI(paused){
+  const btn = document.getElementById('mmnativeExamPauseBtn');
+  if(btn){
+    btn.textContent = paused ? '▶' : '⏸';
+    btn.title = paused ? 'Resume Test' : 'Pause Test';
+    btn.classList.toggle('paused', paused);
+  }
+  const overlay = document.getElementById('mmnativeExamPauseOverlay');
+  if(overlay) overlay.style.display = paused ? 'flex' : 'none';
+  ['mmnativeExamMarkBtn','mmnativeExamClearBtn','mmnativeExamSaveNextBtn','mmnativeExamSaveNextBtnBottom','mmnativeExamSubmitBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.disabled = paused;
+  });
+}
+function mmnativeTogglePause(){
+  if(mmnativeSession.submitted) return;
+  mmnativeSession.paused = !mmnativeSession.paused;
+  if(mmnativeSession.paused) mmnativeStopTimer(); else mmnativeStartTimer();
+  mmnativeSetPausedUI(mmnativeSession.paused);
+}
+function mmnativePaletteState(i){
+  const answered = mmnativeSession.answers[i] !== null && mmnativeSession.answers[i] !== undefined;
+  const marked = mmnativeSession.marked[i];
+  if(marked && answered) return 'pAnsweredMarked';
+  if(marked) return 'pMarked';
+  if(answered) return 'pAnswered';
+  if(mmnativeSession.visited[i]) return 'pNotAnswered';
+  return '';
+}
+function mmnativeRenderPalette(){
+  const grid = document.getElementById('mmnativeExamPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  mmnativeSession.questions.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + mmnativePaletteState(i) + (i === mmnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => mmnativeGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+function mmnativeRenderQuestion(){
+  const q = mmnativeSession.questions[mmnativeSession.current];
+  if(!q) return;
+  mmnativeSession.visited[mmnativeSession.current] = true;
+  const qnoEl = document.getElementById('mmnativeExamQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (mmnativeSession.current + 1);
+  const wordEl = document.getElementById('mmnativeExamWordText');
+  if(wordEl) wordEl.innerHTML = mmnativeQText(q) || '—';
+  const optList = document.getElementById('mmnativeExamOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const selected = mmnativeSession.answers[mmnativeSession.current];
+    (mmnativeOpts(q) || []).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + opt + '</span>';
+      btn.addEventListener('click', () => mmnativeSelectOption(i));
+      optList.appendChild(btn);
+    });
+  }
+  const markBtn = document.getElementById('mmnativeExamMarkBtn');
+  if(markBtn) markBtn.textContent = mmnativeSession.marked[mmnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
+  mmnativeRenderPalette();
+}
+function mmnativeSelectOption(i){
+  mmnativeSession.answers[mmnativeSession.current] = i;
+  mmnativeRenderQuestion();
+}
+function mmnativeGoTo(idx){
+  if(idx < 0 || idx >= mmnativeSession.questions.length) return;
+  mmnativeSession.current = idx;
+  mmnativeRenderQuestion();
+}
+function mmnativeSaveNext(){
+  if(mmnativeSession.current < mmnativeSession.questions.length - 1) mmnativeGoTo(mmnativeSession.current + 1);
+  else mmnativeRenderPalette();
+}
+function mmnativeMarkForReview(){
+  mmnativeSession.marked[mmnativeSession.current] = !mmnativeSession.marked[mmnativeSession.current];
+  if(mmnativeSession.current < mmnativeSession.questions.length - 1) mmnativeGoTo(mmnativeSession.current + 1);
+  else mmnativeRenderQuestion();
+}
+function mmnativeClearResponse(){
+  mmnativeSession.answers[mmnativeSession.current] = null;
+  mmnativeRenderQuestion();
+}
+function mmnativeConfirmSubmit(){
+  const total = mmnativeSession.questions.length;
+  const answered = mmnativeSession.answers.filter(a => a !== null && a !== undefined).length;
+  const notAnswered = total - answered;
+  const ok = confirm('Answered: ' + answered + '\nNot Answered: ' + notAnswered + '\n\nSubmit test now? Ye action wapas nahi ho sakta.');
+  if(ok){ mmnativeStopTimer(); mmnativeSubmit(); }
+}
+function mmnativeSubmit(){
+  if(mmnativeSession.submitted) return;
+  mmnativeSession.submitted = true;
+  mmnativeStopTimer();
+  let correct = 0, wrong = 0, marks = 0;
+  mmnativeSession.questions.forEach((q, i) => {
+    const a = mmnativeSession.answers[i];
+    if(a === null || a === undefined) return;
+    if(a === q.answer){ correct++; marks += (q.marks || 0); }
+    else { wrong++; marks -= (q.neg || 0); }
+  });
+  const skipped = mmnativeSession.questions.length - correct - wrong;
+  const attempted = correct + wrong;
+  const acc = attempted ? Math.round((correct / attempted) * 100) : 0;
+  const titleEl = document.getElementById('mmnativeResultTitle');
+  if(titleEl) titleEl.textContent = mmnativeMockLabel;
+  const summaryEl = document.getElementById('mmnativeExamResultSummary');
+  if(summaryEl){
+    summaryEl.innerHTML =
+      '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + mmnativeFormatMarks(marks) + '</div><div class="l">Total Marks</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + correct + '</div><div class="l">Correct</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + wrong + '</div><div class="l">Wrong</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + skipped + '</div><div class="l">Skipped</div></div>' +
+      '<div class="examSumCard"><div class="n">' + acc + '%</div><div class="l">Accuracy</div></div>' +
+      '<div class="examSumCard"><div class="n">' + mmnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
+  }
+  logQuizActivity(mmnativeMockLabel, correct, attempted);
+  mmnativeResultRenderPalette();
+  mmnativeResultGoTo(0);
+  showCalcPage('mmnativeresult');
+}
+function mmnativeResultQState(i){
+  const a = mmnativeSession.answers[i];
+  const q = mmnativeSession.questions[i];
+  if(a === null || a === undefined) return 'skipped';
+  return a === q.answer ? 'correct' : 'wrong';
+}
+function mmnativeResultRenderPalette(){
+  const grid = document.getElementById('mmnativeResultPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  mmnativeSession.questions.forEach((q, i) => {
+    const st = mmnativeResultQState(i);
+    const cls = st === 'correct' ? 'pAnswered' : st === 'wrong' ? 'pNotAnswered' : '';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + cls + (i === mmnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => mmnativeResultGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+let mmnativeResultRevealed = false;
+function mmnativeResultGoTo(idx){
+  if(idx < 0 || idx >= mmnativeSession.questions.length) return;
+  mmnativeSession.current = idx;
+  mmnativeResultRevealed = false;
+  mmnativeResultRenderQuestion();
+  mmnativeResultRenderPalette();
+}
+function mmnativeResultReveal(){
+  if(mmnativeResultRevealed) return;
+  mmnativeResultRevealed = true;
+  mmnativeResultRenderQuestion();
+}
+function mmnativeResultRenderQuestion(){
+  const i = mmnativeSession.current;
+  const q = mmnativeSession.questions[i];
+  if(!q) return;
+  const qnoEl = document.getElementById('mmnativeResultQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (i + 1);
+  const st = mmnativeResultQState(i);
+  const tagWrap = document.getElementById('mmnativeResultTagWrap');
+  if(tagWrap){
+    if(mmnativeResultRevealed){
+      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+    } else {
+      tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+    }
+  }
+  const wordEl = document.getElementById('mmnativeResultWordText');
+  if(wordEl) wordEl.innerHTML = mmnativeQText(q) || '—';
+  const optList = document.getElementById('mmnativeResultOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const userAns = mmnativeSession.answers[i];
+    (mmnativeOpts(q) || []).forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      let cls = 'examOptBtn';
+      if(mmnativeResultRevealed){
+        if(oi === q.answer) cls += ' correct';
+        else if(oi === userAns) cls += ' wrong';
+      } else if(oi === userAns){
+        cls += ' selected';
+      }
+      btn.className = cls;
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + oi) + '</span><span>' + opt + '</span>';
+      optList.appendChild(btn);
+    });
+  }
+  const solCard = document.getElementById('mmnativeResultSolutionCard');
+  const solText = document.getElementById('mmnativeResultSolutionText');
+  if(mmnativeResultRevealed){
+    if(solText) solText.innerHTML = mmnativeSolText(q) || 'Solution available soon.';
+    if(solCard) solCard.style.display = 'block';
+  } else if(solCard) solCard.style.display = 'none';
+}
+
+function initMainsMockNative(){
+  // Native instructions page
+  const infoBackBtn = document.getElementById('mmnativeInfoBackBtn');
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('mainsmocklist'));
+  const startBtn = document.getElementById('mmnativeStartBtn');
+  if(startBtn) startBtn.addEventListener('click', mmnativeStartExam);
+  const infoLangBtn = document.getElementById('mmnativeInfoLangBtn');
+  if(infoLangBtn) infoLangBtn.addEventListener('click', mmnativeToggleLang);
+
+  // Native exam page
+  const examBackBtn = document.getElementById('mmnativeExamBackBtn');
+  if(examBackBtn) examBackBtn.addEventListener('click', () => {
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ mmnativeStopTimer(); showCalcPage('mainsmocklist'); }
+  });
+  const pauseBtn = document.getElementById('mmnativeExamPauseBtn');
+  if(pauseBtn) pauseBtn.addEventListener('click', mmnativeTogglePause);
+  const resumeBtn = document.getElementById('mmnativeExamResumeBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', mmnativeTogglePause);
+  const submitBtn = document.getElementById('mmnativeExamSubmitBtn');
+  if(submitBtn) submitBtn.addEventListener('click', mmnativeConfirmSubmit);
+  const markBtn = document.getElementById('mmnativeExamMarkBtn');
+  if(markBtn) markBtn.addEventListener('click', mmnativeMarkForReview);
+  const clearBtn = document.getElementById('mmnativeExamClearBtn');
+  if(clearBtn) clearBtn.addEventListener('click', mmnativeClearResponse);
+  const saveNextBtn = document.getElementById('mmnativeExamSaveNextBtn');
+  if(saveNextBtn) saveNextBtn.addEventListener('click', mmnativeSaveNext);
+  const saveNextBtnBottom = document.getElementById('mmnativeExamSaveNextBtnBottom');
+  if(saveNextBtnBottom) saveNextBtnBottom.addEventListener('click', mmnativeSaveNext);
+  const examLangBtn = document.getElementById('mmnativeExamLangBtn');
+  if(examLangBtn) examLangBtn.addEventListener('click', mmnativeToggleLang);
+
+  // Native result page
+  const resultBackBtn = document.getElementById('mmnativeResultBackBtn');
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('mainsmocklist'));
+  const reattemptBtn = document.getElementById('mmnativeResultReattemptBtn');
+  if(reattemptBtn) reattemptBtn.addEventListener('click', mmnativeStartExam);
+  const resultQWrap = document.getElementById('mmnativeResultQuestionWrap');
+  if(resultQWrap) resultQWrap.addEventListener('click', mmnativeResultReveal);
+  const resultOptList = document.getElementById('mmnativeResultOptList');
+  if(resultOptList) resultOptList.addEventListener('click', mmnativeResultReveal);
+  const resultPrevBtn = document.getElementById('mmnativeResultPrevBtn');
+  if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => mmnativeResultGoTo(mmnativeSession.current - 1));
+  const resultNextBtn = document.getElementById('mmnativeResultNextBtn');
+  if(resultNextBtn) resultNextBtn.addEventListener('click', () => mmnativeResultGoTo(mmnativeSession.current + 1));
+  const resultLangBtn = document.getElementById('mmnativeResultLangBtn');
+  if(resultLangBtn) resultLangBtn.addEventListener('click', mmnativeToggleLang);
+}
+
 function openMainsMock(key, file, label, entry){
-  const titleEl = document.getElementById('mainsmockPlayerTitle');
-  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
-  const iframe = document.getElementById('mainsmockIframe');
-  if(iframe) iframe.src = 'mainsmock/' + key + '/' + file;
-  showCalcPage('mainsmockplayer');
+  openMainsMockNative(key, file, label, entry);
 }
 
 function initMainsMockQuiz(){
@@ -15398,14 +16497,9 @@ function initMainsMockQuiz(){
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('mainsmockListBackBtn');
   if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('mainsmockmenu'));
-  const playerBackBtn = document.getElementById('mainsmockPlayerBackBtn');
-  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
-    const iframe = document.getElementById('mainsmockIframe');
-    if(iframe) iframe.src = 'about:blank';
-    showCalcPage('mainsmocklist');
-  });
   const searchBox = document.getElementById('mainsmockSearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterMainsMockGrid(searchBox.value));
+  initMainsMockNative();
 }
 
 // ===== Weak / Revise sub-tab switcher (lives inside the "Weak" tab) =====
