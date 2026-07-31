@@ -12317,35 +12317,68 @@ const mathPyqQuiz = makeMathPyqQuiz();
   //   { type:'image', src, alt?, caption? }                     -> figure with caption
   // Unknown/missing type safely falls back to a plain paragraph so bad
   // data never breaks the reader.
-  function renderGkBlock(b){
+  // ----- Reading-speed math (used by the paragraph-snap auto-scroll below) -----
+  // WPM formula deliberately counts *words*, not raw characters, because
+  // that's what "150 WPM" means in either language. But a Devanagari word
+  // is on average denser (conjuncts/matras pack more sound per word) than
+  // an English word, so it takes a little longer to read at the same WPM —
+  // hence the per-word time gets a small bump scaled by how much of the
+  // paragraph's text is actually Devanagari.
+  const READ_WPM = 150;
+  const READ_MS_PER_WORD = 60000 / READ_WPM; // ~400ms/word at 150 WPM
+  const READ_MIN_MS = 1800;   // even a 1-2 word heading gets a readable pause
+  const READ_MAX_MS = 22000;  // very long paragraphs are capped so it never feels stuck
+  function gkCountWords(text){
+    return (text||'').trim().split(/\s+/).filter(Boolean).length;
+  }
+  function gkDevanagariRatio(text){
+    const chars = (text||'').replace(/\s+/g, '');
+    if(!chars.length) return 0;
+    const dev = (chars.match(/[\u0900-\u097F]/g) || []).length;
+    return dev / chars.length;
+  }
+  function gkComputeReadMs(text, extraMs){
+    const words = Math.max(gkCountWords(text), 1);
+    const hindiRatio = gkDevanagariRatio(text);
+    const msPerWord = READ_MS_PER_WORD * (1 + hindiRatio * 0.28); // Hindi words read a bit slower
+    let ms = words * msPerWord + (extraMs || 0);
+    return Math.round(Math.max(READ_MIN_MS, Math.min(ms, READ_MAX_MS)));
+  }
+  // gkUnit(): wraps one rendered "reading paragraph" with the data-ridx /
+  // data-ms attributes the auto-scroll engine snaps between. ridxBox is a
+  // one-item array used as a mutable shared counter across a whole chapter.
+  function gkUnit(ridxBox, tag, cls, innerHtml, ms){
+    const i = ridxBox[0]++;
+    return `<${tag} class="${cls} gkReadUnit" data-ridx="${i}" data-ms="${ms}">${innerHtml}</${tag}>`;
+  }
+  function renderGkBlock(b, ridxBox){
     if(!b) return '';
-    if(b.type === 'h2') return `<div class="gkH2">${escapeHtml(b.text||'')}</div>`;
-    if(b.type === 'h3') return `<div class="gkH3">${escapeHtml(b.text||'')}</div>`;
+    if(b.type === 'h2') return gkUnit(ridxBox, 'div', 'gkH2', escapeHtml(b.text||''), gkComputeReadMs(b.text||'', 400));
+    if(b.type === 'h3') return gkUnit(ridxBox, 'div', 'gkH3', escapeHtml(b.text||''), gkComputeReadMs(b.text||'', 300));
     if(b.type === 'table' && Array.isArray(b.rows)){
       const headers = Array.isArray(b.headers) ? b.headers : [];
       const theadHtml = headers.length ? `<thead><tr>${headers.map(h=>`<th>${escapeHtml(String(h))}</th>`).join('')}</tr></thead>` : '';
       const tbodyHtml = `<tbody>${b.rows.map(row=>`<tr>${row.map(cell=>`<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('')}</tbody>`;
-      return `<div class="gkTableWrap"><table class="gkTable">${theadHtml}${tbodyHtml}</table></div>`;
+      const tableText = headers.join(' ') + ' ' + b.rows.map(r=>r.join(' ')).join(' ');
+      const ms = gkComputeReadMs(tableText, 1200 + b.rows.length * 500);
+      return gkUnit(ridxBox, 'div', 'gkTableWrap', `<table class="gkTable">${theadHtml}${tbodyHtml}</table>`, ms);
     }
     if(b.type === 'image' && b.src){
       const captionHtml = b.caption ? `<figcaption>${escapeHtml(b.caption)}</figcaption>` : '';
-      return `<figure class="gkFigure"><img src="${escapeHtml(b.src)}" alt="${escapeHtml(b.alt||b.caption||'')}" loading="lazy">${captionHtml}</figure>`;
+      const ms = gkComputeReadMs(b.caption || '', 3200);
+      return gkUnit(ridxBox, 'figure', 'gkFigure', `<img src="${escapeHtml(b.src)}" alt="${escapeHtml(b.alt||b.caption||'')}" loading="lazy">${captionHtml}`, ms);
     }
-    return `<p class="gkP">${escapeHtml(b.text||'')}</p>`;
+    return gkUnit(ridxBox, 'p', 'gkP', escapeHtml(b.text||''), gkComputeReadMs(b.text||''));
   }
 
-  // renderGkBlocks(): renders a whole chapter's block array, grouping any
-  // run of consecutive paragraph ('p') blocks into ONE real bulleted
-  // <ul> list (each paragraph becomes a <li> with a bullet dot) instead
-  // of separate stacked cards. Headings/tables/images break the current
-  // list group and render standalone via renderGkBlock(). This runs for
-  // every subject automatically — no per-chapter markup needed.
   function renderGkBlocks(blocks){
     let html = '';
     let listBuffer = [];
+    const ridxBox = [0]; // shared, mutable read-unit counter for this whole chapter
     function flushList(){
       if(listBuffer.length){
-        html += `<ul class="gkList">${listBuffer.map(b=>`<li class="gkLi">${escapeHtml(b.text||'')}</li>`).join('')}</ul>`;
+        const items = listBuffer.map(b => gkUnit(ridxBox, 'li', 'gkLi', escapeHtml(b.text||''), gkComputeReadMs(b.text||''))).join('');
+        html += `<ul class="gkList">${items}</ul>`;
         listBuffer = [];
       }
     }
@@ -12353,7 +12386,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
       if(!b) return;
       if(!b.type || b.type === 'p'){ listBuffer.push(b); return; }
       flushList();
-      html += renderGkBlock(b);
+      html += renderGkBlock(b, ridxBox);
     });
     flushList();
     return html;
@@ -12461,7 +12494,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
   }
 
   function renderReader(){
-    stopAutoScroll(false); // naya chapter/language khulte hi auto-scroll ruk jaana chahiye
+    resetReadingState(); // naya chapter/language khulte hi auto-scroll poori tarah reset ho jaana chahiye
     const data = dataCache[currentSubject];
     if(!data) return;
     const ch = data.chapters.find(c => c.id === currentChapterId) || data.chapters[0];
@@ -12590,22 +12623,28 @@ const mathPyqQuiz = makeMathPyqQuiz();
     if(currentChapterId < data.chapters.length){ currentChapterId += 1; renderReader(); }
   });
 
-  // ===== Auto-Scroll (Reading Mode) =====
-  // Continuous rAF-driven scroll (no setInterval "jumps") — a fractional
-  // logical scrollTop accumulates every frame so the motion stays
-  // pixel-smooth at any speed. Pauses instantly on any user touch/scroll,
-  // holds a Screen Wake Lock while playing (mobile screen won't sleep),
-  // and auto-stops + resets the Play button when it hits the bottom.
-  const AUTOSCROLL_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-  const AUTOSCROLL_BASE_PX_PER_SEC = 24; // 1x pace, tuned for comfortable reading
+  // ===== Auto-Scroll (Paragraph-Snap Reading Mode) =====
+  // Instead of a continuous scroll, the view sits completely still on one
+  // "reading paragraph" (.gkReadUnit — every gkP/gkLi/gkH2/gkH3/table/figure
+  // from renderGkBlocks, each already carrying a data-ms reading time baked
+  // in from gkComputeReadMs()) while a thin progress bar fills up over that
+  // paragraph's dynamic duration. When it completes, the view smoothly
+  // snaps to bring the next paragraph to the top of the reading area.
+  // Touching the screen pauses the timer instantly; a Screen Wake Lock is
+  // held the whole time auto-scroll is active so the phone doesn't sleep.
+  const AUTOSCROLL_SPEEDS = [0.5, 1, 1.5, 2];
   let autoScrollOn = false;
-  let autoScrollSpeedIdx = 2; // default 1x
-  let autoScrollRafId = null;
-  let autoScrollLastTs = null;
-  let autoScrollLogicalTop = 0;
+  let autoScrollSpeedIdx = 1; // default 1x
   let autoScrollWakeLock = null;
+  let readUnits = [];          // live NodeList snapshot (array) of .gkReadUnit elements, in order
+  let activeUnitIdx = -1;
+  let unitTimerId = null;      // setTimeout handle that advances to the next paragraph
+  let unitDeadlineTs = null;   // ms timestamp (Date.now()) when the active unit's timer completes
+  let unitRemainingMs = null;  // ms left, kept up to date while paused so resuming/speed-change is accurate
 
   function getReaderScrollEl(){ return document.getElementById('calcPage-gkreader'); }
+  function getReaderContentEl(){ return document.getElementById('gkReaderContent'); }
+  function getProgressFillEl(){ return document.getElementById('gkReadProgressFill'); }
 
   function updateAutoScrollUI(){
     const playBtn = document.getElementById('gkAutoScrollPlayBtn');
@@ -12616,6 +12655,8 @@ const mathPyqQuiz = makeMathPyqQuiz();
       playBtn.classList.toggle('gkAutoScrollPlaying', autoScrollOn);
     }
     if(speedBtn) speedBtn.textContent = AUTOSCROLL_SPEEDS[autoScrollSpeedIdx] + 'x';
+    const bar = document.getElementById('gkReadProgressBar');
+    if(bar) bar.classList.toggle('gkReadProgressBar-on', autoScrollOn);
   }
 
   async function requestAutoScrollWakeLock(){
@@ -12624,54 +12665,169 @@ const mathPyqQuiz = makeMathPyqQuiz();
         autoScrollWakeLock = await navigator.wakeLock.request('screen');
         autoScrollWakeLock.addEventListener('release', () => { autoScrollWakeLock = null; });
       }
-    }catch(e){ /* wake lock not available/denied — scrolling still works fine */ }
+    }catch(e){ /* wake lock not available/denied — reading mode still works fine */ }
   }
   function releaseAutoScrollWakeLock(){
     if(autoScrollWakeLock){ autoScrollWakeLock.release().catch(()=>{}); autoScrollWakeLock = null; }
   }
 
-  function autoScrollFrame(ts){
-    if(!autoScrollOn) return;
-    const el = getReaderScrollEl();
-    if(!el){ stopAutoScroll(false); return; }
-    if(autoScrollLastTs == null) autoScrollLastTs = ts;
-    const dt = ts - autoScrollLastTs;
-    autoScrollLastTs = ts;
-    const pxPerMs = (AUTOSCROLL_BASE_PX_PER_SEC * AUTOSCROLL_SPEEDS[autoScrollSpeedIdx]) / 1000;
-    autoScrollLogicalTop += pxPerMs * dt;
-    el.scrollTop = autoScrollLogicalTop;
-    const atBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 2);
-    if(atBottom){ stopAutoScroll(true); return; }
-    autoScrollRafId = requestAnimationFrame(autoScrollFrame);
+  // Progress bar: a real width transition is used (not rAF) so it's cheap
+  // and stays perfectly in sync even if the tab is briefly backgrounded.
+  function startProgressFill(ms){
+    const fill = getProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    // Force reflow so the browser registers the 0% width before we animate,
+    // otherwise it can skip straight to 100% with no visible fill.
+    void fill.offsetWidth;
+    fill.style.transition = `width ${ms}ms linear`;
+    fill.style.width = '100%';
+  }
+  function freezeProgressFill(){
+    const fill = getProgressFillEl();
+    if(!fill) return;
+    const currentWidth = getComputedStyle(fill).width;
+    fill.style.transition = 'none';
+    fill.style.width = currentWidth; // pin it exactly where it was, no snap-back
+  }
+  function resetProgressFill(){
+    const fill = getProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+  }
+
+  function refreshReadUnits(){
+    const contentEl = getReaderContentEl();
+    readUnits = contentEl ? Array.from(contentEl.querySelectorAll('.gkReadUnit')) : [];
+  }
+
+  function clearUnitTimer(){
+    if(unitTimerId){ clearTimeout(unitTimerId); unitTimerId = null; }
+  }
+
+  // Scrolls a unit so it sits at the top of the reading area, with a small
+  // offset so it doesn't hide right under the (hidden) title bar edge.
+  // Uses getBoundingClientRect (not offsetTop) since gkReaderContent isn't
+  // itself the scroll container — calcPage-gkreader (its parent) is.
+  function scrollUnitIntoView(idx){
+    const el = readUnits[idx];
+    const scrollEl = getReaderScrollEl();
+    if(!el || !scrollEl) return;
+    const targetTop = scrollEl.scrollTop + (el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top) - 14;
+    scrollEl.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  }
+
+  function armUnitTimer(ms){
+    clearUnitTimer();
+    unitDeadlineTs = Date.now() + ms;
+    unitRemainingMs = ms;
+    startProgressFill(ms);
+    unitTimerId = setTimeout(advanceToNextUnit, ms);
+  }
+
+  function advanceToNextUnit(){
+    clearUnitTimer();
+    if(activeUnitIdx >= readUnits.length - 1){
+      stopAutoScroll(true); // reached the last paragraph
+      return;
+    }
+    activeUnitIdx += 1;
+    scrollUnitIntoView(activeUnitIdx);
+    const ms = (parseInt(readUnits[activeUnitIdx].getAttribute('data-ms'), 10) || 3000) / AUTOSCROLL_SPEEDS[autoScrollSpeedIdx];
+    armUnitTimer(ms);
+  }
+
+  // Finds whichever paragraph is currently closest to the top of the
+  // reading viewport, so Play always resumes from where the user is
+  // actually looking rather than jumping back to paragraph 0.
+  function findVisibleUnitIdx(){
+    const scrollEl = getReaderScrollEl();
+    if(!scrollEl || !readUnits.length) return 0;
+    const scrollTopEdge = scrollEl.getBoundingClientRect().top + 20;
+    let best = 0;
+    for(let i = 0; i < readUnits.length; i++){
+      if(readUnits[i].getBoundingClientRect().top <= scrollTopEdge) best = i;
+      else break;
+    }
+    return best;
   }
 
   function startAutoScroll(){
-    const el = getReaderScrollEl();
-    if(!el) return;
+    refreshReadUnits();
+    if(!readUnits.length) return;
     autoScrollOn = true;
-    autoScrollLastTs = null;
-    autoScrollLogicalTop = el.scrollTop;
     updateAutoScrollUI();
     requestAutoScrollWakeLock();
-    autoScrollRafId = requestAnimationFrame(autoScrollFrame);
+    activeUnitIdx = findVisibleUnitIdx() - 1; // advanceToNextUnit() will step to this + 1
+    if(activeUnitIdx < -1) activeUnitIdx = -1;
+    advanceToNextUnit();
   }
 
   function stopAutoScroll(reachedEnd){
     autoScrollOn = false;
-    if(autoScrollRafId){ cancelAnimationFrame(autoScrollRafId); autoScrollRafId = null; }
-    autoScrollLastTs = null;
+    clearUnitTimer();
+    freezeProgressFill();
+    releaseAutoScrollWakeLock();
+    updateAutoScrollUI();
+    if(reachedEnd){
+      resetProgressFill();
+      activeUnitIdx = -1;
+      unitRemainingMs = null;
+      unitDeadlineTs = null;
+    }
+  }
+
+  // Called whenever a fresh chapter/language is rendered — fully forgets any
+  // in-progress paragraph position so the new chapter always starts clean.
+  function resetReadingState(){
+    stopAutoScroll(false);
+    activeUnitIdx = -1;
+    unitRemainingMs = null;
+    unitDeadlineTs = null;
+    resetProgressFill();
+    readUnits = [];
+  }
+
+  function pauseAutoScroll(){
+    if(!autoScrollOn) return;
+    // Remember exactly how much time was left on the active paragraph so
+    // resuming (or a speed change) continues smoothly instead of resetting.
+    unitRemainingMs = unitDeadlineTs ? Math.max(300, unitDeadlineTs - Date.now()) : unitRemainingMs;
+    autoScrollOn = false;
+    clearUnitTimer();
+    freezeProgressFill();
     releaseAutoScrollWakeLock();
     updateAutoScrollUI();
   }
 
+  function resumeAutoScroll(){
+    refreshReadUnits();
+    if(!readUnits.length) return;
+    autoScrollOn = true;
+    updateAutoScrollUI();
+    requestAutoScrollWakeLock();
+    if(activeUnitIdx < 0){ advanceToNextUnit(); return; }
+    const ms = unitRemainingMs || (parseInt((readUnits[activeUnitIdx]||{}).getAttribute && readUnits[activeUnitIdx].getAttribute('data-ms'), 10) || 3000);
+    armUnitTimer(ms);
+  }
+
   function toggleAutoScroll(){
-    if(autoScrollOn) stopAutoScroll(false);
+    if(autoScrollOn) pauseAutoScroll();
+    else if(activeUnitIdx >= 0 && activeUnitIdx < readUnits.length - 1 && unitRemainingMs) resumeAutoScroll();
     else startAutoScroll();
   }
 
   function cycleAutoScrollSpeed(){
     autoScrollSpeedIdx = (autoScrollSpeedIdx + 1) % AUTOSCROLL_SPEEDS.length;
     updateAutoScrollUI();
+    // Re-arm the current paragraph's remaining time at the new speed so a
+    // speed change takes effect immediately, not just from the next paragraph.
+    if(autoScrollOn && unitDeadlineTs){
+      const remainingAtOldSpeed = Math.max(300, unitDeadlineTs - Date.now());
+      armUnitTimer(remainingAtOldSpeed); // speed multiplier already baked into future units via advanceToNextUnit
+    }
   }
 
   const autoScrollPlayBtn = document.getElementById('gkAutoScrollPlayBtn');
@@ -12679,7 +12835,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
   const autoScrollSpeedBtn = document.getElementById('gkAutoScrollSpeedBtn');
   if(autoScrollSpeedBtn) autoScrollSpeedBtn.addEventListener('click', (e) => { e.stopPropagation(); cycleAutoScrollSpeed(); });
 
-  // Pause the instant the user touches/scrolls anywhere in the reader —
+  // Pause the instant the user touches the screen anywhere in the reader —
   // but not when the touch is on the FAB itself (that's a deliberate tap).
   const autoScrollScrollEl = getReaderScrollEl();
   if(autoScrollScrollEl){
@@ -12687,7 +12843,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
       autoScrollScrollEl.addEventListener(evt, (e) => {
         if(!autoScrollOn) return;
         if(e.target && e.target.closest && e.target.closest('.gkAutoScrollFab')) return;
-        stopAutoScroll(false);
+        pauseAutoScroll();
       }, {passive:true});
     });
   }

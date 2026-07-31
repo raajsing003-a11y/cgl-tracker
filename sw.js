@@ -32,12 +32,14 @@
 // would keep serving the pre-auto-scroll app.js/index.html, so it must be
 // evicted too.
 //
-// Bumped v5 -> v6: gk_polity.json got corrected English content for
-// chapters 12-23 (blocksEn was previously a Hindi duplicate), and
-// gk_science.json got real English content for all 15 chapters (blocksEn
-// was previously a Hindi duplicate too). Old v5 cache would keep serving
-// the stale Hindi-as-English data, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v6';
+// Bumped v6 -> v7: the auto-scroll engine in Reading Mode was rewritten
+// from continuous pixel-scroll to paragraph-level timer-based snap
+// scrolling (app.js's renderGkBlock/renderGkBlocks now tag every
+// paragraph with data-ridx/data-ms, and the whole auto-scroll section was
+// replaced; index.html gained the gkReadProgressBar markup/CSS). Old v6
+// cache would keep serving the old continuous-scroll app.js/index.html
+// with no progress bar, so it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
