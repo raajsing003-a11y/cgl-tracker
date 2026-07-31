@@ -14033,11 +14033,12 @@ function makeEnglishFullMockQuiz(){
     return set.slice();
   }
 
+  let SETS_KEY_FILTER = null;
   function renderSetMenu(){
     const grid = document.getElementById(prefix + 'SetGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    Object.keys(SETS).forEach(key => {
+    Object.keys(SETS).filter(key => !SETS_KEY_FILTER || key.startsWith(SETS_KEY_FILTER)).forEach(key => {
       const count = SETS[key].length;
       const m = setMeta(key);
       const durMin = Math.round(m.duration / 60);
@@ -14075,6 +14076,7 @@ function makeEnglishFullMockQuiz(){
       grid.appendChild(btn);
     });
   }
+  function setSetsKeyFilter(prefixFilter){ SETS_KEY_FILTER = prefixFilter || null; }
 
   // ===== Testbook-style Exam Mode: per-paper timer, question palette, Mark
   // for Review, Submit Test, then a solution+marks review screen. =====
@@ -14409,10 +14411,8 @@ function makeEnglishFullMockQuiz(){
 
   function init(){
     renderSetMenu();
-    const mainBtn = document.getElementById('calcEnglishFullMockBtn');
-    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('engfullmockmenu'); });
     const menuBackBtn = document.getElementById('engfullmockMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('emmocksmenu'));
 
     const examBackBtn = document.getElementById('engfullmockExamBackBtn');
     if(examBackBtn) examBackBtn.addEventListener('click', () => {
@@ -14456,9 +14456,129 @@ function makeEnglishFullMockQuiz(){
     if(resultTagWrap) resultTagWrap.addEventListener('click', resultReveal);
   }
 
-  return { init };
+  return { init, renderSetMenu, setSetsKeyFilter };
 }
 const englishfullmockQuiz = makeEnglishFullMockQuiz();
+
+// ===== EM Mocks top menu ===== (CPO Mains Mock reuses the existing Testbook-
+// style exam engine above, filtered to cpomains* sets only; CGL Pre / CPO Pre
+// are iframe pools of pre-built self-contained mock HTML, same pattern as
+// Super Practice / 75 Day Practice / Mains Mock.)
+const EMMOCKS_TYPES = [
+  { key:'cpomains', label:'CPO Mains Mock', icon:'📗', count:36, kind:'exam' },
+  { key:'cglpre',   label:'CGL Pre',        icon:'📘', count:78, kind:'iframe' },
+  { key:'cpopre',   label:'CPO Pre',        icon:'🧾', count:41, kind:'iframe' },
+];
+let emmocksManifest = null;
+let emmocksCurrentKey = null;
+let emmocksCurrentLabel = null;
+let emmocksCurrentEntries = [];
+
+async function ensureEmMocksManifest(){
+  if(emmocksManifest) return emmocksManifest;
+  try{
+    const res = await fetch('emmocks/manifest.json');
+    emmocksManifest = await res.json();
+  }catch(e){ emmocksManifest = {}; }
+  return emmocksManifest;
+}
+
+function renderEmMocksTypeGrid(){
+  const grid = document.getElementById('emmocksTypeGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  EMMOCKS_TYPES.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-statement';
+    btn.innerHTML =
+      '<span class="calcIcon calcIcon-statement">' + s.icon + '</span>' +
+      '<span class="calcLabelCol">' +
+        '<span class="calcLabel">' + escapeHtml(s.label) + '</span>' +
+        '<span class="calcSub">' + s.count + ' mocks</span>' +
+      '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => {
+      if(s.kind === 'exam'){
+        englishfullmockQuiz.setSetsKeyFilter('cpomains');
+        englishfullmockQuiz.renderSetMenu();
+        showCalcPage('engfullmockmenu');
+      } else {
+        openEmMockPool(s.key, s.label);
+      }
+    });
+    grid.appendChild(btn);
+  });
+}
+
+async function openEmMockPool(key, label){
+  emmocksCurrentKey = key;
+  const titleEl = document.getElementById('emmocksListTitle');
+  if(titleEl) titleEl.textContent = '📗 ' + label + ' — Choose a Mock';
+  showCalcPage('emmockslist');
+  const grid = document.getElementById('emmocksListGrid');
+  if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
+  const manifest = await ensureEmMocksManifest();
+  const entries = (manifest && manifest[key]) || [];
+  emmocksCurrentLabel = label;
+  emmocksCurrentEntries = entries;
+  const searchBox = document.getElementById('emmocksSearchInput');
+  if(searchBox) searchBox.value = '';
+  renderEmMocksGrid(entries);
+}
+
+function renderEmMocksGrid(entries){
+  const grid = document.getElementById('emmocksListGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  entries.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-vocab';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'flex-start';
+    btn.style.gap = '2px';
+    btn.innerHTML =
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcSub">' + e.q + ' Qs</span>';
+    btn.addEventListener('click', () => openEmMock(emmocksCurrentKey, e.file, emmocksCurrentLabel, e));
+    grid.appendChild(btn);
+  });
+  if(!entries.length){
+    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
+  }
+}
+
+function filterEmMocksGrid(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q){ renderEmMocksGrid(emmocksCurrentEntries); return; }
+  const filtered = emmocksCurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
+  renderEmMocksGrid(filtered);
+}
+
+function openEmMock(key, file, label, entry){
+  const titleEl = document.getElementById('emmocksPlayerTitle');
+  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const iframe = document.getElementById('emmocksIframe');
+  if(iframe) iframe.src = 'emmocks/' + key + '/' + file;
+  showCalcPage('emmocksplayer');
+}
+
+function initEmMocksMenu(){
+  renderEmMocksTypeGrid();
+  const menuBtn = document.getElementById('calcEnglishFullMockBtn');
+  if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('emmocksmenu'));
+  const menuBackBtn = document.getElementById('emmocksMenuBackBtn');
+  if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const listBackBtn = document.getElementById('emmocksListBackBtn');
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('emmocksmenu'));
+  const playerBackBtn = document.getElementById('emmocksPlayerBackBtn');
+  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
+    const iframe = document.getElementById('emmocksIframe');
+    if(iframe) iframe.src = 'about:blank';
+    showCalcPage('emmockslist');
+  });
+  const searchBox = document.getElementById('emmocksSearchInput');
+  if(searchBox) searchBox.addEventListener('input', () => filterEmMocksGrid(searchBox.value));
+}
 
 
 
@@ -14589,6 +14709,354 @@ function initCalcNav(){
   initVoiceQuiz();
   initNarrationQuiz();
   initEnglishTopicwiseQuiz();
+  initSuperPracticeQuiz();
+  initP75Quiz();
+  initMainsMockQuiz();
+  initEmMocksMenu();
+}
+
+// ===== Super Practice =====
+// 660 pre-built, fully self-contained mock-test HTML files (each already has
+// its own question rendering, bilingual EN/HI toggle, dark mode, math/table
+// rendering baked in) bundled under superpractice/<subject>/mock_NNN.html.
+// Rather than re-parsing all 660 files' questions into this app's own quiz
+// engine (which would risk losing images/tables/bilingual toggles some of
+// them use), each mock is shown as-is inside an iframe — subject menu ->
+// mock list -> iframe player. superpractice/manifest.json (built once at
+// packaging time) lists every mock's filename + question count per subject.
+const SUPERPRACTICE_SUBJECTS = [
+  { key:'quant',     label:'Quant (Math)',            icon:'🧮', count:196 },
+  { key:'reasoning', label:'Reasoning',                icon:'🧠', count:146 },
+  { key:'english',   label:'English',                  icon:'📘', count:135 },
+  { key:'gk',        label:'GK / General Awareness',   icon:'🌍', count:169 },
+  { key:'computer',  label:'Computer Knowledge',        icon:'💻', count:14 },
+];
+let spManifest = null;
+let spCurrentSubjectKey = null;
+let spCurrentSubjectLabel = null;
+let spCurrentEntries = [];
+
+async function ensureSPManifest(){
+  if(spManifest) return spManifest;
+  try{
+    const res = await fetch('superpractice/manifest.json');
+    spManifest = await res.json();
+  }catch(e){ spManifest = {}; }
+  return spManifest;
+}
+
+function renderSPSubjectGrid(){
+  const grid = document.getElementById('superpracticeSubjectGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  SUPERPRACTICE_SUBJECTS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-statement';
+    btn.innerHTML =
+      '<span class="calcIcon calcIcon-statement">' + s.icon + '</span>' +
+      '<span class="calcLabelCol">' +
+        '<span class="calcLabel">' + escapeHtml(s.label) + '</span>' +
+        '<span class="calcSub">' + s.count + ' mocks</span>' +
+      '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => openSPSubject(s.key, s.label));
+    grid.appendChild(btn);
+  });
+}
+
+async function openSPSubject(key, label){
+  spCurrentSubjectKey = key;
+  const titleEl = document.getElementById('superpracticeListTitle');
+  if(titleEl) titleEl.textContent = '🔥 ' + label + ' — Choose a Mock';
+  showCalcPage('superpracticelist');
+  const grid = document.getElementById('superpracticeListGrid');
+  if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
+  const manifest = await ensureSPManifest();
+  const entries = (manifest && manifest[key]) || [];
+  spCurrentSubjectLabel = label;
+  spCurrentEntries = entries;
+  const searchBox = document.getElementById('superpracticeSearchInput');
+  if(searchBox) searchBox.value = '';
+  renderSPMockGrid(entries);
+}
+
+function renderSPMockGrid(entries){
+  const grid = document.getElementById('superpracticeListGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  entries.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-vocab';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'flex-start';
+    btn.style.gap = '2px';
+    btn.innerHTML =
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcSub">' + e.q + ' Qs</span>';
+    btn.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
+    grid.appendChild(btn);
+  });
+  if(!entries.length){
+    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
+  }
+}
+
+function filterSPMockGrid(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q){ renderSPMockGrid(spCurrentEntries); return; }
+  const filtered = spCurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
+  renderSPMockGrid(filtered);
+}
+
+function openSPMock(key, file, label, entry){
+  const titleEl = document.getElementById('superpracticePlayerTitle');
+  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const iframe = document.getElementById('superpracticeIframe');
+  if(iframe) iframe.src = 'superpractice/' + key + '/' + file;
+  showCalcPage('superpracticeplayer');
+}
+
+function initSuperPracticeQuiz(){
+  renderSPSubjectGrid();
+  const menuBtn = document.getElementById('calcSuperPracticeBtn');
+  if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('superpracticemenu'));
+  const menuBackBtn = document.getElementById('superpracticeMenuBackBtn');
+  if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const listBackBtn = document.getElementById('superpracticeListBackBtn');
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('superpracticemenu'));
+  const playerBackBtn = document.getElementById('superpracticePlayerBackBtn');
+  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
+    const iframe = document.getElementById('superpracticeIframe');
+    if(iframe) iframe.src = 'about:blank';
+    showCalcPage('superpracticelist');
+  });
+  const searchBox = document.getElementById('superpracticeSearchInput');
+  if(searchBox) searchBox.addEventListener('input', () => filterSPMockGrid(searchBox.value));
+}
+
+// ===== 75 Day Practice ===== (same pattern as Super Practice, separate pool)
+// 384 pre-built, fully self-contained mock-test HTML files bundled under
+// practice75/<subject>/mock_NNN.html. practice75/manifest.json lists every
+// mock's filename + question count per subject.
+const PRACTICE75_SUBJECTS = [
+  { key:'quant',     label:'Quant (Math)',            icon:'🧮', count:139 },
+  { key:'reasoning', label:'Reasoning',                icon:'🧠', count:65 },
+  { key:'english',   label:'English',                  icon:'📘', count:50 },
+  { key:'gk',        label:'GK / General Awareness',   icon:'🌍', count:130 },
+];
+let p75Manifest = null;
+let p75CurrentSubjectKey = null;
+let p75CurrentSubjectLabel = null;
+let p75CurrentEntries = [];
+
+async function ensureP75Manifest(){
+  if(p75Manifest) return p75Manifest;
+  try{
+    const res = await fetch('practice75/manifest.json');
+    p75Manifest = await res.json();
+  }catch(e){ p75Manifest = {}; }
+  return p75Manifest;
+}
+
+function renderP75SubjectGrid(){
+  const grid = document.getElementById('p75SubjectGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  PRACTICE75_SUBJECTS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-statement';
+    btn.innerHTML =
+      '<span class="calcIcon calcIcon-statement">' + s.icon + '</span>' +
+      '<span class="calcLabelCol">' +
+        '<span class="calcLabel">' + escapeHtml(s.label) + '</span>' +
+        '<span class="calcSub">' + s.count + ' mocks</span>' +
+      '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => openP75Subject(s.key, s.label));
+    grid.appendChild(btn);
+  });
+}
+
+async function openP75Subject(key, label){
+  p75CurrentSubjectKey = key;
+  const titleEl = document.getElementById('p75ListTitle');
+  if(titleEl) titleEl.textContent = '🔥 ' + label + ' — Choose a Mock';
+  showCalcPage('75daylist');
+  const grid = document.getElementById('p75ListGrid');
+  if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
+  const manifest = await ensureP75Manifest();
+  const entries = (manifest && manifest[key]) || [];
+  p75CurrentSubjectLabel = label;
+  p75CurrentEntries = entries;
+  const searchBox = document.getElementById('p75SearchInput');
+  if(searchBox) searchBox.value = '';
+  renderP75MockGrid(entries);
+}
+
+function renderP75MockGrid(entries){
+  const grid = document.getElementById('p75ListGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  entries.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-vocab';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'flex-start';
+    btn.style.gap = '2px';
+    btn.innerHTML =
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcSub">' + e.q + ' Qs</span>';
+    btn.addEventListener('click', () => openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e));
+    grid.appendChild(btn);
+  });
+  if(!entries.length){
+    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
+  }
+}
+
+function filterP75MockGrid(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q){ renderP75MockGrid(p75CurrentEntries); return; }
+  const filtered = p75CurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
+  renderP75MockGrid(filtered);
+}
+
+function openP75Mock(key, file, label, entry){
+  const titleEl = document.getElementById('p75PlayerTitle');
+  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const iframe = document.getElementById('p75Iframe');
+  if(iframe) iframe.src = 'practice75/' + key + '/' + file;
+  showCalcPage('75dayplayer');
+}
+
+function initP75Quiz(){
+  renderP75SubjectGrid();
+  const menuBtn = document.getElementById('calc75DayBtn');
+  if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('75daymenu'));
+  const menuBackBtn = document.getElementById('p75MenuBackBtn');
+  if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const listBackBtn = document.getElementById('p75ListBackBtn');
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('75daymenu'));
+  const playerBackBtn = document.getElementById('p75PlayerBackBtn');
+  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
+    const iframe = document.getElementById('p75Iframe');
+    if(iframe) iframe.src = 'about:blank';
+    showCalcPage('75daylist');
+  });
+  const searchBox = document.getElementById('p75SearchInput');
+  if(searchBox) searchBox.addEventListener('input', () => filterP75MockGrid(searchBox.value));
+}
+
+// ===== Mains Mock ===== (same iframe pattern as Super Practice / 75 Day Practice)
+// Two pools of pre-built, fully self-contained mock-test HTML files:
+//   mainsmock/sectional/mock_NNN.html — Pinnacle sectional mocks (97)
+//   mainsmock/full/mock_NNN.html      — Olive SSC CGL Tier II full mocks (71)
+// mainsmock/manifest.json = { sectional: [...], full: [...] }
+const MAINSMOCK_TYPES = [
+  { key:'sectional', label:'Sectional Mock', icon:'📝', count:97 },
+  { key:'full',       label:'Full Mock',      icon:'📘', count:71 },
+];
+let mainsmockManifest = null;
+let mainsmockCurrentTypeKey = null;
+let mainsmockCurrentTypeLabel = null;
+let mainsmockCurrentEntries = [];
+
+async function ensureMainsMockManifest(){
+  if(mainsmockManifest) return mainsmockManifest;
+  try{
+    const res = await fetch('mainsmock/manifest.json');
+    mainsmockManifest = await res.json();
+  }catch(e){ mainsmockManifest = {}; }
+  return mainsmockManifest;
+}
+
+function renderMainsMockTypeGrid(){
+  const grid = document.getElementById('mainsmockTypeGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  MAINSMOCK_TYPES.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-statement';
+    btn.innerHTML =
+      '<span class="calcIcon calcIcon-statement">' + s.icon + '</span>' +
+      '<span class="calcLabelCol">' +
+        '<span class="calcLabel">' + escapeHtml(s.label) + '</span>' +
+        '<span class="calcSub">' + s.count + ' mocks</span>' +
+      '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => openMainsMockType(s.key, s.label));
+    grid.appendChild(btn);
+  });
+}
+
+async function openMainsMockType(key, label){
+  mainsmockCurrentTypeKey = key;
+  const titleEl = document.getElementById('mainsmockListTitle');
+  if(titleEl) titleEl.textContent = '🎯 ' + label + ' — Choose a Mock';
+  showCalcPage('mainsmocklist');
+  const grid = document.getElementById('mainsmockListGrid');
+  if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
+  const manifest = await ensureMainsMockManifest();
+  const entries = (manifest && manifest[key]) || [];
+  mainsmockCurrentTypeLabel = label;
+  mainsmockCurrentEntries = entries;
+  const searchBox = document.getElementById('mainsmockSearchInput');
+  if(searchBox) searchBox.value = '';
+  renderMainsMockGrid(entries);
+}
+
+function renderMainsMockGrid(entries){
+  const grid = document.getElementById('mainsmockListGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  entries.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'calcCard calcCard-vocab';
+    btn.style.flexDirection = 'column';
+    btn.style.alignItems = 'flex-start';
+    btn.style.gap = '2px';
+    btn.innerHTML =
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcSub">' + e.q + ' Qs</span>';
+    btn.addEventListener('click', () => openMainsMock(mainsmockCurrentTypeKey, e.file, mainsmockCurrentTypeLabel, e));
+    grid.appendChild(btn);
+  });
+  if(!entries.length){
+    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
+  }
+}
+
+function filterMainsMockGrid(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q){ renderMainsMockGrid(mainsmockCurrentEntries); return; }
+  const filtered = mainsmockCurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
+  renderMainsMockGrid(filtered);
+}
+
+function openMainsMock(key, file, label, entry){
+  const titleEl = document.getElementById('mainsmockPlayerTitle');
+  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const iframe = document.getElementById('mainsmockIframe');
+  if(iframe) iframe.src = 'mainsmock/' + key + '/' + file;
+  showCalcPage('mainsmockplayer');
+}
+
+function initMainsMockQuiz(){
+  renderMainsMockTypeGrid();
+  const menuBtn = document.getElementById('calcMainsMockBtn');
+  if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('mainsmockmenu'));
+  const menuBackBtn = document.getElementById('mainsmockMenuBackBtn');
+  if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const listBackBtn = document.getElementById('mainsmockListBackBtn');
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('mainsmockmenu'));
+  const playerBackBtn = document.getElementById('mainsmockPlayerBackBtn');
+  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
+    const iframe = document.getElementById('mainsmockIframe');
+    if(iframe) iframe.src = 'about:blank';
+    showCalcPage('mainsmocklist');
+  });
+  const searchBox = document.getElementById('mainsmockSearchInput');
+  if(searchBox) searchBox.addEventListener('input', () => filterMainsMockGrid(searchBox.value));
 }
 
 // ===== Weak / Revise sub-tab switcher (lives inside the "Weak" tab) =====
