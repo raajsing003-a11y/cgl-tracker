@@ -64,7 +64,12 @@
 // transitions disabled (a .noAnim class + reflow) before filling in the
 // next card. Old v9 cache would keep serving the buggy flip-carry-over
 // behaviour, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v10';
+//
+// Bumped v10 -> v11: the "Test Your Knowledge" auto-flashcard feature was
+// removed entirely (button, overlay markup, CSS, and all JS) per request.
+// Old v10 cache would keep serving the old index.html/app.js with the
+// flashcard button and overlay still present, so it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v11';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
