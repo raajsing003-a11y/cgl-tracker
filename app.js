@@ -14572,12 +14572,309 @@ function filterEmMocksGrid(query){
   renderEmMocksGrid(filtered);
 }
 
-function openEmMock(key, file, label, entry){
-  const titleEl = document.getElementById('emmocksPlayerTitle');
-  if(titleEl) titleEl.textContent = label + ' — ' + (entry.label || ('Mock ' + entry.n));
-  const iframe = document.getElementById('emmocksIframe');
-  if(iframe) iframe.src = 'emmocks/' + key + '/' + file;
-  showCalcPage('emmocksplayer');
+// ===== EM Mocks — native player =====
+// Pre-converted data lives at emmocks/data/<key>/mock_NNN.json (see
+// extract_emmocks.js), one JSON per original mock_NNN.html, schema:
+//   { title, duration_min, questions: [ { q, options:[4], answer(0-based),
+//     solution, marks, neg } ] }
+// This reuses the same Testbook-style exam UI (instructions -> timed exam
+// with palette/mark-for-review -> result+solution review) already used for
+// Math/Reasoning/English full mocks elsewhere in the app, instead of an
+// iframe pointing at the mock's own standalone HTML page.
+let emnativeLoaded = null;
+let emnativeMockLabel = '';
+const emnativeSession = {
+  questions: [], answers: [], marked: [], visited: [],
+  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
+};
+
+async function openEmMock(key, file, label, entry){
+  emnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
+  const jsonFile = file.replace(/\.html$/, '.json');
+  const infoTitleEl = document.getElementById('emnativeInfoTitle');
+  if(infoTitleEl) infoTitleEl.textContent = emnativeMockLabel;
+  showCalcPage('emnativeinfo');
+  const qc = document.getElementById('emnativeInfoQCount'); if(qc) qc.textContent = '…';
+  let data;
+  try{
+    const res = await fetch('emmocks/data/' + key + '/' + jsonFile);
+    data = await res.json();
+  }catch(e){
+    alert('Ye mock load nahi ho paaya. Dobara try karein.');
+    showCalcPage('emmockslist');
+    return;
+  }
+  if(!data || !data.questions || !data.questions.length){
+    alert('Ye mock abhi available nahi hai.');
+    showCalcPage('emmockslist');
+    return;
+  }
+  emnativeLoaded = data;
+  const totalQ = data.questions.length;
+  const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
+  const firstQ = data.questions[0] || { marks: 1, neg: 0 };
+  if(qc) qc.textContent = totalQ;
+  const tm = document.getElementById('emnativeInfoMarks');
+  if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
+  const du = document.getElementById('emnativeInfoDuration');
+  if(du) du.textContent = (data.duration_min || 15) + ' minutes';
+  const mk = document.getElementById('emnativeInfoMarking');
+  if(mk) mk.textContent = '+' + firstQ.marks + ' / -' + firstQ.neg;
+}
+
+function emnativeFormatMarks(m){ return (Math.round(m * 100) / 100).toString(); }
+function emnativeFormatTime(sec){
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return (m < 10 ? '0' + m : m) + ':' + (r < 10 ? '0' + r : r);
+}
+
+function emnativeStartExam(){
+  if(!emnativeLoaded) return;
+  emnativeSession.questions = emnativeLoaded.questions;
+  const n = emnativeSession.questions.length;
+  emnativeSession.answers = new Array(n).fill(null);
+  emnativeSession.marked = new Array(n).fill(false);
+  emnativeSession.visited = new Array(n).fill(false);
+  emnativeSession.current = 0;
+  emnativeSession.timeLeft = (emnativeLoaded.duration_min || 15) * 60;
+  emnativeSession.submitted = false;
+  emnativeSession.paused = false;
+  const titleEl = document.getElementById('emnativeExamTitle');
+  if(titleEl) titleEl.textContent = emnativeMockLabel;
+  emnativeStopTimer();
+  emnativeStartTimer();
+  emnativeSetPausedUI(false);
+  emnativeRenderQuestion();
+  showCalcPage('emnativeexam');
+}
+
+function emnativeUpdateTimerDisplay(){
+  const el = document.getElementById('emnativeExamTimerPill');
+  if(!el) return;
+  el.textContent = '⏱ ' + emnativeFormatTime(emnativeSession.timeLeft);
+  el.classList.toggle('examTimerLow', emnativeSession.timeLeft <= 120);
+}
+function emnativeStartTimer(){
+  emnativeUpdateTimerDisplay();
+  emnativeSession.timerId = setInterval(() => {
+    emnativeSession.timeLeft--;
+    emnativeUpdateTimerDisplay();
+    if(emnativeSession.timeLeft <= 0){
+      emnativeStopTimer();
+      emnativeSubmit();
+    }
+  }, 1000);
+}
+function emnativeStopTimer(){
+  if(emnativeSession.timerId){ clearInterval(emnativeSession.timerId); emnativeSession.timerId = null; }
+}
+function emnativeSetPausedUI(paused){
+  const btn = document.getElementById('emnativeExamPauseBtn');
+  if(btn){
+    btn.textContent = paused ? '▶' : '⏸';
+    btn.title = paused ? 'Resume Test' : 'Pause Test';
+    btn.classList.toggle('paused', paused);
+  }
+  const overlay = document.getElementById('emnativeExamPauseOverlay');
+  if(overlay) overlay.style.display = paused ? 'flex' : 'none';
+  ['emnativeExamMarkBtn','emnativeExamClearBtn','emnativeExamSaveNextBtn','emnativeExamSaveNextBtnBottom','emnativeExamSubmitBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.disabled = paused;
+  });
+}
+function emnativeTogglePause(){
+  if(emnativeSession.submitted) return;
+  emnativeSession.paused = !emnativeSession.paused;
+  if(emnativeSession.paused) emnativeStopTimer(); else emnativeStartTimer();
+  emnativeSetPausedUI(emnativeSession.paused);
+}
+function emnativePaletteState(i){
+  const answered = emnativeSession.answers[i] !== null && emnativeSession.answers[i] !== undefined;
+  const marked = emnativeSession.marked[i];
+  if(marked && answered) return 'pAnsweredMarked';
+  if(marked) return 'pMarked';
+  if(answered) return 'pAnswered';
+  if(emnativeSession.visited[i]) return 'pNotAnswered';
+  return '';
+}
+function emnativeRenderPalette(){
+  const grid = document.getElementById('emnativeExamPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  emnativeSession.questions.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + emnativePaletteState(i) + (i === emnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => emnativeGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+function emnativeRenderQuestion(){
+  const q = emnativeSession.questions[emnativeSession.current];
+  if(!q) return;
+  emnativeSession.visited[emnativeSession.current] = true;
+  const qnoEl = document.getElementById('emnativeExamQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (emnativeSession.current + 1);
+  const wordEl = document.getElementById('emnativeExamWordText');
+  if(wordEl) wordEl.innerHTML = q.q || '—';
+  const optList = document.getElementById('emnativeExamOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const selected = emnativeSession.answers[emnativeSession.current];
+    (q.options || []).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + opt + '</span>';
+      btn.addEventListener('click', () => emnativeSelectOption(i));
+      optList.appendChild(btn);
+    });
+  }
+  const markBtn = document.getElementById('emnativeExamMarkBtn');
+  if(markBtn) markBtn.textContent = emnativeSession.marked[emnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
+  emnativeRenderPalette();
+}
+function emnativeSelectOption(i){
+  emnativeSession.answers[emnativeSession.current] = i;
+  emnativeRenderQuestion();
+}
+function emnativeGoTo(idx){
+  if(idx < 0 || idx >= emnativeSession.questions.length) return;
+  emnativeSession.current = idx;
+  emnativeRenderQuestion();
+}
+function emnativeSaveNext(){
+  if(emnativeSession.current < emnativeSession.questions.length - 1) emnativeGoTo(emnativeSession.current + 1);
+  else emnativeRenderPalette();
+}
+function emnativeMarkForReview(){
+  emnativeSession.marked[emnativeSession.current] = !emnativeSession.marked[emnativeSession.current];
+  if(emnativeSession.current < emnativeSession.questions.length - 1) emnativeGoTo(emnativeSession.current + 1);
+  else emnativeRenderQuestion();
+}
+function emnativeClearResponse(){
+  emnativeSession.answers[emnativeSession.current] = null;
+  emnativeRenderQuestion();
+}
+function emnativeConfirmSubmit(){
+  const total = emnativeSession.questions.length;
+  const answered = emnativeSession.answers.filter(a => a !== null && a !== undefined).length;
+  const notAnswered = total - answered;
+  const ok = confirm('Answered: ' + answered + '\nNot Answered: ' + notAnswered + '\n\nSubmit test now? Ye action wapas nahi ho sakta.');
+  if(ok){ emnativeStopTimer(); emnativeSubmit(); }
+}
+function emnativeSubmit(){
+  if(emnativeSession.submitted) return;
+  emnativeSession.submitted = true;
+  emnativeStopTimer();
+  let correct = 0, wrong = 0, marks = 0;
+  emnativeSession.questions.forEach((q, i) => {
+    const a = emnativeSession.answers[i];
+    if(a === null || a === undefined) return;
+    if(a === q.answer){ correct++; marks += (q.marks || 0); }
+    else { wrong++; marks -= (q.neg || 0); }
+  });
+  const skipped = emnativeSession.questions.length - correct - wrong;
+  const attempted = correct + wrong;
+  const acc = attempted ? Math.round((correct / attempted) * 100) : 0;
+  const titleEl = document.getElementById('emnativeResultTitle');
+  if(titleEl) titleEl.textContent = emnativeMockLabel;
+  const summaryEl = document.getElementById('emnativeExamResultSummary');
+  if(summaryEl){
+    summaryEl.innerHTML =
+      '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + emnativeFormatMarks(marks) + '</div><div class="l">Total Marks</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + correct + '</div><div class="l">Correct</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + wrong + '</div><div class="l">Wrong</div></div>' +
+      '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + skipped + '</div><div class="l">Skipped</div></div>' +
+      '<div class="examSumCard"><div class="n">' + acc + '%</div><div class="l">Accuracy</div></div>' +
+      '<div class="examSumCard"><div class="n">' + emnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
+  }
+  logQuizActivity(emnativeMockLabel, correct, attempted);
+  emnativeResultRenderPalette();
+  emnativeResultGoTo(0);
+  showCalcPage('emnativeresult');
+}
+function emnativeResultQState(i){
+  const a = emnativeSession.answers[i];
+  const q = emnativeSession.questions[i];
+  if(a === null || a === undefined) return 'skipped';
+  return a === q.answer ? 'correct' : 'wrong';
+}
+function emnativeResultRenderPalette(){
+  const grid = document.getElementById('emnativeResultPaletteGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  emnativeSession.questions.forEach((q, i) => {
+    const st = emnativeResultQState(i);
+    const cls = st === 'correct' ? 'pAnswered' : st === 'wrong' ? 'pNotAnswered' : '';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'examPaletteBtn ' + cls + (i === emnativeSession.current ? ' pCurrent' : '');
+    btn.textContent = i + 1;
+    btn.addEventListener('click', () => emnativeResultGoTo(i));
+    grid.appendChild(btn);
+  });
+}
+let emnativeResultRevealed = false;
+function emnativeResultGoTo(idx){
+  if(idx < 0 || idx >= emnativeSession.questions.length) return;
+  emnativeSession.current = idx;
+  emnativeResultRevealed = false;
+  emnativeResultRenderQuestion();
+  emnativeResultRenderPalette();
+}
+function emnativeResultReveal(){
+  if(emnativeResultRevealed) return;
+  emnativeResultRevealed = true;
+  emnativeResultRenderQuestion();
+}
+function emnativeResultRenderQuestion(){
+  const i = emnativeSession.current;
+  const q = emnativeSession.questions[i];
+  if(!q) return;
+  const qnoEl = document.getElementById('emnativeResultQNo');
+  if(qnoEl) qnoEl.textContent = 'Question No. ' + (i + 1);
+  const st = emnativeResultQState(i);
+  const tagWrap = document.getElementById('emnativeResultTagWrap');
+  if(tagWrap){
+    if(emnativeResultRevealed){
+      const label = st === 'correct' ? '✅ Correct' : st === 'wrong' ? '❌ Incorrect' : '⏭ Skipped';
+      const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+      tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+    } else {
+      tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">👆 Tap question to view answer & solution</span>';
+    }
+  }
+  const wordEl = document.getElementById('emnativeResultWordText');
+  if(wordEl) wordEl.innerHTML = q.q || '—';
+  const optList = document.getElementById('emnativeResultOptList');
+  if(optList){
+    optList.innerHTML = '';
+    const userAns = emnativeSession.answers[i];
+    (q.options || []).forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      let cls = 'examOptBtn';
+      if(emnativeResultRevealed){
+        if(oi === q.answer) cls += ' correct';
+        else if(oi === userAns) cls += ' wrong';
+      } else if(oi === userAns){
+        cls += ' selected';
+      }
+      btn.className = cls;
+      btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + oi) + '</span><span>' + opt + '</span>';
+      optList.appendChild(btn);
+    });
+  }
+  const solCard = document.getElementById('emnativeResultSolutionCard');
+  const solText = document.getElementById('emnativeResultSolutionText');
+  if(emnativeResultRevealed){
+    if(solText) solText.innerHTML = q.solution || 'Solution available soon.';
+    if(solCard) solCard.style.display = 'block';
+  } else if(solCard) solCard.style.display = 'none';
 }
 
 function initEmMocksMenu(){
@@ -14588,14 +14885,48 @@ function initEmMocksMenu(){
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('emmocksListBackBtn');
   if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('emmocksmenu'));
-  const playerBackBtn = document.getElementById('emmocksPlayerBackBtn');
-  if(playerBackBtn) playerBackBtn.addEventListener('click', () => {
-    const iframe = document.getElementById('emmocksIframe');
-    if(iframe) iframe.src = 'about:blank';
-    showCalcPage('emmockslist');
-  });
   const searchBox = document.getElementById('emmocksSearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterEmMocksGrid(searchBox.value));
+
+  // Native instructions page
+  const infoBackBtn = document.getElementById('emnativeInfoBackBtn');
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('emmockslist'));
+  const startBtn = document.getElementById('emnativeStartBtn');
+  if(startBtn) startBtn.addEventListener('click', emnativeStartExam);
+
+  // Native exam page
+  const examBackBtn = document.getElementById('emnativeExamBackBtn');
+  if(examBackBtn) examBackBtn.addEventListener('click', () => {
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ emnativeStopTimer(); showCalcPage('emmockslist'); }
+  });
+  const pauseBtn = document.getElementById('emnativeExamPauseBtn');
+  if(pauseBtn) pauseBtn.addEventListener('click', emnativeTogglePause);
+  const resumeBtn = document.getElementById('emnativeExamResumeBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', emnativeTogglePause);
+  const submitBtn = document.getElementById('emnativeExamSubmitBtn');
+  if(submitBtn) submitBtn.addEventListener('click', emnativeConfirmSubmit);
+  const markBtn = document.getElementById('emnativeExamMarkBtn');
+  if(markBtn) markBtn.addEventListener('click', emnativeMarkForReview);
+  const clearBtn = document.getElementById('emnativeExamClearBtn');
+  if(clearBtn) clearBtn.addEventListener('click', emnativeClearResponse);
+  const saveNextBtn = document.getElementById('emnativeExamSaveNextBtn');
+  if(saveNextBtn) saveNextBtn.addEventListener('click', emnativeSaveNext);
+  const saveNextBtnBottom = document.getElementById('emnativeExamSaveNextBtnBottom');
+  if(saveNextBtnBottom) saveNextBtnBottom.addEventListener('click', emnativeSaveNext);
+
+  // Native result page
+  const resultBackBtn = document.getElementById('emnativeResultBackBtn');
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('emmockslist'));
+  const reattemptBtn = document.getElementById('emnativeResultReattemptBtn');
+  if(reattemptBtn) reattemptBtn.addEventListener('click', emnativeStartExam);
+  const resultQWrap = document.getElementById('emnativeResultQuestionWrap');
+  if(resultQWrap) resultQWrap.addEventListener('click', emnativeResultReveal);
+  const resultOptList = document.getElementById('emnativeResultOptList');
+  if(resultOptList) resultOptList.addEventListener('click', emnativeResultReveal);
+  const resultPrevBtn = document.getElementById('emnativeResultPrevBtn');
+  if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => emnativeResultGoTo(emnativeSession.current - 1));
+  const resultNextBtn = document.getElementById('emnativeResultNextBtn');
+  if(resultNextBtn) resultNextBtn.addEventListener('click', () => emnativeResultGoTo(emnativeSession.current + 1));
 }
 
 

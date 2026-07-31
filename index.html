@@ -2347,6 +2347,13 @@
     50%{box-shadow:0 0 0 8px rgba(239,68,68,0),inset 0 1px 1px rgba(255,255,255,0.35);}
   }
   /* ===== Testbook-style Mock Exam interface (Math PYQ mocks only) ===== */
+  .examInfoCard{margin:14px;padding:4px 16px;background:var(--card,#161b22);border:1px solid var(--border);border-radius:12px;}
+  .examInfoRow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:14.5px;}
+  .examInfoRow:last-child{border-bottom:none;}
+  .examInfoRow b{color:var(--blue,#4da3ff);font-size:15px;}
+  .examInfoInstructions{margin:14px;padding:14px 16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;}
+  .examInfoInstructionsTitle{font-weight:700;color:var(--gain,#10b981);margin-bottom:8px;font-size:15px;}
+  .examInfoInstructions ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--muted);}
   .examTopBar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0d1420;border-bottom:1px solid var(--border);max-width:100%;}
   .examTopBar .calcSubTitle{font-size:14.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .examTimerPill{display:flex;align-items:center;gap:6px;font-family:monospace;font-size:16px;font-weight:700;color:var(--white);background:#1a2436;border:1px solid rgba(96,165,250,0.4);border-radius:8px;padding:6px 10px;white-space:nowrap;flex:none;}
@@ -4003,13 +4010,118 @@
       <div class="calcGrid calcGrid-2col" id="emmocksListGrid"></div>
     </div>
 
-    <!-- ===== EM Mocks: mock player (iframe, mock ka apna poora UI as-is) ===== -->
-    <div class="calcPage" id="calcPage-emmocksplayer">
-      <div class="examTopBar">
-        <button class="calcBackBtn" id="emmocksPlayerBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
-        <div class="calcSubTitle" id="emmocksPlayerTitle">Mock</div>
+    <!-- ===== EM Mocks: native instructions page (Total Qs/Marks/Duration/Marking) ===== -->
+    <div class="calcPage" id="calcPage-emnativeinfo">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="emnativeInfoBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="emnativeInfoTitle">Mock</div>
       </div>
-      <iframe id="emmocksIframe" title="EM Mock" style="width:100%;height:calc(100vh - 150px);border:0;border-radius:12px;background:#fff;display:block;" src="about:blank"></iframe>
+      <div class="examInfoCard">
+        <div class="examInfoRow"><span>Total Questions</span><b id="emnativeInfoQCount">—</b></div>
+        <div class="examInfoRow"><span>Total Marks</span><b id="emnativeInfoMarks">—</b></div>
+        <div class="examInfoRow"><span>Duration</span><b id="emnativeInfoDuration">—</b></div>
+        <div class="examInfoRow"><span>Marking</span><b id="emnativeInfoMarking">—</b></div>
+      </div>
+      <div class="examInfoInstructions">
+        <div class="examInfoInstructionsTitle">Instructions</div>
+        <ul>
+          <li>Read each question carefully before answering</li>
+          <li>You can mark questions for review and come back later</li>
+          <li>The timer will automatically submit the test when time is up</li>
+          <li>Negative marking applies for wrong answers</li>
+        </ul>
+      </div>
+      <button type="button" class="nav-btn onbPrimary" id="emnativeStartBtn" style="width:100%;margin-top:14px;">▶ Start Test</button>
+    </div>
+
+    <!-- ===== EM Mocks: native Testbook-style Exam Interface (data-driven) ===== -->
+    <div class="calcPage" id="calcPage-emnativeexam">
+      <div class="examTopBar">
+        <button class="calcBackBtn" id="emnativeExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
+        <div class="calcSubTitle" id="emnativeExamTitle">Mock</div>
+        <div class="examTimerPill" id="emnativeExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examPauseBtn" id="emnativeExamPauseBtn" title="Pause Test">⏸</button>
+        <button type="button" class="examSubmitBtn" id="emnativeExamSubmitBtn">Submit Test</button>
+      </div>
+
+      <div class="examNavRow examNavRowTop">
+        <button type="button" class="nav-btn" id="emnativeExamMarkBtn">🚩 Mark for Review</button>
+        <button type="button" class="nav-btn" id="emnativeExamClearBtn">Clear Response</button>
+        <button type="button" class="nav-btn onbPrimary" id="emnativeExamSaveNextBtn">Save &amp; Next ➜</button>
+      </div>
+
+      <div class="examBodyRow">
+        <div class="examMainCol">
+          <div class="examQNo" id="emnativeExamQNo">Question No. 1</div>
+
+          <div class="calcQuestionWrap" id="emnativeExamQuestionWrap" style="padding:6px 2px 14px;text-align:left;">
+            <div class="dsExamBadge" id="emnativeExamExamBadge">📋 Exam</div>
+            <div class="calcQuestion" id="emnativeExamWordText" style="font-size:clamp(19px,5.4vw,24px);line-height:1.5;text-align:left;">—</div>
+          </div>
+
+          <div class="examOptList" id="emnativeExamOptList"></div>
+
+          <div class="examNavRow examNavRowBottom">
+            <button type="button" class="nav-btn onbPrimary" id="emnativeExamSaveNextBtnBottom">Save &amp; Next ➜</button>
+          </div>
+        </div>
+
+        <div class="examPaletteWrap">
+          <div class="examPaletteLegend">
+            <span><span class="examLegendDot" style="background:var(--gain);"></span>Answered</span>
+            <span><span class="examLegendDot" style="background:#7a2f2f;"></span>Not Answered</span>
+            <span><span class="examLegendDot" style="background:#3a3742;"></span>Not Visited</span>
+            <span><span class="examLegendDot" style="background:var(--purple);"></span>Marked for Review</span>
+          </div>
+          <div class="examPaletteGrid" id="emnativeExamPaletteGrid"></div>
+        </div>
+
+        <div class="examPauseOverlay" id="emnativeExamPauseOverlay">
+          <div class="pauseMsg">⏸ Test Paused</div>
+          <button type="button" class="nav-btn onbPrimary" id="emnativeExamResumeBtn">▶ Resume Test</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EM Mocks: Result + Solution Review ===== -->
+    <div class="calcPage" id="calcPage-emnativeresult">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="emnativeResultBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="emnativeResultTitle">Mock Result</div>
+        <button type="button" class="nav-btn" id="emnativeResultReattemptBtn" style="flex:0 0 auto;padding:8px 12px;font-size:12.5px;">🔁 Reattempt</button>
+      </div>
+
+      <div class="examResultSummary" id="emnativeExamResultSummary"></div>
+
+      <div class="calcStatsRow" style="padding:0 14px 6px;">
+        <div class="calcStatPill" style="color:var(--muted);">Solutions</div>
+      </div>
+
+      <div class="examPaletteWrap" style="border-top:none;padding-top:0;">
+        <div class="examPaletteGrid" id="emnativeResultPaletteGrid"></div>
+      </div>
+
+      <div class="examQNo" id="emnativeResultQNo">Question No. 1</div>
+      <div id="emnativeResultTagWrap"></div>
+
+      <div class="calcQuestionWrap" id="emnativeResultQuestionWrap" style="padding:6px 2px 14px;text-align:left;cursor:pointer;">
+        <div class="dsExamBadge" id="emnativeResultExamBadge">📋 Exam</div>
+        <div class="calcQuestion" id="emnativeResultWordText" style="font-size:clamp(19px,5.4vw,24px);line-height:1.5;text-align:left;">—</div>
+      </div>
+
+      <div class="examOptList" id="emnativeResultOptList" style="cursor:pointer;"></div>
+
+      <div class="calcResultCard" id="emnativeResultSolutionCard" style="display:none;text-align:left;padding:14px;margin:4px 14px 18px;">
+        <div class="dsSolBlock" style="margin-top:0;padding-top:0;border-top:none;">
+          <div class="dsSolLabel">Solution</div>
+          <div id="emnativeResultSolutionText"></div>
+        </div>
+      </div>
+
+      <div class="examNavRow" style="padding-bottom:20px;">
+        <button type="button" class="nav-btn" id="emnativeResultPrevBtn">⬅️ Previous</button>
+        <button type="button" class="nav-btn onbPrimary" id="emnativeResultNextBtn">Next ➜</button>
+      </div>
     </div>
 
     <div class="calcPage" id="calcPage-engfullmockmenu">
