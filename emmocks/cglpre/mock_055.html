@@ -1,0 +1,2933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5; /* Improved indigo */
+            --secondary-color: #4338ca;
+            --success-color: #16a34a; /* Brighter green for better contrast */
+            --danger-color: #dc2626;
+            --warning-color: #0369a1;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #1e293b;
+            --bg-color: #ffffff;
+            --muted-text: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --button-hover-brightness: 0.9;
+            --transition-speed: 0.3s;
+            --chart-color-1: #4f46e5;
+            --chart-color-2: #f43f5e;
+            --chart-color-3: #8b5cf6;
+            --chart-color-4: #10b981;
+            --chart-color-5: #f59e0b;
+            --animation-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6366f1; /* Brighter indigo for dark mode */
+            --secondary-color: #818cf8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #0ea5e9;
+            --light-bg: #0f172a;
+            --border-color: #1e293b;
+            --text-color: #f1f5f9;
+            --bg-color: #1e293b;
+            --muted-text: #94a3b8;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+            --button-hover-brightness: 1.1;
+            --chart-color-1: #818cf8;
+            --chart-color-2: #fb7185;
+            --chart-color-3: #a78bfa;
+            --chart-color-4: #34d399;
+            --chart-color-5: #fbbf24;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: var(--font-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--light-bg);
+            line-height: 1.5;
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.5s ease;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+            z-index: -1;
+        }
+
+        [data-theme="dark"] body::before {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        
+        .container {
+            background-color: var(--bg-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .test-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .question-palette {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 16px;
+            position: sticky;
+            top: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.4s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        /* Add custom scrollbar styling */
+        .question-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .question-palette::-webkit-scrollbar-track {
+            background: var(--light-bg);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Add responsive styles for mobile */
+        @media screen and (max-width: 768px) {
+            .test-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .question-palette {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                z-index: 1000;
+                max-height: 50vh;
+                margin: 0;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .palette-grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+            }
+
+            .palette-item {
+                width: 100%;
+                height: 36px;
+            }
+        }
+
+        .palette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .palette-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-weight: 500;
+            min-width: unset;
+            box-shadow: none;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filter-btn.active:hover {
+            filter: brightness(var(--button-hover-brightness));
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .palette-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+            color: var(--text-color);
+            background: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-item:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .palette-item.not-visited {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .palette-item.answered {
+            background: #16a34a;
+            color: white;
+            border-color: #15803d;
+        }
+
+        .palette-item.marked-review {
+            background: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 700;
+        }
+
+        .palette-item.not-answered {
+            background: #dc2626;
+            color: white;
+            border-color: #b91c1c;
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --button-hover-brightness: 0.9;
+            --transition-speed: 0.3s;
+            --chart-color-1: #4f46e5;
+            --chart-color-2: #f43f5e;
+            --chart-color-3: #8b5cf6;
+            --chart-color-4: #10b981;
+            --chart-color-5: #f59e0b;
+            --animation-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6366f1; /* Brighter indigo for dark mode */
+            --secondary-color: #818cf8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #0ea5e9;
+            --light-bg: #0f172a;
+            --border-color: #1e293b;
+            --text-color: #f1f5f9;
+            --bg-color: #1e293b;
+            --muted-text: #94a3b8;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+            --button-hover-brightness: 1.1;
+            --chart-color-1: #818cf8;
+            --chart-color-2: #fb7185;
+            --chart-color-3: #a78bfa;
+            --chart-color-4: #34d399;
+            --chart-color-5: #fbbf24;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: var(--font-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--light-bg);
+            line-height: 1.5;
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.5s ease;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+            z-index: -1;
+        }
+
+        [data-theme="dark"] body::before {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        
+        .container {
+            background-color: var(--bg-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .test-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .question-palette {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 16px;
+            position: sticky;
+            top: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.4s var(--animation-bounce), box-shadow 0.3s ease;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--light-bg);
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .question-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .question-palette::-webkit-scrollbar-track {
+            background: var(--light-bg);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        .question-palette:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .palette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .palette-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-weight: 500;
+            min-width: unset;
+            box-shadow: none;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filter-btn.active:hover {
+            filter: brightness(var(--button-hover-brightness));
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .palette-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+            color: var(--text-color);
+            background: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-item:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .palette-item.not-visited {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .palette-item.answered {
+            background: #16a34a;
+            color: white;
+            border-color: #15803d;
+        }
+
+        .palette-item.marked-review {
+            background: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 700;
+        }
+
+        .palette-item.not-answered {
+            background: #dc2626;
+            color: white;
+            border-color: #b91c1c;
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+            z-index: 1;
+        }
+
+        .palette-item.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid currentColor;
+            border-radius: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary-color), var(--chart-color-3));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .question-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.4s var(--animation-bounce);
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-container:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+        
+        .question-number {
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .question {
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: var(--text-color);
+            font-weight: 500;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .options {
+            flex-grow: 1;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .option {
+            display: block;
+            margin: 12px 0;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            font-size: 14px;
+            font-weight: 400;
+            user-select: none; /* Prevent text selection */
+        }
+        
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background-color: rgba(79, 70, 229, 0.05);
+            transition: width 0.3s ease;
+            z-index: 0;
+        }
+        
+        .option:hover::before {
+            width: 100%;
+        }
+        
+        .option:hover {
+            border-color: var(--primary-color);
+            transform: translateX(8px);
+        }
+        
+        .option:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        .option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .option.selected {
+            background-color: rgba(79, 70, 229, 0.15);
+            border-color: var(--primary-color);
+            transform: translateX(10px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .option.selected::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: var(--primary-color);
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .option-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            /* Added flex-wrap for better text handling */
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 20px;
+            background-color: var(--bg-color);
+            padding-bottom: 10px;
+            z-index: 5;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 22px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            min-width: 100px;
+            letter-spacing: 0.3px;
+            background-color: var(--primary-color);
+            outline: none;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+            z-index: 0;
+        }
+
+        button:hover::before {
+            width: 150%;
+            height: 150%;
+        }
+
+        button:active::before {
+            background: rgba(0, 0, 0, 0.1);
+            width: 150%;
+            height: 150%;
+        }
+        
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.25);
+            filter: brightness(var(--button-hover-brightness));
+        }
+        
+        button:active {
+            transform: translateY(-2px);
+            transition: all 0.1s;
+        }
+
+        button i {
+            font-size: 18px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 1;
+        }
+
+        button span {
+            position: relative;
+            z-index: 1;
+        }
+
+        button:hover i {
+            transform: scale(1.2);
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        button:disabled::before {
+            display: none;
+        }
+
+        #bookmark-btn {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        #bookmark-btn:hover {
+            border-color: #eab308;
+            color: #eab308;
+            background-color: rgba(234, 179, 8, 0.08);
+        }
+
+        #bookmark-btn.active {
+            background-color: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 600;
+        }
+
+        #bookmark-btn.active:hover {
+            background-color: #ca8a04;
+            color: #1e293b;
+        }
+
+        #bookmark-btn i {
+            transition: transform 0.3s var(--animation-bounce);
+        }
+
+        #bookmark-btn:hover i {
+            transform: translateY(-2px);
+        }
+        
+        #submit-test {
+            background-color: var(--success-color);
+            font-weight: 600;
+            min-width: 140px;
+        }
+        
+        #submit-test:hover {
+            box-shadow: 0 6px 15px rgba(22, 163, 74, 0.25);
+        }
+        
+        #prev-btn, #next-btn {
+            background-color: var(--primary-color);
+            min-width: 130px;
+        }
+        
+        #timer {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(79, 70, 229, 0.08);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .timer-warning {
+            color: var(--danger-color);
+            animation: pulse 1.5s infinite;
+            background: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        #result {
+            display: none;
+            color: var(--text-color);
+        }
+        
+        #score {
+            font-size: 32px;
+            text-align: center;
+            margin: 35px 0;
+            padding: 30px;
+            background: linear-gradient(to right, rgba(79, 70, 229, 0.08), rgba(139, 92, 246, 0.08));
+            border-radius: 12px;
+            line-height: 1.6;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.8s var(--animation-bounce);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #score::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1), transparent 60%);
+            z-index: 0;
+        }
+
+        #score div {
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 35px 0;
+        }
+
+        .score-card {
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.4s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--chart-color-1), var(--chart-color-3));
+            transition: height 0.3s ease;
+        }
+
+        .score-card:hover::before {
+            height: 6px;
+        }
+
+        .score-card:nth-child(2)::before {
+            background: linear-gradient(to right, var(--chart-color-2), var(--chart-color-4));
+        }
+
+        .score-card:nth-child(3)::before {
+            background: linear-gradient(to right, var(--chart-color-3), var(--chart-color-5));
+        }
+
+        .score-card:nth-child(4)::before {
+            background: linear-gradient(to right, var(--chart-color-4), var(--chart-color-1));
+        }
+
+        .score-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .score-card h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .score-card div {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--chart-color-1), var(--chart-color-3));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .score-card:hover div {
+            transform: scale(1.1);
+        }
+
+        .score-card:nth-child(2) div {
+            background: linear-gradient(45deg, var(--chart-color-2), var(--chart-color-4));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-card:nth-child(3) div {
+            background: linear-gradient(45deg, var(--chart-color-3), var(--chart-color-5));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-card:nth-child(4) div {
+            background: linear-gradient(45deg, var(--chart-color-4), var(--chart-color-1));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chart-container {
+            height: 350px;
+            margin: 25px 0;
+            background-color: var(--bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            animation: fadeScale 1s ease;
+            position: relative;
+        }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.03), transparent 70%);
+            z-index: 0;
+            border-radius: 12px;
+        }
+
+        .shortcut-hint {
+            font-size: 12px;
+            color: var(--muted-text);
+            font-weight: normal;
+        }
+
+        .keyboard-shortcuts {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .keyboard-shortcuts span {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--muted-text);
+            cursor: help;
+            font-weight: 500;
+        }
+
+        .keyboard-shortcuts span:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .option-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            margin-right: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover .option-number {
+            transform: scale(1.1);
+        }
+
+        .option.selected .option-number {
+            background: var(--success-color);
+            box-shadow: 0 0 10px rgba(22, 163, 74, 0.4);
+        }
+
+        .palette-toggle-btn {
+            background: linear-gradient(145deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+            padding: 0;
+            min-width: unset;
+        }
+
+        .palette-toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .palette-toggle-btn:hover::before {
+            opacity: 1;
+        }
+
+        .palette-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .palette-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .palette-toggle-btn.active {
+            transform: rotate(45deg);
+        }
+
+        .palette-toggle-btn i {
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .palette-toggle-btn:hover i {
+            transform: rotate(-15deg);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            .container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+
+            .test-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .question-palette {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: 0;
+                z-index: 1000;
+                border-radius: 0;
+                overflow-y: auto;
+                transform: translateX(100%);
+                transition: transform 0.3s var(--animation-bounce);
+                padding: 20px;
+            }
+
+            .question-palette.visible {
+                transform: translateX(0);
+            }
+
+            .palette-toggle-btn {
+                width: 48px;
+                height: 48px;
+                bottom: 16px;
+                right: 16px;
+                font-size: 18px;
+            }
+
+            .palette-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .palette-close-btn {
+                background: transparent;
+                border: none;
+                color: var(--text-color);
+                font-size: 20px;
+                cursor: pointer;
+                min-width: auto;
+                padding: 10px;
+                box-shadow: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            }
+
+            .palette-close-btn:hover {
+                color: var(--primary-color);
+                background: rgba(79, 70, 229, 0.1);
+            }
+
+            .score-details {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                width: 100%;
+                gap: 12px;
+            }
+
+            .navigation {
+                flex-direction: column;
+                gap: 15px;
+                position: sticky;
+                bottom: 10px;
+                padding-bottom: 5px;
+            }
+            
+            .question-container {
+                min-height: 400px;
+            }
+
+            .bookmark-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+                padding: 14px 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                padding-bottom: 12px;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .theme-toggle {
+                width: 40px;
+                height: 40px;
+                padding: 10px;
+            }
+
+            .keyboard-shortcuts {
+                display: none;
+            }
+
+            #timer {
+                padding: 8px 14px;
+                font-size: 13px;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .question {
+                font-size: 15px;
+            }
+
+            .option {
+                padding: 14px;
+                margin: 10px 0;
+                word-break: break-word; /* Added to prevent text overflow */
+            }
+
+            .option:hover {
+                transform: translateX(4px);
+            }
+
+            .option.selected {
+                transform: translateX(8px);
+            }
+
+            /* Fix for mobile devices where hover states persist */
+            @media (hover: none) {
+                button:hover, .option:hover, .score-card:hover, .answer-review:hover {
+                    transform: none;
+                }
+
+                button:active, .option:active {
+                    transform: scale(0.98);
+                }
+            }
+
+            /* Enhance readability on mobile */
+            #score {
+                font-size: 24px;
+                padding: 20px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            .custom-chart-legend {
+                flex-direction: column;
+                align-items: flex-start;
+                padding-left: 20px;
+            }
+
+            /* Prevent mobile zoom when tapping buttons/options */
+            button, .option, input, select {
+                font-size: 16px;
+            }
+
+            .palette-filters {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 10px;
+                justify-content: center;
+                -webkit-overflow-scrolling: touch;
+                gap: 8px;
+            }
+            
+            .filter-btn {
+                font-size: 11px;
+                padding: 5px 10px;
+                white-space: nowrap;
+                flex-shrink: 0; /* Prevent filters from shrinking */
+            }
+            
+            /* Fix download button on mobile */
+            .download-btn {
+                width: 100%;
+                min-width: 100%;
+                margin-top: 15px;
+                padding: 14px 10px;
+                white-space: normal; /* Allow text to wrap */
+            }
+            
+            /* Option text can wrap now */
+            .option-content {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            
+            /* Ensure option number doesn't shrink */
+            .option-number {
+                flex-shrink: 0;
+                margin-bottom: 5px;
+            }
+        }
+
+        .answer-review {
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            background: var(--bg-color);
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        .answer-review:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .explanation strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .explanation p {
+            margin: 8px 0;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .explanation {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .correct {
+            color: var(--success-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background-color: rgba(22, 163, 74, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .correct:hover {
+            background-color: rgba(22, 163, 74, 0.15);
+        }
+
+        .incorrect {
+            color: var(--danger-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background-color: rgba(220, 38, 38, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .incorrect:hover {
+            background-color: rgba(220, 38, 38, 0.15);
+        }
+
+        .marks-info {
+                font-size: 12px;
+            color: var(--muted-text);
+            font-style: normal;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background-color: rgba(100, 116, 139, 0.08);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .marks-info:hover {
+            background-color: rgba(100, 116, 139, 0.12);
+        }
+
+        .question-number {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            min-width: unset;
+            width: 38px;
+            height: 38px;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.08);
+            transform: rotate(180deg);
+        }
+
+        .review-warning {
+            background-color: rgba(220, 38, 38, 0.08);
+            border: 1px solid var(--danger-color);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-color);
+            box-shadow: var(--shadow-md);
+            animation: slideDown 0.5s var(--animation-bounce);
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .review-warning i {
+            color: var(--danger-color);
+            font-size: 28px;
+            animation: shake 1s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        #review-list {
+            margin-top: 25px;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .review-item:hover {
+            background: rgba(79, 70, 229, 0.05);
+            transform: translateX(5px);
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .analytics-container {
+            margin-top: 35px;
+            padding: 25px;
+            border-radius: 12px;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        .analytics-container:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-5px);
+        }
+
+        .analytics-container h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analytics-container h3 i {
+            font-size: 20px;
+            color: var(--chart-color-1);
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.3);
+            z-index: 1;
+        }
+
+        .keyboard-pressed {
+            transform: scale(0.95) translateY(0) !important;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+            opacity: 0.9;
+            transition: all 0.1s ease !important;
+        }
+        
+        .keyboard-selected {
+            background-color: rgba(79, 70, 229, 0.15);
+            transform: translateX(5px);
+            transition: all 0.1s ease;
+        }
+        
+        @keyframes buttonPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        .review-warning {
+            animation: none;
+            transition: all 0.3s var(--animation-bounce);
+        }
+        
+        .fade-out {
+            opacity: 0 !important;
+            transform: translateY(-10px) !important;
+        }
+        
+        .review-warning button {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        @media (max-width: 768px) {
+            .review-warning {
+                flex-direction: column;
+                padding: 20px;
+            }
+            
+            .review-warning i {
+                margin-bottom: 10px;
+                align-self: center;
+            }
+        }
+
+        .custom-chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+            padding: 0 16px;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .legend-text {
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .score-card {
+                padding: 20px;
+                min-height: 100px;
+            }
+
+            .score-card h3 {
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+
+            .score-card div {
+                font-size: 24px;
+            }
+
+            .custom-chart-legend {
+                gap: 12px;
+                margin-top: 20px;
+                padding: 0 12px;
+            }
+
+            .chart-legend-item {
+                font-size: 12px;
+            }
+
+            .legend-color {
+                width: 10px;
+                height: 10px;
+                margin-right: 6px;
+            }
+        }
+
+        /* Add new styles for creator info */
+        .creator-info {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            gap: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .creator-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .creator-logo:hover {
+            transform: scale(1.1);
+        }
+
+        .creator-tg {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .creator-tg:hover {
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .creator-tg i {
+            color: #229ED9;
+            font-size: 20px;
+        }
+
+        [data-theme="dark"] .creator-info {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
+        }
+
+        .download-btn {
+            background: linear-gradient(145deg, var(--chart-color-1), var(--chart-color-3));
+            margin-top: 20px;
+            width: auto;
+            padding: 12px 24px;
+            transition: all 0.3s var(--animation-bounce);
+            box-shadow: var(--shadow-md);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            min-width: 200px;
+            color: white;
+            /* Ensure text doesn't overflow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .download-btn i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="creator-info">
+        <a href="https://t.me/finallygotnirvana" target="_blank" class="creator-tg">
+            <i class="fab fa-telegram"></i>
+            Created by @finallygotnirvana
+        </a>
+        <img src="https://i.ibb.co/0ysnvFZS/0x1900-000000-80-0-0.jpg" alt="Creator Logo" class="creator-logo">
+    </div>
+
+    <div class="test-layout">
+        <div id="test-container" class="container">
+            <div class="header">
+                <h1 id="test-title">Mock Test</h1>
+                <div class="header-controls">
+                    <div id="timer"><i class="fas fa-clock"></i> Time Remaining: 00:00</div>
+                    <button class="theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="current-question"></div>
+            
+            <div class="navigation">
+                <div class="nav-buttons">
+                    <button id="prev-btn" disabled><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button id="next-btn">Next <i class="fas fa-arrow-right"></i></button>
+                    <button id="submit-test" style="display: none;"><i class="fas fa-check"></i> Submit Test</button>
+                </div>
+                <button id="bookmark-btn">
+                    <i class="far fa-flag"></i> Mark for Review <span class="shortcut-hint">(B)</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="question-palette container">
+            <div class="palette-header">
+                <h3>Question Palette</h3>
+            </div>
+            <div class="palette-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="answered">Answered</button>
+                <button class="filter-btn" data-filter="not-answered">Not Answered</button>
+                <button class="filter-btn" data-filter="marked-review">Marked for Review</button>
+            </div>
+            <div class="palette-grid" id="question-palette"></div>
+        </div>
+    </div>
+
+    <button class="palette-toggle-btn" id="palette-toggle">
+        <i class="fas fa-th"></i>
+    </button>
+
+            <div id="result" class="container">
+            <div id="score"></div>
+            <div class="score-details">
+                <div class="score-card">
+                    <h3>Total Questions</h3>
+                    <div id="total-questions">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Attempted</h3>
+                    <div id="attempted-questions">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Correct</h3>
+                    <div id="correct-answers">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Accuracy</h3>
+                    <div id="accuracy">0%</div>
+                </div>
+            </div>
+            <div class="analytics-container">
+                <h3>Performance Analysis</h3>
+                <div class="chart-container" id="performance-chart"></div>
+                <button id="download-analysis" class="download-btn"><i class="fas fa-download"></i> Download Analysis</button>
+            </div>
+            <div id="answers"></div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <button id="bottom-download-analysis" class="download-btn"><i class="fas fa-download"></i> Download Analysis</button>
+            </div>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Test data
+        const testData = {"test_info": {"title": "Paid SSC CGL PRE 2025 MOCK 06 (NEW)", "duration": "20", "total_questions": 25, "max_marks": 50, "marks_per_question": 2.0, "negative_marks": 0.5}, "questions": [{"question_number": 1, "question_text": "<strong>Select the most appropriate idiom to replace the underlined segment.</strong> <br /> He thinks his new plan will undoubtedly <ins><strong>produce the desired result.</strong></ins>", "options": ["1) sour grapes\n                                                    <input class=\"question_options0\" name=\"selected_option_0\" type=\"radio\" value=\"589038_142421\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) go pear-shaped\n                                                    <input class=\"question_options1\" name=\"selected_option_0\" type=\"radio\" value=\"589039_142421\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) go suck a lemon\n                                                    <input class=\"question_options2\" name=\"selected_option_0\" type=\"radio\" value=\"589040_142421\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) bear fruit\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_0\" type=\"radio\" value=\"589041_142421\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) bear fruit\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_0\" type=\"radio\" value=\"589041_142421\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D)Bear fruit(idiom) – Produce the desired result फल देना", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 2, "question_text": "<strong>Select the most appropriate option to substitute the underlined segment in the given sentence</strong> <br /> During his <ins><strong>short period when he stays </strong></ins>in Paris, he immersed himself in the city's art and culture.", "options": ["1) Summit\n                                                    <input class=\"question_options0\" name=\"selected_option_1\" type=\"radio\" value=\"589058_142426\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Sojourn\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_1\" type=\"radio\" value=\"589059_142426\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Convocation\n                                                    <input class=\"question_options2\" name=\"selected_option_1\" type=\"radio\" value=\"589060_142426\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Itinerary\n                                                    <input class=\"question_options3\" name=\"selected_option_1\" type=\"radio\" value=\"589061_142426\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) Sojourn\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_1\" type=\"radio\" value=\"589059_142426\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B)Sojourn(noun) – a temporary stay, especially when traveling. अस्थायी प्रवास", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 3, "question_text": "<strong>Select the most appropriate option to fill in the blank.</strong> <br /> Due to _________ 'eve teasing', parents conclude that it is not worth the danger of sending their daughters to school.", "options": ["1) rectified\n                                                    <input class=\"question_options0\" name=\"selected_option_2\" type=\"radio\" value=\"589078_142431\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) localised\n                                                    <input class=\"question_options1\" name=\"selected_option_2\" type=\"radio\" value=\"589079_142431\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) narrow\n                                                    <input class=\"question_options2\" name=\"selected_option_2\" type=\"radio\" value=\"589080_142431\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) widespread\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_2\" type=\"radio\" value=\"589081_142431\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) widespread\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_2\" type=\"radio\" value=\"589081_142431\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D)Widespread'का use होगा क्योंकि \"widespread\" का अर्थ होता है व्यापक रूप से फैला हुआ। sentence में यह बताया गया है कि 'eve teasing' की व्यापकता के कारण माता-पिता अपनी बेटियों को स्कूल भेजने के खतरे को नहीं उठाना चाहते। इसलिए 'widespread' यहाँ सही optionहै। जबकि: 'Rectified' का अर्थ है किसी समस्या को ठीक करना, जो इस संदर्भ में फिट नहीं बैठता। 'Localised' का अर्थ है किसी चीज़ को सीमित क्षेत्र में केंद्रित करना, लेकिन यहां समस्या की व्यापकता पर जोर है। 'Narrow' का अर्थ है संकीर्ण या सीमित, जो इस संदर्भ में सही नहीं है। <br /> Widespread'will be used because it means \"extensively prevalent.\" The sentence implies that due to the extensive prevalence of 'eve teasing,' parents find it risky to send their daughters to school, making 'widespread' the correct option. Whereas: 'Rectified' means to correct a problem, which does not fit the context. 'Localised' means confined to a specific area, but the sentence emphasizes the prevalence, not restriction. 'Narrow' means limited or restricted, which is not appropriate in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 4, "question_text": "<strong>Select the best express Antonym of the given underlined word.</strong> <br /> She was <ins><strong>overly</strong> </ins>concerned about the results, which affected her ability to focus.", "options": ["1) Loud\n                                                    <input class=\"question_options0\" name=\"selected_option_3\" type=\"radio\" value=\"589042_142422\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Distinct\n                                                    <input class=\"question_options1\" name=\"selected_option_3\" type=\"radio\" value=\"589043_142422\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Moderately\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_3\" type=\"radio\" value=\"589044_142422\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Cacophonous\n                                                    <input class=\"question_options3\" name=\"selected_option_3\" type=\"radio\" value=\"589045_142422\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) Moderately\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_3\" type=\"radio\" value=\"589044_142422\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) Overly(adverb) – Excessively, Unduly, Extremely, Unnecessarily, Abnormally अत्यधिक <br /> Antonym:Moderately(adverb) – Reasonably, Slightly, Fairly, Adequately संयमित <br /> Loud(adjective) – Producing a lot of noise, high in volume. ऊँचा <br /> Distinct(adjective) – Clearly different, noticeable, well-defined. स्पष्ट <br /> Cacophonous(adjective) – Harsh-sounding, unpleasant, discordant. कर्कश", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 5, "question_text": "<strong>Sentences of a paragraph are given below in jumbled order. Arrange the sentences in the correct order to form a meaningful and coherent paragraph.</strong><br/>\n<strong>A)  </strong>The monthly average price of the Indian basket of crude began to increase after Russia invaded Ukraine in February 2022.<br/>\n<strong>B)  </strong>It peaked at $116/bbl in June 2022.<br/>\n<strong>C)</strong>  By May 2023, the price crashed to $75.<br/>\n<strong>D) </strong> But India’s retail fuel prices have remained frozen – no changes since May 22, 2022.", "options": ["1) ABDC\n                                                    <input class=\"question_options0\" name=\"selected_option_4\" type=\"radio\" value=\"589094_142435\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) ABCD\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_4\" type=\"radio\" value=\"589095_142435\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) CDAB\n                                                    <input class=\"question_options2\" name=\"selected_option_4\" type=\"radio\" value=\"589096_142435\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) BCDA\n                                                    <input class=\"question_options3\" name=\"selected_option_4\" type=\"radio\" value=\"589097_142435\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) ABCD\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_4\" type=\"radio\" value=\"589095_142435\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) ABCD <br /> A:\"The monthly average price of the Indian basket of crude began to increase after Russia invaded Ukraine in February 2022.\" This sentence serves as a good starting point, providing the background and context for the subsequent events <br /> B:\"It peaked at $116/bbl in June 2022.\" This follows logically from sentence A, indicating the progression of crude oil prices over time <br /> C:\"By May 2023, the price crashed to $75.\" This continues the timeline from sentence B, showcasing a drastic change in the price, adding further detail to the sequence of events <br /> D:\"But India’s retail fuel prices have remained frozen – no changes since May 22, 2022.\" This sentence introduces a contrast with the prior sentences and wraps up the narrative by pointing out the discrepancy between international crude oil prices and India's retail fuel prices", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 6, "question_text": "<strong>Select the INCORRECTLY spelt word.</strong>", "options": ["1) Celebrate\n                                                    <input class=\"question_options0\" name=\"selected_option_5\" type=\"radio\" value=\"589070_142429\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Entertenment\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_5\" type=\"radio\" value=\"589071_142429\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Outburst\n                                                    <input class=\"question_options2\" name=\"selected_option_5\" type=\"radio\" value=\"589072_142429\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Conscious\n                                                    <input class=\"question_options3\" name=\"selected_option_5\" type=\"radio\" value=\"589073_142429\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) Entertenment\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_5\" type=\"radio\" value=\"589071_142429\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) The correct spelling isEntertainment, which means \"the action of providing or being provided with amusement or enjoyment\" (मनोरंजन)", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 7, "question_text": "<strong>Select the best express Synonym of the given underlined word.</strong> <br /> The controversial topic seemed to <ins><strong>polarise</strong> </ins>the audience into two opposing groups.", "options": ["1) Unite\n                                                    <input class=\"question_options0\" name=\"selected_option_6\" type=\"radio\" value=\"589022_142417\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Divide\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_6\" type=\"radio\" value=\"589023_142417\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Harmonise\n                                                    <input class=\"question_options2\" name=\"selected_option_6\" type=\"radio\" value=\"589024_142417\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Reconcile\n                                                    <input class=\"question_options3\" name=\"selected_option_6\" type=\"radio\" value=\"589025_142417\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) Divide\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_6\" type=\"radio\" value=\"589023_142417\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) Polarise(verb) – Divide, Split, Separate, Fragment, Alienate ध्रुवीकरण करना <br /> Synonym: Divide(verb) – Split, separate, polarise, fragment, disunite विभाजित करना <br /> Unite(verb) – Join, combine, unify, connect, merge एकजुट करना <br /> Harmonise(verb) – Reconcile, coordinate, blend, integrate, synchronise सामंजस्य बिठाना <br /> Reconcile(verb) – Harmonise, settle, resolve, mend, pacify सुलह करना", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 8, "question_text": "<strong>Identify the INCORRECTLY spelt word in the given sentence.</strong> <br /> BBC Media has shown exponenteal growth in their revenue this year.", "options": ["1) revenue\n                                                    <input class=\"question_options0\" name=\"selected_option_7\" type=\"radio\" value=\"589066_142428\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) year\n                                                    <input class=\"question_options1\" name=\"selected_option_7\" type=\"radio\" value=\"589067_142428\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) exponenteal\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_7\" type=\"radio\" value=\"589068_142428\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) media\n                                                    <input class=\"question_options3\" name=\"selected_option_7\" type=\"radio\" value=\"589069_142428\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) exponenteal\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_7\" type=\"radio\" value=\"589068_142428\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) The correct spelling of'exponenteal'is'exponential', which means “increasing rapidly by successive increments or multiples” (अत्यधिक तीव्रता से बढ़ना).", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 9, "question_text": "<strong>Select the most appropriate option to fill in the blank.</strong> <br /> The detail given by the instructor was the ______ one.", "options": ["1) updating\n                                                    <input class=\"question_options0\" name=\"selected_option_8\" type=\"radio\" value=\"589074_142430\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) more updation\n                                                    <input class=\"question_options1\" name=\"selected_option_8\" type=\"radio\" value=\"589075_142430\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) most updated\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_8\" type=\"radio\" value=\"589076_142430\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) updates\n                                                    <input class=\"question_options3\" name=\"selected_option_8\" type=\"radio\" value=\"589077_142430\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) most updated\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_8\" type=\"radio\" value=\"589076_142430\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C)'Most updated'का use सही है क्योंकि \"most updated\" का अर्थ है सबसे नया या हालिया जानकारी। यहाँ sentence में एक विशेष जानकारी की बात हो रही है जो सबसे नई और प्रासंगिक है। 'Most updated' adjective के superlative degree को दर्शाता है, जो सही है क्योंकि यह \"the detail\" (singular noun) को modify करता है। \"Updating\" एक present participle है, जिसका अर्थ है 'update करने की प्रक्रिया', यह sentence में adjective की तरह use नहीं हो सकता। \"Updates\" plural noun है, लेकिन sentence में एक singular noun (\"the detail\") की बात हो रही है, इसलिए यह contextually गलत है। <br /> 'Most updated' is correct because it is a superlative adjective that means the most recent or latest. The sentence refers to a specific detail provided by the instructor, which is described as the most current or up-to-date information. Superlative forms like \"most updated\" are used when comparing one thing against all others, which fits here since \"the detail\" is singular and specific. updating – \"Updating\" is a present participle, which means the process of updating. It cannot act as an adjective to describe \"the detail\" in this context. \"Updates\" is a plural noun, but the sentence refers to a singular \"detail,\" making it grammatically incorrect.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 10, "question_text": "<strong>Select the best express Synonym of the given underlined word.</strong> <br /> The architect presented the <ins><strong>contour</strong> </ins>of the building, highlighting its unique design and structure.", "options": ["1) Interior\n                                                    <input class=\"question_options0\" name=\"selected_option_9\" type=\"radio\" value=\"589018_142416\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Color\n                                                    <input class=\"question_options1\" name=\"selected_option_9\" type=\"radio\" value=\"589019_142416\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Outline\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_9\" type=\"radio\" value=\"589020_142416\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Texture\n                                                    <input class=\"question_options3\" name=\"selected_option_9\" type=\"radio\" value=\"589021_142416\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) Outline\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_9\" type=\"radio\" value=\"589020_142416\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) Contour(noun) – Outline, Framework, Structure, Shape, Plan रूपरेखा <br /> Synonym: Outline(noun) – Contour, framework, structure, shape, sketch रूपरेखा <br /> Interior(noun) – Inside, core, inner part, innards, contents आंतरिक भाग <br /> Color(noun) – Hue, shade, tint, tone, pigment रंग <br /> Texture(noun) – Surface, feel, grain, weave, consistency बनावट", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 11, "question_text": "<strong>Select the option that can be used as a one-word substitute for the given group of words</strong>. <br /> Tom is <ins><strong>a person who searches for and collects discarded items</strong></ins>, turning what others throw away into valuable treasures for his community.", "options": ["1) Scavenger\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_10\" type=\"radio\" value=\"589062_142427\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Forager\n                                                    <input class=\"question_options1\" name=\"selected_option_10\" type=\"radio\" value=\"589063_142427\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Hunter\n                                                    <input class=\"question_options2\" name=\"selected_option_10\" type=\"radio\" value=\"589064_142427\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Gatherer\n                                                    <input class=\"question_options3\" name=\"selected_option_10\" type=\"radio\" value=\"589065_142427\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Scavenger\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_10\" type=\"radio\" value=\"589062_142427\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Scavenger(noun) – a person who searches for and collects discarded items. कचरा बीनने वाला व्यक्ति", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 12, "question_text": "<strong>Select the best express Antonym of the given underlined word.</strong> <br /> Due to its <ins><strong>lethal</strong> </ins>potential, handling the chemical requires extreme caution.", "options": ["1) Harmless\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_11\" type=\"radio\" value=\"589046_142423\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Deadly\n                                                    <input class=\"question_options1\" name=\"selected_option_11\" type=\"radio\" value=\"589047_142423\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Dangerous\n                                                    <input class=\"question_options2\" name=\"selected_option_11\" type=\"radio\" value=\"589048_142423\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Devastating\n                                                    <input class=\"question_options3\" name=\"selected_option_11\" type=\"radio\" value=\"589049_142423\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Harmless\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_11\" type=\"radio\" value=\"589046_142423\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) Lethal(adjective) – Deadly, fatal, dangerous, devastating, killer घातक <br /> Antonym: Harmless(adjective) – Not able or likely to cause harm. हानिरहित <br /> Deadly(adjective) – Causing or able to cause death. घातक <br /> Dangerous(adjective) – Able or likely to cause harm or injury. खतरनाक <br /> Devastating(adjective) – Highly destructive or damaging. विनाशकारी", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 13, "question_text": "<strong>Select the best express Synonym of the given underlined word.</strong> <br /> The <ins><strong>looming</strong> </ins>deadline for the project has everyone working overtime to meet expectations.", "options": ["1) Distant\n                                                    <input class=\"question_options0\" name=\"selected_option_12\" type=\"radio\" value=\"589014_142415\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Remote\n                                                    <input class=\"question_options1\" name=\"selected_option_12\" type=\"radio\" value=\"589015_142415\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Unlikely\n                                                    <input class=\"question_options2\" name=\"selected_option_12\" type=\"radio\" value=\"589016_142415\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Impending\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_12\" type=\"radio\" value=\"589017_142415\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) Impending\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_12\" type=\"radio\" value=\"589017_142415\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) Looming(adjective) – Impending, Approaching, Forthcoming, Imminent, Upcoming मंडराता <br /> Synonym: Impending(adjective) – Looming, Approaching, Forthcoming, Imminent, Upcoming (आसन्न) <br /> Distant(adjective) – Faraway, Remote, Far-off, Far, Removed (दूर) <br /> Remote(adjective) – Distant, Faraway, Isolated, Far-off, Unlikely (दूरस्थ) <br /> Unlikely(adjective) – Improbable, Doubtful, Unbelievable, Implausible, Questionable (असंभावित)", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 14, "question_text": "<strong>Select the most appropriate meaning of the given idiom.</strong> <br /> Out of spirits", "options": ["1) Hurt\n                                                    <input class=\"question_options0\" name=\"selected_option_13\" type=\"radio\" value=\"589030_142419\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Obsolete\n                                                    <input class=\"question_options1\" name=\"selected_option_13\" type=\"radio\" value=\"589031_142419\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Cheerful\n                                                    <input class=\"question_options2\" name=\"selected_option_13\" type=\"radio\" value=\"589032_142419\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Gloomy\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_13\" type=\"radio\" value=\"589033_142419\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) Gloomy\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_13\" type=\"radio\" value=\"589033_142419\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D)Out of spirits(idiom) – Gloomy (उदास)", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 15, "question_text": "<strong>Select the most appropriate option that can substitute the underlined segment in the given sentence. If there is no need to substitute it, select ‘No substitution required’.</strong> <br /> The White man had to swallow his bombast and <ins><strong>have completed the journey in mortified.</strong></ins>", "options": ["1) completes the journey mortifying\n                                                    <input class=\"question_options0\" name=\"selected_option_14\" type=\"radio\" value=\"589082_142432\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) completing the mortifying journey\n                                                    <input class=\"question_options1\" name=\"selected_option_14\" type=\"radio\" value=\"589083_142432\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) complete the journey in mortification\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_14\" type=\"radio\" value=\"589084_142432\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) no substitution required\n                                                    <input class=\"question_options3\" name=\"selected_option_14\" type=\"radio\" value=\"589085_142432\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) complete the journey in mortification\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_14\" type=\"radio\" value=\"589084_142432\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) 'have completed' के बदले 'complete' का प्रयोग होगा क्योंकि 'had to' एक Modal Expression है, जिसके बाद हमेशा Verb का Base Form (Bare Infinitive) आता है ।जैसे— <br /> Incorrect: He had to have finished the work. <br /> Correct: He had to finish the work. <br /> 'in mortified' के बदले 'in mortification' का प्रयोग होगा क्योंकि यहाँ एक Noun की आवश्यकता है, जो 'journey' को और स्पष्ट करे। 'Mortified' एक Adjective है, जो गलत है। <br /> 'complete the journey in mortification'will replace'have completed the journey in mortified'because 'had to' requires the base form of the verb ('complete'), and 'mortification' (a Noun) is needed instead of 'mortified' (an Adjective).", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 16, "question_text": "<strong>Select the most appropriate meaning of the underlined phrase.</strong> <br /> In the <ins><strong>absence of government rule</strong></ins>, riots have broken out all over the country and everything is in a state of complete chaos.", "options": ["1) Dictatorship\n                                                    <input class=\"question_options0\" name=\"selected_option_15\" type=\"radio\" value=\"589034_142420\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Monarchy\n                                                    <input class=\"question_options1\" name=\"selected_option_15\" type=\"radio\" value=\"589035_142420\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Oligarchy\n                                                    <input class=\"question_options2\" name=\"selected_option_15\" type=\"radio\" value=\"589036_142420\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Anarchy\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_15\" type=\"radio\" value=\"589037_142420\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) Anarchy\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_15\" type=\"radio\" value=\"589037_142420\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D)Anarchy(noun) – A state of society where there is no government or authority, leading to complete chaos or lawlessness. अराजकता <br /> Dictatorship(noun) – A form of government in which a single leader or party has absolute power. तानाशाही <br /> Monarchy(noun) – A system of government ruled by a king or queen. राजशाही <br /> Oligarchy(noun) – A system of government where a small group of people hold power. कुलीनतंत्र", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 17, "question_text": "<strong>Select the most appropriate meaning of the given idiom.</strong> <br /> Like a dying duck in a thunderstorm", "options": ["1) Dejected or hopeless\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_16\" type=\"radio\" value=\"589026_142418\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Fearful or scared of water\n                                                    <input class=\"question_options1\" name=\"selected_option_16\" type=\"radio\" value=\"589027_142418\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Bad swimmer or practitioner\n                                                    <input class=\"question_options2\" name=\"selected_option_16\" type=\"radio\" value=\"589028_142418\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Harmful or vigilant\n                                                    <input class=\"question_options3\" name=\"selected_option_16\" type=\"radio\" value=\"589029_142418\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Dejected or hopeless\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_16\" type=\"radio\" value=\"589026_142418\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Like a dying duck in a thunderstorm– Dejected or hopeless अत्यधिक निराश, उदास या असहाय दिखना (व्यक्ति की पूरी निराशा और दयनीय स्थिति को दर्शाता है, जैसे एक मरता हुआ बत्तख गरज और बारिश में होता है।)", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 18, "question_text": "<strong>The following sentence has been split into four segments. Identify the segment that contains a grammatical error</strong>. <br /> Japan’s prime minister, Shinzo Abe, urged G20 leaders to / work together to defuse trade / and political tensions, describing it as / threats to global economic growth and stability.", "options": ["1) Japan’s prime minister, Shinzo Abe, urged G20 leaders to\n                                                    <input class=\"question_options0\" name=\"selected_option_17\" type=\"radio\" value=\"589086_142433\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) work together to defuse trade\n                                                    <input class=\"question_options1\" name=\"selected_option_17\" type=\"radio\" value=\"589087_142433\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) and political tensions, describing it as\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_17\" type=\"radio\" value=\"589088_142433\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) threats to global economic growth and stability.\n                                                    <input class=\"question_options3\" name=\"selected_option_17\" type=\"radio\" value=\"589089_142433\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) and political tensions, describing it as\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_17\" type=\"radio\" value=\"589088_142433\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) 'describing it as' के बदले 'describing them as' का प्रयोग होगा क्योंकि यहाँ 'it' का प्रयोग 'trade and political tensions' (plural) के लिए हो रहा है, जो गलत है। Plural noun के लिए 'them' का प्रयोग करेंगे; जैसे— The teacher gave the students their books and asked them to read. <br /> • 'describing them as' will be used instead of 'describing it as' because here 'it' is being used for 'trade and political tensions' (plural), which is incorrect. For plural noun, we will use 'them'; Like— The teacher gave the students their books and asked them to read.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 19, "question_text": "<strong>The following sentence has been split into four segments. Identify the segment that contains a grammatical error</strong>. <br /> Giving the large base of tanks and (A) / reservoirs in Greater Chennai, (B) / prudent rainfall management can help it through (C) / withering summers and weak monsoons. (D)", "options": ["1) Giving the large base of tanks and\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_18\" type=\"radio\" value=\"589090_142434\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) reservoirs in Greater Chennai,\n                                                    <input class=\"question_options1\" name=\"selected_option_18\" type=\"radio\" value=\"589091_142434\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) prudent rainfall management can help it through\n                                                    <input class=\"question_options2\" name=\"selected_option_18\" type=\"radio\" value=\"589092_142434\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) withering summers and weak monsoons.\n                                                    <input class=\"question_options3\" name=\"selected_option_18\" type=\"radio\" value=\"589093_142434\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Giving the large base of tanks and\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_18\" type=\"radio\" value=\"589090_142434\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)'Giving'के बदले'Given'का प्रयोग होगा क्योंकि यहाँpreposition/participle errorहै।\"Given\"(दिए हुए/को देखते हुए) का प्रयोग किसी स्थिति को स्वीकार करते हुए किया जाता है, जबकि\"Giving\"(देते हुए) यहाँ अर्थपूर्ण नहीं है; जैसे—Given the heavy traffic, we should leave early. <br /> •'Given'will be used instead of'Giving'because there is apreposition/participle error.\"Given\"means\"considering/taking into account\", whereas\"Giving\"(to give) does not fit here; Like—Given the heavy traffic, we should leave early.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 20, "question_text": "<strong>Sentences of a paragraph are given below in jumbled order. Arrange the sentences in the correct order to form a meaningful and coherent paragraph.</strong><br/>\n<strong>A)  </strong>So, as our MPs get ready to work from a swanky new office, they and, even more, their party leaders must ask what use is India’s new House for India if it can’t house thoughtful, civil debates and pass well-scrutinised laws that make things better for citizens.<br/>\n<strong>B) </strong> If the splendour and hi-tech amenities reflected new ambitions, the war of tweets and statements pointed to a bitter political divide that can act as a drag on that ambition.<br/>\n<strong>C)   </strong>A grand ceremony and sharp political rhetoric greeted the new Parliament.<br/>\n<strong>D)  </strong> Which is to say it would be tragic were the ways of the old Parliament carry over to the new one.", "options": ["1) CBAD\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_19\" type=\"radio\" value=\"589098_142436\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) BADC\n                                                    <input class=\"question_options1\" name=\"selected_option_19\" type=\"radio\" value=\"589099_142436\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) BACD\n                                                    <input class=\"question_options2\" name=\"selected_option_19\" type=\"radio\" value=\"589100_142436\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) CBDA\n                                                    <input class=\"question_options3\" name=\"selected_option_19\" type=\"radio\" value=\"589101_142436\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) CBAD\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_19\" type=\"radio\" value=\"589098_142436\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) CBAD <br /> C:\"A grand ceremony and sharp political rhetoric greeted the new Parliament.\" <br /> This sentence seems like a natural introduction to the topic. It is setting the stage for the discussion by mentioning the new Parliament and the grand ceremonyB:This sentence elaborates on the scenario introduced in sentence C, discussing the new ambitions, the splendour and the hi-tech amenities of the new Parliament, as well as the war of tweets and statements, and the bitter political divide. It provides more context to the situation and brings in a conflict. <br /> A:This sentence is connected to the preceding one (B) as it continues the line of thought about the implications of the new Parliament and the duties of the MPs and party leaders. The use of the word \"So\" implies a conclusion or a solution to a previously stated problem, which in this case is the bitter political divide mentioned in B <br /> D:Finally, this sentence concludes the passage with a cautionary statement. \"Which is to say\" implies a summarization or restatement of the argument made in previous sentences, hence, this sentence seems most fitting at the end.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 21, "question_text": "<strong>Comprehension</strong>: <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank.</strong> <br /> George Patton Jr said, “I don’t measure man’s success by how high he climbs, but how high he bounces back _____1_____ he hits the bottom.” Emotional and physical _____2______ often _____3______ us. Stages of life are soaked with such experiences. As a child, we were frustrated ____4______not getting things that we wanted dearly. In youth we may have been bullied and rejected. And so the story goes on in our working and home lives, as we grow older. <br /> _______5_____, each time, we manage to recover, after a few gaps of silent suffering. During these gaps we intentionally or unintentionally, disconnect and withdraw ourselves from outward happenings, silently submitting and somehow connecting with something deeper and mysterious that overtakes us, and finally gathering the strength to bounce back. This mysterious power is what drove us to rise above all challenges and carry on with life to the best of our abilities. <br /> <strong>Select the most appropriate option to fill in blank number 1.</strong>", "options": ["1) When\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_20\" type=\"radio\" value=\"589106_142438\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Which\n                                                                <input class=\"question_options1\" name=\"selected_option_20\" type=\"radio\" value=\"589107_142438\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Where\n                                                                <input class=\"question_options2\" name=\"selected_option_20\" type=\"radio\" value=\"589108_142438\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Whose\n                                                                <input class=\"question_options3\" name=\"selected_option_20\" type=\"radio\" value=\"589109_142438\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) When\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_20\" type=\"radio\" value=\"589106_142438\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) 'When' का use होगा क्योंकि \"when\" का अर्थ होता है किसी समय या घटना का वर्णन करना, जो यहाँ सही है। Sentence में कहा गया है कि एक व्यक्ति निचले स्तर पर पहुंचने के बाद कैसे उठता है, इसलिए 'when' यहाँ सही है। जबकि 'Which' और 'Whose' का प्रयोग वस्तु या व्यक्ति की पहचान के लिए होता है और 'Where' का अर्थ है किसी स्थान का वर्णन करना, जो इस context में सही नहीं है। <br /> 'When' will be used because it refers to the description of a time or event, which fits here. The sentence describes how a person rebounds after reaching the bottom, making 'when' appropriate. Whereas, 'Which' and 'Whose' are used for identifying objects or persons, and 'Where' refers to a location, which do not fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 22, "question_text": "<strong>Comprehension</strong>: <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank.</strong> <br /> George Patton Jr said, “I don’t measure man’s success by how high he climbs, but how high he bounces back _____1_____ he hits the bottom.” Emotional and physical _____2______ often _____3______ us. Stages of life are soaked with such experiences. As a child, we were frustrated ____4______not getting things that we wanted dearly. In youth we may have been bullied and rejected. And so the story goes on in our working and home lives, as we grow older. <br /> _______5_____, each time, we manage to recover, after a few gaps of silent suffering. During these gaps we intentionally or unintentionally, disconnect and withdraw ourselves from outward happenings, silently submitting and somehow connecting with something deeper and mysterious that overtakes us, and finally gathering the strength to bounce back. This mysterious power is what drove us to rise above all challenges and carry on with life to the best of our abilities. <br /> <strong>Select the most appropriate option to fill in blank number 2.</strong>", "options": ["1) Knocks\n                                                                <input class=\"question_options0\" name=\"selected_option_21\" type=\"radio\" value=\"589110_142439\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Enhancements\n                                                                <input class=\"question_options1\" name=\"selected_option_21\" type=\"radio\" value=\"589111_142439\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Improves\n                                                                <input class=\"question_options2\" name=\"selected_option_21\" type=\"radio\" value=\"589112_142439\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Setbacks\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_21\" type=\"radio\" value=\"589113_142439\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) Setbacks\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_21\" type=\"radio\" value=\"589113_142439\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) 'Setbacks' का use होगा क्योंकि \"setbacks\" का अर्थ होता है बाधाएँ या प्रतिकूल परिस्थितियाँ, जो यहाँ सही है। Passage में mention है कि जीवन के विभिन्न चरण ऐसी चुनौतियों से भरे होते हैं, इसलिए 'setbacks' यहाँ सही है। 'Knocks' का अर्थ होता है आघात या मार, 'Enhancements' का अर्थ होता है सुधार, और 'Improves' का अर्थ है बेहतर बनाना, जो इस context में सही नहीं हैं। <br /> 'Setbacks' will be used because it means obstacles or adverse conditions, which fits here. The passage describes how various stages of life are filled with such challenges, making 'setbacks' appropriate. 'Knocks' implies impacts or hits, 'Enhancements' means improvements, and 'Improves' means to make better, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 23, "question_text": "<strong>Comprehension</strong>: <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank.</strong> <br /> George Patton Jr said, “I don’t measure man’s success by how high he climbs, but how high he bounces back _____1_____ he hits the bottom.” Emotional and physical _____2______ often _____3______ us. Stages of life are soaked with such experiences. As a child, we were frustrated ____4______not getting things that we wanted dearly. In youth we may have been bullied and rejected. And so the story goes on in our working and home lives, as we grow older. <br /> _______5_____, each time, we manage to recover, after a few gaps of silent suffering. During these gaps we intentionally or unintentionally, disconnect and withdraw ourselves from outward happenings, silently submitting and somehow connecting with something deeper and mysterious that overtakes us, and finally gathering the strength to bounce back. This mysterious power is what drove us to rise above all challenges and carry on with life to the best of our abilities. <br /> <strong>Select the most appropriate option to fill in blank number 3.</strong>", "options": ["1) Overwhelm\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_22\" type=\"radio\" value=\"589114_142440\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Succumb\n                                                                <input class=\"question_options1\" name=\"selected_option_22\" type=\"radio\" value=\"589115_142440\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Yield\n                                                                <input class=\"question_options2\" name=\"selected_option_22\" type=\"radio\" value=\"589116_142440\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Sympathize\n                                                                <input class=\"question_options3\" name=\"selected_option_22\" type=\"radio\" value=\"589117_142440\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Overwhelm\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_22\" type=\"radio\" value=\"589114_142440\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) 'Overwhelm' का use होगा क्योंकि \"overwhelm\" का अर्थ होता है बहुत अधिक प्रभावित करना या किसी चीज़ से दब जाना, जो यहाँ फिट बैठता है। passage में mention है कि बाधाएँ (setbacks) हमें प्रभावित करती हैं, इसलिए 'overwhelm' यहाँ सही है। 'Succumb' और 'Yield' का अर्थ होता है हार मान लेना या समर्पण कर देना, और 'Sympathize' का अर्थ है सहानुभूति दिखाना, जो इस context में सही नहीं हैं। <br /> 'Overwhelm' will be used because it means to be heavily affected or overpowered by something, which fits here. The passage describes how setbacks affect us, making 'overwhelm' appropriate. 'Succumb' and 'Yield' imply giving in or surrendering, and 'Sympathize' means to show empathy, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 24, "question_text": "<strong>Comprehension</strong>: <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank.</strong> <br /> George Patton Jr said, “I don’t measure man’s success by how high he climbs, but how high he bounces back _____1_____ he hits the bottom.” Emotional and physical _____2______ often _____3______ us. Stages of life are soaked with such experiences. As a child, we were frustrated ____4______not getting things that we wanted dearly. In youth we may have been bullied and rejected. And so the story goes on in our working and home lives, as we grow older. <br /> _______5_____, each time, we manage to recover, after a few gaps of silent suffering. During these gaps we intentionally or unintentionally, disconnect and withdraw ourselves from outward happenings, silently submitting and somehow connecting with something deeper and mysterious that overtakes us, and finally gathering the strength to bounce back. This mysterious power is what drove us to rise above all challenges and carry on with life to the best of our abilities. <br /> <strong>Select the most appropriate option to fill in blank number 4</strong>", "options": ["1) With\n                                                                <input class=\"question_options0\" name=\"selected_option_23\" type=\"radio\" value=\"589118_142441\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) On\n                                                                <input class=\"question_options1\" name=\"selected_option_23\" type=\"radio\" value=\"589119_142441\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) By\n                                                                <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_23\" type=\"radio\" value=\"589120_142441\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) To\n                                                                <input class=\"question_options3\" name=\"selected_option_23\" type=\"radio\" value=\"589121_142441\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) By\n                                                                <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_23\" type=\"radio\" value=\"589120_142441\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) 'By' का use होगा क्योंकि \"by\" का अर्थ होता है किसी चीज़ के कारण होना, जो यहाँ फिट बैठता है। Passage में mention है कि बचपन में हमें वह चीज़ें न मिलने पर निराशा होती थी जिन्हें हम बहुत चाहते थे, इसलिए 'by' यहाँ सही है। <br /> 'By' will be used because it implies being affected due to something, which fits here. The passage states that as children, we were frustrated by not getting things we dearly wanted, making 'by' the appropriate choice. 'With', 'On', and 'To' do not fit grammatically in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 25, "question_text": "<strong>Comprehension</strong>: <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank.</strong> <br /> George Patton Jr said, “I don’t measure man’s success by how high he climbs, but how high he bounces back _____1_____ he hits the bottom.” Emotional and physical _____2______ often _____3______ us. Stages of life are soaked with such experiences. As a child, we were frustrated ____4______not getting things that we wanted dearly. In youth we may have been bullied and rejected. And so the story goes on in our working and home lives, as we grow older. <br /> _______5_____, each time, we manage to recover, after a few gaps of silent suffering. During these gaps we intentionally or unintentionally, disconnect and withdraw ourselves from outward happenings, silently submitting and somehow connecting with something deeper and mysterious that overtakes us, and finally gathering the strength to bounce back. This mysterious power is what drove us to rise above all challenges and carry on with life to the best of our abilities. <br /> <strong>Select the most appropriate option to fill in blank number 5</strong>", "options": ["1) Still\n                                                                <input class=\"question_options0\" name=\"selected_option_24\" type=\"radio\" value=\"589122_142442\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Similarly\n                                                                <input class=\"question_options1\" name=\"selected_option_24\" type=\"radio\" value=\"589123_142442\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Besides\n                                                                <input class=\"question_options2\" name=\"selected_option_24\" type=\"radio\" value=\"589124_142442\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Yet\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_24\" type=\"radio\" value=\"589125_142442\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) Yet\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_24\" type=\"radio\" value=\"589125_142442\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) 'Yet' का use होगा क्योंकि \"yet\" का अर्थ होता है फिर भी या तथापि, जो यहाँ सही है। Passage में कहा गया है कि भले ही हम दुःखी हों और कुछ समय के लिए खुद को अलग कर लें, हम फिर भी उठ खड़े होते हैं, इसलिए 'yet' यहाँ सही है। 'Still' का अर्थ होता है अभी भी, 'Similarly' का अर्थ होता है उसी तरह से, और 'Besides' का अर्थ होता है इसके अलावा, जो इस context में सही नहीं हैं। <br /> 'Yet' will be used because it means nonetheless or however, which fits here. The passage indicates that even though we suffer and withdraw for a time, we manage to recover, making 'yet' the appropriate choice. 'Still' means still, 'Similarly' implies in the same manner, and 'Besides' means in addition to, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}]};
+
+        // Test state variables
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let bookmarkedQuestions = new Set();
+        let timerInterval;
+        let isDarkMode = false;
+        let visitedQuestions = new Set();
+
+        // Initialize the test
+        function initializeTest() {
+            // Set test title
+            document.getElementById('test-title').textContent = testData.test_info.title;
+            
+            // Initialize user answers array
+            userAnswers = Array(testData.questions.length).fill(null);
+            
+            // Setup question palette
+            setupQuestionPalette();
+            
+            // Setup timer
+            setupTimer();
+            
+            // Show first question
+            showQuestion(0);
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Make sure palette toggle button is visible on mobile
+            updatePaletteToggleDisplay();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('prev-btn').addEventListener('click', goToPreviousQuestion);
+            document.getElementById('next-btn').addEventListener('click', goToNextQuestion);
+            document.getElementById('submit-test').addEventListener('click', showReviewWarning);
+            document.getElementById('bookmark-btn').addEventListener('click', toggleBookmark);
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+            // Question palette toggle functionality
+            document.getElementById('palette-toggle').addEventListener('click', toggleQuestionPalette);
+
+            // Add keyboard event listener to document
+            document.addEventListener('keydown', handleKeyPress);
+
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    filterQuestions(e.target.dataset.filter);
+                });
+            });
+        }
+
+        function toggleQuestionPalette() {
+            const palette = document.querySelector('.question-palette');
+            const toggleBtn = document.getElementById('palette-toggle');
+            
+            if (palette.classList.contains('visible')) {
+                // Hide palette with animation
+                palette.style.transform = 'translateX(100%)';
+                toggleBtn.classList.remove('active');
+                setTimeout(() => {
+                    palette.classList.remove('visible');
+                }, 300);
+            } else {
+                // Show palette with animation
+                palette.classList.add('visible');
+                toggleBtn.classList.add('active');
+                setTimeout(() => {
+                    palette.style.transform = 'translateX(0)';
+                }, 10);
+            }
+        }
+
+        // Add display flex to palette toggle button when in mobile view
+        function updatePaletteToggleDisplay() {
+            const toggleBtn = document.getElementById('palette-toggle');
+            if (window.innerWidth <= 768) {
+                toggleBtn.style.display = 'flex';
+            } else {
+                toggleBtn.style.display = 'none';
+            }
+        }
+
+        // Call on load and window resize
+        window.addEventListener('load', updatePaletteToggleDisplay);
+        window.addEventListener('resize', updatePaletteToggleDisplay);
+
+        function handleKeyPress(event) {
+            console.log('Key pressed:', event.key); // Add debug logging
+            
+            // Ignore keyboard shortcuts if user is typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Ignore keyboard shortcuts if test is submitted
+            if (document.getElementById('result').style.display === 'block') {
+                return;
+            }
+
+            // Prevent default behavior for arrow keys and numbers to avoid page scrolling
+            if (['ArrowLeft', 'ArrowRight', '1', '2', '3', '4'].includes(event.key)) {
+                event.preventDefault();
+            }
+
+            switch(event.key) {
+                case 'ArrowLeft':
+                    if (currentQuestionIndex > 0) {
+                        goToPreviousQuestion();
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (currentQuestionIndex < testData.questions.length - 1) {
+                        goToNextQuestion();
+                    }
+                    break;
+                case 'b':
+                case 'B':
+                    toggleBookmark();
+                    break;
+                case 'Enter':
+                    if (currentQuestionIndex === testData.questions.length - 1) {
+                        showReviewWarning();
+                    } else {
+                        goToNextQuestion();
+                    }
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                    const optionIndex = parseInt(event.key) - 1;
+                    const options = document.querySelectorAll('.option');
+                    if (options[optionIndex]) {
+                        // Add visual feedback for option selection
+                        options[optionIndex].classList.add('keyboard-selected');
+                        
+                        // Actually select the option
+                        const radio = options[optionIndex].querySelector('input[type="radio"]');
+                        if (radio) {
+                            radio.checked = true;
+                            userAnswers[currentQuestionIndex] = optionIndex + 1;
+                            
+                            // Update the option's visual state
+                            options.forEach(opt => opt.classList.remove('selected'));
+                            options[optionIndex].classList.add('selected');
+                            
+                            // Update the question palette
+                            updateQuestionPalette();
+                        }
+                        
+                        // Remove the selection effect after animation
+                        setTimeout(() => {
+                            options[optionIndex].classList.remove('keyboard-selected');
+                        }, 200);
+                    }
+                    break;
+            }
+        }
+
+        function setupQuestionPalette() {
+            const palette = document.getElementById('question-palette');
+            palette.innerHTML = '';
+            
+            for (let i = 0; i < testData.questions.length; i++) {
+                const item = document.createElement('div');
+                item.className = 'palette-item not-visited';
+                item.textContent = i + 1;
+                item.addEventListener('click', () => {
+                    showQuestion(i);
+                    // Close the palette if it's currently visible (for mobile view)
+                    const paletteElement = document.querySelector('.question-palette');
+                    if (paletteElement.classList.contains('visible')) {
+                        toggleQuestionPalette();
+                    }
+                });
+                palette.appendChild(item);
+            }
+            
+            // Ensure palette toggle button is visible on mobile
+            updatePaletteToggleDisplay();
+        }
+
+        function updateQuestionPalette() {
+            const items = document.querySelectorAll('.palette-item');
+            items.forEach((item, index) => {
+                item.className = 'palette-item';
+                
+                // Only add status classes if the question has been visited
+                if (visitedQuestions.has(index)) {
+                    if (bookmarkedQuestions.has(index)) {
+                        item.classList.add('marked-review');
+                    } else if (userAnswers[index] !== null) {
+                        item.classList.add('answered');
+                    } else {
+                        item.classList.add('not-answered');
+                    }
+                } else {
+                    item.classList.add('not-visited');
+                }
+                
+                if (index === currentQuestionIndex) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function filterQuestions(filter) {
+            const items = document.querySelectorAll('.palette-item');
+            items.forEach((item, index) => {
+                const isMarkedReview = bookmarkedQuestions.has(index);
+                const isAnswered = userAnswers[index] !== null;
+                const isVisited = visitedQuestions.has(index);
+                
+                switch(filter) {
+                    case 'answered':
+                        item.style.display = isAnswered ? 'flex' : 'none';
+                        break;
+                    case 'not-answered':
+                        item.style.display = (isVisited && !isAnswered) ? 'flex' : 'none';
+                        break;
+                    case 'marked-review':
+                        item.style.display = isMarkedReview ? 'flex' : 'none';
+                        break;
+                    default:
+                        item.style.display = 'flex';
+                }
+            });
+        }
+        
+        function setupTimer() {
+            const duration = parseFloat(testData.test_info.duration);
+            let timeLeft = Math.floor(duration * 60);
+            const timerElement = document.getElementById('timer');
+            
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                if (timeLeft <= 300) { // 5 minutes warning
+                    timerElement.classList.add('timer-warning');
+                }
+                
+                timerElement.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    Time Remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}
+                `;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitTest();
+                }
+                
+                timeLeft--;
+            }, 1000);
+        }
+        
+        function showQuestion(index) {
+            currentQuestionIndex = index;
+            // Mark question as visited when opened
+            visitedQuestions.add(index);
+            const question = testData.questions[index];
+            const container = document.getElementById('current-question');
+            
+            // Add fade-out animation
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="question-container">
+                        <div class="question-number">
+                            <span>Question ${question.question_number} of ${testData.questions.length}</span>
+                            <span class="marks-info">
+                                <i class="fas fa-plus-circle"></i> ${question.marks.positive}
+                                <i class="fas fa-minus-circle"></i> ${question.marks.negative}
+                            </span>
+                        </div>
+                        <div class="question">${question.question_text}</div>
+                        <div class="options">
+                            ${question.options.map((option, optIndex) => `
+                                <label class="option ${userAnswers[index] === optIndex + 1 ? 'selected' : ''}">
+                                    <input type="radio" name="question${index}" value="${optIndex + 1}" 
+                                        ${userAnswers[index] === optIndex + 1 ? 'checked' : ''}>
+                                        <div class="option-content">
+                                    <span class="option-number">${optIndex + 1}</span> ${option}
+                                        </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div style="flex-grow: 1;"></div>
+                    </div>
+                `;
+                
+                // Update bookmark button
+                const bookmarkBtn = document.getElementById('bookmark-btn');
+                bookmarkBtn.classList.toggle('active', bookmarkedQuestions.has(index));
+                bookmarkBtn.innerHTML = bookmarkedQuestions.has(index) 
+                    ? '<i class="fas fa-flag"></i> Marked for Review'
+                    : '<i class="far fa-flag"></i> Mark for Review <span class="shortcut-hint">(B)</span>';
+                
+                // Add event listeners to options
+                const options = container.querySelectorAll('.option');
+                    options.forEach((option, optIdx) => {
+                    option.addEventListener('click', function() {
+                        const radio = this.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        
+                            options.forEach(opt => {
+                                opt.classList.remove('selected');
+                                opt.style.transform = 'translateX(0)';
+                            });
+                            
+                            // Animate the selected option
+                        this.classList.add('selected');
+                            this.style.transform = 'translateX(10px)';
+                        
+                        userAnswers[index] = parseInt(radio.value);
+                        updateQuestionPalette();
+
+                            // Highlight the option number with a pulse animation
+                        const optionNumber = this.querySelector('.option-number');
+                        optionNumber.style.animation = 'pulse 0.5s ease';
+                        setTimeout(() => {
+                            optionNumber.style.animation = '';
+                        }, 500);
+                });
+
+                        // Add a small delay to each option's appearance
+                        option.style.opacity = '0';
+                        option.style.transform = 'translateX(20px)';
+                        setTimeout(() => {
+                            option.style.opacity = '1';
+                            option.style.transform = 'translateX(0)';
+                        }, 100 + (optIdx * 50));
+                    });
+                    
+                    // Fade in the content
+                    setTimeout(() => {
+                        container.style.opacity = '1';
+                        container.style.transform = 'translateY(0)';
+                    }, 50);
+                
+                // Update navigation buttons
+                updateNavigationButtons();
+                
+                // Update question palette
+                updateQuestionPalette();
+                }, 150);
+        }
+        
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-test');
+            
+            prevBtn.disabled = currentQuestionIndex === 0;
+            
+            if (currentQuestionIndex === testData.questions.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+        
+        function goToPreviousQuestion() {
+            if (currentQuestionIndex > 0) {
+                showQuestion(currentQuestionIndex - 1);
+            }
+        }
+        
+        function goToNextQuestion() {
+            if (currentQuestionIndex < testData.questions.length - 1) {
+                showQuestion(currentQuestionIndex + 1);
+            }
+        }
+
+        function toggleBookmark() {
+            const btn = document.getElementById('bookmark-btn');
+            if (bookmarkedQuestions.has(currentQuestionIndex)) {
+                bookmarkedQuestions.delete(currentQuestionIndex);
+                btn.classList.remove('active');
+                btn.innerHTML = `
+                    <i class="far fa-flag"></i> 
+                    Mark for Review <span class="shortcut-hint">(B)</span>
+                `;
+            } else {
+                bookmarkedQuestions.add(currentQuestionIndex);
+                btn.classList.add('active');
+                btn.innerHTML = `
+                    <i class="fas fa-flag"></i> 
+                    Marked for Review
+                `;
+            }
+            updateQuestionPalette();
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.innerHTML = `<i class="fas fa-${isDarkMode ? 'sun' : 'moon'}"></i>`;
+        }
+
+        function showReviewWarning() {
+            // Skip the warning and directly submit the test
+            submitTest();
+        }
+        
+        function submitTest() {
+            // Add submission animation
+            const testContainer = document.getElementById('test-container');
+            const questionPalette = document.querySelector('.question-palette');
+            const resultContainer = document.getElementById('result');
+            
+            // Animate test container sliding out
+            testContainer.style.transition = 'all 0.5s var(--animation-bounce)';
+            testContainer.style.transform = 'translateX(-50px)';
+            testContainer.style.opacity = '0';
+            
+            // Animate question palette fading out
+            questionPalette.style.transition = 'all 0.5s var(--animation-bounce)';
+            questionPalette.style.transform = 'translateX(50px)';
+            questionPalette.style.opacity = '0';
+            
+            // Clear the timer
+            clearInterval(timerInterval);
+            
+            // Calculate results with a slight delay for animation
+            setTimeout(() => {
+            let score = 0;
+            let correctCount = 0;
+            let attemptedCount = 0;
+            const reviewAnswers = [];
+            
+            // Calculate score and statistics
+            testData.questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correct_answer;
+                
+                if (userAnswer !== null) {
+                    attemptedCount++;
+                    if (isCorrect) {
+                        score += question.marks.positive;
+                        correctCount++;
+                    } else {
+                        score -= question.marks.negative;
+                    }
+                }
+                
+                reviewAnswers.push({
+                    questionNumber: question.question_number,
+                    questionText: question.question_text,
+                    userChoice: userAnswer,
+                    userChoiceText: userAnswer !== null ? question.options[userAnswer - 1] : 'Not answered',
+                    correctAnswer: question.correct_answer,
+                    correctAnswerText: question.correct_option,
+                    isCorrect: isCorrect,
+                    answered: userAnswer !== null
+                });
+            });
+            
+            // Update statistics
+            document.getElementById('total-questions').textContent = testData.questions.length;
+            document.getElementById('attempted-questions').textContent = attemptedCount;
+            document.getElementById('correct-answers').textContent = correctCount;
+            document.getElementById('accuracy').textContent = 
+                `${Math.round((correctCount / (attemptedCount || 1)) * 100)}%`;
+            
+            // Display score
+            document.getElementById('score').innerHTML = `
+                <div style="font-size: 36px; color: var(--primary-color);">
+                    ${score.toFixed(2)} / ${testData.questions.length * testData.questions[0].marks.positive}
+                </div>
+                <div style="color: var(--text-color); margin-top: 10px;">
+                    Percentage: ${Math.round((score / (testData.questions.length * testData.questions[0].marks.positive)) * 100)}%
+                </div>
+            `;
+            
+            // Create performance chart
+            const chartContainer = document.getElementById('performance-chart');
+            chartContainer.innerHTML = ''; // Clear previous chart if any
+            const ctx = document.createElement('canvas');
+            chartContainer.appendChild(ctx);
+                
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Correct', 'Incorrect', 'Not Attempted'],
+                    datasets: [{
+                        data: [
+                            correctCount,
+                            attemptedCount - correctCount,
+                            testData.questions.length - attemptedCount
+                        ],
+                        backgroundColor: [
+                                '#16a34a', // Fixed success green
+                                '#dc2626', // Fixed error red
+                                '#8b5cf6'  // Fixed purple for not attempted
+                        ],
+                            borderColor: 'var(--bg-color)',
+                        borderWidth: 2,
+                            hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'var(--bg-color)',
+                                titleColor: 'var(--text-color)',
+                                bodyColor: 'var(--text-color)',
+                                borderColor: 'var(--border-color)',
+                                borderWidth: 1,
+                                padding: 12,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        let value = context.raw || 0;
+                                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        let percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Test Performance',
+                                color: 'var(--text-color)',
+                                font: {
+                                    family: 'Inter, sans-serif',
+                                    size: 16,
+                                    weight: '600'
+                                },
+                                padding: {
+                                    bottom: 15
+                            }
+                        }
+                    },
+                    cutout: '65%',
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                            duration: 1500,
+                            easing: 'easeOutQuart'
+                    }
+                }
+            });
+                
+                // Replace the chart's built-in legend with a custom one
+                const customLegend = document.createElement('div');
+                customLegend.className = 'custom-chart-legend';
+
+                chartContainer.appendChild(customLegend);
+            
+            // Update the analytics container title
+            document.querySelector('.analytics-container h3').innerHTML = 
+                '<i class="fas fa-chart-pie"></i> Performance Analysis';
+            
+            // Add event listener to the download analysis buttons with a small delay to ensure UI is ready
+            setTimeout(() => {
+                const downloadBtn = document.getElementById('download-analysis');
+                const bottomDownloadBtn = document.getElementById('bottom-download-analysis');
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', function() {
+                        downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount);
+                    });
+                }
+                if (bottomDownloadBtn) {
+                    bottomDownloadBtn.addEventListener('click', function() {
+                        downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount);
+                    });
+                }
+            }, 500);
+            
+            // Fix any palette toggle issue
+            if (window.innerWidth <= 768) {
+                const paletteToggle = document.getElementById('palette-toggle');
+                if (paletteToggle) {
+                    paletteToggle.style.display = 'flex';
+                }
+                
+                // Add close button to palette if not exists
+                const palette = document.querySelector('.question-palette');
+                if (palette && !document.querySelector('.palette-close-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'palette-close-btn';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', toggleQuestionPalette);
+                    
+                    const paletteHeader = palette.querySelector('.palette-header');
+                    if (paletteHeader) {
+                        paletteHeader.appendChild(closeBtn);
+                    }
+                }
+            }
+            
+                // Display answer review with staggered animation
+            const answersDiv = document.getElementById('answers');
+            answersDiv.innerHTML = '<h3>Answer Review:</h3>';
+            
+                reviewAnswers.forEach((answer, idx) => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-review';
+                    answerDiv.style.opacity = '0';
+                    answerDiv.style.transform = 'translateY(20px)';
+                
+                answerDiv.innerHTML = `
+                    <p><strong>Question ${answer.questionNumber}:</strong> ${answer.questionText}</p>
+                    <p class="${answer.answered ? (answer.isCorrect ? 'correct' : 'incorrect') : ''}">
+                        Your answer: ${answer.userChoiceText}
+                        ${answer.isCorrect ? '<i class="fas fa-check"></i>' : 
+                        (answer.answered ? '<i class="fas fa-times"></i>' : '')}
+                    </p>
+                    ${!answer.isCorrect ? `
+                        <p class="correct">
+                            Correct answer: ${answer.correctAnswerText}
+                            <i class="fas fa-check"></i>
+                        </p>
+                    ` : ''}
+                    ${testData.questions[idx].explanation ? `
+                        <div class="explanation">
+                            <p><strong>Explanation:</strong></p>
+                            <p>${testData.questions[idx].explanation}</p>
+                        </div>
+                    ` : ''}
+                `;
+                
+                answersDiv.appendChild(answerDiv);
+                    
+                    // Animate each answer review with a staggered delay
+                    setTimeout(() => {
+                        answerDiv.style.transition = 'all 0.5s var(--animation-bounce)';
+                        answerDiv.style.opacity = '1';
+                        answerDiv.style.transform = 'translateY(0)';
+                    }, 200 + (idx * 100));
+                });
+                
+                // Show results container with animation
+                resultContainer.style.display = 'block';
+                resultContainer.style.opacity = '0';
+                resultContainer.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    resultContainer.style.transition = 'all 0.6s var(--animation-bounce)';
+                    resultContainer.style.opacity = '1';
+                    resultContainer.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Hide test components
+                testContainer.style.display = 'none';
+                questionPalette.style.display = 'none';
+                document.getElementById('palette-toggle').style.display = 'none';
+            }, 600);
+        }
+        
+        // Initialize the test
+        initializeTest();
+
+        // Add CSS transitions to the current-question container
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentQuestion = document.getElementById('current-question');
+            currentQuestion.style.transition = 'opacity 0.3s ease, transform 0.3s var(--animation-bounce)';
+        });
+
+        // Add CSS for smooth palette transitions
+        document.addEventListener('DOMContentLoaded', function() {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .question-palette {
+                    transition: transform 0.3s var(--animation-bounce);
+                }
+                
+                #palette-toggle {
+                    transition: transform 0.3s var(--animation-bounce);
+                }
+                
+                @media (max-width: 768px) {
+                    .question-container:hover {
+                        transform: translateY(-2px);
+                    }
+                    
+                    .score-card:hover {
+                        transform: translateY(-4px);
+                    }
+                    
+                    .option:hover {
+                        transform: translateX(4px);
+                    }
+                }
+            `;
+            document.head.appendChild(styleElement);
+        });
+
+        // Add this after the Chart.js script tag but before your testData declaration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add custom styling for chart legend
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .chart-legend-item {
+                    display: flex;
+                    align-items: center;
+                    margin: 8px 0;
+                    font-weight: 600;
+                }
+                
+                .legend-color {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                    display: inline-block;
+                }
+                
+                .legend-correct {
+                    background-color: #16a34a;
+                }
+                
+                .legend-incorrect {
+                    background-color: #dc2626;
+                }
+                
+                .legend-not-attempted {
+                    background-color: #8b5cf6;
+                }
+                
+                .custom-chart-legend {
+                    display: flex;
+                    justify-content: center;
+                    gap: 15px;
+                    margin-top: 15px;
+                    flex-wrap: wrap;
+                }
+                
+                [data-theme="dark"] .legend-text {
+                    color: #f1f5f9;
+                }
+                
+                .chart-container canvas {
+                    margin-bottom: 10px;
+                }
+            `;
+            document.head.appendChild(styleElement);
+        });
+
+        // Function to download test analysis as HTML file
+        function downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount) {
+            const maxScore = testData.questions.length * testData.questions[0].marks.positive;
+            const percentage = Math.round((score / maxScore) * 100);
+
+            // Create HTML content
+            let htmlContent = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Test Analysis - ${testData.test_info.title}</title>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                <style>
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        max-width: 900px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        color: #1e293b;
+                        background-color: #f8fafc;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 1px solid #e2e8f0;
+                        padding-bottom: 15px;
+                    }
+                    .header h1 {
+                        color: #4f46e5;
+                        margin-bottom: 5px;
+                    }
+                    .header .date {
+                        font-style: italic;
+                        color: #64748b;
+                    }
+                    .summary {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .summary-card {
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        padding: 15px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        text-align: center;
+                        border: 1px solid #e2e8f0;
+                    }
+                    .summary-card h3 {
+                        margin-top: 0;
+                        margin-bottom: 10px;
+                        color: #64748b;
+                        font-size: 14px;
+                    }
+                    .summary-card .value {
+                        font-size: 24px;
+                        font-weight: bold;
+                        color: #4f46e5;
+                    }
+                    .score-highlight {
+                        background-color: #f3f4f6;
+                        padding: 30px;
+                        border-radius: 8px;
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border: 1px solid #e5e7eb;
+                    }
+                    .score-highlight .score {
+                        font-size: 48px;
+                        font-weight: bold;
+                        color: #4f46e5;
+                    }
+                    .score-highlight .percentage {
+                        font-size: 18px;
+                        color: #64748b;
+                    }
+                    .question-review {
+                        margin-bottom: 30px;
+                    }
+                    .question {
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        padding: 20px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        margin-bottom: 15px;
+                        border: 1px solid #e2e8f0;
+                    }
+                    .question-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 10px;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid #e2e8f0;
+                    }
+                    .question-text {
+                        margin-bottom: 15px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .user-answer {
+                        margin-bottom: 5px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .user-answer.correct {
+                        color: #16a34a;
+                    }
+                    .user-answer.incorrect {
+                        color: #dc2626;
+                    }
+                    .correct-answer {
+                        color: #16a34a;
+                        margin-bottom: 15px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .explanation {
+                        background-color: #f8fafc;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #4f46e5;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .explanation-title {
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #e2e8f0;
+                        color: #64748b;
+                        font-size: 14px;
+                    }
+                    .unattempted {
+                        color: #8b5cf6;
+                    }
+                    @media print {
+                        body {
+                            background-color: white;
+                        }
+                        .question, .summary-card, .score-highlight {
+                            break-inside: avoid;
+                        }
+                    }
+                    /* Responsive fixes */
+                    @media (max-width: 768px) {
+                        body {
+                            padding: 10px;
+                        }
+                        .summary {
+                            grid-template-columns: 1fr;
+                        }
+                        .score-highlight .score {
+                            font-size: 36px;
+                        }
+                        .question-header {
+                            flex-direction: column;
+                            align-items: flex-start;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>${testData.test_info.title}</h1>
+                    <div class="date">Generated on: ${new Date().toLocaleString()}</div>
+                </div>
+                
+                <div class="score-highlight">
+                    <div class="score">${score.toFixed(2)} / ${maxScore}</div>
+                    <div class="percentage">Percentage: ${percentage}%</div>
+                </div>
+                
+                <div class="summary">
+                    <div class="summary-card">
+                        <h3>Total Questions</h3>
+                        <div class="value">${testData.questions.length}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Attempted</h3>
+                        <div class="value">${attemptedCount}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Correct</h3>
+                        <div class="value">${correctCount}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Accuracy</h3>
+                        <div class="value">${Math.round((correctCount / (attemptedCount || 1)) * 100)}%</div>
+                    </div>
+                </div>
+                
+                <h2>Question Review</h2>
+                <div class="question-review">
+            `;
+
+            // Add each question and answer to the HTML content
+            reviewAnswers.forEach((answer, idx) => {
+                const question = testData.questions[idx];
+                htmlContent += `
+                    <div class="question">
+                        <div class="question-header">
+                            <strong>Question ${answer.questionNumber}</strong>
+                            <span>${answer.isCorrect ? '+' : (answer.answered ? '-' : '0')}${question.marks.positive} marks</span>
+                        </div>
+                        <div class="question-text">${answer.questionText}</div>
+                        <div class="user-answer ${answer.isCorrect ? 'correct' : (answer.answered ? 'incorrect' : 'unattempted')}">
+                            <strong>${answer.answered ? 'Your answer: ' : 'Not attempted'}</strong> 
+                            ${answer.answered ? answer.userChoiceText : ''}
+                            ${answer.isCorrect ? ' ✓' : (answer.answered ? ' ✗' : '')}
+                        </div>
+                        ${!answer.isCorrect ? `
+                            <div class="correct-answer">
+                                <strong>Correct answer:</strong> ${answer.correctAnswerText}
+                            </div>
+                        ` : ''}
+                        ${question.explanation ? `
+                            <div class="explanation">
+                                <div class="explanation-title">Explanation:</div>
+                                <div>${question.explanation}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            // Close HTML content
+            htmlContent += `
+                </div>
+                
+                <div class="footer">
+                    <p>&copy; 2025 KUNAL Test Platform. All rights reserved.</p>
+                    <p>Created by @finallygotnirvana</p>
+                </div>
+            </body>
+            </html>
+            `;
+
+            // Create a download link
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            
+            // Format date for filename
+            const date = new Date();
+            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            
+            downloadLink.download = `Test_Analysis_${formattedDate}.html`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            // Prevent default behavior for arrow keys
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    goToPreviousQuestion();
+                    break;
+                case 'ArrowRight':
+                    goToNextQuestion();
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    // Get all options for the current question
+                    const options = document.querySelectorAll('.option');
+                    if (options.length === 0) return;
+
+                    // Find currently selected option
+                    let currentIndex = Array.from(options).findIndex(opt => opt.classList.contains('selected'));
+                    
+                    // Calculate new index
+                    if (e.key === 'ArrowUp') {
+                        currentIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1;
+                    } else {
+                        currentIndex = currentIndex >= options.length - 1 ? 0 : currentIndex + 1;
+                    }
+
+                    // Select the new option
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    options[currentIndex].classList.add('selected');
+                    options[currentIndex].querySelector('input[type="radio"]').checked = true;
+                    
+                    // Update user answer
+                    userAnswers[currentQuestionIndex] = currentIndex + 1;
+                    updateQuestionPalette();
+                    break;
+                case 'b':
+                case 'B':
+                    toggleBookmark();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Exam - em</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1e40af;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #d1d5db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 1000;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        
+        .welcome-screen.hidden {
+            display: none;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        .welcome-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-info {
+            margin-bottom: 25px;
+        }
+        
+        .section-info h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .section-table th,
+        .section-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .subsec-container {
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+        
+        .subsec-row {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .welcome-instructions {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .welcome-instructions h3 {
+            color: var(--warning);
+            margin-bottom: 12px;
+        }
+        
+        .welcome-instructions ul {
+            padding-left: 20px;
+        }
+        
+        .welcome-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #1e3a8a;
+        }
+        
+        .channel-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .channel-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* CBT Exam Interface */
+        .exam-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .exam-container.active {
+            display: flex;
+        }
+        
+        /* Top Header */
+        .exam-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        /* Candidate Info Bar */
+        .candidate-bar {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .candidate-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+        
+        .candidate-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .candidate-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .candidate-id {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .section-badge {
+            background: var(--success);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Main Content Area - FIXED LAYOUT */
+        .exam-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Question Area with separate scroll */
+        .question-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+        
+        .question-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 6px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg);
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .question-marks {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .lang-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 4px;
+        }
+        
+        .lang-btn {
+            padding: 6px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .comprehension {
+            background: #eff6ff;
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .comprehension h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .option:hover:not(.submitted) {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+        }
+        
+        .option.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+        }
+        
+        .option-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .option.selected .option-indicator {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        
+        .option.correct .option-indicator {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .option.wrong .option-indicator {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .solution-box {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .solution-box.show {
+            display: block;
+        }
+        
+        .solution-header {
+            color: var(--success);
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .solution-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation Controls - FIXED AT BOTTOM OF QUESTION AREA */
+        .navigation-bar {
+            background: white;
+            padding: 15px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-prev {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-next {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-review {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-review.marked {
+            background: #92400e;
+        }
+        
+        .btn-submit {
+            background: var(--success);
+            color: white;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        /* Question Navigator Sidebar - SEPARATE SCROLL */
+        .navigator-sidebar {
+            width: 300px;
+            background: white;
+            border-left: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .navigator-header {
+            padding: 15px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+        
+        .navigator-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .nav-question {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .nav-question:hover {
+            background: var(--bg);
+        }
+        
+        .nav-question.current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .nav-question.answered {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .nav-question.review {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        
+        .nav-question.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .nav-question.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .navigator-legend {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            flex-shrink: 0;
+            background: white;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        /* Mobile Navigator Panel */
+        .mobile-navigator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+        
+        .mobile-navigator.open {
+            transform: translateY(0);
+        }
+        
+        .mobile-nav-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-nav {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        /* Result Modal */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .result-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .result-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .result-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result-score {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--success);
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .result-stat {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .result-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .result-stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        
+        .result-stat.correct .result-stat-value {
+            color: var(--success);
+        }
+        
+        .result-stat.incorrect .result-stat-value {
+            color: var(--danger);
+        }
+        
+        .section-results {
+            margin-bottom: 25px;
+        }
+        
+        .section-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .section-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-results-table th,
+        .section-results-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .section-results-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+        
+        .section-results-table .subsection-row {
+            background: #f9fafb;
+            font-size: 13px;
+        }
+        
+        .section-results-table .subsection-row td:first-child {
+            padding-left: 30px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .result-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-close {
+            background: var(--bg);
+            color: var(--text);
+        }
+        
+        .btn-review-ans {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (min-width: 1024px) {
+            .navigator-sidebar {
+                display: flex;
+            }
+            
+            .mobile-only {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .desktop-only {
+                display: none;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .question-scroll {
+                padding: 15px;
+            }
+            
+            .question-card {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .exam-header {
+                padding: 10px 15px;
+            }
+            
+            .exam-title {
+                font-size: 14px;
+            }
+            
+            .timer-box {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+            
+            .candidate-bar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            
+            .navigator-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .result-container {
+                padding: 20px;
+            }
+            
+            .section-results-table {
+                font-size: 13px;
+            }
+            
+            .section-results-table th,
+            .section-results-table td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .exam-header,
+            .candidate-bar,
+            .navigation-bar,
+            .navigator-sidebar,
+            .mobile-navigator {
+                display: none !important;
+            }
+            
+            .question-scroll {
+                padding: 0;
+            }
+            
+            .question-card {
+                page-break-inside: avoid;
+                margin-bottom: 30px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid var(--border);
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1><i class="fas fa-graduation-cap"></i> em</h1>
+                <p>Computer Based Test</p>
+            </div>
+            
+            <div class="test-details">
+                <div class="detail-item">
+                    <div class="detail-label">Test ID</div>
+                    <div class="detail-value">10061</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Questions</div>
+                    <div class="detail-value">25</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Marks</div>
+                    <div class="detail-value">25</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Duration</div>
+                    <div class="detail-value">15 mins</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Marking Scheme</div>
+                    <div class="detail-value">+1 / -0.25</div>
+                </div>
+            </div>
+            
+            
+        <div class="welcome-instructions">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You can mark questions for review and come back later</li>
+                <li>The timer will automatically submit the test when time is up</li>
+                <li>Negative marking applies for wrong answers</li>
+            </ul>
+        </div>
+        
+            
+            <div class="welcome-actions">
+                <button class="start-btn" id="startBtn">
+                    <i class="fas fa-play"></i> Start Test
+                </button>
+                <a href="https://t.me/mocks_wallah_again" target="_blank" class="channel-link">
+                    <i class="fab fa-telegram"></i> Join Channel
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Exam Interface -->
+    <div class="exam-container" id="examContainer">
+        <!-- Top Header -->
+        <div class="exam-header">
+            <div class="exam-title">em</div>
+            <div class="exam-timer">
+                <div class="timer-box" id="mainTimer">15:00</div>
+                <button class="nav-btn btn-submit mobile-only" id="submitBtn">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Candidate Info Bar -->
+        <div class="candidate-bar">
+            <div class="candidate-info">
+                <div class="candidate-photo">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="candidate-details">
+                    <div class="candidate-name">Candidate</div>
+                    <div class="candidate-id">Test ID: 10061</div>
+                </div>
+            </div>
+            <div class="section-badge" id="sectionBadge">
+                <span id="sectionName"></span>
+                <span id="sectionTimer"></span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="exam-main">
+            <!-- Question Area -->
+            <div class="question-area">
+                <div class="question-scroll">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <div>
+                                <div class="question-number" id="questionNum">Question 1 of 25</div>
+                                <div class="question-marks" id="questionMarks">Marks: 1</div>
+                            </div>
+                            <div class="lang-toggle">
+                                <button class="lang-btn active" id="engBtn">English</button>
+                                <button class="lang-btn" id="hinBtn">हिंदी</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comprehension" id="comprehension" style="display:none;">
+                            <h4><i class="fas fa-book-open"></i> Comprehension</h4>
+                            <div id="comprehensionText"></div>
+                        </div>
+                        
+                        <div class="question-text" id="questionText"></div>
+                        
+                        <div class="options-list" id="optionsList"></div>
+                        
+                        <div class="solution-box" id="solutionBox">
+                            <div class="solution-header">
+                                <i class="fas fa-lightbulb"></i> Solution
+                            </div>
+                            <div class="solution-stats" id="solutionStats"></div>
+                            <div id="solutionText"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Bar inside Question Area -->
+                <div class="navigation-bar">
+                    <button class="nav-btn btn-prev" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    
+                    <div class="progress-info">
+                        <div id="progressText">Question 1 of 25</div>
+                        <div style="font-size:11px;margin-top:4px">
+                            Answered: <span id="answeredCount">0</span> | 
+                            <a href="https://t.me/mocks_wallah_again" style="color:var(--primary)">Mocks Wallah</a>
+                        </div>
+                    </div>
+                    
+                    <button class="nav-btn btn-review" id="reviewBtn">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                    
+                    <button class="nav-btn mobile-only" id="navigatorBtn">
+                        <i class="fas fa-th"></i> Questions
+                    </button>
+                    
+                    <button class="nav-btn btn-submit desktop-only" id="submitBtnDesktop">Submit</button>
+                    
+                    <button class="nav-btn btn-next" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigator Sidebar -->
+            <div class="navigator-sidebar desktop-only">
+                <div class="navigator-header">Question Navigator</div>
+                <div class="navigator-grid" id="desktopNav"></div>
+                <div class="navigator-legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--success)"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--warning)"></div>
+                        <span>Marked for Review</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:var(--danger)"></div>
+                        <span>Incorrect</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                        <span>Not Visited</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Navigator Panel -->
+    <div class="mobile-navigator" id="mobileNav">
+        <div class="mobile-nav-header">
+            <h3>Question Navigator</h3>
+            <button class="close-nav" id="closeNav">&times;</button>
+        </div>
+        <div class="navigator-grid" id="mobileNavGrid"></div>
+        <div class="navigator-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--success)"></div>
+                <span>Answered</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--warning)"></div>
+                <span>Marked for Review</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--danger)"></div>
+                <span>Incorrect</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:white;border:2px solid var(--border)"></div>
+                <span>Not Visited</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Modal -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-container">
+            <div class="result-header">
+                <h2>Test Completed!</h2>
+                <div class="result-score" id="resultScore">0/25</div>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-stat correct">
+                    <div class="result-stat-value" id="correctCount">0</div>
+                    <div class="result-stat-label">Correct</div>
+                </div>
+                <div class="result-stat incorrect">
+                    <div class="result-stat-value" id="incorrectCount">0</div>
+                    <div class="result-stat-label">Incorrect</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="unattemptedCount">0</div>
+                    <div class="result-stat-label">Unattempted</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" id="timeTaken">0</div>
+                    <div class="result-stat-label">Minutes</div>
+                </div>
+            </div>
+            
+            <div class="section-results" id="sectionResults" style="display:none;">
+                <h3>Section-wise Performance</h3>
+                <table class="section-results-table" id="sectionResultsTable">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Attempted</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sectionResultsBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="result-actions">
+                <button class="result-btn btn-close" id="closeResult">Close</button>
+                <button class="result-btn btn-review-ans" id="reviewAnswers">Review Answers</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+  {
+    "question": "<p><strong>Choose the most suitable one-word substitution for the following.</strong></p>\r\n\r\n<p>A series of shots put together sequentially to narrate something within a film.</p>",
+    "comp": "",
+    "options": [
+      "Montage",
+      "Trailer",
+      "Preview",
+      "Flashback"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>A)&nbsp;&nbsp;<strong>Montage (noun)</strong> &ndash; A sequence of shots edited together to tell a story or convey an idea फिल्म में क्रमबद्ध दृश्यों का संयोजन</p>\r\n\r\n<p>&bull; <strong>Trailer (noun)</strong> &ndash; A short promotional video of a film फिल्म का प्रचार वीडियो<br />\r\n&bull; <strong>Preview (noun)</strong> &ndash; An advance showing or early view पूर्व प्रदर्शन<br />\r\n&bull; <strong>Flashback (noun)</strong> &ndash; A scene that takes the story back to the past अतीत की झलक</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Given below are six sentences taken from a paragraph. The first and the last sentences are numbered S1 and S2 and are placed in the first and last positions respectively and are fixed in their positions. The other four sentences between the first and last sentences are jumbled up and are numbered A, B, C, and D. Rearrange the jumbled sentences in a logical sequence keeping the unity and coherence of the paragraph intact. Choose the correct alternative that best describes the sequence.</strong></p>\r\n\r\n<p>S1. It was a close, musty, ill-ventilated place, as might be expected, since its inmate seldom left it.<br />\r\nA. A thick dark veil covered her face, but it was cut off close at her upper lip and disclosed a perfectly shaped mouth and a delicately rounded chin.<br />\r\nB. From keeping beasts in a cage, the woman seemed, by some retribution of fate, to have become herself a beast in a cage.<br />\r\nC. She sat now in a broken armchair in the shadowy corner of the room.<br />\r\nD. Long years of inaction had coarsened the lines of her figure, but at some period it must have been beautiful, and was still full and voluptuous.<br />\r\nS2. I could well conceive that she had indeed been a very remarkable woman.</p>",
+    "comp": "",
+    "options": [
+      "ABCD",
+      "DABC",
+      "CDAB",
+      "BCDA"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p><strong>D)&nbsp;&nbsp;BCDA</strong></p>\r\n\r\n<p><strong>सबसे पहले Sentence B आएगा</strong>&mdash;यह एक सामान्य विचार देता है कि वह महिला खुद एक &ldquo;beast in a cage&rdquo; बन गई है, जो S1 (बंद और घुटन भरी जगह) से जुड़ता है।</p>\r\n\r\n<p>इसके बाद <strong>Sentence C आएगा</strong> क्योंकि यह उसकी वर्तमान स्थिति बताता है&mdash;&ldquo;She sat now in a broken armchair&hellip;&rdquo;.</p>\r\n\r\n<p>फिर <strong>Sentence D आएगा</strong> क्योंकि यह उसके शरीर और रूप-रंग का वर्णन करता है&mdash;समय के साथ आए बदलाव।</p>\r\n\r\n<p>अंत में <strong>Sentence A आएगा</strong> क्योंकि यह उसके चेहरे का सूक्ष्म वर्णन करता है, जो S2 (वह एक remarkable woman रही होगी) से जुड़ता है।</p>\r\n\r\n<p><strong>Sentence B comes first</strong>&mdash;it gives a general, reflective idea about the woman being like a beast in a cage, linking with S1 (the confined place).</p>\r\n\r\n<p>Next, <strong>Sentence C follows</strong> because it shows her present position&mdash;&ldquo;She sat now in a broken armchair&hellip;&rdquo;.</p>\r\n\r\n<p>Then, <strong>Sentence D comes</strong> as it describes her physical appearance and how time has affected her.</p>\r\n\r\n<p>Finally, <strong>Sentence A comes last</strong> because it gives specific facial details, which lead naturally to S2 (she must have been a remarkable woman).</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Select the option that correctly replaces the underlined phrase in the following sentence:</strong></p>\r\n\r\n<p>The doctor gave the patient some medications after he <ins><strong>felt</strong> </ins>some pain on his left knee.</p>",
+    "comp": "",
+    "options": [
+      "has felt",
+      "did feel",
+      "had felt",
+      "was felt"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>C) &lsquo;had felt&#39; का use &#39;felt&#39; के बजाय किया जाएगा क्योंकि main clause (gave) में action past में हुआ है और subordinate clause में action उससे पहले हुआ है, इसलिए past perfect tense का use करना आवश्यक है; जैसे&mdash; The doctor gave the patient some medications after he had felt some pain on his left knee.</p>\r\n\r\n<p>&#39;had felt&#39; will be used instead of &#39;felt&#39; because the action in the subordinate clause happened before the main clause, so past perfect tense is required; Like&mdash; The doctor gave the patient some medications after he had felt some pain on his left knee.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Select the most appropriate ANTONYM of the word &ldquo;Upfront.&rdquo;</strong></p>",
+    "comp": "",
+    "options": [
+      "Desiccated",
+      "Deferred",
+      "Declaimed",
+      "Deviated"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p><strong>B) Upfront (adverb)</strong>&nbsp;&ndash; (Of a payment) paid in advance; beforehand. (पहले से / अग्रिम)<br />\r\n<strong>Antonym: Deferred (adjective)</strong>&nbsp;&ndash; Put off to a later time; postponed; delayed until a future date. (आस्थगित / विलंबित)</p>\r\n\r\n<ul>\r\n\t<li>\r\n\t<p><strong>Desiccated (adjective):</strong>&nbsp;Lacking vitality or interest; having had all moisture removed. (शुष्क / नीरस)</p>\r\n\t</li>\r\n\t<li>\r\n\t<p><strong>Declaimed (verb):</strong>&nbsp;To utter or deliver words or a speech in a rhetorical or impassioned way. (सस्वर पाठ करना)</p>\r\n\t</li>\r\n\t<li>\r\n\t<p><strong>Deviated (verb):</strong>&nbsp;To depart from an established course or accepted standard. (विचलित होना)</p>\r\n\t</li>\r\n</ul>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p>Select the most appropriate <strong>antonym</strong> of the word:&nbsp;<strong>Garrulous</strong></p>",
+    "comp": "",
+    "options": [
+      "Talkative",
+      "Loquacious",
+      "Quiet",
+      "Chatty"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p><strong>C)&nbsp;</strong>Garrulous (adjective) &ndash; Excessively talkative, chatty, verbose, loquacious. बहुत बातूनी / शब्दबहुल</p>\r\n\r\n<p>Antonym: <strong>Quiet</strong> (adjective) &ndash; Silent, calm, reserved, not talkative. शांत / मौन</p>\r\n\r\n<p>&bull; Talkative (adjective) &ndash; Chatty, conversational, communicative, voluble. बातूनी</p>\r\n\r\n<p>&bull; Loquacious (adjective) &ndash; Talkative, wordy, chatty, garrulous. बहुत बात करने वाला</p>\r\n\r\n<p>&bull; Chatty (adjective) &ndash; Informal, talkative, friendly, conversational. बातचीत पसंद करने वाला</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Find the part of the sentence that contains an error:</strong></p>\r\n\r\n<p>The CEO (1)/ called off (2)/ the meeting (3)/ without giving any reason out. (4)</p>",
+    "comp": "",
+    "options": [
+      "(1)",
+      "(2)",
+      "(3)",
+      "(4)"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>D) &lsquo;without giving any reason out&rsquo; के बदले &lsquo;without giving any reason&rsquo; का प्रयोग होगा क्योंकि &lsquo;give out&rsquo; का अर्थ है &ldquo;वितरित करना या ऊर्जा समाप्त होना&rdquo;, जो यहाँ उचित नहीं है। सही phrasal verb &lsquo;give out&rsquo; को &lsquo;without giving any reason&rsquo; में परिवर्तित करना होगा; जैसे &mdash;<br />\r\nThe CEO called off the meeting without giving any reason.</p>\r\n\r\n<p>&bull; The error is the word &lsquo;out&rsquo; at the end of the sentence. Either it should be dropped (&lsquo;without giving any reason&rsquo;) or repositioned as &lsquo;without giving out any reason&rsquo; where &lsquo;give out&rsquo; means to announce/disclose. The placement &lsquo;reason out&rsquo; is grammatically incorrect.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Given below are six sentences taken from a paragraph. The first and the last sentences are numbered S1 and S2 and are placed in the first and last positions respectively and are fixed in their positions. The other four sentences between the first and last sentences are jumbled up and are numbered A, B, C,.and D, Rearrange the jumbled sentences in a logical sequence keeping the unity and coherence of the paragraph intact. Choose the correct alternative that best describes the sequence.</strong></p>\r\n\r\n<p>S1. He remained a day in order to learn the art, because he thought he might be able to turn it to use later on, if by chance he should fail to find other work in.Batavia.</p>\r\n\r\n<p>A. Neither on the first nor the second day had he realized how lonely he was, because he was captivated by the grand idea of earning enough money to buy two buffaloes, whereas his father had never had more than one, and was too excited over the prospect of seeing Adinda again to grieve over his departure.</p>\r\n\r\n<p>B. The following day toward evening he thanked his host and departed.</p>\r\n\r\n<p>C. He had left her in anxious hope.</p>\r\n\r\n<p>D. As soon as it was dark, and no one could see him, he took out the Melatti leaves Adinda had given him, for he was sad, thinking that he would not see her for so long.</p>\r\n\r\n<p>S2. The prospect of seeing her again so occupied his heart that on leaving Badoer and passing the tree, he felt something akin to joy, as if the thirty-six moons were already past.</p>",
+    "comp": "",
+    "options": [
+      "ADBC",
+      "CBDA",
+      "BDAC",
+      "DBCA"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p><strong>C)&nbsp;BDAC</strong></p>\r\n\r\n<p><strong>सबसे पहले Sentence B आएगा</strong>&mdash;&ldquo;The following day toward evening he thanked his host and departed.&rdquo; यह S1 के बाद logically आता है, जहाँ वह एक दिन रुकने की बात करता है।</p>\r\n\r\n<p>इसके बाद <strong>Sentence D आएगा</strong> क्योंकि यह उसके departure के बाद की भावनात्मक स्थिति को दिखाता है&mdash;&ldquo;As soon as it was dark&hellip; he took out the Melatti leaves&hellip;&rdquo;.</p>\r\n\r\n<p>फिर <strong>Sentence A आएगा</strong> क्योंकि यह उसकी मानसिक स्थिति को explain करता है&mdash;वह पहले दो दिनों में lonely नहीं था क्योंकि वह अपने future plans और Adinda से मिलने की उम्मीद में व्यस्त था।</p>\r\n\r\n<p>अंत में <strong>Sentence C आएगा</strong> क्योंकि यह Adinda के साथ उसके संबंध को याद दिलाता है&mdash;&ldquo;He had left her in anxious hope.&rdquo; और यह S2 से सीधे जुड़ता है, जहाँ उसे फिर से देखने की आशा दिखाई गई है।</p>\r\n\r\n<p><strong>Sentence B comes first</strong>&mdash;&ldquo;The following day toward evening he thanked his host and departed.&rdquo; This logically follows S1, where he stayed for a day to learn the art.</p>\r\n\r\n<p>Next, <strong>Sentence D follows</strong> because it shows his emotional state after departure&mdash;&ldquo;As soon as it was dark&hellip; he took out the Melatti leaves&hellip;&rdquo;.</p>\r\n\r\n<p>Then, <strong>Sentence A comes</strong> as it explains his mental condition over the days&mdash;he did not feel loneliness due to excitement and hope.</p>\r\n\r\n<p>Finally, <strong>Sentence C comes last</strong> because it refers back to Adinda&mdash;&ldquo;He had left her in anxious hope.&rdquo; This connects directly with S2, which again talks about his anticipation of seeing her.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p>Choose the misspelt word from the given options.</p>",
+    "comp": "",
+    "options": [
+      "Indelable",
+      "Noticeable",
+      "Portable",
+      "Memorable"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>A)&nbsp;The correct spelling of <strong>&lsquo;Indelable&rsquo;</strong> is <strong>&lsquo;Indelible&rsquo;</strong>, which means &ldquo;impossible to remove or forget&rdquo; अमिट, जिसे मिटाया न जा सके।</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p>Select the most appropriate synonym of the word:&nbsp;<strong>PROVENANCE</strong></p>",
+    "comp": "",
+    "options": [
+      "Fabrication",
+      "Origin",
+      "Prediction",
+      "Imitation"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p><strong>B)</strong> <strong>Provenance</strong> (noun) &ndash; <strong>the place of origin, source, or earliest known history of something</strong> उत्पत्ति / स्रोत<br />\r\nSynonym: <strong>Origin</strong> (noun) &ndash; <strong>the beginning or source from which something comes</strong> मूल / प्रारंभ</p>\r\n\r\n<p>&bull; <strong>Fabrication</strong> (noun) &ndash; <strong>the act of making up or inventing something</strong> गढ़ना / मनगढ़ंत<br />\r\n&bull; <strong>Prediction</strong> (noun) &ndash; <strong>a statement about what will happen in the future</strong> पूर्वानुमान<br />\r\n&bull; <strong>Imitation</strong> (noun) &ndash; <strong>copying or mimicking something</strong> नकल / अनुकरण</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Fill in the blank in the following sentence with the correct idiom selecting from the given alternatives.</strong></p>\r\n\r\n<p>Digvijay is going to ask his mother to ascertain which course he should pursue. He is still ________.</p>",
+    "comp": "",
+    "options": [
+      "tied to her apron string",
+      "tied to her silver string",
+      "tied to her saree",
+      "tied to her neck"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>A)&nbsp;<strong>&lsquo;tied to her apron string&rsquo;</strong> का प्रयोग होगा क्योंकि वाक्य में यह बताया जा रहा है कि Digvijay अपने निर्णय स्वयं नहीं ले पा रहा है और अपनी माँ पर निर्भर है। &ldquo;tied to her apron string&rdquo; का अर्थ होता है &mdash; किसी व्यक्ति का अत्यधिक रूप से (विशेषकर माँ पर) निर्भर होना। इसलिए यह idiom यहाँ पूरी तरह सटीक बैठता है।</p>\r\n\r\n<p>&bull; &lsquo;tied to her apron string&rsquo; should be used because the sentence indicates that Digvijay is unable to make his own decisions and is dependent on his mother. The idiom &ldquo;tied to her apron string&rdquo; means being overly dependent on someone (especially one&rsquo;s mother). Thus, it is the most appropriate choice.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Read the following passage carefully and answer the questions based on the passage.</strong></p>\r\n\r\n<p>The rise of job applications through mobile apps and online platforms has created new opportunities for millions seeking employment. However, this digital revolution has also given fraudsters more chances to exploit job seekers. Scammers design fake job postings, impersonate recruiters, and conduct sham interviews via messaging apps or social media to extract personal information and money from innocent candidates.</p>\r\n\r\n<p>Common frauds include fake staffing agencies asking for upfront payments, money laundering schemes involving the misuse of victims&rsquo; bank accounts, and fabricated credit report checks requiring unnecessary fees. Social media platforms like Facebook and LinkedIn have seen increased misuse, where scammers masquerade as hiring managers offering attractive jobs but ultimately requesting payment for training or processing fees. Such deceptive practices not only cause financial loss but also expose victims to identity theft and potential legal trouble.</p>\r\n\r\n<p>Despite widespread awareness campaigns by governments and employment websites, job scams continue growing rapidly and becoming more sophisticated. Vigilance, verification of job offers through trusted sources, and avoidance of suspicious upfront payments are essential measures for protection. Understanding how these scams operate can empower job seekers to navigate digital recruitment safely and securely.</p>\r\n\r\n<p><strong>Identify the voice of the sentence. &ldquo;Scammers design fake job postings to exploit job seekers.&rdquo;</strong></p>",
+    "comp": "<p><strong>Identify the voice of the sentence. &ldquo;Scammers design fake job postings to exploit job seekers.&rdquo;</strong></p>",
+    "options": [
+      "Active voice",
+      "Passive voice",
+      "Reflexive voice",
+      "Causative voice"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>A)&nbsp;<strong>Active voice</strong> का प्रयोग होगा क्योंकि वाक्य में कर्ता &ldquo;Scammers&rdquo; स्वयं क्रिया &ldquo;design&rdquo; को कर रहा है और उसका प्रभाव सीधे &ldquo;fake job postings&rdquo; पर पड़ रहा है। इसलिए यह वाक्य Active voice में है।<br />\r\n&bull; <strong>&lsquo;Active voice&rsquo;</strong> should be used because in the sentence, the subject &ldquo;Scammers&rdquo; is performing the action &ldquo;design&rdquo; directly on &ldquo;fake job postings.&rdquo; Hence, the sentence is in Active voice.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Read the following passage carefully and answer the questions based on the passage.</strong></p>\r\n\r\n<p>The rise of job applications through mobile apps and online platforms has created new opportunities for millions seeking employment. However, this digital revolution has also given fraudsters more chances to exploit job seekers. Scammers design fake job postings, impersonate recruiters, and conduct sham interviews via messaging apps or social media to extract personal information and money from innocent candidates.</p>\r\n\r\n<p>Common frauds include fake staffing agencies asking for upfront payments, money laundering schemes involving the misuse of victims&rsquo; bank accounts, and fabricated credit report checks requiring unnecessary fees. Social media platforms like Facebook and LinkedIn have seen increased misuse, where scammers masquerade as hiring managers offering attractive jobs but ultimately requesting payment for training or processing fees. Such deceptive practices not only cause financial loss but also expose victims to identity theft and potential legal trouble.</p>\r\n\r\n<p>Despite widespread awareness campaigns by governments and employment websites, job scams continue growing rapidly and becoming more sophisticated. Vigilance, verification of job offers through trusted sources, and avoidance of suspicious upfront payments are essential measures for protection. Understanding how these scams operate can empower job seekers to navigate digital recruitment safely and securely.</p>\r\n\r\n<p><strong>In the sentence &ldquo;Scammers masquerade as hiring managers offering attractive jobs,&rdquo; what is the part of speech of the word &ldquo;masquerade&rdquo;?</strong></p>",
+    "comp": "<p><strong>In the sentence &ldquo;Scammers masquerade as hiring managers offering attractive jobs,&rdquo; what is the part of speech of the word &ldquo;masquerade&rdquo;?</strong></p>",
+    "options": [
+      "Noun",
+      "Verb",
+      "Adjective",
+      "Adverb"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>B)&nbsp;<strong>Verb&rsquo; का प्रयोग होगा</strong> क्योंकि वाक्य में &ldquo;Scammers masquerade as hiring managers&hellip;&rdquo; में &ldquo;masquerade&rdquo; क्रिया के रूप में प्रयोग हुआ है, जो subject &ldquo;Scammers&rdquo; की action को दर्शा रहा है। यहाँ इसका अर्थ है &ldquo;भेष बदलना या बनकर प्रस्तुत होना।&rdquo; इसलिए, &ldquo;masquerade&rdquo; एक verb है।<br />\r\n&bull; &lsquo;Verb&rsquo; should be used because in the sentence &ldquo;Scammers masquerade as hiring managers&hellip;&rdquo;, the word &ldquo;masquerade&rdquo; functions as an action performed by the subject &ldquo;Scammers.&rdquo; Here, it means &ldquo;to pretend or disguise oneself as someone else.&rdquo; Thus, &ldquo;masquerade&rdquo; is a verb.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Read the following passage carefully and answer the questions based on the passage.</strong></p>\r\n\r\n<p>The rise of job applications through mobile apps and online platforms has created new opportunities for millions seeking employment. However, this digital revolution has also given fraudsters more chances to exploit job seekers. Scammers design fake job postings, impersonate recruiters, and conduct sham interviews via messaging apps or social media to extract personal information and money from innocent candidates.</p>\r\n\r\n<p>Common frauds include fake staffing agencies asking for upfront payments, money laundering schemes involving the misuse of victims&rsquo; bank accounts, and fabricated credit report checks requiring unnecessary fees. Social media platforms like Facebook and LinkedIn have seen increased misuse, where scammers masquerade as hiring managers offering attractive jobs but ultimately requesting payment for training or processing fees. Such deceptive practices not only cause financial loss but also expose victims to identity theft and potential legal trouble.</p>\r\n\r\n<p>Despite widespread awareness campaigns by governments and employment websites, job scams continue growing rapidly and becoming more sophisticated. Vigilance, verification of job offers through trusted sources, and avoidance of suspicious upfront payments are essential measures for protection. Understanding how these scams operate can empower job seekers to navigate digital recruitment safely and securely.</p>\r\n\r\n<p><strong>What does the word &ldquo;masquerade&rdquo; mean?</strong></p>",
+    "comp": "<p><strong>What does the word &ldquo;masquerade&rdquo; mean?</strong></p>",
+    "options": [
+      "To dress up for a party",
+      "To pretend to be someone else",
+      "To disappear suddenly",
+      "To ask for a favor"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>B)&nbsp;<strong>To pretend to be someone else&rsquo; का प्रयोग होगा</strong> क्योंकि passage में &ldquo;Scammers masquerade as hiring managers&hellip;&rdquo; का अर्थ है कि वे खुद को hiring managers के रूप में प्रस्तुत करते हैं, यानी किसी और का रूप धारण करते हैं। इसलिए, &ldquo;masquerade&rdquo; का सही अर्थ है &ldquo;किसी और होने का दिखावा करना।&rdquo;<br />\r\n&bull; &lsquo;To pretend to be someone else&rsquo; should be used because in the sentence &ldquo;Scammers masquerade as hiring managers&hellip;&rdquo;, it means that they present themselves as hiring managers, i.e., they pretend to be someone else. Thus, this is the correct meaning of &ldquo;masquerade.&rdquo;</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Read the following passage carefully and answer the questions based on the passage.</strong></p>\r\n\r\n<p>The rise of job applications through mobile apps and online platforms has created new opportunities for millions seeking employment. However, this digital revolution has also given fraudsters more chances to exploit job seekers. Scammers design fake job postings, impersonate recruiters, and conduct sham interviews via messaging apps or social media to extract personal information and money from innocent candidates.</p>\r\n\r\n<p>Common frauds include fake staffing agencies asking for upfront payments, money laundering schemes involving the misuse of victims&rsquo; bank accounts, and fabricated credit report checks requiring unnecessary fees. Social media platforms like Facebook and LinkedIn have seen increased misuse, where scammers masquerade as hiring managers offering attractive jobs but ultimately requesting payment for training or processing fees. Such deceptive practices not only cause financial loss but also expose victims to identity theft and potential legal trouble.</p>\r\n\r\n<p>Despite widespread awareness campaigns by governments and employment websites, job scams continue growing rapidly and becoming more sophisticated. Vigilance, verification of job offers through trusted sources, and avoidance of suspicious upfront payments are essential measures for protection. Understanding how these scams operate can empower job seekers to navigate digital recruitment safely and securely.</p>\r\n\r\n<p><strong>In the phrase &ldquo;suspicious upfront payments&rdquo; the word &ldquo;suspicious&rdquo; is closest in meaning to ________.</strong></p>",
+    "comp": "<p><strong>In the phrase &ldquo;suspicious upfront payments&rdquo; the word &ldquo;suspicious&rdquo; is closest in meaning to ________.</strong></p>",
+    "options": [
+      "trustworthy and clear",
+      "common and usual",
+      "doubtful or questionable",
+      "fast and efficient"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>C)&nbsp;<strong>Doubtful or questionable&rsquo; का प्रयोग होगा</strong> क्योंकि &ldquo;suspicious upfront payments&rdquo; में &ldquo;suspicious&rdquo; का अर्थ है ऐसी चीज़ जिस पर शक हो या जो भरोसेमंद न लगे। यह किसी संभावित धोखाधड़ी या गलत गतिविधि की ओर संकेत करता है। इसलिए, &ldquo;doubtful or questionable&rdquo; सबसे उपयुक्त अर्थ है।<br />\r\n&bull; &lsquo;Doubtful or questionable&rsquo; should be used because in the phrase &ldquo;suspicious upfront payments&rdquo;, the word &ldquo;suspicious&rdquo; refers to something that raises doubt or does not seem trustworthy, often indicating possible fraud or wrongdoing. Thus, &ldquo;doubtful or questionable&rdquo; is the closest meaning.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Read the following passage carefully and answer the questions based on the passage.</strong></p>\r\n\r\n<p>The rise of job applications through mobile apps and online platforms has created new opportunities for millions seeking employment. However, this digital revolution has also given fraudsters more chances to exploit job seekers. Scammers design fake job postings, impersonate recruiters, and conduct sham interviews via messaging apps or social media to extract personal information and money from innocent candidates.</p>\r\n\r\n<p>Common frauds include fake staffing agencies asking for upfront payments, money laundering schemes involving the misuse of victims&rsquo; bank accounts, and fabricated credit report checks requiring unnecessary fees. Social media platforms like Facebook and LinkedIn have seen increased misuse, where scammers masquerade as hiring managers offering attractive jobs but ultimately requesting payment for training or processing fees. Such deceptive practices not only cause financial loss but also expose victims to identity theft and potential legal trouble.</p>\r\n\r\n<p>Despite widespread awareness campaigns by governments and employment websites, job scams continue growing rapidly and becoming more sophisticated. Vigilance, verification of job offers through trusted sources, and avoidance of suspicious upfront payments are essential measures for protection. Understanding how these scams operate can empower job seekers to navigate digital recruitment safely and securely.</p>\r\n\r\n<p><strong>What are th&eacute; main types of frauds related to job applications mentioned in the passage, and how do they affect job seekers?</strong></p>",
+    "comp": "<p><strong>What are th&eacute; main types of frauds related to job applications mentioned in the passage, and how do they affect job seekers?</strong></p>",
+    "options": [
+      "Fake job postings and false promises, causing financial loss and identity theft.",
+      "Government job alerts and verified recruitment, ensuring job security.",
+      "Real job offers with transparent processes, helping job seekers find employment.",
+      "Online training programs providing free certifications to all applicants."
+    ],
+    "correct_option_id": 0,
+    "solution": "<p>A)&nbsp;<strong>&lsquo;Fake job postings and false promises, causing financial loss and identity theft&rsquo; का प्रयोग होगा</strong> क्योंकि passage में स्पष्ट रूप से बताया गया है कि scammers नकली job postings बनाते हैं, recruiters का रूप धारण करते हैं और पैसे व personal information ठग लेते हैं। इससे job seekers को आर्थिक नुकसान होता है और उनकी पहचान चोरी (identity theft) का खतरा भी बढ़ जाता है।<br />\r\n&bull; &lsquo;Fake job postings and false promises, causing financial loss and identity theft&rsquo; should be used because the passage clearly explains that scammers create fake job postings, impersonate recruiters, and extract money and personal information. This leads to financial loss and also exposes job seekers to identity theft. Thus, this is the correct answer.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Select the option with the correct spelling that can replace the underlined word in the given sentence. If the spelling in the given sentence is already correct, choose Option &quot;No replacement required&quot;.</strong></p>\r\n\r\n<p>The <strong><ins>querilous</ins> </strong>customer complained about every dish served at the restaurant.</p>",
+    "comp": "",
+    "options": [
+      "queralous",
+      "quirulous",
+      "querulous",
+      "No replacement required"
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>C)&nbsp;The correct spelling of <strong>&lsquo;querilous&rsquo;</strong> is <strong>&lsquo;querulous&rsquo;</strong>, which means &ldquo;complaining in a petulant or whining manner&rdquo; शिकायत करने वाला, कुड़कुड़ाने वाला।</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Choose the most suitable one-word substitution for the following.</strong></p>\r\n\r\n<p>A person who studies the origin of words.</p>",
+    "comp": "",
+    "options": [
+      "Philologist",
+      "Etymologist",
+      "Linguist",
+      "Grammarian"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>B)&nbsp;<strong>Etymologist (noun)</strong> &ndash; A person who studies the origin and history of words शब्दों की उत्पत्ति का अध्ययन करने वाला</p>\r\n\r\n<p>&bull; <strong>Philologist (noun)</strong> &ndash; A person who studies language in historical texts प्राचीन भाषा का अध्ययन करने वाला<br />\r\n&bull; <strong>Linguist (noun)</strong> &ndash; A person skilled in or studying languages भाषाविद्<br />\r\n&bull; <strong>Grammarian (noun)</strong> &ndash; A person who studies grammar व्याकरण विशेषज्ञ</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p>Select the most appropriate <strong>synonym</strong> of the word: <strong>Pellucid</strong></p>",
+    "comp": "",
+    "options": [
+      "Vague",
+      "Clear",
+      "Obscure",
+      "Ambiguous"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p><strong>B)</strong> Pellucid (adjective) &ndash; <strong>clear, transparent, lucid, obvious, plain</strong> स्पष्ट / पारदर्शी</p>\r\n\r\n<p>Synonym: <strong>Clear (adjective)</strong> &ndash; <strong>transparent, evident, distinct, lucid, unmistakable</strong> स्पष्ट / साफ</p>\r\n\r\n<ul>\r\n\t<li>\r\n\t<p><strong>Vague (adjective)</strong> &ndash; <strong>unclear, hazy, indistinct</strong> अस्पष्ट</p>\r\n\t</li>\r\n\t<li>\r\n\t<p><strong>Obscure (adjective)</strong> &ndash; <strong>uncertain, hidden, not clearly expressed</strong> धुंधला / अज्ञात</p>\r\n\t</li>\r\n\t<li>\r\n\t<p><strong>Ambiguous (adjective)</strong> &ndash; <strong>uncertain, open to more than one interpretation</strong> अस्पष्ट / द्विअर्थी</p>\r\n\t</li>\r\n</ul>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Which of the following options is the most suitable conversion of the following sentence into Passive Voice?</strong></p>\r\n\r\n<p>Why didn&#39;t the critics like your new novel?</p>",
+    "comp": "",
+    "options": [
+      "Why wasn't your new novel liked by the critics?",
+      "Why isn't your new novel liked by the critics?",
+      "Why didn't your new novel liked by the critics?",
+      "Why wasn't your new novel like by the critics?"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p><strong>A)&nbsp;Why wasn&#39;t your new novel liked by the critics?</strong></p>\r\n\r\n<p>Active से Passive Voice में बदलने के लिए, Active वाक्य का Object Passive वाक्य का Subject बन जाता है। Negative interrogative sentence में helping verb और &quot;not&quot; का सही प्रयोग किया जाता है और tense वही रखा जाता है। दिए गए वाक्य में &quot;the critics&quot; Subject है, &quot;did not like&quot; Verb (Simple Past Negative) है और &quot;your new novel&quot; Object है। Passive में बदलने पर Object &quot;your new novel&quot; Subject बन गया है, Verb को &quot;was not liked&quot; (Simple Past Passive) में बदला गया है और &quot;by the critics&quot; agent के रूप में प्रयोग हुआ है। इसलिए सही वाक्य होगा &mdash; &quot;Why wasn&#39;t your new novel liked by the critics?&quot;</p>\r\n\r\n<p>To change a sentence from Active to Passive Voice, the object becomes the subject, and in negative interrogative sentences, the helping verb and &quot;not&quot; are properly used while keeping the same tense. Here, &quot;the critics&quot; (Subject), &quot;did not like&quot; (Verb in Simple Past Negative), and &quot;your new novel&quot; (Object) are transformed into &quot;your new novel&quot; (Subject), &quot;was not liked&quot; (Passive Verb in Simple Past), and &quot;by the critics&quot; (agent). Therefore, the correct sentence is &mdash; &quot;Why wasn&#39;t your new novel liked by the critics?&quot;</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Choose the correct option to complete the sentence.</strong></p>\r\n\r\n<p>The farmer used a ________ to cut the grass.</p>",
+    "comp": "",
+    "options": [
+      "cite",
+      "site",
+      "sight",
+      "scythe"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>D)&nbsp;&nbsp;<strong>Scythe&rsquo; का प्रयोग होगा</strong> क्योंकि यह एक कृषि उपकरण (farming tool) है जिसका उपयोग घास काटने के लिए किया जाता है। sentence में &ldquo;The farmer used a ________ to cut the grass&rdquo; स्पष्ट रूप से ऐसे औज़ार की बात कर रहा है। इसलिए &ldquo;scythe&rdquo; सबसे उपयुक्त विकल्प है।<br />\r\n&bull; <strong>&lsquo;Scythe&rsquo; should be used</strong> because it is a farming tool specifically designed for cutting grass. In the sentence, &ldquo;The farmer used a ________ to cut the grass,&rdquo; it clearly refers to such an instrument. Thus, &ldquo;scythe&rdquo; would be the most appropriate choice.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Choose the most suitable option to replace the highlighted part of the sentence:</strong><br />\r\nPeter did not speak to <strong><ins>no one</ins></strong> in the room.</p>",
+    "comp": "",
+    "options": [
+      "anyone",
+      "no one",
+      "somebody",
+      "nobody"
+    ],
+    "correct_option_id": 0,
+    "solution": "<p><strong>A)&nbsp;</strong>&lsquo;no one&rsquo; के स्थान पर <strong>&lsquo;anyone&rsquo;</strong> का प्रयोग होगा क्योंकि sentence में <strong>did not</strong> पहले से ही negation दे रहा है और English में <strong>double negative</strong> का प्रयोग नहीं होता; अतः सही रूप होगा &mdash; <strong>Peter did not speak to anyone in the room.</strong></p>\r\n\r\n<p>&bull; <strong>&lsquo;anyone&rsquo;</strong> will be used instead of <strong>&lsquo;no one&rsquo;</strong> because <strong>did not</strong> already provides the negative sense, and English grammar does not allow <strong>double negatives</strong> in standard usage; hence the correct form is &mdash; <strong>Peter did not speak to anyone in the room.</strong></p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>From the alternatives given below, select the correct meaning of the idiom.</strong></p>\r\n\r\n<p>Cross one&#39;s palm with silver.</p>",
+    "comp": "",
+    "options": [
+      "To salute a person in position",
+      "To pay one, especially as a bribe",
+      "Wear a silver bracelet",
+      "Take something precious secretly"
+    ],
+    "correct_option_id": 1,
+    "solution": "<p>B)&nbsp;Cross one&#39;s palm with silver (idiom) &ndash; To pay someone, especially as a bribe रिश्वत देना</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Which of the following options is the most suitable conversion of the following sentence into Passive Voice?</strong></p>\r\n\r\n<p>The author published a children&#39;s novella last year.</p>",
+    "comp": "",
+    "options": [
+      "A children's novella had been published by the author last year.",
+      "A children's novella was published by the author last year.",
+      "A children's novella is published by the author last year.",
+      "A children's novella was being published by the author last year."
+    ],
+    "correct_option_id": 1,
+    "solution": "<p><strong>B)&nbsp;A children&#39;s novella was published by the author last year.</strong></p>\r\n\r\n<p>Active से Passive Voice में बदलने के लिए, Active वाक्य का Object Passive वाक्य का Subject बन जाता है। Verb को Active से Passive में बदलते समय सही Tense का प्रयोग किया जाता है। दिए गए वाक्य में &quot;The author&quot; Subject है, &quot;published&quot; Verb (Simple Past) है और &quot;a children&#39;s novella&quot; Object है। Passive में बदलने पर Object &quot;A children&#39;s novella&quot; Subject बन गया है, Verb को &quot;was published&quot; (Simple Past Passive) में बदला गया है और &quot;by the author&quot; agent के रूप में प्रयोग हुआ है। इसलिए सही वाक्य होगा &mdash; &quot;A children&#39;s novella was published by the author last year.&quot;</p>\r\n\r\n<p>To change a sentence from Active to Passive Voice, the object becomes the subject and the verb is converted into passive form with the correct tense. In this case, &quot;The author&quot; (Subject), &quot;published&quot; (Verb in Simple Past), and &quot;a children&#39;s novella&quot; (Object) are transformed into &quot;A children&#39;s novella&quot; (Subject), &quot;was published&quot; (Passive Verb in Simple Past), and &quot;by the author&quot; (agent). Therefore, the correct sentence is &mdash; &quot;A children&#39;s novella was published by the author last year.&quot;</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>The following sentence is divided into four parts and are given in the alternatives A, B, C, and D. Select that alternative which contains that part of the sentence which has an error. Selecting the part with the error is the answer.</strong></p>\r\n\r\n<p>If you are looking for a free parking space, you might drive on for hours until you find one.</p>",
+    "comp": "",
+    "options": [
+      "If you are looking for",
+      "a free parking space, you",
+      "might drive on for hours",
+      "until you find one."
+    ],
+    "correct_option_id": 2,
+    "solution": "<p>C)&nbsp; &lsquo;might drive on for hours&rsquo; में त्रुटि है क्योंकि <strong>drive on</strong> का प्रयोग यहाँ अनावश्यक है। सही अभिव्यक्ति केवल <strong>drive for hours</strong> होगी, जिसका अर्थ है <em>घंटों तक गाड़ी चलाना</em>।</p>\r\n\r\n<p>&bull; &lsquo;might drive for hours&rsquo; will be used instead of &lsquo;might drive on for hours&rsquo; because <strong>&ldquo;drive on&rdquo;</strong> is redundant and incorrect in this context; the correct phrase is <strong>&ldquo;drive for hours&rdquo;</strong>, which means to continue driving for a long duration.</p>",
+    "marks": 2.0
+  },
+  {
+    "question": "<p><strong>Which of the following pairs of homonyms can be used to fill in the blanks most suitably?</strong><br />\r\nThe new medication did not _______ the patient&#39;s symptoms as expected, so the doctor questioned its overall _______.</p>",
+    "comp": "",
+    "options": [
+      "alter, altar",
+      "altar, alter",
+      "effect, affect",
+      "affect, effect"
+    ],
+    "correct_option_id": 3,
+    "solution": "<p>D)&nbsp;<strong>Affect, effect&rsquo;</strong> का प्रयोग होगा क्योंकि पहले blank में verb चाहिए जिसका अर्थ है &ldquo;to influence/प्रभाव डालना&rdquo;, और दूसरे blank में noun चाहिए जिसका अर्थ है &ldquo;result/परिणाम&rdquo;। Sentence में कहा गया है कि दवा ने लक्षणों पर अपेक्षित प्रभाव नहीं डाला (did not affect), इसलिए डॉक्टर ने उसके कुल परिणाम/प्रभाव (overall effect) पर सवाल उठाया। इस प्रकार verb + noun का संयोजन अर्थ और grammar दोनों दृष्टि से उपयुक्त है।<br />\r\n&bull; <strong>&lsquo;Affect, effect&rsquo;</strong> should be used because the first blank requires a verb meaning &ldquo;to influence&rdquo;, and the second blank requires a noun meaning &ldquo;result or outcome&rdquo;. The sentence states that the medication did not influence the symptoms (did not affect), leading the doctor to question its overall result (overall effect). Hence, the verb + noun pairing makes correct contextual and grammatical sense.</p>",
+    "marks": 2.0
+  }
+];
+        const sectionsData = null;
+        const marksPerQ = 1;
+        const negMarks = 0.25;
+        const totalDuration = 15;
+        
+        class CBTExam {
+            constructor() {
+                this.questions = questions;
+                this.sections = sectionsData;
+                this.currentQuestion = 0;
+                this.answers = new Array(this.questions.length).fill(null);
+                this.markedForReview = new Array(this.questions.length).fill(false);
+                this.timeSpent = new Array(this.questions.length).fill(0);
+                this.isEnglish = true;
+                this.isSubmitted = false;
+                this.startTime = null;
+                this.lastQuestionTime = null;
+                this.mainTimer = null;
+                this.sectionTimer = null;
+                this.currentSection = this.sections ? 0 : null;
+                this.totalTimeLeft = totalDuration * 60;
+                
+                this.initElements();
+                this.setupWelcomeScreen();
+                this.setupBeforeUnload();
+            }
+            
+            initElements() {
+                this.els = {
+                    welcomeScreen: document.getElementById('welcomeScreen'),
+                    examContainer: document.getElementById('examContainer'),
+                    mainTimer: document.getElementById('mainTimer'),
+                    sectionBadge: document.getElementById('sectionBadge'),
+                    sectionName: document.getElementById('sectionName'),
+                    sectionTimer: document.getElementById('sectionTimer'),
+                    questionNum: document.getElementById('questionNum'),
+                    questionMarks: document.getElementById('questionMarks'),
+                    questionText: document.getElementById('questionText'),
+                    comprehension: document.getElementById('comprehension'),
+                    comprehensionText: document.getElementById('comprehensionText'),
+                    optionsList: document.getElementById('optionsList'),
+                    solutionBox: document.getElementById('solutionBox'),
+                    solutionStats: document.getElementById('solutionStats'),
+                    solutionText: document.getElementById('solutionText'),
+                    progressText: document.getElementById('progressText'),
+                    answeredCount: document.getElementById('answeredCount'),
+                    desktopNav: document.getElementById('desktopNav'),
+                    mobileNav: document.getElementById('mobileNav'),
+                    mobileNavGrid: document.getElementById('mobileNavGrid'),
+                    resultModal: document.getElementById('resultModal'),
+                    resultScore: document.getElementById('resultScore'),
+                    correctCount: document.getElementById('correctCount'),
+                    incorrectCount: document.getElementById('incorrectCount'),
+                    unattemptedCount: document.getElementById('unattemptedCount'),
+                    timeTaken: document.getElementById('timeTaken'),
+                    sectionResults: document.getElementById('sectionResults'),
+                    sectionResultsBody: document.getElementById('sectionResultsBody')
+                };
+            }
+            
+            setupWelcomeScreen() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.els.welcomeScreen.classList.add('hidden');
+                    this.els.examContainer.classList.add('active');
+                    setTimeout(() => this.startExam(), 100);
+                });
+            }
+            
+            setupBeforeUnload() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (!this.isSubmitted) {
+                        e.preventDefault();
+                        e.returnValue = 'Your test is in progress. Are you sure you want to leave?';
+                        return e.returnValue;
+                    }
+                });
+            }
+            
+            startExam() {
+                this.startTime = Date.now();
+                this.lastQuestionTime = this.startTime;
+                this.createNavigator();
+                this.startMainTimer();
+                if (this.sections) {
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                }
+                this.loadQuestion(0);
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('engBtn').onclick = () => this.setLanguage(true);
+                document.getElementById('hinBtn').onclick = () => this.setLanguage(false);
+                document.getElementById('prevBtn').onclick = () => this.navigate(-1);
+                document.getElementById('nextBtn').onclick = () => this.navigate(1);
+                document.getElementById('reviewBtn').onclick = () => this.toggleReview();
+                document.getElementById('submitBtn').onclick = () => this.confirmSubmit();
+                document.getElementById('submitBtnDesktop').onclick = () => this.confirmSubmit();
+                document.getElementById('navigatorBtn').onclick = () => this.openMobileNav();
+                document.getElementById('closeNav').onclick = () => this.closeMobileNav();
+                document.getElementById('closeResult').onclick = () => this.closeResultModal();
+                document.getElementById('reviewAnswers').onclick = () => this.reviewAnswers();
+            }
+            
+            createNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    container.innerHTML = '';
+                    this.questions.forEach((_, i) => {
+                        const btn = document.createElement('div');
+                        btn.className = 'nav-question';
+                        btn.textContent = i + 1;
+                        btn.onclick = () => this.goToQuestion(i);
+                        container.appendChild(btn);
+                    });
+                });
+            }
+            
+            extractText(html, isEng) {
+                if (!html) return '';
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                
+                const langSpans = temp.querySelectorAll('span.eqt, span.hqt');
+                langSpans.forEach(span => {
+                    if ((isEng && span.classList.contains('hqt')) || 
+                        (!isEng && span.classList.contains('eqt'))) {
+                        span.style.display = 'none';
+                    } else {
+                        span.style.display = '';
+                    }
+                });
+                
+                return temp.innerHTML;
+            }
+            
+            getQuestionMarks(qIdx) {
+                if (!this.sections) return marksPerQ;
+                
+                for (const section of this.sections) {
+                    if (qIdx >= section.start && qIdx <= section.end) {
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                if (qIdx >= subsec.start && qIdx <= subsec.end) {
+                                    return subsec.marks_per_q;
+                                }
+                            }
+                        }
+                        return marksPerQ;
+                    }
+                }
+                return marksPerQ;
+            }
+            
+            loadQuestion(idx) {
+                if (this.currentQuestion !== idx) {
+                    const now = Date.now();
+                    this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                    this.lastQuestionTime = now;
+                }
+                
+                this.currentQuestion = idx;
+                const q = this.questions[idx];
+                const qMarks = this.getQuestionMarks(idx);
+                
+                this.els.questionNum.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.els.questionMarks.textContent = `Marks: ${qMarks}`;
+                this.els.progressText.textContent = `Question ${idx + 1} of ${this.questions.length}`;
+                this.updateAnsweredCount();
+                this.updateNavigator();
+                this.updateNavigationButtons();
+                this.updateReviewButton();
+                
+                if (q.comp) {
+                    this.els.comprehension.style.display = 'block';
+                    this.els.comprehensionText.innerHTML = this.extractText(q.comp, this.isEnglish);
+                } else {
+                    this.els.comprehension.style.display = 'none';
+                }
+                
+                this.els.questionText.innerHTML = this.extractText(q.question, this.isEnglish);
+                this.loadOptions(q, idx);
+                
+                if (this.isSubmitted && q.solution) {
+                    const timeSpent = Math.round(this.timeSpent[idx]);
+                    const mins = Math.floor(timeSpent / 60);
+                    const secs = timeSpent % 60;
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                    
+                    this.els.solutionStats.innerHTML = `
+                        <span><i class="fas fa-clock"></i> Time: ${timeStr}</span>
+                        <span><i class="fas fa-check-circle"></i> Correct: ${String.fromCharCode(65 + q.correct_option_id)}</span>
+                    `;
+                    this.els.solutionText.innerHTML = this.extractText(q.solution, this.isEnglish);
+                    this.els.solutionBox.classList.add('show');
+                } else {
+                    this.els.solutionBox.classList.remove('show');
+                }
+                
+                // Render LaTeX in all updated elements
+                renderMath(this.els.questionText);
+                renderMath(this.els.comprehensionText);
+                renderMath(this.els.solutionText);
+            }
+            
+            loadOptions(q, qIdx) {
+                this.els.optionsList.innerHTML = '';
+                const userAnswer = this.answers[qIdx];
+                const correctAnswer = q.correct_option_id;
+                
+                if (!q.options || !Array.isArray(q.options)) return;
+                
+                q.options.forEach((opt, i) => {
+                    const div = document.createElement('div');
+                    let className = 'option';
+                    
+                    if (this.isSubmitted) className += ' submitted';
+                    if (userAnswer === i) className += ' selected';
+                    
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            className += ' correct';
+                        } else if (userAnswer === i && userAnswer !== correctAnswer) {
+                            className += ' wrong';
+                        }
+                    }
+                    
+                    div.className = className;
+                    
+                    let indicator = '';
+                    if (this.isSubmitted && correctAnswer !== undefined) {
+                        if (i === correctAnswer) {
+                            indicator = '✓';
+                        } else if (userAnswer === i) {
+                            indicator = '✗';
+                        }
+                    } else if (userAnswer === i) {
+                        indicator = '✓';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="option-indicator">${indicator}</div>
+                        <div class="option-text">${this.extractText(opt, this.isEnglish)}</div>
+                    `;
+                    
+                    if (!this.isSubmitted) {
+                        div.onclick = () => this.selectOption(i, qIdx);
+                    }
+                    
+                    this.els.optionsList.appendChild(div);
+                });
+                // Render LaTeX in options
+                renderMath(this.els.optionsList);
+            }
+            
+            selectOption(optIdx, qIdx) {
+                if (this.isSubmitted) return;
+                this.answers[qIdx] = this.answers[qIdx] === optIdx ? null : optIdx;
+                this.loadOptions(this.questions[qIdx], qIdx);
+                this.updateAnsweredCount();
+                this.updateNavigator();
+            }
+            
+            toggleReview() {
+                if (this.isSubmitted) return;
+                this.markedForReview[this.currentQuestion] = !this.markedForReview[this.currentQuestion];
+                this.updateNavigator();
+                this.updateReviewButton();
+            }
+            
+            updateReviewButton() {
+                const btn = document.getElementById('reviewBtn');
+                if (this.markedForReview[this.currentQuestion]) {
+                    btn.classList.add('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Marked';
+                } else {
+                    btn.classList.remove('marked');
+                    btn.innerHTML = '<i class="fas fa-flag"></i> Mark for Review';
+                }
+            }
+            
+            navigate(dir) {
+                const newIdx = this.currentQuestion + dir;
+                
+                if (this.isSubmitted) {
+                    if (newIdx >= 0 && newIdx < this.questions.length) {
+                        this.loadQuestion(newIdx);
+                    }
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (newIdx < currentSection.start || newIdx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                if (newIdx >= 0 && newIdx < this.questions.length) {
+                    this.loadQuestion(newIdx);
+                }
+            }
+            
+            goToQuestion(idx) {
+                if (this.isSubmitted) {
+                    this.loadQuestion(idx);
+                    this.closeMobileNav();
+                    return;
+                }
+                
+                if (this.sections) {
+                    const currentSection = this.sections[this.currentSection];
+                    if (idx < currentSection.start || idx > currentSection.end) {
+                        return;
+                    }
+                }
+                
+                this.loadQuestion(idx);
+                this.closeMobileNav();
+            }
+            
+            updateNavigator() {
+                [this.els.desktopNav, this.els.mobileNavGrid].forEach(container => {
+                    const btns = container.querySelectorAll('.nav-question');
+                    btns.forEach((btn, i) => {
+                        btn.className = 'nav-question';
+                        
+                        if (i === this.currentQuestion) {
+                            btn.classList.add('current');
+                        } else if (this.isSubmitted) {
+                            if (this.answers[i] !== null && this.questions[i].correct_option_id !== undefined) {
+                                if (this.answers[i] === this.questions[i].correct_option_id) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.add('wrong');
+                                }
+                            }
+                        } else {
+                            if (this.markedForReview[i]) {
+                                btn.classList.add('review');
+                            } else if (this.answers[i] !== null) {
+                                btn.classList.add('answered');
+                            }
+                            
+                            if (this.sections) {
+                                const currentSection = this.sections[this.currentSection];
+                                if (i < currentSection.start || i > currentSection.end) {
+                                    btn.classList.add('disabled');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const reviewBtn = document.getElementById('reviewBtn');
+                
+                prevBtn.disabled = this.currentQuestion === 0;
+                nextBtn.disabled = this.currentQuestion === this.questions.length - 1;
+                
+                if (this.isSubmitted) {
+                    reviewBtn.style.display = 'none';
+                } else {
+                    reviewBtn.style.display = 'inline-flex';
+                }
+                
+                if (this.sections && !this.isSubmitted) {
+                    const currentSection = this.sections[this.currentSection];
+                    prevBtn.disabled = prevBtn.disabled || (this.currentQuestion === currentSection.start);
+                    nextBtn.disabled = nextBtn.disabled || (this.currentQuestion === currentSection.end);
+                }
+            }
+            
+            updateAnsweredCount() {
+                const count = this.answers.filter(a => a !== null).length;
+                this.els.answeredCount.textContent = count;
+            }
+            
+            setLanguage(isEng) {
+                this.isEnglish = isEng;
+                document.getElementById('engBtn').classList.toggle('active', isEng);
+                document.getElementById('hinBtn').classList.toggle('active', !isEng);
+                this.loadQuestion(this.currentQuestion);
+            }
+            
+            startMainTimer() {
+                this.mainTimer = setInterval(() => {
+                    this.totalTimeLeft--;
+                    if (this.totalTimeLeft <= 0) {
+                        clearInterval(this.mainTimer);
+                        this.submitTest();
+                        return;
+                    }
+                    const mins = Math.floor(this.totalTimeLeft / 60);
+                    const secs = this.totalTimeLeft % 60;
+                    this.els.mainTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            startSectionTimer() {
+                if (!this.sections) return;
+                
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                const section = this.sections[this.currentSection];
+                section.time_left = section.timer;
+                
+                this.sectionTimer = setInterval(() => {
+                    section.time_left--;
+                    const mins = Math.floor(section.time_left / 60);
+                    const secs = section.time_left % 60;
+                    this.els.sectionTimer.textContent = ` | ${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (section.time_left <= 0) {
+                        clearInterval(this.sectionTimer);
+                        this.submitSection();
+                    }
+                }, 1000);
+            }
+            
+            updateSectionInfo() {
+                if (!this.sections) return;
+                const section = this.sections[this.currentSection];
+                this.els.sectionName.textContent = section.name;
+                this.els.sectionBadge.style.display = 'block';
+            }
+            
+            submitSection() {
+                if (!this.sections) return;
+                
+                const section = this.sections[this.currentSection];
+                section.submitted = true;
+                clearInterval(this.sectionTimer);
+                
+                const nextSectionIdx = this.currentSection + 1;
+                if (nextSectionIdx < this.sections.length) {
+                    this.currentSection = nextSectionIdx;
+                    this.startSectionTimer();
+                    this.updateSectionInfo();
+                    this.loadQuestion(this.sections[nextSectionIdx].start);
+                } else {
+                    this.submitTest();
+                }
+                
+                this.updateNavigator();
+            }
+            
+            confirmSubmit() {
+                if (this.sections) {
+                    const section = this.sections[this.currentSection];
+                    const unanswered = this.answers.slice(section.start, section.end + 1)
+                        .filter(a => a === null).length;
+                    
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions in this section. Submit anyway?`
+                        : 'Submit this section?';
+                    
+                    if (confirm(msg)) this.submitSection();
+                } else {
+                    const unanswered = this.answers.filter(a => a === null).length;
+                    let msg = unanswered > 0 
+                        ? `You have ${unanswered} unanswered questions. Submit test?`
+                        : 'Submit test?';
+                    
+                    if (confirm(msg)) this.submitTest();
+                }
+            }
+            
+            submitTest() {
+                if (this.isSubmitted) return;
+                
+                const now = Date.now();
+                this.timeSpent[this.currentQuestion] += (now - this.lastQuestionTime) / 1000;
+                
+                this.isSubmitted = true;
+                clearInterval(this.mainTimer);
+                if (this.sectionTimer) clearInterval(this.sectionTimer);
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('submitBtnDesktop').style.display = 'none';
+                document.getElementById('reviewBtn').style.display = 'none';
+                
+                if (this.sections) {
+                    this.els.sectionBadge.style.display = 'none';
+                }
+                
+                const results = this.calculateResults();
+                this.showResults(results);
+                this.loadQuestion(this.currentQuestion);
+                this.updateNavigator();
+            }
+            
+            calculateResults() {
+                const timeTaken = Math.round((Date.now() - this.startTime) / 60000);
+                let correct = 0, incorrect = 0, unattempted = 0, score = 0;
+                
+                const sectionResults = [];
+                
+                if (this.sections) {
+                    for (const section of this.sections) {
+                        let secCorrect = 0, secIncorrect = 0, secUnattempted = 0, secScore = 0;
+                        const subsecResults = [];
+                        
+                        if (section.subsections) {
+                            for (const subsec of section.subsections) {
+                                let subCorrect = 0, subIncorrect = 0, subUnattempted = 0, subScore = 0;
+                                
+                                for (let i = subsec.start; i <= subsec.end; i++) {
+                                    const userAns = this.answers[i];
+                                    const correctAns = this.questions[i].correct_option_id;
+                                    
+                                    if (userAns === null) {
+                                        subUnattempted++;
+                                    } else if (correctAns !== undefined && userAns === correctAns) {
+                                        subCorrect++;
+                                        subScore += subsec.marks_per_q;
+                                    } else {
+                                        subIncorrect++;
+                                        subScore -= negMarks;
+                                    }
+                                }
+                                
+                                subsecResults.push({
+                                    name: subsec.name,
+                                    attempted: subCorrect + subIncorrect,
+                                    correct: subCorrect,
+                                    incorrect: subIncorrect,
+                                    unattempted: subUnattempted,
+                                    score: Math.max(0, subScore)
+                                });
+                                
+                                secCorrect += subCorrect;
+                                secIncorrect += subIncorrect;
+                                secUnattempted += subUnattempted;
+                                secScore += subScore;
+                            }
+                        } else {
+                            for (let i = section.start; i <= section.end; i++) {
+                                const userAns = this.answers[i];
+                                const correctAns = this.questions[i].correct_option_id;
+                                
+                                if (userAns === null) {
+                                    secUnattempted++;
+                                } else if (correctAns !== undefined && userAns === correctAns) {
+                                    secCorrect++;
+                                    secScore += marksPerQ;
+                                } else {
+                                    secIncorrect++;
+                                    secScore -= negMarks;
+                                }
+                            }
+                        }
+                        
+                        sectionResults.push({
+                            name: section.name,
+                            attempted: secCorrect + secIncorrect,
+                            correct: secCorrect,
+                            incorrect: secIncorrect,
+                            unattempted: secUnattempted,
+                            score: Math.max(0, secScore),
+                            subsections: subsecResults.length > 0 ? subsecResults : null
+                        });
+                        
+                        correct += secCorrect;
+                        incorrect += secIncorrect;
+                        unattempted += secUnattempted;
+                        score += secScore;
+                    }
+                } else {
+                    this.questions.forEach((q, i) => {
+                        const userAns = this.answers[i];
+                        const correctAns = q.correct_option_id;
+                        
+                        if (userAns === null) {
+                            unattempted++;
+                        } else if (correctAns !== undefined && userAns === correctAns) {
+                            correct++;
+                            score += marksPerQ;
+                        } else {
+                            incorrect++;
+                            score -= negMarks;
+                        }
+                    });
+                }
+                
+                return {
+                    score: Math.max(0, score),
+                    correct,
+                    incorrect,
+                    unattempted,
+                    timeTaken,
+                    sectionResults: sectionResults.length > 0 ? sectionResults : null
+                };
+            }
+            
+            showResults(results) {
+                this.els.resultScore.textContent = `${results.score.toFixed(2)}/${this.questions.length * marksPerQ}`;
+                this.els.correctCount.textContent = results.correct;
+                this.els.incorrectCount.textContent = results.incorrect;
+                this.els.unattemptedCount.textContent = results.unattempted;
+                this.els.timeTaken.textContent = results.timeTaken;
+                
+                if (results.sectionResults) {
+                    this.els.sectionResults.style.display = 'block';
+                    this.els.sectionResultsBody.innerHTML = '';
+                    
+                    results.sectionResults.forEach(section => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>${section.name}</strong></td>
+                            <td>${section.attempted}</td>
+                            <td>${section.correct}</td>
+                            <td>${section.incorrect}</td>
+                            <td><strong>${section.score.toFixed(2)}</strong></td>
+                        `;
+                        this.els.sectionResultsBody.appendChild(row);
+                        
+                        if (section.subsections) {
+                            section.subsections.forEach(subsec => {
+                                const subRow = document.createElement('tr');
+                                subRow.className = 'subsection-row';
+                                subRow.innerHTML = `
+                                    <td>${subsec.name}</td>
+                                    <td>${subsec.attempted}</td>
+                                    <td>${subsec.correct}</td>
+                                    <td>${subsec.incorrect}</td>
+                                    <td>${subsec.score.toFixed(2)}</td>
+                                `;
+                                this.els.sectionResultsBody.appendChild(subRow);
+                            });
+                        }
+                    });
+                } else {
+                    this.els.sectionResults.style.display = 'none';
+                }
+                
+                this.els.resultModal.classList.add('show');
+            }
+            
+            closeResultModal() {
+                this.els.resultModal.classList.remove('show');
+            }
+            
+            reviewAnswers() {
+                this.closeResultModal();
+                this.loadQuestion(0);
+            }
+            
+            openMobileNav() {
+                this.els.mobileNav.classList.add('open');
+            }
+            
+            closeMobileNav() {
+                this.els.mobileNav.classList.remove('open');
+            }
+        }
+        
+        // ── KaTeX auto-render helper ──────────────────────────────────────
+        // Renders any LaTeX found in an element after innerHTML is set.
+        // Handles: \(...\)  \[...\]  $...$  $$...$$
+        function renderMath(el) {
+            if (!el || typeof renderMathInElement === 'undefined') return;
+            try {
+                renderMathInElement(el, {
+                    delimiters: [
+                        {left: '$$',  right: '$$',  display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$',   right: '$',   display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                    ],
+                    throwOnError: false,
+                    strict: false,
+                });
+            } catch(e) {}
+        }
+
+        // Initialize the exam
+        document.addEventListener('DOMContentLoaded', () => {
+            new CBTExam();
+        });
+    </script>
+</body>
+</html>

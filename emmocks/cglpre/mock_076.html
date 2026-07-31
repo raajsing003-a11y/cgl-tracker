@@ -1,0 +1,2933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5; /* Improved indigo */
+            --secondary-color: #4338ca;
+            --success-color: #16a34a; /* Brighter green for better contrast */
+            --danger-color: #dc2626;
+            --warning-color: #0369a1;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #1e293b;
+            --bg-color: #ffffff;
+            --muted-text: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --button-hover-brightness: 0.9;
+            --transition-speed: 0.3s;
+            --chart-color-1: #4f46e5;
+            --chart-color-2: #f43f5e;
+            --chart-color-3: #8b5cf6;
+            --chart-color-4: #10b981;
+            --chart-color-5: #f59e0b;
+            --animation-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6366f1; /* Brighter indigo for dark mode */
+            --secondary-color: #818cf8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #0ea5e9;
+            --light-bg: #0f172a;
+            --border-color: #1e293b;
+            --text-color: #f1f5f9;
+            --bg-color: #1e293b;
+            --muted-text: #94a3b8;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+            --button-hover-brightness: 1.1;
+            --chart-color-1: #818cf8;
+            --chart-color-2: #fb7185;
+            --chart-color-3: #a78bfa;
+            --chart-color-4: #34d399;
+            --chart-color-5: #fbbf24;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: var(--font-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--light-bg);
+            line-height: 1.5;
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.5s ease;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+            z-index: -1;
+        }
+
+        [data-theme="dark"] body::before {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        
+        .container {
+            background-color: var(--bg-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .test-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .question-palette {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 16px;
+            position: sticky;
+            top: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.4s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        /* Add custom scrollbar styling */
+        .question-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .question-palette::-webkit-scrollbar-track {
+            background: var(--light-bg);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Add responsive styles for mobile */
+        @media screen and (max-width: 768px) {
+            .test-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .question-palette {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                z-index: 1000;
+                max-height: 50vh;
+                margin: 0;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .palette-grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+            }
+
+            .palette-item {
+                width: 100%;
+                height: 36px;
+            }
+        }
+
+        .palette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .palette-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-weight: 500;
+            min-width: unset;
+            box-shadow: none;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filter-btn.active:hover {
+            filter: brightness(var(--button-hover-brightness));
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .palette-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+            color: var(--text-color);
+            background: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-item:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .palette-item.not-visited {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .palette-item.answered {
+            background: #16a34a;
+            color: white;
+            border-color: #15803d;
+        }
+
+        .palette-item.marked-review {
+            background: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 700;
+        }
+
+        .palette-item.not-answered {
+            background: #dc2626;
+            color: white;
+            border-color: #b91c1c;
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --button-hover-brightness: 0.9;
+            --transition-speed: 0.3s;
+            --chart-color-1: #4f46e5;
+            --chart-color-2: #f43f5e;
+            --chart-color-3: #8b5cf6;
+            --chart-color-4: #10b981;
+            --chart-color-5: #f59e0b;
+            --animation-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6366f1; /* Brighter indigo for dark mode */
+            --secondary-color: #818cf8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #0ea5e9;
+            --light-bg: #0f172a;
+            --border-color: #1e293b;
+            --text-color: #f1f5f9;
+            --bg-color: #1e293b;
+            --muted-text: #94a3b8;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
+            --button-hover-brightness: 1.1;
+            --chart-color-1: #818cf8;
+            --chart-color-2: #fb7185;
+            --chart-color-3: #a78bfa;
+            --chart-color-4: #34d399;
+            --chart-color-5: #fbbf24;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: var(--font-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--light-bg);
+            line-height: 1.5;
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.5s ease;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+            z-index: -1;
+        }
+
+        [data-theme="dark"] body::before {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        
+        .container {
+            background-color: var(--bg-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s var(--animation-bounce), box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .test-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .question-palette {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 16px;
+            position: sticky;
+            top: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.4s var(--animation-bounce), box-shadow 0.3s ease;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--light-bg);
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .question-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .question-palette::-webkit-scrollbar-track {
+            background: var(--light-bg);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .question-palette::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        .question-palette:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .palette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .palette-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-weight: 500;
+            min-width: unset;
+            box-shadow: none;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filter-btn.active:hover {
+            filter: brightness(var(--button-hover-brightness));
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .palette-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+            color: var(--text-color);
+            background: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-item:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .palette-item.not-visited {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .palette-item.answered {
+            background: #16a34a;
+            color: white;
+            border-color: #15803d;
+        }
+
+        .palette-item.marked-review {
+            background: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 700;
+        }
+
+        .palette-item.not-answered {
+            background: #dc2626;
+            color: white;
+            border-color: #b91c1c;
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+            z-index: 1;
+        }
+
+        .palette-item.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid currentColor;
+            border-radius: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary-color), var(--chart-color-3));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .question-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.4s var(--animation-bounce);
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-container:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+        
+        .question-number {
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .question {
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: var(--text-color);
+            font-weight: 500;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .options {
+            flex-grow: 1;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .option {
+            display: block;
+            margin: 12px 0;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            font-size: 14px;
+            font-weight: 400;
+            user-select: none; /* Prevent text selection */
+        }
+        
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background-color: rgba(79, 70, 229, 0.05);
+            transition: width 0.3s ease;
+            z-index: 0;
+        }
+        
+        .option:hover::before {
+            width: 100%;
+        }
+        
+        .option:hover {
+            border-color: var(--primary-color);
+            transform: translateX(8px);
+        }
+        
+        .option:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        .option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .option.selected {
+            background-color: rgba(79, 70, 229, 0.15);
+            border-color: var(--primary-color);
+            transform: translateX(10px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .option.selected::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: var(--primary-color);
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .option-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            /* Added flex-wrap for better text handling */
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 20px;
+            background-color: var(--bg-color);
+            padding-bottom: 10px;
+            z-index: 5;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 22px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            min-width: 100px;
+            letter-spacing: 0.3px;
+            background-color: var(--primary-color);
+            outline: none;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+            z-index: 0;
+        }
+
+        button:hover::before {
+            width: 150%;
+            height: 150%;
+        }
+
+        button:active::before {
+            background: rgba(0, 0, 0, 0.1);
+            width: 150%;
+            height: 150%;
+        }
+        
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.25);
+            filter: brightness(var(--button-hover-brightness));
+        }
+        
+        button:active {
+            transform: translateY(-2px);
+            transition: all 0.1s;
+        }
+
+        button i {
+            font-size: 18px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 1;
+        }
+
+        button span {
+            position: relative;
+            z-index: 1;
+        }
+
+        button:hover i {
+            transform: scale(1.2);
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+
+        button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        button:disabled::before {
+            display: none;
+        }
+
+        #bookmark-btn {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        #bookmark-btn:hover {
+            border-color: #eab308;
+            color: #eab308;
+            background-color: rgba(234, 179, 8, 0.08);
+        }
+
+        #bookmark-btn.active {
+            background-color: #eab308;
+            color: #1e293b;
+            border-color: #ca8a04;
+            font-weight: 600;
+        }
+
+        #bookmark-btn.active:hover {
+            background-color: #ca8a04;
+            color: #1e293b;
+        }
+
+        #bookmark-btn i {
+            transition: transform 0.3s var(--animation-bounce);
+        }
+
+        #bookmark-btn:hover i {
+            transform: translateY(-2px);
+        }
+        
+        #submit-test {
+            background-color: var(--success-color);
+            font-weight: 600;
+            min-width: 140px;
+        }
+        
+        #submit-test:hover {
+            box-shadow: 0 6px 15px rgba(22, 163, 74, 0.25);
+        }
+        
+        #prev-btn, #next-btn {
+            background-color: var(--primary-color);
+            min-width: 130px;
+        }
+        
+        #timer {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(79, 70, 229, 0.08);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .timer-warning {
+            color: var(--danger-color);
+            animation: pulse 1.5s infinite;
+            background: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        #result {
+            display: none;
+            color: var(--text-color);
+        }
+        
+        #score {
+            font-size: 32px;
+            text-align: center;
+            margin: 35px 0;
+            padding: 30px;
+            background: linear-gradient(to right, rgba(79, 70, 229, 0.08), rgba(139, 92, 246, 0.08));
+            border-radius: 12px;
+            line-height: 1.6;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.8s var(--animation-bounce);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #score::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1), transparent 60%);
+            z-index: 0;
+        }
+
+        #score div {
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 35px 0;
+        }
+
+        .score-card {
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.4s var(--animation-bounce);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--chart-color-1), var(--chart-color-3));
+            transition: height 0.3s ease;
+        }
+
+        .score-card:hover::before {
+            height: 6px;
+        }
+
+        .score-card:nth-child(2)::before {
+            background: linear-gradient(to right, var(--chart-color-2), var(--chart-color-4));
+        }
+
+        .score-card:nth-child(3)::before {
+            background: linear-gradient(to right, var(--chart-color-3), var(--chart-color-5));
+        }
+
+        .score-card:nth-child(4)::before {
+            background: linear-gradient(to right, var(--chart-color-4), var(--chart-color-1));
+        }
+
+        .score-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .score-card h3 {
+            margin: 0 0 16px 0;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .score-card div {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--chart-color-1), var(--chart-color-3));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .score-card:hover div {
+            transform: scale(1.1);
+        }
+
+        .score-card:nth-child(2) div {
+            background: linear-gradient(45deg, var(--chart-color-2), var(--chart-color-4));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-card:nth-child(3) div {
+            background: linear-gradient(45deg, var(--chart-color-3), var(--chart-color-5));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-card:nth-child(4) div {
+            background: linear-gradient(45deg, var(--chart-color-4), var(--chart-color-1));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chart-container {
+            height: 350px;
+            margin: 25px 0;
+            background-color: var(--bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            animation: fadeScale 1s ease;
+            position: relative;
+        }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.03), transparent 70%);
+            z-index: 0;
+            border-radius: 12px;
+        }
+
+        .shortcut-hint {
+            font-size: 12px;
+            color: var(--muted-text);
+            font-weight: normal;
+        }
+
+        .keyboard-shortcuts {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .keyboard-shortcuts span {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--muted-text);
+            cursor: help;
+            font-weight: 500;
+        }
+
+        .keyboard-shortcuts span:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .option-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            margin-right: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover .option-number {
+            transform: scale(1.1);
+        }
+
+        .option.selected .option-number {
+            background: var(--success-color);
+            box-shadow: 0 0 10px rgba(22, 163, 74, 0.4);
+        }
+
+        .palette-toggle-btn {
+            background: linear-gradient(145deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+            padding: 0;
+            min-width: unset;
+        }
+
+        .palette-toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .palette-toggle-btn:hover::before {
+            opacity: 1;
+        }
+
+        .palette-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .palette-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .palette-toggle-btn.active {
+            transform: rotate(45deg);
+        }
+
+        .palette-toggle-btn i {
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .palette-toggle-btn:hover i {
+            transform: rotate(-15deg);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            .container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+
+            .test-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .question-palette {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: 0;
+                z-index: 1000;
+                border-radius: 0;
+                overflow-y: auto;
+                transform: translateX(100%);
+                transition: transform 0.3s var(--animation-bounce);
+                padding: 20px;
+            }
+
+            .question-palette.visible {
+                transform: translateX(0);
+            }
+
+            .palette-toggle-btn {
+                width: 48px;
+                height: 48px;
+                bottom: 16px;
+                right: 16px;
+                font-size: 18px;
+            }
+
+            .palette-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .palette-close-btn {
+                background: transparent;
+                border: none;
+                color: var(--text-color);
+                font-size: 20px;
+                cursor: pointer;
+                min-width: auto;
+                padding: 10px;
+                box-shadow: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            }
+
+            .palette-close-btn:hover {
+                color: var(--primary-color);
+                background: rgba(79, 70, 229, 0.1);
+            }
+
+            .score-details {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                width: 100%;
+                gap: 12px;
+            }
+
+            .navigation {
+                flex-direction: column;
+                gap: 15px;
+                position: sticky;
+                bottom: 10px;
+                padding-bottom: 5px;
+            }
+            
+            .question-container {
+                min-height: 400px;
+            }
+
+            .bookmark-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+                padding: 14px 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                padding-bottom: 12px;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .theme-toggle {
+                width: 40px;
+                height: 40px;
+                padding: 10px;
+            }
+
+            .keyboard-shortcuts {
+                display: none;
+            }
+
+            #timer {
+                padding: 8px 14px;
+                font-size: 13px;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .question {
+                font-size: 15px;
+            }
+
+            .option {
+                padding: 14px;
+                margin: 10px 0;
+                word-break: break-word; /* Added to prevent text overflow */
+            }
+
+            .option:hover {
+                transform: translateX(4px);
+            }
+
+            .option.selected {
+                transform: translateX(8px);
+            }
+
+            /* Fix for mobile devices where hover states persist */
+            @media (hover: none) {
+                button:hover, .option:hover, .score-card:hover, .answer-review:hover {
+                    transform: none;
+                }
+
+                button:active, .option:active {
+                    transform: scale(0.98);
+                }
+            }
+
+            /* Enhance readability on mobile */
+            #score {
+                font-size: 24px;
+                padding: 20px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            .custom-chart-legend {
+                flex-direction: column;
+                align-items: flex-start;
+                padding-left: 20px;
+            }
+
+            /* Prevent mobile zoom when tapping buttons/options */
+            button, .option, input, select {
+                font-size: 16px;
+            }
+
+            .palette-filters {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 10px;
+                justify-content: center;
+                -webkit-overflow-scrolling: touch;
+                gap: 8px;
+            }
+            
+            .filter-btn {
+                font-size: 11px;
+                padding: 5px 10px;
+                white-space: nowrap;
+                flex-shrink: 0; /* Prevent filters from shrinking */
+            }
+            
+            /* Fix download button on mobile */
+            .download-btn {
+                width: 100%;
+                min-width: 100%;
+                margin-top: 15px;
+                padding: 14px 10px;
+                white-space: normal; /* Allow text to wrap */
+            }
+            
+            /* Option text can wrap now */
+            .option-content {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            
+            /* Ensure option number doesn't shrink */
+            .option-number {
+                flex-shrink: 0;
+                margin-bottom: 5px;
+            }
+        }
+
+        .answer-review {
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            background: var(--bg-color);
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        .answer-review:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .explanation strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .explanation p {
+            margin: 8px 0;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .explanation {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .correct {
+            color: var(--success-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background-color: rgba(22, 163, 74, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .correct:hover {
+            background-color: rgba(22, 163, 74, 0.15);
+        }
+
+        .incorrect {
+            color: var(--danger-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background-color: rgba(220, 38, 38, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .incorrect:hover {
+            background-color: rgba(220, 38, 38, 0.15);
+        }
+
+        .marks-info {
+                font-size: 12px;
+            color: var(--muted-text);
+            font-style: normal;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background-color: rgba(100, 116, 139, 0.08);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .marks-info:hover {
+            background-color: rgba(100, 116, 139, 0.12);
+        }
+
+        .question-number {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            min-width: unset;
+            width: 38px;
+            height: 38px;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.08);
+            transform: rotate(180deg);
+        }
+
+        .review-warning {
+            background-color: rgba(220, 38, 38, 0.08);
+            border: 1px solid var(--danger-color);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-color);
+            box-shadow: var(--shadow-md);
+            animation: slideDown 0.5s var(--animation-bounce);
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .review-warning i {
+            color: var(--danger-color);
+            font-size: 28px;
+            animation: shake 1s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        #review-list {
+            margin-top: 25px;
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .review-item:hover {
+            background: rgba(79, 70, 229, 0.05);
+            transform: translateX(5px);
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .analytics-container {
+            margin-top: 35px;
+            padding: 25px;
+            border-radius: 12px;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s var(--animation-bounce);
+        }
+
+        .analytics-container:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-5px);
+        }
+
+        .analytics-container h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analytics-container h3 i {
+            font-size: 20px;
+            color: var(--chart-color-1);
+        }
+
+        .palette-item.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.3);
+            z-index: 1;
+        }
+
+        .keyboard-pressed {
+            transform: scale(0.95) translateY(0) !important;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+            opacity: 0.9;
+            transition: all 0.1s ease !important;
+        }
+        
+        .keyboard-selected {
+            background-color: rgba(79, 70, 229, 0.15);
+            transform: translateX(5px);
+            transition: all 0.1s ease;
+        }
+        
+        @keyframes buttonPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        .review-warning {
+            animation: none;
+            transition: all 0.3s var(--animation-bounce);
+        }
+        
+        .fade-out {
+            opacity: 0 !important;
+            transform: translateY(-10px) !important;
+        }
+        
+        .review-warning button {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        @media (max-width: 768px) {
+            .review-warning {
+                flex-direction: column;
+                padding: 20px;
+            }
+            
+            .review-warning i {
+                margin-bottom: 10px;
+                align-self: center;
+            }
+        }
+
+        .custom-chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+            padding: 0 16px;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .legend-text {
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .score-card {
+                padding: 20px;
+                min-height: 100px;
+            }
+
+            .score-card h3 {
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+
+            .score-card div {
+                font-size: 24px;
+            }
+
+            .custom-chart-legend {
+                gap: 12px;
+                margin-top: 20px;
+                padding: 0 12px;
+            }
+
+            .chart-legend-item {
+                font-size: 12px;
+            }
+
+            .legend-color {
+                width: 10px;
+                height: 10px;
+                margin-right: 6px;
+            }
+        }
+
+        /* Add new styles for creator info */
+        .creator-info {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            gap: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .creator-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .creator-logo:hover {
+            transform: scale(1.1);
+        }
+
+        .creator-tg {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .creator-tg:hover {
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .creator-tg i {
+            color: #229ED9;
+            font-size: 20px;
+        }
+
+        [data-theme="dark"] .creator-info {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
+        }
+
+        .download-btn {
+            background: linear-gradient(145deg, var(--chart-color-1), var(--chart-color-3));
+            margin-top: 20px;
+            width: auto;
+            padding: 12px 24px;
+            transition: all 0.3s var(--animation-bounce);
+            box-shadow: var(--shadow-md);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            min-width: 200px;
+            color: white;
+            /* Ensure text doesn't overflow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .download-btn i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="creator-info">
+        <a href="https://t.me/finallygotnirvana" target="_blank" class="creator-tg">
+            <i class="fab fa-telegram"></i>
+            Created by @finallygotnirvana
+        </a>
+        <img src="https://i.ibb.co/0ysnvFZS/0x1900-000000-80-0-0.jpg" alt="Creator Logo" class="creator-logo">
+    </div>
+
+    <div class="test-layout">
+        <div id="test-container" class="container">
+            <div class="header">
+                <h1 id="test-title">Mock Test</h1>
+                <div class="header-controls">
+                    <div id="timer"><i class="fas fa-clock"></i> Time Remaining: 00:00</div>
+                    <button class="theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="current-question"></div>
+            
+            <div class="navigation">
+                <div class="nav-buttons">
+                    <button id="prev-btn" disabled><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button id="next-btn">Next <i class="fas fa-arrow-right"></i></button>
+                    <button id="submit-test" style="display: none;"><i class="fas fa-check"></i> Submit Test</button>
+                </div>
+                <button id="bookmark-btn">
+                    <i class="far fa-flag"></i> Mark for Review <span class="shortcut-hint">(B)</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="question-palette container">
+            <div class="palette-header">
+                <h3>Question Palette</h3>
+            </div>
+            <div class="palette-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="answered">Answered</button>
+                <button class="filter-btn" data-filter="not-answered">Not Answered</button>
+                <button class="filter-btn" data-filter="marked-review">Marked for Review</button>
+            </div>
+            <div class="palette-grid" id="question-palette"></div>
+        </div>
+    </div>
+
+    <button class="palette-toggle-btn" id="palette-toggle">
+        <i class="fas fa-th"></i>
+    </button>
+
+            <div id="result" class="container">
+            <div id="score"></div>
+            <div class="score-details">
+                <div class="score-card">
+                    <h3>Total Questions</h3>
+                    <div id="total-questions">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Attempted</h3>
+                    <div id="attempted-questions">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Correct</h3>
+                    <div id="correct-answers">0</div>
+                </div>
+                <div class="score-card">
+                    <h3>Accuracy</h3>
+                    <div id="accuracy">0%</div>
+                </div>
+            </div>
+            <div class="analytics-container">
+                <h3>Performance Analysis</h3>
+                <div class="chart-container" id="performance-chart"></div>
+                <button id="download-analysis" class="download-btn"><i class="fas fa-download"></i> Download Analysis</button>
+            </div>
+            <div id="answers"></div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <button id="bottom-download-analysis" class="download-btn"><i class="fas fa-download"></i> Download Analysis</button>
+            </div>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Test data
+        const testData = {"test_info": {"title": "Paid SSC CGL PRE 2025 MOCK 27 (NEW)", "duration": "10", "total_questions": 25, "max_marks": 50, "marks_per_question": 2.0, "negative_marks": 0.5}, "questions": [{"question_number": 1, "question_text": "<strong>Select the best express Antonym of the given italicize word.</strong> <br /> Her eyes were filled with <strong><em>compassion</em></strong> as she offered food to the hungry child on the street.", "options": ["1) Apathy\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_0\" type=\"radio\" value=\"634757_153366\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Empathy\n                                                    <input class=\"question_options1\" name=\"selected_option_0\" type=\"radio\" value=\"634758_153366\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Mercy\n                                                    <input class=\"question_options2\" name=\"selected_option_0\" type=\"radio\" value=\"634759_153366\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Kindness\n                                                    <input class=\"question_options3\" name=\"selected_option_0\" type=\"radio\" value=\"634760_153366\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Apathy\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_0\" type=\"radio\" value=\"634757_153366\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Compassion(noun) – Empathy, kindness, mercy, sympathy, benevolenceकरुणा <br /> Antonym:Apathy(noun) – Lack of interest, enthusiasm, or concern; indifference, detachment, coldnessउदासीनता <br /> •Empathy– Ability to understand and share feelings.सहानुभूति <br /> •Mercy– Leniency, compassion shown to offenders.दया <br /> •Kindness– Being nice or considerate.दयालुता", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 2, "question_text": "<strong>Select the word which means the same as the group of words underlined in the given sentence</strong> <br /> The ancient city faced <ins><strong>complete obliteration</strong></ins> after the devastating earthquake, leaving no trace of its former grandeur.", "options": ["1) Elimination\n                                                    <input class=\"question_options0\" name=\"selected_option_1\" type=\"radio\" value=\"634769_153369\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Abolition\n                                                    <input class=\"question_options1\" name=\"selected_option_1\" type=\"radio\" value=\"634770_153369\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Annihilation\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_1\" type=\"radio\" value=\"634771_153369\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Purge\n                                                    <input class=\"question_options3\" name=\"selected_option_1\" type=\"radio\" value=\"634772_153369\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) Annihilation\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_1\" type=\"radio\" value=\"634771_153369\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C)Annihilation(noun) – Complete destruction or obliteration, especially when nothing is left behind. संहार <br /> Elimination(noun) – The act of removing or getting rid of something, often gradually or selectively. समाप्ति <br /> Abolition(noun) – The act of formally putting an end to a system, practice, or institution. उन्मूलन <br /> Purge(noun) – The removal or cleansing of undesirable elements, often from a place or organization. शुद्धिकरण", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 3, "question_text": "<strong>Select the grammatically correct sentence from the options given</strong>", "options": ["1) Neither a boy nor a mother could identify the man.\n                                                    <input class=\"question_options0\" name=\"selected_option_2\" type=\"radio\" value=\"634825_153383\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Neither the boy nor a mother could identify a man.\n                                                    <input class=\"question_options1\" name=\"selected_option_2\" type=\"radio\" value=\"634826_153383\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Neither the boy nor the mother could identify the man.\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_2\" type=\"radio\" value=\"634827_153383\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Neither a boy nor the mother could identify a man.\n                                                    <input class=\"question_options3\" name=\"selected_option_2\" type=\"radio\" value=\"634828_153383\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) Neither the boy nor the mother could identify the man.\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_2\" type=\"radio\" value=\"634827_153383\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) 'Neither the boy nor the mother could identify the man. <br /> 'Neither the boy nor the mother could identify the man.' सही है क्योंकि 'Neither ... nor' का प्रयोग करते समय parallel nouns का प्रयोग आवश्यक होता है, और यहाँ 'the boy' तथा 'the mother' स्पष्ट रूप से विशिष्ट व्यक्तियों को संदर्भित करते हैं। <br /> जैसे— Neither the boy nor the mother could identify the man. <br /> • 'Neither the boy nor the mother could identify the man.' is correct because 'Neither … nor' requires parallel nouns, and 'the boy' and 'the mother' properly refer to specific people; Like— Neither the boy nor the mother could identify the man.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 4, "question_text": "<strong>Select the best express Antonym of the given italicize word.</strong> <br /> He was always <strong><em>mindful</em></strong> of his words when speaking to elders, never offending anyone.", "options": ["1) Oblivious\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_3\" type=\"radio\" value=\"634761_153367\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Attentive\n                                                    <input class=\"question_options1\" name=\"selected_option_3\" type=\"radio\" value=\"634762_153367\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Careful\n                                                    <input class=\"question_options2\" name=\"selected_option_3\" type=\"radio\" value=\"634763_153367\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Conscious\n                                                    <input class=\"question_options3\" name=\"selected_option_3\" type=\"radio\" value=\"634764_153367\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Oblivious\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_3\" type=\"radio\" value=\"634761_153367\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Mindful(adjective) – Aware, conscious, attentive, careful, thoughtfulजागरूक / सजग <br /> Antonym:Oblivious(adjective) – Unaware, ignorant, inattentive, heedlessबेपरवाह / अनजान <br /> •Attentive– Paying attention.ध्यान देने वाला <br /> •Careful– Cautious to avoid harm.सावधान <br /> •Conscious– Aware and responsive.सचेत", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 5, "question_text": "<strong>Sentences of a paragraph are given below in jumbled order. Arrange the sentences in the right order to form a meaningful and coherent paragraph.</strong> <br /> <strong>A</strong>. He was caught by the police on the spot. <br /> <strong>B</strong>. Anil bought a car last week. <br /> <strong>C.</strong> Unfortunately, the car met with an accident today. <br /> <strong>D.</strong> The accident took place due to the carelessness of his driver.", "options": ["1) BACD\n                                                    <input class=\"question_options0\" name=\"selected_option_4\" type=\"radio\" value=\"634873_153391\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) BCDA\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_4\" type=\"radio\" value=\"634874_153391\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) ABDC\n                                                    <input class=\"question_options2\" name=\"selected_option_4\" type=\"radio\" value=\"634875_153391\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) CDBA\n                                                    <input class=\"question_options3\" name=\"selected_option_4\" type=\"radio\" value=\"634876_153391\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) BCDA\n                                                    <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_4\" type=\"radio\" value=\"634874_153391\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) BCDA <br /> Bstarts the paragraph by introducing the subject\"Anil\"and the action\"bought a car,\"setting the context for the events that follow. <br /> CfollowsBlogically, as it introduces a contrasting event (\"Unfortunately, the car met with an accident today\") that relates directly to the car mentioned inB. <br /> Dcomes afterCbecause it explains thereasonfor the accident (\"due to the carelessness of his driver\"), providing a cause-effect relationship. <br /> Aconcludes the paragraph by stating the consequence (\"He was caught by the police on the spot\"), which is a direct result of the accident described earlier. <br /> In Hindi: <br /> Bparagraph की शुरुआत करता है, क्योंकि यह subject\"Anil\"और उसके action\"bought a car\"को introduce करता है, जिससे आगे की घटनाओं का संदर्भ बनता है। <br /> C,Bके बाद आता है क्योंकि यह एक विपरीत घटना (\"car met with an accident\") को बताता है, जोBमें खरीदी गई कार से जुड़ी है। <br /> D,Cके बाद आता है क्योंकि यह accident काकारण(\"due to the carelessness of his driver\") बताता है, जिससे cause-effect relationship स्पष्ट होती है। <br /> Aparagraph को conclude करता है, क्योंकि यह accident कापरिणाम(\"caught by the police\") बताता है, जो पहले की घटनाओं का logical अंत है।", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 6, "question_text": "<strong>Select the option that gives the most appropriate meaning of the underlined word.</strong> <br /> The women of this country never questioned anything. Why are they so <ins><strong>credulous</strong></ins>?", "options": ["1) Willing to believe promptly without adequate evidence\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_5\" type=\"radio\" value=\"634805_153378\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Suspicious of everything surrounding them\n                                                    <input class=\"question_options1\" name=\"selected_option_5\" type=\"radio\" value=\"634806_153378\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Indifferent to the basic necessities of life\n                                                    <input class=\"question_options2\" name=\"selected_option_5\" type=\"radio\" value=\"634807_153378\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Reluctant to face the difficulties of life with courage\n                                                    <input class=\"question_options3\" name=\"selected_option_5\" type=\"radio\" value=\"634808_153378\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Willing to believe promptly without adequate evidence\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_5\" type=\"radio\" value=\"634805_153378\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Credulous(adjective): Having a tendency to believe things too easily without sufficient evidence; gullible; विश्वासशील <br /> Suspicious(adjective): Doubtful, distrustful; संदेही <br /> Indifferent(adjective): Unconcerned, apathetic; उदासीन <br /> Reluctant(adjective): Unwilling, hesitant; अनिच्छुक", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 7, "question_text": "<strong>Select the most appropriate idiom to fill in the blank.</strong> <br /> All my efforts went in vain. The project on which I was working for the last two months has failed and we are _________________.", "options": ["1) back to square one\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_6\" type=\"radio\" value=\"634709_153354\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) all in the seventh heaven\n                                                    <input class=\"question_options1\" name=\"selected_option_6\" type=\"radio\" value=\"634710_153354\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) around the bend\n                                                    <input class=\"question_options2\" name=\"selected_option_6\" type=\"radio\" value=\"634711_153354\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) on the fly\n                                                    <input class=\"question_options3\" name=\"selected_option_6\" type=\"radio\" value=\"634712_153354\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) back to square one\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_6\" type=\"radio\" value=\"634709_153354\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Back to square one(idiom) - Starting over because a previous effort has failed or not produced results.पुनः प्रारंभ से", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 8, "question_text": "<strong>In the given sentence, one of the four underlined words is incorrectly spelt. Identify the INCORRECTLY spelt word.</strong> <br /> She <ins><strong>dabbled</strong> </ins>in <ins><strong>drawing</strong> </ins>and painting, but <ins><strong>scalpture</strong> </ins>was her <ins><strong>favourite</strong> </ins>medium.", "options": ["1) drawing\n                                                    <input class=\"question_options0\" name=\"selected_option_7\" type=\"radio\" value=\"634785_153373\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) favourite\n                                                    <input class=\"question_options1\" name=\"selected_option_7\" type=\"radio\" value=\"634786_153373\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) dabbled\n                                                    <input class=\"question_options2\" name=\"selected_option_7\" type=\"radio\" value=\"634787_153373\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) sculpture\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_7\" type=\"radio\" value=\"634788_153373\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) sculpture\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_7\" type=\"radio\" value=\"634788_153373\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) The correct spelling of the incorrectly spelt word'scalpture'is'sculpture', which means \"the art of making two- or three-dimensional representative or abstract forms, especially by carving stone or wood or by casting metal or plaster\" (मूर्ति बनाना, शिल्पकला).", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 9, "question_text": "<strong>Select the option that will improve the underlined part of the given sentence.</strong> <br /> He <ins><strong>behaves if</strong></ins> he were a king", "options": ["1) could be behaving as\n                                                    <input class=\"question_options0\" name=\"selected_option_8\" type=\"radio\" value=\"634809_153379\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) has been behaving as\n                                                    <input class=\"question_options1\" name=\"selected_option_8\" type=\"radio\" value=\"634810_153379\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) behaves as if\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_8\" type=\"radio\" value=\"634811_153379\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) will be behaving as\n                                                    <input class=\"question_options3\" name=\"selected_option_8\" type=\"radio\" value=\"634812_153379\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) behaves as if\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_8\" type=\"radio\" value=\"634811_153379\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) 'behaves as if' का प्रयोग 'behaves if' के स्थान पर होगा क्योंकि 'as if' का प्रयोग तब किया जाता है जब कोई स्थिति वास्तविक न हो और काल्पनिक परिस्थिति को व्यक्त करना हो; जैसे— He behaves as if he knew everything. <br /> 'behaves as if' will be used instead of 'behaves if' because 'as if' is used when the situation is imaginary or hypothetical; Like— He behaves as if he knew everything.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 10, "question_text": "<strong>Select the most appropriate idiom to fill in the blank.</strong> <br /> Choosing not to pursue a degree in computer engineering was ________, as the market for them is extremely limited nowadays", "options": ["1) airy fairy\n                                                    <input class=\"question_options0\" name=\"selected_option_9\" type=\"radio\" value=\"634705_153353\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) an elevator pitch\n                                                    <input class=\"question_options1\" name=\"selected_option_9\" type=\"radio\" value=\"634706_153353\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) a cut above\n                                                    <input class=\"question_options2\" name=\"selected_option_9\" type=\"radio\" value=\"634707_153353\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) a blessing in disguise\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_9\" type=\"radio\" value=\"634708_153353\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) a blessing in disguise\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_9\" type=\"radio\" value=\"634708_153353\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D)a blessing in disguise(idiom) – something that at first seems bad or unfortunate but results in something good happening later.अशुभ के रूप में शुभ", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 11, "question_text": "<strong>Identify the word with a spelling error in the following sentence. Select the option that correctly rectifies the error.</strong> <br /> In Shakespeare’s play ‘Hamlet’, Hamlet’s flaw is defined as procrustineition", "options": ["1) pracrostination\n                                                    <input class=\"question_options0\" name=\"selected_option_10\" type=\"radio\" value=\"634781_153372\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) procristineition\n                                                    <input class=\"question_options1\" name=\"selected_option_10\" type=\"radio\" value=\"634782_153372\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) procrustination\n                                                    <input class=\"question_options2\" name=\"selected_option_10\" type=\"radio\" value=\"634783_153372\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) procrastination\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_10\" type=\"radio\" value=\"634784_153372\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) procrastination\n                                                    <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_10\" type=\"radio\" value=\"634784_153372\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) The correct spelling is ‘Procrastination’which means \"the action of delaying or postponing something\" (किसी कार्य को टालने की क्रिया).", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 12, "question_text": "<strong>Select the word which means the same as the group of words underlined in the given sentence</strong> <br /> His decision to hike up the treacherous mountain at night, without proper gear, was <ins><strong>contrary to reason or common sense</strong>.</ins>", "options": ["1) Preposterous\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_11\" type=\"radio\" value=\"634765_153368\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Sane\n                                                    <input class=\"question_options1\" name=\"selected_option_11\" type=\"radio\" value=\"634766_153368\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Shrewd\n                                                    <input class=\"question_options2\" name=\"selected_option_11\" type=\"radio\" value=\"634767_153368\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Sagacious\n                                                    <input class=\"question_options3\" name=\"selected_option_11\" type=\"radio\" value=\"634768_153368\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Preposterous\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_11\" type=\"radio\" value=\"634765_153368\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A)Preposterous(adjective) – Contrary to reason or common sense; utterly absurd or ridiculous. बेतुका <br /> Sane(adjective) – Having a sound mind; reasonable and sensible. समझदार <br /> Shrewd(adjective) – Having sharp judgment, especially in practical matters. चतुर <br /> Sagacious(adjective) – Showing keen mental discernment and good judgment; wise. विवेकशील", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 13, "question_text": "<strong>Select the most appropriate option to fill in the blank.</strong> <br /> Some people are in the habit of sharing________ and bull story on unsuitable occasions.", "options": ["1) rooster\n                                                    <input class=\"question_options0\" name=\"selected_option_12\" type=\"radio\" value=\"634701_153352\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) wolf\n                                                    <input class=\"question_options1\" name=\"selected_option_12\" type=\"radio\" value=\"634702_153352\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) cock\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_12\" type=\"radio\" value=\"634703_153352\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) fox\n                                                    <input class=\"question_options3\" name=\"selected_option_12\" type=\"radio\" value=\"634704_153352\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) cock\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_12\" type=\"radio\" value=\"634703_153352\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) Cock and bull story(phrase) – An unbelievable tale that is intended to deceive; a tall tale. झूठी कहानी, झूठ", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 14, "question_text": "<strong>Select the best express synonym of the given underlined word.</strong> <br /> The organization decided to <ins><strong>employ</strong> </ins>new strategies to increase its market share.", "options": ["1) Permanent\n                                                    <input class=\"question_options0\" name=\"selected_option_13\" type=\"radio\" value=\"634741_153362\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Enduring\n                                                    <input class=\"question_options1\" name=\"selected_option_13\" type=\"radio\" value=\"634742_153362\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Utilize\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_13\" type=\"radio\" value=\"634743_153362\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Eternal\n                                                    <input class=\"question_options3\" name=\"selected_option_13\" type=\"radio\" value=\"634744_153362\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) Utilize\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_13\" type=\"radio\" value=\"634743_153362\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) Employ(verb) – Use, Utilize, Apply, Engage, Deploy उपयोगकरना <br /> Synonym:Utilize(verb) – to make use of, to employ something effectively. उपयोग में लाना <br /> Permanent(adjective) – Lasting, enduring, forever. स्थायी <br /> Enduring(adjective) – Lasting, durable, permanent. टिकाऊ <br /> Eternal(adjective) – Everlasting, immortal, perpetual. अनंत", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 15, "question_text": "<strong>The following sentence has been divided into parts. One of them may contain an error. Select the part that contains the error from the given options. If you don’t find any error, mark ‘No error’ as your answer.</strong> <br /> Chetan's room is clean / than Ram's room because / Chetan cleans it more often than Ram.", "options": ["1) Chetan's room is clean\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_14\" type=\"radio\" value=\"634829_153384\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Than Ram's room because\n                                                    <input class=\"question_options1\" name=\"selected_option_14\" type=\"radio\" value=\"634830_153384\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) No error\n                                                    <input class=\"question_options2\" name=\"selected_option_14\" type=\"radio\" value=\"634831_153384\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Chetan cleans it more often than Ram\n                                                    <input class=\"question_options3\" name=\"selected_option_14\" type=\"radio\" value=\"634832_153384\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Chetan's room is clean\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_14\" type=\"radio\" value=\"634829_153384\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) ‘clean’ के स्थान पर ‘cleaner’का use किया जाएगा क्योंकि यहाँ दो चीजों (Chetan का कमरा और Ram का कमरा) की तुलना की जा रही है। तुलना करने के लिए adjective का comparative form (cleaner) प्रयोग किया जाता है; जैसे—Chetan's room is cleaner than Ram's room. <br /> ‘clean’ will be replaced by ‘cleaner’because a comparison is being made between two items (Chetan's room and Ram's room). For comparison, the comparative form of the adjective (cleaner) is used; e.g.—Chetan's room is cleaner than Ram's room.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 16, "question_text": "<strong>Select the best express synonym of the given underlined word.</strong> <br /> Regular exercise can significantly <ins><strong>stimulate</strong> </ins>your brain activity, improving both memory and concentration.", "options": ["1) Encourage\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_15\" type=\"radio\" value=\"634745_153363\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Fleeting\n                                                    <input class=\"question_options1\" name=\"selected_option_15\" type=\"radio\" value=\"634746_153363\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Throttle\n                                                    <input class=\"question_options2\" name=\"selected_option_15\" type=\"radio\" value=\"634747_153363\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) Brief\n                                                    <input class=\"question_options3\" name=\"selected_option_15\" type=\"radio\" value=\"634748_153363\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Encourage\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_15\" type=\"radio\" value=\"634745_153363\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) Stimulate(verb) – Encourage, Boost, Spur, Promote, Activate प्रोत्साहितकरना <br /> Synonym:Encourage(verb) – to give support, confidence, or hope to someone. उत्साहित करना <br /> Fleeting(adjective) – Short-lived, temporary, brief, momentary, passing क्षणिक <br /> Throttle(verb) – Suppress, choke, strangle, restrain, hinder दबाना <br /> Brief(adjective) – Short, concise, fleeting, transient. संक्षिप्त", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 17, "question_text": "<strong>Select the most appropriate adverb to fill in the blank.</strong> <br /> Ramees works ____________ to get through the entrance exam.", "options": ["1) different\n                                                    <input class=\"question_options0\" name=\"selected_option_16\" type=\"radio\" value=\"634713_153355\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) early\n                                                    <input class=\"question_options1\" name=\"selected_option_16\" type=\"radio\" value=\"634714_153355\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) hard\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_16\" type=\"radio\" value=\"634715_153355\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) important\n                                                    <input class=\"question_options3\" name=\"selected_option_16\" type=\"radio\" value=\"634716_153355\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) hard\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_16\" type=\"radio\" value=\"634715_153355\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C)'Hard'का use होगा क्योंकि \"hard\" का अर्थ होता है मेहनत से या प्रयास से। sentence में mention किया गया है कि Ramees entrance exam के लिए मेहनत करता है, इसलिए 'hard' यहाँ सही है। जबकि 'Different' का अर्थ है अलग, 'Early' का अर्थ है जल्दी और 'Important' का अर्थ है महत्वपूर्ण, जो इस context में सही नहीं है।", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 18, "question_text": "<strong>The following sentence has been divided into parts. One of them may contain an error. Select the part that contains the error from the given options. If you don’t find any error, mark ‘No error’ as your answer.</strong> <br /> Her decision, / given the complex circumstances, / was too impulsively made", "options": ["1) was too impulsively made.\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_17\" type=\"radio\" value=\"634833_153385\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) no error\n                                                    <input class=\"question_options1\" name=\"selected_option_17\" type=\"radio\" value=\"634834_153385\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) her decision,\n                                                    <input class=\"question_options2\" name=\"selected_option_17\" type=\"radio\" value=\"634835_153385\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) given the complex circumstances,\n                                                    <input class=\"question_options3\" name=\"selected_option_17\" type=\"radio\" value=\"634836_153385\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) was too impulsively made.\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_17\" type=\"radio\" value=\"634833_153385\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) 'was too impulsively made' के बदले 'was made too impulsively' का प्रयोग होगा क्योंकि adverb 'too impulsively' को verb 'made' के बाद रखा जाना चाहिए ताकि correct word order बना रहे; जैसे— Her decision, given the complex circumstances, was made too impulsively. <br /> 'was made too impulsively' will be used instead of 'was too impulsively made' because the adverb 'too impulsively' should follow the verb 'made' for correct word order; Like— Her decision, given the complex circumstances, was made too impulsively.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 19, "question_text": "<strong>Sentences of a paragraph are given below in jumbled order. Arrange the sentences in the right order to form a meaningful and coherent paragraph.</strong> <br /> <strong>A.</strong> In some cases, the problem of the lowering of the river bottom has caused the water table of the surrounding area to drop, which has adversely affected agriculture. <br /> <strong>B.</strong> Also, another problem, canalization with its extensive system of locks and navigation dams, often seriously disrupts riverine ecosystems. <br /> <strong>C.</strong> The ever-increasing exploitation of rivers has given rise to a variety of problems. <br /> <strong>D.</strong> Further, extensive commercial navigation of rivers has resulted in much artificial improvement of natural channels, including increasing the depth of the channels to permit passage of larger vessels", "options": ["1) CABD\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_18\" type=\"radio\" value=\"634869_153390\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) CDAB\n                                                    <input class=\"question_options1\" name=\"selected_option_18\" type=\"radio\" value=\"634870_153390\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) BDAC\n                                                    <input class=\"question_options2\" name=\"selected_option_18\" type=\"radio\" value=\"634871_153390\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) DCAB\n                                                    <input class=\"question_options3\" name=\"selected_option_18\" type=\"radio\" value=\"634872_153390\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) CABD\n                                                    <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_18\" type=\"radio\" value=\"634869_153390\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) CABD <br /> C begins the paragraph by introducing the subject (exploitation of rivers) and the central claim (various problems). <br /> A follows C because it provides the first specific problem (lowering of the river bottom) and its effect (drop in water table), linked by the phrase \"In some cases.\" <br /> D comes next with another problem (commercial navigation) and its result (artificial channel improvements), connected by \"Further.\" <br /> B concludes by adding one more problem (canalization disrupting ecosystems), introduced by \"Also.\" <br /> Hindi Explanation: <br /> C paragraph की शुरुआत करता है क्योंकि यह subject (नदियों का बढ़ता दोहन) और central idea (विभिन्न समस्याएं) को introduce करता है। <br /> A, C के बाद आता है क्योंकि यह पहली समस्या (नदी तल का नीचे आना) और उसका प्रभाव (जल स्तर का गिरना) बताता है। <br /> D, A के बाद आता है क्योंकि यह दूसरी समस्या (व्यावसायिक नौवहन) और उसके परिणाम (नदी चैनलों में कृत्रिम बदलाव) को जोड़ता है। <br /> B paragraph को समाप्त करता है क्योंकि यह एक और समस्या (नहरों का पारिस्थितिकी को नुकसान) को जोड़ता है।", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 20, "question_text": "<strong>Sentences of a paragraph are given below in jumbled order. Arrange the sentences in the right order to form a meaningful and coherent paragraph.</strong> <br /> <strong>A.</strong> But in snapping at the supposed treasure, he dropped the bit he was carrying, and so lost all. Sentences <br /> <strong>B.</strong> When he was crossing a river on his way home, he saw his own shadow reflected in the stream below. <br /> <strong>C.</strong> Thinking that it was another dog with another piece of meat, he resolved to make himself master of that also. <br /> <strong>D.</strong> A dog had stolen a piece of meat out of a butcher's shop", "options": ["1) BDCA\n                                                    <input class=\"question_options0\" name=\"selected_option_19\" type=\"radio\" value=\"634877_153392\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) DACB\n                                                    <input class=\"question_options1\" name=\"selected_option_19\" type=\"radio\" value=\"634878_153392\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) DBCA\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_19\" type=\"radio\" value=\"634879_153392\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) ACDB\n                                                    <input class=\"question_options3\" name=\"selected_option_19\" type=\"radio\" value=\"634880_153392\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) DBCA\n                                                    <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_19\" type=\"radio\" value=\"634879_153392\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C)DBCA <br /> D starts the paragraph by introducing the subject, \"A dog,\" and the action it performed—\"had stolen a piece of meat.\" This sets the context for the story. <br /> B follows D because it continues the narrative by describing the next action—\"When he was crossing a river...\" The pronoun \"he\" refers back to the dog introduced in D, maintaining subject continuity. <br /> C comes after B as it explains the dog’s reaction upon seeing his shadow—\"Thinking that it was another dog...\" The phrase \"Thinking that\" logically connects to the shadow observed in B, showing cause and effect. <br /> A concludes the paragraph by revealing the consequence of the dog’s action—\"But in snapping at the supposed treasure, he dropped the bit he was carrying...\" The word \"But\" contrasts the dog’s greed with the outcome, completing the moral of the story.Explanation in Hindi: <br /> D paragraph की शुरुआत करता है, क्योंकि यह subject \"A dog\" को introduce करता है और उसके द्वारा किए गए action (\"had stolen a piece of meat\") को बताता है। यह कहानी का context set करता है। <br /> B, D के बाद आता है क्योंकि यह narrative को आगे बढ़ाता है—\"When he was crossing a river...\" Pronoun \"he\", D में introduce किए गए dog को refer करता है, जिससे subject का flow बना रहता है। <br /> C, B के बाद आता है क्योंकि यह dog की reaction को explain करता है—\"Thinking that it was another dog...\" Phrase \"Thinking that\", B में देखे गए shadow से जुड़ता है, जो cause-effect relationship दिखाता है। <br /> A paragraph को conclude करता है, क्योंकि यह dog के action का result बताता है—\"But in snapping at the supposed treasure, he dropped the bit he was carrying...\" शब्द \"But\" dog के greed और उसके नतीजे के बीच contrast दिखाता है, जिससे moral पूरा होता है।", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 21, "question_text": "<strong>Comprehension:</strong> <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank</strong>. <br /> There is always something so fascinating about trains and journeys. There (1) ______ certain symbols and signages inside and outside of the train. The (2) ______ of most of them might not be known to everyone. (3) ______ you are a frequent traveller or not, you may have (4) ______ the letter X or a cross mark on the back of the last (5) ______ of the train. <br /> <strong>Q21. Select the most appropriate option to fill in blank number 1.</strong>", "options": ["1) were\n                                                                <input class=\"question_options0\" name=\"selected_option_20\" type=\"radio\" value=\"634881_153393\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) are\n                                                                <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_20\" type=\"radio\" value=\"634882_153393\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) had been\n                                                                <input class=\"question_options2\" name=\"selected_option_20\" type=\"radio\" value=\"634883_153393\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) will be\n                                                                <input class=\"question_options3\" name=\"selected_option_20\" type=\"radio\" value=\"634884_153393\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) are\n                                                                <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_20\" type=\"radio\" value=\"634882_153393\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) Are'का use होगा क्योंकि यह sentence वर्तमान समय के context में बता रहा है कि ट्रेनों में कुछ निशान होते हैं। Sentence में mention किया गया है कि ट्रेनों में और ट्रेनों के बाहर कुछ सिंबल और संकेत हैं, इसलिए 'are' यहाँ सही है। जबकि 'were' भूतकाल में use होता है, 'had been' भूतकाल की समाप्त स्थितियों के लिए और 'will be' भविष्य के लिए use होता है, जो इस context में सही नहीं है। <br /> Are'should be used because the sentence is talking about a current, ongoing scenario, that there are certain symbols in and on trains. The sentence mentions that there are certain symbols and signages inside and outside of the train, making 'are' fitting here. Whereas, 'were' is used in past tense, 'had been' indicates a past completion and 'will be' is used for the future, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 22, "question_text": "<strong>Comprehension:</strong> <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank</strong>. <br /> There is always something so fascinating about trains and journeys. There (1) ______ certain symbols and signages inside and outside of the train. The (2) ______ of most of them might not be known to everyone. (3) ______ you are a frequent traveller or not, you may have (4) ______ the letter X or a cross mark on the back of the last (5) ______ of the train. <br /> <strong>Q22. Select the most appropriate option to fill in blank number 2.</strong>", "options": ["1) senses\n                                                                <input class=\"question_options0\" name=\"selected_option_21\" type=\"radio\" value=\"634885_153394\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) charge\n                                                                <input class=\"question_options1\" name=\"selected_option_21\" type=\"radio\" value=\"634886_153394\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) worth\n                                                                <input class=\"question_options2\" name=\"selected_option_21\" type=\"radio\" value=\"634887_153394\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) meanings\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_21\" type=\"radio\" value=\"634888_153394\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 4, "correct_option": "4) meanings\n                                                                <input checked=\"checked\" class=\"question_options3\" name=\"selected_option_21\" type=\"radio\" value=\"634888_153394\"/>\n<span class=\"checkmark radio_check3\"></span>", "explanation": "D) Meanings'का use होगा क्योंकि यहाँ चर्चा संकेतों और प्रतीकों की हो रही है जिनका अर्थ आम लोगों को नहीं पता होता। sentence में बताया गया है कि अधिकतर संकेतों का अर्थ सभी को पता नहीं होता, इसलिए 'Meanings' यहाँ सही है। जबकि 'senses' का अर्थ है अनुभूतियाँ, 'charge' का अर्थ है शुल्क या जिम्मेदारी, और 'worth' का अर्थ है मूल्य या अहमियत, जो इस context में सही नहीं है। <br /> Meanings'should be used because the passage discusses symbols and signs whose meanings might not be known to the general public. The sentence highlights that the meanings of most of these symbols are not known to everyone, making 'Meanings' appropriate here. Whereas, 'senses' implies perceptions or feelings, 'charge' means fee or responsibility, and 'worth' denotes value or importance, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 23, "question_text": "<strong>Comprehension:</strong> <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank</strong>. <br /> There is always something so fascinating about trains and journeys. There (1) ______ certain symbols and signages inside and outside of the train. The (2) ______ of most of them might not be known to everyone. (3) ______ you are a frequent traveller or not, you may have (4) ______ the letter X or a cross mark on the back of the last (5) ______ of the train. <br /> <strong>Q23. Select the most appropriate option to fill in blank number 3.</strong>", "options": ["1) Whether\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_22\" type=\"radio\" value=\"634889_153395\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) Whichever\n                                                                <input class=\"question_options1\" name=\"selected_option_22\" type=\"radio\" value=\"634890_153395\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) Whatever\n                                                                <input class=\"question_options2\" name=\"selected_option_22\" type=\"radio\" value=\"634891_153395\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) However\n                                                                <input class=\"question_options3\" name=\"selected_option_22\" type=\"radio\" value=\"634892_153395\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 1, "correct_option": "1) Whether\n                                                                <input checked=\"checked\" class=\"question_options0\" name=\"selected_option_22\" type=\"radio\" value=\"634889_153395\"/>\n<span class=\"checkmark radio_check0\"></span>", "explanation": "A) Whether'का use होगा क्योंकि यह शब्द दो संभावनाओं को दर्शाने के लिए प्रयुक्त होता है। Sentence में उल्लेख किया गया है कि आप अक्सर यात्रा करते हैं या नहीं, आपने ट्रेन की आखिरी डिब्बे पर X अक्षर या क्रॉस चिह्न को देखा हो सकता है, इसलिए 'Whether' यहाँ सही है। जबकि 'Whichever' और 'Whatever' विकल्प या चयन के संकेत के रूप में प्रयुक्त होते हैं, और 'However' विरोधाभास या संकेत दर्शाने के लिए प्रयुक्त होता है, जो इस context में सही नहीं है। <br /> 'Whether'should be used as it introduces two possibilities. The sentence mentions that regardless of whether you frequently travel or not, you might have noticed the letter X or a cross mark on the back of the train's last compartment, making 'Whether' fitting here. On the other hand, 'Whichever' and 'Whatever' imply a choice or selection, and 'However' is used to indicate contrast or exception, which doesn't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 24, "question_text": "<strong>Comprehension:</strong> <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank</strong>. <br /> There is always something so fascinating about trains and journeys. There (1) ______ certain symbols and signages inside and outside of the train. The (2) ______ of most of them might not be known to everyone. (3) ______ you are a frequent traveller or not, you may have (4) ______ the letter X or a cross mark on the back of the last (5) ______ of the train. <br /> <strong>Q24. Select the most appropriate option to fill in blank number 4.</strong>", "options": ["1) distinguished\n                                                                <input class=\"question_options0\" name=\"selected_option_23\" type=\"radio\" value=\"634893_153396\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) recognised\n                                                                <input class=\"question_options1\" name=\"selected_option_23\" type=\"radio\" value=\"634894_153396\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) noticed\n                                                                <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_23\" type=\"radio\" value=\"634895_153396\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) known\n                                                                <input class=\"question_options3\" name=\"selected_option_23\" type=\"radio\" value=\"634896_153396\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 3, "correct_option": "3) noticed\n                                                                <input checked=\"checked\" class=\"question_options2\" name=\"selected_option_23\" type=\"radio\" value=\"634895_153396\"/>\n<span class=\"checkmark radio_check2\"></span>", "explanation": "C) Noticed'का use होगा क्योंकि \"noticed\" का अर्थ होता है किसी विषय या चीज़ को देखना या समझना। Passage में इशारा किया गया है कि यात्री ट्रैन के आखिरी डिब्बे पर एक चिह्न को देख सकते हैं, इसलिए 'noticed' यहाँ सही है। जबकि 'Distinguished' का अर्थ है अलग पहचानना, 'Recognised' का अर्थ है पहचानना जिसे आप पहले देख चुके हैं, और 'Known' का अर्थ है जानते हैं, जो इस context में सही नहीं है। <br /> 'Noticed'should be used because it means to observe or become aware of something. The passage hints that passengers may see a symbol on the back of the last car of the train, making 'noticed' the correct fit. Whereas, 'Distinguished' means to perceive as being different or distinct, 'Recognised' means to identify from having encountered it before, and 'Known' implies being familiar with, which don't fit in this context.", "marks": {"positive": 2.0, "negative": 0.5}}, {"question_number": 25, "question_text": "<strong>Comprehension:</strong> <br /> <strong>In the following passage, some words have been deleted. Read the passage carefully and select the most appropriate option to fill in each blank</strong>. <br /> There is always something so fascinating about trains and journeys. There (1) ______ certain symbols and signages inside and outside of the train. The (2) ______ of most of them might not be known to everyone. (3) ______ you are a frequent traveller or not, you may have (4) ______ the letter X or a cross mark on the back of the last (5) ______ of the train. <br /> <strong>Q25. Select the most appropriate option to fill in blank number 5.</strong>", "options": ["1) booth\n                                                                <input class=\"question_options0\" name=\"selected_option_24\" type=\"radio\" value=\"634897_153397\"/>\n<span class=\"checkmark radio_check0\"></span>", "2) coach\n                                                                <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_24\" type=\"radio\" value=\"634898_153397\"/>\n<span class=\"checkmark radio_check1\"></span>", "3) bus\n                                                                <input class=\"question_options2\" name=\"selected_option_24\" type=\"radio\" value=\"634899_153397\"/>\n<span class=\"checkmark radio_check2\"></span>", "4) rail\n                                                                <input class=\"question_options3\" name=\"selected_option_24\" type=\"radio\" value=\"634900_153397\"/>\n<span class=\"checkmark radio_check3\"></span>"], "correct_answer": 2, "correct_option": "2) coach\n                                                                <input checked=\"checked\" class=\"question_options1\" name=\"selected_option_24\" type=\"radio\" value=\"634898_153397\"/>\n<span class=\"checkmark radio_check1\"></span>", "explanation": "B) Coach'का use होगा क्योंकि \"coach\" का अर्थ होता है रेलगाड़ी का वह हिस्सा जिसमें यात्री सवार होते हैं। Sentence में mention किया गया है कि ट्रेन के अखिरी हिस्से पर X या cross mark होता है, इसलिए 'coach' यहाँ सही है। जबकि 'Booth' का अर्थ है एक छोटा कमरा या स्थान, 'Bus' एक प्रकार की वाहन है, और 'Rail' ट्रैक का हिस्सा होता है, जो इस context में सही नहीं है। <br /> Coach'should be used because it refers to the part of a train where passengers are seated. The sentence refers to a mark on the last part of the train, making 'coach' the most fitting choice. Whereas, 'Booth' refers to a small room or space, 'Bus' is a type of vehicle, and 'Rail' pertains to the track, which are not fitting in this context.", "marks": {"positive": 2.0, "negative": 0.5}}]};
+
+        // Test state variables
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let bookmarkedQuestions = new Set();
+        let timerInterval;
+        let isDarkMode = false;
+        let visitedQuestions = new Set();
+
+        // Initialize the test
+        function initializeTest() {
+            // Set test title
+            document.getElementById('test-title').textContent = testData.test_info.title;
+            
+            // Initialize user answers array
+            userAnswers = Array(testData.questions.length).fill(null);
+            
+            // Setup question palette
+            setupQuestionPalette();
+            
+            // Setup timer
+            setupTimer();
+            
+            // Show first question
+            showQuestion(0);
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Make sure palette toggle button is visible on mobile
+            updatePaletteToggleDisplay();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('prev-btn').addEventListener('click', goToPreviousQuestion);
+            document.getElementById('next-btn').addEventListener('click', goToNextQuestion);
+            document.getElementById('submit-test').addEventListener('click', showReviewWarning);
+            document.getElementById('bookmark-btn').addEventListener('click', toggleBookmark);
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+            // Question palette toggle functionality
+            document.getElementById('palette-toggle').addEventListener('click', toggleQuestionPalette);
+
+            // Add keyboard event listener to document
+            document.addEventListener('keydown', handleKeyPress);
+
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    filterQuestions(e.target.dataset.filter);
+                });
+            });
+        }
+
+        function toggleQuestionPalette() {
+            const palette = document.querySelector('.question-palette');
+            const toggleBtn = document.getElementById('palette-toggle');
+            
+            if (palette.classList.contains('visible')) {
+                // Hide palette with animation
+                palette.style.transform = 'translateX(100%)';
+                toggleBtn.classList.remove('active');
+                setTimeout(() => {
+                    palette.classList.remove('visible');
+                }, 300);
+            } else {
+                // Show palette with animation
+                palette.classList.add('visible');
+                toggleBtn.classList.add('active');
+                setTimeout(() => {
+                    palette.style.transform = 'translateX(0)';
+                }, 10);
+            }
+        }
+
+        // Add display flex to palette toggle button when in mobile view
+        function updatePaletteToggleDisplay() {
+            const toggleBtn = document.getElementById('palette-toggle');
+            if (window.innerWidth <= 768) {
+                toggleBtn.style.display = 'flex';
+            } else {
+                toggleBtn.style.display = 'none';
+            }
+        }
+
+        // Call on load and window resize
+        window.addEventListener('load', updatePaletteToggleDisplay);
+        window.addEventListener('resize', updatePaletteToggleDisplay);
+
+        function handleKeyPress(event) {
+            console.log('Key pressed:', event.key); // Add debug logging
+            
+            // Ignore keyboard shortcuts if user is typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Ignore keyboard shortcuts if test is submitted
+            if (document.getElementById('result').style.display === 'block') {
+                return;
+            }
+
+            // Prevent default behavior for arrow keys and numbers to avoid page scrolling
+            if (['ArrowLeft', 'ArrowRight', '1', '2', '3', '4'].includes(event.key)) {
+                event.preventDefault();
+            }
+
+            switch(event.key) {
+                case 'ArrowLeft':
+                    if (currentQuestionIndex > 0) {
+                        goToPreviousQuestion();
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (currentQuestionIndex < testData.questions.length - 1) {
+                        goToNextQuestion();
+                    }
+                    break;
+                case 'b':
+                case 'B':
+                    toggleBookmark();
+                    break;
+                case 'Enter':
+                    if (currentQuestionIndex === testData.questions.length - 1) {
+                        showReviewWarning();
+                    } else {
+                        goToNextQuestion();
+                    }
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                    const optionIndex = parseInt(event.key) - 1;
+                    const options = document.querySelectorAll('.option');
+                    if (options[optionIndex]) {
+                        // Add visual feedback for option selection
+                        options[optionIndex].classList.add('keyboard-selected');
+                        
+                        // Actually select the option
+                        const radio = options[optionIndex].querySelector('input[type="radio"]');
+                        if (radio) {
+                            radio.checked = true;
+                            userAnswers[currentQuestionIndex] = optionIndex + 1;
+                            
+                            // Update the option's visual state
+                            options.forEach(opt => opt.classList.remove('selected'));
+                            options[optionIndex].classList.add('selected');
+                            
+                            // Update the question palette
+                            updateQuestionPalette();
+                        }
+                        
+                        // Remove the selection effect after animation
+                        setTimeout(() => {
+                            options[optionIndex].classList.remove('keyboard-selected');
+                        }, 200);
+                    }
+                    break;
+            }
+        }
+
+        function setupQuestionPalette() {
+            const palette = document.getElementById('question-palette');
+            palette.innerHTML = '';
+            
+            for (let i = 0; i < testData.questions.length; i++) {
+                const item = document.createElement('div');
+                item.className = 'palette-item not-visited';
+                item.textContent = i + 1;
+                item.addEventListener('click', () => {
+                    showQuestion(i);
+                    // Close the palette if it's currently visible (for mobile view)
+                    const paletteElement = document.querySelector('.question-palette');
+                    if (paletteElement.classList.contains('visible')) {
+                        toggleQuestionPalette();
+                    }
+                });
+                palette.appendChild(item);
+            }
+            
+            // Ensure palette toggle button is visible on mobile
+            updatePaletteToggleDisplay();
+        }
+
+        function updateQuestionPalette() {
+            const items = document.querySelectorAll('.palette-item');
+            items.forEach((item, index) => {
+                item.className = 'palette-item';
+                
+                // Only add status classes if the question has been visited
+                if (visitedQuestions.has(index)) {
+                    if (bookmarkedQuestions.has(index)) {
+                        item.classList.add('marked-review');
+                    } else if (userAnswers[index] !== null) {
+                        item.classList.add('answered');
+                    } else {
+                        item.classList.add('not-answered');
+                    }
+                } else {
+                    item.classList.add('not-visited');
+                }
+                
+                if (index === currentQuestionIndex) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        function filterQuestions(filter) {
+            const items = document.querySelectorAll('.palette-item');
+            items.forEach((item, index) => {
+                const isMarkedReview = bookmarkedQuestions.has(index);
+                const isAnswered = userAnswers[index] !== null;
+                const isVisited = visitedQuestions.has(index);
+                
+                switch(filter) {
+                    case 'answered':
+                        item.style.display = isAnswered ? 'flex' : 'none';
+                        break;
+                    case 'not-answered':
+                        item.style.display = (isVisited && !isAnswered) ? 'flex' : 'none';
+                        break;
+                    case 'marked-review':
+                        item.style.display = isMarkedReview ? 'flex' : 'none';
+                        break;
+                    default:
+                        item.style.display = 'flex';
+                }
+            });
+        }
+        
+        function setupTimer() {
+            const duration = parseFloat(testData.test_info.duration);
+            let timeLeft = Math.floor(duration * 60);
+            const timerElement = document.getElementById('timer');
+            
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                if (timeLeft <= 300) { // 5 minutes warning
+                    timerElement.classList.add('timer-warning');
+                }
+                
+                timerElement.innerHTML = `
+                    <i class="fas fa-clock"></i>
+                    Time Remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}
+                `;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitTest();
+                }
+                
+                timeLeft--;
+            }, 1000);
+        }
+        
+        function showQuestion(index) {
+            currentQuestionIndex = index;
+            // Mark question as visited when opened
+            visitedQuestions.add(index);
+            const question = testData.questions[index];
+            const container = document.getElementById('current-question');
+            
+            // Add fade-out animation
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="question-container">
+                        <div class="question-number">
+                            <span>Question ${question.question_number} of ${testData.questions.length}</span>
+                            <span class="marks-info">
+                                <i class="fas fa-plus-circle"></i> ${question.marks.positive}
+                                <i class="fas fa-minus-circle"></i> ${question.marks.negative}
+                            </span>
+                        </div>
+                        <div class="question">${question.question_text}</div>
+                        <div class="options">
+                            ${question.options.map((option, optIndex) => `
+                                <label class="option ${userAnswers[index] === optIndex + 1 ? 'selected' : ''}">
+                                    <input type="radio" name="question${index}" value="${optIndex + 1}" 
+                                        ${userAnswers[index] === optIndex + 1 ? 'checked' : ''}>
+                                        <div class="option-content">
+                                    <span class="option-number">${optIndex + 1}</span> ${option}
+                                        </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div style="flex-grow: 1;"></div>
+                    </div>
+                `;
+                
+                // Update bookmark button
+                const bookmarkBtn = document.getElementById('bookmark-btn');
+                bookmarkBtn.classList.toggle('active', bookmarkedQuestions.has(index));
+                bookmarkBtn.innerHTML = bookmarkedQuestions.has(index) 
+                    ? '<i class="fas fa-flag"></i> Marked for Review'
+                    : '<i class="far fa-flag"></i> Mark for Review <span class="shortcut-hint">(B)</span>';
+                
+                // Add event listeners to options
+                const options = container.querySelectorAll('.option');
+                    options.forEach((option, optIdx) => {
+                    option.addEventListener('click', function() {
+                        const radio = this.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        
+                            options.forEach(opt => {
+                                opt.classList.remove('selected');
+                                opt.style.transform = 'translateX(0)';
+                            });
+                            
+                            // Animate the selected option
+                        this.classList.add('selected');
+                            this.style.transform = 'translateX(10px)';
+                        
+                        userAnswers[index] = parseInt(radio.value);
+                        updateQuestionPalette();
+
+                            // Highlight the option number with a pulse animation
+                        const optionNumber = this.querySelector('.option-number');
+                        optionNumber.style.animation = 'pulse 0.5s ease';
+                        setTimeout(() => {
+                            optionNumber.style.animation = '';
+                        }, 500);
+                });
+
+                        // Add a small delay to each option's appearance
+                        option.style.opacity = '0';
+                        option.style.transform = 'translateX(20px)';
+                        setTimeout(() => {
+                            option.style.opacity = '1';
+                            option.style.transform = 'translateX(0)';
+                        }, 100 + (optIdx * 50));
+                    });
+                    
+                    // Fade in the content
+                    setTimeout(() => {
+                        container.style.opacity = '1';
+                        container.style.transform = 'translateY(0)';
+                    }, 50);
+                
+                // Update navigation buttons
+                updateNavigationButtons();
+                
+                // Update question palette
+                updateQuestionPalette();
+                }, 150);
+        }
+        
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-test');
+            
+            prevBtn.disabled = currentQuestionIndex === 0;
+            
+            if (currentQuestionIndex === testData.questions.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+        
+        function goToPreviousQuestion() {
+            if (currentQuestionIndex > 0) {
+                showQuestion(currentQuestionIndex - 1);
+            }
+        }
+        
+        function goToNextQuestion() {
+            if (currentQuestionIndex < testData.questions.length - 1) {
+                showQuestion(currentQuestionIndex + 1);
+            }
+        }
+
+        function toggleBookmark() {
+            const btn = document.getElementById('bookmark-btn');
+            if (bookmarkedQuestions.has(currentQuestionIndex)) {
+                bookmarkedQuestions.delete(currentQuestionIndex);
+                btn.classList.remove('active');
+                btn.innerHTML = `
+                    <i class="far fa-flag"></i> 
+                    Mark for Review <span class="shortcut-hint">(B)</span>
+                `;
+            } else {
+                bookmarkedQuestions.add(currentQuestionIndex);
+                btn.classList.add('active');
+                btn.innerHTML = `
+                    <i class="fas fa-flag"></i> 
+                    Marked for Review
+                `;
+            }
+            updateQuestionPalette();
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.innerHTML = `<i class="fas fa-${isDarkMode ? 'sun' : 'moon'}"></i>`;
+        }
+
+        function showReviewWarning() {
+            // Skip the warning and directly submit the test
+            submitTest();
+        }
+        
+        function submitTest() {
+            // Add submission animation
+            const testContainer = document.getElementById('test-container');
+            const questionPalette = document.querySelector('.question-palette');
+            const resultContainer = document.getElementById('result');
+            
+            // Animate test container sliding out
+            testContainer.style.transition = 'all 0.5s var(--animation-bounce)';
+            testContainer.style.transform = 'translateX(-50px)';
+            testContainer.style.opacity = '0';
+            
+            // Animate question palette fading out
+            questionPalette.style.transition = 'all 0.5s var(--animation-bounce)';
+            questionPalette.style.transform = 'translateX(50px)';
+            questionPalette.style.opacity = '0';
+            
+            // Clear the timer
+            clearInterval(timerInterval);
+            
+            // Calculate results with a slight delay for animation
+            setTimeout(() => {
+            let score = 0;
+            let correctCount = 0;
+            let attemptedCount = 0;
+            const reviewAnswers = [];
+            
+            // Calculate score and statistics
+            testData.questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correct_answer;
+                
+                if (userAnswer !== null) {
+                    attemptedCount++;
+                    if (isCorrect) {
+                        score += question.marks.positive;
+                        correctCount++;
+                    } else {
+                        score -= question.marks.negative;
+                    }
+                }
+                
+                reviewAnswers.push({
+                    questionNumber: question.question_number,
+                    questionText: question.question_text,
+                    userChoice: userAnswer,
+                    userChoiceText: userAnswer !== null ? question.options[userAnswer - 1] : 'Not answered',
+                    correctAnswer: question.correct_answer,
+                    correctAnswerText: question.correct_option,
+                    isCorrect: isCorrect,
+                    answered: userAnswer !== null
+                });
+            });
+            
+            // Update statistics
+            document.getElementById('total-questions').textContent = testData.questions.length;
+            document.getElementById('attempted-questions').textContent = attemptedCount;
+            document.getElementById('correct-answers').textContent = correctCount;
+            document.getElementById('accuracy').textContent = 
+                `${Math.round((correctCount / (attemptedCount || 1)) * 100)}%`;
+            
+            // Display score
+            document.getElementById('score').innerHTML = `
+                <div style="font-size: 36px; color: var(--primary-color);">
+                    ${score.toFixed(2)} / ${testData.questions.length * testData.questions[0].marks.positive}
+                </div>
+                <div style="color: var(--text-color); margin-top: 10px;">
+                    Percentage: ${Math.round((score / (testData.questions.length * testData.questions[0].marks.positive)) * 100)}%
+                </div>
+            `;
+            
+            // Create performance chart
+            const chartContainer = document.getElementById('performance-chart');
+            chartContainer.innerHTML = ''; // Clear previous chart if any
+            const ctx = document.createElement('canvas');
+            chartContainer.appendChild(ctx);
+                
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Correct', 'Incorrect', 'Not Attempted'],
+                    datasets: [{
+                        data: [
+                            correctCount,
+                            attemptedCount - correctCount,
+                            testData.questions.length - attemptedCount
+                        ],
+                        backgroundColor: [
+                                '#16a34a', // Fixed success green
+                                '#dc2626', // Fixed error red
+                                '#8b5cf6'  // Fixed purple for not attempted
+                        ],
+                            borderColor: 'var(--bg-color)',
+                        borderWidth: 2,
+                            hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'var(--bg-color)',
+                                titleColor: 'var(--text-color)',
+                                bodyColor: 'var(--text-color)',
+                                borderColor: 'var(--border-color)',
+                                borderWidth: 1,
+                                padding: 12,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        let value = context.raw || 0;
+                                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        let percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Test Performance',
+                                color: 'var(--text-color)',
+                                font: {
+                                    family: 'Inter, sans-serif',
+                                    size: 16,
+                                    weight: '600'
+                                },
+                                padding: {
+                                    bottom: 15
+                            }
+                        }
+                    },
+                    cutout: '65%',
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                            duration: 1500,
+                            easing: 'easeOutQuart'
+                    }
+                }
+            });
+                
+                // Replace the chart's built-in legend with a custom one
+                const customLegend = document.createElement('div');
+                customLegend.className = 'custom-chart-legend';
+
+                chartContainer.appendChild(customLegend);
+            
+            // Update the analytics container title
+            document.querySelector('.analytics-container h3').innerHTML = 
+                '<i class="fas fa-chart-pie"></i> Performance Analysis';
+            
+            // Add event listener to the download analysis buttons with a small delay to ensure UI is ready
+            setTimeout(() => {
+                const downloadBtn = document.getElementById('download-analysis');
+                const bottomDownloadBtn = document.getElementById('bottom-download-analysis');
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', function() {
+                        downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount);
+                    });
+                }
+                if (bottomDownloadBtn) {
+                    bottomDownloadBtn.addEventListener('click', function() {
+                        downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount);
+                    });
+                }
+            }, 500);
+            
+            // Fix any palette toggle issue
+            if (window.innerWidth <= 768) {
+                const paletteToggle = document.getElementById('palette-toggle');
+                if (paletteToggle) {
+                    paletteToggle.style.display = 'flex';
+                }
+                
+                // Add close button to palette if not exists
+                const palette = document.querySelector('.question-palette');
+                if (palette && !document.querySelector('.palette-close-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'palette-close-btn';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', toggleQuestionPalette);
+                    
+                    const paletteHeader = palette.querySelector('.palette-header');
+                    if (paletteHeader) {
+                        paletteHeader.appendChild(closeBtn);
+                    }
+                }
+            }
+            
+                // Display answer review with staggered animation
+            const answersDiv = document.getElementById('answers');
+            answersDiv.innerHTML = '<h3>Answer Review:</h3>';
+            
+                reviewAnswers.forEach((answer, idx) => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-review';
+                    answerDiv.style.opacity = '0';
+                    answerDiv.style.transform = 'translateY(20px)';
+                
+                answerDiv.innerHTML = `
+                    <p><strong>Question ${answer.questionNumber}:</strong> ${answer.questionText}</p>
+                    <p class="${answer.answered ? (answer.isCorrect ? 'correct' : 'incorrect') : ''}">
+                        Your answer: ${answer.userChoiceText}
+                        ${answer.isCorrect ? '<i class="fas fa-check"></i>' : 
+                        (answer.answered ? '<i class="fas fa-times"></i>' : '')}
+                    </p>
+                    ${!answer.isCorrect ? `
+                        <p class="correct">
+                            Correct answer: ${answer.correctAnswerText}
+                            <i class="fas fa-check"></i>
+                        </p>
+                    ` : ''}
+                    ${testData.questions[idx].explanation ? `
+                        <div class="explanation">
+                            <p><strong>Explanation:</strong></p>
+                            <p>${testData.questions[idx].explanation}</p>
+                        </div>
+                    ` : ''}
+                `;
+                
+                answersDiv.appendChild(answerDiv);
+                    
+                    // Animate each answer review with a staggered delay
+                    setTimeout(() => {
+                        answerDiv.style.transition = 'all 0.5s var(--animation-bounce)';
+                        answerDiv.style.opacity = '1';
+                        answerDiv.style.transform = 'translateY(0)';
+                    }, 200 + (idx * 100));
+                });
+                
+                // Show results container with animation
+                resultContainer.style.display = 'block';
+                resultContainer.style.opacity = '0';
+                resultContainer.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    resultContainer.style.transition = 'all 0.6s var(--animation-bounce)';
+                    resultContainer.style.opacity = '1';
+                    resultContainer.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Hide test components
+                testContainer.style.display = 'none';
+                questionPalette.style.display = 'none';
+                document.getElementById('palette-toggle').style.display = 'none';
+            }, 600);
+        }
+        
+        // Initialize the test
+        initializeTest();
+
+        // Add CSS transitions to the current-question container
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentQuestion = document.getElementById('current-question');
+            currentQuestion.style.transition = 'opacity 0.3s ease, transform 0.3s var(--animation-bounce)';
+        });
+
+        // Add CSS for smooth palette transitions
+        document.addEventListener('DOMContentLoaded', function() {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .question-palette {
+                    transition: transform 0.3s var(--animation-bounce);
+                }
+                
+                #palette-toggle {
+                    transition: transform 0.3s var(--animation-bounce);
+                }
+                
+                @media (max-width: 768px) {
+                    .question-container:hover {
+                        transform: translateY(-2px);
+                    }
+                    
+                    .score-card:hover {
+                        transform: translateY(-4px);
+                    }
+                    
+                    .option:hover {
+                        transform: translateX(4px);
+                    }
+                }
+            `;
+            document.head.appendChild(styleElement);
+        });
+
+        // Add this after the Chart.js script tag but before your testData declaration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add custom styling for chart legend
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .chart-legend-item {
+                    display: flex;
+                    align-items: center;
+                    margin: 8px 0;
+                    font-weight: 600;
+                }
+                
+                .legend-color {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    margin-right: 8px;
+                    display: inline-block;
+                }
+                
+                .legend-correct {
+                    background-color: #16a34a;
+                }
+                
+                .legend-incorrect {
+                    background-color: #dc2626;
+                }
+                
+                .legend-not-attempted {
+                    background-color: #8b5cf6;
+                }
+                
+                .custom-chart-legend {
+                    display: flex;
+                    justify-content: center;
+                    gap: 15px;
+                    margin-top: 15px;
+                    flex-wrap: wrap;
+                }
+                
+                [data-theme="dark"] .legend-text {
+                    color: #f1f5f9;
+                }
+                
+                .chart-container canvas {
+                    margin-bottom: 10px;
+                }
+            `;
+            document.head.appendChild(styleElement);
+        });
+
+        // Function to download test analysis as HTML file
+        function downloadAnalysis(testData, reviewAnswers, score, correctCount, attemptedCount) {
+            const maxScore = testData.questions.length * testData.questions[0].marks.positive;
+            const percentage = Math.round((score / maxScore) * 100);
+
+            // Create HTML content
+            let htmlContent = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Test Analysis - ${testData.test_info.title}</title>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                <style>
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        max-width: 900px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        color: #1e293b;
+                        background-color: #f8fafc;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 1px solid #e2e8f0;
+                        padding-bottom: 15px;
+                    }
+                    .header h1 {
+                        color: #4f46e5;
+                        margin-bottom: 5px;
+                    }
+                    .header .date {
+                        font-style: italic;
+                        color: #64748b;
+                    }
+                    .summary {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .summary-card {
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        padding: 15px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        text-align: center;
+                        border: 1px solid #e2e8f0;
+                    }
+                    .summary-card h3 {
+                        margin-top: 0;
+                        margin-bottom: 10px;
+                        color: #64748b;
+                        font-size: 14px;
+                    }
+                    .summary-card .value {
+                        font-size: 24px;
+                        font-weight: bold;
+                        color: #4f46e5;
+                    }
+                    .score-highlight {
+                        background-color: #f3f4f6;
+                        padding: 30px;
+                        border-radius: 8px;
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border: 1px solid #e5e7eb;
+                    }
+                    .score-highlight .score {
+                        font-size: 48px;
+                        font-weight: bold;
+                        color: #4f46e5;
+                    }
+                    .score-highlight .percentage {
+                        font-size: 18px;
+                        color: #64748b;
+                    }
+                    .question-review {
+                        margin-bottom: 30px;
+                    }
+                    .question {
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        padding: 20px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        margin-bottom: 15px;
+                        border: 1px solid #e2e8f0;
+                    }
+                    .question-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 10px;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid #e2e8f0;
+                    }
+                    .question-text {
+                        margin-bottom: 15px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .user-answer {
+                        margin-bottom: 5px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .user-answer.correct {
+                        color: #16a34a;
+                    }
+                    .user-answer.incorrect {
+                        color: #dc2626;
+                    }
+                    .correct-answer {
+                        color: #16a34a;
+                        margin-bottom: 15px;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .explanation {
+                        background-color: #f8fafc;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #4f46e5;
+                        word-break: break-word; /* Ensures text doesn't overflow */
+                    }
+                    .explanation-title {
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #e2e8f0;
+                        color: #64748b;
+                        font-size: 14px;
+                    }
+                    .unattempted {
+                        color: #8b5cf6;
+                    }
+                    @media print {
+                        body {
+                            background-color: white;
+                        }
+                        .question, .summary-card, .score-highlight {
+                            break-inside: avoid;
+                        }
+                    }
+                    /* Responsive fixes */
+                    @media (max-width: 768px) {
+                        body {
+                            padding: 10px;
+                        }
+                        .summary {
+                            grid-template-columns: 1fr;
+                        }
+                        .score-highlight .score {
+                            font-size: 36px;
+                        }
+                        .question-header {
+                            flex-direction: column;
+                            align-items: flex-start;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>${testData.test_info.title}</h1>
+                    <div class="date">Generated on: ${new Date().toLocaleString()}</div>
+                </div>
+                
+                <div class="score-highlight">
+                    <div class="score">${score.toFixed(2)} / ${maxScore}</div>
+                    <div class="percentage">Percentage: ${percentage}%</div>
+                </div>
+                
+                <div class="summary">
+                    <div class="summary-card">
+                        <h3>Total Questions</h3>
+                        <div class="value">${testData.questions.length}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Attempted</h3>
+                        <div class="value">${attemptedCount}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Correct</h3>
+                        <div class="value">${correctCount}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Accuracy</h3>
+                        <div class="value">${Math.round((correctCount / (attemptedCount || 1)) * 100)}%</div>
+                    </div>
+                </div>
+                
+                <h2>Question Review</h2>
+                <div class="question-review">
+            `;
+
+            // Add each question and answer to the HTML content
+            reviewAnswers.forEach((answer, idx) => {
+                const question = testData.questions[idx];
+                htmlContent += `
+                    <div class="question">
+                        <div class="question-header">
+                            <strong>Question ${answer.questionNumber}</strong>
+                            <span>${answer.isCorrect ? '+' : (answer.answered ? '-' : '0')}${question.marks.positive} marks</span>
+                        </div>
+                        <div class="question-text">${answer.questionText}</div>
+                        <div class="user-answer ${answer.isCorrect ? 'correct' : (answer.answered ? 'incorrect' : 'unattempted')}">
+                            <strong>${answer.answered ? 'Your answer: ' : 'Not attempted'}</strong> 
+                            ${answer.answered ? answer.userChoiceText : ''}
+                            ${answer.isCorrect ? ' ✓' : (answer.answered ? ' ✗' : '')}
+                        </div>
+                        ${!answer.isCorrect ? `
+                            <div class="correct-answer">
+                                <strong>Correct answer:</strong> ${answer.correctAnswerText}
+                            </div>
+                        ` : ''}
+                        ${question.explanation ? `
+                            <div class="explanation">
+                                <div class="explanation-title">Explanation:</div>
+                                <div>${question.explanation}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            // Close HTML content
+            htmlContent += `
+                </div>
+                
+                <div class="footer">
+                    <p>&copy; 2025 KUNAL Test Platform. All rights reserved.</p>
+                    <p>Created by @finallygotnirvana</p>
+                </div>
+            </body>
+            </html>
+            `;
+
+            // Create a download link
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            
+            // Format date for filename
+            const date = new Date();
+            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            
+            downloadLink.download = `Test_Analysis_${formattedDate}.html`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            // Prevent default behavior for arrow keys
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+            }
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    goToPreviousQuestion();
+                    break;
+                case 'ArrowRight':
+                    goToNextQuestion();
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    // Get all options for the current question
+                    const options = document.querySelectorAll('.option');
+                    if (options.length === 0) return;
+
+                    // Find currently selected option
+                    let currentIndex = Array.from(options).findIndex(opt => opt.classList.contains('selected'));
+                    
+                    // Calculate new index
+                    if (e.key === 'ArrowUp') {
+                        currentIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1;
+                    } else {
+                        currentIndex = currentIndex >= options.length - 1 ? 0 : currentIndex + 1;
+                    }
+
+                    // Select the new option
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    options[currentIndex].classList.add('selected');
+                    options[currentIndex].querySelector('input[type="radio"]').checked = true;
+                    
+                    // Update user answer
+                    userAnswers[currentQuestionIndex] = currentIndex + 1;
+                    updateQuestionPalette();
+                    break;
+                case 'b':
+                case 'B':
+                    toggleBookmark();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
