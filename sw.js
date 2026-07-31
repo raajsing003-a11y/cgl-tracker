@@ -39,7 +39,14 @@
 // replaced; index.html gained the gkReadProgressBar markup/CSS). Old v6
 // cache would keep serving the old continuous-scroll app.js/index.html
 // with no progress bar, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v7';
+//
+// Bumped v7 -> v8: gk_geography.json and gk_science.json were restructured
+// — several chapters that had multiple TOC-level topics merged into a
+// single chapter were split apart (Geography: 11 -> 16 chapters; Science
+// Physics section: 5 -> 8 chapters). Chapter ids/counts changed, so old v7
+// cache would keep serving the old merged chapter list, so it must be
+// evicted too.
+const CACHE_NAME = 'exam-tracker-v8';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
