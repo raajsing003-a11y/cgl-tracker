@@ -46,7 +46,16 @@
 // Physics section: 5 -> 8 chapters). Chapter ids/counts changed, so old v7
 // cache would keep serving the old merged chapter list, so it must be
 // evicted too.
-const CACHE_NAME = 'exam-tracker-v8';
+//
+// Bumped v8 -> v9: the "Test Your Knowledge" auto-flashcard generator in
+// app.js was fixed — table-based cards had a Romanized/mixed-language
+// question ("... kya hai?"), now pure Hindi ("... क्या है?"); and the
+// cloze question-word picker gained a keyword-triggered map (स्थापना,
+// युद्ध, उद्गम, मुख्यालय, नारा, उपाधि, अनुच्छेद, आदि) so blanks read like
+// real SSC static-GK questions instead of a generic "क्या था/थी?". Old
+// v8 cache would keep serving the buggy/generic flashcard logic, so it
+// must be evicted too.
+const CACHE_NAME = 'exam-tracker-v9';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

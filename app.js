@@ -12913,15 +12913,80 @@ const mathPyqQuiz = makeMathPyqQuiz();
   function makeClozeCard(text){
     const clean = stripTags(text);
     if(clean.length < 12) return null;
+    const word = pickClozeWord(clean);
+    if(!word) return null;
+    const idx = clean.indexOf(word);
+    if(idx === -1) return null;
 
-    // Poore paragraph ki jagah ek-ek sentence (।-wise split) pe kaam karte
-    // hain — SSC one-liner hamesha ek chhota, poora vaakya hota hai, kisi
-    // paragraph ka random tuta-phuta tukda nahi. Bahut chhote ya bahut lambe
-    // sentence ko chhod dete hain taaki sawaal saaf/one-liner bane.
-    const sentences = clean.split(/(?<=।)/).map(s => s.trim()).filter(Boolean);
-    const pool = sentences.filter(s => s.length >= 10 && s.length <= 140);
-    const candidates = pool.length ? pool : sentences;
+    // Answer word ke aas-paas ki punctuation (jaise brackets, comma) hata do
+    const answer = word.replace(/^[(",]+|[)",.।]+$/g, '');
+    if(!answer) return null;
 
+    // Blank ki jagah seedha WH-question banate hain (fill-in-blank nahi) —
+    // word ke type ke hisaab se sahi prashnvachak (question word) chunte hain.
+    // SSC static-GK mein sawaal hamesha ek fixed pattern se poochha jaata hai
+    // (jaise "...की स्थापना किसने की?", "...कहाँ स्थित है?") — isliye pehle
+    // vaakya mein trigger-keyword dhundte hain aur uske hisaab se sahi
+    // prashnvachak/phrase chunte hain; koi trigger na mile to purana
+    // year/ने/generic fallback chalta hai.
+    let qWord = 'क्या';
+    let isYear = false;
+    const words = clean.split(/\s+/);
+    const wIdx = words.indexOf(word);
+
+    // Trigger -> question-phrase map (50-pattern SSC static-GK ke hisaab se)
+    const TYK_TRIGGERS = [
+      [/स्थापना|स्थापित|संस्थापक|जनक/, 'किसने'],
+      [/युद्ध/, 'किनके बीच'],
+      [/संधि|समझौता/, 'किनके बीच'],
+      [/नारा|घोषणा|कहा था|कथन/, 'किसने'],
+      [/लिखी|रचना|पुस्तक|लेखक|द्वारा लिखित/, 'किसने'],
+      [/वायसराय|गवर्नर जनरल/, 'किसके काल में'],
+      [/दरबार|यात्री/, 'किसके दरबार में'],
+      [/बनवाया|बनवाई|निर्माण करवाया/, 'किसने'],
+      [/उपाधि/, 'किसे'],
+      [/उद्गम/, 'कहाँ से'],
+      [/बांध/, 'किस नदी पर'],
+      [/राष्ट्रीय उद्यान|अभयारण्य|वन्यजीव/, 'किस राज्य में'],
+      [/सीमा(?:रेखा)?/, 'किन देशों के बीच'],
+      [/झील|जलप्रपात/, 'किस राज्य/देश में'],
+      [/जलडमरूमध्य|चैनल/, 'किन्हें'],
+      [/अनुच्छेद/, 'किस अनुच्छेद'],
+      [/अनुसूची/, 'किस अनुसूची'],
+      [/संशोधन/, 'किस संशोधन'],
+      [/शपथ/, 'कौन'],
+      [/न्यूनतम आयु|आयु सीमा/, 'क्या'],
+      [/समिति/, 'किसकी अध्यक्षता में'],
+      [/आयोग/, 'कब'],
+      [/मात्रक|इकाई|SI/, 'क्या'],
+      [/रासायनिक सूत्र|रासायनिक नाम/, 'क्या'],
+      [/विटामिन/, 'कौन सा'],
+      [/खोज|आविष्कार/, 'किसने'],
+      [/मुख्यालय/, 'कहाँ'],
+      [/नृत्य/, 'किस राज्य'],
+      [/दिवस/, 'कब'],
+      [/पुरस्कार|सम्मान/, 'किस क्षेत्र'],
+      [/ट्रॉफी|कप/, 'किस खेल'],
+      [/मंदिर/, 'कहाँ'],
+      [/प्रथम/, 'कौन']
+    ];
+
+    if(/\d{4}/.test(word)){ qWord = 'किस वर्ष'; isYear = true; }
+    else if(wIdx !== -1 && words[wIdx+1] === 'ने') qWord = 'किसने';
+    else if(wIdx > 0 && words[wIdx-1] === 'ने') qWord = 'किसने';
+    else {
+      const trigger = TYK_TRIGGERS.find(([re]) => re.test(clean));
+      if(trigger) qWord = trigger[1];
+    }
+
+    let before = clean.slice(0, idx).trim();
+    let after = clean.slice(idx + word.length).trim();
+    // Saal wale case mein "वर्ष/सन्/साल" jaisa marker word pehle se hi
+    // present hota hai — usse hata do warna "वर्ष किस वर्ष?" jaisa dohrav ho
+    if(isYear) before = before.replace(/(वर्ष|सन्|साल|सन)\s*$/u, '').trim();
+
+    // Balance brackets — agar blank ke kaaran ek taraf ka bracket khul kar
+    // reh gaya ho to use hata do taaki sawaal saaf dikhe
     const balanceParens = (s) => {
       let out = '';
       let depth = 0;
@@ -12930,50 +12995,37 @@ const mathPyqQuiz = makeMathPyqQuiz();
         else if(ch === ')'){ if(depth <= 0) continue; depth--; }
         out += ch;
       }
+      // trailing unmatched '(' hata do
       if(depth > 0) out = out.replace(/\([^(]*$/, '').trim();
       return out;
     };
+    before = balanceParens(before);
+    after = balanceParens(after);
+
+    // Vaakya ke ant mein pehle se hi koi kriya (verb) ho (jaise "की", "हुई",
+    // "बनाया", "स्थित") to dobara "था/थी" jodne ki zaroorat nahi
+    const endsWithVerb = /(की|किया|हुई|हुआ|बनाया|बनाई|स्थित|गई|गया|रखा|रखी)\s*$/u;
     const stripEndPunct = (s) => s.replace(/[।.]+\s*$/u, '').trim();
 
-    for(const sentence of candidates){
-      const word = pickClozeWord(sentence);
-      if(!word) continue;
-      const idx = sentence.indexOf(word);
-      if(idx === -1) continue;
-
-      // Answer word ke aas-paas ki punctuation (jaise brackets, comma) hata do
-      const answer = word.replace(/^[(",]+|[)",.।]+$/g, '');
-      if(!answer) continue;
-
-      // Word ke type ke hisaab se sahi prashnvachak (WH-word) chunte hain
-      let qWord = 'क्या';
-      const words = sentence.split(/\s+/);
-      const wIdx = words.indexOf(word);
-      const nextW = wIdx !== -1 ? (words[wIdx+1]||'') : '';
-      if(/\d{4}/.test(word)) qWord = 'किस वर्ष';
-      else if((wIdx !== -1 && words[wIdx+1] === 'ने') || (wIdx > 0 && words[wIdx-1] === 'ने')) qWord = 'किसने';
-      // Agar answer word turant baad kisi aur naam-shabd (noun) ko modify
-      // kar raha ho (jaise "भूमध्य सागर"), to "कौन सा सागर" zyada natural
-      // SSC-style Hindi lagta hai bajaye generic "क्या सागर" ke
-      else if(wIdx > 0 && nextW && cleanWordLen(nextW) >= 2 && !/^(है|था|थी|थे|हुआ|हुई|को|के|की|का|में|से|पर|और|या)$/.test(nextW)) qWord = 'कौन सा';
-
-      // Answer word ko seedha usi jagah qWord se badal do (inline) —
-      // poore sentence ka structure/grammar wahi rehta hai, isliye sawaal
-      // ek natural SSC one-liner jaisa lagta hai, fragment jod-jod ke banaya
-      // hua nahi. "वर्ष/सन्/साल 1971 में" -> "किस वर्ष में" jaisa dohrav
-      // bhi hata dete hain.
-      let q = sentence.replace(word, qWord);
-      if(/किस वर्ष/.test(qWord)) q = q.replace(/(वर्ष|सन्|साल|सन)\s+किस वर्ष/u, 'किस वर्ष');
-      q = balanceParens(q);
-      q = stripEndPunct(q) + '?';
-      q = q.replace(/\s+/g, ' ').trim();
-
-      const meaningfulLen = q.replace(/[^\p{L}\p{N}]/gu, '').length;
-      if(meaningfulLen < 8 || meaningfulLen > 130 || q.includes(answer)) continue;
-
-      return { q, a: answer, full: sentence };
+    // Jitna context chahiye utna hi rakho — bahut lambi statement se sawaal
+    // uljhan bhara na ho isliye ek hi taraf ka context istemaal karte hain
+    let sentence;
+    if(before.length >= after.length || !after){
+      before = stripEndPunct(before);
+      sentence = endsWithVerb.test(before) ? `${before} ${qWord}?` : `${before} ${qWord} था/थी?`;
+      sentence = sentence.replace(/\s+/g, ' ').trim();
+    } else {
+      after = stripEndPunct(after);
+      sentence = `${qWord} ${after}`.replace(/\s+/g, ' ').trim();
+      sentence = stripEndPunct(sentence);
+      sentence += '?';
     }
-    return null;
+    // Safety: agar context bahut chota reh gaya ya answer khud hi sentence
+    // mein reh gaya to poora vaakya use karo
+    if(stripTags(sentence).replace(/[^\p{L}\p{N}]/gu,'').length < 8 || sentence.includes(word)){
+      sentence = `${balanceParens(clean.replace(word, qWord))}?`.replace(/\s+/g, ' ').trim();
+    }
+    return { q: sentence, a: answer, full: clean };
   }
 
   function generateFlashcards(blocks){
@@ -12999,7 +13051,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
             if(!val || val === '—' || val === '-') continue;
             const label = headers[i] || '';
             const q = label
-              ? `'${subject}' की ${label} क्या है?`
+              ? `'${subject}' की/का ${label} क्या है?`
               : `'${subject}' के बारे में क्या सही है?`;
             cards.push({ q, a: val });
           }
