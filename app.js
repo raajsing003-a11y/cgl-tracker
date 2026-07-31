@@ -13955,6 +13955,510 @@ function makeEnglishMockQuiz(){
   return { init };
 }
 const englishmockQuiz = makeEnglishMockQuiz();
+const ENGLISHFULLMOCK_META = {
+  cpomains01: { label: 'SSC CPO Mains Mock 01', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains02: { label: 'SSC CPO Mains Mock 02', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains03: { label: 'SSC CPO Mains Mock 03', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains04: { label: 'SSC CPO Mains Mock 04', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains05: { label: 'SSC CPO Mains Mock 05', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains06: { label: 'SSC CPO Mains Mock 06', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains07: { label: 'SSC CPO Mains Mock 07', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains08: { label: 'SSC CPO Mains Mock 08', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains09: { label: 'SSC CPO Mains Mock 09', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains10: { label: 'SSC CPO Mains Mock 10', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains11: { label: 'SSC CPO Mains Mock 11', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains12: { label: 'SSC CPO Mains Mock 12', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains13: { label: 'SSC CPO Mains Mock 13', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains14: { label: 'SSC CPO Mains Mock 14', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains15: { label: 'SSC CPO Mains Mock 15', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains16: { label: 'SSC CPO Mains Mock 16', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains17: { label: 'SSC CPO Mains Mock 17', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains18: { label: 'SSC CPO Mains Mock 18', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains19: { label: 'SSC CPO Mains Mock 19', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains20: { label: 'SSC CPO Mains Mock 20', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains21: { label: 'SSC CPO Mains Mock 21', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains22: { label: 'SSC CPO Mains Mock 22', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains23: { label: 'SSC CPO Mains Mock 23', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains24: { label: 'SSC CPO Mains Mock 24', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains25: { label: 'SSC CPO Mains Mock 25', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains26: { label: 'SSC CPO Mains Mock 26', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains27: { label: 'SSC CPO Mains Mock 27', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains28: { label: 'SSC CPO Mains Mock 28', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains29: { label: 'SSC CPO Mains Mock 29', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains30: { label: 'SSC CPO Mains Mock 30', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains31: { label: 'SSC CPO Mains Mock 31', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains32: { label: 'SSC CPO Mains Mock 32', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains33: { label: 'SSC CPO Mains Mock 33', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains34: { label: 'SSC CPO Mains Mock 34', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains35: { label: 'SSC CPO Mains Mock 35', duration: 7200, correct: 1, wrong: 0.2 },
+  cpomains36: { label: 'SSC CPO Mains Mock 36', duration: 7200, correct: 1, wrong: 0.2 },
+  cglpre2018j10s2: { label: 'SSC CGL Pre 2018 (10 June, Shift 2)', duration: 1500, correct: 2, wrong: 0.5 }
+};
+
+function makeEnglishFullMockQuiz(){
+  const prefix = 'engfullmock';
+  const SETS = ENGLISHFULLMOCK_SETS;
+  const META = ENGLISHFULLMOCK_META;
+
+  const MOCK_ATTEMPT_KEY = 'cgl50-mockenglishfull-attempts';
+  function loadMockAttempts(){
+    try{
+      const raw = localStorage.getItem(MOCK_ATTEMPT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveMockAttemptsMap(map){
+    try{ localStorage.setItem(MOCK_ATTEMPT_KEY, JSON.stringify(map)); }catch(e){}
+  }
+  function saveMockAttempt(setKey, snapshot){
+    const map = loadMockAttempts();
+    map[setKey] = snapshot;
+    saveMockAttemptsMap(map);
+  }
+  function getMockAttempt(setKey){
+    const map = loadMockAttempts();
+    return map[setKey] || null;
+  }
+
+  const session = { setKey: null };
+
+  function setMeta(key){
+    return META[key] || { label: key, duration: 15 * 60, correct: 2, wrong: 0.5 };
+  }
+  function setLabel(key, count){
+    return setMeta(key).label + ' (' + count + ' Qs)';
+  }
+  function buildSetPool(setKey){
+    const set = SETS[setKey] || [];
+    return set.slice();
+  }
+
+  function renderSetMenu(){
+    const grid = document.getElementById(prefix + 'SetGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    Object.keys(SETS).forEach(key => {
+      const count = SETS[key].length;
+      const m = setMeta(key);
+      const durMin = Math.round(m.duration / 60);
+      const saved = getMockAttempt(key);
+      if(saved){
+        const card = document.createElement('div');
+        card.className = 'calcCard';
+        card.style.cursor = 'pointer';
+        card.innerHTML =
+          '<span class="calcIcon">\ud83d\udcd7</span>' +
+          '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
+          '<span style="font-size:11px;color:var(--muted);font-weight:600;">\u2705 Score: ' + examFormatMarksEnglishFull(saved.marks) + ' \u00b7 Tap to review</span></span>' +
+          '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">\ud83d\udd01</button>';
+        card.addEventListener('click', (e) => {
+          if(e.target.closest('.mockCardReattemptBtn')) return;
+          viewSavedMockAttempt(key);
+        });
+        const reBtn = card.querySelector('.mockCardReattemptBtn');
+        if(reBtn) reBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          startExamQuiz(key);
+        });
+        grid.appendChild(card);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.className = 'calcCard';
+      btn.innerHTML =
+        '<span class="calcIcon">\ud83d\udcd7</span>' +
+        '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
+        '<span class="calcSub">' + durMin + ' min \u00b7 +' + m.correct + ' / -' + m.wrong + '</span></span>' +
+        (isQuizSetAttempted(prefix, key) ? '<span class="calcDoneBadge">\u2705</span>' : '') +
+        '<span class="calcArrow">&#8250;</span>';
+      btn.addEventListener('click', () => startExamQuiz(key));
+      grid.appendChild(btn);
+    });
+  }
+
+  // ===== Testbook-style Exam Mode: per-paper timer, question palette, Mark
+  // for Review, Submit Test, then a solution+marks review screen. =====
+  const examSession = {
+    setKey: null, questions: [],
+    answers: [], marked: [], visited: [],
+    current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false,
+    marksCorrect: 2, marksWrong: 0.5
+  };
+
+  function examFormatMarksEnglishFull(m){
+    return (Math.round(m * 100) / 100).toString();
+  }
+
+  async function startExamQuiz(setKey){
+    if(setKey) session.setKey = setKey;
+    if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
+    const m = setMeta(session.setKey);
+    examSession.setKey = session.setKey;
+    examSession.questions = buildSetPool(session.setKey);
+    const n = examSession.questions.length;
+    examSession.answers = new Array(n).fill(null);
+    examSession.marked = new Array(n).fill(false);
+    examSession.visited = new Array(n).fill(false);
+    examSession.current = 0;
+    examSession.timeLeft = m.duration;
+    examSession.marksCorrect = m.correct;
+    examSession.marksWrong = m.wrong;
+    examSession.submitted = false;
+    examSession.paused = false;
+    const titleEl = document.getElementById('engfullmockExamTitle');
+    if(titleEl) titleEl.textContent = setLabel(session.setKey, n);
+    examStopTimer();
+    examStartTimer();
+    examSetPausedUI(false);
+    examRenderQuestion();
+    showCalcPage('engfullmockexam');
+  }
+
+  function examFormatTime(sec){
+    const s = Math.max(0, sec);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = s % 60;
+    const mm = (m < 10 ? '0' + m : m);
+    const ss = (r < 10 ? '0' + r : r);
+    return h > 0 ? (h + ':' + mm + ':' + ss) : (mm + ':' + ss);
+  }
+  function examUpdateTimerDisplay(){
+    const el = document.getElementById('engfullmockExamTimerPill');
+    if(!el) return;
+    el.textContent = '\u23f1 ' + examFormatTime(examSession.timeLeft);
+    el.classList.toggle('examTimerLow', examSession.timeLeft <= 120);
+  }
+  function examStartTimer(){
+    examUpdateTimerDisplay();
+    examSession.timerId = setInterval(() => {
+      examSession.timeLeft--;
+      examUpdateTimerDisplay();
+      if(examSession.timeLeft <= 0){
+        examStopTimer();
+        examSubmit();
+      }
+    }, 1000);
+  }
+  function examStopTimer(){
+    if(examSession.timerId){ clearInterval(examSession.timerId); examSession.timerId = null; }
+  }
+
+  function examSetPausedUI(paused){
+    const btn = document.getElementById('engfullmockExamPauseBtn');
+    if(btn){
+      btn.textContent = paused ? '\u25b6' : '\u23f8';
+      btn.title = paused ? 'Resume Test' : 'Pause Test';
+      btn.classList.toggle('paused', paused);
+    }
+    const overlay = document.getElementById('engfullmockExamPauseOverlay');
+    if(overlay) overlay.style.display = paused ? 'flex' : 'none';
+    ['engfullmockExamMarkBtn','engfullmockExamClearBtn','engfullmockExamSaveNextBtn','engfullmockExamSaveNextBtnBottom','engfullmockExamSubmitBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if(b) b.disabled = paused;
+    });
+  }
+  function examTogglePause(){
+    if(examSession.submitted) return;
+    examSession.paused = !examSession.paused;
+    if(examSession.paused) examStopTimer();
+    else examStartTimer();
+    examSetPausedUI(examSession.paused);
+  }
+
+  function examPaletteState(i){
+    const answered = examSession.answers[i] !== null && examSession.answers[i] !== undefined;
+    const marked = examSession.marked[i];
+    if(marked && answered) return 'pAnsweredMarked';
+    if(marked) return 'pMarked';
+    if(answered) return 'pAnswered';
+    if(examSession.visited[i]) return 'pNotAnswered';
+    return '';
+  }
+  function examRenderPalette(){
+    const grid = document.getElementById('engfullmockExamPaletteGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    examSession.questions.forEach((q, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examPaletteBtn ' + examPaletteState(i) + (i === examSession.current ? ' pCurrent' : '');
+      btn.textContent = i + 1;
+      btn.addEventListener('click', () => examGoTo(i));
+      grid.appendChild(btn);
+    });
+  }
+
+  function examRenderQuestion(){
+    const q = examSession.questions[examSession.current];
+    if(!q) return;
+    examSession.visited[examSession.current] = true;
+    const qnoEl = document.getElementById('engfullmockExamQNo');
+    if(qnoEl) qnoEl.textContent = 'Question No. ' + (examSession.current + 1);
+    const badgeEl = document.getElementById('engfullmockExamExamBadge');
+    if(badgeEl) badgeEl.textContent = '\ud83d\udcd7 ' + (q.topic || '\u2014');
+    const wordEl = document.getElementById('engfullmockExamWordText');
+    if(wordEl) wordEl.innerHTML = mathify('Q' + q.qn + '. ' + (q.word || '\u2014'));
+    const optList = document.getElementById('engfullmockExamOptList');
+    if(optList){
+      optList.innerHTML = '';
+      const selected = examSession.answers[examSession.current];
+      (q.options || []).forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+        btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + mathify(opt) + '</span>';
+        btn.addEventListener('click', () => examSelectOption(i));
+        optList.appendChild(btn);
+      });
+    }
+    const markBtn = document.getElementById('engfullmockExamMarkBtn');
+    if(markBtn) markBtn.textContent = examSession.marked[examSession.current] ? '\ud83d\udea9 Marked \u2713' : '\ud83d\udea9 Mark for Review';
+    examRenderPalette();
+  }
+
+  function examSelectOption(i){
+    examSession.answers[examSession.current] = i;
+    examRenderQuestion();
+  }
+  function examGoTo(idx){
+    if(idx < 0 || idx >= examSession.questions.length) return;
+    examSession.current = idx;
+    examRenderQuestion();
+  }
+  function examSaveNext(){
+    if(examSession.current < examSession.questions.length - 1) examGoTo(examSession.current + 1);
+    else examRenderPalette();
+  }
+  function examMarkForReview(){
+    examSession.marked[examSession.current] = !examSession.marked[examSession.current];
+    if(examSession.current < examSession.questions.length - 1) examGoTo(examSession.current + 1);
+    else examRenderQuestion();
+  }
+  function examClearResponse(){
+    examSession.answers[examSession.current] = null;
+    examRenderQuestion();
+  }
+
+  function examConfirmSubmit(){
+    const total = examSession.questions.length;
+    const answered = examSession.answers.filter(a => a !== null && a !== undefined).length;
+    const notAnswered = total - answered;
+    const ok = confirm('Answered: ' + answered + '\nNot Answered: ' + notAnswered + '\n\nSubmit test now? Ye action wapas nahi ho sakta.');
+    if(ok){ examStopTimer(); examSubmit(); }
+  }
+
+  function examSubmit(){
+    if(examSession.submitted) return;
+    examSession.submitted = true;
+    examStopTimer();
+    let correct = 0, wrong = 0;
+    examSession.questions.forEach((q, i) => {
+      const a = examSession.answers[i];
+      if(a === null || a === undefined) return;
+      if(a === q.answer) correct++; else wrong++;
+    });
+    const skipped = examSession.questions.length - correct - wrong;
+    const marks = (correct * examSession.marksCorrect) - (wrong * examSession.marksWrong);
+    const attempted = correct + wrong;
+    const acc = attempted ? Math.round((correct / attempted) * 100) : 0;
+    const titleEl = document.getElementById('engfullmockResultTitle');
+    if(titleEl) titleEl.textContent = setLabel(examSession.setKey, examSession.questions.length);
+    const summaryEl = document.getElementById('engfullmockExamResultSummary');
+    if(summaryEl){
+      summaryEl.innerHTML =
+        '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + examFormatMarksEnglishFull(marks) + '</div><div class="l">Total Marks</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + correct + '</div><div class="l">Correct</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + wrong + '</div><div class="l">Wrong</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + skipped + '</div><div class="l">Skipped</div></div>' +
+        '<div class="examSumCard"><div class="n">' + acc + '%</div><div class="l">Accuracy</div></div>' +
+        '<div class="examSumCard"><div class="n">' + examSession.questions.length + '</div><div class="l">Total Qs</div></div>';
+    }
+    saveMockAttempt(examSession.setKey, {
+      setKey: examSession.setKey,
+      questions: examSession.questions,
+      answers: examSession.answers,
+      marked: examSession.marked,
+      visited: examSession.visited,
+      correct: correct, wrong: wrong, skipped: skipped,
+      marks: marks, attempted: attempted, acc: acc,
+      submittedAt: Date.now()
+    });
+    markQuizSetAttempted(prefix, examSession.setKey);
+    resultRenderPalette();
+    resultGoTo(0);
+    showCalcPage('engfullmockresult');
+  }
+
+  function viewSavedMockAttempt(setKey){
+    const saved = getMockAttempt(setKey);
+    if(!saved) return;
+    examSession.setKey = saved.setKey;
+    examSession.questions = saved.questions;
+    examSession.answers = saved.answers;
+    examSession.marked = saved.marked || [];
+    examSession.visited = saved.visited || [];
+    examSession.current = 0;
+    examSession.submitted = true;
+    examStopTimer();
+    const titleEl = document.getElementById('engfullmockResultTitle');
+    if(titleEl) titleEl.textContent = setLabel(saved.setKey, saved.questions.length);
+    const summaryEl = document.getElementById('engfullmockExamResultSummary');
+    if(summaryEl){
+      summaryEl.innerHTML =
+        '<div class="examSumCard"><div class="n" style="color:var(--blue);">' + examFormatMarksEnglishFull(saved.marks) + '</div><div class="l">Total Marks</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--gain);">' + saved.correct + '</div><div class="l">Correct</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--loss);">' + saved.wrong + '</div><div class="l">Wrong</div></div>' +
+        '<div class="examSumCard"><div class="n" style="color:var(--muted);">' + saved.skipped + '</div><div class="l">Skipped</div></div>' +
+        '<div class="examSumCard"><div class="n">' + saved.acc + '%</div><div class="l">Accuracy</div></div>' +
+        '<div class="examSumCard"><div class="n">' + saved.questions.length + '</div><div class="l">Total Qs</div></div>';
+    }
+    resultRenderPalette();
+    resultGoTo(0);
+    showCalcPage('engfullmockresult');
+  }
+
+  function resultQState(i){
+    const a = examSession.answers[i];
+    const q = examSession.questions[i];
+    if(a === null || a === undefined) return 'skipped';
+    return a === q.answer ? 'correct' : 'wrong';
+  }
+  function resultRenderPalette(){
+    const grid = document.getElementById('engfullmockResultPaletteGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    examSession.questions.forEach((q, i) => {
+      const st = resultQState(i);
+      const cls = st === 'correct' ? 'pAnswered' : st === 'wrong' ? 'pNotAnswered' : '';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'examPaletteBtn ' + cls + (i === examSession.current ? ' pCurrent' : '');
+      btn.textContent = i + 1;
+      btn.addEventListener('click', () => resultGoTo(i));
+      grid.appendChild(btn);
+    });
+  }
+  let resultRevealed = false;
+  function resultGoTo(idx){
+    if(idx < 0 || idx >= examSession.questions.length) return;
+    examSession.current = idx;
+    resultRevealed = false;
+    resultRenderQuestion();
+    resultRenderPalette();
+  }
+  function resultReveal(){
+    if(resultRevealed) return;
+    resultRevealed = true;
+    resultRenderQuestion();
+  }
+  function resultRenderQuestion(){
+    const i = examSession.current;
+    const q = examSession.questions[i];
+    if(!q) return;
+    const qnoEl = document.getElementById('engfullmockResultQNo');
+    if(qnoEl) qnoEl.textContent = 'Question No. ' + (i + 1);
+    const st = resultQState(i);
+    const tagWrap = document.getElementById('engfullmockResultTagWrap');
+    if(tagWrap){
+      if(resultRevealed){
+        const label = st === 'correct' ? '\u2705 Correct' : st === 'wrong' ? '\u274c Incorrect' : '\u23ed Skipped';
+        const cls = st === 'correct' ? 'tagCorrect' : st === 'wrong' ? 'tagWrong' : 'tagSkipped';
+        tagWrap.innerHTML = '<span class="examReviewTag ' + cls + '">' + label + '</span>';
+      } else {
+        tagWrap.innerHTML = '<span class="examReviewTag" style="background:#3a3742;color:var(--muted);">\ud83d\udc46 Tap question to view answer & solution</span>';
+      }
+    }
+    const badgeEl = document.getElementById('engfullmockResultExamBadge');
+    if(badgeEl) badgeEl.textContent = '\ud83d\udcd7 ' + (q.topic || '\u2014');
+    const wordEl = document.getElementById('engfullmockResultWordText');
+    if(wordEl) wordEl.innerHTML = mathify('Q' + q.qn + '. ' + (q.word || '\u2014'));
+    const optList = document.getElementById('engfullmockResultOptList');
+    if(optList){
+      optList.innerHTML = '';
+      const userAns = examSession.answers[i];
+      (q.options || []).forEach((opt, idx) => {
+        const div = document.createElement('div');
+        let cls = 'examReviewOptBtn';
+        let tag = '';
+        if(resultRevealed){
+          if(idx === q.answer) cls += ' reviewCorrect';
+          else if(idx === userAns) cls += ' reviewWrong';
+          tag = idx === q.answer ? ' \u2705' : (idx === userAns ? ' \u274c' : '');
+        }
+        div.className = cls;
+        div.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + idx) + '</span><span>' + mathify(opt) + tag + '</span>';
+        optList.appendChild(div);
+      });
+    }
+    const solCard = document.getElementById('engfullmockResultSolutionCard');
+    const solText = document.getElementById('engfullmockResultSolutionText');
+    if(resultRevealed){
+      if(solText) solText.innerHTML = q.explanation ? mathify(q.explanation) : '';
+      if(solCard) solCard.style.display = 'block';
+    } else {
+      if(solText) solText.innerHTML = '';
+      if(solCard) solCard.style.display = 'none';
+    }
+    const prevBtn = document.getElementById('engfullmockResultPrevBtn');
+    if(prevBtn) prevBtn.disabled = (i === 0);
+    const nextBtn = document.getElementById('engfullmockResultNextBtn');
+    if(nextBtn) nextBtn.textContent = (i === examSession.questions.length - 1) ? 'Done \u2713' : 'Next \u279c';
+  }
+
+  function init(){
+    renderSetMenu();
+    const mainBtn = document.getElementById('calcEnglishFullMockBtn');
+    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('engfullmockmenu'); });
+    const menuBackBtn = document.getElementById('engfullmockMenuBackBtn');
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+
+    const examBackBtn = document.getElementById('engfullmockExamBackBtn');
+    if(examBackBtn) examBackBtn.addEventListener('click', () => {
+      if(confirm('Exit test? Aapki progress save nahi hogi.')){ examStopTimer(); showCalcPage('engfullmockmenu'); }
+    });
+    const examSubmitBtn = document.getElementById('engfullmockExamSubmitBtn');
+    if(examSubmitBtn) examSubmitBtn.addEventListener('click', examConfirmSubmit);
+    const examMarkBtn = document.getElementById('engfullmockExamMarkBtn');
+    if(examMarkBtn) examMarkBtn.addEventListener('click', examMarkForReview);
+    const examClearBtn = document.getElementById('engfullmockExamClearBtn');
+    if(examClearBtn) examClearBtn.addEventListener('click', examClearResponse);
+    const examSaveNextBtn = document.getElementById('engfullmockExamSaveNextBtn');
+    if(examSaveNextBtn) examSaveNextBtn.addEventListener('click', examSaveNext);
+    const examSaveNextBtnBottom = document.getElementById('engfullmockExamSaveNextBtnBottom');
+    if(examSaveNextBtnBottom) examSaveNextBtnBottom.addEventListener('click', examSaveNext);
+    const examPauseBtn = document.getElementById('engfullmockExamPauseBtn');
+    if(examPauseBtn) examPauseBtn.addEventListener('click', examTogglePause);
+    const examResumeBtn = document.getElementById('engfullmockExamResumeBtn');
+    if(examResumeBtn) examResumeBtn.addEventListener('click', examTogglePause);
+
+    const resultBackBtn = document.getElementById('engfullmockResultBackBtn');
+    if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('engfullmockmenu'));
+    const resultReattemptBtn = document.getElementById('engfullmockResultReattemptBtn');
+    if(resultReattemptBtn) resultReattemptBtn.addEventListener('click', () => {
+      if(confirm('Is mock ko dobara attempt karna hai? Naya attempt submit karne par purana result overwrite ho jaayega.')){
+        startExamQuiz(examSession.setKey);
+      }
+    });
+    const resultPrevBtn = document.getElementById('engfullmockResultPrevBtn');
+    if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => resultGoTo(examSession.current - 1));
+    const resultNextBtn = document.getElementById('engfullmockResultNextBtn');
+    if(resultNextBtn) resultNextBtn.addEventListener('click', () => {
+      if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
+      else showCalcPage('engfullmockmenu');
+    });
+    const resultQuestionWrap = document.getElementById('engfullmockResultQuestionWrap');
+    if(resultQuestionWrap) resultQuestionWrap.addEventListener('click', resultReveal);
+    const resultOptList = document.getElementById('engfullmockResultOptList');
+    if(resultOptList) resultOptList.addEventListener('click', resultReveal);
+    const resultTagWrap = document.getElementById('engfullmockResultTagWrap');
+    if(resultTagWrap) resultTagWrap.addEventListener('click', resultReveal);
+  }
+
+  return { init };
+}
+const englishfullmockQuiz = makeEnglishFullMockQuiz();
 
 
 
@@ -14076,6 +14580,7 @@ function initCalcNav(){
   wordarrangeageQuiz.init();
   reasoningmockQuiz.init();
   englishmockQuiz.init();
+  englishfullmockQuiz.init();
   mathPyqQuiz.init();
   mathPyqQuiz.initExamMode();
   initPhrasalQuiz();

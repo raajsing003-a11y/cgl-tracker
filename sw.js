@@ -69,7 +69,13 @@
 // removed entirely (button, overlay markup, CSS, and all JS) per request.
 // Old v10 cache would keep serving the old index.html/app.js with the
 // flashcard button and overlay still present, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v11';
+// Bumped v11 -> v12: added the "English Full Mocks (CPO/CGL)" feature —
+// new data/topics/englishfullmock.json + data/index.json entry
+// (ENGLISHFULLMOCK_SETS), new index.html menu/exam/result markup, and new
+// app.js quiz engine (makeEnglishFullMockQuiz). Old v11 cache would keep
+// serving the old index.html/app.js/index.json without this feature, so
+// it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v12';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
