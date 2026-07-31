@@ -13074,11 +13074,22 @@ const mathPyqQuiz = makeMathPyqQuiz();
     const frontEl = document.getElementById('gkTykFront');
     const backEl = document.getElementById('gkTykBack');
     const flipEl = document.getElementById('gkTykFlip');
+    const flipInnerEl = document.getElementById('gkTykFlipInner');
     const prevBtn = document.getElementById('gkTykPrevBtn');
     const nextBtn = document.getElementById('gkTykNextBtn');
     if(!total || !frontEl || !backEl) return;
     const card = tykCards[tykIdx];
-    if(flipEl) flipEl.classList.remove('flipped');
+    // Card badalte waqt flip ko turant (bina animation ke) front par reset
+    // karo — warna purane card ka "flipped" state animate hoke wapas aata
+    // hai aur naye card ka answer pehle hi dikh jaata hai.
+    if(flipEl && flipInnerEl){
+      flipInnerEl.classList.add('noAnim');
+      flipEl.classList.remove('flipped');
+      void flipInnerEl.offsetWidth; // reflow force karo taaki transition-none apply ho jaaye
+      flipInnerEl.classList.remove('noAnim');
+    } else if(flipEl){
+      flipEl.classList.remove('flipped');
+    }
     if(progressEl) progressEl.textContent = `${tykIdx + 1} / ${total}`;
     if(frontEl) frontEl.textContent = card.q;
     if(backEl) backEl.textContent = card.a + (card.full ? '' : '');

@@ -2562,6 +2562,15 @@
     color:#e2e8f0;font-size:11.5px;font-weight:800;letter-spacing:0.2px;
     box-shadow:0 3px 10px rgba(0,0,0,0.3);}
 
+  /* Thin progress bar for the paragraph currently being auto-read. Sticky
+     to the top of the reading viewport so it's visible no matter where the
+     active paragraph sits, but only shown while auto-scroll is on. */
+  .gkReadProgressBar{position:sticky;top:0;left:0;right:0;height:3px;z-index:206;
+    background:rgba(255,255,255,0.08);opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .gkReadProgressBar.gkReadProgressBar-on{opacity:1;}
+  .gkReadProgressFill{height:100%;width:0%;
+    background:linear-gradient(90deg,#38bdf8,#a78bfa,#f472b6);}
+
   /* ===== Reading Mode — chapter content ===== */
   .gkReaderContent{padding:18px 14px 160px;color:var(--text);line-height:1.7;
     animation:gkFadeIn .35s ease;}
@@ -2629,6 +2638,7 @@
   .gkTykFlip{flex:1;min-height:220px;perspective:1200px;cursor:pointer;margin-bottom:14px;}
   .gkTykFlipInner{position:relative;width:100%;height:100%;min-height:220px;
     transition:transform 0.5s;transform-style:preserve-3d;}
+  .gkTykFlipInner.noAnim{transition:none;}
   .gkTykFlip.flipped .gkTykFlipInner{transform:rotateY(180deg);}
   .gkTykFace{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;
     display:flex;align-items:center;justify-content:center;text-align:center;
@@ -4308,6 +4318,7 @@
       <!-- gkReaderTitle kept in DOM (JS sets its text) but visually hidden —
            chapter name should not show in the footer bar anymore. -->
       <div class="gkReaderTitle" id="gkReaderTitle" style="display:none;">&nbsp;</div>
+      <div class="gkReadProgressBar" id="gkReadProgressBar"><div class="gkReadProgressFill" id="gkReadProgressFill"></div></div>
       <div class="gkReaderContent" id="gkReaderContent"></div>
       <div class="gkAutoScrollFab" id="gkAutoScrollFab">
         <button class="gkAutoScrollSpeedBtn" id="gkAutoScrollSpeedBtn" aria-label="Auto-scroll speed">1x</button>

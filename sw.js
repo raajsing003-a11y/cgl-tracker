@@ -55,7 +55,16 @@
 // real SSC static-GK questions instead of a generic "क्या था/थी?". Old
 // v8 cache would keep serving the buggy/generic flashcard logic, so it
 // must be evicted too.
-const CACHE_NAME = 'exam-tracker-v9';
+//
+// Bumped v9 -> v10: fixed a flashcard bug where clicking Next/Prev while
+// a card was flipped showed the new card's answer immediately — the CSS
+// 3D-flip transition was animating the old "flipped" state back to front
+// at the same time the new card's text was set, so the back face briefly
+// showed through. renderTykCard() now force-resets the flip with
+// transitions disabled (a .noAnim class + reflow) before filling in the
+// next card. Old v9 cache would keep serving the buggy flip-carry-over
+// behaviour, so it must be evicted too.
+const CACHE_NAME = 'exam-tracker-v10';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
