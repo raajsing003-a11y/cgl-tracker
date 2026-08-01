@@ -1413,10 +1413,30 @@ function escapeHtml(s){
 // before and passes through unchanged. If the string already contains a
 // pre-rendered KaTeX HTML block (pasted in as ready-made markup), it's left
 // completely untouched so that existing rich rendering keeps working.
+// Runs MathJax over a container after question/option/solution HTML has been
+// injected via innerHTML, so raw \(...\) LaTeX from the source question
+// banks (Super Practice / 75-Day Practice / Math Mock quant, all of which
+// carry genuine LaTeX like \(\sqrt[3]{42875}\)) actually renders instead of
+// showing as literal backslash-text. Safe to call even before the MathJax
+// script has finished loading — it just no-ops until ready, and the next
+// render call will pick it up.
+function typesetMath(container){
+  if(!container) return;
+  if(window.MathJax && window.MathJax.typesetPromise && window.__mathJaxReady){
+    try{ window.MathJax.typesetPromise([container]).catch(function(){}); }catch(e){}
+  }
+}
+
 function mathify(text){
   const raw = String(text || '');
   if(!raw) return '';
   if(raw.indexOf('katex') !== -1) return raw;
+  // Already-rich HTML from the native question banks (Super Practice /
+  // 75-Day Practice quant, converted with real <p>/<sup>/<img> markup and
+  // embedded diagrams) must be trusted as-is — running it through
+  // escapeHtml() + the LaTeX-token substitutions below would show the raw
+  // tags as text and drop the images entirely.
+  if(/<\s*(p|img|sup|sub|span|div|table|br|b|i|ul|ol|li)[ >\/]/i.test(raw)) return raw;
 
   let s = escapeHtml(raw);
 
@@ -12327,6 +12347,7 @@ function makeMathPyqQuiz(){
     const markBtn = document.getElementById('examMarkBtn');
     if(markBtn) markBtn.textContent = examSession.marked[examSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
     examRenderPalette();
+    typesetMath(wordEl); typesetMath(optList);
   }
 
   function examSelectOption(i){
@@ -12528,6 +12549,7 @@ function makeMathPyqQuiz(){
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('resultNextBtn');
     if(nextBtn) nextBtn.textContent = (i === examSession.questions.length - 1) ? 'Done ✓' : 'Next ➜';
+    typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
   }
 
   function initExamMode(){
@@ -16076,6 +16098,7 @@ function spnativeRenderQuestion(){
   const markBtn = document.getElementById('spnativeExamMarkBtn');
   if(markBtn) markBtn.textContent = spnativeSession.marked[spnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
   spnativeRenderPalette();
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 function selectedIsCorrect(session, idx){
   const q = session.questions[idx];
@@ -16232,6 +16255,7 @@ function spnativeResultRenderQuestion(){
     if(solText) solText.innerHTML = spnativeSolText(q) || 'Solution available soon.';
     if(solCard) solCard.style.display = 'block';
   } else if(solCard) solCard.style.display = 'none';
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 
 function initSuperPracticeQuiz(){
@@ -16651,6 +16675,7 @@ function p75nativeRenderQuestion(){
   const markBtn = document.getElementById('p75nativeExamMarkBtn');
   if(markBtn) markBtn.textContent = p75nativeSession.marked[p75nativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
   p75nativeRenderPalette();
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 function p75nativeSelectOption(i){
   if(p75nativeSession.revealed[p75nativeSession.current]) return; // locked once revealed
@@ -16794,6 +16819,7 @@ function p75nativeResultRenderQuestion(){
     if(solText) solText.innerHTML = p75nativeSolText(q) || 'Solution available soon.';
     if(solCard) solCard.style.display = 'block';
   } else if(solCard) solCard.style.display = 'none';
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 
 function initP75Native(){

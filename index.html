@@ -2989,6 +2989,24 @@
 </style>
 
 
+<script>
+  // Renders \( ... \) / \[ ... \] LaTeX embedded in question/option/solution
+  // HTML (Super Practice, 75-Day Practice, Math Mock quant banks all carry
+  // raw LaTeX from the original source — e.g. \(\sqrt[3]{42875}\) — which
+  // plain HTML can't display on its own). Loaded once, then app.js calls
+  // window.typesetMath(container) after each innerHTML question render.
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] },
+    startup: {
+      ready(){
+        MathJax.startup.defaultReady();
+        window.__mathJaxReady = true;
+      }
+    }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js" async></script>
 </head>
 <body>
 <style>
