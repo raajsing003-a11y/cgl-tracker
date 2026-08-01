@@ -17922,6 +17922,27 @@ function maybeShowHelpModalOnce(){
   if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
 }
 
+// ===== Light/Dark theme toggle =====
+// Light is the app-wide default (menus, mocks, quizzes); this button
+// flips <html class="theme-dark"> on/off and remembers the choice.
+{
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeColorMeta = document.getElementById('themeColorMeta');
+  function applyThemeIcon(){
+    const isDark = document.documentElement.classList.contains('theme-dark');
+    if(themeToggleBtn) themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    if(themeColorMeta) themeColorMeta.setAttribute('content', isDark ? '#08070a' : '#f3f4f7');
+  }
+  applyThemeIcon();
+  if(themeToggleBtn){
+    themeToggleBtn.addEventListener('click', function(){
+      const isDark = document.documentElement.classList.toggle('theme-dark');
+      try{ localStorage.setItem('examTrackerTheme', isDark ? 'dark' : 'light'); }catch(e){}
+      applyThemeIcon();
+    });
+  }
+}
+
 // ===== Start Studying: Focus Timer (Pomodoro / Stopwatch / Timed) =====
 // A free-running study-time logger, separate from the daily task checklist —
 // tracks minutes studied per SSC subject (Math/Reasoning/English/GK) so the

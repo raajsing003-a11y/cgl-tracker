@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exam Tracker</title>
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#f3f4f7" id="themeColorMeta">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,14 +14,69 @@
 <link rel="preload" href="./app.js" as="script">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://study-414cf-default-rtdb.firebaseio.com" crossorigin>
+<script>
+  // Runs before first paint so the page never flashes the wrong theme.
+  // Light is the default; only switches to dark if the user chose it before.
+  (function(){
+    try{
+      if(localStorage.getItem('examTrackerTheme') === 'dark'){
+        document.documentElement.classList.add('theme-dark');
+      }
+    }catch(e){}
+  })();
+</script>
 <style>
+  /* ===== Theme system =====
+     Light is the default look for the whole app (menus, mocks, quizzes).
+     Toggling the 🌙/☀️ button in the top bar adds/removes .theme-dark on
+     <html>, which swaps every variable below back to the app's original
+     dark palette. Preference is remembered in localStorage. */
   :root{
+    --bg:#f3f4f7;
+    --panel:#ffffff;
+    --panel2:#ffffff;
+    --card:#ffffff;
+    --border:#dcdfe6;
+    --border-strong:#b7bcc6;
+    --font-main:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --text:#181a1f;
+    --muted:#5b606b;
+    --white:#101216;
+    --gain:#1a9c56;
+    --loss:#e0344c;
+    --accent:#b8790a;
+    --accent-dim:#7a5f14;
+    --blue:#2563eb;
+    --purple:#8b3fd1;
+    --pink:#d1348f;
+    --orange:#c2570f;
+    --teal:#0f9c8a;
+    --quiz-text:#181a1f;
+    --exam-topbar-bg:#ffffff;
+    --exam-timer-bg:#eef2ff;
+    --exam-timer-color:#1d4ed8;
+    --exam-timer-border:#c7d7fb;
+    --exam-pause-overlay-bg:rgba(255,255,255,0.92);
+    --exam-optbtn-bg:#ffffff;
+    --exam-optbtn-shadow:0 1px 3px rgba(0,0,0,0.06);
+    --exam-optmark-bg:#f1f2f5;
+    --exam-opt-selected-bg:#e8f0fe;
+    --exam-opt-correct-bg:#e7f9ef;
+    --exam-opt-wrong-bg:#fdecec;
+    --exam-navbtn-bg:#ffffff;
+    --exam-navbtn-shadow:0 1px 2px rgba(0,0,0,0.05);
+    --exam-pausebtn-bg:#ffffff;
+    --exam-palette-bg:#ffffff;
+    --panel-fade:#e7e9f0;
+    color-scheme:light;
+  }
+  html.theme-dark{
     --bg:#08070a;
     --panel:#111013;
     --panel2:#1a181d;
+    --card:#161b22;
     --border:#333038;
     --border-strong:#726d7a;
-    --font-main:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --text:#c6c3cb;
     --muted:#aaa5ad;
     --white:#eeecf0;
@@ -35,6 +90,23 @@
     --orange:#fb923c;
     --teal:#2dd4bf;
     --quiz-text:#b8b5bd;
+    --exam-topbar-bg:#0d1420;
+    --exam-timer-bg:#1a2436;
+    --exam-timer-color:var(--white);
+    --exam-timer-border:rgba(96,165,250,0.4);
+    --exam-pause-overlay-bg:rgba(8,7,10,0.92);
+    --exam-optbtn-bg:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0) 40%),var(--panel2);
+    --exam-optbtn-shadow:0 1px 0 rgba(255,255,255,0.03) inset,0 3px 8px rgba(0,0,0,0.22);
+    --exam-optmark-bg:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0));
+    --exam-opt-selected-bg:linear-gradient(160deg,rgba(96,165,250,0.22),rgba(96,165,250,0.06));
+    --exam-opt-correct-bg:linear-gradient(160deg,rgba(74,222,128,0.32),rgba(74,222,128,0.09));
+    --exam-opt-wrong-bg:linear-gradient(160deg,rgba(248,113,113,0.32),rgba(248,113,113,0.09));
+    --exam-navbtn-bg:linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0)),var(--panel2);
+    --exam-navbtn-shadow:0 2px 6px rgba(0,0,0,0.22);
+    --exam-pausebtn-bg:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0)),var(--panel2);
+    --exam-palette-bg:linear-gradient(165deg,var(--panel),var(--panel-fade));
+    --panel-fade:var(--panel-fade);
+    color-scheme:dark;
   }
   *{box-sizing:border-box;}
   body{
@@ -72,7 +144,7 @@
   }
   .wallet{margin-bottom:22px;}
   .stat{
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);border:1px solid var(--border);border-radius:11px;
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));border:1px solid var(--border);border-radius:11px;
     padding:14px 8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);
   }
   .stat.invert{background:linear-gradient(160deg,#f4ecd6,#e8d59e);border-color:var(--accent);box-shadow:0 4px 14px rgba(251,191,36,0.2);}
@@ -84,9 +156,9 @@
   .freezeInfo{font-size:13px;margin-top:4px;letter-spacing:1px;}
   .freezeInfo .freezeEmpty{opacity:0.25;filter:grayscale(1);}
   .stat.invert .lbl{color:#4a3f22;}
-  .stat.stat-gain{background:linear-gradient(165deg,rgba(74,222,128,0.14),#0d0c0f);border-color:rgba(74,222,128,0.35);}
+  .stat.stat-gain{background:linear-gradient(165deg,rgba(74,222,128,0.14),var(--panel-fade));border-color:rgba(74,222,128,0.35);}
   .stat.stat-gain .num{color:var(--gain);}
-  .stat.stat-loss{background:linear-gradient(165deg,rgba(248,113,113,0.14),#0d0c0f);border-color:rgba(248,113,113,0.35);}
+  .stat.stat-loss{background:linear-gradient(165deg,rgba(248,113,113,0.14),var(--panel-fade));border-color:rgba(248,113,113,0.35);}
   .stat.stat-loss .num{color:var(--loss);}
 
   .grid-label{font-size:12px;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin:22px 0 10px;font-weight:600;
@@ -126,7 +198,7 @@
   /* ===== Home tab: Last 4 Days Heatmap strip ===== */
   .last4Heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 22px;}
   .last4Cell{
-    border-radius:12px;border:1px solid var(--border);background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    border-radius:12px;border:1px solid var(--border);background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     color:var(--muted);padding:12px 4px 10px;text-align:center;
     display:flex;flex-direction:column;align-items:center;gap:4px;
     box-shadow:0 4px 12px rgba(0,0,0,0.4);
@@ -159,7 +231,7 @@
   .daycell.outrange:active{transform:none;}
 
   .panel{
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border-strong);border-radius:14px;
     padding:18px 16px 10px;margin-bottom:20px;
     box-shadow:0 6px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
@@ -179,11 +251,11 @@
   .restbtn{
     display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;
     border:1px dashed var(--border-strong);border-radius:12px;cursor:pointer;font-size:12px;color:var(--muted);font-weight:600;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     transition:border-color .15s ease,box-shadow .15s ease;
   }
   .restbtn.active{
-    background:linear-gradient(160deg,rgba(45,212,191,0.18),#0d0c0f);
+    background:linear-gradient(160deg,rgba(45,212,191,0.18),var(--panel-fade));
     color:var(--teal);border:1.5px solid var(--teal);border-style:solid;
     box-shadow:0 0 12px rgba(45,212,191,0.25);
   }
@@ -339,12 +411,12 @@
 
   .chapterRow{
     display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:12.5px;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border);border-radius:12px;margin-bottom:7px;
     box-shadow:0 3px 8px rgba(0,0,0,0.3);
   }
   .chapterRow.weak{
-    background:linear-gradient(160deg,rgba(248,113,113,0.14),#0d0c0f);
+    background:linear-gradient(160deg,rgba(248,113,113,0.14),var(--panel-fade));
     border-color:rgba(248,113,113,0.45);box-shadow:0 0 12px rgba(248,113,113,0.2),0 3px 8px rgba(0,0,0,0.3);
   }
   .chapterRow .chName{flex:1;color:var(--text);font-weight:600;min-width:0;}
@@ -469,7 +541,7 @@
   /* ===== Badge Unlock Banner ===== */
   .badgeBanner{
     display:none;
-    background:linear-gradient(135deg,#1a1404,#0a0a0a);color:var(--accent);
+    background:linear-gradient(135deg,var(--panel2),var(--panel-fade));color:var(--accent);
     border:2px solid var(--accent);border-radius:10px;
     padding:16px 16px;margin-bottom:16px;
     box-shadow:0 0 24px rgba(251,191,36,0.25);
@@ -488,7 +560,7 @@
     border:1px solid var(--border);border-radius:10px;padding:12px 6px;text-align:center;
     background:var(--panel2);opacity:0.4;filter:grayscale(1);transition:all .2s ease;
   }
-  .badgeChip.earned{opacity:1;filter:none;border-color:var(--accent);background:linear-gradient(160deg,#1a1404,#141014);box-shadow:0 0 14px rgba(251,191,36,0.15);}
+  .badgeChip.earned{opacity:1;filter:none;border-color:var(--accent);background:linear-gradient(160deg,var(--panel2),var(--panel-fade));box-shadow:0 0 14px rgba(251,191,36,0.15);}
   .badgeChip .bEmoji{font-size:26px;line-height:1;margin-bottom:6px;}
   .badgeChip .bLabel{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;}
   .badgeChip.earned .bLabel{color:var(--accent);}
@@ -496,7 +568,7 @@
 
   /* ===== XP / Level Card (Home) ===== */
   .levelCard{
-    background:linear-gradient(160deg,#1a1404,#0d0c0f);
+    background:linear-gradient(160deg,var(--panel2),var(--panel-fade));
     border:1px solid var(--accent-dim);border-radius:14px;
     padding:16px 16px 14px;margin-bottom:16px;
     box-shadow:0 6px 20px rgba(0,0,0,0.4);
@@ -701,7 +773,7 @@
     padding:10px 12px;margin-bottom:18px;font-size:12.5px;
   }
   .profilebar .pbrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;width:100%;}
-  .profilebar.viewing{border-color:var(--accent);background:linear-gradient(135deg,#1a1404,#111013);}
+  .profilebar.viewing{border-color:var(--accent);background:linear-gradient(135deg,var(--panel2),var(--panel-fade));}
   .profilebar.viewing span{color:var(--accent);}
   .lbwrap{margin-bottom:4px;display:flex;flex-direction:column;gap:10px;}
   .lbsummary{
@@ -713,7 +785,7 @@
   .lbrow{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
     padding:12px 10px;font-size:12.5px;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border);border-radius:14px;
     box-shadow:0 4px 14px rgba(0,0,0,0.4);
     transition:transform .12s ease;
@@ -721,22 +793,22 @@
   .lbrow:active{transform:scale(0.98);}
   .lbrow.active{outline:2px solid var(--accent);}
   .lbrow.me{
-    background:linear-gradient(160deg,rgba(96,165,250,0.16),#0d0c0f);
+    background:linear-gradient(160deg,rgba(96,165,250,0.16),var(--panel-fade));
     border:1.5px solid var(--blue);box-shadow:0 0 14px rgba(96,165,250,0.25),0 4px 14px rgba(0,0,0,0.4);
   }
   .lbrow.lead{
     border-color:rgba(251,191,36,0.6);
-    background:linear-gradient(160deg,rgba(251,191,36,0.16),#0d0c0f);
+    background:linear-gradient(160deg,rgba(251,191,36,0.16),var(--panel-fade));
     box-shadow:0 0 16px rgba(251,191,36,0.28),0 4px 14px rgba(0,0,0,0.4);
   }
   .lbrow.silver{
     border-color:rgba(203,213,225,0.55);
-    background:linear-gradient(160deg,rgba(203,213,225,0.14),#0d0c0f);
+    background:linear-gradient(160deg,rgba(203,213,225,0.14),var(--panel-fade));
     box-shadow:0 0 14px rgba(203,213,225,0.18),0 4px 14px rgba(0,0,0,0.4);
   }
   .lbrow.bronze{
     border-color:rgba(217,119,6,0.55);
-    background:linear-gradient(160deg,rgba(217,119,6,0.16),#0d0c0f);
+    background:linear-gradient(160deg,rgba(217,119,6,0.16),var(--panel-fade));
     box-shadow:0 0 14px rgba(217,119,6,0.22),0 4px 14px rgba(0,0,0,0.4);
   }
   .lbrow.lead.me, .lbrow.silver.me, .lbrow.bronze.me{border-color:var(--blue);}
@@ -790,7 +862,7 @@
   }
   .addfriend input:focus{outline:none;border-color:var(--blue);}
   .readonly-banner{
-    background:linear-gradient(135deg,#1a1404,#0a0a0a);color:var(--accent);
+    background:linear-gradient(135deg,var(--panel2),var(--panel-fade));color:var(--accent);
     border:1px dashed var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:14px;
     font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
   }
@@ -809,7 +881,7 @@
   }
   .topbar-left{
     display:flex;align-items:center;gap:8px;
-    font-family:var(--font-main);font-weight:600;font-size:14.5px;letter-spacing:0.5px;color:var(--white);
+    font-family:var(--font-main);font-weight:600;font-size:14.5px;letter-spacing:0.5px;color:#f4f5f8;
   }
   .topbar-title-col{display:flex;flex-direction:column;line-height:1.25;}
   .topbar-credit{
@@ -834,7 +906,7 @@
     transition:background 0.4s ease;
   }
   .miniring::before{content:'';position:absolute;inset:3px;border-radius:50%;background:#0d0c10;}
-  .miniring span{position:relative;font-size:9px;font-weight:600;color:var(--accent);font-family:var(--font-main);}
+  .miniring span{position:relative;font-size:9px;font-weight:600;color:#fbbf24;font-family:var(--font-main);}
 
   /* ===== "Exam Countdown" ring widget — same conic-gradient ring trick as
      .miniring above, just scaled up and styled to match a black-card +
@@ -899,7 +971,7 @@
     position:fixed;top:64px;left:0;right:0;z-index:59;
     display:none;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
     padding:8px 14px;
-    background:linear-gradient(135deg,#1a1404,#0a0a0a);
+    background:linear-gradient(135deg,var(--panel2),var(--panel-fade));
     border-bottom:1px solid var(--accent);
   }
   .viewbar.show{display:flex;}
@@ -924,7 +996,7 @@
   .subtabbtn{
     display:flex;align-items:center;justify-content:center;gap:7px;
     padding:14px 10px;border-radius:13px;border:1.5px solid var(--border);
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);color:var(--muted);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));color:var(--muted);
     font-family:var(--font-main);font-weight:600;font-size:13.5px;
     cursor:pointer;letter-spacing:0.3px;
     box-shadow:0 4px 12px rgba(0,0,0,0.35);
@@ -955,7 +1027,7 @@
   }
   .calcCard{
     display:flex;align-items:center;gap:12px;text-align:left;
-    background:linear-gradient(165deg,#1c1a1f,#0d0c0f);
+    background:linear-gradient(165deg,#1c1a1f,var(--panel-fade));
     border:1px solid var(--border);border-radius:18px;
     padding:16px 13px;cursor:pointer;position:relative;overflow:hidden;
     font-family:var(--font-main);color:var(--text);
@@ -1539,7 +1611,7 @@
   .calcSheetOverlay.show{display:flex;}
   .calcSheetCard{
     position:relative;width:100%;max-width:520px;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border-strong);border-bottom:none;
     border-radius:22px 22px 0 0;
     padding:10px 18px calc(20px + env(safe-area-inset-bottom,0px));
@@ -1897,7 +1969,7 @@
   /* ===== Daily Motivation Quote (Home) ===== */
   .quoteCard{
     position:relative;overflow:hidden;
-    background:linear-gradient(155deg,#1a1404 0%,#141014 55%,#0d0c0f 100%);
+    background:linear-gradient(155deg,var(--panel2) 0%,var(--panel2) 55%,var(--panel-fade) 100%);
     border:1px solid var(--accent-dim);border-radius:14px;
     padding:16px 16px 14px;margin-bottom:18px;
     box-shadow:0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
@@ -1918,15 +1990,15 @@
   /* ===== Compact "Compete With Friends" summary card on Home ===== */
   .homeLBrow{
     display:flex;align-items:center;gap:10px;padding:9px 10px;font-size:12px;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border);border-radius:12px;margin-bottom:7px;
   }
   .homeLBrow.me{
-    background:linear-gradient(160deg,rgba(96,165,250,0.14),#0d0c0f);
+    background:linear-gradient(160deg,rgba(96,165,250,0.14),var(--panel-fade));
     border-color:var(--blue);
   }
   .homeLBrow.lead{
-    background:linear-gradient(160deg,rgba(251,191,36,0.14),#0d0c0f);
+    background:linear-gradient(160deg,rgba(251,191,36,0.14),var(--panel-fade));
     border-color:rgba(251,191,36,0.55);
   }
   .homeLBrank{font-weight:700;min-width:22px;text-align:center;color:var(--muted);font-size:13px;}
@@ -1981,7 +2053,7 @@
   .rightNowCard{
     display:flex;align-items:center;gap:12px;padding:14px 14px;margin-bottom:18px;
     border-radius:12px;border:1px solid var(--border-strong);
-    background:linear-gradient(160deg,var(--panel),#0d0c0f);
+    background:linear-gradient(160deg,var(--panel),var(--panel-fade));
     box-shadow:0 4px 14px rgba(0,0,0,0.4);
   }
   .rightNowCard.live{border-color:var(--gain);box-shadow:0 0 16px rgba(74,222,128,0.15);}
@@ -2005,7 +2077,7 @@
   .homeTimerBanner{
     display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:14px;
     border-radius:12px;border:1px solid var(--gain);cursor:pointer;
-    background:linear-gradient(160deg,var(--panel),#0d0c0f);
+    background:linear-gradient(160deg,var(--panel),var(--panel-fade));
     box-shadow:0 0 16px rgba(74,222,128,0.15);
   }
   .homeTimerBanner:active{transform:scale(0.98);}
@@ -2086,7 +2158,7 @@
   }
   .onbCard{
     position:relative;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
     border:1px solid var(--border-strong);border-radius:16px;
     padding:22px 18px 18px;max-width:380px;width:100%;
     box-shadow:0 10px 40px rgba(0,0,0,0.6);margin:auto;
@@ -2136,7 +2208,7 @@
   /* ===== Revision Counter tab ===== */
   .chapterRow .chBtn.chRevisePlus{border-color:var(--gain);color:var(--gain);}
   .chapterRow.clear{
-    background:linear-gradient(160deg,rgba(74,222,128,0.12),#0d0c0f);
+    background:linear-gradient(160deg,rgba(74,222,128,0.12),var(--panel-fade));
     border-color:rgba(74,222,128,0.4);
   }
   .chapterRow.clear .chName{color:var(--gain);}
@@ -2144,14 +2216,14 @@
   .chapterRow.revised{border-color:rgba(74,222,128,0.3);}
   .chapterRow.revised .chCount{background:rgba(74,222,128,0.15);color:var(--gain);}
   .chapterRow.neverRevised{
-    background:linear-gradient(160deg,rgba(251,191,36,0.14),#0d0c0f);
+    background:linear-gradient(160deg,rgba(251,191,36,0.14),var(--panel-fade));
     border-color:rgba(251,191,36,0.45);box-shadow:0 0 12px rgba(251,191,36,0.18),0 3px 8px rgba(0,0,0,0.3);
   }
   .chapterRow.neverRevised .chName{color:var(--accent);}
   .chapterRow.neverRevised .chCount{background:rgba(251,191,36,0.2);color:var(--accent);}
   .gkGroup{
     border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));
   }
   .gkGroup summary{
     list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;
@@ -2168,7 +2240,7 @@
   .mockCatCard{
     position:relative;overflow:hidden;text-align:left;cursor:pointer;
     border:1.5px solid var(--border-strong);border-radius:14px;padding:16px 14px;
-    background:linear-gradient(155deg,var(--panel),#0d0c0f);
+    background:linear-gradient(155deg,var(--panel),var(--panel-fade));
     box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
     transition:transform .12s ease,border-color .15s ease;
     font-family:var(--font-main);color:var(--text);
@@ -2203,7 +2275,7 @@
   .mockDetailTitle{font-family:var(--font-main);font-size:18px;font-weight:600;color:var(--white);flex:1;}
 
   .mockEntryCard{
-    background:linear-gradient(165deg,var(--panel),#0d0c0f);border:1px solid var(--border);border-radius:12px;
+    background:linear-gradient(165deg,var(--panel),var(--panel-fade));border:1px solid var(--border);border-radius:12px;
     padding:12px 14px;margin-bottom:10px;border-left:3px solid var(--border-strong);
     box-shadow:0 3px 10px rgba(0,0,0,0.35);
   }
@@ -2268,7 +2340,7 @@
   .studyModeBtn{
     position:relative;overflow:hidden;text-align:center;cursor:pointer;
     border:1.5px solid var(--border-strong);border-radius:14px;padding:16px 8px;
-    background:linear-gradient(155deg, var(--sm-color2,var(--panel)), #0d0c0f);
+    background:linear-gradient(155deg, var(--sm-color2,var(--panel)), var(--panel-fade));
     box-shadow:0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
     transition:transform .12s ease;font-family:var(--font-main);color:var(--white);
   }
@@ -2366,52 +2438,20 @@
     0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.55),inset 0 1px 1px rgba(255,255,255,0.35);}
     50%{box-shadow:0 0 0 8px rgba(239,68,68,0),inset 0 1px 1px rgba(255,255,255,0.35);}
   }
-  /* ===== White "real exam interface" theme — Math + Reasoning only =====
-     showCalcPage() toggles body.lightExamTheme on/off based on which page
-     is open (see LIGHT_THEME_PAGE_PREFIXES in app.js). English/GK/other
-     pages keep the app's normal dark theme untouched. Redefining the
-     shared CSS variables covers most components automatically (cards,
-     buttons, borders); the explicit rules below patch the handful of
-     spots that use hardcoded dark hex values instead of a variable. */
-  body.lightExamTheme{
-    --bg:#f3f4f7;
-    --panel:#ffffff;
-    --panel2:#ffffff;
-    --card:#ffffff;
-    --border:#dcdfe6;
-    --border-strong:#b7bcc6;
-    --text:#181a1f;
-    --muted:#5b606b;
-    --white:#101216;
-    --quiz-text:#181a1f;
-    background:var(--bg) !important;
-  }
-  body.lightExamTheme .calcPage{color:var(--text);}
-  body.lightExamTheme .examInfoCard{background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
-  body.lightExamTheme .examTopBar{background:#ffffff;}
-  body.lightExamTheme .examTimerPill{background:#eef2ff;color:#1d4ed8;border-color:#c7d7fb;}
-  body.lightExamTheme .examOptBtn{background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
-  body.lightExamTheme .examOptBtn .examOptMark{background:#f1f2f5;}
-  body.lightExamTheme .examOptBtn.selected{background:#e8f0fe;}
-  body.lightExamTheme .examOptBtn.correct{background:#e7f9ef;}
-  body.lightExamTheme .examOptBtn.wrong{background:#fdecec;}
-  body.lightExamTheme .examNavRow .nav-btn{background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.05);}
-  body.lightExamTheme .examPauseBtn{background:#ffffff;}
-  body.lightExamTheme .examPaletteWrap{background:#ffffff;}
-  body.lightExamTheme .examPauseOverlay{background:rgba(255,255,255,0.92);}
-  body.lightExamTheme select,
-  body.lightExamTheme input{color-scheme:light;}
-  /* ===== Testbook-style Mock Exam interface (Math PYQ mocks only) ===== */
-  .examInfoCard{margin:14px;padding:4px 16px;background:var(--card,#161b22);border:1px solid var(--border);border-radius:12px;}
+  /* ===== Testbook-style Mock Exam interface (all mocks/quizzes) =====
+     Colors here come from CSS variables (see :root / html.theme-dark
+     above), so this interface follows the app-wide light/dark toggle
+     instead of being pinned to one theme. */
+  .examInfoCard{margin:14px;padding:4px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
   .examInfoRow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:14.5px;}
   .examInfoRow:last-child{border-bottom:none;}
   .examInfoRow b{color:var(--blue,#4da3ff);font-size:15px;}
   .examInfoInstructions{margin:14px;padding:14px 16px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:12px;}
   .examInfoInstructionsTitle{font-weight:700;color:var(--gain,#10b981);margin-bottom:8px;font-size:15px;}
   .examInfoInstructions ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--muted);}
-  .examTopBar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0d1420;border-bottom:1px solid var(--border);max-width:100%;}
+  .examTopBar{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--exam-topbar-bg);border-bottom:1px solid var(--border);max-width:100%;}
   .examTopBar .calcSubTitle{font-size:14.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .examTimerPill{display:flex;align-items:center;gap:6px;font-family:monospace;font-size:16px;font-weight:700;color:var(--white);background:#1a2436;border:1px solid rgba(96,165,250,0.4);border-radius:8px;padding:6px 10px;white-space:nowrap;flex:none;}
+  .examTimerPill{display:flex;align-items:center;gap:6px;font-family:monospace;font-size:16px;font-weight:700;color:var(--exam-timer-color);background:var(--exam-timer-bg);border:1px solid var(--exam-timer-border);border-radius:8px;padding:6px 10px;white-space:nowrap;flex:none;}
   .examTimerPill.examTimerLow{color:var(--loss);border-color:rgba(248,113,113,0.5);animation:examBlink 1s infinite;}
   @keyframes examBlink{0%,100%{opacity:1;}50%{opacity:0.55;}}
   .examSubmitBtn{
@@ -2422,7 +2462,7 @@
   }
   .examSubmitBtn:active{transform:scale(0.95);box-shadow:0 1px 4px rgba(96,165,250,0.35),inset 0 1px 0 rgba(255,255,255,0.3);}
   .examPauseBtn{
-    background:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0)),var(--panel2);
+    background:var(--exam-pausebtn-bg);
     color:var(--white);border:1.5px solid var(--border-strong);border-radius:9px;padding:8px 11px;
     font-size:15px;line-height:1;white-space:nowrap;flex:none;
     box-shadow:0 2px 6px rgba(0,0,0,0.25);transition:transform 0.12s ease,background 0.15s ease,border-color 0.15s ease;
@@ -2450,7 +2490,7 @@
   .examNavRow .nav-btn:disabled, .examSubmitBtn:disabled{opacity:0.4;cursor:not-allowed;}
   .examPauseOverlay{
     display:none;position:absolute;inset:0;z-index:5;
-    background:rgba(8,7,10,0.92);backdrop-filter:blur(3px);
+    background:var(--exam-pause-overlay-bg);backdrop-filter:blur(3px);
     flex-direction:column;align-items:center;justify-content:center;gap:14px;
     border-radius:0 0 14px 14px;
   }
@@ -2460,10 +2500,10 @@
   .examOptList{display:flex;flex-direction:column;gap:10px;padding:10px 14px 4px;}
   .examOptBtn{
     position:relative;display:flex;align-items:flex-start;gap:12px;text-align:left;
-    background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0) 40%),var(--panel2);
+    background:var(--exam-optbtn-bg);
     border:1.5px solid var(--border);border-radius:14px;padding:13px 15px 13px 13px;
     font-size:15.5px;line-height:1.48;color:var(--text);font-family:var(--font-main);width:100%;
-    box-shadow:0 1px 0 rgba(255,255,255,0.03) inset,0 3px 8px rgba(0,0,0,0.22);
+    box-shadow:var(--exam-optbtn-shadow);
     transition:transform 0.12s ease,border-color 0.18s ease,background 0.18s ease,box-shadow 0.18s ease;
     -webkit-tap-highlight-color:transparent;
   }
@@ -2475,26 +2515,26 @@
   .examOptBtn .examOptMark{
     flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border-strong);
     display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;
-    color:var(--muted);background:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0));
+    color:var(--muted);background:var(--exam-optmark-bg);
     transition:all 0.18s ease;
   }
   .examOptBtn.selected{
     border-color:var(--blue);
-    background:linear-gradient(160deg,rgba(96,165,250,0.22),rgba(96,165,250,0.06));
+    background:var(--exam-opt-selected-bg);
     box-shadow:0 1px 0 rgba(255,255,255,0.04) inset,0 4px 14px rgba(96,165,250,0.18);
   }
   .examOptBtn.selected::after{box-shadow:0 0 0 3px rgba(96,165,250,0.14);}
   .examOptBtn.selected .examOptMark{background:linear-gradient(160deg,#7db8fc,var(--blue));border-color:var(--blue);color:#04101f;box-shadow:0 2px 6px rgba(96,165,250,0.45);}
   .examOptBtn.correct{
     border-color:var(--gain);
-    background:linear-gradient(160deg,rgba(74,222,128,0.32),rgba(74,222,128,0.09));color:var(--gain);
+    background:var(--exam-opt-correct-bg);color:var(--gain);
     box-shadow:0 1px 0 rgba(255,255,255,0.04) inset,0 4px 14px rgba(74,222,128,0.2);
   }
   .examOptBtn.correct::after{box-shadow:0 0 0 3px rgba(74,222,128,0.14);}
   .examOptBtn.correct .examOptMark{background:linear-gradient(160deg,#86efac,var(--gain));border-color:var(--gain);color:#04101f;box-shadow:0 2px 6px rgba(74,222,128,0.45);}
   .examOptBtn.wrong{
     border-color:var(--loss);
-    background:linear-gradient(160deg,rgba(248,113,113,0.32),rgba(248,113,113,0.09));color:var(--loss);
+    background:var(--exam-opt-wrong-bg);color:var(--loss);
     box-shadow:0 1px 0 rgba(255,255,255,0.04) inset,0 4px 14px rgba(248,113,113,0.2);
   }
   .examOptBtn.wrong::after{box-shadow:0 0 0 3px rgba(248,113,113,0.14);}
@@ -2502,8 +2542,8 @@
   .examNavRow{display:flex;gap:8px;padding:14px 14px 6px;flex-wrap:wrap;}
   .examNavRow .nav-btn{
     flex:1;min-width:90px;font-size:13px;padding:11px 6px;border-radius:10px;
-    background:linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0)),var(--panel2);
-    box-shadow:0 2px 6px rgba(0,0,0,0.22);
+    background:var(--exam-navbtn-bg);
+    box-shadow:var(--exam-navbtn-shadow);
   }
   .examNavRow .nav-btn:active{transform:scale(0.95);}
   .examNavRow .nav-btn.onbPrimary{background:var(--accent);color:#1a1404;}
@@ -2529,7 +2569,7 @@
     .examMainCol .examQNo{padding-left:0;}
     .examBodyRow .examPaletteWrap{
       flex:none;width:320px;margin-top:0;padding:14px;border-top:none;border-left:1px solid var(--border);
-      border-radius:14px;background:linear-gradient(165deg,var(--panel),#0d0c0f);
+      border-radius:14px;background:var(--exam-palette-bg);
       position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;
     }
     .examBodyRow .examPaletteGrid{grid-template-columns:repeat(5,1fr);}
@@ -3097,6 +3137,7 @@
   <div class="topbar-left">🎯 <div class="topbar-title-col"><span>EXAM TRACKER</span><a class="topbar-credit" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer">BY YUVRAJ SISODIYA</a></div></div>
   <div class="topbar-right">
     <button class="helpBtn adminPanelBtn" id="adminPanelBtn" aria-label="Admin Control Panel" style="display:none;">👑</button>
+    <button class="helpBtn" id="themeToggleBtn" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
     <a class="helpBtn" id="chatBtn" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer" aria-label="Chat on Telegram">💬</a>
     <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
     <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>
