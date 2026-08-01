@@ -11741,9 +11741,9 @@ function makeMathPyqQuiz(){
       srcWrap.style.cssText = 'margin-bottom:14px;';
       const sources = [
         { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
-        { key:'p75',     icon:'🆕', label:'75-Day Practice',  sub:'117 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
         { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'158 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
       ];
+      if(mathpyqMockSource === 'p75') mathpyqMockSource = 'concept';
       sources.forEach(s => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -15681,6 +15681,8 @@ async function openSPMock(key, file, label, entry){
   spnativeCurrentFile = file;
   const spExamPageEl = document.getElementById('calcPage-spnativeexam');
   if(spExamPageEl) spExamPageEl.dataset.subject = key;
+  const spResultPageEl = document.getElementById('calcPage-spnativeresult');
+  if(spResultPageEl) spResultPageEl.dataset.subject = key;
   spnativeMockModeActive = (key === 'quant' && entry && entry.topic === 'Mixed Practice');
   spnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
@@ -15953,7 +15955,9 @@ let spnativeResultRevealed = false;
 function spnativeResultGoTo(idx){
   if(idx < 0 || idx >= spnativeSession.questions.length) return;
   spnativeSession.current = idx;
-  spnativeResultRevealed = false;
+  // Mock-mode (quant 25Q mixed) sessions show the answer & solution right
+  // away on the result page — no need to tap each question first.
+  spnativeResultRevealed = spnativeMockModeActive;
   spnativeResultRenderQuestion();
   spnativeResultRenderPalette();
 }
@@ -16257,6 +16261,8 @@ async function openP75MockNative(key, file, label, entry){
   p75nativeCurrentFile = file;
   const p75ExamPageEl = document.getElementById('calcPage-p75nativeexam');
   if(p75ExamPageEl) p75ExamPageEl.dataset.subject = key;
+  const p75ResultPageEl = document.getElementById('calcPage-p75nativeresult');
+  if(p75ResultPageEl) p75ResultPageEl.dataset.subject = key;
   p75nativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('p75nativeInfoTitle');
