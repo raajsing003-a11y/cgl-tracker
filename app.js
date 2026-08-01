@@ -11916,6 +11916,15 @@ function makeMathPyqQuiz(){
       grid.appendChild(btn);
     });
   }
+  // Math PYQ mock keys come in 3 flavours — 'mock01'.. (Concept Mock),
+  // 'spmock001'.. (Super Practice), 'p75mock001'.. (75-Day Practice). The
+  // old check only matched keys STARTING with 'mock', which missed the sp/
+  // p75 prefixes and silently routed those mocks into the old chapter-quiz
+  // instant-reveal flow instead of the 15-min timed exam mode.
+  function isMathMockKey(key){
+    if(!key) return false;
+    return key.indexOf('mock') === 0 || key.indexOf('spmock') === 0 || key.indexOf('p75mock') === 0;
+  }
   function openLangChoice(setKey){
     session.setKey = setKey;
     const count = (setsForKey(setKey)[setKey] || []).length;
@@ -12075,11 +12084,11 @@ function makeMathPyqQuiz(){
     if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('mathpyqmenu'));
     const langHindiBtn = document.getElementById('mathpyqLangHindiBtn');
     if(langHindiBtn) langHindiBtn.addEventListener('click', () => {
-      if(session.setKey && session.setKey.indexOf('mock') === 0) startExamQuiz('hi'); else startQuiz('hi');
+      if(isMathMockKey(session.setKey)) startExamQuiz('hi'); else startQuiz('hi');
     });
     const langEnglishBtn = document.getElementById('mathpyqLangEnglishBtn');
     if(langEnglishBtn) langEnglishBtn.addEventListener('click', () => {
-      if(session.setKey && session.setKey.indexOf('mock') === 0) startExamQuiz('en'); else startQuiz('en');
+      if(isMathMockKey(session.setKey)) startExamQuiz('en'); else startQuiz('en');
     });
     const backBtn = document.getElementById('mathpyqBackBtn');
     if(backBtn) backBtn.addEventListener('click', () => showCalcPage('mathpyqmenu'));
