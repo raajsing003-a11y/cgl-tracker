@@ -12801,31 +12801,99 @@ const mathPyqQuiz = makeMathPyqQuiz();
     return null;
   }
 
+  // Returns ALL quizzes matching this chapter's topic — both from 75 Days
+  // Practice (chapter-wise, specific) AND Super Practice (broad category) —
+  // instead of picking just one. Used to render a full quiz list under the
+  // chapter content in the GK Reader.
+  async function gkFindAllQuizzesForChapter(subject, titleEn){
+    const titleTokens = gkTokenize(titleEn);
+    const out = { p75: [], sp: [], topicLabel: '' };
+
+    // 1) 75 Days Practice — every entry under the best-matching chapter-wise topic
+    try{
+      const p75 = await gkLoadP75Manifest();
+      const topicMap = gkGroupByTopic(p75);
+      let best = null, bestScore = 0;
+      Object.keys(topicMap).forEach(topic => {
+        const s = gkScoreTitleTopic(titleTokens, topic);
+        if(s > bestScore){ bestScore = s; best = topic; }
+      });
+      if(best && bestScore >= 2){
+        const entries = topicMap[best];
+        const entry = entries[Math.floor(Math.random() * entries.length)];
+        out.p75 = [{ source: 'p75', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }];
+        out.topicLabel = best;
+      }
+    }catch(e){ /* ignore, fall through */ }
+
+    // 2) Super Practice — every entry under the matching broad category
+    try{
+      const sp = await gkLoadSPManifest();
+      const topicMap = gkGroupByTopic(sp);
+      let best = GK_SUBJECT_FALLBACK_TOPIC[subject];
+      if(subject === 'science'){
+        if(/motion|force|gravitation|sound|light|optic|electricity|magnetism|wave|thermodynamic|units|measurement/i.test(titleEn)) best = 'Physics';
+        else if(/matter|atomic|chemical|acid|periodic|metal|organic|reaction/i.test(titleEn)) best = 'Chemistry';
+        else best = 'Biology';
+      }
+      if(!best || !topicMap[best] || !topicMap[best].length){
+        let bestScore = 0; best = null;
+        Object.keys(topicMap).forEach(topic => {
+          const s = gkScoreTitleTopic(titleTokens, topic);
+          if(s > bestScore){ bestScore = s; best = topic; }
+        });
+      }
+      if(best && topicMap[best] && topicMap[best].length){
+        const entries = topicMap[best];
+        const entry = entries[Math.floor(Math.random() * entries.length)];
+        out.sp = [{ source: 'sp', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }];
+        if(!out.topicLabel) out.topicLabel = best;
+      }
+    }catch(e){ /* ignore */ }
+
+    return out;
+  }
+
   function gkQuizCtaHtml(){
     return `<div class="gkQuizCta" id="gkQuizCta">
-      <div class="gkQuizCtaHead">📝 Is Chapter Ka Quiz</div>
+      <div class="gkQuizCtaHead">📝 Is Topic Ke Saare Quiz</div>
       <div class="gkQuizCtaSub" id="gkQuizCtaSub">Quiz dhoondh rahe hain…</div>
-      <button class="gkQuizCtaBtn" id="gkQuizCtaBtn" disabled>Quiz Shuru Karo &#8594;</button>
+      <div class="gkQuizItems" id="gkQuizItems"></div>
     </div>`;
   }
 
   async function attachGkQuizCta(titleEn, subject){
     const myToken = ++window.gkQuizCtaToken;
-    const match = await gkFindQuizForChapter(subject, titleEn);
+    const result = await gkFindAllQuizzesForChapter(subject, titleEn);
     if(myToken !== window.gkQuizCtaToken) return; // user ne chapter badal diya, purana result ignore karo
     const subEl = document.getElementById('gkQuizCtaSub');
-    const btn = document.getElementById('gkQuizCtaBtn');
-    if(!subEl || !btn) return;
-    if(!match){
+    const itemsEl = document.getElementById('gkQuizItems');
+    if(!subEl || !itemsEl) return;
+
+    const all = [...result.p75, ...result.sp];
+    if(!all.length){
       subEl.textContent = 'Abhi iske liye quiz available nahi hai.';
+      itemsEl.innerHTML = '';
       return;
     }
-    subEl.textContent = match.topic + (match.entry.q ? (' — ' + match.entry.q + ' sawaal') : '');
-    btn.disabled = false;
-    btn.onclick = () => {
-      if(match.source === 'p75' && typeof openP75Mock === 'function') openP75Mock(match.key, match.file, match.label, match.entry);
-      else if(typeof openSPMock === 'function') openSPMock(match.key, match.file, match.label, match.entry);
-    };
+
+    const totalQ = all.reduce((s, m) => s + (m.entry.q || 0), 0);
+    subEl.textContent = `${all.length} quiz mile${result.topicLabel ? ' — ' + result.topicLabel : ''} (${totalQ} sawaal total)`;
+
+    itemsEl.innerHTML = all.map((m, i) => `
+      <div class="gkQuizItem" data-idx="${i}">
+        <span class="gkQuizItemSrc">${m.source === 'p75' ? '75 Days' : 'Super Practice'}</span>
+        <span class="gkQuizItemLabel">${escapeHtml(m.label)}</span>
+        <span class="gkQuizItemQ">${m.entry.q ? m.entry.q + ' Q' : ''} &#8594;</span>
+      </div>`).join('');
+
+    itemsEl.querySelectorAll('.gkQuizItem').forEach(el => {
+      el.addEventListener('click', () => {
+        const m = all[+el.dataset.idx];
+        if(m.source === 'p75' && typeof openP75Mock === 'function') openP75Mock(m.key, m.file, m.label, m.entry);
+        else if(typeof openSPMock === 'function') openSPMock(m.key, m.file, m.label, m.entry);
+      });
+    });
   }
 
   const GK_SUBJECTS = {
