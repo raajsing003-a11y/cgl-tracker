@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exam Tracker</title>
-<meta name="theme-color" content="#f3f4f7" id="themeColorMeta">
+<meta name="theme-color" content="#08070a" id="themeColorMeta">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,13 +16,15 @@
 <link rel="preconnect" href="https://study-414cf-default-rtdb.firebaseio.com" crossorigin>
 <script>
   // Runs before first paint so the page never flashes the wrong theme.
-  // Light is the default; only switches to dark if the user chose it before.
+  // Dark is the default; only switches to light if the user chose it before.
   (function(){
     try{
-      if(localStorage.getItem('examTrackerTheme') === 'dark'){
+      if(localStorage.getItem('examTrackerTheme') !== 'light'){
         document.documentElement.classList.add('theme-dark');
       }
-    }catch(e){}
+    }catch(e){
+      document.documentElement.classList.add('theme-dark');
+    }
   })();
 </script>
 <style>
@@ -89,6 +91,93 @@
     --orange:#fb923c;
     --teal:#2dd4bf;
     --quiz-text:#b8b5bd;
+    /* --exam-* vars intentionally NOT overridden here: mock/quiz-taking
+       screens (examTopBar, examOptList, examPaletteWrap, etc.) always keep
+       their light-mode look from :root, even when the rest of the app is
+       in dark mode, per Rahul's request. */
+    color-scheme:dark;
+  }
+  /* While the app is in dark mode, every mock/quiz-taking screen
+     (Reasoning Mock, Super Practice native, 75-Day Practice native, Mains
+     Mock native, English Mock, EM Mock native, English Full Mock, Math
+     PYQ exam) is pinned back to the full light palette, per Rahul's
+     request that "jab mock de rahe ho tab light hi rahe". This re-declares
+     every variable the exam UI touches, scoped to just these containers,
+     so nothing inside them inherits the dark palette. */
+  html.theme-dark #calcPage-reasoningmockexam,
+  html.theme-dark #calcPage-spnativeexam,
+  html.theme-dark #calcPage-p75nativeexam,
+  html.theme-dark #calcPage-mmnativeexam,
+  html.theme-dark #calcPage-emnativeexam,
+  html.theme-dark #calcPage-mathpyqexam{
+    --bg:#f3f4f7;
+    --panel:#ffffff;
+    --panel2:#ffffff;
+    --card:#ffffff;
+    --border:#dcdfe6;
+    --border-strong:#b7bcc6;
+    --text:#181a1f;
+    --muted:#5b606b;
+    --white:#101216;
+    --gain:#1a9c56;
+    --loss:#e0344c;
+    --accent:#b8790a;
+    --accent-dim:#7a5f14;
+    --blue:#2563eb;
+    --purple:#8b3fd1;
+    --pink:#d1348f;
+    --orange:#c2570f;
+    --teal:#0f9c8a;
+    --quiz-text:#181a1f;
+    --exam-topbar-bg:#ffffff;
+    --exam-timer-bg:#eef2ff;
+    --exam-timer-color:#1d4ed8;
+    --exam-timer-border:#c7d7fb;
+    --exam-pause-overlay-bg:rgba(255,255,255,0.92);
+    --exam-optbtn-bg:#ffffff;
+    --exam-optbtn-shadow:0 1px 3px rgba(0,0,0,0.06);
+    --exam-optmark-bg:#f1f2f5;
+    --exam-opt-selected-bg:#e8f0fe;
+    --exam-opt-correct-bg:#e7f9ef;
+    --exam-opt-wrong-bg:#fdecec;
+    --exam-navbtn-bg:#ffffff;
+    --exam-navbtn-shadow:0 1px 2px rgba(0,0,0,0.05);
+    --exam-pausebtn-bg:#ffffff;
+    --exam-palette-bg:#ffffff;
+    background:#f3f4f7;
+    color-scheme:light;
+  }
+  /* Super Practice and 75-Day Practice share ONE native exam page across
+     all subjects (quant/reasoning/computer/english/gk), so the blanket
+     force-light rule above would also flatten English/GK mocks. Per
+     Rahul's request, English and GK mocks/quizzes stay in dark mode even
+     while other subjects on the same shared page are forced light —
+     openSPMock()/openP75MockNative() set data-subject on the container,
+     and these rules (declared after, so they win) put the dark palette
+     back just for those two subjects. */
+  html.theme-dark #calcPage-spnativeexam[data-subject="english"],
+  html.theme-dark #calcPage-spnativeexam[data-subject="gk"],
+  html.theme-dark #calcPage-p75nativeexam[data-subject="english"],
+  html.theme-dark #calcPage-p75nativeexam[data-subject="gk"]{
+    --bg:#08070a;
+    --panel:#111013;
+    --panel2:#1a181d;
+    --card:#161b22;
+    --border:#333038;
+    --border-strong:#726d7a;
+    --text:#c6c3cb;
+    --muted:#aaa5ad;
+    --white:#eeecf0;
+    --gain:#4ade80;
+    --loss:#f87171;
+    --accent:#fbbf24;
+    --accent-dim:#7a5f14;
+    --blue:#60a5fa;
+    --purple:#c084fc;
+    --pink:#f472b6;
+    --orange:#fb923c;
+    --teal:#2dd4bf;
+    --quiz-text:#b8b5bd;
     --exam-topbar-bg:#0d1420;
     --exam-timer-bg:#1a2436;
     --exam-timer-color:var(--white);
@@ -104,6 +193,7 @@
     --exam-navbtn-shadow:0 2px 6px rgba(0,0,0,0.22);
     --exam-pausebtn-bg:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0)),var(--panel2);
     --exam-palette-bg:linear-gradient(165deg,var(--panel),#0d0c0f);
+    background:#08070a;
     color-scheme:dark;
   }
   *{box-sizing:border-box;}

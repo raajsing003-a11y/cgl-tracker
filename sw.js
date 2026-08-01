@@ -109,7 +109,14 @@
 // index.html, new app.js module (openP75MockNative/initP75Native). Old v16
 // cache would keep serving the old iframe player, so it must be evicted.
 // Bumped v20 -> v21: plain version bump, no feature change.
-const CACHE_NAME = 'exam-tracker-v21';
+// Bumped v21 -> v22: app-wide dark mode is now the default (was light).
+// Mock/quiz-taking screens (Reasoning Mock, Super Practice, 75-Day
+// Practice, Mains Mock, EM Mock, Math PYQ) are force-pinned to light
+// regardless of the app theme; English Mock/English Full Mock and the
+// English/GK subjects inside the shared Super Practice + 75-Day Practice
+// native players stay dark. Old v21 cache would keep serving the
+// light-default index.html/app.js, so it must be evicted.
+const CACHE_NAME = 'exam-tracker-v22';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

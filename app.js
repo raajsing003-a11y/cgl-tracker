@@ -15654,6 +15654,8 @@ function spnativeToggleLang(){
 async function openSPMock(key, file, label, entry){
   spnativeCurrentKey = key;
   spnativeCurrentFile = file;
+  const spExamPageEl = document.getElementById('calcPage-spnativeexam');
+  if(spExamPageEl) spExamPageEl.dataset.subject = key;
   spnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('spnativeInfoTitle');
@@ -16222,6 +16224,8 @@ function p75nativeToggleLang(){
 async function openP75MockNative(key, file, label, entry){
   p75nativeCurrentKey = key;
   p75nativeCurrentFile = file;
+  const p75ExamPageEl = document.getElementById('calcPage-p75nativeexam');
+  if(p75ExamPageEl) p75ExamPageEl.dataset.subject = key;
   p75nativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('p75nativeInfoTitle');
