@@ -14685,13 +14685,14 @@ function renderEmMocksGrid(entries){
   if(!grid) return;
   grid.innerHTML = '';
   entries.forEach(e => {
+    const done = isQuizSetAttempted('emnative', emmocksCurrentKey + '/' + e.file);
     const btn = document.createElement('button');
     btn.className = 'calcCard calcCard-vocab';
     btn.style.flexDirection = 'column';
     btn.style.alignItems = 'flex-start';
     btn.style.gap = '2px';
     btn.innerHTML =
-      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span class="calcSub">' + e.q + ' Qs</span>';
     btn.addEventListener('click', () => openEmMock(emmocksCurrentKey, e.file, emmocksCurrentLabel, e));
     grid.appendChild(btn);
@@ -14719,12 +14720,16 @@ function filterEmMocksGrid(query){
 // iframe pointing at the mock's own standalone HTML page.
 let emnativeLoaded = null;
 let emnativeMockLabel = '';
+let emnativeCurrentKey = null;
+let emnativeCurrentFile = null;
 const emnativeSession = {
   questions: [], answers: [], marked: [], visited: [],
   current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
 };
 
 async function openEmMock(key, file, label, entry){
+  emnativeCurrentKey = key;
+  emnativeCurrentFile = file;
   emnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('emnativeInfoTitle');
@@ -14929,6 +14934,7 @@ function emnativeSubmit(){
       '<div class="examSumCard"><div class="n">' + emnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
   }
   logQuizActivity(emnativeMockLabel, correct, attempted);
+  if(emnativeCurrentKey && emnativeCurrentFile) markQuizSetAttempted('emnative', emnativeCurrentKey + '/' + emnativeCurrentFile);
   emnativeResultRenderPalette();
   emnativeResultGoTo(0);
   showCalcPage('emnativeresult');
@@ -15308,13 +15314,13 @@ function renderSPMockGrid(entries){
   chapters.forEach(ch => {
     const isOpen = spOpenChapter === ch.topic;
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'border:1px solid var(--brd,#E5E7EB);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card,#fff);';
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);';
 
     const header = document.createElement('button');
     header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:transparent;border:none;text-align:left;font-size:15px;font-weight:600;cursor:pointer;color:inherit;';
     header.innerHTML =
       '<span>' + escapeHtml(ch.topic) + '</span>' +
-      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted,#6B7280);">' +
+      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted);">' +
         ch.items.length + ' mocks' +
         '<span style="display:inline-block;transform:rotate(' + (isOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
       '</span>';
@@ -15326,13 +15332,14 @@ function renderSPMockGrid(entries){
 
     if(isOpen){
       const body = document.createElement('div');
-      body.style.cssText = 'border-top:1px solid var(--brd,#E5E7EB);';
+      body.style.cssText = 'border-top:1px solid var(--border);';
       ch.items.forEach((e, idx) => {
+        const done = isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
         const row = document.createElement('button');
-        row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--brd,#F0F0F0);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
+        row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
         row.innerHTML =
-          '<span>Level ' + (idx + 1) + '</span>' +
-          '<span style="color:var(--muted,#6B7280);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
+          '<span>Level ' + (idx + 1) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+          '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
         row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
         body.appendChild(row);
       });
@@ -15365,9 +15372,11 @@ function filterSPMockGrid(query){
 // (unlike EM Mocks' already-English-only source).
 let spnativeLoaded = null;
 let spnativeMockLabel = '';
+let spnativeCurrentKey = null;
+let spnativeCurrentFile = null;
 let spnativeLang = 'en'; // 'en' | 'hi'
 const spnativeSession = {
-  questions: [], answers: [], marked: [], visited: [],
+  questions: [], answers: [], marked: [], visited: [], locked: [],
   current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
 };
 
@@ -15393,6 +15402,8 @@ function spnativeToggleLang(){
 }
 
 async function openSPMock(key, file, label, entry){
+  spnativeCurrentKey = key;
+  spnativeCurrentFile = file;
   spnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('spnativeInfoTitle');
@@ -15442,6 +15453,7 @@ function spnativeStartExam(){
   spnativeSession.answers = new Array(n).fill(null);
   spnativeSession.marked = new Array(n).fill(false);
   spnativeSession.visited = new Array(n).fill(false);
+  spnativeSession.locked = new Array(n).fill(false);
   spnativeSession.current = 0;
   spnativeSession.timeLeft = (spnativeLoaded.duration_min || 15) * 60;
   spnativeSession.submitted = false;
@@ -15525,6 +15537,7 @@ function spnativeRenderQuestion(){
   if(qnoEl) qnoEl.textContent = 'Question No. ' + (spnativeSession.current + 1);
   const wordEl = document.getElementById('spnativeExamWordText');
   if(wordEl) wordEl.innerHTML = spnativeQText(q) || '—';
+  const isLocked = !!spnativeSession.locked[spnativeSession.current];
   const optList = document.getElementById('spnativeExamOptList');
   if(optList){
     optList.innerHTML = '';
@@ -15532,18 +15545,45 @@ function spnativeRenderQuestion(){
     (spnativeOpts(q) || []).forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
+      let cls = 'examOptBtn';
+      if(isLocked){
+        if(i === q.answer) cls += ' correct';
+        else if(i === selected) cls += ' wrong';
+      } else if(selected === i){
+        cls += ' selected';
+      }
+      btn.className = cls;
       btn.innerHTML = '<span class="examOptMark">' + String.fromCharCode(65 + i) + '</span><span>' + opt + '</span>';
-      btn.addEventListener('click', () => spnativeSelectOption(i));
+      if(!isLocked) btn.addEventListener('click', () => spnativeSelectOption(i));
+      else btn.disabled = true;
       optList.appendChild(btn);
     });
+  }
+  const solCard = document.getElementById('spnativeExamSolutionCard');
+  const solText = document.getElementById('spnativeExamSolutionText');
+  const tagWrap = document.getElementById('spnativeExamTagWrap');
+  if(isLocked){
+    const wasCorrect = selectedIsCorrect(spnativeSession, spnativeSession.current);
+    if(tagWrap) tagWrap.innerHTML = '<span class="examReviewTag ' + (wasCorrect ? 'tagCorrect' : 'tagWrong') + '">' + (wasCorrect ? '✅ Correct' : '❌ Incorrect') + '</span>';
+    if(solText) solText.innerHTML = spnativeSolText(q) || 'Solution available soon.';
+    if(solCard) solCard.style.display = 'block';
+  } else {
+    if(tagWrap) tagWrap.innerHTML = '';
+    if(solCard) solCard.style.display = 'none';
   }
   const markBtn = document.getElementById('spnativeExamMarkBtn');
   if(markBtn) markBtn.textContent = spnativeSession.marked[spnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
   spnativeRenderPalette();
 }
+function selectedIsCorrect(session, idx){
+  const q = session.questions[idx];
+  const a = session.answers[idx];
+  return a !== null && a !== undefined && a === q.answer;
+}
 function spnativeSelectOption(i){
+  if(spnativeSession.locked[spnativeSession.current]) return;
   spnativeSession.answers[spnativeSession.current] = i;
+  spnativeSession.locked[spnativeSession.current] = true;
   spnativeRenderQuestion();
 }
 function spnativeGoTo(idx){
@@ -15562,6 +15602,7 @@ function spnativeMarkForReview(){
 }
 function spnativeClearResponse(){
   spnativeSession.answers[spnativeSession.current] = null;
+  spnativeSession.locked[spnativeSession.current] = false;
   spnativeRenderQuestion();
 }
 function spnativeConfirmSubmit(){
@@ -15598,6 +15639,7 @@ function spnativeSubmit(){
       '<div class="examSumCard"><div class="n">' + spnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
   }
   logQuizActivity(spnativeMockLabel, correct, attempted);
+  if(spnativeCurrentKey && spnativeCurrentFile) markQuizSetAttempted('spnative', spnativeCurrentKey + '/' + spnativeCurrentFile);
   spnativeResultRenderPalette();
   spnativeResultGoTo(0);
   showCalcPage('spnativeresult');
@@ -15835,13 +15877,13 @@ function renderP75MockGrid(entries){
   chapters.forEach(ch => {
     const isOpen = p75OpenChapter === ch.topic;
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'border:1px solid var(--brd,#E5E7EB);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card,#fff);';
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);';
 
     const header = document.createElement('button');
     header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:transparent;border:none;text-align:left;font-size:15px;font-weight:600;cursor:pointer;color:inherit;';
     header.innerHTML =
       '<span>' + escapeHtml(ch.topic) + '</span>' +
-      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted,#6B7280);">' +
+      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted);">' +
         ch.items.length + ' mocks' +
         '<span style="display:inline-block;transform:rotate(' + (isOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
       '</span>';
@@ -15853,13 +15895,14 @@ function renderP75MockGrid(entries){
 
     if(isOpen){
       const body = document.createElement('div');
-      body.style.cssText = 'border-top:1px solid var(--brd,#E5E7EB);';
+      body.style.cssText = 'border-top:1px solid var(--border);';
       ch.items.forEach((e, idx) => {
+        const done = isQuizSetAttempted('p75native', p75CurrentSubjectKey + '/' + e.file);
         const row = document.createElement('button');
-        row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--brd,#F0F0F0);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
+        row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
         row.innerHTML =
-          '<span>Level ' + (idx + 1) + '</span>' +
-          '<span style="color:var(--muted,#6B7280);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
+          '<span>Level ' + (idx + 1) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+          '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
         row.addEventListener('click', () => openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e));
         body.appendChild(row);
       });
@@ -15892,6 +15935,8 @@ function filterP75MockGrid(query){
 // (unlike EM Mocks' already-English-only source).
 let p75nativeLoaded = null;
 let p75nativeMockLabel = '';
+let p75nativeCurrentKey = null;
+let p75nativeCurrentFile = null;
 let p75nativeLang = 'en'; // 'en' | 'hi'
 const p75nativeSession = {
   questions: [], answers: [], marked: [], visited: [], revealed: [],
@@ -15920,6 +15965,8 @@ function p75nativeToggleLang(){
 }
 
 async function openP75MockNative(key, file, label, entry){
+  p75nativeCurrentKey = key;
+  p75nativeCurrentFile = file;
   p75nativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('p75nativeInfoTitle');
@@ -16145,6 +16192,7 @@ function p75nativeSubmit(){
       '<div class="examSumCard"><div class="n">' + p75nativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
   }
   logQuizActivity(p75nativeMockLabel, correct, attempted);
+  if(p75nativeCurrentKey && p75nativeCurrentFile) markQuizSetAttempted('p75native', p75nativeCurrentKey + '/' + p75nativeCurrentFile);
   p75nativeResultRenderPalette();
   p75nativeResultGoTo(0);
   showCalcPage('p75nativeresult');
@@ -16300,7 +16348,7 @@ function initP75Quiz(){
 //   mainsmock/full/mock_NNN.html      — Olive SSC CGL Tier II full mocks (71)
 // mainsmock/manifest.json = { sectional: [...], full: [...] }
 const MAINSMOCK_TYPES = [
-  { key:'sectional', label:'Sectional Mock', icon:'📝', count:97 },
+  { key:'sectional', label:'Math + Reasoning', icon:'📝', count:97 },
   { key:'full',       label:'Full Mock',      icon:'📘', count:71 },
 ];
 let mainsmockManifest = null;
@@ -16357,13 +16405,14 @@ function renderMainsMockGrid(entries){
   if(!grid) return;
   grid.innerHTML = '';
   entries.forEach(e => {
+    const done = isQuizSetAttempted('mmnative', mainsmockCurrentTypeKey + '/' + e.file);
     const btn = document.createElement('button');
     btn.className = 'calcCard calcCard-vocab';
     btn.style.flexDirection = 'column';
     btn.style.alignItems = 'flex-start';
     btn.style.gap = '2px';
     btn.innerHTML =
-      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + '</span>' +
+      '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span class="calcSub">' + e.q + ' Qs</span>';
     btn.addEventListener('click', () => openMainsMock(mainsmockCurrentTypeKey, e.file, mainsmockCurrentTypeLabel, e));
     grid.appendChild(btn);
@@ -16391,10 +16440,13 @@ function filterMainsMockGrid(query){
 // (unlike EM Mocks' already-English-only source).
 let mmnativeLoaded = null;
 let mmnativeMockLabel = '';
+let mmnativeCurrentKey = null;
+let mmnativeCurrentFile = null;
 let mmnativeLang = 'en'; // 'en' | 'hi'
 const mmnativeSession = {
   questions: [], answers: [], marked: [], visited: [],
-  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
+  current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false,
+  sections: null, sectionIdx: 0, sectionTimeLeft: 0, sectionSubmitted: []
 };
 
 function mmnativeQText(q){ return mmnativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
@@ -16419,6 +16471,8 @@ function mmnativeToggleLang(){
 }
 
 async function openMainsMockNative(key, file, label, entry){
+  mmnativeCurrentKey = key;
+  mmnativeCurrentFile = file;
   mmnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('mmnativeInfoTitle');
@@ -16448,7 +16502,11 @@ async function openMainsMockNative(key, file, label, entry){
   const tm = document.getElementById('mmnativeInfoMarks');
   if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
   const du = document.getElementById('mmnativeInfoDuration');
-  if(du) du.textContent = (data.duration_min || 15) + ' minutes';
+  if(du){
+    if(key === 'sectional') du.textContent = '30 + 30 min (Math then Reasoning, sectional)';
+    else if(key === 'full') du.textContent = '30+30+30+30+15 min — Sec I (Quant/Reasoning) → Sec II (English/GK) → Sec III (Computer)';
+    else du.textContent = (data.duration_min || 15) + ' minutes';
+  }
   const mk = document.getElementById('mmnativeInfoMarking');
   if(mk) mk.textContent = '+' + firstQ.marks + ' / -' + firstQ.neg;
 }
@@ -16468,10 +16526,46 @@ function mmnativeStartExam(){
   mmnativeSession.answers = new Array(n).fill(null);
   mmnativeSession.marked = new Array(n).fill(false);
   mmnativeSession.visited = new Array(n).fill(false);
-  mmnativeSession.current = 0;
-  mmnativeSession.timeLeft = (mmnativeLoaded.duration_min || 15) * 60;
   mmnativeSession.submitted = false;
   mmnativeSession.paused = false;
+  // Sectional Mocks (Math + Reasoning, 60 Qs) get split into two timed
+  // sections — Q1..half = Math (30 min), half+1..end = Reasoning (30 min).
+  // Once a section's time is up (or it's manually submitted), those
+  // questions lock and the next section auto-opens with a fresh timer —
+  // just like the real Tier-II module-wise exam. "Full Mock" (and anything
+  // else) keeps the old single continuous timer for the whole paper.
+  if(mmnativeCurrentKey === 'sectional' && n >= 2){
+    const half = Math.round(n / 2);
+    mmnativeSession.sections = [
+      { name: 'Math', start: 0, end: half, minutes: 30, sectionLabel: null }
+    ];
+    mmnativeSession.sections.push({ name: 'Reasoning', start: half, end: n, minutes: 30, sectionLabel: null });
+    mmnativeSession.sectionIdx = 0;
+    mmnativeSession.sectionSubmitted = mmnativeSession.sections.map(() => false);
+    mmnativeSession.sectionTimeLeft = mmnativeSession.sections[0].minutes * 60;
+    mmnativeSession.current = mmnativeSession.sections[0].start;
+  } else if(mmnativeCurrentKey === 'full' && n === 150){
+    // Official TCS CBT pattern: Section I (Quant 30 + Reasoning 30, 30 min
+    // each) -> Section II (English 45 + GK 25, 30 min each) -> Section III
+    // (Computer Knowledge 20, 15 min). Each subject is its own locked
+    // module — once you move to the next module the previous one (and its
+    // whole section) is permanently locked, exactly like the real exam.
+    mmnativeSession.sections = [
+      { name: 'Quantitative Aptitude', start: 0,   end: 30,  minutes: 30, sectionLabel: 'Section I' },
+      { name: 'Reasoning',             start: 30,  end: 60,  minutes: 30, sectionLabel: 'Section I' },
+      { name: 'English Language',      start: 60,  end: 105, minutes: 30, sectionLabel: 'Section II' },
+      { name: 'General Awareness',     start: 105, end: 130, minutes: 30, sectionLabel: 'Section II' },
+      { name: 'Computer Knowledge',    start: 130, end: 150, minutes: 15, sectionLabel: 'Section III' }
+    ];
+    mmnativeSession.sectionIdx = 0;
+    mmnativeSession.sectionSubmitted = mmnativeSession.sections.map(() => false);
+    mmnativeSession.sectionTimeLeft = mmnativeSession.sections[0].minutes * 60;
+    mmnativeSession.current = mmnativeSession.sections[0].start;
+  } else {
+    mmnativeSession.sections = null;
+    mmnativeSession.current = 0;
+    mmnativeSession.timeLeft = (mmnativeLoaded.duration_min || 15) * 60;
+  }
   const titleEl = document.getElementById('mmnativeExamTitle');
   if(titleEl) titleEl.textContent = mmnativeMockLabel;
   mmnativeStopTimer();
@@ -16484,22 +16578,68 @@ function mmnativeStartExam(){
 function mmnativeUpdateTimerDisplay(){
   const el = document.getElementById('mmnativeExamTimerPill');
   if(!el) return;
-  el.textContent = '⏱ ' + mmnativeFormatTime(mmnativeSession.timeLeft);
-  el.classList.toggle('examTimerLow', mmnativeSession.timeLeft <= 120);
+  const t = mmnativeSession.sections ? mmnativeSession.sectionTimeLeft : mmnativeSession.timeLeft;
+  el.textContent = '⏱ ' + mmnativeFormatTime(t);
+  el.classList.toggle('examTimerLow', t <= 120);
 }
 function mmnativeStartTimer(){
   mmnativeUpdateTimerDisplay();
   mmnativeSession.timerId = setInterval(() => {
-    mmnativeSession.timeLeft--;
-    mmnativeUpdateTimerDisplay();
-    if(mmnativeSession.timeLeft <= 0){
-      mmnativeStopTimer();
-      mmnativeSubmit();
+    if(mmnativeSession.sections){
+      mmnativeSession.sectionTimeLeft--;
+      mmnativeUpdateTimerDisplay();
+      if(mmnativeSession.sectionTimeLeft <= 0){
+        mmnativeAdvanceSection();
+      }
+    } else {
+      mmnativeSession.timeLeft--;
+      mmnativeUpdateTimerDisplay();
+      if(mmnativeSession.timeLeft <= 0){
+        mmnativeStopTimer();
+        mmnativeSubmit();
+      }
     }
   }, 1000);
 }
 function mmnativeStopTimer(){
   if(mmnativeSession.timerId){ clearInterval(mmnativeSession.timerId); mmnativeSession.timerId = null; }
+}
+// Called when a section's 30-min timer runs out (or the user manually
+// submits that section). Locks that section's answers, then either opens
+// the next section with a fresh timer, or — if it was the last section —
+// finalizes the whole mock via mmnativeSubmit().
+function mmnativeAdvanceSection(){
+  if(!mmnativeSession.sections) return;
+  mmnativeSession.sectionSubmitted[mmnativeSession.sectionIdx] = true;
+  const isLast = mmnativeSession.sectionIdx >= mmnativeSession.sections.length - 1;
+  if(isLast){
+    mmnativeStopTimer();
+    mmnativeSubmit();
+    return;
+  }
+  mmnativeSession.sectionIdx++;
+  const prev = mmnativeSession.sections[mmnativeSession.sectionIdx - 1];
+  const sec = mmnativeSession.sections[mmnativeSession.sectionIdx];
+  mmnativeSession.sectionTimeLeft = sec.minutes * 60;
+  mmnativeSession.current = sec.start;
+  const enteringNewSection = sec.sectionLabel && sec.sectionLabel !== prev.sectionLabel;
+  const msg = '⏱ ' + prev.name + ' module submit ho gaya, ab locked hai.\n\n' +
+    (enteringNewSection ? '➡️ ' + sec.sectionLabel + ' shuru — ' : '➡️ Ab ') +
+    sec.name + ' module — ' + sec.minutes + ' minute.';
+  alert(msg);
+  mmnativeRenderQuestion();
+}
+function mmnativeConfirmSubmitSection(){
+  if(!mmnativeSession.sections) return;
+  const sec = mmnativeSession.sections[mmnativeSession.sectionIdx];
+  const isLast = mmnativeSession.sectionIdx >= mmnativeSession.sections.length - 1;
+  const answered = mmnativeSession.answers.slice(sec.start, sec.end).filter(a => a !== null && a !== undefined).length;
+  const markedCount = mmnativeSession.marked.slice(sec.start, sec.end).filter(Boolean).length;
+  const notAnswered = (sec.end - sec.start) - answered;
+  const nextName = isLast ? null : mmnativeSession.sections[mmnativeSession.sectionIdx + 1].name;
+  const msg = 'Attempted: ' + answered + '\nNot Attempted: ' + notAnswered + '\nMarked for Review: ' + markedCount + '\n\n' +
+    (isLast ? 'Submit test now? Ye action wapas nahi ho sakta.' : sec.name + ' module submit karke ' + nextName + ' module shuru karein? ' + sec.name + ' ke baad wapas edit nahi ho sakega.');
+  if(confirm(msg)) mmnativeAdvanceSection();
 }
 function mmnativeSetPausedUI(paused){
   const btn = document.getElementById('mmnativeExamPauseBtn');
@@ -16534,7 +16674,11 @@ function mmnativeRenderPalette(){
   const grid = document.getElementById('mmnativeExamPaletteGrid');
   if(!grid) return;
   grid.innerHTML = '';
+  const range = mmnativeSession.sections
+    ? [mmnativeSession.sections[mmnativeSession.sectionIdx].start, mmnativeSession.sections[mmnativeSession.sectionIdx].end]
+    : [0, mmnativeSession.questions.length];
   mmnativeSession.questions.forEach((q, i) => {
+    if(i < range[0] || i >= range[1]) return; // dusre section ke questions is view me nahi aate
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'examPaletteBtn ' + mmnativePaletteState(i) + (i === mmnativeSession.current ? ' pCurrent' : '');
@@ -16549,6 +16693,20 @@ function mmnativeRenderQuestion(){
   mmnativeSession.visited[mmnativeSession.current] = true;
   const qnoEl = document.getElementById('mmnativeExamQNo');
   if(qnoEl) qnoEl.textContent = 'Question No. ' + (mmnativeSession.current + 1);
+  const badgeEl = document.getElementById('mmnativeExamExamBadge');
+  if(badgeEl){
+    if(mmnativeSession.sections){
+      const sec = mmnativeSession.sections[mmnativeSession.sectionIdx];
+      const siblings = mmnativeSession.sections.filter(s => s.sectionLabel === sec.sectionLabel);
+      const tabsTxt = siblings.length > 1
+        ? siblings.map(s => s.name === sec.name ? '● ' + s.name : '🔒 ' + s.name).join('   |   ')
+        : sec.name;
+      badgeEl.innerHTML = (sec.sectionLabel ? '🔥 ' + sec.sectionLabel + ' — ' : '🔥 ') +
+        '<div style="font-size:12px;font-weight:600;margin-top:4px;color:var(--muted);">' + escapeHtml(tabsTxt) + ' (Q' + (sec.start + 1) + '-' + sec.end + ')</div>';
+    } else {
+      badgeEl.textContent = '🔥 Mains Mock';
+    }
+  }
   const wordEl = document.getElementById('mmnativeExamWordText');
   if(wordEl) wordEl.innerHTML = mmnativeQText(q) || '—';
   const optList = document.getElementById('mmnativeExamOptList');
@@ -16566,6 +16724,11 @@ function mmnativeRenderQuestion(){
   }
   const markBtn = document.getElementById('mmnativeExamMarkBtn');
   if(markBtn) markBtn.textContent = mmnativeSession.marked[mmnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
+  const submitBtn = document.getElementById('mmnativeExamSubmitBtn');
+  if(submitBtn && mmnativeSession.sections){
+    const isLast = mmnativeSession.sectionIdx >= mmnativeSession.sections.length - 1;
+    submitBtn.textContent = isLast ? 'Submit Test' : 'Submit ' + mmnativeSession.sections[mmnativeSession.sectionIdx].name;
+  }
   mmnativeRenderPalette();
 }
 function mmnativeSelectOption(i){
@@ -16574,16 +16737,22 @@ function mmnativeSelectOption(i){
 }
 function mmnativeGoTo(idx){
   if(idx < 0 || idx >= mmnativeSession.questions.length) return;
+  if(mmnativeSession.sections){
+    const sec = mmnativeSession.sections[mmnativeSession.sectionIdx];
+    if(idx < sec.start || idx >= sec.end) return; // dusre section me jaana allowed nahi jab tak current section submit na ho
+  }
   mmnativeSession.current = idx;
   mmnativeRenderQuestion();
 }
 function mmnativeSaveNext(){
-  if(mmnativeSession.current < mmnativeSession.questions.length - 1) mmnativeGoTo(mmnativeSession.current + 1);
+  const lastIdx = mmnativeSession.sections ? mmnativeSession.sections[mmnativeSession.sectionIdx].end - 1 : mmnativeSession.questions.length - 1;
+  if(mmnativeSession.current < lastIdx) mmnativeGoTo(mmnativeSession.current + 1);
   else mmnativeRenderPalette();
 }
 function mmnativeMarkForReview(){
   mmnativeSession.marked[mmnativeSession.current] = !mmnativeSession.marked[mmnativeSession.current];
-  if(mmnativeSession.current < mmnativeSession.questions.length - 1) mmnativeGoTo(mmnativeSession.current + 1);
+  const lastIdx = mmnativeSession.sections ? mmnativeSession.sections[mmnativeSession.sectionIdx].end - 1 : mmnativeSession.questions.length - 1;
+  if(mmnativeSession.current < lastIdx) mmnativeGoTo(mmnativeSession.current + 1);
   else mmnativeRenderQuestion();
 }
 function mmnativeClearResponse(){
@@ -16591,6 +16760,10 @@ function mmnativeClearResponse(){
   mmnativeRenderQuestion();
 }
 function mmnativeConfirmSubmit(){
+  if(mmnativeSession.sections){
+    mmnativeConfirmSubmitSection();
+    return;
+  }
   const total = mmnativeSession.questions.length;
   const answered = mmnativeSession.answers.filter(a => a !== null && a !== undefined).length;
   const notAnswered = total - answered;
@@ -16624,6 +16797,7 @@ function mmnativeSubmit(){
       '<div class="examSumCard"><div class="n">' + mmnativeSession.questions.length + '</div><div class="l">Total Qs</div></div>';
   }
   logQuizActivity(mmnativeMockLabel, correct, attempted);
+  if(mmnativeCurrentKey && mmnativeCurrentFile) markQuizSetAttempted('mmnative', mmnativeCurrentKey + '/' + mmnativeCurrentFile);
   mmnativeResultRenderPalette();
   mmnativeResultGoTo(0);
   showCalcPage('mmnativeresult');
