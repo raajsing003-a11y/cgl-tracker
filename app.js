@@ -11903,9 +11903,9 @@ function makeMathPyqQuiz(){
       srcWrap.style.cssText = 'margin-bottom:14px;';
       const sources = [
         { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
-        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'158 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
+        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'158 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
+        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'117 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
       ];
-      if(mathpyqMockSource === 'p75') mathpyqMockSource = 'concept';
       sources.forEach(s => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -13817,6 +13817,7 @@ function makeReasoningMockQuiz(){
     const markBtn = document.getElementById('reasoningmockExamMarkBtn');
     if(markBtn) markBtn.textContent = examSession.marked[examSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
     examRenderPalette();
+    typesetMath(wordEl); typesetMath(optList);
   }
 
   function examSelectOption(i){
@@ -14011,6 +14012,7 @@ function makeReasoningMockQuiz(){
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('reasoningmockResultNextBtn');
     if(nextBtn) nextBtn.textContent = (i === examSession.questions.length - 1) ? 'Done ✓' : 'Next ➜';
+    typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
   }
 
   function init(){
@@ -14340,6 +14342,7 @@ function makeEnglishMockQuiz(){
     const markBtn = document.getElementById('englishmockExamMarkBtn');
     if(markBtn) markBtn.textContent = examSession.marked[examSession.current] ? '\ud83d\udea9 Marked \u2713' : '\ud83d\udea9 Mark for Review';
     examRenderPalette();
+    typesetMath(wordEl); typesetMath(optList);
   }
 
   function examSelectOption(i){
@@ -14531,6 +14534,7 @@ function makeEnglishMockQuiz(){
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('englishmockResultNextBtn');
     if(nextBtn) nextBtn.textContent = (i === examSession.questions.length - 1) ? 'Done \u2713' : 'Next \u279c';
+    typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
   }
 
   function init(){
@@ -14855,6 +14859,7 @@ function makeEnglishFullMockQuiz(){
     const markBtn = document.getElementById('engfullmockExamMarkBtn');
     if(markBtn) markBtn.textContent = examSession.marked[examSession.current] ? '\ud83d\udea9 Marked \u2713' : '\ud83d\udea9 Mark for Review';
     examRenderPalette();
+    typesetMath(wordEl); typesetMath(optList);
   }
 
   function examSelectOption(i){
@@ -15044,6 +15049,7 @@ function makeEnglishFullMockQuiz(){
     if(prevBtn) prevBtn.disabled = (i === 0);
     const nextBtn = document.getElementById('engfullmockResultNextBtn');
     if(nextBtn) nextBtn.textContent = (i === examSession.questions.length - 1) ? 'Done \u2713' : 'Next \u279c';
+    typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
   }
 
   function init(){
@@ -15360,6 +15366,7 @@ function emnativeRenderQuestion(){
   const markBtn = document.getElementById('emnativeExamMarkBtn');
   if(markBtn) markBtn.textContent = emnativeSession.marked[emnativeSession.current] ? '🚩 Marked ✓' : '🚩 Mark for Review';
   emnativeRenderPalette();
+  typesetMath(wordEl); typesetMath(optList);
 }
 function emnativeSelectOption(i){
   emnativeSession.answers[emnativeSession.current] = i;
@@ -15500,6 +15507,7 @@ function emnativeResultRenderQuestion(){
     if(solText) solText.innerHTML = q.solution || 'Solution available soon.';
     if(solCard) solCard.style.display = 'block';
   } else if(solCard) solCard.style.display = 'none';
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 
 function initEmMocksMenu(){
@@ -17277,6 +17285,7 @@ function mmnativeRenderQuestion(){
     submitBtn.textContent = isLast ? 'Submit Test' : 'Submit ' + mmnativeSession.sections[mmnativeSession.sectionIdx].name;
   }
   mmnativeRenderPalette();
+  typesetMath(wordEl); typesetMath(optList);
 }
 function mmnativeSelectOption(i){
   mmnativeSession.answers[mmnativeSession.current] = i;
@@ -17428,6 +17437,7 @@ function mmnativeResultRenderQuestion(){
     if(solText) solText.innerHTML = mmnativeSolText(q) || 'Solution available soon.';
     if(solCard) solCard.style.display = 'block';
   } else if(solCard) solCard.style.display = 'none';
+  typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
 }
 
 function initMainsMockNative(){

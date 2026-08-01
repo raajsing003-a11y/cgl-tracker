@@ -125,7 +125,23 @@
 // takes over the full screen on pure white with the app topbar/tabbar
 // hidden. Old v22 cache would keep serving the old instant-reveal Mixed
 // Practice, light Computer subject, and non-fullscreen mock layout.
-const CACHE_NAME = 'exam-tracker-v23';
+// Bumped v23 -> v24: Quant sectional mocks rebuilt across all three quiz
+// engines. 75-Day Practice: removed 79 old single-chapter 25-Q "sectional"
+// mocks (superpractice/practice75 manifest.json + data/quant/mock_NNN.json);
+// all 2919 75-Day Practice Quant questions + all 3940 Super Practice Quant
+// questions were pooled and redistributed round-robin into new
+// multi-chapter "Sectional Mock" sets (25 Qs each, every chapter
+// represented, no single-chapter mocks) — 117 new sets for 75-Day Practice
+// (mock_140..mock_256), 158 new sets for Super Practice (mock_197..
+// mock_354). data/topics/math_p75.json (P75_MATH_SETS) and
+// data/topics/math_sp.json (SP_MATH_SETS) were regenerated from this same
+// mixed data (p75mock001..117, spmock001..158), and the Math Mock menu's
+// "75-Day Practice" source card (previously disabled/hidden) is now
+// re-enabled alongside Concept Mock and Super Practice. Old v23 cache
+// would keep serving the old single-chapter sectionals, the stale
+// chapter-pure P75_MATH_SETS, and the hidden 75-Day Practice source card,
+// so it must be evicted.
+const CACHE_NAME = 'exam-tracker-v24';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
