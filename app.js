@@ -8523,7 +8523,7 @@ function buildVocabSavedPool(){
     q._qIndex = it.qIndex;
     pool.push(q);
   });
-  return shuffledCopy(pool);
+  return pool;
 }
 // "Saved Questions" button ke upar live count dikhata hai.
 function updateVocabSavedMenuBtn(){
@@ -8889,7 +8889,7 @@ function buildSpellingSavedPool(){
     q._qIndex = it.qIndex;
     pool.push(q);
   });
-  return shuffledCopy(pool);
+  return pool;
 }
 function updateSpellingSavedMenuBtn(){
   const lbl = document.getElementById('spellingSavedCountLabel');
@@ -9350,7 +9350,7 @@ function buildIdiomSavedPool(){
     q._qIndex = it.qIndex;
     pool.push(q);
   });
-  return shuffledCopy(pool);
+  return pool;
 }
 function updateIdiomSavedMenuBtn(){
   const lbl = document.getElementById('idiomSavedCountLabel');
@@ -9647,7 +9647,7 @@ function buildGrammarSavedPool(){
     q._qIndex = it.qIndex;
     pool.push(q);
   });
-  return shuffledCopy(pool);
+  return pool;
 }
 function updateGrammarSavedMenuBtn(){
   const lbl = document.getElementById('grammarSavedCountLabel');
@@ -9994,7 +9994,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
       q._qIndex = it.qIndex;
       pool.push(q);
     });
-    return shuffledCopy(pool);
+    return pool;
   }
   function updateSavedMenuBtn(){
     const lbl = document.getElementById(prefix + 'SavedCountLabel');
@@ -13073,7 +13073,7 @@ function redistributeSetsAcrossPool(SETS){
   const sizes = keys.map(k => SETS[k].length);
   const pool = [];
   keys.forEach(k => { SETS[k].forEach(q => pool.push(q)); });
-  const shuffled = shuffledCopy(pool);
+  const shuffled = pool;
   let idx = 0;
   keys.forEach((k, i) => {
     SETS[k] = shuffled.slice(idx, idx + sizes[i]);
@@ -15089,8 +15089,22 @@ function initEnglishTopicwiseQuiz(){
   // "English Topic-wise" card — same flow as Math/Reasoning Chapterwise:
   // tap the main card -> chapter list (calcPage-englishtopicwisemenu),
   // tap a chapter -> quiz starts straight away (calcPage-englishtopicwise).
+  //
+  // Bug fix: renderTopicMenu() used to only run once, inside init() at
+  // startup — but init() itself sits behind several Firebase awaits
+  // (registerPlayer/loadPlayerState/refreshRoomMeta...) in the app's boot
+  // sequence. On a slow/flaky connection those awaits can take a while (or
+  // occasionally never settle), so the topic grid never got populated even
+  // though the card's own click listener was wired independently — tapping
+  // it navigated to a genuinely empty page. Re-running renderTopicMenu()
+  // right here, at click time, makes the grid self-healing: it's always
+  // freshly (re)populated the moment the page is actually about to be shown,
+  // regardless of whatever happened (or hadn't finished) during boot.
   const btn = document.getElementById('calcEnglishTopicwiseBtn');
-  if(btn) btn.addEventListener('click', () => showCalcPage('englishtopicwisetopics'));
+  if(btn) btn.addEventListener('click', () => {
+    englishTopicwiseQuiz.renderTopicMenu();
+    showCalcPage('englishtopicwisetopics');
+  });
   englishTopicwiseQuiz.init();
 }
 
@@ -15335,10 +15349,11 @@ function renderSPMockGrid(entries){
       body.style.cssText = 'border-top:1px solid var(--border);';
       ch.items.forEach((e, idx) => {
         const done = isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
+        const rowLabel = (e.label || e.topic || ('Level ' + (idx + 1)));
         const row = document.createElement('button');
         row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
         row.innerHTML =
-          '<span>Level ' + (idx + 1) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+          '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
           '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
         row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
         body.appendChild(row);
@@ -15849,7 +15864,10 @@ async function openP75Subject(key, label){
 function groupP75Entries(entries){
   const map = new Map();
   entries.forEach(e => {
-    const key = (e.topic || 'Mixed Practice').trim();
+    // Prefer the broader "category" (subject-level bucket, e.g. Calculation,
+    // Algebra, Polity, Geography) when present; falls back to the raw topic
+    // for sections that don't have category tagging yet.
+    const key = (e.category || e.topic || 'Mixed Practice').trim();
     if(!map.has(key)) map.set(key, []);
     map.get(key).push(e);
   });
@@ -15898,10 +15916,11 @@ function renderP75MockGrid(entries){
       body.style.cssText = 'border-top:1px solid var(--border);';
       ch.items.forEach((e, idx) => {
         const done = isQuizSetAttempted('p75native', p75CurrentSubjectKey + '/' + e.file);
+        const rowLabel = (e.topic || e.label || ('Level ' + (idx + 1)));
         const row = document.createElement('button');
         row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
         row.innerHTML =
-          '<span>Level ' + (idx + 1) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+          '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
           '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
         row.addEventListener('click', () => openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e));
         body.appendChild(row);
@@ -16546,15 +16565,15 @@ function mmnativeStartExam(){
     mmnativeSession.current = mmnativeSession.sections[0].start;
   } else if(mmnativeCurrentKey === 'full' && n === 150){
     // Official TCS CBT pattern: Section I (Quant 30 + Reasoning 30, 30 min
-    // each) -> Section II (English 45 + GK 25, 30 min each) -> Section III
+    // each) -> Section II (English 45, 40 min + GK 25, 20 min) -> Section III
     // (Computer Knowledge 20, 15 min). Each subject is its own locked
     // module — once you move to the next module the previous one (and its
     // whole section) is permanently locked, exactly like the real exam.
     mmnativeSession.sections = [
       { name: 'Quantitative Aptitude', start: 0,   end: 30,  minutes: 30, sectionLabel: 'Section I' },
       { name: 'Reasoning',             start: 30,  end: 60,  minutes: 30, sectionLabel: 'Section I' },
-      { name: 'English Language',      start: 60,  end: 105, minutes: 30, sectionLabel: 'Section II' },
-      { name: 'General Awareness',     start: 105, end: 130, minutes: 30, sectionLabel: 'Section II' },
+      { name: 'English Language',      start: 60,  end: 105, minutes: 40, sectionLabel: 'Section II' },
+      { name: 'General Awareness',     start: 105, end: 130, minutes: 20, sectionLabel: 'Section II' },
       { name: 'Computer Knowledge',    start: 130, end: 150, minutes: 15, sectionLabel: 'Section III' }
     ];
     mmnativeSession.sectionIdx = 0;

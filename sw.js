@@ -108,7 +108,7 @@
 // practice75/data/<subject>/mock_NNN.json, new calcPage-p75native* pages in
 // index.html, new app.js module (openP75MockNative/initP75Native). Old v16
 // cache would keep serving the old iframe player, so it must be evicted.
-const CACHE_NAME = 'exam-tracker-v17';
+const CACHE_NAME = 'exam-tracker-v19';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
