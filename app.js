@@ -5381,7 +5381,7 @@ function logMathMockToSectional(name, marks, correct, wrong, skip){
 // negative marking) mirrors Math Mock: on submit this auto-pushes an
 // entry into Score tab's "Reasoning Sectional" category (state.mockLog.
 // reasoningSec) so its avg updates automatically, no re-typing needed.
-function logReasoningMockToSectional(name, marks, correct, wrong, skip){
+function logReasoningMockToSectional(name, marks, correct, wrong, skip, autoSrc){
   ensureMockLogState();
   state.mockLog.reasoningSec.push({
     id: 'quizsec_' + Date.now() + '_' + Math.floor(Math.random()*10000),
@@ -5394,11 +5394,45 @@ function logReasoningMockToSectional(name, marks, correct, wrong, skip){
     chapter: '',
     remarks: '',
     auto: true,
-    autoSrc: 'Reasoning Mock Quiz'
+    autoSrc: autoSrc || 'Reasoning Mock Quiz'
   });
   save();
   if(mockActiveCat === 'reasoningSec') renderMockDetail();
   if(typeof renderMockTab === 'function') renderMockTab();
+}
+// English Sectional — mirrors Math/Reasoning Mock Quiz above, but since
+// there's no separate Quiz-tab "English Mock" (PYQ) feature, this gets
+// called from Super Practice (spnativeSubmit) and 75-Day Practice
+// (p75nativeSubmit) whenever an English mock is submitted, so English
+// Sectional avg (state.mockLog.engSec) fills in automatically too, no
+// re-typing needed, same as Math/Reasoning.
+function logEnglishMockToSectional(name, marks, correct, wrong, skip, autoSrc){
+  ensureMockLogState();
+  state.mockLog.engSec.push({
+    id: 'quizsec_' + Date.now() + '_' + Math.floor(Math.random()*10000),
+    name: name,
+    date: fmtISODate(new Date()),
+    score: marks,
+    right: correct,
+    wrong: wrong,
+    skip: skip,
+    chapter: '',
+    remarks: '',
+    auto: true,
+    autoSrc: autoSrc || 'English Mock Quiz'
+  });
+  save();
+  if(mockActiveCat === 'engSec') renderMockDetail();
+  if(typeof renderMockTab === 'function') renderMockTab();
+}
+// Generic helper — Super Practice & 75-Day Practice cover ALL subjects
+// (quant/english/reasoning/gk/computer) with the same native player, so
+// route whichever subject key was actually attempted into the matching
+// Score-tab Sectional bucket (only math/english/reasoning have one).
+function logSubjectMockToSectional(subjectKey, name, marks, correct, wrong, skip, autoSrc){
+  if(subjectKey === 'quant') logMathMockToSectional(name, marks, correct, wrong, skip);
+  else if(subjectKey === 'english') logEnglishMockToSectional(name, marks, correct, wrong, skip, autoSrc);
+  else if(subjectKey === 'reasoning') logReasoningMockToSectional(name, marks, correct, wrong, skip);
 }
 const MOCK_CATS = [
   {id:'preMock', label:'Pre Mock', icon:'📘'},
@@ -11477,6 +11511,21 @@ function makeMathPyqQuiz(){
   const prefix = 'mathpyq';
   let SETS = MATH_PYQ_SETS; // reassigned to the chunked version once TOPIC_META is defined below
   let mathpyqView = 'mocks'; // 'chapters' | 'mocks'
+  // 'concept' = original 44 SSC/RRB PYQ mocks (mock01..mock44, from
+  // MATH_PYQ_SETS). 'p75' = new 75-Day Practice sectional mocks — all 2919
+  // 75-Day Practice Quant questions redistributed into 117 mixed, 25-Q,
+  // 15-min mocks (p75mock001..p75mock117, from P75_MATH_SETS). Both share
+  // the exact same exam engine/UI below — only the source object + key
+  // prefix differ.
+  let mathpyqMockSource = 'concept'; // 'concept' | 'p75'
+  function p75Sets(){ return window.P75_MATH_SETS || {}; }
+  function spSets(){ return window.SP_MATH_SETS || {}; }
+  function setsForKey(key){
+    if(!key) return SETS;
+    if(key.indexOf('p75mock') === 0) return p75Sets();
+    if(key.indexOf('spmock') === 0) return spSets();
+    return SETS;
+  }
 
   // ===== Saved Mock Attempts (localStorage) =====
   // Jab ek mock "Submit Test" hota hai, uska poora snapshot (questions,
@@ -11588,12 +11637,21 @@ function makeMathPyqQuiz(){
   const CHUNKED_META = MATH_PYQ_CHUNKED.chunkedMeta;
 
   function setLabel(key, count){
+    if(key && key.indexOf('p75mock') === 0){
+      const num = parseInt(key.replace('p75mock', ''), 10) || key;
+      return '75-Day Practice Mock ' + num + ' (' + count + ' Qs)';
+    }
+    if(key && key.indexOf('spmock') === 0){
+      const num = parseInt(key.replace('spmock', ''), 10) || key;
+      return 'Super Practice Mock ' + num + ' (' + count + ' Qs)';
+    }
     const meta = CHUNKED_META[key];
     const name = meta ? meta.en : key;
     return name + ' (' + count + ' Qs)';
   }
   function buildSetPool(setKey){
-    const set = SETS[setKey] || [];
+    const src = setsForKey(setKey);
+    const set = (src && src[setKey]) || [];
     // Math PYQ chapters are shown in their original Q1, Q2, Q3... order
     // (not shuffled) so revision feels sequential/predictable.
     return set.slice();
@@ -11631,10 +11689,41 @@ function makeMathPyqQuiz(){
     const menuTitleEl = document.getElementById('mathpyqMenuTitle');
 
     if(mathpyqView === 'mocks'){
-      if(menuTitleEl) menuTitleEl.textContent = 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)';
-      Object.keys(SETS).filter(key => key.indexOf('mock') === 0).forEach(key => {
-        const count = SETS[key].length;
-        const meta = CHUNKED_META[key];
+      // Source toggle: 'concept' (original 44 SSC/RRB PYQ mocks) vs 'p75'
+      // (117 mocks from 75-Day Practice Quant) vs 'sp' (158 mocks from
+      // Super Practice Quant). Rendered once at the top of the grid.
+      const srcRow = document.createElement('div');
+      srcRow.className = 'calcToggleRow';
+      srcRow.style.cssText = 'display:flex;gap:8px;padding:0 0 10px;flex-wrap:wrap;';
+      const sources = [
+        { key:'concept', label:'🧮 Concept Mock' },
+        { key:'p75',     label:'🆕 75-Day Practice' },
+        { key:'sp',      label:'🔥 Super Practice' }
+      ];
+      sources.forEach(s => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'nav-btn' + (mathpyqMockSource === s.key ? ' onbPrimary' : '');
+        b.style.flex = '1 1 30%';
+        b.style.minWidth = '100px';
+        b.textContent = s.label;
+        b.addEventListener('click', () => { mathpyqMockSource = s.key; renderSetMenu(); });
+        srcRow.appendChild(b);
+      });
+      grid.appendChild(srcRow);
+
+      const isP75 = mathpyqMockSource === 'p75';
+      const isSP = mathpyqMockSource === 'sp';
+      const mockSrcSets = isP75 ? p75Sets() : (isSP ? spSets() : SETS);
+      const mockKeyPrefix = isP75 ? 'p75mock' : (isSP ? 'spmock' : 'mock');
+      const useDefaultMeta = !isP75 && !isSP;
+
+      if(menuTitleEl) menuTitleEl.textContent = isP75
+        ? '75-Day Practice — Choose a Mock (25 Qs mixed, all chapters)'
+        : (isSP ? 'Super Practice — Choose a Mock (25 Qs mixed, all chapters)' : 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)');
+      Object.keys(mockSrcSets).filter(key => key.indexOf(mockKeyPrefix) === 0).forEach(key => {
+        const count = mockSrcSets[key].length;
+        const meta = useDefaultMeta ? CHUNKED_META[key] : null;
         const saved = getMockAttempt(key);
         if(saved){
           // Already submitted: tapping the card opens the FULL saved
@@ -11716,15 +11805,16 @@ function makeMathPyqQuiz(){
   }
   function openLangChoice(setKey){
     session.setKey = setKey;
-    const count = (SETS[setKey] || []).length;
+    const count = (setsForKey(setKey)[setKey] || []).length;
     const titleEl = document.getElementById('mathpyqLangTitle');
     if(titleEl) titleEl.textContent = 'Math PYQ — ' + setLabel(setKey, count);
     showCalcPage('mathpyqlang');
   }
   async function startQuiz(lang){
     if(lang) session.lang = lang;
-    if(!session.setKey || !SETS[session.setKey]) return;
-    if(!(await window.ensureTopicReady(SETS))) return;
+    const srcSets = setsForKey(session.setKey);
+    if(!session.setKey || !srcSets[session.setKey]) return;
+    if(!(await window.ensureTopicReady(srcSets))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
     session.correct = 0;
@@ -11850,7 +11940,7 @@ function makeMathPyqQuiz(){
   function init(){
     renderSetMenu();
     const mainBtn = document.getElementById('calcMathPyqBtn');
-    if(mainBtn) mainBtn.addEventListener('click', () => { mathpyqView = 'mocks'; mathpyqChapterSel = null; renderSetMenu(); showCalcPage('mathpyqmenu'); });
+    if(mainBtn) mainBtn.addEventListener('click', () => { mathpyqView = 'mocks'; mathpyqMockSource = 'concept'; mathpyqChapterSel = null; renderSetMenu(); showCalcPage('mathpyqmenu'); });
     const chapterwiseBtn = document.getElementById('calcMathChapterwiseBtn');
     if(chapterwiseBtn) chapterwiseBtn.addEventListener('click', () => { mathpyqView = 'chapters'; mathpyqChapterSel = null; renderSetMenu(); showCalcPage('mathpyqmenu'); });
     const menuBackBtn = document.getElementById('mathpyqMenuBackBtn');
@@ -11909,8 +11999,9 @@ function makeMathPyqQuiz(){
 
   async function startExamQuiz(lang){
     if(lang) session.lang = lang;
-    if(!session.setKey || !SETS[session.setKey]) return;
-    if(!(await window.ensureTopicReady(SETS))) return;
+    const srcSets2 = setsForKey(session.setKey);
+    if(!session.setKey || !srcSets2[session.setKey]) return;
+    if(!(await window.ensureTopicReady(srcSets2))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -12283,7 +12374,18 @@ function makeMathPyqQuiz(){
     if(resultTagWrap) resultTagWrap.addEventListener('click', resultReveal);
   }
 
-  return { init, startQuiz, initExamMode };
+  // Exposed so other entry points (e.g. Super Practice's "Math Sectional"
+  // card) can jump straight to the mocks view with a chosen source, without
+  // duplicating any of the toggle/render logic above.
+  function openMocksView(source){
+    mathpyqView = 'mocks';
+    mathpyqMockSource = (source === 'p75' || source === 'sp') ? source : 'concept';
+    mathpyqChapterSel = null;
+    renderSetMenu();
+    showCalcPage('mathpyqmenu');
+  }
+
+  return { init, startQuiz, initExamMode, openMocksView };
 }
 const mathPyqQuiz = makeMathPyqQuiz();
 
@@ -13131,7 +13233,21 @@ const wordarrangeageQuiz = makeBilingualSetQuiz('wordarrangeage', WORDARRANGEAGE
 // (not the chapter list), same as Math Mock.
 function makeReasoningMockQuiz(){
   const prefix = 'reasoningmock';
-  const SETS = REASONINGMOCK_SETS;
+  const SETS = REASONINGMOCK_SETS; // 'concept' source (original mixed mocks)
+  // 'concept' = original Reasoning Mocks (mock01.., REASONINGMOCK_SETS).
+  // 'p75' = 75-Day Practice Reasoning pool redistributed into mixed 25-Q
+  // mocks (p75mock001.., from P75_REASONING_SETS). 'sp' = Super Practice
+  // Reasoning pool redistributed the same way (spmock001.., from
+  // SP_REASONING_SETS) — mirrors English Mock's concept/p75/sp source toggle.
+  let reasoningMockSource = 'concept'; // 'concept' | 'p75' | 'sp'
+  function p75Sets(){ return window.P75_REASONING_SETS || {}; }
+  function spSets(){ return window.SP_REASONING_SETS || {}; }
+  function setsForKey(key){
+    if(!key) return SETS;
+    if(key.indexOf('p75mock') === 0) return p75Sets();
+    if(key.indexOf('spmock') === 0) return spSets();
+    return SETS;
+  }
 
   // ===== Saved Mock Attempts (localStorage) — same pattern as Math Mock,
   // separate storage key so the two mocks' saved attempts never collide. =====
@@ -13174,13 +13290,22 @@ function makeReasoningMockQuiz(){
     mainssectional: 'Mains Sectional'
   };
   function setLabel(key, count){
+    if(key && key.indexOf('p75mock') === 0){
+      const num = parseInt(key.replace('p75mock', ''), 10) || key;
+      return '75-Day Practice Mock ' + num + ' (' + count + ' Qs)';
+    }
+    if(key && key.indexOf('spmock') === 0){
+      const num = parseInt(key.replace('spmock', ''), 10) || key;
+      return 'Super Mock ' + num + ' (' + count + ' Qs)';
+    }
     const num = (key.match(/\d+/) || [key])[0];
-    const prefix = key.replace(/\d+$/, '');
-    const nice = SET_PREFIX_LABELS[prefix] || 'Mock';
+    const pfx = key.replace(/\d+$/, '');
+    const nice = SET_PREFIX_LABELS[pfx] || 'Mock';
     return nice + ' ' + num + ' (' + count + ' Qs)';
   }
   function buildSetPool(setKey){
-    const set = SETS[setKey] || [];
+    const src = setsForKey(setKey);
+    const set = (src && src[setKey]) || [];
     return set.slice();
   }
   function questionLines(q, lang){
@@ -13211,8 +13336,17 @@ function makeReasoningMockQuiz(){
     const grid = document.getElementById(prefix + 'SetGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    Object.keys(SETS).forEach(key => {
-      const count = SETS[key].length;
+
+    const menuTitleEl = document.getElementById(prefix + 'MenuTitle');
+    if(menuTitleEl){
+      menuTitleEl.textContent = reasoningMockSource === 'p75'
+        ? '🆕 75-Day Practice — Choose a Mock (25 Qs mixed, all chapters)'
+        : (reasoningMockSource === 'sp' ? '🔥 Super Mocks — Choose a Mock (25 Qs mixed, all chapters)' : '🧮 Concept Mock — Choose a Mock (25 Qs mixed, all chapters)');
+    }
+
+    const mockSrcSets = reasoningMockSource === 'p75' ? p75Sets() : (reasoningMockSource === 'sp' ? spSets() : SETS);
+    Object.keys(mockSrcSets).forEach(key => {
+      const count = mockSrcSets[key].length;
       const saved = getMockAttempt(key);
       if(saved){
         const card = document.createElement('div');
@@ -13248,7 +13382,7 @@ function makeReasoningMockQuiz(){
   }
   function openLangChoice(setKey){
     session.setKey = setKey;
-    const count = (SETS[setKey] || []).length;
+    const count = (setsForKey(setKey)[setKey] || []).length;
     const titleEl = document.getElementById('reasoningmockLangTitle');
     if(titleEl) titleEl.textContent = 'Reasoning Mock — ' + setLabel(setKey, count);
     showCalcPage('reasoningmocklang');
@@ -13271,8 +13405,9 @@ function makeReasoningMockQuiz(){
 
   async function startExamQuiz(lang){
     if(lang) session.lang = lang;
-    if(!session.setKey || !SETS[session.setKey]) return;
-    if(!(await window.ensureTopicReady(SETS))) return;
+    const srcSets = setsForKey(session.setKey);
+    if(!session.setKey || !srcSets[session.setKey]) return;
+    if(!(await window.ensureTopicReady(srcSets))) return;
     examSession.setKey = session.setKey;
     examSession.lang = session.lang;
     examSession.questions = buildSetPool(session.setKey);
@@ -13451,7 +13586,8 @@ function makeReasoningMockQuiz(){
         '<div class="examSumCard"><div class="n">' + examSession.questions.length + '</div><div class="l">Total Qs</div></div>';
     }
     logQuizActivity(setLabel(examSession.setKey, examSession.questions.length), correct, attempted);
-    logReasoningMockToSectional(setLabel(examSession.setKey, examSession.questions.length), marks, correct, wrong, skipped);
+    const reasoningSrcLabel = examSession.setKey.indexOf('p75mock') === 0 ? '75-Day Practice' : (examSession.setKey.indexOf('spmock') === 0 ? 'Super Practice' : 'Concept Mock');
+    logReasoningMockToSectional(setLabel(examSession.setKey, examSession.questions.length), marks, correct, wrong, skipped, 'Reasoning Mock (' + reasoningSrcLabel + ')');
     markQuizSetAttempted(prefix, examSession.setKey);
     saveMockAttempt(examSession.setKey, {
       setKey: examSession.setKey,
@@ -13588,10 +13724,22 @@ function makeReasoningMockQuiz(){
 
   function init(){
     renderSetMenu();
+    // Main "Reasoning Mock" card on Quiz tab now opens a chooser page with
+    // three separate entry buttons (Super Mocks / 75-Day Practice / Concept
+    // Mock) — each jumps straight to its own mock list with
+    // reasoningMockSource preset, mirroring English Mock's SP/P75/Concept setup.
     const mainBtn = document.getElementById('calcReasoningMockBtn');
-    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('reasoningmockmenu'); });
+    if(mainBtn) mainBtn.addEventListener('click', () => showCalcPage('reasoningmockchooser'));
+    const chooserBackBtn = document.getElementById('reasoningmockChooserBackBtn');
+    if(chooserBackBtn) chooserBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    const spBtn = document.getElementById('calcReasoningMockSPBtn');
+    if(spBtn) spBtn.addEventListener('click', () => { reasoningMockSource = 'sp'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
+    const p75Btn = document.getElementById('calcReasoningMockP75Btn');
+    if(p75Btn) p75Btn.addEventListener('click', () => { reasoningMockSource = 'p75'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
+    const conceptBtn = document.getElementById('calcReasoningMockConceptBtn');
+    if(conceptBtn) conceptBtn.addEventListener('click', () => { reasoningMockSource = 'concept'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
     const menuBackBtn = document.getElementById('reasoningmockMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('reasoningmockchooser'));
     const langBackBtn = document.getElementById('reasoningmockLangBackBtn');
     if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage('reasoningmockmenu'));
     const langHindiBtn = document.getElementById('reasoningmockLangHindiBtn');
@@ -13657,7 +13805,21 @@ const reasoningmockQuiz = makeReasoningMockQuiz();
 // Spotting, Sentence Improvement, Voice, Narration, Para Jumbles, etc.). =====
 function makeEnglishMockQuiz(){
   const prefix = 'englishmock';
-  const SETS = ENGLISHMOCK_SETS;
+  const SETS = ENGLISHMOCK_SETS; // 'concept' source (original 68 mixed mocks)
+  // 'concept' = original 68 Hard English Mocks (mock01..mock68, from
+  // ENGLISHMOCK_SETS). 'p75' = 75-Day Practice English pool redistributed
+  // into mixed 25-Q mocks (p75mock001.. , from P75_ENGLISH_SETS). 'sp' =
+  // Super Practice English pool redistributed the same way (spmock001..,
+  // from SP_ENGLISH_SETS) — mirrors Math PYQ's concept/p75/sp source toggle.
+  let engMockSource = 'concept'; // 'concept' | 'p75' | 'sp'
+  function p75Sets(){ return window.P75_ENGLISH_SETS || {}; }
+  function spSets(){ return window.SP_ENGLISH_SETS || {}; }
+  function setsForKey(key){
+    if(!key) return SETS;
+    if(key.indexOf('p75mock') === 0) return p75Sets();
+    if(key.indexOf('spmock') === 0) return spSets();
+    return SETS;
+  }
 
   const MOCK_ATTEMPT_KEY = 'cgl50-mockenglish-attempts';
   function loadMockAttempts(){
@@ -13682,11 +13844,20 @@ function makeEnglishMockQuiz(){
   const session = { setKey: null };
 
   function setLabel(key, count){
+    if(key && key.indexOf('p75mock') === 0){
+      const num = parseInt(key.replace('p75mock', ''), 10) || key;
+      return '75-Day Practice Mock ' + num + ' (' + count + ' Qs)';
+    }
+    if(key && key.indexOf('spmock') === 0){
+      const num = parseInt(key.replace('spmock', ''), 10) || key;
+      return 'Super Mock ' + num + ' (' + count + ' Qs)';
+    }
     const num = (key.match(/\d+/) || [key])[0];
     return 'Mock ' + num + ' (' + count + ' Qs)';
   }
   function buildSetPool(setKey){
-    const set = SETS[setKey] || [];
+    const src = setsForKey(setKey);
+    const set = (src && src[setKey]) || [];
     return set.slice();
   }
 
@@ -13694,8 +13865,17 @@ function makeEnglishMockQuiz(){
     const grid = document.getElementById(prefix + 'SetGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    Object.keys(SETS).forEach(key => {
-      const count = SETS[key].length;
+
+    const menuTitleEl = document.getElementById(prefix + 'MenuTitle');
+    if(menuTitleEl){
+      menuTitleEl.textContent = engMockSource === 'p75'
+        ? '\ud83c\udd95 75-Day Practice \u2014 Choose a Mock (25 Qs mixed, all English topics)'
+        : (engMockSource === 'sp' ? '\ud83d\udd25 Super Mocks \u2014 Choose a Mock (25 Qs mixed, all English topics)' : '\ud83e\uddee Concept Mock \u2014 Choose a Mock (25 Qs mixed, all English topics)');
+    }
+
+    const mockSrcSets = engMockSource === 'p75' ? p75Sets() : (engMockSource === 'sp' ? spSets() : SETS);
+    Object.keys(mockSrcSets).forEach(key => {
+      const count = mockSrcSets[key].length;
       const saved = getMockAttempt(key);
       if(saved){
         const card = document.createElement('div');
@@ -13747,8 +13927,10 @@ function makeEnglishMockQuiz(){
 
   async function startExamQuiz(setKey){
     if(setKey) session.setKey = setKey;
-    if(!session.setKey || !SETS[session.setKey]) return;
-    if(!(await window.ensureTopicReady(SETS))) return;
+    if(!session.setKey) return;
+    const srcSets = setsForKey(session.setKey);
+    if(!srcSets[session.setKey]) return;
+    if(!(await window.ensureTopicReady(srcSets))) return;
     examSession.setKey = session.setKey;
     examSession.questions = buildSetPool(session.setKey);
     const n = examSession.questions.length;
@@ -13936,6 +14118,8 @@ function makeEnglishMockQuiz(){
       submittedAt: Date.now()
     });
     markQuizSetAttempted(prefix, examSession.setKey);
+    const engSrcLabel = examSession.setKey.indexOf('p75mock') === 0 ? '75-Day Practice' : (examSession.setKey.indexOf('spmock') === 0 ? 'Super Practice' : 'Concept Mock');
+    logEnglishMockToSectional(setLabel(examSession.setKey, examSession.questions.length), marks, correct, wrong, skipped, 'English Mock (' + engSrcLabel + ')');
     resultRenderPalette();
     resultGoTo(0);
     showCalcPage('englishmockresult');
@@ -14059,8 +14243,15 @@ function makeEnglishMockQuiz(){
 
   function init(){
     renderSetMenu();
-    const mainBtn = document.getElementById('calcEnglishMockBtn');
-    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage('englishmockmenu'); });
+    // Three separate entry buttons on the English Mocks menu (Super Mocks /
+    // 75-Day Practice / Concept Mock) — each jumps straight to its own mock
+    // list with engMockSource preset, no in-page toggle needed.
+    const spBtn = document.getElementById('calcEnglishMockSPBtn');
+    if(spBtn) spBtn.addEventListener('click', () => { engMockSource = 'sp'; renderSetMenu(); showCalcPage('englishmockmenu'); });
+    const p75Btn = document.getElementById('calcEnglishMockP75Btn');
+    if(p75Btn) p75Btn.addEventListener('click', () => { engMockSource = 'p75'; renderSetMenu(); showCalcPage('englishmockmenu'); });
+    const conceptBtn = document.getElementById('calcEnglishMockConceptBtn');
+    if(conceptBtn) conceptBtn.addEventListener('click', () => { engMockSource = 'concept'; renderSetMenu(); showCalcPage('englishmockmenu'); });
     const menuBackBtn = document.getElementById('englishmockMenuBackBtn');
     if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
 
@@ -15260,6 +15451,23 @@ function renderSPSubjectGrid(){
   const grid = document.getElementById('superpracticeSubjectGrid');
   if(!grid) return;
   grid.innerHTML = '';
+  // "Math Sectional" — jumps straight into the existing Math Mock exam
+  // engine's mocks view (15-min, 25-Q, mixed-chapter tests), with its own
+  // Concept Mock / 75-Day Practice toggle inside. Kept separate from the
+  // iframe-based Quant (Math) card below since it's a different engine
+  // (native exam UI, not pre-built HTML mocks).
+  const mathSecBtn = document.createElement('button');
+  mathSecBtn.className = 'calcCard calcCard-statement';
+  mathSecBtn.innerHTML =
+    '<span class="calcIcon calcIcon-statement">🔢</span>' +
+    '<span class="calcLabelCol">' +
+      '<span class="calcLabel">Math Sectional</span>' +
+      '<span class="calcSub">15-min · 25 Qs mixed · Concept + 75-Day Practice</span>' +
+    '</span>' +
+    '<span class="calcArrow">&#8250;</span>';
+  mathSecBtn.addEventListener('click', () => mathPyqQuiz.openMocksView('concept'));
+  grid.appendChild(mathSecBtn);
+
   SUPERPRACTICE_SUBJECTS.forEach(s => {
     const btn = document.createElement('button');
     btn.className = 'calcCard calcCard-statement';
@@ -15655,6 +15863,7 @@ function spnativeSubmit(){
   }
   logQuizActivity(spnativeMockLabel, correct, attempted);
   if(spnativeCurrentKey && spnativeCurrentFile) markQuizSetAttempted('spnative', spnativeCurrentKey + '/' + spnativeCurrentFile);
+  logSubjectMockToSectional(spnativeCurrentKey, spnativeMockLabel, marks, correct, wrong, skipped, 'Super Practice');
   spnativeResultRenderPalette();
   spnativeResultGoTo(0);
   showCalcPage('spnativeresult');
@@ -16212,6 +16421,7 @@ function p75nativeSubmit(){
   }
   logQuizActivity(p75nativeMockLabel, correct, attempted);
   if(p75nativeCurrentKey && p75nativeCurrentFile) markQuizSetAttempted('p75native', p75nativeCurrentKey + '/' + p75nativeCurrentFile);
+  logSubjectMockToSectional(p75nativeCurrentKey, p75nativeMockLabel, marks, correct, wrong, skipped, '75-Day Practice');
   p75nativeResultRenderPalette();
   p75nativeResultGoTo(0);
   showCalcPage('p75nativeresult');
