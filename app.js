@@ -7777,12 +7777,33 @@ window.addEventListener('popstate', (e)=>{
 // _fromPopState=true means we're reacting to the Android/browser back button
 // (via popstate below) — same rule as switchTab(): don't push a new history
 // entry in that case, or every back-press would just re-push itself.
+// ===== Math / Reasoning pages get a white "real exam interface" theme =====
+// Har Math aur Reasoning quiz/mock/menu page (chapter list se lekar exam
+// screen aur result tak) ab app ke default dark theme ki jagah ek white,
+// Testbook-jaisa light theme mein khulta hai — English/GK/other pages ka
+// dark theme untouched rehta hai. Prefix-match hai isliye "seating" apne
+// "seatingmenu"/"seatinglang" versions ko bhi cover kar leta hai.
+const LIGHT_THEME_PAGE_PREFIXES = [
+  // Reasoning topics
+  'seating','seatinghard','orderranking','letteranalogy','letterword','logicmix',
+  'bloodrelations','numberanalogy','alphanumeric','syllogism','clockio','wordanalogy',
+  'letterseriesds','dictorder','calendarreasoning','wordformation','directiondistance',
+  'reasoninghardmix','statementconclusion','wordarrangeage','coding','oddone',
+  'decisionmaking','series','statement','reasoningmock','reasoningchapters',
+  // Math topics
+  'digitalsum','unitdigit','mathpyq'
+];
+function isLightThemePage(name){
+  if(!name) return false;
+  return LIGHT_THEME_PAGE_PREFIXES.some(p => name.indexOf(p) === 0);
+}
 function showCalcPage(name, _fromPopState){
   const prevActive = document.querySelector('.calcPage.active');
   const prevName = prevActive ? prevActive.id.replace('calcPage-', '') : null;
   document.querySelectorAll('.calcPage').forEach(el=>{
     el.classList.toggle('active', el.id === 'calcPage-' + name);
   });
+  document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
@@ -11689,28 +11710,34 @@ function makeMathPyqQuiz(){
     const menuTitleEl = document.getElementById('mathpyqMenuTitle');
 
     if(mathpyqView === 'mocks'){
-      // Source toggle: 'concept' (original 44 SSC/RRB PYQ mocks) vs 'p75'
+      // Source picker: 'concept' (original 44 SSC/RRB PYQ mocks) vs 'p75'
       // (117 mocks from 75-Day Practice Quant) vs 'sp' (158 mocks from
-      // Super Practice Quant). Rendered once at the top of the grid.
-      const srcRow = document.createElement('div');
-      srcRow.className = 'calcToggleRow';
-      srcRow.style.cssText = 'display:flex;gap:8px;padding:0 0 10px;flex-wrap:wrap;';
+      // Super Practice Quant). Rendered as full-width cards — mirrors the
+      // Reasoning Mock chooser's separate calcCard buttons — instead of the
+      // old inline pill toggle, so each source reads as its own big button.
+      const srcWrap = document.createElement('div');
+      srcWrap.className = 'calcGrid calcGrid-1col';
+      srcWrap.style.cssText = 'margin-bottom:14px;';
       const sources = [
-        { key:'concept', label:'🧮 Concept Mock' },
-        { key:'p75',     label:'🆕 75-Day Practice' },
-        { key:'sp',      label:'🔥 Super Practice' }
+        { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
+        { key:'p75',     icon:'🆕', label:'75-Day Practice',  sub:'117 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
+        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'158 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
       ];
       sources.forEach(s => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'nav-btn' + (mathpyqMockSource === s.key ? ' onbPrimary' : '');
-        b.style.flex = '1 1 30%';
-        b.style.minWidth = '100px';
-        b.textContent = s.label;
+        b.className = 'calcCard calcCard-unitdigit' + (mathpyqMockSource === s.key ? ' onbPrimary' : '');
+        b.innerHTML =
+          '<span class="calcIcon calcIcon-unitdigit">' + s.icon + '</span>' +
+          '<span class="calcLabelCol">' +
+            '<span class="calcLabel">' + s.label + '</span>' +
+            '<span class="calcSub">' + s.sub + '</span>' +
+          '</span>' +
+          '<span class="calcArrow">' + (mathpyqMockSource === s.key ? '✅' : '&#8250;') + '</span>';
         b.addEventListener('click', () => { mathpyqMockSource = s.key; renderSetMenu(); });
-        srcRow.appendChild(b);
+        srcWrap.appendChild(b);
       });
-      grid.appendChild(srcRow);
+      grid.appendChild(srcWrap);
 
       const isP75 = mathpyqMockSource === 'p75';
       const isSP = mathpyqMockSource === 'sp';
@@ -16708,6 +16735,7 @@ async function openMainsMockNative(key, file, label, entry){
   if(infoTitleEl) infoTitleEl.textContent = mmnativeMockLabel;
   mmnativeUpdateLangBtns();
   showCalcPage('mmnativeinfo');
+  document.body.classList.toggle('lightExamTheme', true); // Mains Mock: light theme for both sectional and full mocks
   const qc = document.getElementById('mmnativeInfoQCount'); if(qc) qc.textContent = '…';
   let data;
   try{
@@ -16732,7 +16760,7 @@ async function openMainsMockNative(key, file, label, entry){
   if(tm) tm.textContent = Math.round(totalMarks * 100) / 100;
   const du = document.getElementById('mmnativeInfoDuration');
   if(du){
-    if(key === 'sectional') du.textContent = '30 + 30 min (Math then Reasoning, sectional)';
+    if(key === 'sectional') du.textContent = '15 + 15 min (Math then Reasoning, sectional)';
     else if(key === 'full') du.textContent = '30+30+30+30+15 min — Sec I (Quant/Reasoning) → Sec II (English/GK) → Sec III (Computer)';
     else du.textContent = (data.duration_min || 15) + ' minutes';
   }
@@ -16766,9 +16794,9 @@ function mmnativeStartExam(){
   if(mmnativeCurrentKey === 'sectional' && n >= 2){
     const half = Math.round(n / 2);
     mmnativeSession.sections = [
-      { name: 'Math', start: 0, end: half, minutes: 30, sectionLabel: null }
+      { name: 'Math', start: 0, end: half, minutes: 15, sectionLabel: null }
     ];
-    mmnativeSession.sections.push({ name: 'Reasoning', start: half, end: n, minutes: 30, sectionLabel: null });
+    mmnativeSession.sections.push({ name: 'Reasoning', start: half, end: n, minutes: 15, sectionLabel: null });
     mmnativeSession.sectionIdx = 0;
     mmnativeSession.sectionSubmitted = mmnativeSession.sections.map(() => false);
     mmnativeSession.sectionTimeLeft = mmnativeSession.sections[0].minutes * 60;
@@ -16802,6 +16830,7 @@ function mmnativeStartExam(){
   mmnativeSetPausedUI(false);
   mmnativeRenderQuestion();
   showCalcPage('mmnativeexam');
+  document.body.classList.toggle('lightExamTheme', true); // Mains Mock: light theme for both sectional and full mocks
 }
 
 function mmnativeUpdateTimerDisplay(){
@@ -17030,6 +17059,7 @@ function mmnativeSubmit(){
   mmnativeResultRenderPalette();
   mmnativeResultGoTo(0);
   showCalcPage('mmnativeresult');
+  document.body.classList.toggle('lightExamTheme', true); // Mains Mock: light theme for both sectional and full mocks
 }
 function mmnativeResultQState(i){
   const a = mmnativeSession.answers[i];
