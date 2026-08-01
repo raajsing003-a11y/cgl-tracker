@@ -116,7 +116,16 @@
 // English/GK subjects inside the shared Super Practice + 75-Day Practice
 // native players stay dark. Old v21 cache would keep serving the
 // light-default index.html/app.js, so it must be evicted.
-const CACHE_NAME = 'exam-tracker-v22';
+// Bumped v22 -> v23: Super Practice quant "Mixed Practice" mocks now run
+// in mock-mode (fixed 15-min timer, answers revealed only after Submit,
+// not instantly per question); Computer subject inside Super Practice is
+// now pinned dark (joining English/GK); and every light-theme mock/exam
+// screen (Reasoning Mock, Mains Mock, EM Mock, Math PYQ, and Super
+// Practice/75-Day Practice pages when not on a dark-pinned subject) now
+// takes over the full screen on pure white with the app topbar/tabbar
+// hidden. Old v22 cache would keep serving the old instant-reveal Mixed
+// Practice, light Computer subject, and non-fullscreen mock layout.
+const CACHE_NAME = 'exam-tracker-v23';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

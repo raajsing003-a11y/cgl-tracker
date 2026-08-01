@@ -7797,6 +7797,26 @@ function isLightThemePage(name){
   if(!name) return false;
   return LIGHT_THEME_PAGE_PREFIXES.some(p => name.indexOf(p) === 0);
 }
+// Full-screen white takeover for mock/exam-taking screens that use the
+// light palette (Reasoning Mock, Mains Mock, EM Mock, Math PYQ exam,
+// always; Super Practice + 75-Day Practice native exam only when the
+// current subject isn't one of the ones pinned dark). App topbar/tabbar
+// are hidden while this is active (see .examFullscreenLight CSS).
+const FULLSCREEN_LIGHT_ALWAYS = ['reasoningmockexam','mathpyqexam','mmnativeexam','emnativeexam'];
+const FULLSCREEN_LIGHT_SUBJECT_AWARE = {
+  spnativeexam: ['english','gk','computer'],
+  p75nativeexam: ['english','gk']
+};
+function isFullscreenLightPage(name){
+  if(FULLSCREEN_LIGHT_ALWAYS.indexOf(name) !== -1) return true;
+  const darkSubjects = FULLSCREEN_LIGHT_SUBJECT_AWARE[name];
+  if(darkSubjects){
+    const el = document.getElementById('calcPage-' + name);
+    const subj = el ? el.dataset.subject : null;
+    return darkSubjects.indexOf(subj) === -1;
+  }
+  return false;
+}
 function showCalcPage(name, _fromPopState){
   const prevActive = document.querySelector('.calcPage.active');
   const prevName = prevActive ? prevActive.id.replace('calcPage-', '') : null;
@@ -7804,6 +7824,7 @@ function showCalcPage(name, _fromPopState){
     el.classList.toggle('active', el.id === 'calcPage-' + name);
   });
   document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
+  document.body.classList.toggle('examFullscreenLight', isFullscreenLightPage(name));
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
@@ -15622,6 +15643,10 @@ function filterSPMockGrid(query){
 // (unlike EM Mocks' already-English-only source).
 let spnativeLoaded = null;
 let spnativeMockLabel = '';
+// Mixed Practice (quant "sectional" mocks): behave like a real mock —
+// 15 min fixed timer, answers only revealed after final Submit — instead
+// of Super Practice's usual instant-reveal-per-question quiz style.
+let spnativeMockModeActive = false;
 let spnativeCurrentKey = null;
 let spnativeCurrentFile = null;
 let spnativeLang = 'en'; // 'en' | 'hi'
@@ -15656,6 +15681,7 @@ async function openSPMock(key, file, label, entry){
   spnativeCurrentFile = file;
   const spExamPageEl = document.getElementById('calcPage-spnativeexam');
   if(spExamPageEl) spExamPageEl.dataset.subject = key;
+  spnativeMockModeActive = (key === 'quant' && entry && entry.topic === 'Mixed Practice');
   spnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
   const jsonFile = file.replace(/\.html$/, '.json');
   const infoTitleEl = document.getElementById('spnativeInfoTitle');
@@ -15707,7 +15733,7 @@ function spnativeStartExam(){
   spnativeSession.visited = new Array(n).fill(false);
   spnativeSession.locked = new Array(n).fill(false);
   spnativeSession.current = 0;
-  spnativeSession.timeLeft = (spnativeLoaded.duration_min || 15) * 60;
+  spnativeSession.timeLeft = spnativeMockModeActive ? 15 * 60 : (spnativeLoaded.duration_min || 15) * 60;
   spnativeSession.submitted = false;
   spnativeSession.paused = false;
   const titleEl = document.getElementById('spnativeExamTitle');
@@ -15835,6 +15861,11 @@ function selectedIsCorrect(session, idx){
 function spnativeSelectOption(i){
   if(spnativeSession.locked[spnativeSession.current]) return;
   spnativeSession.answers[spnativeSession.current] = i;
+  if(spnativeMockModeActive){
+    // Mock-style: just record the pick, don't lock/reveal correct-wrong now.
+    spnativeRenderQuestion();
+    return;
+  }
   spnativeSession.locked[spnativeSession.current] = true;
   spnativeRenderQuestion();
 }
