@@ -210,6 +210,41 @@
     background:#08070a;
     color-scheme:dark;
   }
+  /* ===== Per-mock dark-mode toggle (Avnee's request) =====
+     Every mock-taking screen above is pinned light regardless of the
+     app-wide theme. Each one now also has its own 🌙 button in the exam
+     top bar; tapping it adds .examDarkOn to that screen's container
+     (and its result screen) so it can be switched to dark independently.
+     This block is declared after the forced-light rules above, so on a
+     tie in specificity it wins and the toggle works whether the app
+     itself is in light or dark mode. */
+  #calcPage-reasoningmockexam.examDarkOn, #calcPage-reasoningmockresult.examDarkOn,
+  #calcPage-spnativeexam.examDarkOn, #calcPage-spnativeresult.examDarkOn,
+  #calcPage-p75nativeexam.examDarkOn, #calcPage-p75nativeresult.examDarkOn,
+  #calcPage-mmnativeexam.examDarkOn, #calcPage-mmnativeresult.examDarkOn,
+  #calcPage-emnativeexam.examDarkOn, #calcPage-emnativeresult.examDarkOn,
+  #calcPage-englishmockexam.examDarkOn, #calcPage-englishmockresult.examDarkOn,
+  #calcPage-engfullmockexam.examDarkOn, #calcPage-engfullmockresult.examDarkOn,
+  #calcPage-mathpyqexam.examDarkOn, #calcPage-mathpyqresult.examDarkOn{
+    --bg:#08070a; --panel:#111013; --panel2:#1a181d; --card:#161b22;
+    --border:#333038; --border-strong:#726d7a; --text:#c6c3cb; --muted:#aaa5ad;
+    --white:#eeecf0; --gain:#4ade80; --loss:#f87171; --accent:#fbbf24;
+    --accent-dim:#7a5f14; --blue:#60a5fa; --purple:#c084fc; --pink:#f472b6;
+    --orange:#fb923c; --teal:#2dd4bf; --quiz-text:#b8b5bd;
+    --exam-topbar-bg:#0d1420; --exam-timer-bg:#1a2436; --exam-timer-color:#eeecf0;
+    --exam-timer-border:rgba(96,165,250,0.4); --exam-pause-overlay-bg:rgba(8,7,10,0.92);
+    --exam-optbtn-bg:#1a181d; --exam-optbtn-shadow:0 1px 0 rgba(255,255,255,0.03) inset,0 3px 8px rgba(0,0,0,0.22);
+    --exam-optmark-bg:#222026; --exam-opt-selected-bg:rgba(96,165,250,0.18);
+    --exam-opt-correct-bg:rgba(74,222,128,0.18); --exam-opt-wrong-bg:rgba(248,113,113,0.18);
+    --exam-navbtn-bg:#1a181d; --exam-navbtn-shadow:0 2px 6px rgba(0,0,0,0.22);
+    --exam-pausebtn-bg:#1a181d; --exam-palette-bg:#161b22;
+    background:#08070a !important;
+    color-scheme:dark;
+  }
+  .examDarkBtn{background:var(--exam-navbtn-bg,#fff);border:none;border-radius:8px;
+    width:34px;height:34px;min-width:34px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;
+    box-shadow:var(--exam-navbtn-shadow,0 1px 2px rgba(0,0,0,0.05));padding:0;}
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -2917,6 +2952,29 @@
     z-index:9000 !important;max-width:none !important;
     padding-top:env(safe-area-inset-top,0px);
   }
+
+  /* ===== App-wide fullscreen takeover for ANY mock/quiz being attempted =====
+     Toggled via body.appQuizFullscreen (set in showCalcPage/
+     isQuizTakingPage() in app.js). Unlike examFullscreenLight above (which
+     only covered a handful of always-light mock engines and force-fills
+     white), this applies to every quiz/mock-taking screen in the app —
+     reasoning/english/math topic quizzes, vocab/idiom/grammar practice,
+     and all native mock engines — and keeps whatever theme (light/dark/
+     per-mock dark toggle) that screen is already using instead of forcing
+     white. It just hides the app's own topbar + tab bar so the quiz/mock
+     takes over the full screen. */
+  body.appQuizFullscreen .topbar,
+  body.appQuizFullscreen .tabbar{
+    display:none !important;
+  }
+  body.appQuizFullscreen .calcPage.active{
+    position:fixed !important;inset:0 !important;
+    width:100vw !important;height:100vh !important;
+    overflow-y:auto !important;
+    background:var(--bg) !important;
+    z-index:9000 !important;max-width:none !important;
+    padding-top:env(safe-area-inset-top,0px);
+  }
 </style>
 
 
@@ -3960,6 +4018,7 @@
         <button class="calcBackBtn" id="reasoningmockExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
         <div class="calcSubTitle" id="reasoningmockExamTitle">Mock</div>
         <div class="examTimerPill" id="reasoningmockExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examDarkBtn" id="reasoningmockExamDarkBtn" title="Dark mode" onclick="toggleExamDark('reasoningmock')">🌙</button>
         <button type="button" class="examPauseBtn" id="reasoningmockExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="reasoningmockExamSubmitBtn">Submit Test</button>
       </div>
@@ -4106,6 +4165,7 @@
         <div class="calcSubTitle" id="spnativeExamTitle">Mock</div>
         <div class="examTimerPill" id="spnativeExamTimerPill">⏱ 15:00</div>
         <button type="button" class="nav-btn" id="spnativeExamLangBtn" style="flex:0 0 auto;padding:6px 10px;font-size:12px;">🌐 EN</button>
+        <button type="button" class="examDarkBtn" id="spnativeExamDarkBtn" title="Dark mode" onclick="toggleExamDark('spnative')">🌙</button>
         <button type="button" class="examPauseBtn" id="spnativeExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="spnativeExamSubmitBtn">Submit Test</button>
       </div>
@@ -4252,6 +4312,7 @@
         <div class="calcSubTitle" id="p75nativeExamTitle">Mock</div>
         <div class="examTimerPill" id="p75nativeExamTimerPill">⏱ 15:00</div>
         <button type="button" class="nav-btn" id="p75nativeExamLangBtn" style="flex:0 0 auto;padding:6px 10px;font-size:12px;">🌐 EN</button>
+        <button type="button" class="examDarkBtn" id="p75nativeExamDarkBtn" title="Dark mode" onclick="toggleExamDark('p75native')">🌙</button>
         <button type="button" class="examPauseBtn" id="p75nativeExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="p75nativeExamSubmitBtn">Submit Test</button>
       </div>
@@ -4396,6 +4457,7 @@
         <div class="calcSubTitle" id="mmnativeExamTitle">Mock</div>
         <div class="examTimerPill" id="mmnativeExamTimerPill">⏱ 15:00</div>
         <button type="button" class="nav-btn" id="mmnativeExamLangBtn" style="flex:0 0 auto;padding:6px 10px;font-size:12px;">🌐 EN</button>
+        <button type="button" class="examDarkBtn" id="mmnativeExamDarkBtn" title="Dark mode" onclick="toggleExamDark('mmnative')">🌙</button>
         <button type="button" class="examPauseBtn" id="mmnativeExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="mmnativeExamSubmitBtn">Submit Test</button>
       </div>
@@ -4487,6 +4549,7 @@
         <button class="calcBackBtn" id="englishmockExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
         <div class="calcSubTitle" id="englishmockExamTitle">Mock</div>
         <div class="examTimerPill" id="englishmockExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examDarkBtn" id="englishmockExamDarkBtn" title="Dark mode" onclick="toggleExamDark('englishmock')">🌙</button>
         <button type="button" class="examPauseBtn" id="englishmockExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="englishmockExamSubmitBtn">Submit Test</button>
       </div>
@@ -4648,6 +4711,7 @@
         <button class="calcBackBtn" id="emnativeExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
         <div class="calcSubTitle" id="emnativeExamTitle">Mock</div>
         <div class="examTimerPill" id="emnativeExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examDarkBtn" id="emnativeExamDarkBtn" title="Dark mode" onclick="toggleExamDark('emnative')">🌙</button>
         <button type="button" class="examPauseBtn" id="emnativeExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="emnativeExamSubmitBtn">Submit Test</button>
       </div>
@@ -4746,6 +4810,7 @@
         <button class="calcBackBtn" id="engfullmockExamBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
         <div class="calcSubTitle" id="engfullmockExamTitle">Mock</div>
         <div class="examTimerPill" id="engfullmockExamTimerPill">⏱ 15:00</div>
+        <button type="button" class="examDarkBtn" id="engfullmockExamDarkBtn" title="Dark mode" onclick="toggleExamDark('engfullmock')">🌙</button>
         <button type="button" class="examPauseBtn" id="engfullmockExamPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="engfullmockExamSubmitBtn">Submit Test</button>
       </div>
@@ -7854,6 +7919,7 @@
         <button class="calcBackBtn" id="examBackBtn" aria-label="Back" style="margin:0;">&#8249;</button>
         <div class="calcSubTitle" id="examTitle">Mock</div>
         <div class="examTimerPill" id="examTimerPill">⏱ 15:00</div>
+        <button type="button" class="examDarkBtn" id="examDarkBtn" title="Dark mode" onclick="toggleExamDark('mathpyq')">🌙</button>
         <button type="button" class="examPauseBtn" id="examPauseBtn" title="Pause Test">⏸</button>
         <button type="button" class="examSubmitBtn" id="examSubmitBtn">Submit Test</button>
       </div>

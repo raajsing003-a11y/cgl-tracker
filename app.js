@@ -7817,6 +7817,65 @@ function isFullscreenLightPage(name){
   }
   return false;
 }
+// ===== Per-mock dark-mode toggle =====
+// The 8 native mock/exam engines are pinned light by the CSS rules above
+// (per Rahul's earlier request). Avnee ne ab har mock ke top bar mein
+// apna 🌙 button maanga hai jisse us mock ko dark mode mein switch kiya
+// ja sake, app ke overall theme se independent. Ek hi shared localStorage
+// flag rakha hai taaki sabhi mocks mein toggle same behave kare.
+const EXAM_DARK_PAGE_BASES = [
+  'reasoningmock','spnative','p75native','mmnative',
+  'englishmock','emnative','engfullmock','mathpyq'
+];
+function getExamDarkPref(){
+  try{ return localStorage.getItem('examDarkPref') === '1'; }catch(e){ return false; }
+}
+function setExamDarkPref(v){
+  try{ localStorage.setItem('examDarkPref', v ? '1' : '0'); }catch(e){}
+}
+function applyExamDarkClass(base){
+  const on = getExamDarkPref();
+  ['exam','result'].forEach(suffix => {
+    const el = document.getElementById('calcPage-' + base + suffix);
+    if(el) el.classList.toggle('examDarkOn', on);
+  });
+  const btnId = (base === 'mathpyq') ? 'examDarkBtn' : (base + 'ExamDarkBtn');
+  const btn = document.getElementById(btnId);
+  if(btn){ btn.textContent = on ? '☀️' : '🌙'; btn.title = on ? 'Light mode' : 'Dark mode'; }
+}
+function toggleExamDark(base){
+  setExamDarkPref(!getExamDarkPref());
+  EXAM_DARK_PAGE_BASES.forEach(applyExamDarkClass);
+}
+
+// ===== App-wide fullscreen for any mock/quiz being attempted =====
+// Koi bhi mock ya quiz page dete waqt (topic quizzes, practice sets, ya
+// native mock engines — sab), screen fullscreen ho jaani chahiye. Page
+// naam se hi decide karte hain: menu/list/chapters/lang/info/result/
+// reader/chooser/topics wali screens "taking" screens nahi hain, baaki
+// sab (jahan actual question attempt ho raha hai) fullscreen ban jaati
+// hain. CSS takeover (topbar/tabbar hide) hamesha kaam karta hai; real
+// browser Fullscreen API best-effort hai (kai mobile browsers/PWA mein
+// allowed nahi hota, isliye try/catch ke saath silently ignore karte hain).
+const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|info$|result$|reader$|chooser$|topics$)/;
+function isQuizTakingPage(name){
+  if(!name) return false;
+  return !QUIZ_TAKING_EXCLUDE_RE.test(name);
+}
+function enterAppFullscreen(){
+  try{
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(req && !document.fullscreenElement) req.call(el).catch(()=>{});
+  }catch(e){}
+}
+function exitAppFullscreen(){
+  try{
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document).catch(()=>{});
+  }catch(e){}
+}
+
 function showCalcPage(name, _fromPopState){
   const prevActive = document.querySelector('.calcPage.active');
   const prevName = prevActive ? prevActive.id.replace('calcPage-', '') : null;
@@ -7825,6 +7884,12 @@ function showCalcPage(name, _fromPopState){
   });
   document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
   document.body.classList.toggle('examFullscreenLight', isFullscreenLightPage(name));
+  const enteringQuiz = isQuizTakingPage(name);
+  const wasInQuiz = isQuizTakingPage(prevName);
+  document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
+  if(enteringQuiz && !wasInQuiz) enterAppFullscreen();
+  else if(!enteringQuiz && wasInQuiz) exitAppFullscreen();
+  EXAM_DARK_PAGE_BASES.forEach(applyExamDarkClass);
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
