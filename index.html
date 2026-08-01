@@ -2327,6 +2327,12 @@
   .onbBtnRow .nav-btn{flex:1;text-align:center;min-width:0;}
   .onbPrimary{background:var(--accent);border-color:var(--accent);color:#1a1404;}
   .onbPrimary:hover{background:#ffd75e;color:#1a1404;}
+  /* Selected calcCard (yellow bg via onbPrimary) has dark bg text, but
+     .calcLabel/.calcSub force white — fixes unreadable label on active
+     mock-source cards like "Concept Mock". */
+  .calcCard.onbPrimary .calcLabel{color:#1a1404;}
+  .calcCard.onbPrimary .calcSub{color:rgba(26,20,4,0.75)!important;}
+  .calcCard.onbPrimary .calcArrow{color:#1a1404;}
   .onbStatus{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:12px;line-height:1.5;display:none;}
 
   /* ===== AI Strict Manager ===== */
@@ -3002,6 +3008,11 @@
       ready(){
         MathJax.startup.defaultReady();
         window.__mathJaxReady = true;
+        // Anything already inserted into the page before MathJax finished
+        // loading (raw "\(...\)" LaTeX sitting as plain text) needs one
+        // retypeset pass now, otherwise it stays unrendered until the user
+        // happens to navigate to another question.
+        try{ MathJax.typesetPromise([document.body]).catch(function(){}); }catch(e){}
       }
     }
   };
@@ -3985,7 +3996,7 @@
           <span class="calcIcon calcIcon-statement">🔥</span>
           <span class="calcLabelCol">
             <span class="calcLabel">Super Mocks</span>
-            <span class="calcSub">117 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
+            <span class="calcSub">101 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -3993,7 +4004,7 @@
           <span class="calcIcon calcIcon-statement">🆕</span>
           <span class="calcLabelCol">
             <span class="calcLabel">75-Day Practice</span>
-            <span class="calcSub">60 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
+            <span class="calcSub">57 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -4676,7 +4687,7 @@
           <span class="calcIcon calcIcon-statement">🔥</span>
           <span class="calcLabelCol">
             <span class="calcLabel">Super Mocks</span>
-            <span class="calcSub">109 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
+            <span class="calcSub">108 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -4684,7 +4695,7 @@
           <span class="calcIcon calcIcon-statement">🆕</span>
           <span class="calcLabelCol">
             <span class="calcLabel">75-Day Practice</span>
-            <span class="calcSub">50 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
+            <span class="calcSub">49 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>

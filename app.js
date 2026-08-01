@@ -1402,6 +1402,20 @@ function hasVal(v){ return v!==undefined && v!==null && v!=='' && !isNaN(parseFl
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Like escapeHtml() but leaves already-valid HTML entity references (numeric
+// like &#8730; / &#x221A;, or named like &radic; / &pi;) untouched instead of
+// re-escaping their leading "&" into "&amp;". Several question banks (Math
+// PYQ options, Super Practice quant options such as "120(2-&#8730;3)" or
+// "100&radic;2/&pi; cm") were authored with literal entity syntax rather
+// than the actual √/π characters. Running those through the old escapeHtml()
+// turned "&#8730;" into "&amp;#8730;", which browsers then display as the
+// literal text "&#8730;" instead of decoding it to "√" — this is why option
+// text showed raw entity codes on screen instead of the math symbols.
+function escapeHtmlKeepEntities(s){
+  return String(s)
+    .replace(/&(?!#\d+;|#x[0-9a-fA-F]+;|[a-zA-Z]+;)/g, '&amp;')
+    .replace(/[<>"']/g, c=>({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 // Converts plain-text math notation into real HTML so it actually displays
 // correctly instead of showing raw "^"/backslash-command text — e.g.
 // "(-2)^3" -> "(-2)<sup>3</sup>", "\\frac{2}{5}" -> a proper fraction,
@@ -1438,7 +1452,7 @@ function mathify(text){
   // tags as text and drop the images entirely.
   if(/<\s*(p|img|sup|sub|span|div|table|br|b|i|ul|ol|li)[ >\/]/i.test(raw)) return raw;
 
-  let s = escapeHtml(raw);
+  let s = escapeHtmlKeepEntities(raw);
 
   // Common LaTeX-ish tokens (simple text substitutions, not a full TeX engine)
   s = s.replace(/\\left|\\right/g, '');
@@ -11903,8 +11917,8 @@ function makeMathPyqQuiz(){
       srcWrap.style.cssText = 'margin-bottom:14px;';
       const sources = [
         { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
-        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'158 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
-        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'117 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
+        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'147 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
+        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'90 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
       ];
       sources.forEach(s => {
         const b = document.createElement('button');
@@ -15943,6 +15957,10 @@ async function openSPMock(key, file, label, entry){
   spnativeUpdateLangBtns();
   showCalcPage('spnativeinfo');
   const qc = document.getElementById('spnativeInfoQCount'); if(qc) qc.textContent = '…';
+  spnativeLoaded = null;
+  const startBtn = document.getElementById('spnativeStartBtn');
+  const startBtnOldLabel = startBtn ? startBtn.textContent : '';
+  if(startBtn){ startBtn.disabled = true; startBtn.textContent = '⏳ Mock download ho raha hai...'; }
   let data;
   try{
     const res = await fetch('superpractice/data/' + key + '/' + jsonFile);
@@ -15958,6 +15976,7 @@ async function openSPMock(key, file, label, entry){
     return;
   }
   spnativeLoaded = data;
+  if(startBtn){ startBtn.disabled = false; startBtn.textContent = startBtnOldLabel || '▶ Start Test'; }
   const totalQ = data.questions.length;
   const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
   const firstQ = data.questions[0] || { marks: 1, neg: 0.25 };
@@ -16524,6 +16543,10 @@ async function openP75MockNative(key, file, label, entry){
   p75nativeUpdateLangBtns();
   showCalcPage('p75nativeinfo');
   const qc = document.getElementById('p75nativeInfoQCount'); if(qc) qc.textContent = '…';
+  p75nativeLoaded = null;
+  const startBtnGate = document.getElementById('p75nativeStartBtn');
+  const startBtnGateOldLabel = startBtnGate ? startBtnGate.textContent : '';
+  if(startBtnGate){ startBtnGate.disabled = true; startBtnGate.textContent = '⏳ Mock download ho raha hai...'; }
   let data;
   try{
     const res = await fetch('practice75/data/' + key + '/' + jsonFile);
@@ -16539,6 +16562,7 @@ async function openP75MockNative(key, file, label, entry){
     return;
   }
   p75nativeLoaded = data;
+  if(startBtnGate){ startBtnGate.disabled = false; startBtnGate.textContent = startBtnGateOldLabel || '▶ Start Test'; }
   const totalQ = data.questions.length;
   const totalMarks = data.questions.reduce((s, q) => s + (q.marks || 0), 0);
   const firstQ = data.questions[0] || { marks: 1, neg: 0.25 };
