@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exam Tracker</title>
 <meta name="theme-color" content="#08070a" id="themeColorMeta">
+<meta name="color-scheme" content="light dark" id="colorSchemeMeta">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,24 +16,21 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://study-414cf-default-rtdb.firebaseio.com" crossorigin>
 <script>
-  // Runs before first paint so the page never flashes the wrong theme.
-  // Dark is the default; only switches to light if the user chose it before.
-  (function(){
-    try{
-      if(localStorage.getItem('examTrackerTheme') !== 'light'){
-        document.documentElement.classList.add('theme-dark');
-      }
-    }catch(e){
-      document.documentElement.classList.add('theme-dark');
-    }
-  })();
+  // App-wide theme is always dark now (per Yuvraj's request — only the
+  // mock/quiz-taking screens get their own light/dark switch, see the
+  // 🌙 button inside each exam top bar + .examDarkOn CSS below). There is
+  // no more app-wide light mode or toggle.
+  document.documentElement.classList.add('theme-dark');
 </script>
+
 <style>
   /* ===== Theme system =====
-     Light is the default look for the whole app (menus, mocks, quizzes).
-     Toggling the 🌙/☀️ button in the top bar adds/removes .theme-dark on
-     <html>, which swaps every variable below back to the app's original
-     dark palette. Preference is remembered in localStorage. */
+     App-wide theme is always dark now (per Yuvraj's request) — there is
+     no more app-wide light mode or toggle; html always has .theme-dark.
+     The :root block below is kept only as a pre-paint fallback. Only
+     mock/quiz-taking screens can still be light or dark, independently,
+     via their own 🌙 button — see the "force-light" and ".examDarkOn"
+     blocks further down. */
   :root{
     --bg:#f3f4f7;
     --panel:#ffffff;
@@ -215,9 +213,14 @@
      app-wide theme. Each one now also has its own 🌙 button in the exam
      top bar; tapping it adds .examDarkOn to that screen's container
      (and its result screen) so it can be switched to dark independently.
-     This block is declared after the forced-light rules above, so on a
-     tie in specificity it wins and the toggle works whether the app
-     itself is in light or dark mode. */
+     NOTE: the forced-light rules above use an "html.theme-dark #id"
+     selector, which is MORE specific than a plain "#id.examDarkOn" one
+     (the extra "html" type selector wins the specificity tie-break) —
+     so when the app's own theme is already dark, that rule was silently
+     beating this one and only the page background was going dark while
+     option boxes/text stayed stuck in light colors. Using !important on
+     every property here sidesteps that specificity fight for good and
+     makes the toggle work no matter what the app-wide theme is set to. */
   #calcPage-reasoningmockexam.examDarkOn, #calcPage-reasoningmockresult.examDarkOn,
   #calcPage-spnativeexam.examDarkOn, #calcPage-spnativeresult.examDarkOn,
   #calcPage-p75nativeexam.examDarkOn, #calcPage-p75nativeresult.examDarkOn,
@@ -226,18 +229,18 @@
   #calcPage-englishmockexam.examDarkOn, #calcPage-englishmockresult.examDarkOn,
   #calcPage-engfullmockexam.examDarkOn, #calcPage-engfullmockresult.examDarkOn,
   #calcPage-mathpyqexam.examDarkOn, #calcPage-mathpyqresult.examDarkOn{
-    --bg:#08070a; --panel:#111013; --panel2:#1a181d; --card:#161b22;
-    --border:#333038; --border-strong:#726d7a; --text:#c6c3cb; --muted:#aaa5ad;
-    --white:#eeecf0; --gain:#4ade80; --loss:#f87171; --accent:#fbbf24;
-    --accent-dim:#7a5f14; --blue:#60a5fa; --purple:#c084fc; --pink:#f472b6;
-    --orange:#fb923c; --teal:#2dd4bf; --quiz-text:#b8b5bd;
-    --exam-topbar-bg:#0d1420; --exam-timer-bg:#1a2436; --exam-timer-color:#eeecf0;
-    --exam-timer-border:rgba(96,165,250,0.4); --exam-pause-overlay-bg:rgba(8,7,10,0.92);
-    --exam-optbtn-bg:#1a181d; --exam-optbtn-shadow:0 1px 0 rgba(255,255,255,0.03) inset,0 3px 8px rgba(0,0,0,0.22);
-    --exam-optmark-bg:#222026; --exam-opt-selected-bg:rgba(96,165,250,0.18);
-    --exam-opt-correct-bg:rgba(74,222,128,0.18); --exam-opt-wrong-bg:rgba(248,113,113,0.18);
-    --exam-navbtn-bg:#1a181d; --exam-navbtn-shadow:0 2px 6px rgba(0,0,0,0.22);
-    --exam-pausebtn-bg:#1a181d; --exam-palette-bg:#161b22;
+    --bg:#08070a !important; --panel:#111013 !important; --panel2:#1a181d !important; --card:#161b22 !important;
+    --border:#333038 !important; --border-strong:#726d7a !important; --text:#c6c3cb !important; --muted:#aaa5ad !important;
+    --white:#eeecf0 !important; --gain:#4ade80 !important; --loss:#f87171 !important; --accent:#fbbf24 !important;
+    --accent-dim:#7a5f14 !important; --blue:#60a5fa !important; --purple:#c084fc !important; --pink:#f472b6 !important;
+    --orange:#fb923c !important; --teal:#2dd4bf !important; --quiz-text:#b8b5bd !important;
+    --exam-topbar-bg:#0d1420 !important; --exam-timer-bg:#1a2436 !important; --exam-timer-color:#eeecf0 !important;
+    --exam-timer-border:rgba(96,165,250,0.4) !important; --exam-pause-overlay-bg:rgba(8,7,10,0.92) !important;
+    --exam-optbtn-bg:#1a181d !important; --exam-optbtn-shadow:0 1px 0 rgba(255,255,255,0.03) inset,0 3px 8px rgba(0,0,0,0.22) !important;
+    --exam-optmark-bg:#222026 !important; --exam-opt-selected-bg:rgba(96,165,250,0.18) !important;
+    --exam-opt-correct-bg:rgba(74,222,128,0.18) !important; --exam-opt-wrong-bg:rgba(248,113,113,0.18) !important;
+    --exam-navbtn-bg:#1a181d !important; --exam-navbtn-shadow:0 2px 6px rgba(0,0,0,0.22) !important;
+    --exam-pausebtn-bg:#1a181d !important; --exam-palette-bg:#161b22 !important;
     background:#08070a !important;
     color-scheme:dark;
   }
@@ -3317,7 +3320,6 @@
   <div class="topbar-left">🎯 <div class="topbar-title-col"><span>EXAM TRACKER</span><a class="topbar-credit" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer">BY YUVRAJ SISODIYA</a></div></div>
   <div class="topbar-right">
     <button class="helpBtn adminPanelBtn" id="adminPanelBtn" aria-label="Admin Control Panel" style="display:none;">👑</button>
-    <button class="helpBtn" id="themeToggleBtn" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
     <a class="helpBtn" id="chatBtn" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer" aria-label="Chat on Telegram">💬</a>
     <button class="helpBtn" id="helpBtn" aria-label="Help">❓</button>
     <div class="miniring" id="miniRing"><span id="miniRingLabel">0%</span></div>

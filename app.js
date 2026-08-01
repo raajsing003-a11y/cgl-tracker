@@ -5,6 +5,82 @@
 // values below for pre-existing users who never set a custom target).
 let START_DATE = new Date('2026-07-06T00:00:00');
 let TOTAL_DAYS = 50;
+// ===== Super Practice mock naming helper =====
+// Super Practice mocks ("spmock001", "spmock002"...) are deliberately
+// mixed-chapter tests. Earlier they all showed the generic, unhelpful
+// name "Super Practice Mock N", which looked like it said "Mixed
+// Practice" with no info about what's actually inside. This helper looks
+// at the actual questions in a given mock (via their per-question
+// chapter/topic tag) and builds a real name out of the 1-2 chapters that
+// actually dominate that specific mock, e.g. "Number System + Time,
+// Speed & Distance Mix" instead of just a number.
+// Reasoning Super Practice questions have no chapter tag on them (unlike
+// Math/English), so we guess the sub-topic straight from the question
+// text using ordered keyword rules. Checked against real question sets
+// while building this — order matters (more specific rules first).
+function classifyReasoningQuestionText(text){
+  const t = (text || '').toLowerCase();
+  const rules = [
+    [/venn diagram/, 'Venn Diagram'],
+    [/transparent sheet|mirror image|water image|folded|paper fold/, 'Mirror & Water Image'],
+    [/cube|dice|dices/, 'Cube & Dice'],
+    [/dictionary|alphabetical order/, 'Alphabet Test'],
+    [/statements? .*conclusions?|conclusions? .*statements?/, 'Syllogism'],
+    [/coded as|code language|is written as|letters are jumble|number has been denoted to each/, 'Coding-Decoding'],
+    [/hexagon|triangular mat|circular table|row facing|linear arrangement|face(s|d)? (north|south|east|west)? ?the centre|floor(s)?.*building|persons? work(s)? in a building/, 'Seating Arrangement'],
+    [/clock|calendar|day of the week|which day|was (monday|tuesday|wednesday|thursday|friday|saturday|sunday)/, 'Clock & Calendar'],
+    [/matrix/, 'Matrix'],
+    [/count(ing)? (the )?number of (triangles|squares|lines|circles)|how many triangles|how many squares/, 'Figure Counting'],
+    [/mathematical sign|mathematical operation|balance the given equation|interchang(ed|ing).*(sign|number)|means '?(minus|plus|divided|multiplied|add)/, 'Mathematical Operations'],
+    [/logical(,)? (and )?meaningful order|logical sequence/, 'Logical Sequence'],
+    [/meaningful (four|five|three|six)-letter.*word|words can be formed/, 'Word Formation'],
+    [/rank(ing)?|taller than|heavier than|shorter than|position from the (left|right|top|bottom)|older than|oldest among/, 'Ranking & Order'],
+    [/(started|walks|walking|ran|running) .*(north|south|east|west)|distance between|direction/, 'Direction Sense'],
+    [/odd (one|word|number|pair) out|select the odd|not similar to|which .*does not belong|is different from the rest|triad.*different from the other/, 'Classification / Odd One Out'],
+    [/triad|number-pair|set(s)? of numbers are related|numbers.*related in the same way/, 'Number Analogy'],
+    [/word-pair|is related to.*then.*is related to|pair of terms/, 'Analogy'],
+    [/related to \d+.*following a certain logic|analogous|analogy|is related to.*in the same way/, 'Analogy'],
+    [/missing (number|term)|complete the series|replace the question mark|find the (next|missing)|series.*put in bracket/, 'Series'],
+    [/related to.*second (letter-cluster|number|figure|word)|first .*is related to the second/, 'Analogy'],
+    [/data (provided|given) in the statements? (is|are) sufficient|data sufficiency/, 'Statement Reasoning'],
+    [/how is .*related to|relation(ship)? .*(family|grandmother|grandfather|mother|father|brother|sister|cousin|nephew|niece|uncle|aunt)|son-in-law|daughter-in-law|spouse of|married to/, 'Blood Relations'],
+    [/in a row,|sitting in the middle of a row|neighbour of both/, 'Seating Arrangement']
+  ];
+  for(let i = 0; i < rules.length; i++){
+    if(rules[i][0].test(t)) return rules[i][1];
+  }
+  return 'General Reasoning';
+}
+function reasoningQuestionText(item){
+  if(!item) return '';
+  const en = item.en || {};
+  const hi = item.hi || {};
+  const prompt = en.prompt || hi.prompt || item.prompt || [];
+  return Array.isArray(prompt) ? prompt.join(' ') : String(prompt || '');
+}
+function buildSPMockLabel(items, field, num, count, prefix){
+  const counts = {};
+  const order = [];
+  (items || []).forEach(function(it){
+    const v = it && it[field];
+    if(!v) return;
+    if(!(v in counts)){ counts[v] = 0; order.push(v); }
+    counts[v]++;
+  });
+  const sorted = order.slice().sort(function(a, b){ return counts[b] - counts[a]; });
+  let namePart = '';
+  if(sorted.length === 0){
+    namePart = '';
+  } else if(sorted.length === 1){
+    namePart = sorted[0];
+  } else {
+    const top2 = sorted.slice(0, 2);
+    namePart = top2.join(' + ') + (sorted.length > 2 ? ' Mix' : '');
+  }
+  const base = (prefix || 'Super Practice') + ' ' + num;
+  const withName = namePart ? (base + ': ' + namePart) : base;
+  return withName + ' (' + count + ' Qs)';
+}
 // ===== AI proxy endpoint =====
 // The 4 AI features below (Time Coach, Strict Manager popup, AI Study
 // Guide, AI Mock Analysis) all call this single Cloudflare Worker URL —
@@ -11750,7 +11826,8 @@ function makeMathPyqQuiz(){
     }
     if(key && key.indexOf('spmock') === 0){
       const num = parseInt(key.replace('spmock', ''), 10) || key;
-      return 'Super Practice Mock ' + num + ' (' + count + ' Qs)';
+      const qs = (window.SP_MATH_SETS && window.SP_MATH_SETS[key]) || [];
+      return buildSPMockLabel(qs, 'chap', num, count, 'Super Practice');
     }
     const meta = CHUNKED_META[key];
     const name = meta ? meta.en : key;
@@ -13418,7 +13495,9 @@ function makeReasoningMockQuiz(){
     }
     if(key && key.indexOf('spmock') === 0){
       const num = parseInt(key.replace('spmock', ''), 10) || key;
-      return 'Super Mock ' + num + ' (' + count + ' Qs)';
+      const qs = (window.SP_REASONING_SETS && window.SP_REASONING_SETS[key]) || [];
+      const tagged = qs.map(function(it){ return { cls: classifyReasoningQuestionText(reasoningQuestionText(it)) }; });
+      return buildSPMockLabel(tagged, 'cls', num, count, 'Super Practice');
     }
     const num = (key.match(/\d+/) || [key])[0];
     const pfx = key.replace(/\d+$/, '');
@@ -13972,7 +14051,8 @@ function makeEnglishMockQuiz(){
     }
     if(key && key.indexOf('spmock') === 0){
       const num = parseInt(key.replace('spmock', ''), 10) || key;
-      return 'Super Mock ' + num + ' (' + count + ' Qs)';
+      const qs = (window.SP_ENGLISH_SETS && window.SP_ENGLISH_SETS[key]) || [];
+      return buildSPMockLabel(qs, 'topic', num, count, 'Super Practice');
     }
     const num = (key.match(/\d+/) || [key])[0];
     return 'Mock ' + num + ' (' + count + ' Qs)';
@@ -18037,25 +18117,14 @@ function maybeShowHelpModalOnce(){
   if(helpGotItBtn) helpGotItBtn.addEventListener('click', hideHelpModal);
 }
 
-// ===== Light/Dark theme toggle =====
-// Light is the app-wide default (menus, mocks, quizzes); this button
-// flips <html class="theme-dark"> on/off and remembers the choice.
+// ===== App-wide theme =====
+// App is always dark now — no more app-wide light/dark toggle (per
+// Yuvraj's request). Only individual mock/quiz-taking screens can be
+// switched between light/dark via their own 🌙 button (see
+// toggleExamDark() + .examDarkOn CSS).
 {
-  const themeToggleBtn = document.getElementById('themeToggleBtn');
   const themeColorMeta = document.getElementById('themeColorMeta');
-  function applyThemeIcon(){
-    const isDark = document.documentElement.classList.contains('theme-dark');
-    if(themeToggleBtn) themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
-    if(themeColorMeta) themeColorMeta.setAttribute('content', isDark ? '#08070a' : '#f3f4f7');
-  }
-  applyThemeIcon();
-  if(themeToggleBtn){
-    themeToggleBtn.addEventListener('click', function(){
-      const isDark = document.documentElement.classList.toggle('theme-dark');
-      try{ localStorage.setItem('examTrackerTheme', isDark ? 'dark' : 'light'); }catch(e){}
-      applyThemeIcon();
-    });
-  }
+  if(themeColorMeta) themeColorMeta.setAttribute('content', '#08070a');
 }
 
 // ===== Start Studying: Focus Timer (Pomodoro / Stopwatch / Timed) =====
