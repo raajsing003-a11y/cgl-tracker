@@ -15819,6 +15819,35 @@ async function openSPSubject(key, label){
 // with Level 1, Level 2... inside it, instead of a flat "Mixed Practice #1,
 // #2, #3..." list. Untagged/mixed mocks are bucketed into a single "Mixed
 // Practice" chapter and pushed to the bottom.
+// Canonical Oliveboard SSC Quant curriculum order (matches the official
+// "SSC Super Practice Tests" chapter sequence shown in the Oliveboard app).
+// Used to sort the 'math' subject's chapters the same way Oliveboard does,
+// instead of A-Z. Chapters not in this list fall back to the end, sorted
+// alphabetically among themselves.
+const OLIVEBOARD_MATH_CHAPTER_ORDER = [
+  "Basics of Number System","Decimals and Fractions","Factors, Multiples and HCF/LCM",
+  "Divisibility","Remainder Theorem","Unit Digits and finding number of zeroes",
+  "Simplification","Surds","Indices","Percentages","Ratio and Proportion",
+  "Averages and Ages","Profit, Loss, and Discount","Profit and Loss: Dishonest seller",
+  "Partnerships","Mixtures and Alligations","Simple Interest","Compound Interest",
+  "Simple and Compound Interest: Installments","Time and Work",
+  "Time and Work: Pipes and Cisterns","Speed, Distance and Time","Trains",
+  "Boats and Streams","Races and Tracks","Circular Motion in Speed, Time and Distance",
+  "Polynomials and Linear Equations","Algebra One Variable","Algebra Two Variables",
+  "Algebra Three Variables","Quadratic Equations","Trigonometric Ratios",
+  "Trigonometric Identities","Heights and Distances","Lines and Angles","Triangles",
+  "Quadrilaterals & Polygons","Circles","Coordinate Geometry","2D Mensuration 1",
+  "2D Mensuration 2","3D Mensuration 1","3D Mensuration 2","3D Mensuration 3",
+  "3D Mensuration 4","DI Tables","DI Bar, Line graphs and Histogram","DI Pie Charts",
+  "DI Double Graphs","Series and Progressions","Set Theory",
+  "Permutation and Combination","Probability","Statistics","Quant","Base Conversion"
+];
+// Canonical order for the levels/types shown inside an opened chapter.
+const OLIVEBOARD_MATH_LABEL_ORDER = [
+  "Level 1","Level 2","Level 3","Past Year Questions","Most Repetitive Questions",
+  "Speed Improvement","Revision"
+];
+
 function groupSPEntries(entries){
   const map = new Map();
   entries.forEach(e => {
@@ -15827,11 +15856,30 @@ function groupSPEntries(entries){
     map.get(key).push(e);
   });
   const chapters = Array.from(map.entries()).map(([topic, items]) => ({ topic, items }));
-  chapters.sort((a, b) => {
-    if(a.topic === 'Mixed Practice' && b.topic !== 'Mixed Practice') return 1;
-    if(b.topic === 'Mixed Practice' && a.topic !== 'Mixed Practice') return -1;
-    return a.topic.localeCompare(b.topic);
-  });
+  const useOliveboardOrder = spCurrentSubjectKey === 'math';
+  if(useOliveboardOrder){
+    chapters.forEach(ch => {
+      ch.items.sort((a, b) => {
+        const ai = OLIVEBOARD_MATH_LABEL_ORDER.indexOf((a.label || '').trim());
+        const bi = OLIVEBOARD_MATH_LABEL_ORDER.indexOf((b.label || '').trim());
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+    });
+    chapters.sort((a, b) => {
+      const ai = OLIVEBOARD_MATH_CHAPTER_ORDER.indexOf(a.topic);
+      const bi = OLIVEBOARD_MATH_CHAPTER_ORDER.indexOf(b.topic);
+      if(ai === -1 && bi === -1) return a.topic.localeCompare(b.topic);
+      if(ai === -1) return 1;
+      if(bi === -1) return -1;
+      return ai - bi;
+    });
+  } else {
+    chapters.sort((a, b) => {
+      if(a.topic === 'Mixed Practice' && b.topic !== 'Mixed Practice') return 1;
+      if(b.topic === 'Mixed Practice' && a.topic !== 'Mixed Practice') return -1;
+      return a.topic.localeCompare(b.topic);
+    });
+  }
   return chapters;
 }
 
