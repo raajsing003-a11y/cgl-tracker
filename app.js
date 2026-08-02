@@ -11918,7 +11918,7 @@ function makeMathPyqQuiz(){
       const sources = [
         { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
         { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'147 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
-        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'90 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
+        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'75 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
       ];
       sources.forEach(s => {
         const b = document.createElement('button');
@@ -11944,7 +11944,7 @@ function makeMathPyqQuiz(){
 
       if(menuTitleEl) menuTitleEl.textContent = isP75
         ? '75-Day Practice — Choose a Mock (25 Qs mixed, all chapters)'
-        : (isSP ? 'Super Practice — Choose a Mock (25 Qs mixed, all chapters)' : 'Math PYQ — Choose a Mock (25 Qs mixed, all chapters)');
+        : (isSP ? 'Super Practice — Choose a Mock (25 Qs mixed, all chapters)' : 'Math Sectional — Choose a Mock (25 Qs mixed, all chapters)');
       Object.keys(mockSrcSets).filter(key => key.indexOf(mockKeyPrefix) === 0).forEach(key => {
         const count = mockSrcSets[key].length;
         const meta = useDefaultMeta ? CHUNKED_META[key] : null;
@@ -15741,7 +15741,7 @@ function initCalcNav(){
 // mock list -> iframe player. superpractice/manifest.json (built once at
 // packaging time) lists every mock's filename + question count per subject.
 const SUPERPRACTICE_SUBJECTS = [
-  { key:'quant',     label:'Quant (Math)',            icon:'🧮', count:196 },
+  { key:'math',      label:'Quant (Math)',            icon:'🧮', count:196 },
   { key:'reasoning', label:'Reasoning',                icon:'🧠', count:146 },
   { key:'english',   label:'English',                  icon:'📘', count:135 },
   { key:'gk',        label:'GK / General Awareness',   icon:'🌍', count:169 },

@@ -141,13 +141,13 @@
 // would keep serving the old single-chapter sectionals, the stale
 // chapter-pure P75_MATH_SETS, and the hidden 75-Day Practice source card,
 // so it must be evicted.
-// Bumped v25 -> v26: Super Practice Quant chapters reordered to match the
-// Oliveboard curriculum sequence, Math chapters/levels reordered the same
-// way, GK regrouped subject-wise (History/Polity/Economy/... -> subtopics),
-// and 75-Day Practice Quant's "Sectional Mock" category removed. Old v25
-// cache would keep serving the stale alphabetical ordering and flat GK
-// list, so it must be evicted.
-const CACHE_NAME = 'exam-tracker-v26';
+// Bumped v27 -> v28: Math bank rebuilt again using the authoritative
+// Test-ID -> Chapter -> Type mapping from the user's own extraction log
+// (maths_document.docx) instead of the smaller math_ids.csv — grows from
+// 106 to all 196 mocks across 54 chapters, with exact chapter/type names
+// as originally labelled. Old v27 cache would keep serving the smaller,
+// differently-named 106-mock set.
+const CACHE_NAME = 'exam-tracker-v28';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
