@@ -16022,7 +16022,19 @@ async function openSPSubject(key, label){
   const grid = document.getElementById('superpracticeListGrid');
   if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
   const manifest = await ensureSPManifest();
-  const entries = (manifest && manifest[key]) || [];
+  let entries = ((manifest && manifest[key]) || []).map(e => Object.assign({ _src:'sp' }, e));
+  // Reasoning's "Sectional Mock" chapter also pulls in 75-Day Practice's
+  // Reasoning "Sectional Mock" pool, so both Super Practice and 75-Day
+  // Practice show the combined set of sectional mocks in one place.
+  if(key === 'reasoning'){
+    try{
+      const p75m = await ensureP75Manifest();
+      const p75Extra = ((p75m && p75m.reasoning) || [])
+        .filter(e => (e.category || e.topic || '').trim() === 'Sectional Mock')
+        .map(e => Object.assign({ _src:'p75' }, e));
+      entries = entries.concat(p75Extra);
+    }catch(e){ /* ignore — SP list still shows its own mocks */ }
+  }
   spCurrentSubjectLabel = label;
   spCurrentEntries = entries;
   const searchBox = document.getElementById('superpracticeSearchInput');
@@ -16169,14 +16181,20 @@ let spOpenGKSubtopic = null; // currently expanded GK subtopic, or null
 
 function renderSPMockRows(items, body){
   items.forEach((e, idx) => {
-    const done = isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
+    const fromP75 = e._src === 'p75';
+    const done = fromP75
+      ? isQuizSetAttempted('p75native', spCurrentSubjectKey + '/' + e.file)
+      : isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
     const rowLabel = (e.label || e.topic || ('Level ' + (idx + 1)));
     const row = document.createElement('button');
     row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
     row.innerHTML =
-      '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+      '<span>' + escapeHtml(rowLabel) + (fromP75 ? ' <span style="color:var(--muted);font-size:11px;">(75-Day)</span>' : '') + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
-    row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
+    row.addEventListener('click', () => {
+      if(fromP75) openP75MockNative(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e);
+      else openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e);
+    });
     body.appendChild(row);
   });
   const lastRow = body.lastElementChild;
@@ -16811,7 +16829,18 @@ async function openP75Subject(key, label){
   const grid = document.getElementById('p75ListGrid');
   if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
   const manifest = await ensureP75Manifest();
-  const entries = (manifest && manifest[key]) || [];
+  let entries = ((manifest && manifest[key]) || []).map(e => Object.assign({ _src:'p75' }, e));
+  // Same merge as Super Practice, in reverse — Reasoning's "Sectional Mock"
+  // chapter here also pulls in Super Practice's own Sectional Mock pool.
+  if(key === 'reasoning'){
+    try{
+      const spm = await ensureSPManifest();
+      const spExtra = ((spm && spm.reasoning) || [])
+        .filter(e => (e.topic || '').trim() === 'Sectional Mock')
+        .map(e => Object.assign({ _src:'sp' }, e));
+      entries = entries.concat(spExtra);
+    }catch(e){ /* ignore — 75-Day list still shows its own mocks */ }
+  }
   p75CurrentSubjectLabel = label;
   p75CurrentEntries = entries;
   const searchBox = document.getElementById('p75SearchInput');
@@ -16878,14 +16907,20 @@ function renderP75MockGrid(entries){
       const body = document.createElement('div');
       body.style.cssText = 'border-top:1px solid var(--border);';
       ch.items.forEach((e, idx) => {
-        const done = isQuizSetAttempted('p75native', p75CurrentSubjectKey + '/' + e.file);
-        const rowLabel = (e.topic || e.label || ('Level ' + (idx + 1)));
+        const fromSP = e._src === 'sp';
+        const done = fromSP
+          ? isQuizSetAttempted('spnative', p75CurrentSubjectKey + '/' + e.file)
+          : isQuizSetAttempted('p75native', p75CurrentSubjectKey + '/' + e.file);
+        const rowLabel = (e.label || e.topic || ('Level ' + (idx + 1)));
         const row = document.createElement('button');
         row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
         row.innerHTML =
-          '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+          '<span>' + escapeHtml(rowLabel) + (fromSP ? ' <span style="color:var(--muted);font-size:11px;">(Super)</span>' : '') + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
           '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
-        row.addEventListener('click', () => openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e));
+        row.addEventListener('click', () => {
+          if(fromSP) openSPMock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e);
+          else openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e);
+        });
         body.appendChild(row);
       });
       const lastRow = body.lastElementChild;
@@ -19744,7 +19779,7 @@ if('serviceWorker' in navigator){
   const ED_READ_MS_PER_WORD = 60000 / ED_READ_WPM;
   const ED_READ_MIN_MS = 1800;
   const ED_READ_MAX_MS = 22000;
-  const ED_WORDS_PER_UNIT = 45; // roughly kitne words ka ek "paragraph" chunk bane
+  const ED_WORDS_PER_UNIT = 25; // roughly kitne words ka ek "paragraph" chunk bane (chhote paragraphs)
 
   function edCountWords(text){ return (text||'').trim().split(/\s+/).filter(Boolean).length; }
   function edComputeReadMs(text){
