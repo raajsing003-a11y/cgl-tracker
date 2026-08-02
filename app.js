@@ -14241,10 +14241,6 @@ function makeReasoningMockQuiz(){
     if(mainBtn) mainBtn.addEventListener('click', () => showCalcPage('reasoningmockchooser'));
     const chooserBackBtn = document.getElementById('reasoningmockChooserBackBtn');
     if(chooserBackBtn) chooserBackBtn.addEventListener('click', () => showCalcPage('menu'));
-    const spBtn = document.getElementById('calcReasoningMockSPBtn');
-    if(spBtn) spBtn.addEventListener('click', () => { reasoningMockSource = 'sp'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
-    const p75Btn = document.getElementById('calcReasoningMockP75Btn');
-    if(p75Btn) p75Btn.addEventListener('click', () => { reasoningMockSource = 'p75'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
     const conceptBtn = document.getElementById('calcReasoningMockConceptBtn');
     if(conceptBtn) conceptBtn.addEventListener('click', () => { reasoningMockSource = 'concept'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
     const menuBackBtn = document.getElementById('reasoningmockMenuBackBtn');
@@ -14758,10 +14754,6 @@ function makeEnglishMockQuiz(){
     // Three separate entry buttons on the English Mocks menu (Super Mocks /
     // 75-Day Practice / Concept Mock) — each jumps straight to its own mock
     // list with engMockSource preset, no in-page toggle needed.
-    const spBtn = document.getElementById('calcEnglishMockSPBtn');
-    if(spBtn) spBtn.addEventListener('click', () => { engMockSource = 'sp'; renderSetMenu(); showCalcPage('englishmockmenu'); });
-    const p75Btn = document.getElementById('calcEnglishMockP75Btn');
-    if(p75Btn) p75Btn.addEventListener('click', () => { engMockSource = 'p75'; renderSetMenu(); showCalcPage('englishmockmenu'); });
     const conceptBtn = document.getElementById('calcEnglishMockConceptBtn');
     if(conceptBtn) conceptBtn.addEventListener('click', () => { engMockSource = 'concept'; renderSetMenu(); showCalcPage('englishmockmenu'); });
     const menuBackBtn = document.getElementById('englishmockMenuBackBtn');
@@ -20122,7 +20114,8 @@ if('serviceWorker' in navigator){
       const w = e.target.closest('.vocabWord');
       if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning, w.dataset.hindi);
     });
-    if(contentEl) contentEl.addEventListener('scroll', updateEdProgress, {passive:true});
+    const edScrollElForProgress = edGetScrollEl();
+    if(edScrollElForProgress) edScrollElForProgress.addEventListener('scroll', updateEdProgress, {passive:true});
 
     const popupOverlay = document.getElementById('vocabPopupOverlay');
     if(popupOverlay) popupOverlay.addEventListener('click', (e) => { if(e.target === popupOverlay) hideVocabPopup(); });
@@ -20157,156 +20150,5 @@ if('serviceWorker' in navigator){
     document.addEventListener('DOMContentLoaded', initEditorialReading);
   } else {
     initEditorialReading();
-  }
-})();
-
-// ===== In-App Browser (PhonePe/Instagram jaisa — links app ke andar hi khulte hain) =====
-(function(){
-  let historyIdx = -1;
-  let historyStack = [];
-  let currentUrl = '';
-  let loadWatchdog = null;
-
-  function getEl(id){ return document.getElementById(id); }
-
-  function shortUrl(url){
-    try{
-      const u = new URL(url);
-      return u.hostname.replace(/^www\./,'') + u.pathname.replace(/\/$/, '');
-    }catch(e){ return url; }
-  }
-
-  function updateNavBtns(){
-    const backBtn = getEl('inAppBrowserBackBtn');
-    const fwdBtn = getEl('inAppBrowserFwdBtn');
-    if(backBtn) backBtn.disabled = (historyIdx <= 0);
-    if(fwdBtn) fwdBtn.disabled = (historyIdx >= historyStack.length - 1);
-  }
-
-  function showBlockedMsg(show){
-    const msg = getEl('inAppBrowserBlockedMsg');
-    const frame = getEl('inAppBrowserFrame');
-    if(msg) msg.classList.toggle('show', show);
-    if(frame) frame.style.visibility = show ? 'hidden' : 'visible';
-  }
-
-  function navigateTo(url, pushHistory){
-    const frame = getEl('inAppBrowserFrame');
-    const urlText = getEl('inAppBrowserUrlText');
-    const loadBar = getEl('inAppBrowserLoadBar');
-    if(!frame) return;
-    currentUrl = url;
-    if(urlText) urlText.textContent = shortUrl(url);
-    if(loadBar){ loadBar.classList.remove('loading'); void loadBar.offsetWidth; loadBar.classList.add('loading'); }
-    showBlockedMsg(false);
-    frame.src = url;
-    if(pushHistory !== false){
-      historyStack = historyStack.slice(0, historyIdx + 1);
-      historyStack.push(url);
-      historyIdx = historyStack.length - 1;
-    }
-    updateNavBtns();
-
-    // Kuch sites (X-Frame-Options / CSP) iframe ke andar load hi nahi hoti —
-    // agar reasonable time mein load event nahi aata aur frame khaali/blank
-    // rahta hai, user ko "browser mein kholo" ka option de do.
-    clearTimeout(loadWatchdog);
-    loadWatchdog = setTimeout(() => {
-      try{
-        // Cross-origin frame ka content check nahi kar sakte, isliye sirf
-        // heuristic: agar iframe ka contentWindow.length aur koi visible
-        // paint signal na mile, best-effort blocked-detection skip karke
-        // sirf failsafe timeout treat karte hain agar 'load' event hi nahi fira.
-      }catch(e){}
-    }, 6000);
-  }
-
-  window.openInAppBrowser = function(url){
-    if(!url) return;
-    const overlay = getEl('inAppBrowserOverlay');
-    if(overlay) overlay.classList.add('open');
-    historyStack = [];
-    historyIdx = -1;
-    navigateTo(url, true);
-  };
-
-  function closeInAppBrowser(){
-    const overlay = getEl('inAppBrowserOverlay');
-    const frame = getEl('inAppBrowserFrame');
-    if(overlay) overlay.classList.remove('open');
-    if(frame) frame.src = 'about:blank';
-    clearTimeout(loadWatchdog);
-  }
-
-  function initInAppBrowser(){
-    const closeBtn = getEl('inAppBrowserCloseBtn');
-    if(closeBtn) closeBtn.addEventListener('click', closeInAppBrowser);
-
-    const backBtn = getEl('inAppBrowserBackBtn');
-    if(backBtn) backBtn.addEventListener('click', () => {
-      const frame = getEl('inAppBrowserFrame');
-      if(frame && frame.contentWindow){
-        try{ frame.contentWindow.history.back(); }catch(e){}
-      }
-      if(historyIdx > 0){ historyIdx--; updateNavBtns(); }
-    });
-    const fwdBtn = getEl('inAppBrowserFwdBtn');
-    if(fwdBtn) fwdBtn.addEventListener('click', () => {
-      const frame = getEl('inAppBrowserFrame');
-      if(frame && frame.contentWindow){
-        try{ frame.contentWindow.history.forward(); }catch(e){}
-      }
-      if(historyIdx < historyStack.length - 1){ historyIdx++; updateNavBtns(); }
-    });
-    const reloadBtn = getEl('inAppBrowserReloadBtn');
-    if(reloadBtn) reloadBtn.addEventListener('click', () => { if(currentUrl) navigateTo(currentUrl, false); });
-
-    const externalBtn = getEl('inAppBrowserExternalBtn');
-    if(externalBtn) externalBtn.addEventListener('click', () => { if(currentUrl) window.open(currentUrl, '_blank', 'noopener'); });
-    const blockedExternalBtn = getEl('inAppBrowserBlockedExternalBtn');
-    if(blockedExternalBtn) blockedExternalBtn.addEventListener('click', () => { if(currentUrl) window.open(currentUrl, '_blank', 'noopener'); });
-
-    // Menu ka "Google Search" button — tap karte hi google.com in-app
-    // browser ke andar khulta hai (PhonePe/Instagram wale in-app browser jaisa).
-    const googleBrowserBtn = getEl('calcGoogleBrowserBtn');
-    if(googleBrowserBtn) googleBrowserBtn.addEventListener('click', () => { window.openInAppBrowser('https://www.google.com'); });
-
-    const frame = getEl('inAppBrowserFrame');
-    if(frame){
-      frame.addEventListener('load', () => {
-        clearTimeout(loadWatchdog);
-        const loadBar = getEl('inAppBrowserLoadBar');
-        if(loadBar){ loadBar.classList.remove('loading'); loadBar.style.width = '100%'; setTimeout(() => { loadBar.style.width = '0%'; }, 300); }
-        // Same-origin ho toh actual URL update kar do (redirect follow karne ke liye)
-        try{
-          const realUrl = frame.contentWindow.location.href;
-          if(realUrl && realUrl !== 'about:blank'){
-            currentUrl = realUrl;
-            const urlText = getEl('inAppBrowserUrlText');
-            if(urlText) urlText.textContent = shortUrl(realUrl);
-          }
-        }catch(e){ /* cross-origin — expected, URL bar purane requested URL par hi rahega */ }
-      });
-    }
-
-    // App ke andar kahin bhi kisi external http(s) link pe tap hote hi
-    // naye tab/browser ki jagah isi in-app browser mein khole — bilkul
-    // PhonePe/Instagram ke andar-ka-browser jaisa.
-    document.addEventListener('click', function(e){
-      const a = e.target && e.target.closest && e.target.closest('a[href]');
-      if(!a) return;
-      const href = a.getAttribute('href') || '';
-      if(!/^https?:\/\//i.test(href)) return; // internal anchors/tel/mailto/etc chhod do
-      if(a.hasAttribute('data-external')) return; // explicitly opt-out chahiye toh data-external
-      if(a.hasAttribute('download')) return; // download links normal hi rahen
-      e.preventDefault();
-      window.openInAppBrowser(href);
-    }, true);
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initInAppBrowser);
-  } else {
-    initInAppBrowser();
   }
 })();
