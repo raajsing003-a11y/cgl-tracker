@@ -19726,6 +19726,79 @@ if('serviceWorker' in navigator){
     showCalcPage('editoriallist');
   }
 
+  const ED_READ_WPM = 150;
+  const ED_READ_MS_PER_WORD = 60000 / ED_READ_WPM;
+  const ED_READ_MIN_MS = 1800;
+  const ED_READ_MAX_MS = 22000;
+  const ED_WORDS_PER_UNIT = 45; // roughly kitne words ka ek "paragraph" chunk bane
+
+  function edCountWords(text){ return (text||'').trim().split(/\s+/).filter(Boolean).length; }
+  function edComputeReadMs(text){
+    const words = Math.max(edCountWords(text), 1);
+    const ms = words * ED_READ_MS_PER_WORD;
+    return Math.round(Math.max(ED_READ_MIN_MS, Math.min(ms, ED_READ_MAX_MS)));
+  }
+
+  // Editorial ka raw text ek hi lambi blob hoti hai (koi paragraph break
+  // nahi) — isliye sentence boundaries pe todke ~45-words ke pseudo-
+  // paragraphs banate hain, taaki auto-scroll ke paas snap karne ke liye
+  // discrete reading units hon (bilkul GK Reader jaisa experience).
+  function splitIntoReadUnits(text){
+    const sentences = (text || '').match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || [text];
+    const chunks = [];
+    let current = '';
+    let currentWords = 0;
+    sentences.forEach(sent => {
+      const w = edCountWords(sent);
+      if(currentWords > 0 && currentWords + w > ED_WORDS_PER_UNIT){
+        chunks.push(current.trim());
+        current = '';
+        currentWords = 0;
+      }
+      current += sent;
+      currentWords += w;
+    });
+    if(current.trim()) chunks.push(current.trim());
+    return chunks.length ? chunks : [text];
+  }
+
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Har vocab word ko article ke text mein dhoondh ke green clickable span
+  // mein wrap karta hai — automatic, kisi bhi editorial ke liye, based on
+  // us editorial ke apne vocab list se (data mein pehle se koi markup
+  // hone ki zaroorat nahi).
+  function highlightVocabInHtml(rawHtml, vocabList){
+    if(!vocabList || !vocabList.length) return escapeHtml(rawHtml);
+    // Lambe/multi-word phrases pehle match karo taaki chhote words unke
+    // andar se galti se match na ho jaayein (e.g. "burst out laughing"
+    // "burst" se pehle match hona chahiye).
+    const sorted = vocabList.slice().sort((a,b) => b.word.length - a.word.length);
+    const text = escapeHtml(rawHtml);
+    // Placeholder-based approach: pehle sab matches ko unique tokens se
+    // replace karo (taaki overlapping words dobara match na hon), phir
+    // end mein tokens ko actual span HTML se replace karo.
+    const tokens = [];
+    let working = text;
+    sorted.forEach((v, idx) => {
+      const word = v.word.trim();
+      if(!word) return;
+      const pattern = new RegExp('\\b' + escapeRegExp(word) + '\\b', 'gi');
+      working = working.replace(pattern, (match) => {
+        const tokenId = '\u0000VOCAB' + tokens.length + '\u0000';
+        tokens.push({ match, word: v.word, pos: v.pos || '', meaning: v.meaning || '', hindi: v.hindi || '' });
+        return tokenId;
+      });
+    });
+    tokens.forEach((t, i) => {
+      const tokenId = '\u0000VOCAB' + i + '\u0000';
+      const span = '<span class="vocabWord" data-word="' + escapeHtml(t.word) + '" data-pos="' + escapeHtml(t.pos) + '" data-meaning="' + escapeHtml(t.meaning) + '" data-hindi="' + escapeHtml(t.hindi) + '">' + t.match + '</span>';
+      working = working.split(tokenId).join(span);
+    });
+    return working;
+  }
+
   function applyEdFontSize(){
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl) contentEl.style.fontSize = edFontSize + 'px';
@@ -19738,10 +19811,17 @@ if('serviceWorker' in navigator){
     if(headerTitle) headerTitle.textContent = e.title;
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl){
-      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${e.title}</div>
-        <p style="line-height:1.85;">${e.html}</p>`;
+      const paras = splitIntoReadUnits(e.html);
+      const paraHtml = paras.map((p, i) => {
+        const highlighted = highlightVocabInHtml(p, e.vocab);
+        const ms = edComputeReadMs(p);
+        return `<p class="gkP gkReadUnit" data-ridx="${i}" data-ms="${ms}" style="line-height:1.85;">${highlighted}</p>`;
+      }).join('');
+      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${escapeHtml(e.title)}</div>
+        ${paraHtml}`;
       contentEl.scrollTop = 0;
     }
+    resetEdReadingState();
     const scrollEl = document.getElementById('calcPage-editorialreader');
     if(scrollEl) scrollEl.scrollTop = 0;
     applyEdFontSize();
@@ -19753,12 +19833,183 @@ if('serviceWorker' in navigator){
   }
 
   function updateEdProgress(){
+    if(edAutoScrollOn) return; // auto-scroll ke waqt fill per-paragraph timer control karta hai
     const scrollEl = document.getElementById('calcPage-editorialreader');
     const fill = document.getElementById('edReadProgressFill');
     if(!scrollEl || !fill) return;
     const max = scrollEl.scrollHeight - scrollEl.clientHeight;
     const pct = max > 0 ? (scrollEl.scrollTop / max) * 100 : 0;
     fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  // ===== Auto-scroll (GK Reader jaisa hi paragraph-snap engine, editorial ke liye) =====
+  const ED_AUTOSCROLL_SPEEDS = [0.5, 1, 1.5, 2];
+  let edAutoScrollOn = false;
+  let edAutoScrollSpeedIdx = 1;
+  let edAutoScrollWakeLock = null;
+  let edReadUnits = [];
+  let edActiveUnitIdx = -1;
+  let edUnitTimerId = null;
+  let edUnitDeadlineTs = null;
+  let edUnitRemainingMs = null;
+
+  function edGetScrollEl(){ return document.getElementById('calcPage-editorialreader'); }
+  function edGetContentEl(){ return document.getElementById('edReaderContent'); }
+  function edGetProgressFillEl(){ return document.getElementById('edReadProgressFill'); }
+
+  function updateEdAutoScrollUI(){
+    const playBtn = document.getElementById('edAutoScrollPlayBtn');
+    const speedBtn = document.getElementById('edAutoScrollSpeedBtn');
+    if(playBtn){
+      playBtn.innerHTML = edAutoScrollOn ? '&#10074;&#10074;' : '&#9654;';
+      playBtn.setAttribute('aria-label', edAutoScrollOn ? 'Pause auto scroll' : 'Play auto scroll');
+      playBtn.classList.toggle('gkAutoScrollPlaying', edAutoScrollOn);
+    }
+    if(speedBtn) speedBtn.textContent = ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx] + 'x';
+    const bar = document.getElementById('edReadProgressBar');
+    if(bar) bar.classList.toggle('gkReadProgressBar-on', edAutoScrollOn);
+  }
+
+  async function edRequestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        edAutoScrollWakeLock = await navigator.wakeLock.request('screen');
+        edAutoScrollWakeLock.addEventListener('release', () => { edAutoScrollWakeLock = null; });
+      }
+    }catch(e){}
+  }
+  function edReleaseWakeLock(){
+    if(edAutoScrollWakeLock){ edAutoScrollWakeLock.release().catch(()=>{}); edAutoScrollWakeLock = null; }
+  }
+
+  function edStartProgressFill(ms){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    void fill.offsetWidth;
+    fill.style.transition = `width ${ms}ms linear`;
+    fill.style.width = '100%';
+  }
+  function edFreezeProgressFill(){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    const currentWidth = getComputedStyle(fill).width;
+    fill.style.transition = 'none';
+    fill.style.width = currentWidth;
+  }
+  function edResetProgressFill(){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+  }
+
+  function edRefreshReadUnits(){
+    const contentEl = edGetContentEl();
+    edReadUnits = contentEl ? Array.from(contentEl.querySelectorAll('.gkReadUnit')) : [];
+  }
+  function edClearUnitTimer(){
+    if(edUnitTimerId){ clearTimeout(edUnitTimerId); edUnitTimerId = null; }
+  }
+  function edScrollUnitIntoView(idx){
+    const el = edReadUnits[idx];
+    const scrollEl = edGetScrollEl();
+    if(!el || !scrollEl) return;
+    const targetTop = scrollEl.scrollTop + (el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top) - 14;
+    scrollEl.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  }
+  function edArmUnitTimer(ms){
+    edClearUnitTimer();
+    edUnitDeadlineTs = Date.now() + ms;
+    edUnitRemainingMs = ms;
+    edStartProgressFill(ms);
+    edUnitTimerId = setTimeout(edAdvanceToNextUnit, ms);
+  }
+  function edAdvanceToNextUnit(){
+    edClearUnitTimer();
+    if(edActiveUnitIdx >= edReadUnits.length - 1){
+      edStopAutoScroll(true);
+      return;
+    }
+    edActiveUnitIdx += 1;
+    edScrollUnitIntoView(edActiveUnitIdx);
+    const ms = (parseInt(edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000) / ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx];
+    edArmUnitTimer(ms);
+  }
+  function edFindVisibleUnitIdx(){
+    const scrollEl = edGetScrollEl();
+    if(!scrollEl || !edReadUnits.length) return 0;
+    const scrollTopEdge = scrollEl.getBoundingClientRect().top + 20;
+    let best = 0;
+    for(let i = 0; i < edReadUnits.length; i++){
+      if(edReadUnits[i].getBoundingClientRect().top <= scrollTopEdge) best = i;
+      else break;
+    }
+    return best;
+  }
+  function edStartAutoScroll(){
+    edRefreshReadUnits();
+    if(!edReadUnits.length) return;
+    edAutoScrollOn = true;
+    updateEdAutoScrollUI();
+    edRequestWakeLock();
+    edActiveUnitIdx = edFindVisibleUnitIdx() - 1;
+    if(edActiveUnitIdx < -1) edActiveUnitIdx = -1;
+    edAdvanceToNextUnit();
+  }
+  function edStopAutoScroll(reachedEnd){
+    edAutoScrollOn = false;
+    edClearUnitTimer();
+    edFreezeProgressFill();
+    edReleaseWakeLock();
+    updateEdAutoScrollUI();
+    if(reachedEnd){
+      edResetProgressFill();
+      edActiveUnitIdx = -1;
+      edUnitRemainingMs = null;
+      edUnitDeadlineTs = null;
+    }
+  }
+  function resetEdReadingState(){
+    edStopAutoScroll(false);
+    edActiveUnitIdx = -1;
+    edUnitRemainingMs = null;
+    edUnitDeadlineTs = null;
+    edResetProgressFill();
+    edReadUnits = [];
+  }
+  function edPauseAutoScroll(){
+    if(!edAutoScrollOn) return;
+    edUnitRemainingMs = edUnitDeadlineTs ? Math.max(300, edUnitDeadlineTs - Date.now()) : edUnitRemainingMs;
+    edAutoScrollOn = false;
+    edClearUnitTimer();
+    edFreezeProgressFill();
+    edReleaseWakeLock();
+    updateEdAutoScrollUI();
+  }
+  function edResumeAutoScroll(){
+    edRefreshReadUnits();
+    if(!edReadUnits.length) return;
+    edAutoScrollOn = true;
+    updateEdAutoScrollUI();
+    edRequestWakeLock();
+    if(edActiveUnitIdx < 0){ edAdvanceToNextUnit(); return; }
+    const ms = edUnitRemainingMs || (parseInt((edReadUnits[edActiveUnitIdx]||{}).getAttribute && edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000);
+    edArmUnitTimer(ms);
+  }
+  function edToggleAutoScroll(){
+    if(edAutoScrollOn) edPauseAutoScroll();
+    else if(edActiveUnitIdx >= 0 && edActiveUnitIdx < edReadUnits.length - 1 && edUnitRemainingMs) edResumeAutoScroll();
+    else edStartAutoScroll();
+  }
+  function edCycleAutoScrollSpeed(){
+    edAutoScrollSpeedIdx = (edAutoScrollSpeedIdx + 1) % ED_AUTOSCROLL_SPEEDS.length;
+    updateEdAutoScrollUI();
+    if(edAutoScrollOn && edUnitDeadlineTs){
+      const remainingAtOldSpeed = Math.max(300, edUnitDeadlineTs - Date.now());
+      edArmUnitTimer(remainingAtOldSpeed);
+    }
   }
 
   function openEditorialReader(catId, index){
@@ -19794,12 +20045,22 @@ if('serviceWorker' in navigator){
     if(ov) ov.classList.remove('open');
   }
 
-  function showVocabPopup(word, pos, meaning){
+  function showVocabPopup(word, pos, meaning, hindi){
     const overlay = document.getElementById('vocabPopupOverlay');
     const wordEl = document.getElementById('vocabPopupWord');
     const meaningEl = document.getElementById('vocabPopupMeaning');
+    const hindiEl = document.getElementById('vocabPopupHindi');
     if(wordEl) wordEl.textContent = word + (pos ? ' (' + pos + ')' : '');
     if(meaningEl) meaningEl.textContent = meaning;
+    if(hindiEl){
+      if(hindi && hindi.trim()){
+        hindiEl.textContent = hindi;
+        hindiEl.classList.add('show');
+      } else {
+        hindiEl.textContent = '';
+        hindiEl.classList.remove('show');
+      }
+    }
     if(overlay) overlay.classList.add('open');
   }
   function hideVocabPopup(){
@@ -19821,6 +20082,7 @@ if('serviceWorker' in navigator){
 
     const readerBackBtn = document.getElementById('edReaderBackBtn');
     if(readerBackBtn) readerBackBtn.addEventListener('click', () => {
+      resetEdReadingState();
       closeEdReaderListOverlay();
       if(edCurrentCatId) openEditorialCategory(edCurrentCatId);
       else showCalcPage('editorialmenu');
@@ -19858,7 +20120,7 @@ if('serviceWorker' in navigator){
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl) contentEl.addEventListener('click', (e) => {
       const w = e.target.closest('.vocabWord');
-      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning);
+      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning, w.dataset.hindi);
     });
     if(contentEl) contentEl.addEventListener('scroll', updateEdProgress, {passive:true});
 
@@ -19866,6 +20128,29 @@ if('serviceWorker' in navigator){
     if(popupOverlay) popupOverlay.addEventListener('click', (e) => { if(e.target === popupOverlay) hideVocabPopup(); });
     const popupClose = document.getElementById('vocabPopupClose');
     if(popupClose) popupClose.addEventListener('click', hideVocabPopup);
+
+    // ----- Auto-scroll wiring -----
+    const edAutoScrollPlayBtn = document.getElementById('edAutoScrollPlayBtn');
+    if(edAutoScrollPlayBtn) edAutoScrollPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); edToggleAutoScroll(); });
+    const edAutoScrollSpeedBtn = document.getElementById('edAutoScrollSpeedBtn');
+    if(edAutoScrollSpeedBtn) edAutoScrollSpeedBtn.addEventListener('click', (e) => { e.stopPropagation(); edCycleAutoScrollSpeed(); });
+
+    const edAutoScrollScrollEl = edGetScrollEl();
+    if(edAutoScrollScrollEl){
+      ['touchstart','mousedown','wheel'].forEach(evt => {
+        edAutoScrollScrollEl.addEventListener(evt, (e) => {
+          if(!edAutoScrollOn) return;
+          if(e.target && e.target.closest && e.target.closest('.gkAutoScrollFab')) return;
+          edPauseAutoScroll();
+        }, {passive:true});
+      });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible' && edAutoScrollOn && !edAutoScrollWakeLock){
+        edRequestWakeLock();
+      }
+    });
+    updateEdAutoScrollUI();
   }
 
   if(document.readyState === 'loading'){
