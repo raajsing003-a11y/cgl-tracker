@@ -2859,7 +2859,34 @@
   /* ===== Reading Mode — Auto-Scroll FAB =====
      Floats just above the footer bar, on the side, so it never sits on
      top of the text being read. */
-  .gkAutoScrollFab{position:fixed;right:14px;
+  .inAppBrowserOverlay{position:fixed;inset:0;z-index:5000;background:#0a0a0a;
+    display:none;flex-direction:column;}
+  .inAppBrowserOverlay.open{display:flex;}
+  .inAppBrowserTopBar{display:flex;align-items:center;gap:6px;padding:10px 8px;
+    background:#161a22;border-bottom:1px solid rgba(255,255,255,0.08);flex:0 0 auto;
+    padding-top:calc(10px + env(safe-area-inset-top));}
+  .inAppBrowserIconBtn{width:36px;height:36px;flex:0 0 auto;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.08);color:#e5e7eb;font-size:18px;display:flex;
+    align-items:center;justify-content:center;cursor:pointer;}
+  .inAppBrowserIconBtn:active{background:rgba(255,255,255,0.18);}
+  .inAppBrowserIconBtn:disabled{opacity:0.35;}
+  .inAppBrowserCloseBtn{background:rgba(244,63,94,0.18);color:#f43f5e;}
+  .inAppBrowserUrlBar{flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,0.06);border-radius:20px;padding:8px 12px;overflow:hidden;}
+  .inAppBrowserLock{font-size:11px;opacity:0.7;flex:0 0 auto;}
+  .inAppBrowserUrlText{font-size:13px;color:#d1d5db;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;}
+  .inAppBrowserLoadBar{height:2.5px;width:0%;background:linear-gradient(90deg,#38bdf8,#34d399);
+    flex:0 0 auto;transition:width 0.25s ease;}
+  .inAppBrowserLoadBar.loading{width:70%;transition:width 3s ease;}
+  .inAppBrowserFrame{flex:1;width:100%;border:none;background:#fff;}
+  .inAppBrowserBlockedMsg{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%);
+    display:none;flex-direction:column;align-items:center;gap:14px;text-align:center;
+    color:#d1d5db;font-size:14px;background:#161a22;padding:24px 18px;border-radius:16px;
+    border:1px solid rgba(255,255,255,0.1);}
+  .inAppBrowserBlockedMsg.show{display:flex;}
+
+
     bottom:calc(146px + env(safe-area-inset-bottom));z-index:215;
     display:flex;flex-direction:column;align-items:center;gap:8px;}
   .gkAutoScrollPlayBtn{width:52px;height:52px;border-radius:50%;flex:0 0 auto;
@@ -3150,6 +3177,26 @@
       <a class="nav-btn" href="./exam-tracker.apk" download style="text-decoration:none;display:inline-block;text-align:center;">⬇️ Install APK (Android)</a>
     </div>
     <div class="onbStatus" id="onbStatus"></div>
+  </div>
+</div>
+
+<div class="inAppBrowserOverlay" id="inAppBrowserOverlay">
+  <div class="inAppBrowserTopBar">
+    <button class="inAppBrowserIconBtn" id="inAppBrowserBackBtn" aria-label="Back">&#8592;</button>
+    <button class="inAppBrowserIconBtn" id="inAppBrowserFwdBtn" aria-label="Forward">&#8594;</button>
+    <div class="inAppBrowserUrlBar" id="inAppBrowserUrlBar">
+      <span class="inAppBrowserLock">&#128274;</span>
+      <span class="inAppBrowserUrlText" id="inAppBrowserUrlText">Loading…</span>
+    </div>
+    <button class="inAppBrowserIconBtn" id="inAppBrowserReloadBtn" aria-label="Reload">&#8635;</button>
+    <button class="inAppBrowserIconBtn" id="inAppBrowserExternalBtn" aria-label="Open in browser">&#8599;</button>
+    <button class="inAppBrowserIconBtn inAppBrowserCloseBtn" id="inAppBrowserCloseBtn" aria-label="Close">&#10005;</button>
+  </div>
+  <div class="inAppBrowserLoadBar" id="inAppBrowserLoadBar"></div>
+  <iframe class="inAppBrowserFrame" id="inAppBrowserFrame" title="In-app browser" referrerpolicy="no-referrer"></iframe>
+  <div class="inAppBrowserBlockedMsg" id="inAppBrowserBlockedMsg">
+    <div>Ye site app ke andar open nahi ho paa rahi (site ki security setting isse rok rahi hai).</div>
+    <button class="nav-btn" id="inAppBrowserBlockedExternalBtn">Browser mein kholo</button>
   </div>
 </div>
 
@@ -3889,6 +3936,18 @@
           <span class="calcLabelCol">
             <span class="calcLabel">Calculation</span>
             <span class="calcSub">Digital Sum, Unit Digit · Addition, Subtraction, Multiplication, Division · Square, Cube, Roots, Tables, Trigonometry, Percentage, Fraction</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+
+      <div class="grid-label">🌐 Browser</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard calcCard-gkFeatured" id="calcGoogleBrowserBtn">
+          <span class="calcIcon calcIcon-gkFeatured">🌐</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Google Search</span>
+            <span class="calcSub">google.com app ke andar hi khulega</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
