@@ -12936,6 +12936,8 @@ const mathPyqQuiz = makeMathPyqQuiz();
     return html;
   }
 
+  const GK_QUIZ_OVERRIDE = {"ancient": {"1": {"p75": ["Prehistoric Period IVC Vedic P"], "sp": ["Ancient History: Indus Valley Civilisation"]}, "2": {"p75": ["Prehistoric Period IVC Vedic P"], "sp": ["Ancient History: Indus Valley Civilisation"]}, "3": {"p75": ["Prehistoric Period IVC Vedic P"], "sp": ["Ancient History: Rig Veda and Later Vedic Period"]}, "4": {"p75": ["Mahajanapadas Magadha Jainism"], "sp": ["Ancient History: Jainism, Buddhism and Mahajanapadas"]}, "5": {"p75": ["Mahajanapadas Magadha Jainism"], "sp": ["Ancient History: Jainism, Buddhism and Mahajanapadas"]}, "6": {"p75": ["Mahajanapadas Magadha Jainism", "Mauryan Empire Gupta Period"], "sp": ["Ancient History: Magadha Empire", "Ancient History: Mauryan Empire", "Ancient History: Post-Mauryan Period"]}, "7": {"p75": ["Mauryan Empire Gupta Period"], "sp": ["Ancient History: Gupta Empire and Post-Gupta Period"]}, "8": {"p75": ["Mauryan Empire Gupta Period"], "sp": ["Ancient History: Gupta Empire and Post-Gupta Period"]}, "9": {"p75": ["Dynasties of South India Rajpu"], "sp": ["Ancient History: Sangam Age", "Ancient History: South Indian Kingdoms - I(Pallavas and Chlolas)", "Ancient History: South Indian Kingdoms - II(Chalukyas and Rashtrakutas)"]}, "10": {"p75": ["Ancient His Miscellaneous", "Ancient Architecture", "Ancient Literature"], "sp": ["Ancient History: Books and authors in Ancient times"]}}, "medieval": {"1": {"p75": ["Dynasties of South India Rajpu"], "sp": ["Medieval History: Early Medieval History (Rajputs, Arab invasion)"]}, "2": {"p75": ["Arab invasion & Delhi Sultan"], "sp": ["Medieval History: Delhi Sultanate"]}, "3": {"p75": ["Mughal Empire 1", "Mughal Empire 2", "Mughal Empire 3"], "sp": ["Medieval History: Mughal Period and its Architecture"]}, "4": {"p75": ["Independent Kingdoms & Brtis"], "sp": ["Medieval History: Regional Kingdoms (Vijayanagar and Bahmani)"]}, "5": {"p75": ["Maratha Empire & Advent of E"], "sp": ["Medieval History: Maratha History"]}, "6": {"p75": ["Sikhism & Miscellaneous Medi"], "sp": ["Medieval History: Bhakti and Sufi Movement"]}, "7": {"p75": ["Medieval History Ediquity Base"], "sp": ["Medieval History: Mughal Period and its Architecture"]}, "8": {"p75": ["Independent Kingdoms & Brtis"], "sp": ["Modern History: Major Battles"]}, "9": {"p75": ["Sufism & Bhakti Movement Vi", "Social & Religious Reforms"], "sp": ["Medieval History: Bhakti and Sufi Movement"]}, "10": {"p75": ["Arab invasion & Delhi Sultan"], "sp": ["Medieval History: Early Medieval History (Rajputs, Arab invasion)"]}}, "modernhistory": {"1": {"p75": ["Maratha Empire & Advent of E"], "sp": ["Modern History: Coming of British Rule and Europeans"]}, "2": {"p75": ["Independent Kingdoms & Brtis"], "sp": ["Modern History: Coming of British Rule and Europeans"]}, "3": {"p75": ["Independent Kingdoms & Brtis"], "sp": ["Modern History: British Rule", "Modern History: Revolt of 1857"]}, "4": {"p75": ["Governor-General & Viceroy"], "sp": ["Modern History: British Rule"]}, "5": {"p75": ["Revolutionary Movements 1", "Revolutionary Movements 2"], "sp": ["Modern History: National Movements"]}, "6": {"p75": ["Social & Religious Reforms"], "sp": ["Modern History: Social and cultural reform movements"]}, "7": {"p75": ["Revolutionary Movements 2"], "sp": ["Modern History: National Movements"]}, "8": {"p75": ["Revolutionary Movements 1", "Revolutionary Movements 2", "Revolutionary Movements 3"], "sp": ["Modern History: Extremist Movements"]}, "9": {"p75": ["Indian National Congress"], "sp": ["Modern History: Indian National Congress"]}, "10": {"p75": ["Indian National Congress"], "sp": ["Modern History: Indian National Congress"]}, "11": {"p75": ["Famous Nicknames Slogans Books"], "sp": ["Modern History: Leaders of Freedom Movement"]}, "12": {"p75": ["Revolutionary Movements 3"], "sp": ["Modern History: National Movements"]}, "13": {"p75": ["Famous Nicknames Slogans Books"], "sp": ["Modern History: Leaders of Freedom Movement"]}}, "polity": {"1": {"p75": ["Constitutional Development", "Sources of Constitution"], "sp": ["Polity: History of making of Indian constitution"]}, "2": {"p75": ["Constitutional Development"], "sp": ["Polity: History of making of Indian constitution"]}, "3": {"p75": ["Committees Commissions & Eme"], "sp": ["Polity: History of making of Indian constitution"]}, "4": {"p75": ["Constitutional Development"], "sp": ["Polity: Important articles"]}, "5": {"p75": ["Parts & Schedules"], "sp": ["Polity: Schedules and parts"]}, "6": {"p75": ["Preamble & Citizenship"], "sp": ["Polity: Important articles"]}, "7": {"p75": ["Union and its Territory Pancha"], "sp": ["Polity: Important articles"]}, "8": {"p75": ["Preamble & Citizenship"], "sp": ["Polity: Important articles"]}, "9": {"p75": ["Fundamental Rights"], "sp": ["Polity: Important articles"]}, "10": {"p75": ["Fundamental Duties & DPSP"], "sp": ["Polity: Important articles"]}, "11": {"p75": ["Fundamental Duties & DPSP"], "sp": ["Polity: Important articles"]}, "12": {"p75": ["President & Vice-President"], "sp": ["Polity: Facts related to President, Vice president, Prime Minister, Chief minister, Parliament houses, cabinet ministers, attorney general etc."]}, "13": {"p75": ["Parliament A"], "sp": ["Polity: Parliament and State Legislatures"]}, "14": {"p75": ["Parliament B"], "sp": ["Polity: Parliament and State Legislatures"]}, "15": {"p75": ["Governor State & Judiciary"], "sp": ["Polity: Parliament and State Legislatures"]}, "16": {"p75": ["Governor State & Judiciary"], "sp": ["Polity: Supreme and High court"]}, "17": {"p75": ["Union and its Territory Pancha"], "sp": ["Polity: Various bodies"]}, "18": {"p75": ["Committees Commissions & Eme"], "sp": ["Polity: Various bodies"]}, "19": {"p75": ["Committees Commissions & Eme"], "sp": ["Polity: Emergency in India"]}, "20": {"p75": ["Constitutional Amendment Acts"], "sp": ["Polity: Important articles"]}, "21": {"p75": ["Miscellaneous Polity"], "sp": ["Polity: Various bodies"]}, "22": {"p75": ["Miscellaneous Polity"], "sp": ["Polity: Case laws in news"]}, "23": {"p75": ["Miscellaneous Polity"], "sp": ["Polity: Various bodies"]}}, "geography": {"1": {"p75": ["Earth"], "sp": ["Geography: World geography facts and superlatives"]}, "2": {"p75": ["Earth"], "sp": ["Geography: World geography facts and superlatives"]}, "3": {"p75": ["Rock Earthquake & Volcano"], "sp": ["Geography: Physical features of India"]}, "4": {"p75": ["Landform Mountain Grassland De"], "sp": ["Geography: Physical features of India"]}, "5": {"p75": ["Atmosphere Climate & Cyclone"], "sp": ["Geography: Atmosphere", "Geography: Indian Climate"]}, "6": {"p75": ["Climate Soils & Vegetation"], "sp": ["Geography: Natural vegetation", "Geography: Soils and agriculture"]}, "7": {"p75": ["Location & Neighbour Countri"], "sp": ["Geography: India and neighbouring countries"]}, "8": {"p75": ["Mountains Peaks & Plateau"], "sp": ["Geography: Physical features of India"]}, "9": {"p75": ["Mountains Peaks & Plateau"], "sp": ["Geography: Physical features of India"]}, "10": {"p75": ["Passes & Coastline"], "sp": ["Geography: Physical features of India"]}, "11": {"p75": ["River 1", "River 2", "Dams & City on bank of River"], "sp": ["Geography: Rivers and Lakes"]}, "12": {"p75": ["Agriculture"], "sp": ["Geography: Soils and agriculture"]}, "13": {"p75": ["Mineral Resources & Industr"], "sp": ["Geography: Mineral and Energy resources"]}, "14": {"p75": ["Ocean Rivers & Straits"], "sp": ["Geography: World geography facts and superlatives"]}, "15": {"p75": ["Census"], "sp": ["Geography: Population"]}, "16": {"p75": ["Miscellaneous Indian Geograph"], "sp": ["Geography: National parks and Wildlife sanctuaries", "Geography: Ecosystem and Environment"]}}, "economy": {"1": {"p75": ["Economics Sector & Taxation"], "sp": ["Economy: GDP and National income"]}, "2": {"p75": ["Demand & Supply"], "sp": ["Economy: Economic Reforms"]}, "3": {"p75": ["Inflation & Capital Market"], "sp": ["Economy: Economic Reforms"]}, "4": {"p75": ["National Income Poverty & U"], "sp": ["Economy: GDP and National income"]}, "5": {"p75": ["Miscellaneous 1 Economics"], "sp": ["Economy: Budget related terms", "Economy: Indian fiscal system"]}, "6": {"p75": ["Economics Sector & Taxation"], "sp": ["Economy:Tax structure"]}, "7": {"p75": ["Money & Banking 1", "Money & Banking 2"], "sp": ["Economy: Banking"]}, "8": {"p75": ["Money & Banking 1", "Money & Banking 2"], "sp": ["Economy: Banking"]}, "9": {"p75": ["Inflation & Capital Market"], "sp": ["Economy: Major acts and regulatory bodies"]}, "10": {"p75": ["Miscellaneous 1 Economics"], "sp": ["Economy: Indian fiscal system"]}, "11": {"p75": ["National Income Poverty & U"], "sp": ["Economy: GDP and National income"]}, "12": {"p75": ["Five Year Plan"], "sp": ["Economy: Five Year Plan"]}, "13": {"p75": ["Miscellaneous 1 Economics"], "sp": ["Economy: Major acts and regulatory bodies"]}}, "science": {"1": {"p75": ["Mechanics"], "sp": ["Physics: Motion"]}, "2": {"p75": ["Mechanics"], "sp": ["Physics: Force and Friction"]}, "3": {"p75": ["Gravitation & Thermodynamics"], "sp": ["Physics: Gravitation", "Physics: Work, Power and Energy"]}, "4": {"p75": ["Sound & Waves"], "sp": ["Physics: Sound"]}, "5": {"p75": ["Optics"], "sp": ["Physics: Optics"]}, "6": {"p75": ["Gravitation & Thermodynamics", "Electricity"], "sp": ["Physics: Heat and thermodynamics", "Physics: Electricity"]}, "7": {"p75": ["Sound & Waves"], "sp": ["Physics: Waves", "Physics: Radioactivity"]}, "8": {"p75": ["Units & Measurements", "Invention Physics"], "sp": ["Physics: Measurements and SI Units", "Physics: Discoveries and inventions", "Physics: Scientific instruments"]}, "9": {"p75": ["Matters Atomic Structure & N"], "sp": ["Chemistry: Matter and it's states"]}, "10": {"p75": ["Matters Atomic Structure & N"], "sp": ["Chemistry: Atomic structure and periodic table"]}, "11": {"p75": ["Chemical Properties"], "sp": ["Chemistry: Chemical changes and reactions"]}, "12": {"p75": ["Organic Compounds & Names"], "sp": ["Chemistry: Chemistry in everyday life"]}, "13": {"p75": ["Organic Chemistry", "Alloy & Ores", "Metal & Non-metal 1", "Metal & Non-metal 2", "Periodic Table", "Acid Base & Salt"], "sp": ["Chemistry: Metals and Non-metals", "Chemistry: Basics of organic chemistry"]}, "14": {"p75": ["Animal Cell", "Plant Cell and Plant & Anima"], "sp": ["Biology: Cell", "Biology: Cell Structure and Functions"]}, "15": {"p75": ["Respiratory Excretory Nervous"], "sp": ["Biology: Human physiology"]}, "16": {"p75": ["Digestive System Circulatory S"], "sp": ["Biology: Nutrients and diseases", "Biology: Life Processes"]}, "17": {"p75": ["Respiratory Excretory Nervous", "Digestive System Circulatory S"], "sp": ["Biology: Life Processes"]}, "18": {"p75": ["Human Diseases Part-1", "Human Diseases Part-2", "Human Diseases Treatments", "Vitamins & Nutrition"], "sp": ["Biology: Nutrients and diseases"]}}};
+
   // ===== Auto Quiz Linker: GK Reader chapter -> Super Practice / 75 Days Practice GK quiz =====
   // Jab bhi koi chapter khulta hai, uske content ke niche automatic uss topic
   // ka quiz card dikhta hai. Pehle practice75 (topic-wise, zyada specific) me
@@ -13043,49 +13045,68 @@ const mathPyqQuiz = makeMathPyqQuiz();
   // Practice (chapter-wise, specific) AND Super Practice (broad category) —
   // instead of picking just one. Used to render a full quiz list under the
   // chapter content in the GK Reader.
-  async function gkFindAllQuizzesForChapter(subject, titleEn){
+  async function gkFindAllQuizzesForChapter(subject, titleEn, chapterId){
     const titleTokens = gkTokenize(titleEn);
     const out = { p75: [], sp: [], topicLabel: '' };
+    const override = (chapterId != null && GK_QUIZ_OVERRIDE[subject]) ? GK_QUIZ_OVERRIDE[subject][chapterId] : null;
 
-    // 1) 75 Days Practice — every entry under the best-matching chapter-wise topic
+    // 1) 75 Days Practice — every entry under the override topic(s), else best-matching token topic
     try{
       const p75 = await gkLoadP75Manifest();
       const topicMap = gkGroupByTopic(p75);
-      let best = null, bestScore = 0;
-      Object.keys(topicMap).forEach(topic => {
-        const s = gkScoreTitleTopic(titleTokens, topic);
-        if(s > bestScore){ bestScore = s; best = topic; }
-      });
-      if(best && bestScore >= 2){
-        const entries = topicMap[best];
-        const entry = entries[Math.floor(Math.random() * entries.length)];
-        out.p75 = [{ source: 'p75', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }];
-        out.topicLabel = best;
-      }
-    }catch(e){ /* ignore, fall through */ }
-
-    // 2) Super Practice — every entry under the matching broad category
-    try{
-      const sp = await gkLoadSPManifest();
-      const topicMap = gkGroupByTopic(sp);
-      let best = GK_SUBJECT_FALLBACK_TOPIC[subject];
-      if(subject === 'science'){
-        if(/motion|force|gravitation|sound|light|optic|electricity|magnetism|wave|thermodynamic|units|measurement/i.test(titleEn)) best = 'Physics';
-        else if(/matter|atomic|chemical|acid|periodic|metal|organic|reaction/i.test(titleEn)) best = 'Chemistry';
-        else best = 'Biology';
-      }
-      if(!best || !topicMap[best] || !topicMap[best].length){
-        let bestScore = 0; best = null;
+      if(override && override.p75 && override.p75.length){
+        const topics = override.p75.filter(t => topicMap[t] && topicMap[t].length);
+        let entries = [];
+        topics.forEach(t => { entries = entries.concat(topicMap[t]); });
+        if(entries.length){
+          out.p75 = entries.map(entry => ({ source: 'p75', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: topics.join(', ') }));
+          out.topicLabel = topics.join(', ');
+        }
+      } else {
+        let best = null, bestScore = 0;
         Object.keys(topicMap).forEach(topic => {
           const s = gkScoreTitleTopic(titleTokens, topic);
           if(s > bestScore){ bestScore = s; best = topic; }
         });
+        if(best && bestScore >= 2){
+          const entries = topicMap[best];
+          out.p75 = entries.map(entry => ({ source: 'p75', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }));
+          out.topicLabel = best;
+        }
       }
-      if(best && topicMap[best] && topicMap[best].length){
-        const entries = topicMap[best];
-        const entry = entries[Math.floor(Math.random() * entries.length)];
-        out.sp = [{ source: 'sp', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }];
-        if(!out.topicLabel) out.topicLabel = best;
+    }catch(e){ /* ignore, fall through */ }
+
+    // 2) Super Practice — every entry under the override topic(s), else broad-category / token match
+    try{
+      const sp = await gkLoadSPManifest();
+      const topicMap = gkGroupByTopic(sp);
+      if(override && override.sp && override.sp.length){
+        const topics = override.sp.filter(t => topicMap[t] && topicMap[t].length);
+        let entries = [];
+        topics.forEach(t => { entries = entries.concat(topicMap[t]); });
+        if(entries.length){
+          out.sp = entries.map(entry => ({ source: 'sp', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: topics.join(', ') }));
+          if(!out.topicLabel) out.topicLabel = topics.join(', ');
+        }
+      } else {
+        let best = GK_SUBJECT_FALLBACK_TOPIC[subject];
+        if(subject === 'science'){
+          if(/motion|force|gravitation|sound|light|optic|electricity|magnetism|wave|thermodynamic|units|measurement/i.test(titleEn)) best = 'Physics';
+          else if(/matter|atomic|chemical|acid|periodic|metal|organic|reaction/i.test(titleEn)) best = 'Chemistry';
+          else best = 'Biology';
+        }
+        if(!best || !topicMap[best] || !topicMap[best].length){
+          let bestScore = 0; best = null;
+          Object.keys(topicMap).forEach(topic => {
+            const s = gkScoreTitleTopic(titleTokens, topic);
+            if(s > bestScore){ bestScore = s; best = topic; }
+          });
+        }
+        if(best && topicMap[best] && topicMap[best].length){
+          const entries = topicMap[best];
+          out.sp = entries.map(entry => ({ source: 'sp', key: 'gk', file: entry.file, label: entry.label || entry.topic, entry, topic: best }));
+          if(!out.topicLabel) out.topicLabel = best;
+        }
       }
     }catch(e){ /* ignore */ }
 
@@ -13100,9 +13121,9 @@ const mathPyqQuiz = makeMathPyqQuiz();
     </div>`;
   }
 
-  async function attachGkQuizCta(titleEn, subject){
+  async function attachGkQuizCta(titleEn, subject, chapterId){
     const myToken = ++window.gkQuizCtaToken;
-    const result = await gkFindAllQuizzesForChapter(subject, titleEn);
+    const result = await gkFindAllQuizzesForChapter(subject, titleEn, chapterId);
     if(myToken !== window.gkQuizCtaToken) return; // user ne chapter badal diya, purana result ignore karo
     const subEl = document.getElementById('gkQuizCtaSub');
     const itemsEl = document.getElementById('gkQuizItems');
@@ -13251,7 +13272,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
       const bodyHtml = renderGkBlocks(blocks);
       contentEl.innerHTML = `<div class="gkChapTitle">${escapeHtml(title)}</div>` + bodyHtml + gkQuizCtaHtml();
       contentEl.scrollTop = 0;
-      attachGkQuizCta(ch.titleEn, currentSubject);
+      attachGkQuizCta(ch.titleEn, currentSubject, ch.id);
     }
     applyFontSize();
     const langBtn = document.getElementById('gkReaderLangBtn');
@@ -14241,10 +14262,6 @@ function makeReasoningMockQuiz(){
     if(mainBtn) mainBtn.addEventListener('click', () => showCalcPage('reasoningmockchooser'));
     const chooserBackBtn = document.getElementById('reasoningmockChooserBackBtn');
     if(chooserBackBtn) chooserBackBtn.addEventListener('click', () => showCalcPage('menu'));
-    const spBtn = document.getElementById('calcReasoningMockSPBtn');
-    if(spBtn) spBtn.addEventListener('click', () => { reasoningMockSource = 'sp'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
-    const p75Btn = document.getElementById('calcReasoningMockP75Btn');
-    if(p75Btn) p75Btn.addEventListener('click', () => { reasoningMockSource = 'p75'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
     const conceptBtn = document.getElementById('calcReasoningMockConceptBtn');
     if(conceptBtn) conceptBtn.addEventListener('click', () => { reasoningMockSource = 'concept'; renderSetMenu(); showCalcPage('reasoningmockmenu'); });
     const menuBackBtn = document.getElementById('reasoningmockMenuBackBtn');
@@ -14758,10 +14775,6 @@ function makeEnglishMockQuiz(){
     // Three separate entry buttons on the English Mocks menu (Super Mocks /
     // 75-Day Practice / Concept Mock) — each jumps straight to its own mock
     // list with engMockSource preset, no in-page toggle needed.
-    const spBtn = document.getElementById('calcEnglishMockSPBtn');
-    if(spBtn) spBtn.addEventListener('click', () => { engMockSource = 'sp'; renderSetMenu(); showCalcPage('englishmockmenu'); });
-    const p75Btn = document.getElementById('calcEnglishMockP75Btn');
-    if(p75Btn) p75Btn.addEventListener('click', () => { engMockSource = 'p75'; renderSetMenu(); showCalcPage('englishmockmenu'); });
     const conceptBtn = document.getElementById('calcEnglishMockConceptBtn');
     if(conceptBtn) conceptBtn.addEventListener('click', () => { engMockSource = 'concept'; renderSetMenu(); showCalcPage('englishmockmenu'); });
     const menuBackBtn = document.getElementById('englishmockMenuBackBtn');
@@ -15327,6 +15340,7 @@ const EMMOCKS_TYPES = [
   { key:'cpomains', label:'CPO Mains Mock', icon:'📗', count:36, kind:'exam' },
   { key:'cglpre',   label:'CGL Pre',        icon:'📘', count:78, kind:'iframe' },
   { key:'cpopre',   label:'CPO Pre',        icon:'🧾', count:41, kind:'iframe' },
+  { key:'superpracticemix', label:'English Sectional (Super Practice + 75 Day Mix)', icon:'🔀', count:134, kind:'iframe' },
 ];
 let emmocksManifest = null;
 let emmocksCurrentKey = null;
@@ -15565,12 +15579,12 @@ function emnativeRenderQuestion(){
   const qnoEl = document.getElementById('emnativeExamQNo');
   if(qnoEl) qnoEl.textContent = 'Question No. ' + (emnativeSession.current + 1);
   const wordEl = document.getElementById('emnativeExamWordText');
-  if(wordEl) wordEl.innerHTML = q.q || '—';
+  if(wordEl) wordEl.innerHTML = q.q || q.q_en || '—';
   const optList = document.getElementById('emnativeExamOptList');
   if(optList){
     optList.innerHTML = '';
     const selected = emnativeSession.answers[emnativeSession.current];
-    (q.options || []).forEach((opt, i) => {
+    (q.options || q.options_en || []).forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'examOptBtn' + (selected === i ? ' selected' : '');
@@ -15697,12 +15711,12 @@ function emnativeResultRenderQuestion(){
     }
   }
   const wordEl = document.getElementById('emnativeResultWordText');
-  if(wordEl) wordEl.innerHTML = q.q || '—';
+  if(wordEl) wordEl.innerHTML = q.q || q.q_en || '—';
   const optList = document.getElementById('emnativeResultOptList');
   if(optList){
     optList.innerHTML = '';
     const userAns = emnativeSession.answers[i];
-    (q.options || []).forEach((opt, oi) => {
+    (q.options || q.options_en || []).forEach((opt, oi) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       let cls = 'examOptBtn';
@@ -15720,7 +15734,7 @@ function emnativeResultRenderQuestion(){
   const solCard = document.getElementById('emnativeResultSolutionCard');
   const solText = document.getElementById('emnativeResultSolutionText');
   if(emnativeResultRevealed){
-    if(solText) solText.innerHTML = q.solution || 'Solution available soon.';
+    if(solText) solText.innerHTML = q.solution || q.solution_en || 'Solution available soon.';
     if(solCard) solCard.style.display = 'block';
   } else if(solCard) solCard.style.display = 'none';
   typesetMath(wordEl); typesetMath(optList); typesetMath(solText);
@@ -19726,6 +19740,79 @@ if('serviceWorker' in navigator){
     showCalcPage('editoriallist');
   }
 
+  const ED_READ_WPM = 150;
+  const ED_READ_MS_PER_WORD = 60000 / ED_READ_WPM;
+  const ED_READ_MIN_MS = 1800;
+  const ED_READ_MAX_MS = 22000;
+  const ED_WORDS_PER_UNIT = 45; // roughly kitne words ka ek "paragraph" chunk bane
+
+  function edCountWords(text){ return (text||'').trim().split(/\s+/).filter(Boolean).length; }
+  function edComputeReadMs(text){
+    const words = Math.max(edCountWords(text), 1);
+    const ms = words * ED_READ_MS_PER_WORD;
+    return Math.round(Math.max(ED_READ_MIN_MS, Math.min(ms, ED_READ_MAX_MS)));
+  }
+
+  // Editorial ka raw text ek hi lambi blob hoti hai (koi paragraph break
+  // nahi) — isliye sentence boundaries pe todke ~45-words ke pseudo-
+  // paragraphs banate hain, taaki auto-scroll ke paas snap karne ke liye
+  // discrete reading units hon (bilkul GK Reader jaisa experience).
+  function splitIntoReadUnits(text){
+    const sentences = (text || '').match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || [text];
+    const chunks = [];
+    let current = '';
+    let currentWords = 0;
+    sentences.forEach(sent => {
+      const w = edCountWords(sent);
+      if(currentWords > 0 && currentWords + w > ED_WORDS_PER_UNIT){
+        chunks.push(current.trim());
+        current = '';
+        currentWords = 0;
+      }
+      current += sent;
+      currentWords += w;
+    });
+    if(current.trim()) chunks.push(current.trim());
+    return chunks.length ? chunks : [text];
+  }
+
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Har vocab word ko article ke text mein dhoondh ke green clickable span
+  // mein wrap karta hai — automatic, kisi bhi editorial ke liye, based on
+  // us editorial ke apne vocab list se (data mein pehle se koi markup
+  // hone ki zaroorat nahi).
+  function highlightVocabInHtml(rawHtml, vocabList){
+    if(!vocabList || !vocabList.length) return escapeHtml(rawHtml);
+    // Lambe/multi-word phrases pehle match karo taaki chhote words unke
+    // andar se galti se match na ho jaayein (e.g. "burst out laughing"
+    // "burst" se pehle match hona chahiye).
+    const sorted = vocabList.slice().sort((a,b) => b.word.length - a.word.length);
+    const text = escapeHtml(rawHtml);
+    // Placeholder-based approach: pehle sab matches ko unique tokens se
+    // replace karo (taaki overlapping words dobara match na hon), phir
+    // end mein tokens ko actual span HTML se replace karo.
+    const tokens = [];
+    let working = text;
+    sorted.forEach((v, idx) => {
+      const word = v.word.trim();
+      if(!word) return;
+      const pattern = new RegExp('\\b' + escapeRegExp(word) + '\\b', 'gi');
+      working = working.replace(pattern, (match) => {
+        const tokenId = '\u0000VOCAB' + tokens.length + '\u0000';
+        tokens.push({ match, word: v.word, pos: v.pos || '', meaning: v.meaning || '', hindi: v.hindi || '' });
+        return tokenId;
+      });
+    });
+    tokens.forEach((t, i) => {
+      const tokenId = '\u0000VOCAB' + i + '\u0000';
+      const span = '<span class="vocabWord" data-word="' + escapeHtml(t.word) + '" data-pos="' + escapeHtml(t.pos) + '" data-meaning="' + escapeHtml(t.meaning) + '" data-hindi="' + escapeHtml(t.hindi) + '">' + t.match + '</span>';
+      working = working.split(tokenId).join(span);
+    });
+    return working;
+  }
+
   function applyEdFontSize(){
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl) contentEl.style.fontSize = edFontSize + 'px';
@@ -19738,10 +19825,17 @@ if('serviceWorker' in navigator){
     if(headerTitle) headerTitle.textContent = e.title;
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl){
-      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${e.title}</div>
-        <p style="line-height:1.85;">${e.html}</p>`;
+      const paras = splitIntoReadUnits(e.html);
+      const paraHtml = paras.map((p, i) => {
+        const highlighted = highlightVocabInHtml(p, e.vocab);
+        const ms = edComputeReadMs(p);
+        return `<p class="gkP gkReadUnit" data-ridx="${i}" data-ms="${ms}" style="line-height:1.85;">${highlighted}</p>`;
+      }).join('');
+      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${escapeHtml(e.title)}</div>
+        ${paraHtml}`;
       contentEl.scrollTop = 0;
     }
+    resetEdReadingState();
     const scrollEl = document.getElementById('calcPage-editorialreader');
     if(scrollEl) scrollEl.scrollTop = 0;
     applyEdFontSize();
@@ -19753,12 +19847,183 @@ if('serviceWorker' in navigator){
   }
 
   function updateEdProgress(){
+    if(edAutoScrollOn) return; // auto-scroll ke waqt fill per-paragraph timer control karta hai
     const scrollEl = document.getElementById('calcPage-editorialreader');
     const fill = document.getElementById('edReadProgressFill');
     if(!scrollEl || !fill) return;
     const max = scrollEl.scrollHeight - scrollEl.clientHeight;
     const pct = max > 0 ? (scrollEl.scrollTop / max) * 100 : 0;
     fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  // ===== Auto-scroll (GK Reader jaisa hi paragraph-snap engine, editorial ke liye) =====
+  const ED_AUTOSCROLL_SPEEDS = [0.5, 1, 1.5, 2];
+  let edAutoScrollOn = false;
+  let edAutoScrollSpeedIdx = 1;
+  let edAutoScrollWakeLock = null;
+  let edReadUnits = [];
+  let edActiveUnitIdx = -1;
+  let edUnitTimerId = null;
+  let edUnitDeadlineTs = null;
+  let edUnitRemainingMs = null;
+
+  function edGetScrollEl(){ return document.getElementById('calcPage-editorialreader'); }
+  function edGetContentEl(){ return document.getElementById('edReaderContent'); }
+  function edGetProgressFillEl(){ return document.getElementById('edReadProgressFill'); }
+
+  function updateEdAutoScrollUI(){
+    const playBtn = document.getElementById('edAutoScrollPlayBtn');
+    const speedBtn = document.getElementById('edAutoScrollSpeedBtn');
+    if(playBtn){
+      playBtn.innerHTML = edAutoScrollOn ? '&#10074;&#10074;' : '&#9654;';
+      playBtn.setAttribute('aria-label', edAutoScrollOn ? 'Pause auto scroll' : 'Play auto scroll');
+      playBtn.classList.toggle('gkAutoScrollPlaying', edAutoScrollOn);
+    }
+    if(speedBtn) speedBtn.textContent = ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx] + 'x';
+    const bar = document.getElementById('edReadProgressBar');
+    if(bar) bar.classList.toggle('gkReadProgressBar-on', edAutoScrollOn);
+  }
+
+  async function edRequestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        edAutoScrollWakeLock = await navigator.wakeLock.request('screen');
+        edAutoScrollWakeLock.addEventListener('release', () => { edAutoScrollWakeLock = null; });
+      }
+    }catch(e){}
+  }
+  function edReleaseWakeLock(){
+    if(edAutoScrollWakeLock){ edAutoScrollWakeLock.release().catch(()=>{}); edAutoScrollWakeLock = null; }
+  }
+
+  function edStartProgressFill(ms){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    void fill.offsetWidth;
+    fill.style.transition = `width ${ms}ms linear`;
+    fill.style.width = '100%';
+  }
+  function edFreezeProgressFill(){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    const currentWidth = getComputedStyle(fill).width;
+    fill.style.transition = 'none';
+    fill.style.width = currentWidth;
+  }
+  function edResetProgressFill(){
+    const fill = edGetProgressFillEl();
+    if(!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+  }
+
+  function edRefreshReadUnits(){
+    const contentEl = edGetContentEl();
+    edReadUnits = contentEl ? Array.from(contentEl.querySelectorAll('.gkReadUnit')) : [];
+  }
+  function edClearUnitTimer(){
+    if(edUnitTimerId){ clearTimeout(edUnitTimerId); edUnitTimerId = null; }
+  }
+  function edScrollUnitIntoView(idx){
+    const el = edReadUnits[idx];
+    const scrollEl = edGetScrollEl();
+    if(!el || !scrollEl) return;
+    const targetTop = scrollEl.scrollTop + (el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top) - 14;
+    scrollEl.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  }
+  function edArmUnitTimer(ms){
+    edClearUnitTimer();
+    edUnitDeadlineTs = Date.now() + ms;
+    edUnitRemainingMs = ms;
+    edStartProgressFill(ms);
+    edUnitTimerId = setTimeout(edAdvanceToNextUnit, ms);
+  }
+  function edAdvanceToNextUnit(){
+    edClearUnitTimer();
+    if(edActiveUnitIdx >= edReadUnits.length - 1){
+      edStopAutoScroll(true);
+      return;
+    }
+    edActiveUnitIdx += 1;
+    edScrollUnitIntoView(edActiveUnitIdx);
+    const ms = (parseInt(edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000) / ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx];
+    edArmUnitTimer(ms);
+  }
+  function edFindVisibleUnitIdx(){
+    const scrollEl = edGetScrollEl();
+    if(!scrollEl || !edReadUnits.length) return 0;
+    const scrollTopEdge = scrollEl.getBoundingClientRect().top + 20;
+    let best = 0;
+    for(let i = 0; i < edReadUnits.length; i++){
+      if(edReadUnits[i].getBoundingClientRect().top <= scrollTopEdge) best = i;
+      else break;
+    }
+    return best;
+  }
+  function edStartAutoScroll(){
+    edRefreshReadUnits();
+    if(!edReadUnits.length) return;
+    edAutoScrollOn = true;
+    updateEdAutoScrollUI();
+    edRequestWakeLock();
+    edActiveUnitIdx = edFindVisibleUnitIdx() - 1;
+    if(edActiveUnitIdx < -1) edActiveUnitIdx = -1;
+    edAdvanceToNextUnit();
+  }
+  function edStopAutoScroll(reachedEnd){
+    edAutoScrollOn = false;
+    edClearUnitTimer();
+    edFreezeProgressFill();
+    edReleaseWakeLock();
+    updateEdAutoScrollUI();
+    if(reachedEnd){
+      edResetProgressFill();
+      edActiveUnitIdx = -1;
+      edUnitRemainingMs = null;
+      edUnitDeadlineTs = null;
+    }
+  }
+  function resetEdReadingState(){
+    edStopAutoScroll(false);
+    edActiveUnitIdx = -1;
+    edUnitRemainingMs = null;
+    edUnitDeadlineTs = null;
+    edResetProgressFill();
+    edReadUnits = [];
+  }
+  function edPauseAutoScroll(){
+    if(!edAutoScrollOn) return;
+    edUnitRemainingMs = edUnitDeadlineTs ? Math.max(300, edUnitDeadlineTs - Date.now()) : edUnitRemainingMs;
+    edAutoScrollOn = false;
+    edClearUnitTimer();
+    edFreezeProgressFill();
+    edReleaseWakeLock();
+    updateEdAutoScrollUI();
+  }
+  function edResumeAutoScroll(){
+    edRefreshReadUnits();
+    if(!edReadUnits.length) return;
+    edAutoScrollOn = true;
+    updateEdAutoScrollUI();
+    edRequestWakeLock();
+    if(edActiveUnitIdx < 0){ edAdvanceToNextUnit(); return; }
+    const ms = edUnitRemainingMs || (parseInt((edReadUnits[edActiveUnitIdx]||{}).getAttribute && edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000);
+    edArmUnitTimer(ms);
+  }
+  function edToggleAutoScroll(){
+    if(edAutoScrollOn) edPauseAutoScroll();
+    else if(edActiveUnitIdx >= 0 && edActiveUnitIdx < edReadUnits.length - 1 && edUnitRemainingMs) edResumeAutoScroll();
+    else edStartAutoScroll();
+  }
+  function edCycleAutoScrollSpeed(){
+    edAutoScrollSpeedIdx = (edAutoScrollSpeedIdx + 1) % ED_AUTOSCROLL_SPEEDS.length;
+    updateEdAutoScrollUI();
+    if(edAutoScrollOn && edUnitDeadlineTs){
+      const remainingAtOldSpeed = Math.max(300, edUnitDeadlineTs - Date.now());
+      edArmUnitTimer(remainingAtOldSpeed);
+    }
   }
 
   function openEditorialReader(catId, index){
@@ -19794,12 +20059,22 @@ if('serviceWorker' in navigator){
     if(ov) ov.classList.remove('open');
   }
 
-  function showVocabPopup(word, pos, meaning){
+  function showVocabPopup(word, pos, meaning, hindi){
     const overlay = document.getElementById('vocabPopupOverlay');
     const wordEl = document.getElementById('vocabPopupWord');
     const meaningEl = document.getElementById('vocabPopupMeaning');
+    const hindiEl = document.getElementById('vocabPopupHindi');
     if(wordEl) wordEl.textContent = word + (pos ? ' (' + pos + ')' : '');
     if(meaningEl) meaningEl.textContent = meaning;
+    if(hindiEl){
+      if(hindi && hindi.trim()){
+        hindiEl.textContent = hindi;
+        hindiEl.classList.add('show');
+      } else {
+        hindiEl.textContent = '';
+        hindiEl.classList.remove('show');
+      }
+    }
     if(overlay) overlay.classList.add('open');
   }
   function hideVocabPopup(){
@@ -19821,6 +20096,7 @@ if('serviceWorker' in navigator){
 
     const readerBackBtn = document.getElementById('edReaderBackBtn');
     if(readerBackBtn) readerBackBtn.addEventListener('click', () => {
+      resetEdReadingState();
       closeEdReaderListOverlay();
       if(edCurrentCatId) openEditorialCategory(edCurrentCatId);
       else showCalcPage('editorialmenu');
@@ -19858,14 +20134,38 @@ if('serviceWorker' in navigator){
     const contentEl = document.getElementById('edReaderContent');
     if(contentEl) contentEl.addEventListener('click', (e) => {
       const w = e.target.closest('.vocabWord');
-      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning);
+      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning, w.dataset.hindi);
     });
-    if(contentEl) contentEl.addEventListener('scroll', updateEdProgress, {passive:true});
+    const edScrollElForProgress = edGetScrollEl();
+    if(edScrollElForProgress) edScrollElForProgress.addEventListener('scroll', updateEdProgress, {passive:true});
 
     const popupOverlay = document.getElementById('vocabPopupOverlay');
     if(popupOverlay) popupOverlay.addEventListener('click', (e) => { if(e.target === popupOverlay) hideVocabPopup(); });
     const popupClose = document.getElementById('vocabPopupClose');
     if(popupClose) popupClose.addEventListener('click', hideVocabPopup);
+
+    // ----- Auto-scroll wiring -----
+    const edAutoScrollPlayBtn = document.getElementById('edAutoScrollPlayBtn');
+    if(edAutoScrollPlayBtn) edAutoScrollPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); edToggleAutoScroll(); });
+    const edAutoScrollSpeedBtn = document.getElementById('edAutoScrollSpeedBtn');
+    if(edAutoScrollSpeedBtn) edAutoScrollSpeedBtn.addEventListener('click', (e) => { e.stopPropagation(); edCycleAutoScrollSpeed(); });
+
+    const edAutoScrollScrollEl = edGetScrollEl();
+    if(edAutoScrollScrollEl){
+      ['touchstart','mousedown','wheel'].forEach(evt => {
+        edAutoScrollScrollEl.addEventListener(evt, (e) => {
+          if(!edAutoScrollOn) return;
+          if(e.target && e.target.closest && e.target.closest('.gkAutoScrollFab')) return;
+          edPauseAutoScroll();
+        }, {passive:true});
+      });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible' && edAutoScrollOn && !edAutoScrollWakeLock){
+        edRequestWakeLock();
+      }
+    });
+    updateEdAutoScrollUI();
   }
 
   if(document.readyState === 'loading'){

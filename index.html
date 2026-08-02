@@ -2773,7 +2773,8 @@
   body.gkReaderFullscreen .viewbar,
   body.gkReaderFullscreen .tabbar,
   body.gkReaderFullscreen .quickStudyBtn{display:none !important;}
-  #calcPage-gkreader.active{
+  #calcPage-gkreader.active,
+  #calcPage-editorialreader.active{
     display:block;position:fixed;inset:0;z-index:200;
     overflow-y:auto;-webkit-overflow-scrolling:touch;
     background:
@@ -2923,6 +2924,8 @@
     border:none;background:rgba(255,255,255,0.08);color:#fff;font-size:14px;cursor:pointer;}
   .vocabPopupWord{font-size:19px;font-weight:800;color:#fff;margin-bottom:10px;}
   .vocabPopupMeaning{font-size:15px;line-height:1.55;color:#e5e7eb;font-weight:600;}
+  .vocabPopupHindi{font-size:15px;line-height:1.55;color:#fbbf24;font-weight:600;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);display:none;}
+  .vocabPopupHindi.show{display:block;}
   .gkReaderContent .gkH2{font-size:1.12em;font-weight:800;color:#fff;
     margin:28px 0 12px;padding:10px 14px;border-radius:12px;
     background:linear-gradient(90deg, rgba(56,189,248,0.16), rgba(167,139,250,0.10) 60%, transparent);
@@ -3818,23 +3821,23 @@
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
-      </div>
-
-      <div class="grid-label">📗 English</div>
-      <div class="calcGrid calcGrid-1col">
-        <button class="calcCard calcCard-vocab" id="calcEnglishVocabHubBtn" data-calc="englishvocabmenu">
-          <span class="calcIcon calcIcon-vocab">📚</span>
+        <button class="calcCard calcCard-gkFeatured" id="calcEnglishVocabHubBtn" data-calc="englishvocabmenu">
+          <span class="calcIcon calcIcon-gkFeatured">📚</span>
           <span class="calcLabelCol">
             <span class="calcLabel">English Vocab</span>
             <span class="calcSub">Vocab Quiz · Idioms &amp; Phrases · Phrasal Verbs · Spelling · Homophones · Prepositions</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
+      </div>
+
+      <div class="grid-label">📗 English</div>
+      <div class="calcGrid calcGrid-1col">
         <button class="calcCard calcCard-statement" id="calcEnglishFullMockBtn" data-calc="emmocksmenu">
           <span class="calcIcon calcIcon-statement">📗</span>
           <span class="calcLabelCol">
             <span class="calcLabel">English Mocks</span>
-            <span class="calcSub">CPO Mains (36) · CGL Pre (78) · CPO Pre (41) · Hard English (68)</span>
+            <span class="calcSub">CPO Mains (36) · CGL Pre (78) · CPO Pre (41) · English Sectional (134)</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -4039,22 +4042,6 @@
         <div class="calcSubTitle">🧠 Reasoning Mocks — Choose Type</div>
       </div>
       <div class="calcGrid calcGrid-1col">
-        <button class="calcCard calcCard-statement" id="calcReasoningMockSPBtn">
-          <span class="calcIcon calcIcon-statement">🔥</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">Super Mocks</span>
-            <span class="calcSub">101 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
-        <button class="calcCard calcCard-statement" id="calcReasoningMockP75Btn">
-          <span class="calcIcon calcIcon-statement">🆕</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">75-Day Practice</span>
-            <span class="calcSub">57 Mocks · 25 Qs each (mixed, all chapters) · 15 min</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
         <button class="calcCard calcCard-statement" id="calcReasoningMockConceptBtn">
           <span class="calcIcon calcIcon-statement">🧮</span>
           <span class="calcLabelCol">
@@ -4730,22 +4717,6 @@
       </div>
       <div class="calcGrid calcGrid-1col" id="emmocksTypeGrid"></div>
       <div class="calcGrid calcGrid-1col">
-        <button class="calcCard calcCard-statement" id="calcEnglishMockSPBtn" data-calc="englishmock" data-eng-src="sp">
-          <span class="calcIcon calcIcon-statement">🔥</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">Super Mocks</span>
-            <span class="calcSub">108 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
-        <button class="calcCard calcCard-statement" id="calcEnglishMockP75Btn" data-calc="englishmock" data-eng-src="p75">
-          <span class="calcIcon calcIcon-statement">🆕</span>
-          <span class="calcLabelCol">
-            <span class="calcLabel">75-Day Practice</span>
-            <span class="calcSub">49 Mocks · 25 Qs each (mixed, all English topics) · 15 min</span>
-          </span>
-          <span class="calcArrow">&#8250;</span>
-        </button>
         <button class="calcCard calcCard-statement" id="calcEnglishMockConceptBtn" data-calc="englishmock" data-eng-src="concept">
           <span class="calcIcon calcIcon-statement">🧮</span>
           <span class="calcLabelCol">
@@ -5463,6 +5434,10 @@
       <div class="gkReaderTitle" id="edReaderTitle" style="display:none;">&nbsp;</div>
       <div class="gkReadProgressBar" id="edReadProgressBar"><div class="gkReadProgressFill" id="edReadProgressFill"></div></div>
       <div class="gkReaderContent" id="edReaderContent"></div>
+      <div class="gkAutoScrollFab" id="edAutoScrollFab">
+        <button class="gkAutoScrollSpeedBtn" id="edAutoScrollSpeedBtn" aria-label="Auto-scroll speed">1x</button>
+        <button class="gkAutoScrollPlayBtn" id="edAutoScrollPlayBtn" aria-label="Play auto scroll">&#9654;</button>
+      </div>
       <div class="gkReaderFooter">
         <div class="gkReaderFooterRow gkReaderFooterRow-top">
           <button class="gkReaderBackBtn" id="edReaderBackBtn" aria-label="Back">&#8249;</button>
@@ -5490,6 +5465,7 @@
           <button class="vocabPopupClose" id="vocabPopupClose" aria-label="Close">&#10005;</button>
           <div class="vocabPopupWord" id="vocabPopupWord"></div>
           <div class="vocabPopupMeaning" id="vocabPopupMeaning"></div>
+          <div class="vocabPopupHindi" id="vocabPopupHindi"></div>
         </div>
       </div>
     </div>
