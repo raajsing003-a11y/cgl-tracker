@@ -18047,23 +18047,11 @@ function drawAppIcon(size){
   ctx.fillText('TRACKER', size/2, size/2+size*0.198);
   return canvas.toDataURL('image/png');
 }
-// A no-op service worker (registered via Blob URL, so still zero companion
-// files on GitHub) is required for Chrome/Android to reliably fire the real
-// beforeinstallprompt event — without one, Chrome usually falls back to the
-// manual "Add to Home Screen" bookmark instead of the proper install banner.
-// It does NOT cache anything (network passthrough only), so you always see
-// the latest version of this file — no stale-data risk.
-function registerNoopServiceWorker(){
-  if(!('serviceWorker' in navigator)) return;
-  if(!(location.protocol === 'https:' || location.hostname === 'localhost')) return;
-  try{
-    const swCode = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',function(){});";
-    const swBlob = new Blob([swCode], {type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
-  }catch(e){}
-}
+// Service worker registration ab sirf ek jagah hoti hai — './sw.js' ke
+// through, file ke bottom mein. Pehle yahan ek dusra blob-URL noop SW bhi
+// registered hota tha isi scope ('/') pe, jo real sw.js ke saath race/conflict
+// create karta tha aur naye deploys stale dikhte the. Hataya gaya.
 async function setupHomeScreenIcon(){
-  registerNoopServiceWorker();
   try{
     const icon192 = drawAppIcon(192);
     const icon512 = drawAppIcon(512);
@@ -19624,8 +19612,50 @@ window.addEventListener('pagehide', ()=>{ save(); if(findRunningTaskIdx()!==unde
 })();
 
 // Real, static service worker file (for PWABuilder / Android packaging).
+// Jab bhi naya sw.js deploy hota hai aur woh activate ho jaata hai, ek
+// chhota non-intrusive banner dikhata hai — user apni marzi se tap karke
+// refresh karega. Koi force reload nahi, isliye beech mein quiz/timer
+// chal raha ho toh unsaved progress loss nahi hoga.
+function showUpdateAvailableBanner(){
+  if(document.getElementById('swUpdateBanner')) return; // already shown
+  const bar = document.createElement('div');
+  bar.id = 'swUpdateBanner';
+  bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#111827;color:#fbbf24;font-size:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.5);border-top:1px solid #fbbf24;';
+  bar.innerHTML = '<span>Naya update available hai.</span>';
+  const btn = document.createElement('button');
+  btn.textContent = 'Refresh karo';
+  btn.style.cssText = 'background:#fbbf24;color:#0a0a0a;border:none;border-radius:6px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer;flex-shrink:0;';
+  btn.onclick = function(){ location.reload(); };
+  bar.appendChild(btn);
+  document.body.appendChild(bar);
+}
+
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').then(function(registration){
+    // Case 1: naya SW pehle se waiting state mein hai (registration ke waqt hi)
+    if(registration.waiting){
+      showUpdateAvailableBanner();
+    }
+    // Case 2: naya SW install ho raha hai isi session mein
+    registration.addEventListener('updatefound', function(){
+      const newWorker = registration.installing;
+      if(!newWorker) return;
+      newWorker.addEventListener('statechange', function(){
+        if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+          // Purana SW already control kar raha tha, naya install ho gaya = update available
+          showUpdateAvailableBanner();
+        }
+      });
+    });
+  }).catch(function(){});
+
+  // Jab naya SW asli control le leta hai (activate ho ke), ye fire hota hai.
+  // Agar user ne banner tap karke reload kiya hai, tabhi ye path chalega.
+  let refreshingAlready = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(refreshingAlready) return;
+    refreshingAlready = true;
+  });
 }
 
 // ===== Editorial Reading (SSC CGL) =====
