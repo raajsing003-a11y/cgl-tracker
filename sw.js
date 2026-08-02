@@ -141,12 +141,13 @@
 // would keep serving the old single-chapter sectionals, the stale
 // chapter-pure P75_MATH_SETS, and the hidden 75-Day Practice source card,
 // so it must be evicted.
-// Bumped v24 -> v25: Super Practice (Computer/GK/Reasoning/English/Math)
-// and 75 Days Practice (Reasoning/English) content was rebuilt — new/renamed
-// mock_*.json files, corrected chapter/type titles, and manifest.json
-// changes in superpractice/ and practice75/. Old v24 cache would keep
-// serving the stale mock files and manifest, so it must be evicted too.
-const CACHE_NAME = 'exam-tracker-v25';
+// Bumped v25 -> v26: Super Practice Quant chapters reordered to match the
+// Oliveboard curriculum sequence, Math chapters/levels reordered the same
+// way, GK regrouped subject-wise (History/Polity/Economy/... -> subtopics),
+// and 75-Day Practice Quant's "Sectional Mock" category removed. Old v25
+// cache would keep serving the stale alphabetical ordering and flat GK
+// list, so it must be evicted.
+const CACHE_NAME = 'exam-tracker-v26';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

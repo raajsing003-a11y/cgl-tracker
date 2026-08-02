@@ -15811,6 +15811,8 @@ async function openSPSubject(key, label){
   const searchBox = document.getElementById('superpracticeSearchInput');
   if(searchBox) searchBox.value = '';
   spOpenChapter = null;
+  spOpenGKSubject = null;
+  spOpenGKSubtopic = null;
   renderSPMockGrid(entries);
 }
 
@@ -15848,6 +15850,59 @@ const OLIVEBOARD_MATH_LABEL_ORDER = [
   "Speed Improvement","Revision"
 ];
 
+// Canonical order for the 'quant' subject (21 broader buckets — different
+// granularity than 'math'). Sectional Mock and Mixed Practice always last,
+// matching how Oliveboard's own quant list ends.
+const OLIVEBOARD_QUANT_CHAPTER_ORDER = [
+  "Number System","HCF & LCM","Simplification","Percentage","Ratio & Proportion",
+  "Average","Profit & Loss","Mixture & Alligation","Simple & Compound Interest",
+  "Time & Work","Pipes & Cisterns","Time, Speed & Distance","Algebra","Trigonometry",
+  "Height & Distance","Mensuration (2D)","Mensuration (3D)","Statistics","Probability",
+  "Sectional Mock","Mixed Practice"
+];
+
+// GK 'topic' strings are "Subject: Subtopic" (e.g. "Ancient History: Mauryan
+// Empire"). This canonical order controls which Subject button appears
+// first — subtopics within a subject are just sorted alphabetically.
+const GK_SUBJECT_ORDER = [
+  "Ancient History","Medieval History","Modern History","Polity","Economy",
+  "Geography","Physics","Chemistry","Biology","Art and Culture","Static GK",
+  "Census, Reports and Schemes"
+];
+function parseGKTopic(topic){
+  const t = (topic || '').trim();
+  const idx = t.indexOf(':');
+  if(idx === -1) return { subject: 'Other', subtopic: t || 'Mixed Practice' };
+  return { subject: t.slice(0, idx).trim(), subtopic: t.slice(idx + 1).trim() };
+}
+// Two-level version of groupSPEntries, used only for the 'gk' subject:
+// Subject -> [ { subtopic, items } ], subjects and subtopics each sorted.
+function groupGKEntries(entries){
+  const bySubject = new Map();
+  entries.forEach(e => {
+    const { subject, subtopic } = parseGKTopic(e.topic);
+    if(!bySubject.has(subject)) bySubject.set(subject, new Map());
+    const bySub = bySubject.get(subject);
+    if(!bySub.has(subtopic)) bySub.set(subtopic, []);
+    bySub.get(subtopic).push(e);
+  });
+  const subjects = Array.from(bySubject.entries()).map(([subject, subMap]) => {
+    const subtopics = Array.from(subMap.entries()).map(([subtopic, items]) => ({ subtopic, items }));
+    subtopics.sort((a, b) => a.subtopic.localeCompare(b.subtopic));
+    const count = subtopics.reduce((s, x) => s + x.items.length, 0);
+    return { subject, subtopics, count };
+  });
+  subjects.sort((a, b) => {
+    const ai = GK_SUBJECT_ORDER.indexOf(a.subject);
+    const bi = GK_SUBJECT_ORDER.indexOf(b.subject);
+    if(ai === -1 && bi === -1) return a.subject.localeCompare(b.subject);
+    if(ai === -1) return 1;
+    if(bi === -1) return -1;
+    return ai - bi;
+  });
+  return subjects;
+}
+
 function groupSPEntries(entries){
   const map = new Map();
   entries.forEach(e => {
@@ -15856,8 +15911,7 @@ function groupSPEntries(entries){
     map.get(key).push(e);
   });
   const chapters = Array.from(map.entries()).map(([topic, items]) => ({ topic, items }));
-  const useOliveboardOrder = spCurrentSubjectKey === 'math';
-  if(useOliveboardOrder){
+  if(spCurrentSubjectKey === 'math'){
     chapters.forEach(ch => {
       ch.items.sort((a, b) => {
         const ai = OLIVEBOARD_MATH_LABEL_ORDER.indexOf((a.label || '').trim());
@@ -15868,6 +15922,15 @@ function groupSPEntries(entries){
     chapters.sort((a, b) => {
       const ai = OLIVEBOARD_MATH_CHAPTER_ORDER.indexOf(a.topic);
       const bi = OLIVEBOARD_MATH_CHAPTER_ORDER.indexOf(b.topic);
+      if(ai === -1 && bi === -1) return a.topic.localeCompare(b.topic);
+      if(ai === -1) return 1;
+      if(bi === -1) return -1;
+      return ai - bi;
+    });
+  } else if(spCurrentSubjectKey === 'quant'){
+    chapters.sort((a, b) => {
+      const ai = OLIVEBOARD_QUANT_CHAPTER_ORDER.indexOf(a.topic);
+      const bi = OLIVEBOARD_QUANT_CHAPTER_ORDER.indexOf(b.topic);
       if(ai === -1 && bi === -1) return a.topic.localeCompare(b.topic);
       if(ai === -1) return 1;
       if(bi === -1) return -1;
@@ -15884,8 +15947,96 @@ function groupSPEntries(entries){
 }
 
 let spOpenChapter = null; // currently expanded chapter name, or null
+let spOpenGKSubject = null;  // currently expanded GK subject, or null
+let spOpenGKSubtopic = null; // currently expanded GK subtopic, or null
+
+function renderSPMockRows(items, body){
+  items.forEach((e, idx) => {
+    const done = isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
+    const rowLabel = (e.label || e.topic || ('Level ' + (idx + 1)));
+    const row = document.createElement('button');
+    row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
+    row.innerHTML =
+      '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
+      '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
+    row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
+    body.appendChild(row);
+  });
+  const lastRow = body.lastElementChild;
+  if(lastRow) lastRow.style.borderBottom = 'none';
+}
+
+function renderSPMockGridGK(entries){
+  const grid = document.getElementById('superpracticeListGrid');
+  if(!grid) return;
+  grid.classList.remove('calcGrid', 'calcGrid-2col');
+  grid.innerHTML = '';
+  const subjects = groupGKEntries(entries);
+  if(!subjects.length){
+    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
+    return;
+  }
+  subjects.forEach(subj => {
+    const isSubjOpen = spOpenGKSubject === subj.subject;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);';
+
+    const header = document.createElement('button');
+    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:transparent;border:none;text-align:left;font-size:15px;font-weight:600;cursor:pointer;color:inherit;';
+    header.innerHTML =
+      '<span>' + escapeHtml(subj.subject) + '</span>' +
+      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted);">' +
+        subj.count + ' mocks' +
+        '<span style="display:inline-block;transform:rotate(' + (isSubjOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
+      '</span>';
+    header.addEventListener('click', () => {
+      spOpenGKSubject = isSubjOpen ? null : subj.subject;
+      spOpenGKSubtopic = null;
+      renderSPMockGridGK(entries);
+    });
+    wrap.appendChild(header);
+
+    if(isSubjOpen){
+      const body = document.createElement('div');
+      body.style.cssText = 'border-top:1px solid var(--border);';
+      subj.subtopics.forEach(st => {
+        const isSubOpen = spOpenGKSubtopic === st.subtopic;
+        const subWrap = document.createElement('div');
+        subWrap.style.cssText = 'border-bottom:1px solid var(--border);';
+
+        const subHeader = document.createElement('button');
+        subHeader.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px 12px 24px;background:transparent;border:none;text-align:left;font-size:14px;font-weight:500;cursor:pointer;color:inherit;';
+        subHeader.innerHTML =
+          '<span>' + escapeHtml(st.subtopic) + '</span>' +
+          '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:12px;color:var(--muted);">' +
+            st.items.length + ' mocks' +
+            '<span style="display:inline-block;transform:rotate(' + (isSubOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
+          '</span>';
+        subHeader.addEventListener('click', () => {
+          spOpenGKSubtopic = isSubOpen ? null : st.subtopic;
+          renderSPMockGridGK(entries);
+        });
+        subWrap.appendChild(subHeader);
+
+        if(isSubOpen){
+          const innerBody = document.createElement('div');
+          innerBody.style.cssText = 'background:var(--bg,transparent);';
+          renderSPMockRows(st.items, innerBody);
+          subWrap.appendChild(innerBody);
+        }
+        body.appendChild(subWrap);
+      });
+      const lastSub = body.lastElementChild;
+      if(lastSub) lastSub.style.borderBottom = 'none';
+      wrap.appendChild(body);
+    }
+
+    grid.appendChild(wrap);
+  });
+}
 
 function renderSPMockGrid(entries){
+  if(spCurrentSubjectKey === 'gk'){ renderSPMockGridGK(entries); return; }
   const grid = document.getElementById('superpracticeListGrid');
   if(!grid) return;
   grid.classList.remove('calcGrid', 'calcGrid-2col');
@@ -15917,19 +16068,7 @@ function renderSPMockGrid(entries){
     if(isOpen){
       const body = document.createElement('div');
       body.style.cssText = 'border-top:1px solid var(--border);';
-      ch.items.forEach((e, idx) => {
-        const done = isQuizSetAttempted('spnative', spCurrentSubjectKey + '/' + e.file);
-        const rowLabel = (e.label || e.topic || ('Level ' + (idx + 1)));
-        const row = document.createElement('button');
-        row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;border:none;border-bottom:1px solid var(--border);text-align:left;cursor:pointer;font-size:14px;color:inherit;';
-        row.innerHTML =
-          '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
-          '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
-        row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
-        body.appendChild(row);
-      });
-      const lastRow = body.lastElementChild;
-      if(lastRow) lastRow.style.borderBottom = 'none';
+      renderSPMockRows(ch.items, body);
       wrap.appendChild(body);
     }
 
@@ -15939,8 +16078,21 @@ function renderSPMockGrid(entries){
 
 function filterSPMockGrid(query){
   const q = (query || '').trim().toLowerCase();
-  if(!q){ spOpenChapter = null; renderSPMockGrid(spCurrentEntries); return; }
+  if(!q){
+    spOpenChapter = null; spOpenGKSubject = null; spOpenGKSubtopic = null;
+    renderSPMockGrid(spCurrentEntries);
+    return;
+  }
   const filtered = spCurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
+  if(spCurrentSubjectKey === 'gk'){
+    const subjects = groupGKEntries(filtered);
+    if(subjects.length === 1){
+      spOpenGKSubject = subjects[0].subject;
+      spOpenGKSubtopic = subjects[0].subtopics.length === 1 ? subjects[0].subtopics[0].subtopic : null;
+    }
+    renderSPMockGridGK(filtered);
+    return;
+  }
   const chapters = groupSPEntries(filtered);
   if(chapters.length === 1) spOpenChapter = chapters[0].topic;
   renderSPMockGrid(filtered);
