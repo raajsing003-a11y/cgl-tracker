@@ -8003,7 +8003,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
@@ -10741,6 +10741,208 @@ function makeDigitalSumQuiz(){
   return { init, startQuiz };
 }
 const digitalsumQuiz = makeDigitalSumQuiz();
+
+// ===== Generic Calc-Set Quiz (used for Calculation Quiz — Tables/Square/
+// Cube/Mix Multiplication/Digit Addition practice sets extracted from the
+// uploaded printable sheets). Same behaviour as Digital Sum/Unit Digit
+// (Hindi-or-English language choice, then instant-reveal-per-question, no
+// timer) but parametrized so it doesn't need its own hardcoded copy of the
+// whole engine, and set labels come from topicMeta (sheet titles) instead
+// of "Set N". Solution block only renders if sol1 has actual content.
+function makeCalcSetQuiz(prefix, SETS, label, icon, mainBtnId, topicMeta, backPage){
+  const session = { setKey: null, lang: 'hi', questions: [], index: 0, correct: 0, wrong: 0, answered: false, userAnswers: [] };
+  const menuBack = backPage || 'calculationhubmenu';
+
+  function setLabel(key, count){
+    const meta = topicMeta && topicMeta[key];
+    return (meta || key) + ' (' + count + ' Qs)';
+  }
+  function buildSetPool(setKey){
+    return (SETS[setKey] || []).slice();
+  }
+  function renderSetMenu(){
+    const grid = document.getElementById(prefix + 'SetGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    Object.keys(SETS).forEach(key => {
+      const count = SETS[key].length;
+      const lbl = setLabel(key, count);
+      if(renderQuizAttemptCard(grid, prefix, key, icon, lbl, () => openLangChoice(key))) return;
+      const btn = document.createElement('button');
+      btn.className = 'calcCard';
+      btn.innerHTML =
+        '<span class="calcIcon">' + icon + '</span>' +
+        '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(lbl) + '</span></span>' +
+        '<span class="calcArrow">&#8250;</span>';
+      btn.addEventListener('click', () => openLangChoice(key));
+      grid.appendChild(btn);
+    });
+  }
+  function openLangChoice(setKey){
+    session.setKey = setKey;
+    const count = (SETS[setKey] || []).length;
+    const titleEl = document.getElementById(prefix + 'LangTitle');
+    if(titleEl) titleEl.textContent = label + ' — ' + setLabel(setKey, count);
+    showCalcPage(prefix + 'lang');
+  }
+  async function startQuiz(lang){
+    if(lang) session.lang = lang;
+    if(!session.setKey || !SETS[session.setKey]) return;
+    if(!(await window.ensureTopicReady(SETS))) return;
+    session.questions = buildSetPool(session.setKey);
+    session.index = 0;
+    session.correct = 0;
+    session.wrong = 0;
+    session.answered = false;
+    session.userAnswers = new Array(session.questions.length).fill(null);
+    const count = session.questions.length;
+    const titleEl = document.getElementById(prefix + 'QuizTitle');
+    if(titleEl) titleEl.textContent = setLabel(session.setKey, count);
+    const resultCard = document.getElementById(prefix + 'ResultCard');
+    if(resultCard) resultCard.style.display = 'none';
+    const qWrap = document.getElementById(prefix + 'QuestionWrap');
+    if(qWrap) qWrap.style.display = '';
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(ansGrid) ansGrid.style.display = '';
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    updateStats();
+    renderQuestion();
+    showCalcPage(prefix);
+  }
+  function updateStats(){
+    const c = document.getElementById(prefix + 'StatCorrect');
+    const w = document.getElementById(prefix + 'StatWrong');
+    const p = document.getElementById(prefix + 'StatProgress');
+    if(c) c.textContent = session.correct;
+    if(w) w.textContent = session.wrong;
+    if(p) p.textContent = 'Q ' + Math.min(session.index + 1, session.questions.length) + '/' + session.questions.length;
+  }
+  function nextTopRowEl(){
+    const btn = document.getElementById(prefix + 'NextBtnTop');
+    return btn ? btn.closest('.calcNextTopRow') : null;
+  }
+  function renderQuestion(){
+    const q = session.questions[session.index];
+    if(!q){ endQuiz(); return; }
+    session.answered = false;
+    const badgeEl = document.getElementById(prefix + 'ExamBadge');
+    if(badgeEl) badgeEl.textContent = icon + ' ' + (q.exam || label);
+    const wordEl = document.getElementById(prefix + 'WordText');
+    if(wordEl) wordEl.innerHTML = mathify((session.lang === 'en' ? q.en : q.hi) || '—');
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(!ansGrid) return;
+    ansGrid.innerHTML = '';
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'calcAnsBtn';
+      btn.innerHTML = mathify(opt);
+      btn.addEventListener('click', () => selectAnswer(i));
+      ansGrid.appendChild(btn);
+    });
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'none';
+    updateStats();
+  }
+  function selectAnswer(i){
+    if(session.answered) return;
+    session.answered = true;
+    const q = session.questions[session.index];
+    const correct = i === q.answer;
+    session.userAnswers[session.index] = i;
+    if(correct) session.correct++; else session.wrong++;
+    document.querySelectorAll('#' + prefix + 'AnsGrid .calcAnsBtn').forEach((b, idx) => {
+      b.classList.add('disabled');
+      if(idx === q.answer) b.classList.add('correct');
+      else if(idx === i) b.classList.add('wrong');
+    });
+    updateStats();
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    const solText = document.getElementById(prefix + 'SolutionText');
+    if(solText){
+      const verdict = correct ? '✅ Sahi Jawaab!' : '❌ Galat Jawaab.';
+      const sol1Html = formatSolSteps(q.sol1);
+      solText.innerHTML =
+        '<div style="font-size:17px;font-weight:700;color:var(--quiz-text);">' + verdict + '</div>' +
+        (sol1Html ? '<div class="dsSolBlock"><div class="dsSolLabel">Solution</div>' + sol1Html + '</div>' : '');
+    }
+    if(solCard) solCard.style.display = 'block';
+    const nextTopRow = nextTopRowEl();
+    if(nextTopRow) nextTopRow.style.display = 'flex';
+  }
+  function goToNext(){
+    session.index++;
+    if(session.index < session.questions.length) renderQuestion();
+    else endQuiz();
+  }
+  function endQuiz(){
+    const total = session.correct + session.wrong;
+    const acc = total ? Math.round((session.correct / total) * 100) : 0;
+    const qWrap = document.getElementById(prefix + 'QuestionWrap');
+    if(qWrap) qWrap.style.display = 'none';
+    const ansGrid = document.getElementById(prefix + 'AnsGrid');
+    if(ansGrid) ansGrid.style.display = 'none';
+    const solCard = document.getElementById(prefix + 'SolutionCard');
+    if(solCard) solCard.style.display = 'none';
+    const titleResult = document.getElementById(prefix + 'ResultTitle');
+    if(titleResult) titleResult.textContent = '🎉 Quiz Complete!';
+    const statsEl = document.getElementById(prefix + 'ResultStats');
+    if(statsEl){
+      statsEl.innerHTML =
+        '<div>✅ Correct: <b>' + session.correct + '</b></div>' +
+        '<div>❌ Wrong: <b>' + session.wrong + '</b></div>' +
+        '<div>🎯 Accuracy: <b>' + acc + '%</b></div>' +
+        '<div>📝 Attempted: <b>' + total + '/' + session.questions.length + '</b></div>';
+    }
+    const resultCard = document.getElementById(prefix + 'ResultCard');
+    if(resultCard) resultCard.style.display = 'block';
+    const titleEl2 = document.getElementById(prefix + 'QuizTitle');
+    logQuizActivity(titleEl2 ? titleEl2.textContent : label, session.correct, total);
+    markQuizSetAttempted(prefix, session.setKey);
+    if(session.setKey !== 'saved'){
+      saveQuizAttemptDetail(prefix, session.setKey, {
+        correct: session.correct, wrong: session.wrong, total, acc,
+        items: buildMathSolReviewItems(session.questions, session.userAnswers, session.lang)
+      });
+    }
+    ensureResultTopReattemptBtn(resultCard, () => startQuiz(session.lang));
+    renderSetMenu();
+  }
+  function init(){
+    renderSetMenu();
+    const mainBtn = document.getElementById(mainBtnId);
+    if(mainBtn) mainBtn.addEventListener('click', () => { renderSetMenu(); showCalcPage(prefix + 'menu'); });
+    const menuBackBtn = document.getElementById(prefix + 'MenuBackBtn');
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage(menuBack));
+    const langBackBtn = document.getElementById(prefix + 'LangBackBtn');
+    if(langBackBtn) langBackBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+    const langHindiBtn = document.getElementById(prefix + 'LangHindiBtn');
+    if(langHindiBtn) langHindiBtn.addEventListener('click', () => startQuiz('hi'));
+    const langEnglishBtn = document.getElementById(prefix + 'LangEnglishBtn');
+    if(langEnglishBtn) langEnglishBtn.addEventListener('click', () => startQuiz('en'));
+    const backBtn = document.getElementById(prefix + 'BackBtn');
+    if(backBtn) backBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+    const nextBtn = document.getElementById(prefix + 'NextBtn');
+    if(nextBtn) nextBtn.addEventListener('click', goToNext);
+    const nextBtnTop = document.getElementById(prefix + 'NextBtnTop');
+    if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
+    attachQuizSwipeNext('calcPage-' + prefix, goToNext);
+    const againBtn = document.getElementById(prefix + 'ResultAgainBtn');
+    if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
+    const resBackBtn = document.getElementById(prefix + 'ResultBackBtn');
+    if(resBackBtn) resBackBtn.addEventListener('click', () => showCalcPage(prefix + 'menu'));
+  }
+  return { init, startQuiz };
+}
+// 980 questions (Tables 11-36, Basic Tables/Addition, Square practice 1-9,
+// Basic Cube/Square, Mix Multiplication 1-10, 2/4-Digit Addition sets)
+// extracted from the uploaded 49 printable-sheet HTML files, split into 49
+// sets (one per original sheet) — data/topics/calcquiz.json, registered as
+// CALCQUIZ_SETS in data/index.json.
+const CALCQUIZ_TOPIC_META = {"set1":"Table of 11 Practice","set2":"Table of 12 Practice","set3":"Table of 13 Practice","set4":"Table of 14 Practice","set5":"Table of 15 Practice","set6":"Table of 16 Practice","set7":"Table of 17 Practice","set8":"Table of 18 Practice","set9":"Table of 19 Practice","set10":"Table of 21 Practice","set11":"Table of 22 Practice","set12":"Table of 23 Practice","set13":"Table of 24 Practice","set14":"Table of 25 Practice","set15":"Table of 36 Practice","set16":"Basic Tables addition - 1","set17":"Basic Tables addition - 2","set18":"Basic Tables","set19":"Basic Tables - 2","set20":"Basic Tables addition","set21":"Square practice - 1","set22":"Square practice - 2","set23":"Square practice - 3","set24":"Square practice - 4","set25":"Square practice - 5","set26":"Square practice - 6","set27":"Square practice - 7","set28":"Square practice - 8","set29":"Square practice - 9","set30":"Basic Tables addition - 2","set31":"Basic Cube practice - 1","set32":"Basic Square","set33":"Mix multiplication - 1","set34":"Mix multiplication - 2","set35":"Mix multiplication - 3","set36":"Mix multiplication - 4","set37":"Mix multiplication - 5","set38":"Mix multiplication - 6","set39":"Mix multiplication - 7","set40":"Mix multiplication - 8","set41":"Mix multiplication - 9","set42":"Mix multiplication - 10","set43":"2 Digit Addition","set44":"2 Digit Addition - 2","set45":"4 Digit Addition","set46":"4 Digit Addition - 2","set47":"4 Digit Addition - 3","set48":"4 Digit Addition - 4","set49":"4 Digit Addition - 5"};
+const calcQuizQuiz = makeCalcSetQuiz('calcquiz', CALCQUIZ_SETS, 'Calculation Quiz', '🧮', 'calcCalcQuizBtn', CALCQUIZ_TOPIC_META);
 // [data moved to data/unitdigit_sets.js]
 
 // ===== Unit Digit Quiz (Math) =====
@@ -15692,6 +15894,7 @@ function initCalcNav(){
   initReasoningQuiz();
   digitalsumQuiz.init();
   unitdigitQuiz.init();
+  calcQuizQuiz.init();
   statementQuiz.init();
   decisionmakingQuiz.init();
   seatingQuiz.init();
@@ -19424,3 +19627,220 @@ window.addEventListener('pagehide', ()=>{ save(); if(findRunningTaskIdx()!==unde
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+
+// ===== Editorial Reading (SSC CGL) =====
+(function(){
+  function getData(){ return window.EDITORIAL_DATA; }
+
+  let edCurrentCatId = null;
+  let edCurrentList = [];
+  let edCurrentIndex = 0;
+  const ED_FONT_MIN = 14, ED_FONT_MAX = 24, ED_FONT_DEFAULT = 17;
+  let edFontSize = parseInt(localStorage.getItem('editorialFontSize'), 10) || ED_FONT_DEFAULT;
+
+  function catCounts(){
+    const data = getData();
+    const counts = {};
+    if(!data) return counts;
+    data.editorials.forEach(e => { counts[e.cat] = (counts[e.cat] || 0) + 1; });
+    return counts;
+  }
+
+  function renderEditorialCategories(){
+    const data = getData();
+    const grid = document.getElementById('editorialCatGrid');
+    if(!grid) return;
+    if(!data){ grid.innerHTML = '<div style="padding:20px;opacity:0.7;">Loading…</div>'; return; }
+    const counts = catCounts();
+    grid.innerHTML = data.categories.map(c => `
+      <button class="edCatCard" data-cat="${c.id}">
+        <span class="edCatIcon">${c.icon}</span>
+        <span class="edCatName">${c.name}</span>
+        <span class="edCatCount">${counts[c.id] || 0} articles</span>
+      </button>
+    `).join('');
+    grid.querySelectorAll('.edCatCard').forEach(btn => {
+      btn.addEventListener('click', () => openEditorialCategory(btn.dataset.cat));
+    });
+  }
+
+  function getCategoryEditorials(catId){
+    const data = getData();
+    if(!data) return [];
+    return data.editorials.filter(e => e.cat === catId);
+  }
+
+  function openEditorialCategory(catId){
+    const data = getData();
+    if(!data) return;
+    edCurrentCatId = catId;
+    const list = getCategoryEditorials(catId);
+    const cat = data.categories.find(c => c.id === catId);
+    const titleEl = document.getElementById('editorialListTitle');
+    if(titleEl) titleEl.textContent = (cat ? cat.icon + ' ' + cat.name : 'Editorials');
+    const countEl = document.getElementById('editorialListCount');
+    if(countEl) countEl.textContent = list.length + ' Articles';
+    const grid = document.getElementById('editorialListGrid');
+    if(grid){
+      grid.innerHTML = list.map((e, i) => `
+        <button class="edArticleCard" data-idx="${i}">
+          <span class="edArticleIdx">${i+1}</span>
+          <span class="edArticleTitle">${e.title}</span>
+          <span class="edArticleMeta">${e.vocab.length} words</span>
+        </button>
+      `).join('');
+      grid.querySelectorAll('.edArticleCard').forEach(btn => {
+        btn.addEventListener('click', () => openEditorialReader(catId, parseInt(btn.dataset.idx, 10)));
+      });
+    }
+    showCalcPage('editoriallist');
+  }
+
+  function applyEdFontSize(){
+    const contentEl = document.getElementById('edReaderContent');
+    if(contentEl) contentEl.style.fontSize = edFontSize + 'px';
+  }
+
+  function renderEdReaderContent(){
+    const e = edCurrentList[edCurrentIndex];
+    if(!e) return;
+    const headerTitle = document.getElementById('edReaderHeaderTitle');
+    if(headerTitle) headerTitle.textContent = e.title;
+    const contentEl = document.getElementById('edReaderContent');
+    if(contentEl){
+      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${e.title}</div>
+        <p style="line-height:1.85;">${e.html}</p>`;
+      contentEl.scrollTop = 0;
+    }
+    const scrollEl = document.getElementById('calcPage-editorialreader');
+    if(scrollEl) scrollEl.scrollTop = 0;
+    applyEdFontSize();
+    const prevBtn = document.getElementById('edReaderPrevBtn');
+    const nextBtn = document.getElementById('edReaderNextBtn');
+    if(prevBtn) prevBtn.disabled = (edCurrentIndex <= 0);
+    if(nextBtn) nextBtn.disabled = (edCurrentIndex >= edCurrentList.length - 1);
+    updateEdProgress();
+  }
+
+  function updateEdProgress(){
+    const scrollEl = document.getElementById('calcPage-editorialreader');
+    const fill = document.getElementById('edReadProgressFill');
+    if(!scrollEl || !fill) return;
+    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+    const pct = max > 0 ? (scrollEl.scrollTop / max) * 100 : 0;
+    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  function openEditorialReader(catId, index){
+    edCurrentCatId = catId;
+    edCurrentList = getCategoryEditorials(catId);
+    edCurrentIndex = index;
+    showCalcPage('editorialreader');
+    renderEdReaderContent();
+  }
+
+  function openEdReaderListOverlay(){
+    const ov = document.getElementById('edReaderListOverlay');
+    const wrap = document.getElementById('edReaderListSheetGrid');
+    if(wrap){
+      wrap.innerHTML = edCurrentList.map((e, i) => `
+        <button class="edArticleCard" data-idx="${i}">
+          <span class="edArticleIdx">${i+1}</span>
+          <span class="edArticleTitle">${e.title}</span>
+        </button>
+      `).join('');
+      wrap.querySelectorAll('.edArticleCard').forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeEdReaderListOverlay();
+          edCurrentIndex = parseInt(btn.dataset.idx, 10);
+          renderEdReaderContent();
+        });
+      });
+    }
+    if(ov) ov.classList.add('open');
+  }
+  function closeEdReaderListOverlay(){
+    const ov = document.getElementById('edReaderListOverlay');
+    if(ov) ov.classList.remove('open');
+  }
+
+  function showVocabPopup(word, pos, meaning){
+    const overlay = document.getElementById('vocabPopupOverlay');
+    const wordEl = document.getElementById('vocabPopupWord');
+    const meaningEl = document.getElementById('vocabPopupMeaning');
+    if(wordEl) wordEl.textContent = word + (pos ? ' (' + pos + ')' : '');
+    if(meaningEl) meaningEl.textContent = meaning;
+    if(overlay) overlay.classList.add('open');
+  }
+  function hideVocabPopup(){
+    const overlay = document.getElementById('vocabPopupOverlay');
+    if(overlay) overlay.classList.remove('open');
+  }
+
+  function initEditorialReading(){
+    renderEditorialCategories();
+
+    const openBtn = document.getElementById('calcEditorialBtn');
+    if(openBtn) openBtn.addEventListener('click', () => { renderEditorialCategories(); showCalcPage('editorialmenu'); });
+
+    const menuBackBtn = document.getElementById('editorialMenuBackBtn');
+    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
+
+    const listBackBtn = document.getElementById('editorialListBackBtn');
+    if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('editorialmenu'));
+
+    const readerBackBtn = document.getElementById('edReaderBackBtn');
+    if(readerBackBtn) readerBackBtn.addEventListener('click', () => {
+      closeEdReaderListOverlay();
+      if(edCurrentCatId) openEditorialCategory(edCurrentCatId);
+      else showCalcPage('editorialmenu');
+    });
+
+    const fontIncBtn = document.getElementById('edFontIncBtn');
+    if(fontIncBtn) fontIncBtn.addEventListener('click', () => {
+      edFontSize = Math.min(ED_FONT_MAX, edFontSize + 1);
+      localStorage.setItem('editorialFontSize', edFontSize);
+      applyEdFontSize();
+    });
+    const fontDecBtn = document.getElementById('edFontDecBtn');
+    if(fontDecBtn) fontDecBtn.addEventListener('click', () => {
+      edFontSize = Math.max(ED_FONT_MIN, edFontSize - 1);
+      localStorage.setItem('editorialFontSize', edFontSize);
+      applyEdFontSize();
+    });
+
+    const prevBtn = document.getElementById('edReaderPrevBtn');
+    if(prevBtn) prevBtn.addEventListener('click', () => {
+      if(edCurrentIndex > 0){ edCurrentIndex--; renderEdReaderContent(); }
+    });
+    const nextBtn = document.getElementById('edReaderNextBtn');
+    if(nextBtn) nextBtn.addEventListener('click', () => {
+      if(edCurrentIndex < edCurrentList.length - 1){ edCurrentIndex++; renderEdReaderContent(); }
+    });
+
+    const listBtn = document.getElementById('edReaderListBtn');
+    if(listBtn) listBtn.addEventListener('click', () => openEdReaderListOverlay());
+    const listCloseBtn = document.getElementById('edReaderListCloseBtn');
+    if(listCloseBtn) listCloseBtn.addEventListener('click', () => closeEdReaderListOverlay());
+    const listOverlay = document.getElementById('edReaderListOverlay');
+    if(listOverlay) listOverlay.addEventListener('click', (e) => { if(e.target === listOverlay) closeEdReaderListOverlay(); });
+
+    const contentEl = document.getElementById('edReaderContent');
+    if(contentEl) contentEl.addEventListener('click', (e) => {
+      const w = e.target.closest('.vocabWord');
+      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning);
+    });
+    if(contentEl) contentEl.addEventListener('scroll', updateEdProgress, {passive:true});
+
+    const popupOverlay = document.getElementById('vocabPopupOverlay');
+    if(popupOverlay) popupOverlay.addEventListener('click', (e) => { if(e.target === popupOverlay) hideVocabPopup(); });
+    const popupClose = document.getElementById('vocabPopupClose');
+    if(popupClose) popupClose.addEventListener('click', hideVocabPopup);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initEditorialReading);
+  } else {
+    initEditorialReading();
+  }
+})();

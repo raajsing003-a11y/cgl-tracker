@@ -2892,6 +2892,37 @@
     background:linear-gradient(120deg,#7dd3fc,#c4b5fd,#f9a8d4);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     line-height:1.35;}
+  /* ===== Editorial Reading ===== */
+  .edCatGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:2px 2px 20px;}
+  .edCatCard{border:none;cursor:pointer;border-radius:16px;padding:14px 8px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    background:linear-gradient(160deg, rgba(56,189,248,0.14), rgba(167,139,250,0.08));
+    border:1px solid rgba(255,255,255,0.08);color:var(--text);
+    box-shadow:0 4px 14px rgba(0,0,0,0.18);}
+  .edCatCard .edCatIcon{font-size:28px;line-height:1;}
+  .edCatCard .edCatName{font-size:12.5px;font-weight:700;text-align:center;line-height:1.25;}
+  .edCatCard .edCatCount{font-size:10.5px;opacity:0.65;font-weight:600;}
+  .edArticleCard{width:100%;text-align:left;border:none;cursor:pointer;border-radius:14px;
+    padding:13px 14px;margin-bottom:0;display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--text);}
+  .edArticleCard .edArticleIdx{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(135deg,#38bdf8,#a78bfa);color:#0b0f14;font-weight:800;
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;}
+  .edArticleCard .edArticleTitle{flex:1;font-size:13.5px;font-weight:700;line-height:1.35;}
+  .edArticleCard .edArticleMeta{flex:0 0 auto;font-size:10.5px;opacity:0.6;}
+  .gkReaderContent .vocabWord{color:#34d399;font-weight:700;cursor:pointer;
+    border-bottom:1.5px dashed rgba(52,211,153,0.55);padding:0 1px;}
+  .gkReaderContent .vocabWord:active{opacity:0.7;}
+  .vocabPopupOverlay{position:fixed;inset:0;z-index:400;background:rgba(6,7,10,0.55);
+    display:none;align-items:center;justify-content:center;padding:24px;}
+  .vocabPopupOverlay.open{display:flex;}
+  .vocabPopupBox{position:relative;width:100%;max-width:360px;background:#2b2f38;
+    border-radius:18px;padding:24px 22px 22px;box-shadow:0 16px 40px rgba(0,0,0,0.45);
+    border:1px solid rgba(255,255,255,0.08);}
+  .vocabPopupClose{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;
+    border:none;background:rgba(255,255,255,0.08);color:#fff;font-size:14px;cursor:pointer;}
+  .vocabPopupWord{font-size:19px;font-weight:800;color:#fff;margin-bottom:10px;}
+  .vocabPopupMeaning{font-size:15px;line-height:1.55;color:#e5e7eb;font-weight:600;}
   .gkReaderContent .gkH2{font-size:1.12em;font-weight:800;color:#fff;
     margin:28px 0 12px;padding:10px 14px;border-radius:12px;
     background:linear-gradient(90deg, rgba(56,189,248,0.16), rgba(167,139,250,0.10) 60%, transparent);
@@ -3779,6 +3810,14 @@
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
+        <button class="calcCard calcCard-gkFeatured" id="calcEditorialBtn" data-calc="editorialmenu">
+          <span class="calcIcon calcIcon-gkFeatured">📰</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Editorial Reading</span>
+            <span class="calcSub">124 editorials · category-wise · tap a word for its meaning</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
       </div>
 
       <div class="grid-label">📗 English</div>
@@ -3875,6 +3914,14 @@
           <span class="calcLabelCol">
             <span class="calcLabel">Unit Digit</span>
             <span class="calcSub">85 Qs · SSC/RRB PYQs · Hindi + English</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard calcCard-digitalsum" id="calcCalcQuizBtn" data-calc="calcquiz">
+          <span class="calcIcon calcIcon-digitalsum">🧮</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Calculation Quiz</span>
+            <span class="calcSub">980 Qs · Tables, Square, Cube, Mix Multiplication, Digit Addition · Hindi + English</span>
           </span>
           <span class="calcArrow">&#8250;</span>
         </button>
@@ -5394,6 +5441,59 @@
       </div>
     </div>
 
+    <div class="calcPage" id="calcPage-editorialmenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="editorialMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">📰 Editorial Reading</div>
+      </div>
+      <div class="grid-label" style="margin-top:0;">Choose a Category</div>
+      <div class="edCatGrid" id="editorialCatGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-editoriallist">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="editorialListBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="editorialListTitle">Editorials</div>
+      </div>
+      <div class="grid-label" style="margin-top:0;" id="editorialListCount">Articles</div>
+      <div class="gkCatGrid" id="editorialListGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-editorialreader">
+      <div class="gkReaderTitle" id="edReaderTitle" style="display:none;">&nbsp;</div>
+      <div class="gkReadProgressBar" id="edReadProgressBar"><div class="gkReadProgressFill" id="edReadProgressFill"></div></div>
+      <div class="gkReaderContent" id="edReaderContent"></div>
+      <div class="gkReaderFooter">
+        <div class="gkReaderFooterRow gkReaderFooterRow-top">
+          <button class="gkReaderBackBtn" id="edReaderBackBtn" aria-label="Back">&#8249;</button>
+          <div style="flex:1;color:var(--white,#fff);font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="edReaderHeaderTitle"></div>
+          <button class="gkFontBtn gkFontBtn-dec" id="edFontDecBtn" aria-label="Decrease text size">A&minus;</button>
+          <button class="gkFontBtn gkFontBtn-inc" id="edFontIncBtn" aria-label="Increase text size">A+</button>
+        </div>
+        <div class="gkReaderFooterRow gkReaderNav">
+          <button id="edReaderPrevBtn">&#8249; Prev</button>
+          <button class="gkReaderToolBtn" id="edReaderListBtn" title="Article list">&#9776;</button>
+          <button id="edReaderNextBtn">Next &#8250;</button>
+        </div>
+      </div>
+      <div class="gkReaderListOverlay" id="edReaderListOverlay">
+        <div class="gkReaderListSheet">
+          <div class="gkReaderListSheetHead">
+            <span>Articles</span>
+            <button class="gkReaderListCloseBtn" id="edReaderListCloseBtn" aria-label="Close">&#10005;</button>
+          </div>
+          <div class="gkCatGrid" id="edReaderListSheetGrid"></div>
+        </div>
+      </div>
+      <div class="vocabPopupOverlay" id="vocabPopupOverlay">
+        <div class="vocabPopupBox" id="vocabPopupBox">
+          <button class="vocabPopupClose" id="vocabPopupClose" aria-label="Close">&#10005;</button>
+          <div class="vocabPopupWord" id="vocabPopupWord"></div>
+          <div class="vocabPopupMeaning" id="vocabPopupMeaning"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="calcPage" id="calcPage-englishvocabmenu">
       <div class="calcSubHead">
         <button class="calcBackBtn" id="englishVocabHubBackBtn" aria-label="Back">&#8249;</button>
@@ -6227,6 +6327,77 @@
         <div class="calcResultBtnRow">
           <button class="nav-btn" id="digitalsumResultAgainBtn">🔁 Practice Again</button>
           <button class="nav-btn" id="digitalsumResultBackBtn">⬅️ Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Calculation Quiz (Math) — Tables/Square/Cube/Mix Multiplication/Digit Addition ===== -->
+    <div class="calcPage" id="calcPage-calcquizmenu">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="calcquizMenuBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle">Calculation Quiz — Choose a Set</div>
+      </div>
+      <div class="calcGrid calcGrid-1col" id="calcquizSetGrid"></div>
+    </div>
+
+    <div class="calcPage" id="calcPage-calcquizlang">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="calcquizLangBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="calcquizLangTitle">Calculation Quiz</div>
+      </div>
+      <div class="dsLangIntro">Quiz kis language mein chahiye?</div>
+      <div class="calcGrid calcGrid-1col">
+        <button class="calcCard" id="calcquizLangHindiBtn">
+          <span class="calcIcon">🇮🇳</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">हिंदी (Hindi)</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+        <button class="calcCard" id="calcquizLangEnglishBtn">
+          <span class="calcIcon">🇬🇧</span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">English</span>
+          </span>
+          <span class="calcArrow">&#8250;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="calcPage" id="calcPage-calcquiz">
+      <div class="calcSubHead">
+        <button class="calcBackBtn" id="calcquizBackBtn" aria-label="Back">&#8249;</button>
+        <div class="calcSubTitle" id="calcquizQuizTitle">Calculation Quiz</div>
+      </div>
+
+      <div class="calcStatsRow">
+        <div class="calcStatPill calcStatPill-correct">✅ <span id="calcquizStatCorrect">0</span></div>
+        <div class="calcStatPill calcStatPill-wrong">❌ <span id="calcquizStatWrong">0</span></div>
+        <div class="calcStatPill" id="calcquizStatProgress" style="color:var(--muted);">Q 1/1</div>
+      </div>
+
+      <div class="calcQuestionWrap" id="calcquizQuestionWrap" style="padding:6px 2px 20px;text-align:left;">
+        <div class="dsExamBadge" id="calcquizExamBadge">🧮 Calculation Quiz</div>
+        <div class="calcQuestion" id="calcquizWordText" style="font-size:clamp(19px,5.4vw,24px);line-height:1.5;text-align:left;">—</div>
+      </div>
+
+      <div class="calcNextTopRow">
+        <button type="button" class="calcCtrlBtn calcNextTopBtn" id="calcquizNextBtnTop" aria-label="Next Question" title="Next Question">⏭</button>
+      </div>
+
+      <div class="calcAnsGrid calcAnsGrid-list" id="calcquizAnsGrid"></div>
+
+      <div class="calcResultCard" id="calcquizSolutionCard" style="display:none;text-align:left;padding:14px;margin-top:4px;">
+        <div id="calcquizSolutionText"></div>
+        <button class="nav-btn onbPrimary" id="calcquizNextBtn" style="width:100%;margin-top:12px;">Next ➜</button>
+      </div>
+
+      <div class="calcResultCard" id="calcquizResultCard" style="display:none;">
+        <div class="calcResultTitle" id="calcquizResultTitle">🎉 Quiz Complete!</div>
+        <div class="calcResultStats" id="calcquizResultStats"></div>
+        <div class="calcResultBtnRow">
+          <button class="nav-btn" id="calcquizResultAgainBtn">🔁 Practice Again</button>
+          <button class="nav-btn" id="calcquizResultBackBtn">⬅️ Back</button>
         </div>
       </div>
     </div>
@@ -8397,6 +8568,7 @@
   canvas.addEventListener('pointerleave', stopDrawing);
 })();
 </script>
+<script defer src="./data/editorial-data.js"></script>
 <script defer src="./data/loader.js"></script>
 </body>
 </html>
