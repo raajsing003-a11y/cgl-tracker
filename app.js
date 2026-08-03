@@ -1389,6 +1389,29 @@ function markCalcTaskFromQuiz(opLabel, correct, total){
   if(selectedDay === day) renderAll();
   if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(day);
 }
+// Calculation Speed Test (tools/calc-speed-test.html) khulti hai ek naye tab
+// mein (Quiz tab ke top button se, ya Daily Target ke "Calculation" task ke
+// ⚡ button se). Wahan Submit Test dabate hi wo tab window.opener.postMessage()
+// se yahan bata deta hai ki test complete ho gaya — usi se Calculation task
+// yahan automatically tick ho jaata hai, ₹ mil jaata hai, aur result note ke
+// roop mein Today tab mein save ho jaata hai (markCalcTaskFromQuiz jaisa hi
+// jaisa app ke apne internal Calc quizzes ke liye pehle se hota hai).
+window.addEventListener('message', function(e){
+  const msg = e && e.data;
+  if(!msg || msg.type !== 'examTrackerCalcSpeedComplete') return;
+  const total = parseInt(msg.total, 10);
+  const correct = parseInt(msg.correct, 10);
+  if(!total || isNaN(total)) return;
+  markCalcTaskFromQuiz(msg.label || 'Calculation Speed Test', isNaN(correct)?0:correct, total);
+});
+// Calculation Speed Test — poori tarah app ke andar hi khulti hai (ek
+// calcPage ke andar iframe), koi naya tab/browser redirect nahi hota.
+(function initCalcSpeedTestPage(){
+  const openBtn = document.getElementById('calcSpeedTestBtn');
+  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('speedtest'));
+  const backBtn = document.getElementById('speedtestBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
 function dayStatus(n){
   const d = getDay(n);
   if(d.rest) return 'rest';
@@ -5164,6 +5187,7 @@ function renderPanel(){
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch"><span class="icoClock" aria-hidden="true"></span></button>` : ''}
         ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
         ${showCalcQuizBtn ? `<button class="taskTimerBtn" type="button" data-calc-quiz-btn-idx="${idx}" title="Calculation quiz shuru karo">🧮</button>` : ''}
+        ${showCalcQuizBtn ? `<button class="taskTimerBtn" type="button" data-calc-speed-btn-idx="${idx}" title="Calculation Speed Test kholo">⚡</button>` : ''}
         ${hasPhoto ? `<button class="taskTimerBtn taskPhotoBadgeBtn" type="button" data-photo-view-idx="${idx}" title="Proof photo dekho">📷</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
         ${(showScoreBtn && taskScoreExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskScoreBox-${idx}">${taskScoreBoxHtml(d, autoType, dis)}</div>` : ''}
@@ -5340,6 +5364,13 @@ function renderPanel(){
       e.stopPropagation();
       switchTab('calc');
       showCalcPage('menu');
+    });
+  });
+  panel.querySelectorAll('[data-calc-speed-btn-idx]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      switchTab('calc');
+      showCalcPage('speedtest');
     });
   });
   panel.querySelectorAll('[data-photo-view-idx]').forEach(btn=>{
