@@ -7999,6 +7999,12 @@ function toggleExamDark(base){
 // browser Fullscreen API best-effort hai (kai mobile browsers/PWA mein
 // allowed nahi hota, isliye try/catch ke saath silently ignore karte hain).
 const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|info$|result$|reader$|chooser$|topics$)/;
+// Calculation Speed Test apni khud ki iframe page hai jise humesha CSS-only
+// takeover chahiye (jaise gkreader) — real browser Fullscreen API nahi,
+// kyunki wo Android/Chrome ka apna "exit fullscreen, drag from top" bar
+// dikha deta hai jo tool ke topbar/URL area ke upar overlap kar jaata hai.
+// CSS takeover (topbar/tabbar hide) is page ke liye already kaam karta hai.
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8025,11 +8031,17 @@ function showCalcPage(name, _fromPopState){
   });
   document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
   document.body.classList.toggle('examFullscreenLight', isFullscreenLightPage(name));
-  const enteringQuiz = isQuizTakingPage(name);
-  const wasInQuiz = isQuizTakingPage(prevName);
+  // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
+  // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
+  // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
-  if(enteringQuiz && !wasInQuiz) enterAppFullscreen();
-  else if(!enteringQuiz && wasInQuiz) exitAppFullscreen();
+  const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
+  const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
+  if(enteringQuiz && !wasInQuiz && !skipNativeFullscreen) enterAppFullscreen();
+  else if(!enteringQuiz && wasInQuiz && !skipNativeFullscreenPrev) exitAppFullscreen();
+  if(skipNativeFullscreen) exitAppFullscreen();
   EXAM_DARK_PAGE_BASES.forEach(applyExamDarkClass);
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke

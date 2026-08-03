@@ -1181,8 +1181,31 @@
     -webkit-text-fill-color:#c9a35f;}
   .calcLongBtn .calcArrow{font-size:19px;color:#f2b544;flex-shrink:0;}
 
-  #calcPage-speedtest.active{display:flex !important;flex-direction:column;}
-  #calcPage-speedtest .examTopBar{flex:0 0 auto;}
+  /* Speed Test ab appQuizFullscreen takeover mein shaamil nahi hai (app.js
+     mein exclude kiya), taaki app ka apna topbar + neeche wala tabbar
+     (bottom nav) hamesha dikhte rahein. Isliye yahan height ko manually
+     body ke upar/neeche wale fixed bars ke exact padding (82px top,
+     84px+safe-area bottom) ke barabar bound kiya hai, taaki iframe poori
+     bachi hui jagah bhare bina scroll-jump ke. */
+  #calcPage-speedtest.active{
+    display:flex !important;flex-direction:column;
+    height:calc(100vh - 82px - 84px - env(safe-area-inset-bottom,0px));
+  }
+  /* Poora top bar (title + background strip) hata diya — ab sirf ek
+     floating back button hai, iframe ke upar overlay ki tarah, koi bhi
+     bg color ya title text nahi dikhta. */
+  #calcPage-speedtest{position:relative;}
+  #calcPage-speedtest .examTopBar{
+    position:absolute;top:8px;left:8px;z-index:5;
+    background:transparent;border:0;padding:0;width:auto;
+  }
+  #calcPage-speedtest .examTopBar .calcSubTitle{display:none;}
+  #calcPage-speedtest .calcBackBtn{
+    background:rgba(13,20,32,0.72);
+    color:#eeecf0;
+    border-radius:50%;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
   .speedtestFrame{flex:1 1 auto;width:100%;border:0;display:block;background:#0a0e18;}
 
   .calcGrid{
