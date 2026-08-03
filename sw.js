@@ -1,4 +1,5 @@
 // CGL Tracker — Service Worker
+// Build tag: calc-speed-test fullscreen fix + pen redesign (2026-08-03)
 // Cache version bump karo jab bhi naya deploy karna ho (purana cache force-clear karega)
 const CACHE_VERSION = 'v' + Date.now(); // build ke time unique version, hamesha fresh deploy force karega
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
