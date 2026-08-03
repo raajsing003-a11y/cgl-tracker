@@ -155,6 +155,31 @@
   }
   @media (max-width:380px){ .picker .pgrid{grid-template-columns:1fr 1fr;} }
 
+
+  /* ===== PEN (freehand scratch/annotation over the sheet) ===== */
+  .penToggle{
+    position:fixed; right:14px; bottom:112px; z-index:60;
+    width:50px; height:50px; border-radius:50%;
+    background:linear-gradient(135deg,#ef5865,#b31f2d); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    border:2px solid rgba(255,255,255,.25); box-shadow:0 8px 20px -6px rgba(239,88,101,.7);
+  }
+  /* Pen hamesha red hi rehta hai (on ho ya off) — active hone par sirf
+     ek white ring se pata chalta hai ki abhi drawing mode on hai. */
+  .penToggle.active{border-color:#fff; box-shadow:0 8px 24px -4px rgba(239,88,101,.9), 0 0 0 3px rgba(239,88,101,.35);}
+  .penClearBtn{
+    position:fixed; right:14px; bottom:170px; z-index:60;
+    padding:8px 14px; font-size:11px; border-radius:20px; display:none;
+    background:#182948; border:1px solid var(--line); color:var(--text);
+  }
+  .penClearBtn.show{display:block;}
+  #penCanvas{
+    position:absolute; left:0; top:0; z-index:55; touch-action:none;
+    pointer-events:none;
+  }
+  #penCanvas.active{pointer-events:auto;}
+  .sheet{position:relative;}
+
   .overlay{
     position:fixed; inset:0; background:rgba(4,7,14,.9); backdrop-filter:blur(6px);
     display:none; align-items:center; justify-content:center; z-index:80; padding:16px;
@@ -222,6 +247,10 @@
   <div class="ptitle">Sahi jawab chuno</div>
   <div class="pgrid" id="pgrid"></div>
 </div>
+
+<!-- red scratch pen — freehand rough work over the sheet, doesn't touch answers -->
+<button type="button" class="penToggle" id="penToggle" title="Pen">✏️</button>
+<button type="button" class="penClearBtn" id="penClearBtn">Clear</button>
 
 <div class="overlay" id="overlay">
   <div class="result-card">
@@ -768,7 +797,11 @@ function toHindiLabel(rawHtml){
 function renderSheet(){
   cells = [];
   const sheet = document.getElementById('sheet');
+  // penCanvas sheet ke andar hi rehta hai — innerHTML clear se pehle
+  // usse nikaal lo, warna wipe ho jaayega, phir wapas jod do.
+  const penCanvas = document.getElementById('penCanvas');
   sheet.innerHTML = '';
+  if (penCanvas) sheet.appendChild(penCanvas);
 
   sections.forEach((sec, si) => {
     const box = document.createElement('div');
@@ -849,6 +882,7 @@ function openPicker(idx){
     pgrid.appendChild(b);
   });
   document.getElementById('picker').classList.add('show');
+  cell.el.scrollIntoView({block:'center', behavior:'smooth'});
 }
 function closePicker(){
   document.getElementById('picker').classList.remove('show');
@@ -856,9 +890,21 @@ function closePicker(){
   if (activeCellIdx >= 0) cells[activeCellIdx].el.classList.remove('active');
   activeCellIdx = -1;
 }
+// Har jawab bharte hi (chahe option tap karke ya keyboard se type karke)
+// agla khaali blank apne aap khul jaata hai.
+function goToNextBlank(fromIdx){
+  for (let i = fromIdx + 1; i < cells.length; i++){
+    if (!cells[i].answered){ openPicker(i); return; }
+  }
+  for (let i = 0; i <= fromIdx; i++){
+    if (!cells[i].answered){ openPicker(i); return; }
+  }
+  closePicker();
+}
 function chooseAnswer(val){
   if (activeCellIdx < 0) return;
   const cell = cells[activeCellIdx];
+  const doneIdx = activeCellIdx;
   const ok = cell.textMode ? (val === cell.correct) : (Math.abs(val - cell.correct) < 1e-6);
   cell.answered = true; cell.ok = ok;
   const shownVal = cell.binary ? (val===1?'Haan':'Nahi') : val;
@@ -870,8 +916,8 @@ function chooseAnswer(val){
   }
   cell.el.classList.add('filled', ok?'correct':'wrong');
   cell.el.disabled = true;
-  closePicker();
   updateStats();
+  goToNextBlank(doneIdx);
 }
 
 /* ================= STATS ================= */
@@ -903,11 +949,16 @@ function revealSection(si){
 }
 function revealAll(){ sections.forEach((s,i)=>revealSection(i)); }
 
+function clearPenCanvas(){
+  const c = document.getElementById('penCanvas');
+  if (c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
 function resetSheet(){
   buildSections();
   renderSheet();
   restartTimer();
   closePicker();
+  clearPenCanvas();
   document.getElementById('overlay').classList.remove('show');
 }
 function newMock(){
@@ -915,6 +966,7 @@ function newMock(){
   renderSheet();
   restartTimer();
   closePicker();
+  clearPenCanvas();
   document.getElementById('overlay').classList.remove('show');
 }
 
@@ -1080,6 +1132,105 @@ document.getElementById('newMockBtn').addEventListener('click', newMock);
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.blank') && !e.target.closest('.picker')) closePicker();
 });
+
+/* ================= RED SCRATCH PEN =================
+   Rough-work overlay over the sheet — sirf red, thin stroke, aur ek
+   Clear button. Answer blanks isse independent hain: pen sirf upar se
+   nishaan lagane ke liye hai, jawaab bharne ke liye nahi (uske liye
+   picker/keyboard use karo). Jab tak drag na ho (sirf tap ho), tap
+   neeche wale button/blank tak pahunch jaata hai — taaki pen on hote
+   hue bhi blanks/buttons tap kiye ja sakein. */
+(function initScratchPen(){
+  const sheet = document.getElementById('sheet');
+  const canvas = document.createElement('canvas');
+  canvas.id = 'penCanvas';
+  sheet.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const toggleBtn = document.getElementById('penToggle');
+  const clearBtn = document.getElementById('penClearBtn');
+  let penOn = false, drawing = false, moved = false, lastX = 0, lastY = 0, downX = 0, downY = 0;
+  const TAP_SLOP = 6; // px — isse zyada move ho to drag maana jaata hai, warna tap
+
+  function resizeCanvas(){
+    const w = sheet.clientWidth, h = sheet.scrollHeight;
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#ff3b3b';
+    ctx.lineWidth = 2; // thin
+  }
+  const ro = new ResizeObserver(resizeCanvas);
+  ro.observe(sheet);
+  resizeCanvas();
+
+  function setPen(on){
+    penOn = on;
+    canvas.classList.toggle('active', on);
+    toggleBtn.classList.toggle('active', on);
+    clearBtn.classList.toggle('show', on);
+  }
+  toggleBtn.addEventListener('click', () => setPen(!penOn));
+  clearBtn.addEventListener('click', () => ctx.clearRect(0,0,canvas.width,canvas.height));
+
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    const p = pos(e);
+    drawing = true; moved = false;
+    lastX = downX = p.x; lastY = downY = p.y;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drawing) return;
+    const p = pos(e);
+    if (!moved && Math.hypot(p.x-downX, p.y-downY) > TAP_SLOP) moved = true;
+    if (moved){
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      lastX = p.x; lastY = p.y;
+    }
+  });
+  function endStroke(e){
+    if (!drawing) return;
+    drawing = false;
+    if (!moved){
+      // Sirf tap tha, koi drag nahi — neeche wale button/blank tak
+      // click pahuncha do.
+      canvas.style.pointerEvents = 'none';
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      canvas.style.pointerEvents = penOn ? 'auto' : '';
+      if (el && el.closest) {
+        const target = el.closest('.blank, button');
+        if (target) target.click();
+      }
+    }
+  }
+  canvas.addEventListener('pointerup', endStroke);
+  canvas.addEventListener('pointercancel', endStroke);
+})();
+
+/* Ye tool hamesha ek iframe ke andar khulta hai (GK Reader jaisa hi
+   CSS-only takeover) — kabhi bhi real browser Fullscreen API nahi
+   maangta, kyunki wahi Chrome ka "to exit full screen, drag from the
+   top" bar dikha deta hai jo yahan overlap kar jaata hai. Belt-and-
+   suspenders: agar kisi wajah se top document already fullscreen mein
+   hai (purani state ya kisi aur page se), to yahan aate hi usse turant
+   bahar nikaal do. */
+(function forceExitNativeFullscreen(){
+  try{
+    const top = window.top || window;
+    const d = top.document;
+    const fsEl = d.fullscreenElement || d.webkitFullscreenElement || d.msFullscreenElement;
+    if (fsEl){
+      const exit = d.exitFullscreen || d.webkitExitFullscreen || d.msExitFullscreen;
+      if (exit) exit.call(d).catch(()=>{});
+    }
+  }catch(e){ /* cross-origin ya support na hone par chup-chaap ignore */ }
+})();
 
 /* ================= INIT ================= */
 populateChapterSelect();
