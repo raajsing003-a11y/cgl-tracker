@@ -2801,19 +2801,10 @@
     font-size:14px;display:flex;align-items:center;justify-content:center;
     box-shadow:0 6px 16px -6px rgba(239,88,101,0.7);opacity:1;transition:box-shadow 0.2s;touch-action:none;}
   #scratchFab:active,#scratchFab.active{border-color:#fff;box-shadow:0 8px 24px -4px rgba(239,88,101,.9), 0 0 0 3px rgba(239,88,101,.35);}
-  #scratchToolbar{position:fixed;right:14px;bottom:214px;z-index:10000;display:none;flex-direction:column;gap:6px;
-    width:112px;background:rgba(28,28,30,0.45);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:8px;
-    box-shadow:0 6px 20px rgba(0,0,0,0.25);backdrop-filter:blur(6px);opacity:0.65;transition:opacity 0.2s;}
-  #scratchToolbar:hover,#scratchToolbar:active,#scratchToolbar:focus-within{opacity:0.96;}
-  #scratchToolbar.show{display:flex;}
-  .scratchRow{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
-  .scratchRow:not(#scratchColorRow){flex-direction:column;align-items:stretch;}
-  .scratchSwatch{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.5);padding:0;
-    background-color:transparent;opacity:0.85;}
-  .scratchSwatch.selected{border-color:#fff;box-shadow:0 0 0 2px var(--accent,#0a84ff);opacity:1;}
-  .scratchBtn{background:rgba(44,44,46,0.55);color:var(--white,#fff);border:1px solid rgba(255,255,255,0.12);
-    border-radius:8px;padding:6px 8px;font-size:12.5px;white-space:nowrap;width:100%;text-align:center;}
-  .scratchBtn.selected{background:rgba(10,132,255,0.75);color:#fff;}
+  #scratchClearBtn{position:fixed;right:14px;bottom:378px;z-index:10000;
+    padding:8px 14px;font-size:11px;border-radius:20px;display:none;
+    background:#182948;border:1px solid rgba(255,255,255,0.14);color:#fff;}
+  #scratchClearBtn.show{display:block;}
 
   /* ===== Reading Mode — fullscreen takeover ===== */
   /* Jab reader khula ho, poori app chrome (top bar, tab bar, view bar,
@@ -8400,45 +8391,22 @@
 </div>
 
 
-<!-- ===== Screen Pen / Scratchpad (draw over any quiz / mock screen) ===== -->
+<!-- ===== Screen Pen / Scratchpad (draw over any quiz / mock screen) =====
+     Ab calculation-speed-test wale pen jaisa hi simple hai — ek hi button
+     (on/off), fixed red color, fixed thin width. Koi color/size/eraser/
+     undo/done options ka bhara-pura menu nahi — bas ek "Clear" button
+     jab pen on ho. -->
 <canvas id="scratchCanvas"></canvas>
 <button id="scratchFab" title="Pen">✏️</button>
-<div id="scratchToolbar">
-  <div class="scratchRow" id="scratchColorRow"></div>
-  <div class="scratchRow">
-    <button class="scratchBtn" data-size="3">Thin</button>
-    <button class="scratchBtn" data-size="6">Med</button>
-    <button class="scratchBtn" data-size="12">Thick</button>
-  </div>
-  <div class="scratchRow">
-    <button class="scratchBtn" id="scratchEraserBtn">🧹 Eraser</button>
-    <button class="scratchBtn" id="scratchUndoBtn">↩️ Undo</button>
-  </div>
-  <div class="scratchRow">
-    <button class="scratchBtn" id="scratchClearBtn">🗑 Clear</button>
-    <button class="scratchBtn" id="scratchDoneBtn">✅ Done</button>
-  </div>
-</div>
+<button id="scratchClearBtn" title="Clear">Clear</button>
 <script>
 (function(){
   const canvas = document.getElementById('scratchCanvas');
   const ctx = canvas.getContext('2d');
   const fab = document.getElementById('scratchFab');
-  const toolbar = document.getElementById('scratchToolbar');
-  const colorRow = document.getElementById('scratchColorRow');
-  const eraserBtn = document.getElementById('scratchEraserBtn');
-  const undoBtn = document.getElementById('scratchUndoBtn');
   const clearBtn = document.getElementById('scratchClearBtn');
-  const doneBtn = document.getElementById('scratchDoneBtn');
-
-  const colors = ['#ff453a','#0a84ff','#34c759','#111111','#ffffff'];
-  let currentColor = colors[0];
-  let currentSize = 6;
-  let erasing = false;
   let drawing = false;
   let drawMode = false;
-  const undoStack = [];
-  const MAX_UNDO = 15;
 
   function resizeCanvas(){
     let prevData = null;
@@ -8447,68 +8415,24 @@
     }
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ff3b3b';
     if(prevData){ try{ ctx.putImageData(prevData,0,0); }catch(e){} }
   }
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   window.addEventListener('orientationchange', resizeCanvas);
 
-  colors.forEach((c, i) => {
-    const b = document.createElement('button');
-    b.className = 'scratchSwatch' + (i === 0 ? ' selected' : '');
-    b.style.background = c;
-    b.addEventListener('click', () => {
-      currentColor = c;
-      erasing = false;
-      eraserBtn.classList.remove('selected');
-      colorRow.querySelectorAll('.scratchSwatch').forEach(el => el.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-    colorRow.appendChild(b);
-  });
-
-  toolbar.querySelectorAll('[data-size]').forEach(btn => {
-    if(btn.dataset.size === '6') btn.classList.add('selected');
-    btn.addEventListener('click', () => {
-      currentSize = parseInt(btn.dataset.size, 10);
-      toolbar.querySelectorAll('[data-size]').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    });
-  });
-
-  eraserBtn.addEventListener('click', () => {
-    erasing = !erasing;
-    eraserBtn.classList.toggle('selected', erasing);
-  });
-
-  function pushUndo(){
-    try{
-      undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      if(undoStack.length > MAX_UNDO) undoStack.shift();
-    }catch(e){}
-  }
-
-  undoBtn.addEventListener('click', () => {
-    if(!undoStack.length) return;
-    const prev = undoStack.pop();
-    ctx.putImageData(prev, 0, 0);
-  });
-
-  clearBtn.addEventListener('click', () => {
-    pushUndo();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  });
-
   function setDrawMode(on){
     drawMode = on;
     canvas.classList.toggle('drawing', drawMode);
-    toolbar.classList.toggle('show', drawMode);
     fab.classList.toggle('active', drawMode);
-    fab.textContent = drawMode ? '👁️' : '✏️';
+    clearBtn.classList.toggle('show', drawMode);
   }
 
   fab.addEventListener('click', () => { if(!fabDragged) setDrawMode(!drawMode); });
-  doneBtn.addEventListener('click', () => setDrawMode(false));
+  clearBtn.addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 
   // ===== Drag to reposition the pen FAB anywhere on screen =====
   const FAB_POS_KEY = 'cgl50-scratchFab-pos';
@@ -8573,7 +8497,6 @@
       try{ fab.releasePointerCapture(dragPointerId); }catch(err){}
     }
     dragPointerId = null;
-    // slight delay so the click event (fired right after pointerup) sees fabDragged
     setTimeout(() => { fabDragged = false; }, 50);
   }
   fab.addEventListener('pointerup', endFabDrag);
@@ -8586,12 +8509,6 @@
   canvas.addEventListener('pointerdown', (e) => {
     if(!drawMode) return;
     drawing = true;
-    pushUndo();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = currentSize;
-    ctx.globalCompositeOperation = erasing ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = currentColor;
     const p = getPos(e);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
