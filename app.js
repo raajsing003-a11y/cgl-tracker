@@ -1389,6 +1389,29 @@ function markCalcTaskFromQuiz(opLabel, correct, total){
   if(selectedDay === day) renderAll();
   if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(day);
 }
+// Calculation Speed Test (tools/calc-speed-test.html) khulti hai ek naye tab
+// mein (Quiz tab ke top button se, ya Daily Target ke "Calculation" task ke
+// ⚡ button se). Wahan Submit Test dabate hi wo tab window.opener.postMessage()
+// se yahan bata deta hai ki test complete ho gaya — usi se Calculation task
+// yahan automatically tick ho jaata hai, ₹ mil jaata hai, aur result note ke
+// roop mein Today tab mein save ho jaata hai (markCalcTaskFromQuiz jaisa hi
+// jaisa app ke apne internal Calc quizzes ke liye pehle se hota hai).
+window.addEventListener('message', function(e){
+  const msg = e && e.data;
+  if(!msg || msg.type !== 'examTrackerCalcSpeedComplete') return;
+  const total = parseInt(msg.total, 10);
+  const correct = parseInt(msg.correct, 10);
+  if(!total || isNaN(total)) return;
+  markCalcTaskFromQuiz(msg.label || 'Calculation Speed Test', isNaN(correct)?0:correct, total);
+});
+// Calculation Speed Test — poori tarah app ke andar hi khulti hai (ek
+// calcPage ke andar iframe), koi naya tab/browser redirect nahi hota.
+(function initCalcSpeedTestPage(){
+  const openBtn = document.getElementById('calcSpeedTestBtn');
+  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('speedtest'));
+  const backBtn = document.getElementById('speedtestBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
 function dayStatus(n){
   const d = getDay(n);
   if(d.rest) return 'rest';
@@ -5164,6 +5187,7 @@ function renderPanel(){
         ${showTimerBtn ? `<button class="taskTimerBtn${tt&&tt.running?' active':''}" type="button" data-timer-btn-idx="${idx}" title="Pomodoro/Stopwatch"><span class="icoClock" aria-hidden="true"></span></button>` : ''}
         ${showScoreBtn ? `<button class="taskTimerBtn${taskScoreExpandedIdx===idx?' active':''}" type="button" data-score-btn-idx="${idx}" title="${autoType==='mockAnalysis'?'Wrong Qs + Chapter Log':autoType==='sectional'?'Sectional Score':'Mock Score'}">${autoType==='mockAnalysis'?'❌':autoType==='sectional'?'🧮':'🧪'}</button>` : ''}
         ${showCalcQuizBtn ? `<button class="taskTimerBtn" type="button" data-calc-quiz-btn-idx="${idx}" title="Calculation quiz shuru karo">🧮</button>` : ''}
+        ${showCalcQuizBtn ? `<button class="taskTimerBtn" type="button" data-calc-speed-btn-idx="${idx}" title="Calculation Speed Test kholo">⚡</button>` : ''}
         ${hasPhoto ? `<button class="taskTimerBtn taskPhotoBadgeBtn" type="button" data-photo-view-idx="${idx}" title="Proof photo dekho">📷</button>` : ''}
         ${(showTimerBtn && taskTimerExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskTimerBox-${idx}">${taskTimerBoxHtml(idx)}</div>` : ''}
         ${(showScoreBtn && taskScoreExpandedIdx===idx) ? `<div class="taskTimerBox" id="taskScoreBox-${idx}">${taskScoreBoxHtml(d, autoType, dis)}</div>` : ''}
@@ -5340,6 +5364,13 @@ function renderPanel(){
       e.stopPropagation();
       switchTab('calc');
       showCalcPage('menu');
+    });
+  });
+  panel.querySelectorAll('[data-calc-speed-btn-idx]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      switchTab('calc');
+      showCalcPage('speedtest');
     });
   });
   panel.querySelectorAll('[data-photo-view-idx]').forEach(btn=>{
@@ -7968,6 +7999,12 @@ function toggleExamDark(base){
 // browser Fullscreen API best-effort hai (kai mobile browsers/PWA mein
 // allowed nahi hota, isliye try/catch ke saath silently ignore karte hain).
 const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|info$|result$|reader$|chooser$|topics$)/;
+// Calculation Speed Test apni khud ki iframe page hai jise humesha CSS-only
+// takeover chahiye (jaise gkreader) — real browser Fullscreen API nahi,
+// kyunki wo Android/Chrome ka apna "exit fullscreen, drag from top" bar
+// dikha deta hai jo tool ke topbar/URL area ke upar overlap kar jaata hai.
+// CSS takeover (topbar/tabbar hide) is page ke liye already kaam karta hai.
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -7994,16 +8031,22 @@ function showCalcPage(name, _fromPopState){
   });
   document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
   document.body.classList.toggle('examFullscreenLight', isFullscreenLightPage(name));
-  const enteringQuiz = isQuizTakingPage(name);
-  const wasInQuiz = isQuizTakingPage(prevName);
+  // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
+  // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
+  // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
-  if(enteringQuiz && !wasInQuiz) enterAppFullscreen();
-  else if(!enteringQuiz && wasInQuiz) exitAppFullscreen();
+  const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
+  const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
+  if(enteringQuiz && !wasInQuiz && !skipNativeFullscreen) enterAppFullscreen();
+  else if(!enteringQuiz && wasInQuiz && !skipNativeFullscreenPrev) exitAppFullscreen();
+  if(skipNativeFullscreen) exitAppFullscreen();
   EXAM_DARK_PAGE_BASES.forEach(applyExamDarkClass);
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
