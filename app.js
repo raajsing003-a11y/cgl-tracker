@@ -19689,19 +19689,6 @@ function showUpdateAvailableBanner(){
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(function(registration){
-    // Page load hote hi turant naye sw.js ke liye check karo (browser ka apna
-    // sw.js cache bhi bypass karke), taaki GitHub par kiya gaya update turant pakde.
-    registration.update().catch(function(){});
-    // Har 20 second mein bhi dobara check karo — jab tak tab khula hai,
-    // koi bhi naya deploy jald se jald detect ho jayega.
-    setInterval(function(){ registration.update().catch(function(){}); }, 20000);
-    // Tab wapas focus/visible hone par bhi turant check karo
-    document.addEventListener('visibilitychange', function(){
-      if(document.visibilityState === 'visible'){
-        registration.update().catch(function(){});
-      }
-    });
-
     // Case 1: naya SW pehle se waiting state mein hai (registration ke waqt hi)
     if(registration.waiting){
       showUpdateAvailableBanner();
@@ -19718,14 +19705,6 @@ if('serviceWorker' in navigator){
       });
     });
   }).catch(function(){});
-
-  // Naya sw.js activate hote hi khud postMessage bhejta hai (SW_UPDATED) —
-  // isse banner turant dikh jaata hai, updatefound event ka wait nahi karna padta.
-  navigator.serviceWorker.addEventListener('message', function(event){
-    if(event.data && event.data.type === 'SW_UPDATED'){
-      showUpdateAvailableBanner();
-    }
-  });
 
   // Jab naya SW asli control le leta hai (activate ho ke), ye fire hota hai.
   // Agar user ne banner tap karke reload kiya hai, tabhi ye path chalega.
