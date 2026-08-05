@@ -13732,6 +13732,26 @@ const homophoneQuiz = makeReasoningQuiz('homophone', HOMOPHONE_SETS, 'Homophones
 
 const prepositionQuiz = makeReasoningQuiz('preposition', PREPOSITION_SETS, 'Prepositions', 'englishvocabmenu');
 
+// Eduquity (Inspector Baba) vocab dump — OWS/Synonyms/Antonyms/Idioms/
+// Homonyms, one big array per category in EDUQUITY_SETS, chunked into
+// 10-question sets with a two-level menu just like English Topic-wise.
+const EDUQUITY_TOPIC_META = {
+  ows: { label: 'One Word Substitution', icon: '📖' },
+  synonym: { label: 'Synonyms', icon: '🟰' },
+  antonym: { label: 'Antonyms', icon: '🔁' },
+  idiom: { label: 'Idioms & Phrases', icon: '💬' },
+  homonym: { label: 'Homonyms', icon: '🔊' }
+};
+const EDUQUITY_CHUNKED = chunkSetsIntoTens(EDUQUITY_SETS, EDUQUITY_TOPIC_META, 10);
+const EDUQUITY_GROUP = {
+  originalSets: EDUQUITY_SETS,
+  topicMeta: EDUQUITY_TOPIC_META,
+  gridId: 'eduquityTopicGrid',
+  pageId: 'eduquitytopics'
+};
+const eduquityQuiz = makeReasoningQuiz('eduquity', EDUQUITY_CHUNKED.chunkedSets, 'Eduquity', 'englishvocabmenu', EDUQUITY_CHUNKED.chunkedMeta, EDUQUITY_GROUP);
+
+
 // ===== Fix: sets were topic-clustered in the source data (ek pure set mein
 // zyada tar questions ka answer wahi ek preposition word hota tha, jaise
 // "to" 8-10 baar lagatar) — isse bina sentence padhe hi pattern se answer
@@ -15880,6 +15900,19 @@ function initPhrasalQuiz(){
   phrasalQuiz.init();
 }
 
+function initEduquityQuiz(){
+  // "Eduquity" card — English Topic-wise jaisa hi two-level flow: pehle
+  // category chuno (calcPage-eduquitytopics: OWS/Synonyms/Antonyms/Idioms/
+  // Homonyms), phir uss category ke 10-10 question sets (calcPage-eduquitymenu),
+  // phir quiz (calcPage-eduquity).
+  const btn = document.getElementById('calcEduquityBtn');
+  if(btn) btn.addEventListener('click', () => {
+    eduquityQuiz.renderTopicMenu();
+    showCalcPage('eduquitytopics');
+  });
+  eduquityQuiz.init();
+}
+
 function initHomophoneQuiz(){
   // "Homophones" card — same flow: Set choose karo (calcPage-homophonemenu),
   // phir quiz shuru hota hai (calcPage-homophone).
@@ -15980,6 +16013,7 @@ function initCalcNav(){
   mathPyqQuiz.init();
   mathPyqQuiz.initExamMode();
   initPhrasalQuiz();
+  initEduquityQuiz();
   initHomophoneQuiz();
   initPrepositionQuiz();
   initVoiceQuiz();
@@ -19689,6 +19723,19 @@ function showUpdateAvailableBanner(){
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(function(registration){
+    // Page load hote hi turant naye sw.js ke liye check karo (browser ka apna
+    // sw.js cache bhi bypass karke), taaki GitHub par kiya gaya update turant pakde.
+    registration.update().catch(function(){});
+    // Har 20 second mein bhi dobara check karo — jab tak tab khula hai,
+    // koi bhi naya deploy jald se jald detect ho jayega.
+    setInterval(function(){ registration.update().catch(function(){}); }, 20000);
+    // Tab wapas focus/visible hone par bhi turant check karo
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible'){
+        registration.update().catch(function(){});
+      }
+    });
+
     // Case 1: naya SW pehle se waiting state mein hai (registration ke waqt hi)
     if(registration.waiting){
       showUpdateAvailableBanner();
@@ -19705,6 +19752,14 @@ if('serviceWorker' in navigator){
       });
     });
   }).catch(function(){});
+
+  // Naya sw.js activate hote hi khud postMessage bhejta hai (SW_UPDATED) —
+  // isse banner turant dikh jaata hai, updatefound event ka wait nahi karna padta.
+  navigator.serviceWorker.addEventListener('message', function(event){
+    if(event.data && event.data.type === 'SW_UPDATED'){
+      showUpdateAvailableBanner();
+    }
+  });
 
   // Jab naya SW asli control le leta hai (activate ho ke), ye fire hota hai.
   // Agar user ne banner tap karke reload kiya hai, tabhi ye path chalega.
