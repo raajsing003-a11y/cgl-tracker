@@ -8536,8 +8536,28 @@
     canvas.style.pointerEvents = 'none';
     const target = document.elementFromPoint(e.clientX, e.clientY);
     canvas.style.pointerEvents = '';
-    if(target && target !== canvas && typeof target.click === 'function'){
-      target.click();
+    if(target && target !== canvas){
+      // calc-speed-test jaise pages ek iframe ke andar khulte hain, jahan
+      // elementFromPoint sirf <iframe> tag hi dega — uske andar ka asli
+      // button/blank cell nahi. Isliye agar target iframe hai, to uske
+      // contentDocument mein tap ke coordinates translate karke wahan ka
+      // real element dhoondo aur usi ko click karo.
+      if(target.tagName === 'IFRAME'){
+        try{
+          const rect = target.getBoundingClientRect();
+          const innerX = e.clientX - rect.left;
+          const innerY = e.clientY - rect.top;
+          const innerDoc = target.contentDocument;
+          if(innerDoc){
+            const innerTarget = innerDoc.elementFromPoint(innerX, innerY);
+            if(innerTarget && typeof innerTarget.click === 'function'){
+              innerTarget.click();
+            }
+          }
+        }catch(err){ /* cross-origin ya kuch aur — chup chaap ignore karo */ }
+      } else if(typeof target.click === 'function'){
+        target.click();
+      }
     }
     clearScratch();
   }
