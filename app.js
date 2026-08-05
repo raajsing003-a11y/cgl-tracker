@@ -13732,25 +13732,6 @@ const homophoneQuiz = makeReasoningQuiz('homophone', HOMOPHONE_SETS, 'Homophones
 
 const prepositionQuiz = makeReasoningQuiz('preposition', PREPOSITION_SETS, 'Prepositions', 'englishvocabmenu');
 
-// Eduquity (Inspector Baba) vocab dump — OWS/Synonyms/Antonyms/Idioms/
-// Homonyms, one big array per category in EDUQUITY_SETS, chunked into
-// 10-question sets with a two-level menu just like English Topic-wise.
-const EDUQUITY_TOPIC_META = {
-  ows: { label: 'One Word Substitution', icon: '📖' },
-  synonym: { label: 'Synonyms', icon: '🟰' },
-  antonym: { label: 'Antonyms', icon: '🔁' },
-  idiom: { label: 'Idioms & Phrases', icon: '💬' },
-  homonym: { label: 'Homonyms', icon: '🔊' }
-};
-const EDUQUITY_CHUNKED = chunkSetsIntoTens(EDUQUITY_SETS, EDUQUITY_TOPIC_META, 10);
-const EDUQUITY_GROUP = {
-  originalSets: EDUQUITY_SETS,
-  topicMeta: EDUQUITY_TOPIC_META,
-  gridId: 'eduquityTopicGrid',
-  pageId: 'eduquitytopics'
-};
-const eduquityQuiz = makeReasoningQuiz('eduquity', EDUQUITY_CHUNKED.chunkedSets, 'Eduquity', 'englishvocabmenu', EDUQUITY_CHUNKED.chunkedMeta, EDUQUITY_GROUP);
-
 // ===== Fix: sets were topic-clustered in the source data (ek pure set mein
 // zyada tar questions ka answer wahi ek preposition word hota tha, jaise
 // "to" 8-10 baar lagatar) — isse bina sentence padhe hi pattern se answer
@@ -15899,19 +15880,6 @@ function initPhrasalQuiz(){
   phrasalQuiz.init();
 }
 
-function initEduquityQuiz(){
-  // "Eduquity" card — English Topic-wise jaisa hi two-level flow: pehle
-  // category chuno (calcPage-eduquitytopics: OWS/Synonyms/Antonyms/Idioms/
-  // Homonyms), phir uss category ke 10-10 question sets (calcPage-eduquitymenu),
-  // phir quiz (calcPage-eduquity).
-  const btn = document.getElementById('calcEduquityBtn');
-  if(btn) btn.addEventListener('click', () => {
-    eduquityQuiz.renderTopicMenu();
-    showCalcPage('eduquitytopics');
-  });
-  eduquityQuiz.init();
-}
-
 function initHomophoneQuiz(){
   // "Homophones" card — same flow: Set choose karo (calcPage-homophonemenu),
   // phir quiz shuru hota hai (calcPage-homophone).
@@ -16012,7 +15980,6 @@ function initCalcNav(){
   mathPyqQuiz.init();
   mathPyqQuiz.initExamMode();
   initPhrasalQuiz();
-  initEduquityQuiz();
   initHomophoneQuiz();
   initPrepositionQuiz();
   initVoiceQuiz();
