@@ -1,60 +1,64 @@
-// CGL Tracker — Service Worker (v3 — FASTEST UPDATE MODE)
-// Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
-// Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
-
-const CACHE_VERSION = 'v' + Date.now();
+// CGL Tracker — Service Worker
+// Build tag: calc-speed-test fullscreen fix + pen redesign (2026-08-03)
+// Cache version bump karo jab bhi naya deploy karna ho (purana cache force-clear karega)
+const CACHE_VERSION = 'v' + Date.now(); // build ke time unique version, hamesha fresh deploy force karega
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
-// Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,
-// isse install kabhi fail/slow nahi hoga aur SW turant activate ho jaayega.
-const CORE_ASSETS = ['./', './index.html'];
+// Yahan apni core files add karo (jo offline bhi chahiye)
+const CORE_ASSETS = [
+  './',
+  './index.html'
+];
 
-// ---------- INSTALL ----------
+// INSTALL — naya cache banao, core assets pre-cache karo
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // wait mat karo, turant naya SW le lo
+  self.skipWaiting(); // naye SW ko turant activate hone do, wait mat karo
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(
-        CORE_ASSETS.map((url) => cache.add(url).catch(() => {}))
-      )
-    )
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(CORE_ASSETS).catch((err) => {
+        console.warn('Pre-cache failed for some assets:', err);
+      });
+    })
   );
 });
 
-// ---------- ACTIVATE ----------
+// ACTIVATE — saare purane caches delete karo
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.map((key) => caches.delete(key)))) // SAARA purana cache saaf
-      .then(() => self.clients.claim())
-      .then(() => {
-        // Sabhi open tabs ko turant signal bhejo taaki latest version dikhe
-        return self.clients.matchAll({ type: 'window' }).then((clients) => {
-          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      );
+    }).then(() => self.clients.claim()) // turant sab open tabs control mein le lo
+  );
+});
+
+// FETCH — network-first strategy (hamesha latest try karo, fail ho toh cache se do)
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => {
+          return cached || caches.match('./index.html');
         });
       })
   );
 });
 
-// ---------- FETCH ----------
-// Pure network-first: hamesha fresh file lao. Cache sirf tab use hota hai
-// jab internet na ho (offline fallback), taaki purani/stale file kabhi na dikhe.
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  event.respondWith(
-    fetch(req, { cache: 'no-store' }) // browser ka apna HTTP cache bhi bypass karo
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-        return response;
-      })
-      .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
-  );
-});
-
-// ---------- MANUAL TRIGGER ----------
+// Naye SW ko turant activate karne ke liye message listener (optional manual trigger)
 self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
