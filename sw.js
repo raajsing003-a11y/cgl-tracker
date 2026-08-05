@@ -1,64 +1,60 @@
-// CGL Tracker — Service Worker
-// Build tag: calc-speed-test fullscreen fix + pen redesign (2026-08-03)
-// Cache version bump karo jab bhi naya deploy karna ho (purana cache force-clear karega)
-const CACHE_VERSION = 'v' + Date.now(); // build ke time unique version, hamesha fresh deploy force karega
+// CGL Tracker — Service Worker (v3 — FASTEST UPDATE MODE)
+// Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
+// Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
+
+const CACHE_VERSION = 'v' + Date.now();
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
-// Yahan apni core files add karo (jo offline bhi chahiye)
-const CORE_ASSETS = [
-  './',
-  './index.html'
-];
+// Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,
+// isse install kabhi fail/slow nahi hoga aur SW turant activate ho jaayega.
+const CORE_ASSETS = ['./', './index.html'];
 
-// INSTALL — naya cache banao, core assets pre-cache karo
+// ---------- INSTALL ----------
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // naye SW ko turant activate hone do, wait mat karo
+  self.skipWaiting(); // wait mat karo, turant naya SW le lo
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CORE_ASSETS).catch((err) => {
-        console.warn('Pre-cache failed for some assets:', err);
-      });
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        CORE_ASSETS.map((url) => cache.add(url).catch(() => {}))
+      )
+    )
   );
 });
 
-// ACTIVATE — saare purane caches delete karo
+// ---------- ACTIVATE ----------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      );
-    }).then(() => self.clients.claim()) // turant sab open tabs control mein le lo
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key)))) // SAARA purana cache saaf
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Sabhi open tabs ko turant signal bhejo taaki latest version dikhe
+        return self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 
-// FETCH — network-first strategy (hamesha latest try karo, fail ho toh cache se do)
+// ---------- FETCH ----------
+// Pure network-first: hamesha fresh file lao. Cache sirf tab use hota hai
+// jab internet na ho (offline fallback), taaki purani/stale file kabhi na dikhe.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(req, { cache: 'no-store' }) // browser ka apna HTTP cache bhi bypass karo
       .then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          return cached || caches.match('./index.html');
-        });
-      })
+      .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
   );
 });
 
-// Naye SW ko turant activate karne ke liye message listener (optional manual trigger)
+// ---------- MANUAL TRIGGER ----------
 self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
