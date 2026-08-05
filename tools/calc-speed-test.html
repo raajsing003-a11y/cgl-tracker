@@ -147,9 +147,7 @@
   }
   .stairsChar.victory img, .stairsMiniStage img.victory{animation:victoryDance .5s ease-in-out 3;}
 
-  /* ===== combo speed-up on runner + stairs char ===== */
-  .runner.combo .leg.l, .runner.combo .leg.r{animation-duration:.15s !important;}
-  .runner.combo .arm.l, .runner.combo .arm.r{animation-duration:.15s !important;}
+  /* combo speed-up ab .stairsChar/.stairsMiniStage img par apply hota hai (upar dekho) */
 
   /* ===== RUNNER MASCOT (mini game-style character jo progress bar par daudta hai) =====
      Generic "plumber" style runner — apna design hai, koi copyrighted
@@ -587,6 +585,7 @@
     100%{transform:translateY(0) rotate(0deg);}
   }
   .stairsChar.climbAnim img{animation:stairsClimbHop .55s ease;}
+  .stairsChar.combo.climbAnim img, .stairsMiniStage img.combo.climbAnim{animation-duration:.28s !important;}
   @keyframes stairsClimbHop{
     0%{transform:translateY(0) scale(1) rotate(0);}
     30%{transform:translateY(-22px) scale(1.15,.9) rotate(-8deg);}
@@ -1509,8 +1508,12 @@ function stairsOnCorrect(){
     STAIRS_SIDES.forEach(side => stairsBump('stairsCoinBox_'+side, 'milestone'));
   }
   // runner combo speed-up jab streak >=3
-  const runnerEl = document.getElementById('runner');
-  if (runnerEl) runnerEl.classList.toggle('combo', streak >= 3);
+  STAIRS_SIDES.forEach(side => {
+    const el = document.getElementById('stairsChar_'+side);
+    if (el) el.classList.toggle('combo', streak >= 3);
+  });
+  const miniImg = document.getElementById('stairsMiniImg');
+  if (miniImg) miniImg.classList.toggle('combo', streak >= 3);
 
   // top pe pahunchte hi victory dance
   if (stairsCurrentStep >= stairsTotalSteps){
@@ -1536,8 +1539,12 @@ function stairsOnWrong(){
   stairsReactEmoji('stairsMiniStage', sadEmoji);
   stairsRender();
   STAIRS_SIDES.forEach(side => stairsPlaceNextCoin(side));
-  const runnerEl = document.getElementById('runner');
-  if (runnerEl) runnerEl.classList.remove('combo');
+  STAIRS_SIDES.forEach(side => {
+    const el = document.getElementById('stairsChar_'+side);
+    if (el) el.classList.remove('combo');
+  });
+  const miniImg2 = document.getElementById('stairsMiniImg');
+  if (miniImg2) miniImg2.classList.remove('combo');
 }
 window.addEventListener('resize', stairsRender);
 
