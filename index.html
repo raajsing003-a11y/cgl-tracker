@@ -1369,6 +1369,14 @@
     border:none;border-radius:18px;
     box-shadow:0 8px 22px rgba(190,24,93,0.32),inset 0 1px 0 rgba(255,255,255,0.18);
   }
+  .calcCard-eduquity{
+    background:linear-gradient(135deg,#0f2f2a,#123a2e 45%,#0c241f);
+    border:1px solid rgba(52,211,153,0.35);
+    text-decoration:none;
+  }
+  .calcCard-eduquity .calcIcon-eduquity{background:rgba(52,211,153,0.18);color:#34d399;}
+  .calcCard-eduquity .calcLabel{color:#fff;}
+  .calcCard-eduquity .calcSub{color:rgba(255,255,255,0.75);font-size:11px;font-weight:600;}
   .calcCard-vocab .calcIcon-vocab{
     background:rgba(255,255,255,0.18);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35),0 2px 6px rgba(0,0,0,0.15);
     border:1px solid rgba(255,255,255,0.25);
@@ -5602,6 +5610,15 @@
             <span class="calcLabel">Narration</span>
           </span>
         </button>
+        <a class="calcCard calcCard-eduquity" id="eduquityBtn" href="https://testportal.ssccglpinnacle.com/ssc/ssc-eduquity-test-pass" target="_blank" rel="noopener">
+          <span class="calcIcon calcIcon-eduquity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+          </span>
+          <span class="calcLabelCol">
+            <span class="calcLabel">Eduquity Test Pass</span>
+            <span class="calcSub">SSC ka official CBT pattern practice</span>
+          </span>
+        </a>
       </div>
     </div>
 
@@ -8536,8 +8553,28 @@
     canvas.style.pointerEvents = 'none';
     const target = document.elementFromPoint(e.clientX, e.clientY);
     canvas.style.pointerEvents = '';
-    if(target && target !== canvas && typeof target.click === 'function'){
-      target.click();
+    if(target && target !== canvas){
+      // calc-speed-test jaise pages ek iframe ke andar khulte hain, jahan
+      // elementFromPoint sirf <iframe> tag hi dega — uske andar ka asli
+      // button/blank cell nahi. Isliye agar target iframe hai, to uske
+      // contentDocument mein tap ke coordinates translate karke wahan ka
+      // real element dhoondo aur usi ko click karo.
+      if(target.tagName === 'IFRAME'){
+        try{
+          const rect = target.getBoundingClientRect();
+          const innerX = e.clientX - rect.left;
+          const innerY = e.clientY - rect.top;
+          const innerDoc = target.contentDocument;
+          if(innerDoc){
+            const innerTarget = innerDoc.elementFromPoint(innerX, innerY);
+            if(innerTarget && typeof innerTarget.click === 'function'){
+              innerTarget.click();
+            }
+          }
+        }catch(err){ /* cross-origin ya kuch aur — chup chaap ignore karo */ }
+      } else if(typeof target.click === 'function'){
+        target.click();
+      }
     }
     clearScratch();
   }
