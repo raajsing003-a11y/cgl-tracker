@@ -788,37 +788,41 @@ function makeOptions(correct, isDecimal){
   const mag = Math.max(1, Math.abs(correct));
   let guard = 0;
   if (!isDecimal){
-    // Step-multiplier pool magnitude ke hisaab se — chhote numbers ke liye
-    // chhote multiples (1-9), bade numbers ke liye thoda bada range bhi,
-    // par har cheez *10 hi hai taaki unit digit hamesha correct jaisa rahe.
-    const steps = mag < 200 ? [1,2,3,4,5,6,7,8,9]
-                : mag < 2000 ? [1,2,3,4,5,6,7,8,9,10,11,12]
-                : [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20];
+    // Sabhi 5 distractors ka unit digit correct jaisa hi rakha hai (delta
+    // hamesha 10 ka multiple) — taaki koi bhi option "alag dikhe" na, warna
+    // alag-digit wale options turant pehchaan kar eliminate ho jaate hain
+    // aur baaki mein se sabse paas wala guess ho jaata hai. Delta bhi
+    // bahut tight (10/20/30/40) taaki sab options ek jaisi range mein
+    // paas-paas dikhein, koi bhi standout na ho.
+    const sameDigitDeltas = [10,20,30,40];
+    let si = 0;
     while (out.length < 5 && guard < 500){
       guard++;
-      const cand = correct + pick(steps) * 10 * (Math.random() < 0.5 ? -1 : 1);
+      const cand = correct + sameDigitDeltas[si % sameDigitDeltas.length] * (Math.random() < 0.5 ? -1 : 1);
+      si++;
       if (cand <= 0 || set.has(cand)) continue;
       set.add(cand); out.push(cand);
     }
-    // Fallback bhi 10-multiple hi use karta hai taaki guarantee kabhi na
-    // toote ki koi distractor different unit digit ka ban jaye.
-    let n = 1;
+    // Fallback agar collisions ki wajah se kam pad jaye, tab bhi same
+    // tight pool se hi uthata hai.
+    let fi = 0;
     while (out.length < 5){
-      const cand = correct + n * 10 * (out.length % 2 === 0 ? 1 : -1);
-      n++;
+      const cand = correct + sameDigitDeltas[fi % sameDigitDeltas.length] * (out.length % 2 === 0 ? 1 : -1);
+      fi++;
       if (cand > 0 && !set.has(cand)){ set.add(cand); out.push(cand); }
     }
   } else {
-    // Decimal wale (division quotients) — sirf chhoti, tight deltas taaki
-    // rounding/approximation se bhi correct option turant pehchana na jaye.
+    // Decimal wale (division quotients) — aur bhi chhoti, tight deltas
+    // taaki rounding/approximation se bhi correct option turant pehchana
+    // na jaye.
     while (out.length < 5 && guard < 500){
       guard++;
-      const cand = Math.round((correct + pick([-1,-0.75,-0.5,-0.25,0.25,0.5,0.75,1])) * 100) / 100;
+      const cand = Math.round((correct + pick([-0.5,-0.4,-0.3,-0.25,-0.2,0.2,0.25,0.3,0.4,0.5])) * 100) / 100;
       if (cand <= 0 || set.has(cand)) continue;
       set.add(cand); out.push(cand);
     }
     while (out.length < 5){
-      const cand = Math.round((correct + (out.length+1) * 0.3 * (Math.random()<0.5?-1:1)) * 100) / 100;
+      const cand = Math.round((correct + (out.length+1) * 0.15 * (Math.random()<0.5?-1:1)) * 100) / 100;
       if (cand>0 && !set.has(cand)){ set.add(cand); out.push(cand); }
     }
   }
