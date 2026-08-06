@@ -13192,11 +13192,25 @@ const mathPyqQuiz = makeMathPyqQuiz();
     itemsEl.querySelectorAll('.gkQuizItem').forEach(el => {
       el.addEventListener('click', () => {
         const m = all[+el.dataset.idx];
+        // Yaad rakho ki quiz GK Reader ke is chapter se khula tha, taaki
+        // exam/result se "back" karne par seedha yahi chapter phir se khule.
+        window.gkQuizReturnCtx = { subject: subject, chapterId: chapterId };
         if(m.source === 'p75' && typeof openP75Mock === 'function') openP75Mock(m.key, m.file, m.label, m.entry);
         else if(typeof openSPMock === 'function') openSPMock(m.key, m.file, m.label, m.entry);
       });
     });
   }
+  // One-shot: if a mock was opened from a GK Reader chapter, jump back to
+  // that exact chapter; otherwise fall back to the normal quiz list page.
+  window.gkReturnOrPage = function(fallbackPage){
+    const ctx = window.gkQuizReturnCtx;
+    window.gkQuizReturnCtx = null;
+    if(ctx && typeof window.gkOpenChapter === 'function'){
+      window.gkOpenChapter(ctx.subject, ctx.chapterId);
+      return;
+    }
+    showCalcPage(fallbackPage);
+  };
 
   const GK_SUBJECTS = {
     ancient: {
@@ -13367,6 +13381,10 @@ const mathPyqQuiz = makeMathPyqQuiz();
       startAutoScroll(); // chapter khulte hi auto-scroll khud-ba-khud shuru ho jaaye
     });
   }
+  // Expose globally so quiz engines (Super Practice / 75-Day native exam) can
+  // jump straight back to this exact GK Reader chapter after a mock started
+  // from the "Is Topic Ke Saare Quiz" card — see gkReturnOrPage() below.
+  window.gkOpenChapter = openChapter;
 
   const menuBtn = document.getElementById('calcGkBtn');
   if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('gkmenu'));
@@ -16816,7 +16834,7 @@ function initSuperPracticeQuiz(){
 
   // Native instructions page
   const infoBackBtn = document.getElementById('spnativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => window.gkReturnOrPage('superpracticelist'));
   const startBtn = document.getElementById('spnativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', spnativeStartExam);
   const infoLangBtn = document.getElementById('spnativeInfoLangBtn');
@@ -16825,7 +16843,7 @@ function initSuperPracticeQuiz(){
   // Native exam page
   const examBackBtn = document.getElementById('spnativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); showCalcPage('superpracticelist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); window.gkReturnOrPage('superpracticelist'); }
   });
   const pauseBtn = document.getElementById('spnativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', spnativeTogglePause);
@@ -16846,7 +16864,7 @@ function initSuperPracticeQuiz(){
 
   // Native result page
   const resultBackBtn = document.getElementById('spnativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => window.gkReturnOrPage('superpracticelist'));
   const reattemptBtn = document.getElementById('spnativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', spnativeStartExam);
   const resultQWrap = document.getElementById('spnativeResultQuestionWrap');
@@ -17376,7 +17394,7 @@ function p75nativeResultRenderQuestion(){
 function initP75Native(){
   // Native instructions page
   const infoBackBtn = document.getElementById('p75nativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => window.gkReturnOrPage('75daylist'));
   const startBtn = document.getElementById('p75nativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', p75nativeStartExam);
   const infoLangBtn = document.getElementById('p75nativeInfoLangBtn');
@@ -17385,7 +17403,7 @@ function initP75Native(){
   // Native exam page
   const examBackBtn = document.getElementById('p75nativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); showCalcPage('75daylist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); window.gkReturnOrPage('75daylist'); }
   });
   const pauseBtn = document.getElementById('p75nativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', p75nativeTogglePause);
@@ -17406,7 +17424,7 @@ function initP75Native(){
 
   // Native result page
   const resultBackBtn = document.getElementById('p75nativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => window.gkReturnOrPage('75daylist'));
   const reattemptBtn = document.getElementById('p75nativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', p75nativeStartExam);
   const resultQWrap = document.getElementById('p75nativeResultQuestionWrap');
