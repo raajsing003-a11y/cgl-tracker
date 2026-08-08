@@ -309,21 +309,87 @@ function defaultTimeSettings(){
     breaks: BREAKS.map(b=>({start:b.start, end:b.end}))
   };
 }
-function getTimeSettings(){
+// ISO date (YYYY-MM-DD) for a given day-number, used as the key for a
+// per-day custom target override — see "Aaj Ke Liye Alag Target" below.
+function dayISODate(dayNum){
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + ((dayNum||todayDayNum())-1));
+  return fmtISODate(d);
+}
+function validTimeSettingsObj(parsed){
+  if(parsed && typeof parsed.dayEnd==='number' && Array.isArray(parsed.breaks)){
+    parsed.breaks = parsed.breaks.filter(b=>b && typeof b.start==='number' && typeof b.end==='number' && b.end>b.start);
+    return parsed;
+  }
+  return null;
+}
+// The DEFAULT (every day, unless that day has its own override) time
+// settings — same key/shape as before, so existing saves keep working.
+function getGlobalTimeSettings(){
   try{
     const raw = localStorage.getItem('cgl50-timesettings');
     if(raw){
-      const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed.dayEnd==='number' && Array.isArray(parsed.breaks)){
-        parsed.breaks = parsed.breaks.filter(b=>b && typeof b.start==='number' && typeof b.end==='number' && b.end>b.start);
-        return parsed;
-      }
+      const parsed = validTimeSettingsObj(JSON.parse(raw));
+      if(parsed) return parsed;
     }
   }catch(e){}
   return defaultTimeSettings();
 }
-function setTimeSettings(obj){
+function setGlobalTimeSettings(obj){
   try{ localStorage.setItem('cgl50-timesettings', JSON.stringify(obj)); }catch(e){}
+}
+// Per-day overrides — { "2026-08-08": {dayEnd, breaks}, ... }. A day with
+// no entry here just falls back to the global default above, which is what
+// makes "next day apne aap default pe wapas" work for free: the override
+// only ever applies to the exact date it was saved for.
+function getDailyTimeOverrides(){
+  try{
+    const raw = localStorage.getItem('cgl50-timesettings-daily');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object') return parsed;
+    }
+  }catch(e){}
+  return {};
+}
+function setDailyTimeOverrides(map){
+  // Keep only the last 30 days of overrides so this never grows forever.
+  try{
+    const keys = Object.keys(map).sort();
+    if(keys.length > 30){
+      const drop = keys.slice(0, keys.length-30);
+      drop.forEach(k=>delete map[k]);
+    }
+    localStorage.setItem('cgl50-timesettings-daily', JSON.stringify(map));
+  }catch(e){}
+}
+// Effective time settings for a given day-number: that day's own override
+// if it has one, else the global default.
+function getTimeSettingsForDay(dayNum){
+  const overrides = getDailyTimeOverrides();
+  const key = dayISODate(dayNum);
+  const ov = overrides[key] ? validTimeSettingsObj(overrides[key]) : null;
+  return { settings: ov || getGlobalTimeSettings(), isOverride: !!ov, dateKey: key };
+}
+function setTimeSettingsForDay(dayNum, obj, onlyToday){
+  if(onlyToday){
+    const overrides = getDailyTimeOverrides();
+    overrides[dayISODate(dayNum)] = obj;
+    setDailyTimeOverrides(overrides);
+  } else {
+    setGlobalTimeSettings(obj);
+  }
+}
+function clearTimeSettingsOverrideForDay(dayNum){
+  const overrides = getDailyTimeOverrides();
+  delete overrides[dayISODate(dayNum)];
+  setDailyTimeOverrides(overrides);
+}
+// Old function name kept so the rest of the app (renderTimeGuide's builder)
+// doesn't need to change — always resolves against TODAY's effective
+// settings (its own override if saved, else the global default).
+function getTimeSettings(){
+  return getTimeSettingsForDay(todayDayNum()).settings;
 }
 function minToTimeInputStr(mins){
   mins = ((Math.round(mins)%1440)+1440)%1440;
@@ -339,8 +405,11 @@ function timeInputStrToMin(str){
 }
 // In-memory draft of the settings form so add/remove-break edits don't get
 // wiped out by the next unrelated re-render (a task checkbox tick, a
-// background sync tick, etc.) before the person taps Save.
+// background sync tick, etc.) before the person taps Save. Keyed by which
+// day-number the draft belongs to, so switching days (Prev/Next) doesn't
+// carry a stale draft over onto a different date.
 let timeSettingsDraft = null;
+let timeSettingsDraftDay = null;
 // In-memory draft for the Task Editor (name/start/duration per task) — lets
 // add/remove-task edits build up before the person taps Save, without a
 // background re-render (checkbox tick, sync tick, etc.) wiping the draft.
@@ -352,9 +421,25 @@ function renderTimeSettings(){
     el.innerHTML = '';
     return;
   }
-  if(!timeSettingsDraft) timeSettingsDraft = getTimeSettings();
+  // If the box currently has focus (person is mid-edit, e.g. the native
+  // time picker is open), skip this re-render entirely — the periodic
+  // 60s live-clock tick and other background renders used to rebuild this
+  // box's innerHTML out from under the person while they were picking a
+  // time, which is why the time often refused to "stick". Now a
+  // background tick just leaves it alone until they're done.
+  if(el.contains(document.activeElement)) return;
+  const dayForDraft = selectedDay;
+  if(!timeSettingsDraft || timeSettingsDraftDay !== dayForDraft){
+    timeSettingsDraft = JSON.parse(JSON.stringify(getTimeSettingsForDay(dayForDraft).settings));
+    timeSettingsDraftDay = dayForDraft;
+  }
   const ts = timeSettingsDraft;
+  const hasOverride = getTimeSettingsForDay(dayForDraft).isOverride;
+  const isToday = (dayForDraft === todayDayNum());
   let html = `<div class="tsHead">⚙️ Apna Time-Table Set Karo</div>`;
+  if(hasOverride){
+    html += `<div class="losshint" style="padding:2px 0 8px;">📅 Aaj (${fmtDate(dayForDraft)}) ke liye alag target set hai — kal apne aap default pe wapas aa jaayega.</div>`;
+  }
   html += `
     <div class="tsRow">
       <span class="tsLabel">🏁 Target kis time tak khatam karna hai</span>
@@ -377,29 +462,35 @@ function renderTimeSettings(){
   html += `
     <div class="btnrow">
       <button class="nav-btn" id="tsAddBreakBtn" style="font-size:12.5px;">➕ Break Jodo</button>
-      <button class="nav-btn" id="tsSaveBtn" style="font-size:12.5px;">💾 Save Karo</button>
+      <button class="nav-btn" id="tsSaveTodayBtn" style="font-size:12.5px;">📅 ${isToday? 'Sirf Aaj Ke Liye Save':'Sirf Is Din Ke Liye Save'}</button>
+      <button class="nav-btn" id="tsSaveBtn" style="font-size:12.5px;">💾 Hamesha Ke Liye Save</button>
+      ${hasOverride ? `<button class="nav-btn" id="tsClearOverrideBtn" style="font-size:12.5px;">🗑️ Aaj Ka Alag Target Hatao</button>` : ''}
       <button class="nav-btn" id="tsResetBtn" style="font-size:12.5px;">↩️ Default</button>
     </div>
   `;
   el.innerHTML = html;
 
-  document.getElementById('tsEndInput').addEventListener('change', (e)=>{
+  el.querySelector('#tsEndInput').addEventListener('change', (e)=>{
+    const v = timeInputStrToMin(e.target.value);
+    if(v!==null) timeSettingsDraft.dayEnd = v;
+  });
+  el.querySelector('#tsEndInput').addEventListener('input', (e)=>{
     const v = timeInputStrToMin(e.target.value);
     if(v!==null) timeSettingsDraft.dayEnd = v;
   });
   el.querySelectorAll('.tsBreakStart').forEach(inp=>{
-    inp.addEventListener('change', (e)=>{
+    ['change','input'].forEach(evt=> inp.addEventListener(evt, (e)=>{
       const i = parseInt(e.target.getAttribute('data-bidx'),10);
       const v = timeInputStrToMin(e.target.value);
       if(v!==null) timeSettingsDraft.breaks[i].start = v;
-    });
+    }));
   });
   el.querySelectorAll('.tsBreakEnd').forEach(inp=>{
-    inp.addEventListener('change', (e)=>{
+    ['change','input'].forEach(evt=> inp.addEventListener(evt, (e)=>{
       const i = parseInt(e.target.getAttribute('data-bidx'),10);
       const v = timeInputStrToMin(e.target.value);
       if(v!==null) timeSettingsDraft.breaks[i].end = v;
-    });
+    }));
   });
   el.querySelectorAll('.tsBreakDel').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -414,19 +505,38 @@ function renderTimeSettings(){
     timeSettingsDraft.breaks.push({start, end: Math.min(start+30,1439)});
     renderTimeSettings();
   });
-  document.getElementById('tsSaveBtn').addEventListener('click', ()=>{
-    // Drop inverted/zero-length rows and keep breaks time-ordered so the
-    // guide never trips over an overlapping or backwards window.
+  function cleanDraftBreaks(){
     timeSettingsDraft.breaks = timeSettingsDraft.breaks
       .filter(b=>b.end > b.start)
       .sort((a,b)=>a.start-b.start);
-    setTimeSettings(timeSettingsDraft);
+  }
+  document.getElementById('tsSaveTodayBtn').addEventListener('click', ()=>{
+    // Only this exact date — tomorrow (or any other day) is untouched and
+    // simply keeps using the default/global target.
+    cleanDraftBreaks();
+    setTimeSettingsForDay(dayForDraft, timeSettingsDraft, true);
+    renderTimeGuide();
+    renderTimeSettings();
+  });
+  document.getElementById('tsSaveBtn').addEventListener('click', ()=>{
+    // Drop inverted/zero-length rows and keep breaks time-ordered so the
+    // guide never trips over an overlapping or backwards window.
+    cleanDraftBreaks();
+    setGlobalTimeSettings(timeSettingsDraft);
+    renderTimeGuide();
+    renderTimeSettings();
+  });
+  const clearBtn = document.getElementById('tsClearOverrideBtn');
+  if(clearBtn) clearBtn.addEventListener('click', ()=>{
+    clearTimeSettingsOverrideForDay(dayForDraft);
+    timeSettingsDraft = null; // force reload from (now cleared) storage
     renderTimeGuide();
     renderTimeSettings();
   });
   document.getElementById('tsResetBtn').addEventListener('click', ()=>{
     timeSettingsDraft = defaultTimeSettings();
-    setTimeSettings(timeSettingsDraft);
+    setGlobalTimeSettings(timeSettingsDraft);
+    clearTimeSettingsOverrideForDay(dayForDraft);
     renderTimeGuide();
     renderTimeSettings();
   });
