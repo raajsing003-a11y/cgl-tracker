@@ -15522,6 +15522,7 @@ async function openEmMock(key, file, label, entry){
   try{
     const res = await fetch('emmocks/data/' + key + '/' + jsonFile);
     data = await res.json();
+    data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
     showCalcPage('emmockslist');
@@ -16401,6 +16402,27 @@ function filterSPMockGrid(query){
 // palette/mark-for-review -> result+solution review), but with a live
 // EN/हिंदी toggle since Super Practice source files carry both languages
 // (unlike EM Mocks' already-English-only source).
+function fixMockImageTags(html){
+  if(!html || typeof html !== 'string' || html.indexOf('<img') === -1) return html;
+  // Oliveboard-hosted question images (u1.oliveboard.in) block hotlinking when
+  // the browser sends a Referer header from another origin (our github.io
+  // site), which shows up as a broken image icon. Stripping the referrer via
+  // referrerpolicy="no-referrer" makes the request look "direct" and the
+  // image loads normally. Applied once right after a mock's JSON is fetched.
+  return html.replace(/<img\s/gi, '<img referrerpolicy="no-referrer" loading="lazy" ');
+}
+function fixMockImagesInData(data){
+  if(!data || !Array.isArray(data.questions)) return data;
+  data.questions.forEach(q => {
+    ['q_en','q_hi','solution_en','solution_hi'].forEach(k => {
+      if(q[k]) q[k] = fixMockImageTags(q[k]);
+    });
+    ['options_en','options_hi'].forEach(k => {
+      if(Array.isArray(q[k])) q[k] = q[k].map(o => fixMockImageTags(o));
+    });
+  });
+  return data;
+}
 let spnativeLoaded = null;
 let spnativeMockLabel = '';
 // Mixed Practice (quant "sectional" mocks): behave like a real mock —
@@ -16415,9 +16437,10 @@ const spnativeSession = {
   current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
 };
 
-function spnativeQText(q){ return spnativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
-function spnativeOpts(q){ return spnativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
-function spnativeSolText(q){ return spnativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+function nativeHasHiContent(arr){ return Array.isArray(arr) && arr.some(s => (s || '').toString().trim().length > 0); }
+function spnativeQText(q){ return spnativeLang === 'hi' && (q.q_hi || '').trim() ? q.q_hi : q.q_en; }
+function spnativeOpts(q){ return spnativeLang === 'hi' && nativeHasHiContent(q.options_hi) ? q.options_hi : q.options_en; }
+function spnativeSolText(q){ return spnativeLang === 'hi' && (q.solution_hi || '').trim() ? q.solution_hi : q.solution_en; }
 
 function spnativeUpdateLangBtns(){
   const label = spnativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
@@ -16459,6 +16482,7 @@ async function openSPMock(key, file, label, entry){
   try{
     const res = await fetch('superpractice/data/' + key + '/' + jsonFile);
     data = await res.json();
+    data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
     showCalcPage('superpracticelist');
@@ -17002,9 +17026,9 @@ const p75nativeSession = {
   current: 0, timeLeft: 0, timerId: null, submitted: false, paused: false
 };
 
-function p75nativeQText(q){ return p75nativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
-function p75nativeOpts(q){ return p75nativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
-function p75nativeSolText(q){ return p75nativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+function p75nativeQText(q){ return p75nativeLang === 'hi' && (q.q_hi || '').trim() ? q.q_hi : q.q_en; }
+function p75nativeOpts(q){ return p75nativeLang === 'hi' && nativeHasHiContent(q.options_hi) ? q.options_hi : q.options_en; }
+function p75nativeSolText(q){ return p75nativeLang === 'hi' && (q.solution_hi || '').trim() ? q.solution_hi : q.solution_en; }
 
 function p75nativeUpdateLangBtns(){
   const label = p75nativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
@@ -17045,6 +17069,7 @@ async function openP75MockNative(key, file, label, entry){
   try{
     const res = await fetch('practice75/data/' + key + '/' + jsonFile);
     data = await res.json();
+    data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
     showCalcPage('75daylist');
@@ -17520,9 +17545,9 @@ const mmnativeSession = {
   sections: null, sectionIdx: 0, sectionTimeLeft: 0, sectionSubmitted: []
 };
 
-function mmnativeQText(q){ return mmnativeLang === 'hi' ? (q.q_hi || q.q_en) : q.q_en; }
-function mmnativeOpts(q){ return mmnativeLang === 'hi' ? (q.options_hi || q.options_en) : q.options_en; }
-function mmnativeSolText(q){ return mmnativeLang === 'hi' ? (q.solution_hi || q.solution_en) : q.solution_en; }
+function mmnativeQText(q){ return mmnativeLang === 'hi' && (q.q_hi || '').trim() ? q.q_hi : q.q_en; }
+function mmnativeOpts(q){ return mmnativeLang === 'hi' && nativeHasHiContent(q.options_hi) ? q.options_hi : q.options_en; }
+function mmnativeSolText(q){ return mmnativeLang === 'hi' && (q.solution_hi || '').trim() ? q.solution_hi : q.solution_en; }
 
 function mmnativeUpdateLangBtns(){
   const label = mmnativeLang === 'hi' ? '🌐 हिं' : '🌐 EN';
@@ -17556,6 +17581,7 @@ async function openMainsMockNative(key, file, label, entry){
   try{
     const res = await fetch('mainsmock/data/' + key + '/' + jsonFile);
     data = await res.json();
+    data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
     showCalcPage('mainsmocklist');
