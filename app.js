@@ -2580,7 +2580,36 @@ function togglePinned(name){
 // WITHOUT touching the live TASKS/TASK_DURATIONS_MIN/TASK_VALUES globals,
 // so the leaderboard can fairly score every player using THEIR OWN tasks —
 // never mixing one person's task list with another's ₹ values or count.
+// ===== Daily-only Task Override ("Sirf Aaj Ke Liye") =====
+// Lets a member set a completely different task list for JUST today without
+// touching their permanent list — tomorrow, since dateKeyOfToday() will be a
+// new key that has no matching entry here, getTaskDefsFromState() silently
+// falls back to the normal permanent list all on its own. Only ever ONE key
+// is kept (today's) — pruneDailyTaskOverride() wipes any stale older key
+// every time state loads, so this never bloats storage.
+function dateKeyOfToday(){ return dateKeyOf(new Date()); }
+function hasDailyTaskOverride(st){
+  st = st || state;
+  const k = dateKeyOfToday();
+  return !!(st.dailyTaskOverrides && Array.isArray(st.dailyTaskOverrides[k]) && st.dailyTaskOverrides[k].length>0);
+}
+function pruneDailyTaskOverride(st){
+  st = st || state;
+  if(!st.dailyTaskOverrides) return;
+  const todayKey = dateKeyOfToday();
+  Object.keys(st.dailyTaskOverrides).forEach(k=>{
+    if(k!==todayKey) delete st.dailyTaskOverrides[k];
+  });
+}
 function getTaskDefsFromState(st){
+  const todayKey = dateKeyOfToday();
+  if(st.dailyTaskOverrides && Array.isArray(st.dailyTaskOverrides[todayKey]) && st.dailyTaskOverrides[todayKey].length>0){
+    return st.dailyTaskOverrides[todayKey].map((d,i)=>({
+      name: (d && typeof d.name==='string' && d.name.trim()) ? d.name : ('Task '+(i+1)),
+      start: (d && typeof d.start==='number') ? d.start : DEFAULT_TASK_START_MIN[i%DEFAULT_TASK_START_MIN.length],
+      duration: (d && typeof d.duration==='number' && d.duration>0) ? d.duration : 30
+    }));
+  }
   if(Array.isArray(st.taskDefs) && st.taskDefs.length>0){
     return st.taskDefs.map((d,i)=>({
       name: (d && typeof d.name==='string' && d.name.trim()) ? d.name : ('Task '+(i+1)),
@@ -3826,6 +3855,7 @@ function updateAdminPanelBtnVisibility(){
 }
 
 function applyLoadedExtras(){
+  pruneDailyTaskOverride(state); // drop any yesterday-or-older daily override — auto revert to default
   const defs = getTaskDefsFromState(state);
   TASKS = defs.map(d=>d.name);
   TASK_START_MIN = defs.map(d=>d.start);
@@ -7471,7 +7501,15 @@ function renderTaskEditForm(){
     }));
   }
   const draftValues = computeTaskValues(taskEditDraft.map(t=>t.duration||1));
-  form.innerHTML = taskEditDraft.map((t, idx)=>{
+  const dailyBadge = hasDailyTaskOverride(state)
+    ? `<div class="losshint" style="padding-top:0;margin-bottom:8px;color:var(--gain);">🟢 Aaj ke liye custom target active hai — kal apne aap default list wapas aa jayegi.</div>`
+    : '';
+  const dailyToggleRow = `
+    <label class="taskModeOption" id="dailyOnlyRow" style="margin-bottom:10px;">
+      <input type="checkbox" id="dailyOnlyToggle" ${hasDailyTaskOverride(state)?'checked':''}>
+      <span>📅 Sirf Aaj Ke Liye Save Karo (kal khud-ba-khud default pe wapas)</span>
+    </label>`;
+  form.innerHTML = dailyBadge + dailyToggleRow + taskEditDraft.map((t, idx)=>{
     const tier = tierForMins(t.duration||0);
     return `
     <div class="taskEditRow" data-row-idx="${idx}">
@@ -7554,28 +7592,65 @@ document.getElementById('saveTasksBtn').addEventListener('click', async ()=>{
     start: (typeof t.start==='number') ? t.start : 480,
     duration: (typeof t.duration==='number' && t.duration>0) ? t.duration : 30
   }));
+  const dailyOnlyEl = document.getElementById('dailyOnlyToggle');
+  const dailyOnly = !!(dailyOnlyEl && dailyOnlyEl.checked);
+
   TASKS = cleaned.map(t=>t.name);
   TASK_START_MIN = cleaned.map(t=>t.start);
   TASK_DURATIONS_MIN = cleaned.map(t=>t.duration);
   TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN); // auto-arranges ₹5,000 across the new task list
-  state.taskDefs = cleaned.slice();
-  delete state.taskNames; // superseded by state.taskDefs (name+time+duration)
+
+  if(dailyOnly){
+    // Today-only: permanent state.taskDefs untouched, only today's date-key
+    // gets this list. Tomorrow pruneDailyTaskOverride()/getTaskDefsFromState()
+    // automatically fall back to the permanent list on their own.
+    if(!state.dailyTaskOverrides) state.dailyTaskOverrides = {};
+    pruneDailyTaskOverride(state);
+    state.dailyTaskOverrides[dateKeyOfToday()] = cleaned.slice();
+  } else {
+    state.taskDefs = cleaned.slice();
+    delete state.taskNames; // superseded by state.taskDefs (name+time+duration)
+    if(state.dailyTaskOverrides) delete state.dailyTaskOverrides[dateKeyOfToday()]; // permanent save overrides any today-only one
+  }
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
   // Admin, Shared Task Mode ON: push this same list to the room so every
   // member's tab picks it up automatically on their next auto-sync tick.
-  if(isSharedTaskMode() && isMeAdmin()){
+  // (Today-only lists stay local and are never broadcast to the room.)
+  if(!dailyOnly && isSharedTaskMode() && isMeAdmin()){
     await saveSharedTaskDefs(cleaned);
     lastAppliedSharedTasksJSON = JSON.stringify(cleaned);
   }
   renderAll();
   renderTaskEditForm();
-  alert(isSharedTaskMode() && isMeAdmin()
-    ? 'Tasks save ho gaye ✅ — sabke tab mein automatically update ho jayenge.'
-    : 'Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.');
+  alert(dailyOnly
+    ? 'Aaj ke liye tasks save ho gaye ✅ — kal apne aap default list wapas aa jayegi.'
+    : (isSharedTaskMode() && isMeAdmin()
+      ? 'Tasks save ho gaye ✅ — sabke tab mein automatically update ho jayenge.'
+      : 'Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.'));
 });
 document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
+  const dailyOnlyEl = document.getElementById('dailyOnlyToggle');
+  const hasOverride = hasDailyTaskOverride(state);
+  // If today's list is currently a daily-only override, offer a quick,
+  // non-destructive "just undo today" path instead of always nuking the
+  // permanent list.
+  if(hasOverride && dailyOnlyEl && dailyOnlyEl.checked){
+    if(!confirm('Aaj ka custom target hata ke default list pe wapas jaayein?')) return;
+    delete state.dailyTaskOverrides[dateKeyOfToday()];
+    const defs = getTaskDefsFromState(state);
+    TASKS = defs.map(d=>d.name);
+    TASK_START_MIN = defs.map(d=>d.start);
+    TASK_DURATIONS_MIN = defs.map(d=>d.duration);
+    TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
+    resizeAllDaysTasks();
+    taskEditDraft = null;
+    await save();
+    renderAll();
+    renderTaskEditForm();
+    return;
+  }
   if(!confirm('Sab tasks (naam, time, duration) default pe reset kar du?')) return;
   TASKS = DEFAULT_TASKS.slice();
   TASK_START_MIN = DEFAULT_TASK_START_MIN.slice();
@@ -7583,6 +7658,7 @@ document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
   TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
   delete state.taskNames;
   delete state.taskDefs;
+  if(state.dailyTaskOverrides) delete state.dailyTaskOverrides[dateKeyOfToday()];
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
@@ -13192,25 +13268,11 @@ const mathPyqQuiz = makeMathPyqQuiz();
     itemsEl.querySelectorAll('.gkQuizItem').forEach(el => {
       el.addEventListener('click', () => {
         const m = all[+el.dataset.idx];
-        // Yaad rakho ki quiz GK Reader ke is chapter se khula tha, taaki
-        // exam/result se "back" karne par seedha yahi chapter phir se khule.
-        window.gkQuizReturnCtx = { subject: subject, chapterId: chapterId };
         if(m.source === 'p75' && typeof openP75Mock === 'function') openP75Mock(m.key, m.file, m.label, m.entry);
         else if(typeof openSPMock === 'function') openSPMock(m.key, m.file, m.label, m.entry);
       });
     });
   }
-  // One-shot: if a mock was opened from a GK Reader chapter, jump back to
-  // that exact chapter; otherwise fall back to the normal quiz list page.
-  window.gkReturnOrPage = function(fallbackPage){
-    const ctx = window.gkQuizReturnCtx;
-    window.gkQuizReturnCtx = null;
-    if(ctx && typeof window.gkOpenChapter === 'function'){
-      window.gkOpenChapter(ctx.subject, ctx.chapterId);
-      return;
-    }
-    showCalcPage(fallbackPage);
-  };
 
   const GK_SUBJECTS = {
     ancient: {
@@ -13381,10 +13443,6 @@ const mathPyqQuiz = makeMathPyqQuiz();
       startAutoScroll(); // chapter khulte hi auto-scroll khud-ba-khud shuru ho jaaye
     });
   }
-  // Expose globally so quiz engines (Super Practice / 75-Day native exam) can
-  // jump straight back to this exact GK Reader chapter after a mock started
-  // from the "Is Topic Ke Saare Quiz" card — see gkReturnOrPage() below.
-  window.gkOpenChapter = openChapter;
 
   const menuBtn = document.getElementById('calcGkBtn');
   if(menuBtn) menuBtn.addEventListener('click', () => showCalcPage('gkmenu'));
@@ -16834,7 +16892,7 @@ function initSuperPracticeQuiz(){
 
   // Native instructions page
   const infoBackBtn = document.getElementById('spnativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => window.gkReturnOrPage('superpracticelist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
   const startBtn = document.getElementById('spnativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', spnativeStartExam);
   const infoLangBtn = document.getElementById('spnativeInfoLangBtn');
@@ -16843,7 +16901,7 @@ function initSuperPracticeQuiz(){
   // Native exam page
   const examBackBtn = document.getElementById('spnativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); window.gkReturnOrPage('superpracticelist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); showCalcPage('superpracticelist'); }
   });
   const pauseBtn = document.getElementById('spnativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', spnativeTogglePause);
@@ -16864,7 +16922,7 @@ function initSuperPracticeQuiz(){
 
   // Native result page
   const resultBackBtn = document.getElementById('spnativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => window.gkReturnOrPage('superpracticelist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
   const reattemptBtn = document.getElementById('spnativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', spnativeStartExam);
   const resultQWrap = document.getElementById('spnativeResultQuestionWrap');
@@ -17394,7 +17452,7 @@ function p75nativeResultRenderQuestion(){
 function initP75Native(){
   // Native instructions page
   const infoBackBtn = document.getElementById('p75nativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => window.gkReturnOrPage('75daylist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
   const startBtn = document.getElementById('p75nativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', p75nativeStartExam);
   const infoLangBtn = document.getElementById('p75nativeInfoLangBtn');
@@ -17403,7 +17461,7 @@ function initP75Native(){
   // Native exam page
   const examBackBtn = document.getElementById('p75nativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); window.gkReturnOrPage('75daylist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); showCalcPage('75daylist'); }
   });
   const pauseBtn = document.getElementById('p75nativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', p75nativeTogglePause);
@@ -17424,7 +17482,7 @@ function initP75Native(){
 
   // Native result page
   const resultBackBtn = document.getElementById('p75nativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => window.gkReturnOrPage('75daylist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
   const reattemptBtn = document.getElementById('p75nativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', p75nativeStartExam);
   const resultQWrap = document.getElementById('p75nativeResultQuestionWrap');
