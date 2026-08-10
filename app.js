@@ -8147,7 +8147,12 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // kyunki wo Android/Chrome ka apna "exit fullscreen, drag from top" bar
 // dikha deta hai jo tool ke topbar/URL area ke upar overlap kar jaata hai.
 // CSS takeover (topbar/tabbar hide) is page ke liye already kaam karta hai.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards'];
+// 'grammarch' added here so the Grammar Chapter-wise quiz screen only ever
+// uses the CSS-only takeover (topbar/tabbar hidden) instead of the real
+// browser Fullscreen API — avoids the "drag from top to exit fullscreen"
+// hint banner some mobile browsers/PWA hosts (e.g. GitHub Pages) show on
+// native fullscreen entry.
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'grammarch'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
