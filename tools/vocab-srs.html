@@ -265,11 +265,6 @@ h1{font-size:16px; margin:0 0 2px; display:flex; align-items:center; gap:6px;}
 
   <!-- REVIEW PANEL -->
   <div class="panel active" id="panel-review">
-    <div class="limit-row">
-      <label>New words/day (Anki-style pacing)</label>
-      <input type="number" id="dailyLimitInput" min="5" max="300">
-    </div>
-
     <div id="reviewArea"></div>
   </div>
 
@@ -328,7 +323,7 @@ const SETTINGS_KEY = 'vocab_srs_settings_v1';
 function todayStr(){ return new Date().toDateString(); }
 
 function getSettings(){
-  return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"dailyLimit":50}');
+  return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"dailyLimit":100000}');
 }
 function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 
@@ -371,28 +366,19 @@ function schedule(card, rating){
 // ---------- Rendering ----------
 function refreshStats(){
   const now = Date.now();
-  const dailyState = getDailyState();
-  const settings = getSettings();
-  const remaining = Math.max(0, settings.dailyLimit - dailyState.newShown);
-
   const reviewDue = cards.filter(c => c.reps > 0 && (c.due||0) <= now).length;
-  const newAvailableToday = Math.min(remaining, cards.filter(c => !c.reps || c.reps === 0).length);
+  const newAvailableToday = cards.filter(c => !c.reps || c.reps === 0).length;
 
   document.getElementById('statDue').textContent = reviewDue;
   document.getElementById('statNew').textContent = newAvailableToday;
   document.getElementById('statTotal').textContent = cards.length;
-  document.getElementById('dailyLimitInput').value = settings.dailyLimit;
 }
 
 function buildQueue(){
   const now = Date.now();
-  const dailyState = getDailyState();
-  const settings = getSettings();
-  const remaining = Math.max(0, settings.dailyLimit - dailyState.newShown);
-
   const reviewDue = cards.filter(c => c.reps > 0 && (c.due||0) <= now)
                           .sort((a,b)=> (a.due||0)-(b.due||0));
-  const freshNew = cards.filter(c => !c.reps || c.reps === 0).slice(0, remaining);
+  const freshNew = cards.filter(c => !c.reps || c.reps === 0);
 
   queue = reviewDue.concat(freshNew);
 }
@@ -660,15 +646,6 @@ document.querySelectorAll('.tab').forEach(t=>{
     if(t.dataset.tab === 'review') renderReview();
     if(t.dataset.tab === 'manage') renderManage();
   });
-});
-
-document.getElementById('dailyLimitInput').addEventListener('change', (e)=>{
-  const v = Math.max(5, Math.min(200, parseInt(e.target.value) || 30));
-  const s = getSettings();
-  s.dailyLimit = v;
-  saveSettings(s);
-  refreshStats();
-  renderReview();
 });
 
 // ---------- Init ----------
