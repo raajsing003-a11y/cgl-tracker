@@ -10713,6 +10713,46 @@ const englishTopicwiseQuiz = makeReasoningQuiz('englishtopicwise', ENGLISH_TOPIC
 // 2025" quizzes/buttons were merged into ODDONE_SETS / SERIES_SETS above (as
 // extra sets) so all practice for the same topic lives under one button.
 
+// ===== Grammar Chapter-wise (button pinned at top of English Topic-wise) =====
+// DATA FORMAT: GRAMMAR_CHAPTERWISE_SETS.<chapterKey> = array of questions,
+// each { word: "<question text>", options:[4], answer:<0-3 index>,
+// explanation: "<solution>" }. 600 Qs across 19 chapters (Noun, Pronoun,
+// Adjective, Verb, Tense, SVA, Adverb, Preposition, Conjunction, Article,
+// Conditional, Voice, Narration, Misc, Basics, Figures of Speech, Sentence
+// Structure, Question Tags, Mixed Revision) — sourced from the SSC CGL
+// Grammar 600Q bank. Reuses the same reasoning-quiz engine as English
+// Topic-wise (single language, MCQ + explanation), chunked into 10-question
+// sets per chapter so each chapter shows as "Noun - Set 1 (10 Qs)" etc.
+const GRAMMAR_CHAPTERWISE_TOPIC_META = {
+  chapter1: { label: "Noun", icon: "📘" },
+  chapter2: { label: "Pronoun", icon: "👤" },
+  chapter3: { label: "Adjective", icon: "🎨" },
+  chapter4: { label: "Verb", icon: "🏃" },
+  chapter5: { label: "Tense", icon: "⏰" },
+  chapter6: { label: "Subject-Verb Agreement", icon: "🤝" },
+  chapter7: { label: "Adverb", icon: "⚡" },
+  chapter8: { label: "Preposition", icon: "📍" },
+  chapter9: { label: "Conjunction", icon: "🔗" },
+  chapter10: { label: "Article", icon: "📎" },
+  chapter11: { label: "Conditional Sentences", icon: "🔀" },
+  chapter12: { label: "Active & Passive Voice", icon: "🔁" },
+  chapter13: { label: "Narration (Direct-Indirect)", icon: "🗣️" },
+  chapter14: { label: "Miscellaneous Grammar", icon: "📦" },
+  chapter15: { label: "Basics — Parts of Speech, Phrases, Clauses", icon: "🧩" },
+  chapter16: { label: "Figures of Speech", icon: "🎭" },
+  chapter17: { label: "Sentence Structure", icon: "🏗️" },
+  chapter18: { label: "Question Tags", icon: "❓" },
+  chapter19: { label: "Mixed Final Revision", icon: "🎯" },
+};
+const GRAMMAR_CHAPTERWISE_CHUNKED = chunkSetsIntoTens(GRAMMAR_CHAPTERWISE_SETS, GRAMMAR_CHAPTERWISE_TOPIC_META, 10);
+const GRAMMAR_CHAPTERWISE_GROUP = {
+  originalSets: GRAMMAR_CHAPTERWISE_SETS,
+  topicMeta: GRAMMAR_CHAPTERWISE_TOPIC_META,
+  gridId: 'grammarchTopicGrid',
+  pageId: 'grammarchtopics'
+};
+const grammarChapterwiseQuiz = makeReasoningQuiz('grammarch', GRAMMAR_CHAPTERWISE_CHUNKED.chunkedSets, 'Grammar Chapter-wise', 'englishtopicwisetopics', GRAMMAR_CHAPTERWISE_CHUNKED.chunkedMeta, GRAMMAR_CHAPTERWISE_GROUP);
+
 // [data moved to data/digitalsum_sets.js]
 
 
@@ -16034,6 +16074,16 @@ function initEnglishTopicwiseQuiz(){
     showCalcPage('englishtopicwisetopics');
   });
   englishTopicwiseQuiz.init();
+
+  // "Grammar Chapter-wise" — pinned button at the top of the English
+  // Topic-wise topic list, opens its own chapter list -> Set 1/Set 2...
+  // -> quiz flow (same self-healing re-render-on-click pattern as above).
+  const grammarChBtn = document.getElementById('calcGrammarChapterwiseBtn');
+  if(grammarChBtn) grammarChBtn.addEventListener('click', () => {
+    grammarChapterwiseQuiz.renderTopicMenu();
+    showCalcPage('grammarchtopics');
+  });
+  grammarChapterwiseQuiz.init();
 }
 
 function initPhrasalQuiz(){
