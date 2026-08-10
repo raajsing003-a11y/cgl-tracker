@@ -7599,7 +7599,6 @@ function renderTaskEditForm(){
             <span style="flex:1;font-size:13.5px;font-weight:600;">${escapeHtml(name)}</span>
           </div>
           <div class="taskEditBottom">
-            <span style="font-size:12px;color:var(--muted);">⏰ ${minToTimeInputStr(TASK_START_MIN[idx])}</span>
             <span style="font-size:12px;color:var(--muted);"><span class="icoClock" aria-hidden="true"></span> ${TASK_DURATIONS_MIN[idx]} min</span>
             <span class="tVal ${tier.cls}">${tier.emoji} ₹${Math.round(TASK_VALUES[idx]||0)}</span>
           </div>
@@ -7624,7 +7623,6 @@ function renderTaskEditForm(){
         <button class="teDel" data-task-idx="${idx}" title="Ye task hatao" ${taskEditDraft.length<=1?'disabled':''}>✕</button>
       </div>
       <div class="taskEditBottom">
-        <label>⏰ Start<input type="time" class="teStart" data-task-idx="${idx}" value="${minToTimeInputStr(t.start)}"></label>
         <label><span class="icoClock" aria-hidden="true"></span> Mins<input type="number" class="teDur" data-task-idx="${idx}" min="5" step="5" value="${t.duration}"></label>
         <span class="tVal ${tier.cls}" data-val-idx="${idx}">${tier.emoji} ₹${Math.round(draftValues[idx])}</span>
       </div>
