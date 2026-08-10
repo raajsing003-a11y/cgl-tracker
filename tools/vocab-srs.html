@@ -9,7 +9,7 @@
   --bg:#0a0e18; --panel:#121b2e; --panel2:#0d1524; --line:#233252;
   --gold:#f2b544; --gold2:#ffd27a; --gold-dim:#4a3616;
   --green:#3ecf8e; --red:#ef5865; --blue:#4f9be0; --purple:#8b7ae8;
-  --text:#eef2f9; --dim:#8ea0bd;
+  --text:#dbe0e8; --dim:#8ea0bd;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{height:100%; margin:0; padding:0; overscroll-behavior:none;}
@@ -403,11 +403,35 @@ function renderReview(){
   const area = document.getElementById('reviewArea');
   if(queue.length === 0){
     area.innerHTML = '<div class="done-msg"><div class="big">✅</div><div class="txt">Abhi koi card due nahi hai.<br>Naya word add kar ya baad mein aa.</div></div>';
+    notifyExamTrackerIfSessionComplete();
     return;
   }
   current = queue[0];
   revealed = false;
   renderCard();
+}
+
+// ---------- Exam Tracker integration: auto-tick "Vocab" task ----------
+// Jab is tool mein saare due cards review ho jaate hain (queue khaali), aur
+// is session mein kam se kam ek card rate hui thi, ek baar exam-tracker app
+// (parent tab/window jisne isse iframe/tab mein khola) ko batao — wahan
+// "Vocab" task apne-aap tick ho jaata hai (Calculation task ke calcQuiz
+// pattern jaisa hi). `sentThisEmpty` guard se same completion baar-baar
+// notify nahi hoti jab tak naye cards due na ho jayein.
+let vocabSessionRated = 0;
+let vocabSessionGood = 0;
+let sentThisEmpty = false;
+function notifyExamTrackerIfSessionComplete(){
+  if(vocabSessionRated === 0 || sentThisEmpty) return;
+  sentThisEmpty = true;
+  const payload = {
+    type: 'examTrackerVocabComplete',
+    label: 'Vocab Review',
+    correct: vocabSessionGood,
+    total: vocabSessionRated
+  };
+  try{ if(window.parent && window.parent !== window) window.parent.postMessage(payload, '*'); }catch(e){}
+  try{ if(window.opener && !window.opener.closed) window.opener.postMessage(payload, '*'); }catch(e){}
 }
 
 function renderCard(){
@@ -515,6 +539,10 @@ function rate(r){
   schedule(current, r);
   save();
   if(wasNew) bumpDailyNew();
+
+  vocabSessionRated += 1;
+  if(r >= 1) vocabSessionGood += 1; // Hard/Good/Easy count as "correct"; Again does not
+  sentThisEmpty = false; // fresh due card just showed up, allow a future notify once it empties again
 
   const cardEl = document.querySelector('.card-box');
   if(r >= 2){ // Good or Easy — streak continues

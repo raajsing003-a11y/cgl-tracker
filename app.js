@@ -127,6 +127,7 @@ function taskAutoType(name){
   }
   if(n.includes('sectional')) return 'sectional';
   if(n.includes('calculat')) return 'calcQuiz';
+  if(n.includes('vocab')) return 'vocabQuiz';
   return null;
 }
 
@@ -1483,18 +1484,35 @@ function logQuizActivity(label, correct, total){
 // list has been customized and no "Calculation" task exists anymore.
 function markCalcTaskFromQuiz(opLabel, correct, total){
   if(!total) return;
+  markTaskFromExternalQuiz('calcQuiz', '\ud83e\uddee ' + opLabel, correct, total, () => logQuizActivity('Calculation \u2014 ' + opLabel, correct, total));
+}
+// Same pattern, for the Vocab Flash Cards tool (tools/vocab-srs.html) — jab
+// user ek review session complete karta hai (queue khaali ho jaati hai),
+// wo tool postMessage bhejta hai aur yahan "Vocab" task apne-aap tick ho
+// jaata hai, ₹ mil jaata hai, aur session ka result note ban jaata hai —
+// bilkul calcQuiz/Calculation task jaisa hi.
+function markVocabTaskFromQuiz(opLabel, correct, total){
+  if(!total) return;
+  markTaskFromExternalQuiz('vocabQuiz', '\ud83d\udcda ' + opLabel, correct, total, () => logQuizActivity('Vocab \u2014 ' + opLabel, correct, total));
+}
+// Shared by markCalcTaskFromQuiz and markVocabTaskFromQuiz: finds today's
+// task matching the given taskAutoType, ticks it, writes a result note, and
+// fires the reward toast if that was the last task of the day. Falls back
+// to a plain quiz-log entry (via `fallback`) if the task list was customized
+// and no matching task exists anymore.
+function markTaskFromExternalQuiz(autoType, noteLabel, correct, total, fallback){
   const day = todayDayNum();
   const d = getDay(day);
-  const idx = TASKS.findIndex(t => taskAutoType(t) === 'calcQuiz');
+  const idx = TASKS.findIndex(t => taskAutoType(t) === autoType);
   if(idx === -1){
-    logQuizActivity('Calculation \u2014 ' + opLabel, correct, total);
+    fallback();
     return;
   }
   const doneBefore = d.tasks.filter(Boolean).length;
   d.tasks[idx] = true;
   const doneAfter = d.tasks.filter(Boolean).length;
   if(d.taskCheckedAt) d.taskCheckedAt[idx] = Date.now();
-  if(d.taskNotes) d.taskNotes[idx] = '\ud83e\uddee ' + opLabel + ' \u2014 ' + correct + '/' + total + ' correct';
+  if(d.taskNotes) d.taskNotes[idx] = noteLabel + ' \u2014 ' + correct + '/' + total + ' correct';
   save();
   if(selectedDay === day) renderAll();
   if(doneBefore < TASKS.length && doneAfter === TASKS.length) showReward(day);
@@ -1508,11 +1526,19 @@ function markCalcTaskFromQuiz(opLabel, correct, total){
 // jaisa app ke apne internal Calc quizzes ke liye pehle se hota hai).
 window.addEventListener('message', function(e){
   const msg = e && e.data;
-  if(!msg || msg.type !== 'examTrackerCalcSpeedComplete') return;
-  const total = parseInt(msg.total, 10);
-  const correct = parseInt(msg.correct, 10);
-  if(!total || isNaN(total)) return;
-  markCalcTaskFromQuiz(msg.label || 'Calculation Speed Test', isNaN(correct)?0:correct, total);
+  if(!msg) return;
+  if(msg.type === 'examTrackerCalcSpeedComplete'){
+    const total = parseInt(msg.total, 10);
+    const correct = parseInt(msg.correct, 10);
+    if(!total || isNaN(total)) return;
+    markCalcTaskFromQuiz(msg.label || 'Calculation Speed Test', isNaN(correct)?0:correct, total);
+  } else if(msg.type === 'examTrackerVocabComplete'){
+    // Sent by tools/vocab-srs.html when a review session's queue empties out.
+    const total = parseInt(msg.total, 10);
+    const correct = parseInt(msg.correct, 10);
+    if(!total || isNaN(total)) return;
+    markVocabTaskFromQuiz(msg.label || 'Vocab Review', isNaN(correct)?0:correct, total);
+  }
 });
 // Calculation Speed Test — poori tarah app ke andar hi khulti hai (ek
 // calcPage ke andar iframe), koi naya tab/browser redirect nahi hota.
