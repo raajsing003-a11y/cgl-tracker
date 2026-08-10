@@ -309,21 +309,87 @@ function defaultTimeSettings(){
     breaks: BREAKS.map(b=>({start:b.start, end:b.end}))
   };
 }
-function getTimeSettings(){
+// ISO date (YYYY-MM-DD) for a given day-number, used as the key for a
+// per-day custom target override — see "Aaj Ke Liye Alag Target" below.
+function dayISODate(dayNum){
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + ((dayNum||todayDayNum())-1));
+  return fmtISODate(d);
+}
+function validTimeSettingsObj(parsed){
+  if(parsed && typeof parsed.dayEnd==='number' && Array.isArray(parsed.breaks)){
+    parsed.breaks = parsed.breaks.filter(b=>b && typeof b.start==='number' && typeof b.end==='number' && b.end>b.start);
+    return parsed;
+  }
+  return null;
+}
+// The DEFAULT (every day, unless that day has its own override) time
+// settings — same key/shape as before, so existing saves keep working.
+function getGlobalTimeSettings(){
   try{
     const raw = localStorage.getItem('cgl50-timesettings');
     if(raw){
-      const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed.dayEnd==='number' && Array.isArray(parsed.breaks)){
-        parsed.breaks = parsed.breaks.filter(b=>b && typeof b.start==='number' && typeof b.end==='number' && b.end>b.start);
-        return parsed;
-      }
+      const parsed = validTimeSettingsObj(JSON.parse(raw));
+      if(parsed) return parsed;
     }
   }catch(e){}
   return defaultTimeSettings();
 }
-function setTimeSettings(obj){
+function setGlobalTimeSettings(obj){
   try{ localStorage.setItem('cgl50-timesettings', JSON.stringify(obj)); }catch(e){}
+}
+// Per-day overrides — { "2026-08-08": {dayEnd, breaks}, ... }. A day with
+// no entry here just falls back to the global default above, which is what
+// makes "next day apne aap default pe wapas" work for free: the override
+// only ever applies to the exact date it was saved for.
+function getDailyTimeOverrides(){
+  try{
+    const raw = localStorage.getItem('cgl50-timesettings-daily');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object') return parsed;
+    }
+  }catch(e){}
+  return {};
+}
+function setDailyTimeOverrides(map){
+  // Keep only the last 30 days of overrides so this never grows forever.
+  try{
+    const keys = Object.keys(map).sort();
+    if(keys.length > 30){
+      const drop = keys.slice(0, keys.length-30);
+      drop.forEach(k=>delete map[k]);
+    }
+    localStorage.setItem('cgl50-timesettings-daily', JSON.stringify(map));
+  }catch(e){}
+}
+// Effective time settings for a given day-number: that day's own override
+// if it has one, else the global default.
+function getTimeSettingsForDay(dayNum){
+  const overrides = getDailyTimeOverrides();
+  const key = dayISODate(dayNum);
+  const ov = overrides[key] ? validTimeSettingsObj(overrides[key]) : null;
+  return { settings: ov || getGlobalTimeSettings(), isOverride: !!ov, dateKey: key };
+}
+function setTimeSettingsForDay(dayNum, obj, onlyToday){
+  if(onlyToday){
+    const overrides = getDailyTimeOverrides();
+    overrides[dayISODate(dayNum)] = obj;
+    setDailyTimeOverrides(overrides);
+  } else {
+    setGlobalTimeSettings(obj);
+  }
+}
+function clearTimeSettingsOverrideForDay(dayNum){
+  const overrides = getDailyTimeOverrides();
+  delete overrides[dayISODate(dayNum)];
+  setDailyTimeOverrides(overrides);
+}
+// Old function name kept so the rest of the app (renderTimeGuide's builder)
+// doesn't need to change — always resolves against TODAY's effective
+// settings (its own override if saved, else the global default).
+function getTimeSettings(){
+  return getTimeSettingsForDay(todayDayNum()).settings;
 }
 function minToTimeInputStr(mins){
   mins = ((Math.round(mins)%1440)+1440)%1440;
@@ -339,8 +405,11 @@ function timeInputStrToMin(str){
 }
 // In-memory draft of the settings form so add/remove-break edits don't get
 // wiped out by the next unrelated re-render (a task checkbox tick, a
-// background sync tick, etc.) before the person taps Save.
+// background sync tick, etc.) before the person taps Save. Keyed by which
+// day-number the draft belongs to, so switching days (Prev/Next) doesn't
+// carry a stale draft over onto a different date.
 let timeSettingsDraft = null;
+let timeSettingsDraftDay = null;
 // In-memory draft for the Task Editor (name/start/duration per task) — lets
 // add/remove-task edits build up before the person taps Save, without a
 // background re-render (checkbox tick, sync tick, etc.) wiping the draft.
@@ -352,9 +421,25 @@ function renderTimeSettings(){
     el.innerHTML = '';
     return;
   }
-  if(!timeSettingsDraft) timeSettingsDraft = getTimeSettings();
+  // If the box currently has focus (person is mid-edit, e.g. the native
+  // time picker is open), skip this re-render entirely — the periodic
+  // 60s live-clock tick and other background renders used to rebuild this
+  // box's innerHTML out from under the person while they were picking a
+  // time, which is why the time often refused to "stick". Now a
+  // background tick just leaves it alone until they're done.
+  if(el.contains(document.activeElement)) return;
+  const dayForDraft = selectedDay;
+  if(!timeSettingsDraft || timeSettingsDraftDay !== dayForDraft){
+    timeSettingsDraft = JSON.parse(JSON.stringify(getTimeSettingsForDay(dayForDraft).settings));
+    timeSettingsDraftDay = dayForDraft;
+  }
   const ts = timeSettingsDraft;
+  const hasOverride = getTimeSettingsForDay(dayForDraft).isOverride;
+  const isToday = (dayForDraft === todayDayNum());
   let html = `<div class="tsHead">⚙️ Apna Time-Table Set Karo</div>`;
+  if(hasOverride){
+    html += `<div class="losshint" style="padding:2px 0 8px;">📅 Aaj (${fmtDate(dayForDraft)}) ke liye alag target set hai — kal apne aap default pe wapas aa jaayega.</div>`;
+  }
   html += `
     <div class="tsRow">
       <span class="tsLabel">🏁 Target kis time tak khatam karna hai</span>
@@ -377,29 +462,35 @@ function renderTimeSettings(){
   html += `
     <div class="btnrow">
       <button class="nav-btn" id="tsAddBreakBtn" style="font-size:12.5px;">➕ Break Jodo</button>
-      <button class="nav-btn" id="tsSaveBtn" style="font-size:12.5px;">💾 Save Karo</button>
+      <button class="nav-btn" id="tsSaveTodayBtn" style="font-size:12.5px;">📅 ${isToday? 'Sirf Aaj Ke Liye Save':'Sirf Is Din Ke Liye Save'}</button>
+      <button class="nav-btn" id="tsSaveBtn" style="font-size:12.5px;">💾 Hamesha Ke Liye Save</button>
+      ${hasOverride ? `<button class="nav-btn" id="tsClearOverrideBtn" style="font-size:12.5px;">🗑️ Aaj Ka Alag Target Hatao</button>` : ''}
       <button class="nav-btn" id="tsResetBtn" style="font-size:12.5px;">↩️ Default</button>
     </div>
   `;
   el.innerHTML = html;
 
-  document.getElementById('tsEndInput').addEventListener('change', (e)=>{
+  el.querySelector('#tsEndInput').addEventListener('change', (e)=>{
+    const v = timeInputStrToMin(e.target.value);
+    if(v!==null) timeSettingsDraft.dayEnd = v;
+  });
+  el.querySelector('#tsEndInput').addEventListener('input', (e)=>{
     const v = timeInputStrToMin(e.target.value);
     if(v!==null) timeSettingsDraft.dayEnd = v;
   });
   el.querySelectorAll('.tsBreakStart').forEach(inp=>{
-    inp.addEventListener('change', (e)=>{
+    ['change','input'].forEach(evt=> inp.addEventListener(evt, (e)=>{
       const i = parseInt(e.target.getAttribute('data-bidx'),10);
       const v = timeInputStrToMin(e.target.value);
       if(v!==null) timeSettingsDraft.breaks[i].start = v;
-    });
+    }));
   });
   el.querySelectorAll('.tsBreakEnd').forEach(inp=>{
-    inp.addEventListener('change', (e)=>{
+    ['change','input'].forEach(evt=> inp.addEventListener(evt, (e)=>{
       const i = parseInt(e.target.getAttribute('data-bidx'),10);
       const v = timeInputStrToMin(e.target.value);
       if(v!==null) timeSettingsDraft.breaks[i].end = v;
-    });
+    }));
   });
   el.querySelectorAll('.tsBreakDel').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -414,19 +505,38 @@ function renderTimeSettings(){
     timeSettingsDraft.breaks.push({start, end: Math.min(start+30,1439)});
     renderTimeSettings();
   });
-  document.getElementById('tsSaveBtn').addEventListener('click', ()=>{
-    // Drop inverted/zero-length rows and keep breaks time-ordered so the
-    // guide never trips over an overlapping or backwards window.
+  function cleanDraftBreaks(){
     timeSettingsDraft.breaks = timeSettingsDraft.breaks
       .filter(b=>b.end > b.start)
       .sort((a,b)=>a.start-b.start);
-    setTimeSettings(timeSettingsDraft);
+  }
+  document.getElementById('tsSaveTodayBtn').addEventListener('click', ()=>{
+    // Only this exact date — tomorrow (or any other day) is untouched and
+    // simply keeps using the default/global target.
+    cleanDraftBreaks();
+    setTimeSettingsForDay(dayForDraft, timeSettingsDraft, true);
+    renderTimeGuide();
+    renderTimeSettings();
+  });
+  document.getElementById('tsSaveBtn').addEventListener('click', ()=>{
+    // Drop inverted/zero-length rows and keep breaks time-ordered so the
+    // guide never trips over an overlapping or backwards window.
+    cleanDraftBreaks();
+    setGlobalTimeSettings(timeSettingsDraft);
+    renderTimeGuide();
+    renderTimeSettings();
+  });
+  const clearBtn = document.getElementById('tsClearOverrideBtn');
+  if(clearBtn) clearBtn.addEventListener('click', ()=>{
+    clearTimeSettingsOverrideForDay(dayForDraft);
+    timeSettingsDraft = null; // force reload from (now cleared) storage
     renderTimeGuide();
     renderTimeSettings();
   });
   document.getElementById('tsResetBtn').addEventListener('click', ()=>{
     timeSettingsDraft = defaultTimeSettings();
-    setTimeSettings(timeSettingsDraft);
+    setGlobalTimeSettings(timeSettingsDraft);
+    clearTimeSettingsOverrideForDay(dayForDraft);
     renderTimeGuide();
     renderTimeSettings();
   });
@@ -1410,15 +1520,6 @@ window.addEventListener('message', function(e){
   const openBtn = document.getElementById('calcSpeedTestBtn');
   if(openBtn) openBtn.addEventListener('click', () => showCalcPage('speedtest'));
   const backBtn = document.getElementById('speedtestBackBtn');
-  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
-})();
-// Vocab Flashcards (tools/vocab-srs.html) — poori tarah app ke andar hi
-// khulti hai (Calc tab ke top button se), Calculation Speed Test jaisa hi
-// iframe-in-a-calcPage pattern, koi naya tab/browser redirect nahi hota.
-(function initVocabSrsPage(){
-  const openBtn = document.getElementById('vocabSrsBtn');
-  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('vocabsrs'));
-  const backBtn = document.getElementById('vocabSrsBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
 function dayStatus(n){
@@ -2589,36 +2690,7 @@ function togglePinned(name){
 // WITHOUT touching the live TASKS/TASK_DURATIONS_MIN/TASK_VALUES globals,
 // so the leaderboard can fairly score every player using THEIR OWN tasks —
 // never mixing one person's task list with another's ₹ values or count.
-// ===== Daily-only Task Override ("Sirf Aaj Ke Liye") =====
-// Lets a member set a completely different task list for JUST today without
-// touching their permanent list — tomorrow, since dateKeyOfToday() will be a
-// new key that has no matching entry here, getTaskDefsFromState() silently
-// falls back to the normal permanent list all on its own. Only ever ONE key
-// is kept (today's) — pruneDailyTaskOverride() wipes any stale older key
-// every time state loads, so this never bloats storage.
-function dateKeyOfToday(){ return dateKeyOf(new Date()); }
-function hasDailyTaskOverride(st){
-  st = st || state;
-  const k = dateKeyOfToday();
-  return !!(st.dailyTaskOverrides && Array.isArray(st.dailyTaskOverrides[k]) && st.dailyTaskOverrides[k].length>0);
-}
-function pruneDailyTaskOverride(st){
-  st = st || state;
-  if(!st.dailyTaskOverrides) return;
-  const todayKey = dateKeyOfToday();
-  Object.keys(st.dailyTaskOverrides).forEach(k=>{
-    if(k!==todayKey) delete st.dailyTaskOverrides[k];
-  });
-}
 function getTaskDefsFromState(st){
-  const todayKey = dateKeyOfToday();
-  if(st.dailyTaskOverrides && Array.isArray(st.dailyTaskOverrides[todayKey]) && st.dailyTaskOverrides[todayKey].length>0){
-    return st.dailyTaskOverrides[todayKey].map((d,i)=>({
-      name: (d && typeof d.name==='string' && d.name.trim()) ? d.name : ('Task '+(i+1)),
-      start: (d && typeof d.start==='number') ? d.start : DEFAULT_TASK_START_MIN[i%DEFAULT_TASK_START_MIN.length],
-      duration: (d && typeof d.duration==='number' && d.duration>0) ? d.duration : 30
-    }));
-  }
   if(Array.isArray(st.taskDefs) && st.taskDefs.length>0){
     return st.taskDefs.map((d,i)=>({
       name: (d && typeof d.name==='string' && d.name.trim()) ? d.name : ('Task '+(i+1)),
@@ -3864,7 +3936,6 @@ function updateAdminPanelBtnVisibility(){
 }
 
 function applyLoadedExtras(){
-  pruneDailyTaskOverride(state); // drop any yesterday-or-older daily override — auto revert to default
   const defs = getTaskDefsFromState(state);
   TASKS = defs.map(d=>d.name);
   TASK_START_MIN = defs.map(d=>d.start);
@@ -7510,15 +7581,7 @@ function renderTaskEditForm(){
     }));
   }
   const draftValues = computeTaskValues(taskEditDraft.map(t=>t.duration||1));
-  const dailyBadge = hasDailyTaskOverride(state)
-    ? `<div class="losshint" style="padding-top:0;margin-bottom:8px;color:var(--gain);">🟢 Aaj ke liye custom target active hai — kal apne aap default list wapas aa jayegi.</div>`
-    : '';
-  const dailyToggleRow = `
-    <label class="taskModeOption" id="dailyOnlyRow" style="margin-bottom:10px;">
-      <input type="checkbox" id="dailyOnlyToggle" ${hasDailyTaskOverride(state)?'checked':''}>
-      <span>📅 Sirf Aaj Ke Liye Save Karo (kal khud-ba-khud default pe wapas)</span>
-    </label>`;
-  form.innerHTML = dailyBadge + dailyToggleRow + taskEditDraft.map((t, idx)=>{
+  form.innerHTML = taskEditDraft.map((t, idx)=>{
     const tier = tierForMins(t.duration||0);
     return `
     <div class="taskEditRow" data-row-idx="${idx}">
@@ -7601,65 +7664,28 @@ document.getElementById('saveTasksBtn').addEventListener('click', async ()=>{
     start: (typeof t.start==='number') ? t.start : 480,
     duration: (typeof t.duration==='number' && t.duration>0) ? t.duration : 30
   }));
-  const dailyOnlyEl = document.getElementById('dailyOnlyToggle');
-  const dailyOnly = !!(dailyOnlyEl && dailyOnlyEl.checked);
-
   TASKS = cleaned.map(t=>t.name);
   TASK_START_MIN = cleaned.map(t=>t.start);
   TASK_DURATIONS_MIN = cleaned.map(t=>t.duration);
   TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN); // auto-arranges ₹5,000 across the new task list
-
-  if(dailyOnly){
-    // Today-only: permanent state.taskDefs untouched, only today's date-key
-    // gets this list. Tomorrow pruneDailyTaskOverride()/getTaskDefsFromState()
-    // automatically fall back to the permanent list on their own.
-    if(!state.dailyTaskOverrides) state.dailyTaskOverrides = {};
-    pruneDailyTaskOverride(state);
-    state.dailyTaskOverrides[dateKeyOfToday()] = cleaned.slice();
-  } else {
-    state.taskDefs = cleaned.slice();
-    delete state.taskNames; // superseded by state.taskDefs (name+time+duration)
-    if(state.dailyTaskOverrides) delete state.dailyTaskOverrides[dateKeyOfToday()]; // permanent save overrides any today-only one
-  }
+  state.taskDefs = cleaned.slice();
+  delete state.taskNames; // superseded by state.taskDefs (name+time+duration)
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
   // Admin, Shared Task Mode ON: push this same list to the room so every
   // member's tab picks it up automatically on their next auto-sync tick.
-  // (Today-only lists stay local and are never broadcast to the room.)
-  if(!dailyOnly && isSharedTaskMode() && isMeAdmin()){
+  if(isSharedTaskMode() && isMeAdmin()){
     await saveSharedTaskDefs(cleaned);
     lastAppliedSharedTasksJSON = JSON.stringify(cleaned);
   }
   renderAll();
   renderTaskEditForm();
-  alert(dailyOnly
-    ? 'Aaj ke liye tasks save ho gaye ✅ — kal apne aap default list wapas aa jayegi.'
-    : (isSharedTaskMode() && isMeAdmin()
-      ? 'Tasks save ho gaye ✅ — sabke tab mein automatically update ho jayenge.'
-      : 'Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.'));
+  alert(isSharedTaskMode() && isMeAdmin()
+    ? 'Tasks save ho gaye ✅ — sabke tab mein automatically update ho jayenge.'
+    : 'Tasks save ho gaye ✅ — ₹5,000 automatically naye tasks mein arrange ho gaya.');
 });
 document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
-  const dailyOnlyEl = document.getElementById('dailyOnlyToggle');
-  const hasOverride = hasDailyTaskOverride(state);
-  // If today's list is currently a daily-only override, offer a quick,
-  // non-destructive "just undo today" path instead of always nuking the
-  // permanent list.
-  if(hasOverride && dailyOnlyEl && dailyOnlyEl.checked){
-    if(!confirm('Aaj ka custom target hata ke default list pe wapas jaayein?')) return;
-    delete state.dailyTaskOverrides[dateKeyOfToday()];
-    const defs = getTaskDefsFromState(state);
-    TASKS = defs.map(d=>d.name);
-    TASK_START_MIN = defs.map(d=>d.start);
-    TASK_DURATIONS_MIN = defs.map(d=>d.duration);
-    TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
-    resizeAllDaysTasks();
-    taskEditDraft = null;
-    await save();
-    renderAll();
-    renderTaskEditForm();
-    return;
-  }
   if(!confirm('Sab tasks (naam, time, duration) default pe reset kar du?')) return;
   TASKS = DEFAULT_TASKS.slice();
   TASK_START_MIN = DEFAULT_TASK_START_MIN.slice();
@@ -7667,7 +7693,6 @@ document.getElementById('resetTasksBtn').addEventListener('click', async ()=>{
   TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
   delete state.taskNames;
   delete state.taskDefs;
-  if(state.dailyTaskOverrides) delete state.dailyTaskOverrides[dateKeyOfToday()];
   resizeAllDaysTasks();
   taskEditDraft = null;
   await save();
@@ -8089,7 +8114,7 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // kyunki wo Android/Chrome ka apna "exit fullscreen, drag from top" bar
 // dikha deta hai jo tool ke topbar/URL area ke upar overlap kar jaata hai.
 // CSS takeover (topbar/tabbar hide) is page ke liye already kaam karta hai.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'vocabsrs'];
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8119,8 +8144,8 @@ function showCalcPage(name, _fromPopState){
   // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
   // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
   // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
-  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'vocabsrs';
-  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'vocabsrs';
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
   const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
   const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
@@ -8131,7 +8156,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'vocabsrs');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
