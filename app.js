@@ -1522,6 +1522,13 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('speedtestBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Vocab Flash Cards — same in-app iframe pattern as Calculation Speed Test above.
+(function initVocabFlashcardsPage(){
+  const openBtn = document.getElementById('calcVocabFlashBtn');
+  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('flashcards'));
+  const backBtn = document.getElementById('flashcardsBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
 function dayStatus(n){
   const d = getDay(n);
   if(d.rest) return 'rest';
@@ -8114,7 +8121,7 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // kyunki wo Android/Chrome ka apna "exit fullscreen, drag from top" bar
 // dikha deta hai jo tool ke topbar/URL area ke upar overlap kar jaata hai.
 // CSS takeover (topbar/tabbar hide) is page ke liye already kaam karta hai.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest'];
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8144,8 +8151,8 @@ function showCalcPage(name, _fromPopState){
   // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
   // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
   // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
-  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest';
-  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest';
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
   const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
   const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
@@ -8156,7 +8163,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');

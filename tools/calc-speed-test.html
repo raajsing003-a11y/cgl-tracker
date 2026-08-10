@@ -855,20 +855,41 @@ function genMultiplication3(){
   const matrix = rows.map(r => cols.map(c => r*c));
   return { kind:'grid', title:"Multiplication — 3-digit × 3-digit", cols, rows, matrix };
 }
+// Bade L aur kam-jaane-pehchaane (2-3 digit) divisors — jaan-boojh kar
+// tables se bahar rakha gaya hai taaki quotient seedha yaad na ho, khud
+// nikaalna pade. Teesra dividend-multiple (L×3) bhi add kiya hai taaki
+// per-section questions bhi zyada hon.
 const DIV_FAMILIES = [
-  {L:360, divs:[12,15,18,20,24,30,36,40,45,60,72,90]},
-  {L:720, divs:[12,15,16,18,20,24,30,36,40,45,48,60,72,80,90]},
-  {L:600, divs:[12,15,20,24,25,30,40,50,60,75]},
-  {L:480, divs:[12,15,16,20,24,30,32,40,48,60,80]},
-  {L:900, divs:[12,15,18,20,25,30,36,45,50,60,75,90]},
-  {L:840, divs:[12,14,15,20,21,24,28,30,35,40,42,56,60,70,84,120]}
+  {L:2520, divs:[36,42,45,56,60,63,70,72,84,90,105,112,120,126,140,168,180,210]},
+  {L:5040, divs:[48,56,63,72,80,84,90,105,112,120,126,140,144,168,180,210,240,252]},
+  {L:3600, divs:[48,60,72,75,80,90,96,100,120,144,150,160,180,200,225,240]},
+  {L:4320, divs:[54,60,72,80,90,96,108,120,135,144,160,180,192,216,240,270]},
+  {L:6300, divs:[63,70,75,84,90,100,105,126,140,150,175,180,210,225,252,300]},
+  {L:7560, divs:[63,72,84,90,105,108,120,126,135,140,168,189,210,216,252,280]},
+  {L:1800, divs:[36,40,45,48,50,60,72,75,90,100,120,150,180,225]},
+  {L:9240, divs:[56,60,66,70,77,84,88,105,110,120,132,140,154,165,168,210,220,231]}
 ];
+const drawDivFamilyIdx = makeQueueDrawer('cst_q_divfam_v2', DIV_FAMILIES.length);
+// Kuch hard rows jaan-boojh kar aise divisors use karte hain jo L ko poora
+// divide nahi karte — quotient ek decimal (1 jagah) mein aata hai, taaki
+// off-guard na pakde jaayein bas "table yaad hai" wale answers se.
+const DIV_HARD_EXTRA = [7,9,11,13,17,19,23,29];
 function genDivision(){
-  const fam = pick(DIV_FAMILIES);
-  const rows = shuffle(fam.divs).slice(0,3);
-  const cols = [1,2].map(k => fam.L*k);
-  const matrix = rows.map(d => cols.map(c => c/d));
-  return { kind:'grid', title:"Division", cols, rows, matrix };
+  const fam = DIV_FAMILIES[drawDivFamilyIdx(1)[0]];
+  // 3 "clean" divisors (exact, integer quotient — par bade/obscure divisors
+  // hone se ab bhi khud calculate karna padta hai) + 1 "hard" divisor jo
+  // exactly divide nahi karta — uska row 1-decimal quotient maangta hai.
+  const cleanRows = shuffle(fam.divs).slice(0,3);
+  const hardDivisor = pick(DIV_HARD_EXTRA);
+  const rows = [...cleanRows, hardDivisor];
+  const cols = [1,2,3].map(k => fam.L*k);
+  const matrix = rows.map((d, ri_) => cols.map(c => {
+    if (ri_ === rows.length-1){
+      return Math.round((c / d) * 10) / 10; // hard row — non-exact, 1 decimal
+    }
+    return c / d;
+  }));
+  return { kind:'grid', title:"Division (aakhri row non-exact hai — decimal mein answer karo)", cols, rows, matrix };
 }
 function genTablePractice(){
   const three = drawTableNumIdx(3).map(i => TABLE_NUMBERS[i]);
@@ -896,15 +917,19 @@ function genSubtraction(){
   const matrix = rows.map(r => cols.map(c => c-r));
   return { kind:'grid', title:`Subtraction (${use3?'3':'2'}-digit)`, cols, rows, matrix };
 }
+const SQUARE_POOL = Array.from({length:34},(_,i)=>i+17); // 17-50
+const drawSquareIdx = makeQueueDrawer('cst_q_square_v1', SQUARE_POOL.length);
 function genSquare(){
-  const pool = shuffle(Array.from({length:34},(_,i)=>i+17)).slice(0,4); // 17-50
+  const pool = drawSquareIdx(4).map(i => SQUARE_POOL[i]);
   const extra = ri(51,70);
   const rows = shuffle([...pool, extra]);
   const matrix = rows.map(n => [n*n]);
   return { kind:'grid', title:"Square", cols:["Square"], rows, matrix };
 }
+const CUBE_POOL = Array.from({length:14},(_,i)=>i+11); // 11-24
+const drawCubeIdx = makeQueueDrawer('cst_q_cube_v1', CUBE_POOL.length);
 function genCube(){
-  const pool = shuffle(Array.from({length:14},(_,i)=>i+11)).slice(0,3); // 11-24
+  const pool = drawCubeIdx(3).map(i => CUBE_POOL[i]);
   const extra = ri(25,30);
   const rows = shuffle([...pool, extra]);
   const matrix = rows.map(n => [n*n*n]);
@@ -1685,7 +1710,8 @@ function renderSheet(){
         const rh = document.createElement('td'); rh.className='rowhead'; rh.textContent=r; tr.appendChild(rh);
         sec.cols.forEach((c, ci) => {
           const td = document.createElement('td');
-          td.appendChild(makeBlank({ correct: sec.matrix[ri_][ci], decimal:false }, si));
+          const cellVal = sec.matrix[ri_][ci];
+          td.appendChild(makeBlank({ correct: cellVal, decimal: !Number.isInteger(cellVal) }, si));
           tr.appendChild(td);
         });
         table.appendChild(tr);
