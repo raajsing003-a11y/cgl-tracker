@@ -8170,11 +8170,13 @@ function isQuizTakingPage(name){
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
 }
 function enterAppFullscreen(){
-  try{
-    const el = document.documentElement;
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if(req && !document.fullscreenElement) req.call(el).catch(()=>{});
-  }catch(e){}
+  // Native Fullscreen API jaan-bujh kar disable kar diya hai — isse
+  // browser/PWA host (jaise GitHub Pages) "drag from the top to exit full
+  // screen" jaisa hint banner dikhata tha jo kisi bhi quiz page ke upar
+  // aa jaata tha. App ka apna CSS-only fullscreen look (appQuizFullscreen /
+  // gkReaderFullscreen classes) already poori tarah kaam karta hai, isliye
+  // asli browser fullscreen ki zaroorat nahi hai.
+  return;
 }
 function exitAppFullscreen(){
   try{
