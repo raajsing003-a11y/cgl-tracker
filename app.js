@@ -8994,6 +8994,14 @@ function isCompleteVocabKey(key){
   const num = parseInt((key.match(/\d+/) || [])[0], 10);
   return !isNaN(num) && num >= COMPLETE_VOCAB_START;
 }
+// Complete Vocab list mein set98..set165 ko display ke liye 1..68 dikhaya
+// jaata hai — andar VOCAB_SETS ki asli key (set98 etc.) nahi badalti, sirf
+// yeh label. Menu aur quiz-title dono isi ek jagah se number nikalte hain.
+function completeVocabDisplayLabel(key, count){
+  const orderedKeys = Object.keys(VOCAB_SETS).filter(isCompleteVocabKey);
+  const displayNum = orderedKeys.indexOf(key) + 1;
+  return 'Set ' + displayNum + ' (' + count + ' Qs)';
+}
 
 function renderVocabSetMenu(){
   const grid = document.getElementById('vocabSetGrid');
@@ -9024,7 +9032,7 @@ function renderCompleteVocabSetMenu(){
   Object.keys(VOCAB_SETS).forEach(key => {
     if(!isCompleteVocabKey(key)) return;
     const count = VOCAB_SETS[key].length;
-    const label = vocabSetLabel(key, count);
+    const label = completeVocabDisplayLabel(key, count);
     if(renderQuizAttemptCard(grid, 'vocab', key, '📚', label, () => startVocabQuiz(key, 'completevocabmenu'))) return;
     const btn = document.createElement('button');
     btn.className = 'calcCard';
@@ -9065,7 +9073,9 @@ async function startVocabQuiz(setKey, originPage){
   const titleEl = document.getElementById('vocabQuizTitle');
   if(titleEl) titleEl.textContent = isSaved
     ? 'Vocab Quiz — ⭐ Saved (' + vocabSession.questions.length + ')'
-    : 'Vocab Quiz — ' + vocabSetLabel(setKey, vocabSession.questions.length);
+    : (vocabSession.originPage === 'completevocabmenu'
+        ? 'Complete Vocab — ' + completeVocabDisplayLabel(setKey, vocabSession.questions.length)
+        : 'Vocab Quiz — ' + vocabSetLabel(setKey, vocabSession.questions.length));
   const resultCard = document.getElementById('vocabResultCard');
   if(resultCard) resultCard.style.display = 'none';
   const qWrap = document.getElementById('vocabQuestionWrap');
