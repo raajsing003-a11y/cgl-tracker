@@ -1548,12 +1548,26 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('speedtestBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
-// Vocab Flash Cards — same in-app iframe pattern as Calculation Speed Test above.
+// Vocab Flash Cards — home button ab seedha iframe nahi kholta, pehle ek
+// chooser hub dikhata hai: "Vocab Flash Cards" (SRS iframe tool, jaisa
+// pehle tha) aur "Complete Vocab" (set98–set165 quiz sets, jo pehle Vocab
+// Quiz list mein the — wahan se hata kar yahan la diye gaye hain).
 (function initVocabFlashcardsPage(){
   const openBtn = document.getElementById('calcVocabFlashBtn');
-  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('flashcards'));
+  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('flashhubmenu'));
+  const hubBackBtn = document.getElementById('flashHubBackBtn');
+  if(hubBackBtn) hubBackBtn.addEventListener('click', () => showCalcPage('menu'));
+  const hubFlashBtn = document.getElementById('flashHubVocabFlashBtn');
+  if(hubFlashBtn) hubFlashBtn.addEventListener('click', () => showCalcPage('flashcards'));
+  const hubCompleteVocabBtn = document.getElementById('flashHubCompleteVocabBtn');
+  if(hubCompleteVocabBtn) hubCompleteVocabBtn.addEventListener('click', () => {
+    safeRun(renderCompleteVocabSetMenu, 'renderCompleteVocabSetMenu');
+    showCalcPage('completevocabmenu');
+  });
+  const completeVocabBackBtn = document.getElementById('completeVocabMenuBackBtn');
+  if(completeVocabBackBtn) completeVocabBackBtn.addEventListener('click', () => showCalcPage('flashhubmenu'));
   const backBtn = document.getElementById('flashcardsBackBtn');
-  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('flashhubmenu'));
 })();
 function dayStatus(n){
   const d = getDay(n);
@@ -8971,26 +8985,59 @@ function updateVocabSavedMenuBtn(){
   if(lbl) lbl.textContent = vocabSavedCount() + ' saved';
 }
 
+// set98 se set165 tak ke sets "Complete Vocab" (Vocab Flash Cards hub ke
+// andar) mein chale gaye hain — ab yeh Vocab Quiz ki main set-list mein
+// nahi dikhte. Dono jagah wahi VOCAB_SETS data use hota hai, bas menu
+// split ho gaya hai.
+const COMPLETE_VOCAB_START = 98;
+function isCompleteVocabKey(key){
+  const num = parseInt((key.match(/\d+/) || [])[0], 10);
+  return !isNaN(num) && num >= COMPLETE_VOCAB_START;
+}
+
 function renderVocabSetMenu(){
   const grid = document.getElementById('vocabSetGrid');
   if(!grid) return;
   grid.innerHTML = '';
   Object.keys(VOCAB_SETS).forEach(key => {
+    if(isCompleteVocabKey(key)) return;
     const count = VOCAB_SETS[key].length;
     const label = vocabSetLabel(key, count);
-    if(renderQuizAttemptCard(grid, 'vocab', key, '📖', label, () => startVocabQuiz(key))) return;
+    if(renderQuizAttemptCard(grid, 'vocab', key, '📖', label, () => startVocabQuiz(key, 'vocabmenu'))) return;
     const btn = document.createElement('button');
     btn.className = 'calcCard';
     btn.innerHTML =
       '<span class="calcIcon">📖</span>' +
       '<span class="calcLabel">' + escapeHtml(label) + '</span>' +
       '<span class="calcArrow">&#8250;</span>';
-    btn.addEventListener('click', () => startVocabQuiz(key));
+    btn.addEventListener('click', () => startVocabQuiz(key, 'vocabmenu'));
     grid.appendChild(btn);
   });
 }
 
-async function startVocabQuiz(setKey){
+// "Complete Vocab" — same VOCAB_SETS data, sirf set98–set165 wale sets,
+// Vocab Flash Cards hub ke andar apni alag set-list screen par.
+function renderCompleteVocabSetMenu(){
+  const grid = document.getElementById('completeVocabSetGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  Object.keys(VOCAB_SETS).forEach(key => {
+    if(!isCompleteVocabKey(key)) return;
+    const count = VOCAB_SETS[key].length;
+    const label = vocabSetLabel(key, count);
+    if(renderQuizAttemptCard(grid, 'vocab', key, '📚', label, () => startVocabQuiz(key, 'completevocabmenu'))) return;
+    const btn = document.createElement('button');
+    btn.className = 'calcCard';
+    btn.innerHTML =
+      '<span class="calcIcon">📚</span>' +
+      '<span class="calcLabel">' + escapeHtml(label) + '</span>' +
+      '<span class="calcArrow">&#8250;</span>';
+    btn.addEventListener('click', () => startVocabQuiz(key, 'completevocabmenu'));
+    grid.appendChild(btn);
+  });
+}
+
+async function startVocabQuiz(setKey, originPage){
   // "Practice Again" button se dobara call hone par setKey nahi milta —
   // us case mein pichhle wale set (ya 'saved') ko hi reuse kar lo.
   if(!setKey) setKey = vocabSession.setKey;
@@ -8998,6 +9045,12 @@ async function startVocabQuiz(setKey){
   const isSaved = setKey === 'saved';
   if(!isSaved && !VOCAB_SETS[setKey]) return;
   if(!(await window.ensureTopicReady(VOCAB_SETS))) return;
+  // Back buttons (quiz page + result screen) yahin se decide karte hain ki
+  // wapas kis menu par jaana hai — Vocab Quiz list ya Complete Vocab list.
+  // "Practice Again" jaisi dobara-call mein originPage nahi milta, us case
+  // mein pichla wala hi bana rehta hai.
+  if(originPage) vocabSession.originPage = originPage;
+  else if(!vocabSession.originPage) vocabSession.originPage = isCompleteVocabKey(setKey) ? 'completevocabmenu' : 'vocabmenu';
   vocabSession.setKey = setKey;
   vocabSession.questions = isSaved ? buildVocabSavedPool() : buildVocabSetPool(setKey);
   if(isSaved && vocabSession.questions.length === 0){
@@ -9135,11 +9188,13 @@ function endVocabQuiz(){
     });
   }
   ensureResultTopReattemptBtn(resultCard, () => startVocabQuiz(vocabSession.setKey));
-  renderVocabSetMenu();
+  if(vocabSession.originPage === 'completevocabmenu') renderCompleteVocabSetMenu();
+  else renderVocabSetMenu();
 }
 
 function initVocabQuiz(){
   renderVocabSetMenu();
+  renderCompleteVocabSetMenu();
   updateVocabSavedMenuBtn();
   // English Vocab master button (dashboard) -> hub submenu with the 9 topics.
   const vocabHubBtn = document.getElementById('calcEnglishVocabHubBtn');
@@ -9176,11 +9231,11 @@ function initVocabQuiz(){
   if(nextBtnTop) nextBtnTop.addEventListener('click', goToNextVocabQuestion);
   attachQuizSwipeNext('calcPage-vocab', goToNextVocabQuestion);
   const backBtn = document.getElementById('vocabBackBtn');
-  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('vocabmenu'));
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage(vocabSession.originPage || 'vocabmenu'));
   const againBtn = document.getElementById('vocabResultAgainBtn');
   if(againBtn) againBtn.addEventListener('click', () => startVocabQuiz());
   const resBackBtn = document.getElementById('vocabResultBackBtn');
-  if(resBackBtn) resBackBtn.addEventListener('click', () => showCalcPage('vocabmenu'));
+  if(resBackBtn) resBackBtn.addEventListener('click', () => showCalcPage(vocabSession.originPage || 'vocabmenu'));
 
   // "Spelling" card — Vocab Quiz jaisa hi do-step flow: pehle Set choose
   // karo (calcPage-spellingmenu), phir quiz shuru hota hai (calcPage-spelling).
