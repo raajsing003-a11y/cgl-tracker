@@ -896,16 +896,30 @@ for(let day=1; day<=30; day++){
 // Day's card stays usable here — every other card gets a lock overlay.
 // Standalone use (opened directly, no parent, or a different origin) never
 // locks anything, so this file keeps working on its own too.
-async function applyStudy30Lock(){
+async function applyStudy30Lock(retriesLeft){
+  if(retriesLeft === undefined) retriesLeft = 20;
+  const embedded = !!(window.parent && window.parent !== window);
   let unlockedDay = null;
   let bypass = false;
+  let parentReady = false;
   try{
-    if(window.parent && window.parent !== window && typeof window.parent.loadStudy30Day === 'function'){
+    if(embedded && typeof window.parent.loadStudy30Day === 'function'){
+      parentReady = true;
       unlockedDay = await window.parent.loadStudy30Day();
       bypass = typeof window.parent.isMeAdmin === 'function' && window.parent.isMeAdmin();
     }
-  }catch(e){ unlockedDay = null; }
-  if(!unlockedDay) return; // standalone / not embedded / cross-origin — no lock
+  }catch(e){ unlockedDay = null; parentReady = false; }
+  if(embedded && !parentReady){
+    // Embedded, but the parent app hasn't finished loading its script yet
+    // (e.g. app.js is still parsing/executing). Do NOT treat this as
+    // "standalone, no lock" — that would flash every day as unlocked for
+    // a moment. Retry shortly instead; keep whatever lock state (or none
+    // yet, on the very first call) is already on screen in the meantime.
+    if(retriesLeft > 0) setTimeout(()=>applyStudy30Lock(retriesLeft-1), 300);
+    return;
+  }
+  if(!embedded) return; // genuinely standalone (opened directly, no parent) — no lock
+  if(!unlockedDay) return; // embedded, parent ready, but no room/day info — no lock
   for(let day=1; day<=30; day++){
     const card = document.getElementById('pcard-'+day);
     if(!card) continue;
