@@ -1548,14 +1548,6 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('speedtestBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
-// 30 Day Study Tracker — poori tarah app ke andar hi khulti hai (ek
-// calcPage ke andar iframe), koi naya tab/browser redirect nahi hota.
-(function initStudyTrackerPage(){
-  const openBtn = document.getElementById('calcStudyTrackerBtn');
-  if(openBtn) openBtn.addEventListener('click', () => showCalcPage('studytracker'));
-  const backBtn = document.getElementById('studytrackerBackBtn');
-  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
-})();
 // Vocab Flash Cards — home button ab seedha iframe nahi kholta, pehle ek
 // chooser hub dikhata hai: "Vocab Flash Cards" (SRS iframe tool, jaisa
 // pehle tha) aur "Complete Vocab" (set98–set165 quiz sets, jo pehle Vocab
@@ -2822,71 +2814,12 @@ async function saveSharedTaskDefs(defs){
 // otherwise deliberately avoids re-rendering every auto-sync tick, so it
 // doesn't yank focus out of a notes/mistakes textarea mid-type).
 let lastAppliedSharedTasksJSON = null;
-// ===== 30-Day Study Plan: Admin day-unlock + auto-publish to Today tab =====
-// Admin controls which Day (1-30) of the 30-Day Study Tracker (Quiz tab ->
-// "30 Day Study Tracker") is currently unlocked for everyone. Only that
-// Day's card is usable inside the tracker for non-admin members — the rest
-// show a locked overlay. Admin can also "Publish" that Day straight into
-// everyone's Today tab as their only 4 tasks (Math+Reasoning, English, GK,
-// Full Mock) — reusing the existing Shared Task Mode pipe so money/checkoff
-// behaves exactly like any other shared task. A member can personally opt
-// out any time (see study30_optOut below) and get their own custom tasks
-// back without affecting anyone else.
-const STUDY30_DAY_KEY = '_study30Day';
-let study30DayCache = null;
-let study30DayCacheAt = 0;
-async function loadStudy30Day(){
-  const room = getRoomCode();
-  if(!room) return 1;
-  if(study30DayCache!==null && (Date.now()-study30DayCacheAt) < 8000) return study30DayCache;
-  const raw = await kvdbGet(STUDY30_DAY_KEY);
-  let day = parseInt(raw, 10);
-  if(!day || day<1) day = 1;
-  if(day>30) day = 30;
-  study30DayCache = day;
-  study30DayCacheAt = Date.now();
-  return day;
-}
-async function setStudy30Day(day){
-  const room = getRoomCode();
-  if(!room) return;
-  day = Math.max(1, Math.min(30, parseInt(day,10)||1));
-  await kvdbSet(STUDY30_DAY_KEY, String(day));
-  study30DayCache = day;
-  study30DayCacheAt = Date.now();
-}
-// Builds the 4-task shared list for a given Day — kept generic (full detail
-// lives inside the tracker itself) so this never drifts out of sync with
-// the tracker's own chapter/vocab/GK content.
-function buildStudy30TaskDefs(day){
-  return [
-    { name: `📐 Day ${day} — Math + Reasoning Sectional`, start: 420, duration: 90 },
-    { name: `📖 Day ${day} — English Full Plan`,          start: 570, duration: 90 },
-    { name: `🌍 Day ${day} — GK Reading + Static GK`,      start: 720, duration: 90 },
-    { name: `🎯 Day ${day} — Full Mock`,                   start: 870, duration: 150 }
-  ];
-}
-// Personal, per-device opt-out from Study30 shared mode — doesn't touch the
-// room-wide setting, so it never affects other members.
-function isStudy30OptedOut(){
-  try{ return localStorage.getItem('study30_optOut') === 'true'; }catch(e){ return false; }
-}
-function setStudy30OptedOut(v){
-  try{
-    if(v) localStorage.setItem('study30_optOut','true');
-    else localStorage.removeItem('study30_optOut');
-  }catch(e){}
-}
-
 // Called after every refreshRoomMeta() — applies (or reverts) the shared
 // task list so it takes effect for EVERY member automatically, without
 // anyone needing to open/edit anything themselves.
 async function applySharedTaskModeIfNeeded(){
   if(!getRoomCode()) return;
-  // Personal opt-out (Admin excluded — an Admin who opted out would just
-  // confuse their own Publish flow): fall back to this member's own tasks
-  // exactly like Individual Mode, without touching the room-wide setting.
-  if(!isSharedTaskMode() || (isStudy30OptedOut() && !isMeAdmin())){
+  if(!isSharedTaskMode()){
     if(lastAppliedSharedTasksJSON !== null){
       // Mode was just switched back to individual — hand this state's own
       // tasks back control.
@@ -3855,46 +3788,6 @@ async function renderAdminSection(){
 // rendered while isMeAdmin() is true — the header button that opens this
 // modal is itself hidden for everyone else, and this function
 // double-checks admin status again before rendering anything sensitive.
-function wireStudy30AdminControls(){
-  const nextBtn = document.getElementById('study30NextDayBtn');
-  const publishBtn = document.getElementById('study30PublishBtn');
-  const stopBtn = document.getElementById('study30StopBtn');
-  const statusEl = document.getElementById('study30Status');
-  if(nextBtn) nextBtn.addEventListener('click', async ()=>{
-    nextBtn.disabled = true; nextBtn.textContent = '⏳...';
-    const day = await loadStudy30Day();
-    await setStudy30Day(day + 1);
-    if(statusEl) statusEl.textContent = `Day ${day+1} unlock ho gaya.`;
-    await renderAdminPanelBody();
-  });
-  if(publishBtn) publishBtn.addEventListener('click', async ()=>{
-    publishBtn.disabled = true; publishBtn.textContent = '⏳...';
-    const day = await loadStudy30Day();
-    const defs = buildStudy30TaskDefs(day);
-    await saveSharedTaskDefs(defs);
-    await setRoomTaskMode('shared');
-    currentRoomTaskMode = 'shared';
-    lastAppliedSharedTasksJSON = JSON.stringify(defs);
-    TASKS = defs.map(d=>d.name);
-    TASK_START_MIN = defs.map(d=>d.start);
-    TASK_DURATIONS_MIN = defs.map(d=>d.duration);
-    TASK_VALUES = computeTaskValues(TASK_DURATIONS_MIN);
-    taskEditDraft = null;
-    safeRun(renderAll, 'renderAll');
-    if(statusEl) statusEl.textContent = `Day ${day} sabke Today tab mein publish ho gaya. ✅`;
-    await renderAdminPanelBody();
-  });
-  if(stopBtn) stopBtn.addEventListener('click', async ()=>{
-    stopBtn.disabled = true; stopBtn.textContent = '⏳...';
-    await setRoomTaskMode('individual');
-    currentRoomTaskMode = 'individual';
-    lastAppliedSharedTasksJSON = null;
-    applyLoadedExtras();
-    safeRun(renderAll, 'renderAll');
-    if(statusEl) statusEl.textContent = 'Individual mode wapas on ho gaya — har member apna task khud karega.';
-    await renderAdminPanelBody();
-  });
-}
 async function renderAdminPanelBody(){
   const roomCodeWrap = document.getElementById('adminPanelRoomCodeWrap');
   const bodyEl = document.getElementById('adminPanelBody');
@@ -3969,21 +3862,6 @@ async function renderAdminPanelBody(){
     <div class="losshint" style="padding-top:6px;">${annStatusLine}</div>
   `;
 
-  const study30Day = await loadStudy30Day();
-  const study30Html = `
-    <div class="grid-label" style="margin-top:14px;">📘 30-Day Study Plan</div>
-    <div class="losshint" style="padding-top:0;">Sirf "Day ${study30Day}" hi sabke tracker mein khulta hai — agla din tabhi khulega jab tum unlock karoge. "Publish" karne se yehi Day sabke Today tab mein target ban jaata hai (paisa bhi wahin milta hai).</div>
-    <div class="btnrow" style="margin-top:8px;flex-wrap:wrap;">
-      <span class="losshint" style="padding:0;font-weight:700;color:var(--accent);">Abhi Unlocked: Day ${study30Day} / 30</span>
-    </div>
-    <div class="btnrow" style="margin-top:8px;flex-wrap:wrap;">
-      <button class="nav-btn" id="study30NextDayBtn" ${study30Day>=30?'disabled':''}>🔓 Next Day Unlock Karo</button>
-      <button class="nav-btn" id="study30PublishBtn">📤 Publish (Sabka Today Target Banao)</button>
-      ${currentRoomTaskMode==='shared' ? `<button class="nav-btn" id="study30StopBtn">⏹️ Rok Do (Individual Mode)</button>` : ''}
-    </div>
-    <div class="losshint" id="study30Status" style="padding-top:6px;"></div>
-  `;
-
   const weeklyHtml = `
     <div class="grid-label" style="margin-top:14px;">🏆 Leaderboard</div>
     <div class="losshint" style="padding-top:0;">Rank tab ke "Today", "This Week" aur "All-Time" khud-ba-khud reset hote hain — progress, streak ya wallet kuch delete nahi hota, sirf scoreboard restart hota hai.</div>
@@ -4008,13 +3886,12 @@ async function renderAdminPanelBody(){
   `;
 
   if(!others.length){
-    bodyEl.innerHTML = announceHtml + study30Html + subAdminHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
     wireAdminBackupButtons();
     wireAdminAnnouncementAndWeeklyControls();
-    wireStudy30AdminControls();
     return;
   }
-  bodyEl.innerHTML = announceHtml + study30Html + subAdminHtml + weeklyHtml + backupHtml + `
+  bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `
     <div class="losshint" style="padding-top:14px;">"Hide" karne se member ka naam/progress sirf tumhe aur usko dikhega, baaki sabse chhup jayega. 🗑️ Hatao se member hamesha ke liye group se hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
@@ -4041,7 +3918,6 @@ async function renderAdminPanelBody(){
   `;
   wireAdminBackupButtons();
   wireAdminAnnouncementAndWeeklyControls();
-  wireStudy30AdminControls();
   const setSubAdminBtn = document.getElementById('setSubAdminBtn');
   if(setSubAdminBtn) setSubAdminBtn.addEventListener('click', async ()=>{
     const sel = document.getElementById('subAdminSelect');
@@ -7680,30 +7556,9 @@ function renderTaskModeSelector(){
   }
   const mode = currentRoomTaskMode;
   if(!isMeAdmin()){
-    const optedOut = isStudy30OptedOut();
-    if(mode==='shared'){
-      el.innerHTML = optedOut
-        ? `<div class="losshint" style="padding-top:0;">🚪 Tumne is shared plan se khud exit kar liya hai — abhi apne custom tasks use kar rahe ho.</div>
-           <div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="study30RejoinBtn">▶️ Wapas Plan Follow Karo</button></div>`
-        : `<div class="losshint" style="padding-top:0;">🔒 Admin (<b>${escapeHtml(currentRoomAdmin||'')}</b>) ne sabke liye same tasks set kiye hain — automatically sync hote rehte hain.</div>
-           <div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="study30OptOutBtn">🚪 Ye Plan Chhodo, Apne Tasks Banao</button></div>`;
-      const rejoinBtn = document.getElementById('study30RejoinBtn');
-      if(rejoinBtn) rejoinBtn.addEventListener('click', async ()=>{
-        setStudy30OptedOut(false);
-        lastAppliedSharedTasksJSON = null;
-        await applySharedTaskModeIfNeeded();
-        renderTaskModeSelector();
-      });
-      const optOutBtn = document.getElementById('study30OptOutBtn');
-      if(optOutBtn) optOutBtn.addEventListener('click', async ()=>{
-        setStudy30OptedOut(true);
-        lastAppliedSharedTasksJSON = null;
-        await applySharedTaskModeIfNeeded();
-        renderTaskModeSelector();
-      });
-    } else {
-      el.innerHTML = `<div class="losshint" style="padding-top:0;"><span class="icoEdit" aria-hidden="true"></span> Abhi har member (tum bhi) apne tasks khud customize kar sakte ho.</div>`;
-    }
+    el.innerHTML = mode==='shared'
+      ? `<div class="losshint" style="padding-top:0;">🔒 Admin (<b>${escapeHtml(currentRoomAdmin||'')}</b>) ne sabke liye same tasks set kiye hain — automatically sync hote rehte hain.</div>`
+      : `<div class="losshint" style="padding-top:0;"><span class="icoEdit" aria-hidden="true"></span> Abhi har member (tum bhi) apne tasks khud customize kar sakte ho.</div>`;
     return;
   }
   el.innerHTML = `
@@ -7746,7 +7601,7 @@ function renderTaskEditForm(){
   // Shared Task Mode + not the Admin: tasks come from the Admin automatically,
   // so this member's own edit form is replaced by a read-only list and the
   // add/save/reset buttons are hidden — there's nothing here for them to save.
-  if(isSharedTaskMode() && !isMeAdmin() && !isStudy30OptedOut()){
+  if(isSharedTaskMode() && !isMeAdmin()){
     if(actionsRow) actionsRow.style.display = 'none';
     form.innerHTML = `<div class="losshint" style="padding-top:0;margin-bottom:10px;">🔒 Admin (<b>${escapeHtml(currentRoomAdmin||'')}</b>) ne sabke liye same tasks set kiye hain — edit lock hai, Admin badlega to yahan automatically update hoga.</div>` +
       TASKS.map((name,idx)=>{
@@ -8353,7 +8208,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'studytracker');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
