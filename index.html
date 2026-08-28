@@ -1227,6 +1227,17 @@
     box-shadow:0 2px 6px rgba(0,0,0,0.3);
   }
   .flashcardsFrame{flex:1 1 auto;width:100%;border:0;display:block;background:#0a0e18;}
+
+  /* Study Tracker page was missing this same fullscreen-flex override that
+     speedtest/flashcards have above — without it, .calcPage.active{display:block}
+     wins, the iframe's flex:1 1 auto has no flex parent to size against, and it
+     collapses to a tiny default height. Header/stats (outside the iframe) show
+     fine, but everything inside the iframe (the actual tracker) looks blank. */
+  #calcPage-studytracker.active{
+    display:flex !important;flex-direction:column;
+    position:fixed;inset:0;z-index:200;
+  }
+  #calcPage-studytracker{position:relative;}
   .studytrackerFrame{flex:1 1 auto;width:100%;border:0;display:block;background:#12141b;}
 
   .calcGrid{
@@ -3596,7 +3607,7 @@
   </div>
 
   <div class="tabview" id="tab-today" data-tabview="today">
-    <div class="quoteCard" id="todayQuoteCard">
+    <div class="quoteCard">
       <div class="quoteEyebrow">🎯 Motivation</div>
       <div class="quoteText" id="quoteText-today">Loading…</div>
     </div>
@@ -3629,10 +3640,8 @@
       <div class="loading">Loading tracker…</div>
     </div>
 
-    <div id="todayCalendarBlock">
-      <div class="grid-label">📅 <span id="calDaysLabel">50</span> Din Ka Calendar (✅ done · ⏳ partial · 😴 rest · chhota no. = Plan Day)</div>
-      <div class="calendarView" id="calendarView"></div>
-    </div>
+    <div class="grid-label">📅 <span id="calDaysLabel">50</span> Din Ka Calendar (✅ done · ⏳ partial · 😴 rest · chhota no. = Plan Day)</div>
+    <div class="calendarView" id="calendarView"></div>
   </div>
 
   <div class="tabview" id="tab-mock" data-tabview="mock">
