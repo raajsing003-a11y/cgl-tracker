@@ -292,6 +292,43 @@
   #confettiLayer{position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:hidden;}
   .confetti-piece{position:absolute; top:-12px; width:8px; height:8px; opacity:0.9; animation:confettiFall linear forwards;}
   @keyframes confettiFall{to{transform:translateY(110vh) rotate(540deg); opacity:0.2;}}
+
+  /* ===== Bold + bigger text pass — match main app's task-list typography
+     (see index.html .task .name: 15px / 700 / #fff) across every item row,
+     label and title in this tracker. ===== */
+  .plan-row-title{font-size:15px !important; font-weight:700 !important; color:#fff !important;}
+  .plan-row-time{font-size:12.5px !important; font-weight:700 !important;}
+  .plan-row-num{font-size:13px !important; font-weight:700 !important;}
+  .day-chapters{font-size:15px !important; font-weight:700 !important; color:#fff !important;}
+  .day-qty{font-size:13px !important; font-weight:700 !important;}
+  .cat-list, .cat-item span.cat-label{font-size:14px !important; font-weight:600 !important;}
+  .eng-mini span{font-size:13.5px !important; font-weight:700 !important;}
+  .eng-block-title, .gk-round-label, .mock-label{font-size:11.5px !important; font-weight:800 !important;}
+  .gk-subj{font-size:15px !important; font-weight:700 !important;}
+  .gk-pages{font-size:13px !important; font-weight:700 !important;}
+  .formula-topic{font-size:15px !important; font-weight:700 !important;}
+  .fixed-card .fnum{font-size:15px !important; font-weight:700 !important;}
+  .fixed-card .flabel{font-size:11px !important; font-weight:700 !important;}
+  .mock-card .mtitle span{font-size:11.5px !important; font-weight:700 !important;}
+  .actual-row{font-size:12.5px !important; font-weight:700 !important;}
+  .plan-day-round{font-size:12.5px !important; font-weight:700 !important;}
+  .progress-label{font-size:14px !important; font-weight:700 !important;}
+  .round-title{font-size:16px !important; font-weight:700 !important;}
+  .sub{font-size:13.5px !important; font-weight:600 !important;}
+  .today-badge{font-size:11px !important; font-weight:800 !important;}
+
+  /* ===== Admin bar — Next Day unlock / Publish / member progress, right
+     inside the tracker so Admin doesn't have to leave it. ===== */
+  #study30AdminBar{background:linear-gradient(155deg,var(--card),var(--card2)); border:1.5px solid var(--accent); border-radius:12px; padding:12px 14px; margin-bottom:14px; box-shadow:var(--glow-gold), var(--shadow);}
+  #study30AdminBar .s30-title{font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:var(--accent); margin-bottom:6px;}
+  #study30AdminBar .s30-status{font-size:13px; font-weight:600; color:var(--muted); margin-bottom:10px;}
+  #study30AdminBar .s30-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
+  #study30AdminBar button, #study30AdminBar select{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; border-radius:8px; border:1.5px solid var(--border); background:var(--card2); color:var(--text); padding:9px 12px; cursor:pointer;}
+  #study30AdminBar button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep)); color:#101418; border-color:var(--accent);}
+  #study30AdminBar select{flex:1; min-width:120px;}
+  #study30MemberProgress{margin-top:8px; display:none; flex-direction:column; gap:6px;}
+  #study30MemberProgress .s30-mrow{display:flex; justify-content:space-between; align-items:center; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; font-weight:700;}
+  #study30MemberProgress .s30-mrow span.pct{font-family:'JetBrains Mono',monospace; color:var(--done);}
 </style>
 </head>
 <body>
@@ -299,6 +336,8 @@
 <div class="hero-wrap">
 <h1>📘 30-Day Study Tracker</h1>
 <div class="sub">Maths + Reasoning + English + GK + Full Mock — Sab Ek Hi Daily View Mein, Poori Detail Ke Saath</div>
+
+<div id="study30AdminBar" style="display:none;"></div>
 
 <div class="streak-row">
   <div class="streak-card" id="streakCard"><b id="streakVal">0</b><span>Din Streak 🔥</span></div>
@@ -928,6 +967,91 @@ async function applyStudy30Lock(){
 }
 applyStudy30Lock();
 setInterval(applyStudy30Lock, 25000);
+
+// ===== Admin Bar — Next Day unlock + Publish + member progress, wired
+// straight into this tracker (same postMessage-free trick as the lock
+// above: calls straight into the parent app's already-existing globals,
+// since this iframe is same-origin). Sirf Admin ko dikhta hai. =====
+async function renderStudy30AdminBar(){
+  const bar = document.getElementById('study30AdminBar');
+  if(!bar) return;
+  const p = window.parent;
+  const embedded = !!(p && p !== window && typeof p.isMeAdmin === 'function');
+  if(!embedded || !p.isMeAdmin()){ bar.style.display = 'none'; return; }
+  // Don't clobber an open "member progress" view on the periodic re-render.
+  const openBox = document.getElementById('study30MemberProgress');
+  if(openBox && openBox.style.display === 'flex') return;
+  bar.style.display = 'block';
+  let day = 1;
+  try{ day = await p.loadStudy30Day(); }catch(e){}
+  bar.innerHTML = `
+    <div class="s30-title">👑 Admin — Task Control (isi tracker se)</div>
+    <div class="s30-status" id="s30AdminStatus">Abhi Unlocked: Day ${day} / 30</div>
+    <div class="s30-row">
+      <button id="s30NextBtn" ${day>=30?'disabled':''}>🔓 Next Day Unlock</button>
+      <button id="s30PublishBtn" class="primary">📤 Publish (Sabka Target Banao)</button>
+    </div>
+    <div class="s30-row">
+      <select id="s30MemberSelect"><option value="">— Member chuno —</option></select>
+      <button id="s30ViewBtn">👁️ Pehle Ke Task Dekho</button>
+    </div>
+    <div id="study30MemberProgress"></div>
+  `;
+  const nextBtn = document.getElementById('s30NextBtn');
+  const publishBtn = document.getElementById('s30PublishBtn');
+  const viewBtn = document.getElementById('s30ViewBtn');
+  const statusEl = document.getElementById('s30AdminStatus');
+  const memberSelect = document.getElementById('s30MemberSelect');
+
+  nextBtn.addEventListener('click', async ()=>{
+    nextBtn.disabled = true; nextBtn.textContent = '⏳...';
+    const d = await p.loadStudy30Day();
+    await p.setStudy30Day(d + 1);
+    statusEl.textContent = `Day ${d+1} unlock ho gaya.`;
+    renderStudy30AdminBar();
+  });
+  publishBtn.addEventListener('click', async ()=>{
+    publishBtn.disabled = true; publishBtn.textContent = '⏳...';
+    const d = await p.loadStudy30Day();
+    const defs = p.buildStudy30TaskDefs(d);
+    await p.saveSharedTaskDefs(defs);
+    await p.setRoomTaskMode('shared');
+    if(typeof p.applySharedTaskModeIfNeeded === 'function') await p.applySharedTaskModeIfNeeded();
+    statusEl.textContent = `Day ${d} sabke Today tab mein publish ho gaya. ✅`;
+    publishBtn.disabled = false; publishBtn.textContent = '📤 Publish (Sabka Target Banao)';
+  });
+  try{
+    const names = await p.loadRoomRegistry();
+    memberSelect.innerHTML = `<option value="">— Member chuno —</option>` + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  }catch(e){}
+  viewBtn.addEventListener('click', async ()=>{
+    const name = memberSelect.value;
+    const box = document.getElementById('study30MemberProgress');
+    if(!name){ box.style.display='none'; return; }
+    viewBtn.disabled = true; viewBtn.textContent = '⏳...';
+    try{
+      const st = await p.loadPlayerState(name);
+      const total = 30;
+      let rows = '';
+      for(let i=1; i<=total; i++){
+        const d = p.getDayFrom(st, i);
+        if(!p.isDayTouchedFrom(d)) continue;
+        const count = Array.isArray(d.tasks) ? d.tasks.length : 0;
+        const done = Array.isArray(d.tasks) ? d.tasks.filter(Boolean).length : 0;
+        const pct = count ? Math.round((done/count)*100) : 0;
+        rows += `<div class="s30-mrow"><span>${d.rest ? '😴 Rest' : 'Day '+i}</span><span class="pct">${d.rest ? '—' : done+'/'+count+' ('+pct+'%)'}</span></div>`;
+      }
+      box.innerHTML = rows || `<div class="s30-mrow"><span>Abhi tak koi din touch nahi kiya.</span></div>`;
+      box.style.display = 'flex';
+    }catch(e){
+      box.innerHTML = `<div class="s30-mrow"><span>Load nahi ho paya, dobara try karo.</span></div>`;
+      box.style.display = 'flex';
+    }
+    viewBtn.disabled = false; viewBtn.textContent = '👁️ Pehle Ke Task Dekho';
+  });
+}
+renderStudy30AdminBar();
+setInterval(renderStudy30AdminBar, 25000);
 
 const fullMockFields = ['score','correct','wrong','mistakes','math','reasoning','english','gk'];
 function toggleFullMock(day){

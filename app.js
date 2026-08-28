@@ -2322,6 +2322,16 @@ function startRoomAutoSync(){
     if(roomSyncInFlight) return;
     roomSyncInFlight = true;
     try{
+      // Room-level state (task mode / who's Admin / shared Study30 tasks)
+      // used to only refresh on specific navigation (opening Room panel,
+      // switching viewed member, app reload) — so when Admin hit Publish,
+      // everyone else's Today tab only picked it up (and hid the extra
+      // widgets) whenever they next happened to navigate, which could be
+      // minutes late. Pulling it into this same 25s tick means the
+      // "sirf target dikhna chahiye" hide now lands within ~25s for
+      // everyone, same as the rest of the auto-sync.
+      await refreshRoomMeta();
+      await applySharedTaskModeIfNeeded();
       await renderCompetePanel();
       if(viewingName !== myName){
         state = await loadPlayerState(viewingName);
@@ -2855,15 +2865,21 @@ async function setStudy30Day(day){
   study30DayCache = day;
   study30DayCacheAt = Date.now();
 }
-// Builds the 4-task shared list for a given Day — kept generic (full detail
+// Builds the shared task list for a given Day — kept generic (full detail
 // lives inside the tracker itself) so this never drifts out of sync with
-// the tracker's own chapter/vocab/GK content.
+// the tracker's own chapter/vocab/GK content. Har block yahan alag-alag
+// individual target hai (tracker ke jaisa hi split) — ek combined blob ki
+// jagah, taaki Today tab mein har target apni khud ki checkbox/₹ ke saath
+// alag dikhe.
 function buildStudy30TaskDefs(day){
   return [
-    { name: `📐 Day ${day} — Math + Reasoning Sectional`, start: 420, duration: 90 },
-    { name: `📖 Day ${day} — English Full Plan`,          start: 570, duration: 90 },
-    { name: `🌍 Day ${day} — GK Reading + Static GK`,      start: 720, duration: 90 },
-    { name: `🎯 Day ${day} — Full Mock`,                   start: 870, duration: 150 }
+    { name: `📐 Day ${day} — Math Sectional`,          start: 420, duration: 45  },
+    { name: `🧠 Day ${day} — Reasoning Sectional`,      start: 465, duration: 45  },
+    { name: `📖 Day ${day} — English PQRS/RC/CT`,       start: 570, duration: 60  },
+    { name: `🔤 Day ${day} — Vocab`,                    start: 630, duration: 30  },
+    { name: `🌍 Day ${day} — GK Reading (Current)`,     start: 720, duration: 45  },
+    { name: `📚 Day ${day} — Static GK Revision`,       start: 765, duration: 45  },
+    { name: `🎯 Day ${day} — Full Mock + Analysis`,     start: 870, duration: 150 }
   ];
 }
 // Personal, per-device opt-out from Study30 shared mode — doesn't touch the
@@ -2876,6 +2892,20 @@ function setStudy30OptedOut(v){
     if(v) localStorage.setItem('study30_optOut','true');
     else localStorage.removeItem('study30_optOut');
   }catch(e){}
+}
+
+// Today tab "focus mode" — jab Shared Task Mode (Study30 publish) on ho,
+// toh member ko Today tab mein SIRF us din ka Target (task list) dikhna
+// chahiye — motivation quote, AI Strict Manager, "Customize Tasks" aur
+// niche wala 50-din calendar sab hata do, taaki sirf target hi dikhe.
+// Individual Mode mein wapas jaate hi sab kuch phir se dikh jaata hai.
+function applyStudy30TodayFocusMode(){
+  const focusOn = isSharedTaskMode() && !(isStudy30OptedOut() && !isMeAdmin());
+  const ids = ['todayQuoteCard', 'strictManagerPanel', 'taskEditSection', 'todayCalendarBlock'];
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = focusOn ? 'none' : '';
+  });
 }
 
 // Called after every refreshRoomMeta() — applies (or reverts) the shared
@@ -2895,12 +2925,13 @@ async function applySharedTaskModeIfNeeded(){
       renderAll();
       renderTaskEditForm();
     }
+    applyStudy30TodayFocusMode();
     return;
   }
   const defs = await loadSharedTaskDefs();
-  if(!defs || !defs.length) return; // Admin hasn't saved a shared list yet
+  if(!defs || !defs.length){ applyStudy30TodayFocusMode(); return; } // Admin hasn't saved a shared list yet
   const json = JSON.stringify(defs);
-  if(json === lastAppliedSharedTasksJSON) return; // no change since last apply
+  if(json === lastAppliedSharedTasksJSON){ applyStudy30TodayFocusMode(); return; } // no change since last apply
   lastAppliedSharedTasksJSON = json;
   TASKS = defs.map(d=>d.name);
   TASK_START_MIN = defs.map(d=>d.start);
@@ -2910,6 +2941,7 @@ async function applySharedTaskModeIfNeeded(){
   taskEditDraft = null;
   renderAll();
   renderTaskEditForm();
+  applyStudy30TodayFocusMode();
 }
 
 function dayEarnLossFrom(st, d, dayIndex){
@@ -3072,6 +3104,14 @@ function applyReadOnlyUI(){
   if(resetRevEngBtn) resetRevEngBtn.style.display = ro ? 'none' : '';
   if(resetRevGkBtn) resetRevGkBtn.style.display = ro ? 'none' : '';
   if(!ro) renderTargetPanel();
+  // applyReadOnlyUI() just put taskEditSection BACK to visible above (own
+  // tracker => ro=false => display:''), which silently undid Study30's
+  // "sirf target dikhna chahiye" hide — this ran after that hide in every
+  // call path (switchViewing, init, etc.), so Customize Tasks (and via the
+  // same bug, the quote/AI-manager/calendar) kept reappearing for members
+  // even after Admin published. Re-assert focus mode last so it always
+  // wins, regardless of call order.
+  applyStudy30TodayFocusMode();
 }
 
 function renderProfileBar(){
@@ -8178,6 +8218,14 @@ function switchTab(name, _fromPopState){
   // rank/kamai not showing yet. Force one fresh fetch the moment it opens.
   if(name === 'compete' && name !== prevName){
     safeRun(()=>{ renderCompetePanel(); }, 'renderCompetePanel');
+  }
+  // Same idea as Compete above — Today tab's shared-target hide/show
+  // (applyStudy30TodayFocusMode) shouldn't wait on the 25s background
+  // timer either. Force a fresh room-meta check the moment it opens, so
+  // if Admin published/unpublished while this tab was closed, it reflects
+  // immediately instead of up to 25s late.
+  if(name === 'today' && name !== prevName && getRoomCode()){
+    safeRun(async ()=>{ await refreshRoomMeta(); await applySharedTaskModeIfNeeded(); }, 'todayFocusModeRefresh');
   }
 }
 function initTabs(){
