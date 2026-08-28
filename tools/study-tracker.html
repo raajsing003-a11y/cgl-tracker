@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30 Day Maths + English Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12141b; --card:#1d212b; --card2:#1b1f28;
+    --accent:#f0c05f; --accent-deep:#e0b355; --accent2:#4fbf8b; --text:#f3f5fb; --muted:#9aa0aa;
+    --pencil:#7d8499; --done:#4fbf8b; --done-soft:#173328; --border:#31384a;
+    --eng:#7ea6e0;
+    --gk:#d97b6c;
+    --shadow:0 2px 0 rgba(0,0,0,0.35), 0 8px 20px -12px rgba(0,0,0,0.6);
+    --glow-gold:0 0 0 1px rgba(240,192,95,0.15), 0 8px 24px -10px rgba(240,192,95,0.25);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Space Grotesk',-apple-system,sans-serif;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0) 0 0/16px 16px,
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(240,192,95,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 10%, rgba(79,191,139,0.07), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text); padding:6px; padding-bottom:40px;
+  }
+  h1{font-family:'Fraunces',serif; font-weight:700; font-size:1.55rem; text-align:center; margin:4px 0 2px;
+     background:linear-gradient(135deg,var(--accent) 0%,var(--accent-deep) 55%,#c98f3f 100%);
+     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:var(--accent);
+     letter-spacing:.2px; filter:drop-shadow(0 2px 10px rgba(240,192,95,0.18));}
+  .sub{text-align:center; color:var(--muted); font-size:0.85rem; font-style:italic; margin-bottom:14px;}
+  .tabs{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+  .tab-btn{
+    flex:none; width:100%; padding:12px; text-align:center; border-radius:10px; border:1.5px solid var(--border);
+    background:var(--card); color:var(--muted); font-weight:700; cursor:pointer; font-size:0.9rem;
+  }
+  .tab-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent-deep)); color:#101418; border-color:var(--accent); box-shadow:var(--glow-gold);}
+  .tab-btn.eng-active{background:var(--eng); color:#101418; border-color:var(--eng);}
+  .tab-btn.gk-active{background:var(--gk); color:#101418; border-color:var(--gk);}
+  .tab-btn.mock-active{background:#e0b355; color:#101418; border-color:#e0b355;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  #tab-math, #tab-eng, #tab-gk{display:none !important;}
+  .tabs{margin-bottom:10px;}
+  .plan-embed .day-card{margin:8px 0 12px;}
+  .plan-section-label{font-size:9.5px; text-transform:uppercase; letter-spacing:1px; font-weight:700; padding:10px 6px 0; color:var(--accent2);}
+  .plan-section-label.eng{color:var(--eng);}
+  .plan-section-label.gk{color:var(--gk);}
+  .plan-list{border-bottom:1px dashed var(--border);}
+  .progress-wrap{background:linear-gradient(155deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:14px; padding:13px 17px; margin-bottom:18px; box-shadow:var(--shadow);}
+  .progress-label{display:flex; justify-content:space-between; font-size:0.85rem; color:var(--muted); margin-bottom:6px;}
+  .progress-bar{height:11px; background:#232733; border-radius:6px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);}
+  .progress-fill{height:100%; background:linear-gradient(90deg,var(--accent2),var(--done)); width:0%; transition:width .3s ease; position:relative; overflow:hidden;}
+  .progress-fill::after{content:""; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,0.35) 50%,transparent 70%); background-size:200% 100%; animation:shimmer 2.4s ease-in-out infinite;}
+  @keyframes shimmer{0%{background-position:150% 0;} 100%{background-position:-50% 0;}}
+  .progress-fill.eng{background:linear-gradient(90deg,var(--eng),#a8c8f0);}
+  .progress-fill.gk{background:linear-gradient(90deg,var(--gk),#f0a89c);}
+  .round-title{font-size:1rem; color:var(--accent2); margin:24px 0 10px; padding-left:4px; border-left:4px solid var(--accent2);}
+  .round-title.eng{color:var(--eng); border-left-color:var(--eng);}
+  .day-card{background:linear-gradient(155deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:12px; padding:14px 15px; margin-bottom:11px; box-shadow:var(--shadow); position:relative;}
+  .day-card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--border); border-radius:10px 0 0 10px;}
+  .day-card.done::before{background:linear-gradient(180deg,var(--done),var(--accent2)); box-shadow:0 0 8px rgba(79,191,139,0.5);}
+  .day-card.done{border-color:rgba(79,191,139,0.35);}
+  .day-top{display:flex; align-items:flex-start; gap:10px; padding-left:6px;}
+  .day-num{flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); background:var(--card2); color:var(--accent); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.8rem; transition:all .2s ease;}
+  .day-card.done .day-num{background:linear-gradient(135deg,var(--done),#3da074); border-color:var(--done); color:#101418; box-shadow:0 0 10px rgba(79,191,139,0.45);}
+  .day-info{flex:1; min-width:0;}
+  .day-chapters{font-family:'Fraunces',serif; font-size:1rem; font-weight:600; line-height:1.3; color:var(--text);}
+  .day-qty{font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--pencil); margin-top:3px; letter-spacing:.3px;}
+  .checkbox{flex-shrink:0; width:26px; height:26px; border-radius:6px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.95rem; color:var(--done); user-select:none; background:var(--card2); transition:all .18s ease;}
+  .checkbox.checked{background:linear-gradient(135deg,var(--done),#3da074); border-color:var(--done); color:#101418; box-shadow:0 0 10px rgba(79,191,139,0.5);}
+  .checkbox:active{transform:scale(0.9);}
+  .actual-row{display:flex; align-items:center; gap:8px; margin-top:9px; font-size:0.72rem; color:var(--pencil); text-transform:uppercase; letter-spacing:.5px;}
+  .actual-row input{width:60px; background:var(--card2); border:1px solid var(--border); border-radius:2px; color:var(--text); padding:5px 6px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;}
+  .actual-row input:focus{outline:none; border-color:var(--accent);}
+  footer{text-align:center; color:var(--pencil); font-size:0.72rem; font-style:italic; margin-top:24px; padding-bottom:20px;}
+  .mock-section{margin-top:11px; padding-top:10px; border-top:1px dashed var(--border);}
+  .mock-label{font-size:9.5px; text-transform:uppercase; letter-spacing:1px; color:var(--pencil); margin-bottom:7px; display:flex; align-items:center; gap:6px;}
+  .mock-label::after{content:""; flex:1; height:1px; background:var(--border);}
+  .mock-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:7px;}
+  .mock-grid.mock-grid-2col{grid-template-columns:1fr; gap:10px;}
+  .mock-card.detailed{padding:12px 13px;}
+  .mock-card.detailed .mtitle{margin-bottom:9px;}
+  .mock-card.detailed .mtitle span{font-size:12px; letter-spacing:.5px;}
+  .mock-card.detailed input[type=number]:not(.mock-subrow input),
+  .mock-card.detailed > input[type=number]{font-size:1rem; padding:9px 10px; text-align:left;}
+  .mock-card.detailed .mock-subrow{display:flex; flex-direction:column; gap:8px; margin-top:8px;}
+  .mock-card.detailed .mock-subrow input{width:100%; background:var(--bg); border:1px solid var(--border); border-radius:2px; color:var(--text); padding:9px 6px; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:0.85rem; text-align:center;}
+  .mock-card.detailed .mock-subrow input::placeholder{color:var(--pencil); font-weight:400;}
+  .mock-card.detailed .mock-time{margin-top:8px; width:100%; text-align:left !important; font-weight:400 !important; font-size:0.85rem !important; color:var(--text); padding:9px 10px !important; background:var(--bg); border:1px solid var(--border); border-radius:2px; font-family:'Space Grotesk',sans-serif;}
+  .mock-card.detailed .mock-time::placeholder{color:var(--pencil);}
+  .mock-card.reasoning{border-color:var(--eng);}
+  .mock-card.reasoning .mtitle span{color:var(--eng);}
+  .mock-card.reasoning.done{border-color:var(--done);}
+  .mock-card{background:var(--card2); border:1px solid var(--border); border-radius:6px; padding:7px 8px; transition:border-color .2s ease, box-shadow .2s ease;}
+  .mock-card.done{border-color:var(--done); box-shadow:0 0 10px -4px rgba(79,191,139,0.4);}
+  .mock-card .mtitle{display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;}
+  .mock-card .mtitle span{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--pencil); letter-spacing:.4px;}
+  .mock-tick{width:16px; height:16px; border-radius:3px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--done); cursor:pointer; background:transparent;}
+  .mock-tick.checked{background:var(--done); border-color:var(--done); color:#101418;}
+  .mock-tick.eng-tick.checked{background:var(--eng); border-color:var(--eng);}
+  .mock-card input{width:100%; background:var(--bg); border:1px solid var(--border); border-radius:2px; color:var(--accent); padding:5px 6px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.85rem; text-align:center;}
+  .mock-card input::placeholder{color:var(--pencil); font-weight:400;}
+  .mock-card input:focus{outline:none; border-color:var(--accent);}
+  .formula-section{margin-top:11px; padding-top:10px; border-top:1px dashed var(--border);}
+  .formula-card{background:var(--card2); border:1px solid var(--border); border-radius:6px; padding:9px 10px; display:flex; justify-content:space-between; align-items:center; transition:border-color .2s ease, box-shadow .2s ease;}
+  .formula-card.done{border-color:var(--accent); box-shadow:0 0 10px -4px rgba(240,192,95,0.4);}
+  .formula-topic{font-family:'Fraunces',serif; font-weight:600; font-size:0.88rem; color:var(--accent);}
+  .reset-btn{display:block; margin:20px auto 0; background:var(--card); border:1.5px dashed var(--border); color:var(--pencil); padding:9px 16px; border-radius:2px; font-size:0.78rem; font-family:'Space Grotesk',sans-serif; cursor:pointer;}
+  /* English specific */
+  .eng-block{margin-top:9px; padding:8px 10px; background:var(--card2); border:1px solid var(--border); border-radius:2px;}
+  .eng-block-title{font-size:9.5px; text-transform:uppercase; letter-spacing:1px; color:var(--eng); margin-bottom:6px; font-weight:700;}
+  .cat-list{list-style:none; margin:0; padding:0; font-size:0.78rem; color:var(--text); line-height:1.55;}
+  .cat-item{display:flex; align-items:center; gap:7px; padding:4px 6px; border-radius:3px; margin-bottom:2px; cursor:pointer; border:1px solid transparent;}
+  .cat-item .mini-chk{flex-shrink:0; width:16px; height:16px; border-radius:3px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--eng); background:var(--bg);}
+  .cat-item.item-checked{background:var(--done-soft); border-color:var(--done);}
+  .cat-item.item-checked .mini-chk{background:var(--done); border-color:var(--done); color:#101418;}
+  .cat-item.item-checked span.cat-label{color:var(--muted); text-decoration:line-through;}
+  .eng-total{font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--pencil); margin-top:5px;}
+  .eng-mini-grid{display:grid; grid-template-columns:1fr; gap:7px; margin-top:9px;}
+  .eng-mini{background:var(--card2); border:1px solid var(--border); border-radius:2px; padding:7px 8px; display:flex; justify-content:space-between; align-items:center; gap:6px; cursor:pointer;}
+  .eng-mini span{font-size:0.76rem; color:var(--muted);}
+  .eng-mini .mini-chk{flex-shrink:0; width:16px; height:16px; border-radius:3px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--eng); background:var(--bg);}
+  .eng-mini.item-checked{background:var(--done-soft); border-color:var(--done);}
+  .eng-mini.item-checked .mini-chk{background:var(--done); border-color:var(--done); color:#101418;}
+  .fixed-daily{display:grid; grid-template-columns:1fr; gap:6px; margin-top:9px;}
+  .fixed-card{background:var(--card2); border:1px solid var(--border); border-radius:6px; padding:9px 10px; text-align:left; cursor:pointer; display:flex; align-items:center; justify-content:space-between; transition:border-color .2s, box-shadow .2s;}
+  .fixed-card .fnum{font-family:'JetBrains Mono',monospace; color:var(--eng); font-weight:700; font-size:0.95rem;}
+  .fixed-card .flabel{font-size:0.62rem; color:var(--pencil); text-transform:uppercase; letter-spacing:.3px; margin-top:2px;}
+  .fixed-card.item-checked{background:var(--done-soft); border-color:var(--done);}
+  .fixed-card.item-checked .fnum, .fixed-card.item-checked .flabel{color:var(--done);}
+  /* GK specific */
+  .gk-block{display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--card2); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; cursor:pointer; transition:border-color .2s, box-shadow .2s;}
+  .gk-block .mini-chk{flex-shrink:0; width:18px; height:18px; border-radius:3px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--gk); background:var(--bg);}
+  .gk-block.item-checked{background:var(--done-soft); border-color:var(--done);}
+  .gk-block.item-checked .mini-chk{background:var(--done); border-color:var(--done); color:#101418;}
+  .gk-subj{font-family:'Fraunces',serif; font-weight:600; color:var(--gk); font-size:0.9rem;}
+  .gk-block.item-checked .gk-subj{color:var(--muted); text-decoration:line-through;}
+  .gk-pages{font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--pencil); margin-left:auto;}
+  .gk-round-label{font-size:9.5px; text-transform:uppercase; letter-spacing:1px; color:var(--gk); margin-bottom:6px; font-weight:700;}
+  /* ALL-IN-ONE Daily Plan */
+  .plan-card{background:var(--card); border:1px solid var(--border); border-radius:2px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden;}
+  .plan-card.done{border-color:var(--done);}
+  .plan-card.plan-locked{position:relative; opacity:0.55; filter:grayscale(0.4);}
+  .plan-card.plan-locked *{pointer-events:none;}
+  .plan-lock-overlay{position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px;
+    background:rgba(10,12,17,0.72); color:var(--accent); font-family:'Fraunces',serif; font-weight:600; font-size:0.95rem; letter-spacing:.2px;
+    backdrop-filter:blur(1.5px);}
+  .plan-day-head{display:flex; align-items:center; justify-content:space-between; padding:12px 12px; background:var(--card2); border-bottom:1px solid var(--border);}
+  .plan-day-badge{display:flex; align-items:center; gap:10px;}
+  .plan-day-num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.95rem; color:#101418; background:var(--accent); border-radius:6px; padding:4px 10px;}
+  .plan-day-round{font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+  .plan-day-head .checkbox{margin-left:auto;}
+  .plan-list{list-style:none; margin:0; padding:6px 0;}
+  .plan-row{display:flex; align-items:center; gap:10px; padding:11px 12px; border-bottom:1px dashed var(--border); cursor:pointer;}
+  .plan-row:last-child{border-bottom:none;}
+  .plan-row.item-checked{background:var(--done-soft);}
+  .plan-row-num{flex-shrink:0; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--pencil); width:16px;}
+  .plan-row-body{flex:1; min-width:0;}
+  .plan-row-title{font-family:'Fraunces',serif; font-weight:600; font-size:0.88rem; color:var(--text); line-height:1.3;}
+  .plan-row.item-checked .plan-row-title{color:var(--muted); text-decoration:line-through;}
+  .plan-row-time{font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--accent); margin-top:2px; text-transform:uppercase; letter-spacing:.4px;}
+  .plan-row-chk{flex-shrink:0; width:22px; height:22px; border-radius:3px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--done); background:var(--card2);}
+  .plan-row.item-checked .plan-row-chk{background:var(--done); border-color:var(--done); color:#101418;}
+  .static-gk-card{margin-top:9px; padding-top:10px; border-top:1px dashed var(--border);}
+  /* Analysis tab */
+  .an-card{background:linear-gradient(155deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:14px; padding:15px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .an-card h3{font-family:'Fraunces',serif; font-size:1rem; color:var(--accent); margin:0 0 12px; display:flex; align-items:center; gap:6px;}
+  .an-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .an-stat{background:var(--card2); border:1px solid var(--border); border-radius:2px; padding:9px 10px; text-align:center;}
+  .an-stat b{display:block; font-family:'JetBrains Mono',monospace; font-size:1.15rem; color:var(--text);}
+  .an-stat span{font-size:0.65rem; color:var(--pencil); text-transform:uppercase; letter-spacing:.4px;}
+  .an-bar-row{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:0.78rem;}
+  .an-bar-label{width:92px; flex-shrink:0; color:var(--muted);}
+  .an-bar-track{flex:1; height:9px; background:#232733; border-radius:5px; overflow:hidden;}
+  .an-bar-fill{height:100%; border-radius:5px;}
+  .an-bar-pct{width:38px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--pencil); flex-shrink:0;}
+  .an-empty{text-align:center; color:var(--pencil); font-size:0.82rem; font-style:italic; padding:14px;}
+  .an-trend{font-family:'JetBrains Mono',monospace; font-size:0.78rem; font-weight:700; padding:2px 8px; border-radius:2px;}
+  .an-trend.up{color:var(--done); background:var(--done-soft);}
+  .an-trend.down{color:#e2665a; background:#3a2426;}
+  .an-trend.flat{color:var(--pencil); background:var(--card2);}
+  .an-subrow{display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text); padding:6px 0; border-bottom:1px dashed var(--border);}
+  .an-subrow:last-child{border-bottom:none;}
+  .an-subrow span:last-child{font-family:'JetBrains Mono',monospace; color:var(--accent2); font-weight:700;}
+  .an-refresh{display:block; margin:4px auto 16px; background:var(--card); border:1.5px dashed var(--border); color:var(--pencil); padding:8px 16px; border-radius:2px; font-size:0.75rem; font-family:'Space Grotesk',sans-serif; cursor:pointer;}
+  #mockTabRoot .add-wrap{display:none !important;}
+  #mockTabRoot .toolbar select#filterType option[value="PYQ"]{display:none;}
+#mockTabRoot{
+    --paper:#15181f; --paper2:#1b1f28; --ink:#eef0f6; --ink-soft:#a9b0c3;
+    --line:#31384a; --line-soft:#262c3a; --pencil:#7d8499;
+    --red:#e2665a; --red-soft:#3a2426;
+    --green:#4fbf8b; --green-soft:#173328;
+    --gold:#e0b355; --gold-soft:#3a301a;
+    --card:#1d212b; --shadow:0 2px 0 rgba(0,0,0,0.35), 0 8px 20px -12px rgba(0,0,0,0.6);
+  }#mockTabRoot, #mockTabRoot *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;min-width:0;}#mockTabRoot{
+    font-family:'Space Grotesk',-apple-system,sans-serif;overflow-wrap:break-word;word-break:break-word;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.045) 1px, transparent 0) 0 0/16px 16px,
+      var(--paper);
+    color:var(--ink);padding-bottom:90px;min-height:60vh;margin:0 -9px;padding-left:0;padding-right:0;
+  }#mockTabRoot .serif{font-family:'Fraunces',serif;}#mockTabRoot .mono{font-family:'JetBrains Mono',monospace;}#mockTabRoot header{
+    position:sticky;top:0;z-index:30;
+    background:var(--paper);
+    border-bottom:2px solid var(--line);
+    padding:14px 8px 12px;
+  }#mockTabRoot .roll-row{display:flex;justify-content:space-between;align-items:flex-start;}#mockTabRoot .roll-row .mono{font-size:10px;color:var(--pencil);letter-spacing:1px;text-transform:uppercase;}#mockTabRoot h1{font-family:'Fraunces',serif;font-weight:700;font-size:22px;margin:2px 0 3px;letter-spacing:.2px;color:var(--ink);}#mockTabRoot .sub{font-size:11.5px;color:var(--ink-soft);margin:0;font-style:italic;}#mockTabRoot .header-seal{
+    width:38px;height:38px;border:1.5px solid var(--line);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+    transform:rotate(-8deg);flex-shrink:0;background:var(--card);
+  }#mockTabRoot /* Attendance strip */
+  .strip-wrap{padding:12px 8px 4px;}#mockTabRoot .strip-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--pencil);margin-bottom:6px;display:flex;justify-content:space-between;}#mockTabRoot .strip{display:flex;gap:3px;flex-wrap:wrap;}#mockTabRoot .cell{flex:1;min-width:8px;height:20px;border-radius:3px;background:var(--line-soft);border:1px solid var(--line);position:relative;}#mockTabRoot .cell.done{background:var(--green);border-color:var(--green);}#mockTabRoot .cell.pyq-tick::after{content:"";position:absolute;inset:3px;border:1px dashed rgba(255,255,255,.2);border-radius:2px;}#mockTabRoot .stats{display:flex;gap:8px;overflow-x:auto;padding:12px 8px 6px;}#mockTabRoot .stat{flex:1;min-width:76px;background:linear-gradient(155deg,var(--card),var(--paper2));border:1px solid var(--line);border-radius:10px;
+    padding:9px 8px;text-align:center;box-shadow:var(--shadow);position:relative;}#mockTabRoot .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);}#mockTabRoot .stat b{display:block;font-family:'JetBrains Mono',monospace;font-size:17px;color:var(--ink);font-weight:700;}#mockTabRoot .stat span{font-size:9px;color:var(--pencil);text-transform:uppercase;letter-spacing:.6px;}#mockTabRoot .toolbar{display:flex;flex-direction:column;gap:8px;padding:8px 16px 10px;}#mockTabRoot .toolbar select{flex:none;width:100%;background:var(--card);border:1px solid var(--line);color:var(--ink);
+    padding:9px 10px;border-radius:2px;font-size:12.5px;font-family:'Space Grotesk',sans-serif;font-weight:500;}#mockTabRoot .toolbar select option{background:var(--card);color:var(--ink);}#mockTabRoot .add-wrap{padding:0 8px 10px;}#mockTabRoot .add-toggle{width:100%;background:var(--card);border:1.5px dashed var(--line);color:var(--gold);
+    padding:11px;border-radius:2px;font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif;
+    letter-spacing:.3px;}#mockTabRoot .add-form{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:12px;margin-top:8px;
+    display:none;box-shadow:var(--shadow);}#mockTabRoot .add-form.open{display:block;}#mockTabRoot .add-form .row{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}#mockTabRoot .add-form .row > div{flex:1;}#mockTabRoot .add-form select{width:100%;background:var(--paper2);border:1px solid var(--line);color:var(--ink);
+    padding:9px 10px;border-radius:2px;font-size:13px;font-family:'Space Grotesk',sans-serif;}#mockTabRoot .add-form input[type=date]{width:100%;background:var(--paper2);border:1px solid var(--line);color:var(--ink);
+    padding:8px 10px;border-radius:2px;font-size:13px;font-family:'JetBrains Mono',monospace;}#mockTabRoot .add-form .hint{font-size:10px;color:var(--pencil);margin:2px 0 10px;font-style:italic;}#mockTabRoot .add-form .confirm{width:100%;background:var(--gold);color:#1c1503;border:none;padding:11px;border-radius:2px;
+    font-weight:700;font-size:13px;font-family:'Space Grotesk',sans-serif;}#mockTabRoot .list{padding:2px 8px;display:flex;flex-direction:column;gap:10px;}#mockTabRoot .card{background:linear-gradient(155deg,var(--card),var(--paper2));border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);
+    transition:box-shadow .2s;}#mockTabRoot .card.open{box-shadow:0 2px 0 rgba(0,0,0,0.35), 0 14px 26px -12px rgba(0,0,0,0.7);}#mockTabRoot .card-head{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;position:relative;gap:8px;}#mockTabRoot .card-head::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line);}#mockTabRoot .card.done-card .card-head::before{background:var(--green);}#mockTabRoot .card-head .left{display:flex;flex-direction:column;gap:3px;padding-left:6px;flex:1;min-width:0;overflow:hidden;}#mockTabRoot .card-head .left .date{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}#mockTabRoot .card-head > div[style]{flex-shrink:0;}#mockTabRoot .badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:2px 7px;
+    border-radius:2px;font-weight:700;letter-spacing:.4px;border:1px solid currentColor;}#mockTabRoot .badge.pyq{color:var(--gold);}#mockTabRoot .badge.live{color:var(--red);}#mockTabRoot .date{font-family:'Fraunces',serif;font-size:15.5px;font-weight:600;}#mockTabRoot .meta{font-size:10.5px;color:var(--ink-soft);}#mockTabRoot .meta .mono{font-size:10px;}#mockTabRoot .score-pill{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green);
+    background:var(--green-soft);padding:2px 8px;border-radius:2px;}#mockTabRoot .del-mock{font-size:11px;color:var(--red);background:none;border:none;padding:2px 4px;cursor:pointer;}#mockTabRoot .edit-mock{font-size:11px;color:var(--pencil);background:none;border:none;padding:2px 4px;cursor:pointer;}#mockTabRoot .chev{color:var(--pencil);transition:transform .25s;font-size:11px;}#mockTabRoot .card.open .chev{transform:rotate(180deg);}#mockTabRoot .body{max-height:0;overflow:hidden;transition:max-height .3s ease;}#mockTabRoot .card.open .body{max-height:1000px;}#mockTabRoot .body-inner{padding:2px 14px 16px 20px;border-top:1px dashed var(--line);}#mockTabRoot .group-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink);
+    margin:13px 0 7px;font-weight:700;display:flex;align-items:center;gap:6px;}#mockTabRoot .group-title::after{content:"";flex:1;height:1px;background:var(--line);}#mockTabRoot .group-title.scope{color:var(--red);}#mockTabRoot .grid{display:grid;grid-template-columns:1fr;gap:8px;}#mockTabRoot label{font-size:10px;color:var(--pencil);display:block;margin-bottom:3px;font-weight:500;}#mockTabRoot input[type=number], #mockTabRoot input[type=text], #mockTabRoot textarea{
+    width:100%;background:var(--paper2);border:1px solid var(--line);color:var(--ink);
+    padding:9px 10px;border-radius:2px;font-size:14.5px;font-family:'JetBrains Mono',monospace;}#mockTabRoot input[type=text], #mockTabRoot textarea{font-family:'Space Grotesk',sans-serif;font-size:13.5px;}#mockTabRoot input:focus, #mockTabRoot textarea:focus, #mockTabRoot select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(224,179,85,.12);}#mockTabRoot textarea{resize:vertical;min-height:46px;}#mockTabRoot .field{margin-bottom:8px;}#mockTabRoot .scope-field input{border-color:var(--red-soft);}#mockTabRoot .scope-field input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(226,102,90,.12);}#mockTabRoot .saved-flag{font-size:10px;color:var(--green);opacity:0;transition:opacity .3s;margin-top:8px;display:block;
+    font-weight:600;text-transform:uppercase;letter-spacing:.5px;}#mockTabRoot .saved-flag.show{opacity:1;}#mockTabRoot .fab{position:fixed;bottom:14px;right:14px;left:14px;display:flex;gap:8px;z-index:40;}#mockTabRoot .fab button{flex:1;padding:14px;border-radius:2px;border:1.5px solid var(--line);font-size:13px;font-weight:700;
+    font-family:'Space Grotesk',sans-serif;letter-spacing:.3px;box-shadow:0 6px 16px rgba(0,0,0,.4);}#mockTabRoot .fab .export{background:var(--ink);color:var(--paper);border-color:var(--ink);}#mockTabRoot .empty{text-align:center;color:var(--pencil);padding:40px 20px;font-size:13px;font-style:italic;}#mockTabRoot .empty .big{font-size:26px;display:block;margin-bottom:8px;}#mockTabRoot /* Search */
+  .search-wrap{padding:0 16px 8px;}#mockTabRoot .search-wrap input{width:100%;background:var(--card);border:1px solid var(--line);color:var(--ink);
+    padding:9px 10px;border-radius:2px;font-size:13px;font-family:'Space Grotesk',sans-serif;}#mockTabRoot .search-wrap input::placeholder{color:var(--pencil);}#mockTabRoot /* Subject breakdown */
+  .subj-wrap{padding:2px 8px 10px;}#mockTabRoot .subj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}#mockTabRoot .subj-card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:8px 5px;text-align:center;}#mockTabRoot .subj-card b{display:block;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink);}#mockTabRoot .subj-card span{font-size:8.5px;color:var(--pencil);text-transform:uppercase;letter-spacing:.4px;}#mockTabRoot /* Sparkline */
+  .spark-wrap{padding:2px 8px 10px;}#mockTabRoot .spark-card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:10px 12px;box-shadow:var(--shadow);}#mockTabRoot .spark-card .spark-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--pencil);margin-bottom:6px;display:flex;justify-content:space-between;}#mockTabRoot .spark-card canvas{width:100%;height:56px;display:block;}#mockTabRoot .pb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gold);border:1px solid var(--gold);
+    border-radius:2px;padding:1px 5px;margin-left:5px;letter-spacing:.3px;}#mockTabRoot .score-pill.up{color:var(--green);background:var(--green-soft);}#mockTabRoot .score-pill.down{color:var(--red);background:var(--red-soft);}#mockTabRoot .dup-mock{font-size:11px;color:var(--pencil);background:none;border:none;padding:2px 4px;cursor:pointer;}#mockTabRoot /* Toast */
+  #toastHost{position:fixed;left:8px;right:8px;bottom:78px;z-index:60;display:flex;flex-direction:column;gap:6px;pointer-events:none;}#mockTabRoot .toast{background:var(--ink);color:var(--paper);font-size:12.5px;font-weight:600;padding:10px 12px;border-radius:2px;
+    box-shadow:0 6px 16px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:space-between;gap:10px;
+    opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:auto;}#mockTabRoot .toast.show{opacity:1;transform:translateY(0);}#mockTabRoot .toast button{background:none;border:none;color:var(--gold);font-weight:700;font-size:12px;font-family:'Space Grotesk',sans-serif;cursor:pointer;padding:0 2px;}
+#mockTabRoot .target-wrap{padding:12px 8px 4px;}
+#mockTabRoot .target-card{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--gold);border-radius:2px;padding:10px 12px;box-shadow:var(--shadow);}
+#mockTabRoot .target-icon{font-size:15px;}
+#mockTabRoot .target-text{flex:1;font-size:12.5px;color:var(--ink-soft);}
+#mockTabRoot .target-text b{color:var(--ink);}
+#mockTabRoot .target-status{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:2px;background:var(--gold-soft);color:var(--gold);}
+#mockTabRoot .target-status.hit{background:var(--green-soft);color:var(--green);}
+#mockTabRoot .target-history-toggle{margin-top:8px;font-size:10.5px;color:var(--pencil);text-transform:uppercase;letter-spacing:.5px;text-align:center;cursor:pointer;padding:6px;}
+#mockTabRoot .target-history-toggle:active{color:var(--gold);}
+#mockTabRoot .target-history{display:none;flex-direction:column;gap:6px;margin-top:6px;}
+#mockTabRoot .target-history.open{display:flex;}
+#mockTabRoot .target-history-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:2px;padding:8px 10px;}
+#mockTabRoot .target-history-row .thd-date{font-family:'Fraunces',serif;font-size:12.5px;color:var(--ink);}
+#mockTabRoot .target-history-row .thd-status{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:2px;}
+#mockTabRoot .target-history-row .thd-status.hit{background:var(--green-soft);color:var(--green);}
+#mockTabRoot .target-history-row .thd-status.miss{background:var(--red-soft);color:var(--red);}
+#mockTabRoot .target-history-empty{text-align:center;color:var(--pencil);font-size:11.5px;font-style:italic;padding:10px;}
+
+  @media (min-width:480px){#mockTabRoot .subj-grid{grid-template-columns:repeat(8,1fr);}
+  }
+
+  /* ===== OVERHAUL: hero, streak, backup, polish ===== */
+  .hero-wrap{max-width:720px; margin:0 auto;}
+  .streak-row{display:flex; gap:8px; margin:0 0 14px;}
+  .streak-card{flex:1; background:linear-gradient(160deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:12px; padding:12px 10px; text-align:center; box-shadow:var(--shadow); position:relative; overflow:hidden; transition:transform .15s ease, box-shadow .2s ease;}
+  .streak-card::before{content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.6;}
+  .streak-card b{display:block; font-family:'JetBrains Mono',monospace; font-size:1.35rem; color:var(--accent); line-height:1.1; text-shadow:0 0 12px rgba(240,192,95,0.25);}
+  .streak-card span{font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+  .streak-card.fire{border-color:rgba(255,140,60,0.5); box-shadow:0 0 18px -4px rgba(255,140,60,0.45), var(--shadow); animation:firePulse 1.8s ease-in-out infinite;}
+  .streak-card.fire b{color:#ff9d52; text-shadow:0 0 14px rgba(255,140,60,0.5);}
+  @keyframes firePulse{0%,100%{box-shadow:0 0 14px -4px rgba(255,140,60,0.35), var(--shadow);} 50%{box-shadow:0 0 24px -2px rgba(255,140,60,0.6), var(--shadow);}}
+  .backup-row{display:flex; gap:8px; margin-bottom:14px;}
+  .backup-btn{flex:1; background:var(--card); border:1.5px solid var(--border); color:var(--muted); padding:10px 8px; border-radius:10px; font-size:0.72rem; font-family:'Space Grotesk',sans-serif; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:border-color .15s, color .15s, transform .1s, box-shadow .2s;}
+  .backup-btn:active{transform:scale(0.96);}
+  .backup-btn:hover{border-color:var(--accent); color:var(--accent); box-shadow:0 0 12px -4px rgba(240,192,95,0.35);}
+  #importFileInput{display:none;}
+  .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px); background:linear-gradient(155deg,var(--card),var(--card2)); border:1px solid var(--accent); color:var(--text); padding:11px 20px; border-radius:10px; font-size:0.8rem; font-weight:600; box-shadow:var(--glow-gold), var(--shadow); z-index:999; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  /* micro-polish */
+  body{transition:background .3s;}
+  .tab-btn{transition:all .18s ease;}
+  .tab-btn:active{transform:scale(0.97);}
+  .day-card{transition:transform .15s ease, box-shadow .15s ease, border-color .2s;}
+  .day-card:hover{transform:translateY(-2px); box-shadow:0 4px 0 rgba(0,0,0,0.35), 0 16px 30px -14px rgba(0,0,0,0.75);}
+  .day-card:active{transform:translateY(0) scale(0.995);}
+  .plan-card{transition:transform .15s ease, border-color .2s;}
+  .plan-card:hover{transform:translateY(-1px);}
+  .checkbox, .mock-tick, .mini-chk, .plan-row-chk{transition:background .18s ease, border-color .18s ease, transform .12s ease;}
+  .checkbox.checked, .mock-tick.checked, .plan-row-chk.checked{animation:tickPop .28s ease;}
+  @keyframes tickPop{0%{transform:scale(0.7);} 55%{transform:scale(1.18);} 100%{transform:scale(1);}}
+  .progress-fill{transition:width .4s cubic-bezier(.34,1.56,.64,1);}
+  .today-badge{display:inline-block; background:var(--accent); color:#101418; font-size:0.6rem; font-weight:800; letter-spacing:.5px; padding:2px 7px; border-radius:20px; margin-left:8px; text-transform:uppercase; vertical-align:middle;}
+  #confettiLayer{position:fixed; inset:0; pointer-events:none; z-index:9999; overflow:hidden;}
+  .confetti-piece{position:absolute; top:-12px; width:8px; height:8px; opacity:0.9; animation:confettiFall linear forwards;}
+  @keyframes confettiFall{to{transform:translateY(110vh) rotate(540deg); opacity:0.2;}}
+</style>
+</head>
+<body>
+
+<div class="hero-wrap">
+<h1>📘 30-Day Study Tracker</h1>
+<div class="sub">Maths + Reasoning + English + GK + Full Mock — Sab Ek Hi Daily View Mein, Poori Detail Ke Saath</div>
+
+<div class="streak-row">
+  <div class="streak-card" id="streakCard"><b id="streakVal">0</b><span>Din Streak 🔥</span></div>
+  <div class="streak-card"><b id="totalDoneVal">0/30</b><span>Overall Days</span></div>
+  <div class="streak-card"><b id="todayDayVal">—</b><span>Aaj Ka Day</span></div>
+</div>
+<div class="backup-row">
+  <button class="backup-btn" onclick="exportTrackerData()">⬇ Backup Lein</button>
+  <button class="backup-btn" onclick="document.getElementById('importFileInput').click()">⬆ Restore Karein</button>
+  <input type="file" id="importFileInput" accept="application/json" onchange="importTrackerData(this.files[0])">
+</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-maintab="plan" onclick="switchMainTab('plan')">📅 Daily Plan</button>
+  <button class="tab-btn" data-maintab="mock" onclick="switchMainTab('mock')">🎯 Mock Log & Analysis</button>
+</div>
+
+<!-- ===================== ALL-IN-ONE DAILY PLAN (SINGLE UNIFIED VIEW) ===================== -->
+<div class="tab-panel active" id="tab-plan">
+<div class="progress-wrap">
+  <div class="progress-label"><span id="progressTextPlan">0 / 30 days complete</span><span id="progressPctPlan">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFillPlan" style="background:linear-gradient(90deg,#e0b355,#4fbf8b);"></div></div>
+</div>
+<div id="trackerPlan"></div>
+<button class="reset-btn" onclick="resetAllPlan()">Reset Daily Plan Progress</button>
+<footer>Maths + Reasoning + English + GK + Full Mock — sab ek hi daily card mein, poori detail (scores/vocab/GK) ke saath • Progress saves automatically</footer>
+</div>
+
+<!-- ===================== MATHS TAB ===================== -->
+<div class="tab-panel" id="tab-math">
+<div class="progress-wrap">
+  <div class="progress-label"><span id="progressText">0 / 30 days complete</span><span id="progressPct">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+<div id="tracker"></div>
+<button class="reset-btn" onclick="resetAll()">Reset Maths Progress</button>
+<footer>Target ~80-110 Q/day • Tap circle to mark day complete • Progress saves automatically</footer>
+</div>
+
+<!-- ===================== ENGLISH TAB ===================== -->
+<div class="tab-panel" id="tab-eng">
+<div class="progress-wrap">
+  <div class="progress-label"><span id="progressTextEng">0 / 30 days complete</span><span id="progressPctEng">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill eng" id="progressFillEng"></div></div>
+</div>
+<div id="trackerEng"></div>
+<button class="reset-btn" onclick="resetAllEng()">Reset English Progress</button>
+<footer>Vocab 2x + Idioms 2x + Grammar cycle + Error Notebook + Daily RC/PQRS/Cloze • Progress saves automatically</footer>
+</div>
+
+<!-- ===================== GK TAB ===================== -->
+<div class="tab-panel" id="tab-gk">
+<div class="progress-wrap">
+  <div class="progress-label"><span id="progressTextGk">0 / 30 days complete</span><span id="progressPctGk">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill gk" id="progressFillGk"></div></div>
+</div>
+<div id="trackerGk"></div>
+<button class="reset-btn" onclick="resetAllGk()">Reset GK Progress</button>
+<footer>1st Read (Day 1-9) → Revision 1/2/3 (Day 10-21) → Buffer (Day 22-30) • 30 min daily Static GK constant • ~1.5 hr book + 30 min Static GK/day</footer>
+</div>
+
+<!-- ===================== MOCK TAB (TTS) ===================== -->
+<div class="tab-panel" id="tab-mock">
+<div id="mockTabRoot">
+
+
+<header>
+  <div class="roll-row">
+    <div>
+      <div class="mono">SSC CGL · MOCK LOG</div>
+      <h1>Topper Test Series</h1>
+      <p class="sub">tap a date to fill your sheet — everything autosaves</p>
+    </div>
+    <div class="header-seal">🎯</div>
+  </div>
+</header>
+
+<div style="padding:12px 8px 0;">
+  <div id="analysisContent"></div>
+</div>
+
+
+<div class="target-wrap">
+  <div class="target-card" id="targetCard">
+    <span class="target-icon">🎯</span>
+    <span class="target-text">Daily Target: <b>1 Full Mock</b></span>
+    <span class="target-status" id="targetStatus">Pending</span>
+  </div>
+  <div class="target-history-toggle" id="targetHistoryToggle" onclick="toggleTargetHistory()">Target History <span id="targetHistoryCount">(0 days)</span> <span id="targetHistoryChev">▾</span></div>
+  <div class="target-history" id="targetHistory"></div>
+</div>
+
+<div class="strip-wrap">
+  <div class="strip-label"><span>ATTENDANCE</span><span id="stripCount" class="mono">0/0</span></div>
+  <div class="strip" id="strip"></div>
+</div>
+
+<div class="stats" id="statsRow"></div>
+
+<div class="spark-wrap">
+  <div class="spark-card">
+    <div class="spark-label"><span>SCORE TREND</span><span id="sparkRange" class="mono"></span></div>
+    <canvas id="sparkCanvas"></canvas>
+  </div>
+</div>
+
+<div class="subj-wrap">
+  <div class="subj-grid" id="subjGrid"></div>
+</div>
+
+<div class="search-wrap">
+  <input type="text" id="searchBox" placeholder="Search mock by name..." aria-label="Search mocks">
+</div>
+
+<div class="toolbar">
+  <select id="filterType" aria-label="Filter by paper type">
+    <option value="all">All Papers</option>
+    <option value="PYQ">PYQ only</option>
+    <option value="LIVE mock">Live Mock only</option>
+  </select>
+  <select id="filterStatus" aria-label="Filter by status">
+    <option value="all">All Status</option>
+    <option value="done">Filled</option>
+    <option value="pending">Pending</option>
+  </select>
+  <select id="sortOrder" aria-label="Sort order">
+    <option value="date_asc">Oldest first</option>
+    <option value="date_desc">Newest first</option>
+    <option value="score_desc">Highest score</option>
+    <option value="score_asc">Lowest score</option>
+  </select>
+</div>
+
+<div class="add-wrap">
+  <button class="add-toggle" id="addToggle">＋ Add New Mock</button>
+  <div class="add-form" id="addForm">
+    <div class="row">
+      <div>
+        <label>Mock Name</label>
+        <input type="text" id="newName" placeholder="e.g. Mock 1 / Set A...">
+      </div>
+      <div>
+        <label>Type</label>
+        <select id="newType">
+          <option value="LIVE mock">Live Mock</option>
+          <option value="PYQ">PYQ</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint">Date apne aap aaj ki lag jaayegi — jis din add karoge, wahi date set hogi.</div>
+    <button class="confirm" id="confirmAdd">Add Mock</button>
+  </div>
+</div>
+
+<div class="list" id="list"></div>
+
+<div id="toastHost"></div>
+
+
+</div>
+</div>
+
+
+<script>
+function playTick(isDone){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    if(isDone){
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime+0.1);
+    } else {
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime+0.1);
+    }
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime+0.15);
+  }catch(e){}
+}
+
+const formulaTopics = ["Geometry Half","Geometry Half","Mensuration 2D","Mensuration 3D","Algebra Half","Algebra Half","Trigonometry Half","Trigonometry Half","Number System","Arithmetic All Formula"];
+
+const plan = [
+  {ch:"Number System + LCM & HCF", qty:"58+27 = 85 Q"},
+  {ch:"Sequence & Series + Simplification + Surds & Indices", qty:"21+45+14 = 80 Q"},
+  {ch:"Data Interpretation + Permutation & Combination + Probability + Statistics", qty:"17+18+47+22 = 104 Q"},
+  {ch:"Algebra + Polynomials", qty:"71+17 = 88 Q"},
+  {ch:"2D-Mensuration + 3D-Mensuration", qty:"31+44 = 75 Q"},
+  {ch:"Trigonometry + Height & Distance", qty:"76+32 = 108 Q"},
+  {ch:"Geometry", qty:"101 Q"},
+  {ch:"Polygon + Co-ordinate Geometry", qty:"11+47 = 58 Q"},
+  {ch:"Backup / Buffer Day (pending + weak questions)", qty:"Revision"},
+  {ch:"Percentage + Discount", qty:"54+36 = 90 Q"},
+  {ch:"Profit & Loss + Simple Interest + Compound Interest", qty:"39+35+37 = 111 Q"},
+  {ch:"SI & CI Installment + Age + Partnership", qty:"22+20+24 = 66 Q"},
+  {ch:"Ratio & Proportion + Work & Wages + Pipe & Cistern", qty:"57+8+14 = 79 Q"},
+  {ch:"Average + Mixture & Alligation + Time & Work", qty:"41+25+33 = 99 Q"},
+  {ch:"Time,Speed&Distance + Boat & Stream + Race", qty:"42+16+22 = 80 Q"}
+];
+
+const tracker = document.getElementById('tracker');
+let html = '';
+for(let round=1; round<=2; round++){
+  html += `<div class="round-title">Round ${round} — Day ${(round-1)*15+1} to ${round*15}</div>`;
+  plan.forEach((item, idx)=>{
+    const dayNum = (round-1)*15 + idx + 1;
+    html += `
+    <div class="day-card" id="card-${dayNum}">
+      <div class="day-top">
+        <div class="day-num">${dayNum}</div>
+        <div class="day-info">
+          <div class="day-chapters">Day ${dayNum} — ${item.ch}</div>
+          <div class="day-qty">${item.qty}</div>
+          <div class="actual-row">Solved: <input type="number" id="actual-${dayNum}" placeholder="0" min="0" onchange="saveActual(${dayNum})"></div>
+          <div class="mock-section">
+            <div class="mock-label">Sectional Mocks — Math + Reasoning — runs Day 1 to Day 30</div>
+            <div class="mock-grid mock-grid-2col">
+              <div class="mock-card detailed" id="mockcard-${dayNum}-1">
+                <div class="mtitle"><span>MATH MOCK 1</span><div class="mock-tick" id="mock-${dayNum}-1" onclick="toggleMock(${dayNum},'1')">✓</div></div>
+                <input type="number" id="score-${dayNum}-1" placeholder="Score (out of 30)" min="0" max="30" onchange="saveScore(${dayNum},'1')">
+                <div class="mock-subrow">
+                  <input type="number" id="correct-${dayNum}-1" placeholder="✓ Correct" min="0" onchange="saveMockDetail(${dayNum},'1','correct')">
+                  <input type="number" id="wrong-${dayNum}-1" placeholder="✗ Wrong" min="0" onchange="saveMockDetail(${dayNum},'1','wrong')">
+                </div>
+              </div>
+              <div class="mock-card detailed" id="mockcard-${dayNum}-2">
+                <div class="mtitle"><span>MATH MOCK 2</span><div class="mock-tick" id="mock-${dayNum}-2" onclick="toggleMock(${dayNum},'2')">✓</div></div>
+                <input type="number" id="score-${dayNum}-2" placeholder="Score (out of 30)" min="0" max="30" onchange="saveScore(${dayNum},'2')">
+                <div class="mock-subrow">
+                  <input type="number" id="correct-${dayNum}-2" placeholder="✓ Correct" min="0" onchange="saveMockDetail(${dayNum},'2','correct')">
+                  <input type="number" id="wrong-${dayNum}-2" placeholder="✗ Wrong" min="0" onchange="saveMockDetail(${dayNum},'2','wrong')">
+                </div>
+              </div>
+              <div class="mock-card detailed" id="mockcard-${dayNum}-3">
+                <div class="mtitle"><span>MATH MOCK 3</span><div class="mock-tick" id="mock-${dayNum}-3" onclick="toggleMock(${dayNum},'3')">✓</div></div>
+                <input type="number" id="score-${dayNum}-3" placeholder="Score (out of 30)" min="0" max="30" onchange="saveScore(${dayNum},'3')">
+                <div class="mock-subrow">
+                  <input type="number" id="correct-${dayNum}-3" placeholder="✓ Correct" min="0" onchange="saveMockDetail(${dayNum},'3','correct')">
+                  <input type="number" id="wrong-${dayNum}-3" placeholder="✗ Wrong" min="0" onchange="saveMockDetail(${dayNum},'3','wrong')">
+                </div>
+              </div>
+              <div class="mock-card detailed reasoning" id="mockcard-${dayNum}-R">
+                <div class="mtitle"><span>REASONING</span><div class="mock-tick" id="mock-${dayNum}-R" onclick="toggleMock(${dayNum},'R')">✓</div></div>
+                <input type="number" id="score-${dayNum}-R" placeholder="Score (out of 30)" min="0" max="30" onchange="saveScore(${dayNum},'R')">
+                <div class="mock-subrow">
+                  <input type="number" id="correct-${dayNum}-R" placeholder="✓ Correct" min="0" onchange="saveMockDetail(${dayNum},'R','correct')">
+                  <input type="number" id="wrong-${dayNum}-R" placeholder="✗ Wrong" min="0" onchange="saveMockDetail(${dayNum},'R','wrong')">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="formula-section">
+            <div class="mock-label">30-Min Formula Revision — runs Day 1 to Day 30</div>
+            <div class="formula-card" id="formulacard-${dayNum}"><span class="formula-topic">${formulaTopics[(dayNum-1) % formulaTopics.length]}</span><div class="mock-tick" id="formula-${dayNum}" onclick="toggleFormula(${dayNum})">✓</div></div>
+          </div>
+        </div>
+        <div class="checkbox" id="chk-${dayNum}" onclick="toggleDay(${dayNum})">✓</div>
+      </div>
+    </div>`;
+  });
+}
+tracker.innerHTML = html;
+
+const mockKeys = ['1','2','3','R'];
+
+function loadState(){
+  for(let i=1;i<=30;i++){
+    const done = localStorage.getItem('day'+i+'_done') === 'true';
+    const actual = localStorage.getItem('day'+i+'_actual') || '';
+    if(done){ document.getElementById('chk-'+i).classList.add('checked'); document.getElementById('card-'+i).classList.add('done'); }
+    document.getElementById('actual-'+i).value = actual;
+    const fdone = localStorage.getItem('day'+i+'_formula') === 'true';
+    if(fdone){ document.getElementById('formula-'+i).classList.add('checked'); document.getElementById('formulacard-'+i).classList.add('done'); }
+    mockKeys.forEach(m=>{
+      const mdone = localStorage.getItem('day'+i+'_mock'+m) === 'true';
+      const score = localStorage.getItem('day'+i+'_mockscore'+m) || '';
+      const correct = localStorage.getItem('day'+i+'_mockcorrect'+m) || '';
+      const wrong = localStorage.getItem('day'+i+'_mockwrong'+m) || '';
+      document.getElementById('score-'+i+'-'+m).value = score;
+      document.getElementById('correct-'+i+'-'+m).value = correct;
+      document.getElementById('wrong-'+i+'-'+m).value = wrong;
+      if(mdone){ document.getElementById('mock-'+i+'-'+m).classList.add('checked'); document.getElementById('mockcard-'+i+'-'+m).classList.add('done'); }
+    });
+  }
+  updateProgress();
+}
+function toggleFormula(day){
+  const tick = document.getElementById('formula-'+day); const card = document.getElementById('formulacard-'+day);
+  const isDone = tick.classList.toggle('checked'); card.classList.toggle('done', isDone);
+  localStorage.setItem('day'+day+'_formula', isDone); playTick(isDone); updateProgress();
+}
+function toggleMock(day, mockNum){
+  const tick = document.getElementById('mock-'+day+'-'+mockNum); const card = document.getElementById('mockcard-'+day+'-'+mockNum);
+  const isDone = tick.classList.toggle('checked'); card.classList.toggle('done', isDone);
+  localStorage.setItem('day'+day+'_mock'+mockNum, isDone); playTick(isDone); updateProgress();
+}
+function saveScore(day, mockNum){
+  const val = document.getElementById('score-'+day+'-'+mockNum).value;
+  localStorage.setItem('day'+day+'_mockscore'+mockNum, val);
+  if(val !== ''){
+    const tick = document.getElementById('mock-'+day+'-'+mockNum); const card = document.getElementById('mockcard-'+day+'-'+mockNum);
+    if(!tick.classList.contains('checked')){ tick.classList.add('checked'); card.classList.add('done'); localStorage.setItem('day'+day+'_mock'+mockNum, true); updateProgress(); }
+  }
+}
+function saveMockDetail(day, mockNum, field){
+  const val = document.getElementById(field+'-'+day+'-'+mockNum).value;
+  localStorage.setItem('day'+day+'_mock'+field+mockNum, val);
+}
+function toggleDay(i){
+  const chk = document.getElementById('chk-'+i); const card = document.getElementById('card-'+i);
+  const isDone = chk.classList.toggle('checked'); card.classList.toggle('done', isDone);
+  localStorage.setItem('day'+i+'_done', isDone); playTick(isDone); updateProgress();
+}
+function saveActual(i){ localStorage.setItem('day'+i+'_actual', document.getElementById('actual-'+i).value); }
+function updateProgress(){
+  let count=0, mockCount=0;
+  for(let i=1;i<=30;i++){
+    if(localStorage.getItem('day'+i+'_done')==='true') count++;
+    mockKeys.forEach(m=>{ if(localStorage.getItem('day'+i+'_mock'+m)==='true') mockCount++; });
+  }
+  const pct = Math.round((count/30)*100);
+  document.getElementById('progressText').textContent = count + ' / 30 days complete • Mocks: ' + mockCount + ' / 120';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+function resetAll(){
+  if(confirm('Maths progress reset karna hai?')){
+    for(let i=1;i<=30;i++){
+      localStorage.removeItem('day'+i+'_done'); localStorage.removeItem('day'+i+'_actual'); localStorage.removeItem('day'+i+'_formula');
+      mockKeys.forEach(m=>{
+        localStorage.removeItem('day'+i+'_mock'+m);
+        localStorage.removeItem('day'+i+'_mockscore'+m);
+        localStorage.removeItem('day'+i+'_mockcorrect'+m);
+        localStorage.removeItem('day'+i+'_mockwrong'+m);
+        localStorage.removeItem('day'+i+'_mocktime'+m);
+      });
+    }
+    location.reload();
+  }
+}
+loadState();
+
+// ===================== ENGLISH DATA =====================
+const englishPlan = [{"day": 1, "vocab_cats": ["PHOBIAS — 26 words", "Fear/Cowardice vs Courage/Boldness — 41 words", "-CIDE WORDS (Killing) — 10 words", "Anger/Irritation vs Calm/Peace — 56 words", "-MANIA WORDS (Obsession) — 15 words", "Happiness/Joy vs Sadness/Grief — 45 words"], "vocab_total": 193, "idiom_range": "Idiom #1-133 (Round 1)", "idiom_count": 133, "grammar": "Noun", "error_note": "Pg 1-4", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #1-17 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #1-17 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #1-67 (Round 1)", "spelling_count": 67}, {"day": 2, "vocab_cats": ["-LOGY WORDS (Fields of Study) — 42 words", "Praise/Flattery vs Criticism/Insult — 59 words", "Specialists & Adherents (-IST/-IAN) — 49 words", "Honesty/Sincerity vs Cheat/Fraud — 51 words"], "vocab_total": 201, "idiom_range": "Idiom #134-267 (Round 1)", "idiom_count": 134, "grammar": "Pronoun", "error_note": "Pg 5-8", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #18-34 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #18-34 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #68-134 (Round 1)", "spelling_count": 67}, {"day": 3, "vocab_cats": ["-ARCHY/-CRACY (Systems of Rule) — 16 words", "Wisdom/Intelligence vs Foolishness — 23 words", "-GAMY WORDS (Marriage) — 7 words", "Generosity vs Greed — 9 words", "Age-Number Words (-genarian) — 4 words", "Kindness vs Cruelty — 39 words", "Time-Period Words — 18 words", "Diligence vs Laziness — 20 words", "Group/Collection Words — 15 words"], "vocab_total": 151, "idiom_range": "Idiom #268-400 (Round 1)", "idiom_count": 133, "grammar": "Adjective", "error_note": "Pg 9-12", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #35-51 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #35-51 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #135-201 (Round 1)", "spelling_count": 67}, {"day": 4, "vocab_cats": ["Stubbornness — 24 words", "Number-Prefix Words — 18 words", "Beginner vs Expert — 12 words", "Animal/Bird Sound Words — 8 words", "Poverty vs Wealth — 39 words", "Religion/Spirituality — 42 words", "Clear vs Secret — 61 words"], "vocab_total": 204, "idiom_range": "Idiom #401-533 (Round 1)", "idiom_count": 133, "grammar": "Verb", "error_note": "Pg 13-16", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #52-68 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #52-68 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #202-268 (Round 1)", "spelling_count": 67}, {"day": 5, "vocab_cats": ["Buildings/Places/Architecture — 35 words", "Temporary vs Permanent — 26 words", "Animals/Birds — 36 words", "Old Age vs Youth — 28 words", "Plants/Vegetation — 21 words", "Loud vs Soft — 19 words"], "vocab_total": 165, "idiom_range": "Idiom #534-667 (Round 1)", "idiom_count": 134, "grammar": "Tense", "error_note": "Pg 17-20", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #69-85 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #69-85 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #269-335 (Round 1)", "spelling_count": 67}, {"day": 6, "vocab_cats": ["Writing/Literature/Language — 71 words", "Surprise — 10 words", "Water/Sea/River — 12 words", "Disgust — 11 words", "Light/Darkness — 25 words", "Shame/Humiliation — 34 words", "Shape/Texture/Material — 16 words"], "vocab_total": 179, "idiom_range": "Idiom #668-800 (Round 1)", "idiom_count": 133, "grammar": "Subject-Verb Agreement", "error_note": "Pg 21-24", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #86-102 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #86-102 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #336-402 (Round 1)", "spelling_count": 67}, {"day": 7, "vocab_cats": ["Jealousy/Envy — 2 words", "Death/Mortality (2) — 29 words", "Love vs Hate — 6 words", "Groups/Collections/Gatherings — 79 words", "Hope vs Despair — 28 words", "People/Professions/Roles — 46 words"], "vocab_total": 190, "idiom_range": "Idiom #801-933 (Round 1)", "idiom_count": 133, "grammar": "Adverb", "error_note": "Pg 25-28", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #103-119 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #103-119 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #403-469 (Round 1)", "spelling_count": 67}, {"day": 8, "vocab_cats": ["Danger vs Safety — 29 words", "Objects/Tools/Containers — 4 words", "Sleep — 21 words", "Vehicles/Transport/Travel — 38 words", "Death/Mortality — 22 words", "Clothing/Fashion/Appearance Items — 13 words", "Money/Trade/Business — 7 words", "Music/Arts/Performance — 10 words", "Food/Eating/Hunger — 67 words"], "vocab_total": 211, "idiom_range": "Idiom #934-1067 (Round 1)", "idiom_count": 134, "grammar": "Preposition", "error_note": "Pg 29-32", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #120-136 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #120-136 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #470-536 (Round 1)", "spelling_count": 67}, {"day": 9, "vocab_cats": ["Science/Technology/Machinery — 16 words", "Physical Appearance — 20 words", "Mathematics/Measurement/Numbers — 4 words", "Weather/Nature — 52 words", "Mental State/Cognition/Memory — 40 words"], "vocab_total": 132, "idiom_range": "Idiom #1068-1200 (Round 1)", "idiom_count": 133, "grammar": "Conjunction", "error_note": "Pg 33-36", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #137-153 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #137-153 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #537-603 (Round 1)", "spelling_count": 67}, {"day": 10, "vocab_cats": ["Body/Health/Medical — 71 words", "Communication/Signal/Message — 3 words", "Punishment/Crime/Law — 66 words", "Society/Politics/Governance — 14 words", "War/Military — 42 words"], "vocab_total": 196, "idiom_range": "Idiom #1201-1333 (Round 1)", "idiom_count": 133, "grammar": "Article", "error_note": "Pg 37-40", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #154-170 (Round 1)", "phrasal_count": 17, "homonym_range": "Homonym #154-170 (Round 1)", "homonym_count": 17, "spelling_range": "Spelling #604-670 (Round 1)", "spelling_count": 67}, {"day": 11, "vocab_cats": ["Superiority vs Inferiority/Submission — 20 words", "Speech/Talkativeness vs Silence — 44 words", "Effort/Struggle/Difficulty — 11 words", "Movement: Fast vs Slow — 31 words", "Pleasure/Entertainment/Leisure — 8 words", "Destruction/Ruin vs Construction/Repair — 23 words", "Help/Support vs Hindrance/Obstruction — 15 words", "Strength/Power vs Weakness — 39 words"], "vocab_total": 191, "idiom_range": "Idiom #1334-1467 (Round 1)", "idiom_count": 134, "grammar": "Conditional Sentences", "error_note": "Pg 41-44", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #171-186 (Round 1)", "phrasal_count": 16, "homonym_range": "Homonym #171-186 (Round 1)", "homonym_count": 16, "spelling_range": "Spelling #671-736 (Round 1)", "spelling_count": 66}, {"day": 12, "vocab_cats": ["Confusion/Bewilderment — 6 words", "Size: Large vs Small — 56 words", "Morality: Virtue vs Corruption — 7 words", "Cleanliness vs Dirtiness — 5 words", "Writing/Literature/Language (2) — 4 words", "Persuasion/Manipulation — 13 words", "Unsteady Movement/Falling — 5 words", "Obedience/Submission vs Rebellion — 6 words", "Chance/Luck/Uncertainty/Superlatives — 6 words", "Secrecy/Spying/Observation — 7 words", "Degree/Extent/Accuracy — 4 words", "Argument/Conflict/Dispute — 9 words", "Precision/Grammar/Linguistics — 11 words", "Change/Transformation — 12 words"], "vocab_total": 151, "idiom_range": "Idiom #1468-1600 (Round 1)", "idiom_count": 133, "grammar": "Voice (Active/Passive)", "error_note": "Pg 45-48", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #187-202 (Round 1)", "phrasal_count": 16, "homonym_range": "Homonym #187-202 (Round 1)", "homonym_count": 16, "spelling_range": "Spelling #737-802 (Round 1)", "spelling_count": 66}, {"day": 13, "vocab_cats": ["Meaning/Obligation — 58 words", "Time/Duration/Frequency — 32 words", "Rank/Order & Sequence — 58 words", "Beginning/Origin/End/Conclusion — 39 words"], "vocab_total": 187, "idiom_range": "Idiom #1601-1733 (Round 1)", "idiom_count": 133, "grammar": "Narration (Direct/Indirect)", "error_note": "Pg 49-52", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #203-218 (Round 1)", "phrasal_count": 16, "homonym_range": "Homonym #203-218 (Round 1)", "homonym_count": 16, "spelling_range": "Spelling #803-868 (Round 1)", "spelling_count": 66}, {"day": 14, "vocab_cats": ["General Vocabulary (1) — 53 words", "Abundance/Excess vs Scarcity/Lack — 34 words", "General Vocabulary (2) — 90 words"], "vocab_total": 177, "idiom_range": "Idiom #1734-1867 (Round 1)", "idiom_count": 134, "grammar": "Phrase & Clause", "error_note": "Pg 53-56", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #219-234 (Round 1)", "phrasal_count": 16, "homonym_range": "Homonym #219-234 (Round 1)", "homonym_count": 16, "spelling_range": "Spelling #869-934 (Round 1)", "spelling_count": 66}, {"day": 15, "vocab_cats": ["Restraint/Control vs Freedom — 25 words", "General Vocabulary (3) — 9 words", "Belief/Doubt/Imagination — 25 words", "General Vocabulary (4) — 7 words", "Formality/Custom/Ceremony — 14 words", "Necessity/Importance/Obligation — 8 words", "Guilt/Innocence/Conscience — 27 words", "Eccentricity/Oddity/Unconventionality — 4 words", "Uselessness/Futility/Irrelevance — 5 words", "Persistence/Relentlessness — 8 words", "Doubtful/Uncertain Claims — 9 words", "Colour & Appearance Shades — 8 words", "Legal/Official Process & Administration — 4 words", "Honour/Title/Distinction — 9 words", "Smell & Strong Sensation — 8 words", "Manners: Rudeness vs Politeness — 5 words", "Society/Governance (2) — 1 words"], "vocab_total": 176, "idiom_range": "Idiom #1868-2000 (Round 1)", "idiom_count": 133, "grammar": "Sentence Types", "error_note": "Pg 57-60", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #235-250 (Round 1)", "phrasal_count": 16, "homonym_range": "Homonym #235-250 (Round 1)", "homonym_count": 16, "spelling_range": "Spelling #935-1000 (Round 1)", "spelling_count": 66}, {"day": 16, "vocab_cats": ["Restraint/Control vs Freedom — 25 words", "General Vocabulary (3) — 9 words", "Belief/Doubt/Imagination — 25 words", "General Vocabulary (4) — 7 words", "Formality/Custom/Ceremony — 14 words", "Necessity/Importance/Obligation — 8 words", "Guilt/Innocence/Conscience — 27 words", "Eccentricity/Oddity/Unconventionality — 4 words", "Uselessness/Futility/Irrelevance — 5 words", "Persistence/Relentlessness — 8 words", "Doubtful/Uncertain Claims — 9 words", "Colour & Appearance Shades — 8 words", "Legal/Official Process & Administration — 4 words", "Honour/Title/Distinction — 9 words", "Smell & Strong Sensation — 8 words", "Manners: Rudeness vs Politeness — 5 words", "Society/Governance (2) — 1 words"], "vocab_total": 176, "idiom_range": "Idiom #1-133 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "English New Pattern Topics", "error_note": "Pg 61-64", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #1-17 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #1-17 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #1-67 (Round 2 - revision)", "spelling_count": 67}, {"day": 17, "vocab_cats": ["General Vocabulary (1) — 53 words", "Abundance/Excess vs Scarcity/Lack — 34 words", "General Vocabulary (2) — 90 words"], "vocab_total": 177, "idiom_range": "Idiom #134-267 (Round 2 - reverse order)", "idiom_count": 134, "grammar": "Noun", "error_note": "Pg 65-68", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #18-34 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #18-34 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #68-134 (Round 2 - revision)", "spelling_count": 67}, {"day": 18, "vocab_cats": ["Meaning/Obligation — 58 words", "Time/Duration/Frequency — 32 words", "Rank/Order & Sequence — 58 words", "Beginning/Origin/End/Conclusion — 39 words"], "vocab_total": 187, "idiom_range": "Idiom #268-400 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Pronoun", "error_note": "Pg 69-72", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #35-51 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #35-51 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #135-201 (Round 2 - revision)", "spelling_count": 67}, {"day": 19, "vocab_cats": ["Confusion/Bewilderment — 6 words", "Size: Large vs Small — 56 words", "Morality: Virtue vs Corruption — 7 words", "Cleanliness vs Dirtiness — 5 words", "Writing/Literature/Language (2) — 4 words", "Persuasion/Manipulation — 13 words", "Unsteady Movement/Falling — 5 words", "Obedience/Submission vs Rebellion — 6 words", "Chance/Luck/Uncertainty/Superlatives — 6 words", "Secrecy/Spying/Observation — 7 words", "Degree/Extent/Accuracy — 4 words", "Argument/Conflict/Dispute — 9 words", "Precision/Grammar/Linguistics — 11 words", "Change/Transformation — 12 words"], "vocab_total": 151, "idiom_range": "Idiom #401-533 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Adjective", "error_note": "Pg 73-76", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #52-68 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #52-68 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #202-268 (Round 2 - revision)", "spelling_count": 67}, {"day": 20, "vocab_cats": ["Superiority vs Inferiority/Submission — 20 words", "Speech/Talkativeness vs Silence — 44 words", "Effort/Struggle/Difficulty — 11 words", "Movement: Fast vs Slow — 31 words", "Pleasure/Entertainment/Leisure — 8 words", "Destruction/Ruin vs Construction/Repair — 23 words", "Help/Support vs Hindrance/Obstruction — 15 words", "Strength/Power vs Weakness — 39 words"], "vocab_total": 191, "idiom_range": "Idiom #534-667 (Round 2 - reverse order)", "idiom_count": 134, "grammar": "Verb", "error_note": "Pg 77-80", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #69-85 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #69-85 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #269-335 (Round 2 - revision)", "spelling_count": 67}, {"day": 21, "vocab_cats": ["Body/Health/Medical — 71 words", "Communication/Signal/Message — 3 words", "Punishment/Crime/Law — 66 words", "Society/Politics/Governance — 14 words", "War/Military — 42 words"], "vocab_total": 196, "idiom_range": "Idiom #668-800 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Tense", "error_note": "Pg 81-84", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #86-102 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #86-102 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #336-402 (Round 2 - revision)", "spelling_count": 67}, {"day": 22, "vocab_cats": ["Science/Technology/Machinery — 16 words", "Physical Appearance — 20 words", "Mathematics/Measurement/Numbers — 4 words", "Weather/Nature — 52 words", "Mental State/Cognition/Memory — 40 words"], "vocab_total": 132, "idiom_range": "Idiom #801-933 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Subject-Verb Agreement", "error_note": "Pg 85-88", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #103-119 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #103-119 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #403-469 (Round 2 - revision)", "spelling_count": 67}, {"day": 23, "vocab_cats": ["Danger vs Safety — 29 words", "Objects/Tools/Containers — 4 words", "Sleep — 21 words", "Vehicles/Transport/Travel — 38 words", "Death/Mortality — 22 words", "Clothing/Fashion/Appearance Items — 13 words", "Money/Trade/Business — 7 words", "Music/Arts/Performance — 10 words", "Food/Eating/Hunger — 67 words"], "vocab_total": 211, "idiom_range": "Idiom #934-1067 (Round 2 - reverse order)", "idiom_count": 134, "grammar": "Adverb", "error_note": "Pg 89-92", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #120-136 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #120-136 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #470-536 (Round 2 - revision)", "spelling_count": 67}, {"day": 24, "vocab_cats": ["Jealousy/Envy — 2 words", "Death/Mortality (2) — 29 words", "Love vs Hate — 6 words", "Groups/Collections/Gatherings — 79 words", "Hope vs Despair — 28 words", "People/Professions/Roles — 46 words"], "vocab_total": 190, "idiom_range": "Idiom #1068-1200 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Preposition", "error_note": "Pg 93-96", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #137-153 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #137-153 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #537-603 (Round 2 - revision)", "spelling_count": 67}, {"day": 25, "vocab_cats": ["Writing/Literature/Language — 71 words", "Surprise — 10 words", "Water/Sea/River — 12 words", "Disgust — 11 words", "Light/Darkness — 25 words", "Shame/Humiliation — 34 words", "Shape/Texture/Material — 16 words"], "vocab_total": 179, "idiom_range": "Idiom #1201-1333 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Conjunction", "error_note": "Pg 97-100", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #154-170 (Round 2 - revision)", "phrasal_count": 17, "homonym_range": "Homonym #154-170 (Round 2 - revision)", "homonym_count": 17, "spelling_range": "Spelling #604-670 (Round 2 - revision)", "spelling_count": 67}, {"day": 26, "vocab_cats": ["Buildings/Places/Architecture — 35 words", "Temporary vs Permanent — 26 words", "Animals/Birds — 36 words", "Old Age vs Youth — 28 words", "Plants/Vegetation — 21 words", "Loud vs Soft — 19 words"], "vocab_total": 165, "idiom_range": "Idiom #1334-1467 (Round 2 - reverse order)", "idiom_count": 134, "grammar": "Article", "error_note": "Weak Pages Buffer Revision (from Pg 1-100)", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #171-186 (Round 2 - revision)", "phrasal_count": 16, "homonym_range": "Homonym #171-186 (Round 2 - revision)", "homonym_count": 16, "spelling_range": "Spelling #671-736 (Round 2 - revision)", "spelling_count": 66}, {"day": 27, "vocab_cats": ["Stubbornness — 24 words", "Number-Prefix Words — 18 words", "Beginner vs Expert — 12 words", "Animal/Bird Sound Words — 8 words", "Poverty vs Wealth — 39 words", "Religion/Spirituality — 42 words", "Clear vs Secret — 61 words"], "vocab_total": 204, "idiom_range": "Idiom #1468-1600 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Conditional Sentences", "error_note": "Weak Pages Buffer Revision (from Pg 1-100)", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #187-202 (Round 2 - revision)", "phrasal_count": 16, "homonym_range": "Homonym #187-202 (Round 2 - revision)", "homonym_count": 16, "spelling_range": "Spelling #737-802 (Round 2 - revision)", "spelling_count": 66}, {"day": 28, "vocab_cats": ["-ARCHY/-CRACY (Systems of Rule) — 16 words", "Wisdom/Intelligence vs Foolishness — 23 words", "-GAMY WORDS (Marriage) — 7 words", "Generosity vs Greed — 9 words", "Age-Number Words (-genarian) — 4 words", "Kindness vs Cruelty — 39 words", "Time-Period Words — 18 words", "Diligence vs Laziness — 20 words", "Group/Collection Words — 15 words"], "vocab_total": 151, "idiom_range": "Idiom #1601-1733 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Voice (Active/Passive)", "error_note": "Weak Pages Buffer Revision (from Pg 1-100)", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #203-218 (Round 2 - revision)", "phrasal_count": 16, "homonym_range": "Homonym #203-218 (Round 2 - revision)", "homonym_count": 16, "spelling_range": "Spelling #803-868 (Round 2 - revision)", "spelling_count": 66}, {"day": 29, "vocab_cats": ["-LOGY WORDS (Fields of Study) — 42 words", "Praise/Flattery vs Criticism/Insult — 59 words", "Specialists & Adherents (-IST/-IAN) — 49 words", "Honesty/Sincerity vs Cheat/Fraud — 51 words"], "vocab_total": 201, "idiom_range": "Idiom #1734-1867 (Round 2 - reverse order)", "idiom_count": 134, "grammar": "Narration (Direct/Indirect)", "error_note": "Weak Pages Buffer Revision (from Pg 1-100)", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #219-234 (Round 2 - revision)", "phrasal_count": 16, "homonym_range": "Homonym #219-234 (Round 2 - revision)", "homonym_count": 16, "spelling_range": "Spelling #869-934 (Round 2 - revision)", "spelling_count": 66}, {"day": 30, "vocab_cats": ["PHOBIAS — 26 words", "Fear/Cowardice vs Courage/Boldness — 41 words", "-CIDE WORDS (Killing) — 10 words", "Anger/Irritation vs Calm/Peace — 56 words", "-MANIA WORDS (Obsession) — 15 words", "Happiness/Joy vs Sadness/Grief — 45 words"], "vocab_total": 193, "idiom_range": "Idiom #1868-2000 (Round 2 - reverse order)", "idiom_count": 133, "grammar": "Phrase & Clause", "error_note": "Weak Pages Buffer Revision (from Pg 1-100)", "rc": 2, "pqrs": 10, "cloze": 2, "phrasal_range": "Phrasal Verb #235-250 (Round 2 - revision)", "phrasal_count": 16, "homonym_range": "Homonym #235-250 (Round 2 - revision)", "homonym_count": 16, "spelling_range": "Spelling #935-1000 (Round 2 - revision)", "spelling_count": 66}];
+
+const trackerEng = document.getElementById('trackerEng');
+let htmlE = '';
+for(let round=1; round<=2; round++){
+  htmlE += `<div class="round-title eng">Round ${round} — Day ${(round-1)*15+1} to ${round*15}</div>`;
+  for(let idx=0; idx<15; idx++){
+    const item = englishPlan[(round-1)*15 + idx];
+    const dayNum = item.day;
+    const catListHtml = item.vocab_cats.map((c,ci) => `<li class="cat-item" id="item-${dayNum}-vocab-${ci}" onclick="toggleItem(${dayNum},'vocab-${ci}')"><span class="mini-chk">✓</span><span class="cat-label">${c}</span></li>`).join('');
+    const roundEndDay = round*15;
+    htmlE += `
+    <div class="day-card" id="ecard-${dayNum}">
+      <div class="day-top">
+        <div class="day-num">${dayNum}</div>
+        <div class="day-info">
+          <div class="day-chapters">Day ${dayNum} — English Full Plan</div>
+
+          <div class="eng-block">
+            <div class="eng-block-title">Vocabulary Categories (Round ${round}) — completes Day ${roundEndDay}</div>
+            <ul class="cat-list">${catListHtml}</ul>
+            <div class="eng-total">Total Vocab Words Today: ${item.vocab_total}</div>
+          </div>
+
+          <div class="eng-mini-grid">
+            <div class="eng-mini" id="item-${dayNum}-idiom" onclick="toggleItem(${dayNum},'idiom')"><span class="mini-chk">✓</span><span>Idioms: ${item.idiom_range} — completes Day ${roundEndDay}</span></div>
+            <div class="eng-mini" id="item-${dayNum}-grammar" onclick="toggleItem(${dayNum},'grammar')"><span class="mini-chk">✓</span><span>Grammar: ${item.grammar} — completes Day ${roundEndDay}</span></div>
+            <div class="eng-mini" id="item-${dayNum}-error" onclick="toggleItem(${dayNum},'error')"><span class="mini-chk">✓</span><span>Error Notebook: ${item.error_note} — completes Day ${roundEndDay}</span></div>
+            <div class="eng-mini" id="item-${dayNum}-phrasal" onclick="toggleItem(${dayNum},'phrasal')"><span class="mini-chk">✓</span><span>${item.phrasal_range} (${item.phrasal_count}) — completes Day ${roundEndDay}</span></div>
+            <div class="eng-mini" id="item-${dayNum}-homonym" onclick="toggleItem(${dayNum},'homonym')"><span class="mini-chk">✓</span><span>${item.homonym_range} (${item.homonym_count}) — completes Day ${roundEndDay}</span></div>
+            <div class="eng-mini" id="item-${dayNum}-spelling" onclick="toggleItem(${dayNum},'spelling')"><span class="mini-chk">✓</span><span>${item.spelling_range} (${item.spelling_count}) — completes Day ${roundEndDay}</span></div>
+          </div>
+
+          <div class="mock-section">
+            <div class="mock-label">Daily Fixed Practice — runs Day 1 to Day 30</div>
+            <div class="fixed-daily">
+              <div class="fixed-card" id="item-${dayNum}-rc" onclick="toggleItem(${dayNum},'rc')"><div class="fnum">${item.rc}</div><div class="flabel">Reading Comp.</div></div>
+              <div class="fixed-card" id="item-${dayNum}-pqrs" onclick="toggleItem(${dayNum},'pqrs')"><div class="fnum">${item.pqrs}</div><div class="flabel">PQRS / Para Jumble</div></div>
+              <div class="fixed-card" id="item-${dayNum}-cloze" onclick="toggleItem(${dayNum},'cloze')"><div class="fnum">${item.cloze}</div><div class="flabel">Cloze Test</div></div>
+            </div>
+          </div>
+
+          <div class="eng-total" style="margin-top:8px; color:var(--eng); font-weight:700;">
+            Grand Daily Word/Item Count ≈ ${item.vocab_total + item.idiom_count} words + ${item.rc} RC + ${item.pqrs} PQRS + ${item.cloze} Cloze
+          </div>
+        </div>
+        <div class="checkbox" id="echk-${dayNum}" onclick="toggleDayEng(${dayNum})">✓</div>
+      </div>
+    </div>`;
+  }
+}
+trackerEng.innerHTML = htmlE;
+
+function toggleItem(dayNum, key){
+  const el = document.getElementById('item-'+dayNum+'-'+key);
+  const isDone = el.classList.toggle('item-checked');
+  localStorage.setItem('eitem-'+dayNum+'-'+key, isDone); playTick(isDone);
+}
+
+function loadStateEng(){
+  for(let i=1;i<=30;i++){
+    const done = localStorage.getItem('eday'+i+'_done') === 'true';
+    if(done){ document.getElementById('echk-'+i).classList.add('checked'); document.getElementById('ecard-'+i).classList.add('done'); }
+    const item = englishPlan[i-1];
+    const keys = item.vocab_cats.map((c,ci)=>'vocab-'+ci).concat(['idiom','grammar','error','phrasal','homonym','spelling','rc','pqrs','cloze']);
+    keys.forEach(k=>{
+      if(localStorage.getItem('eitem-'+i+'-'+k) === 'true'){
+        const el = document.getElementById('item-'+i+'-'+k);
+        if(el) el.classList.add('item-checked');
+      }
+    });
+  }
+  updateProgressEng();
+}
+function toggleDayEng(i){
+  const chk = document.getElementById('echk-'+i); const card = document.getElementById('ecard-'+i);
+  const isDone = chk.classList.toggle('checked'); card.classList.toggle('done', isDone);
+  localStorage.setItem('eday'+i+'_done', isDone); playTick(isDone); updateProgressEng();
+}
+function updateProgressEng(){
+  let count=0;
+  for(let i=1;i<=30;i++){ if(localStorage.getItem('eday'+i+'_done')==='true') count++; }
+  const pct = Math.round((count/30)*100);
+  document.getElementById('progressTextEng').textContent = count + ' / 30 days complete';
+  document.getElementById('progressPctEng').textContent = pct + '%';
+  document.getElementById('progressFillEng').style.width = pct + '%';
+}
+function resetAllEng(){
+  if(confirm('English progress reset karna hai?')){
+    for(let i=1;i<=30;i++){
+      localStorage.removeItem('eday'+i+'_done');
+      const item = englishPlan[i-1];
+      const keys = item.vocab_cats.map((c,ci)=>'vocab-'+ci).concat(['idiom','grammar','error','phrasal','homonym','spelling','rc','pqrs','cloze']);
+      keys.forEach(k=>localStorage.removeItem('eitem-'+i+'-'+k));
+    }
+    location.reload();
+  }
+}
+loadStateEng();
+
+// ===================== GK DATA =====================
+const gkPlan = [{"day": 1, "round": "1st Detailed Read", "blocks": [{"subject": "History", "pages": "1-14"}, {"subject": "Geography", "pages": "1-11"}]}, {"day": 2, "round": "1st Detailed Read", "blocks": [{"subject": "History", "pages": "15-27"}, {"subject": "Geography", "pages": "12-23"}]}, {"day": 3, "round": "1st Detailed Read", "blocks": [{"subject": "History", "pages": "28-40"}, {"subject": "Geography", "pages": "24-35"}]}, {"day": 4, "round": "1st Detailed Read", "blocks": [{"subject": "History", "pages": "41-52 (complete)"}, {"subject": "Geography", "pages": "36-48"}]}, {"day": 5, "round": "1st Detailed Read", "blocks": [{"subject": "Geography", "pages": "49-72 (complete)"}]}, {"day": 6, "round": "1st Detailed Read", "blocks": [{"subject": "Economics", "pages": "1-14"}, {"subject": "Polity", "pages": "1-7"}]}, {"day": 7, "round": "1st Detailed Read", "blocks": [{"subject": "Economics", "pages": "15-28"}, {"subject": "Polity", "pages": "8-14"}]}, {"day": 8, "round": "1st Detailed Read", "blocks": [{"subject": "Economics", "pages": "29-42 (complete)"}, {"subject": "Polity", "pages": "15-20 (complete)"}]}, {"day": 9, "round": "1st Detailed Read", "blocks": [{"subject": "Science", "pages": "1-32 (complete)"}]}, {"day": 10, "round": "Revision 1", "blocks": [{"subject": "History", "pages": "1-52"}, {"subject": "Geography", "pages": "1-3"}]}, {"day": 11, "round": "Revision 1", "blocks": [{"subject": "Geography", "pages": "4-58"}]}, {"day": 12, "round": "Revision 1", "blocks": [{"subject": "Geography", "pages": "59-72"}, {"subject": "Economics", "pages": "1-41"}]}, {"day": 13, "round": "Revision 1", "blocks": [{"subject": "Economics", "pages": "42"}, {"subject": "Polity", "pages": "1-20"}, {"subject": "Science", "pages": "1-32"}]}, {"day": 14, "round": "Revision 2", "blocks": [{"subject": "Science", "pages": "1-32"}, {"subject": "Polity", "pages": "1-20"}, {"subject": "Economics", "pages": "1-3"}]}, {"day": 15, "round": "Revision 2", "blocks": [{"subject": "Economics", "pages": "4-42"}, {"subject": "Geography", "pages": "1-16"}]}, {"day": 16, "round": "Revision 2", "blocks": [{"subject": "Geography", "pages": "17-72"}]}, {"day": 17, "round": "Revision 2", "blocks": [{"subject": "History", "pages": "1-52"}]}, {"day": 18, "round": "Revision 3", "blocks": [{"subject": "Economics", "pages": "1-42"}, {"subject": "Science", "pages": "1-13"}]}, {"day": 19, "round": "Revision 3", "blocks": [{"subject": "Science", "pages": "14-32"}, {"subject": "History", "pages": "1-36"}]}, {"day": 20, "round": "Revision 3", "blocks": [{"subject": "History", "pages": "37-52"}, {"subject": "Polity", "pages": "1-20"}, {"subject": "Geography", "pages": "1-19"}]}, {"day": 21, "round": "Revision 3", "blocks": [{"subject": "Geography", "pages": "20-72"}]}, {"day": 22, "round": "Buffer", "blocks": [{"subject": "History", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Polity", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 23, "round": "Buffer", "blocks": [{"subject": "Geography", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Science", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 24, "round": "Buffer", "blocks": [{"subject": "Economics", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "History", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 25, "round": "Buffer", "blocks": [{"subject": "Polity", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Geography", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 26, "round": "Buffer", "blocks": [{"subject": "Science", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Economics", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 27, "round": "Buffer", "blocks": [{"subject": "History", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Geography", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 28, "round": "Buffer", "blocks": [{"subject": "Economics", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Polity", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 29, "round": "Buffer", "blocks": [{"subject": "Science", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "History", "pages": "Full Quick Skim + Weak Topics"}]}, {"day": 30, "round": "Buffer", "blocks": [{"subject": "Geography", "pages": "Full Quick Skim + Weak Topics"}, {"subject": "Economics", "pages": "Full Quick Skim + Weak Topics"}]}];
+
+const gkSubjectCompleteDay = {'History':4,'Geography':5,'Economics':8,'Polity':8,'Science':9};
+const trackerGk = document.getElementById('trackerGk');
+let htmlG = '';
+let lastRound = '';
+gkPlan.forEach(item=>{
+  const dayNum = item.day;
+  if(item.round !== lastRound){
+    htmlG += `<div class="round-title" style="color:var(--gk); border-left-color:var(--gk);">${item.round}</div>`;
+    lastRound = item.round;
+  }
+  const blocksHtml = item.blocks.map((b,bi)=>`
+    <div class="gk-block" id="gitem-${dayNum}-${bi}" onclick="toggleGkItem(${dayNum},${bi})">
+      <span class="mini-chk">✓</span>
+      <span class="gk-subj">${b.subject}${gkSubjectCompleteDay[b.subject] ? ' (completes Day '+gkSubjectCompleteDay[b.subject]+')' : ''}</span>
+      <span class="gk-pages">Pg ${b.pages}</span>
+    </div>`).join('');
+  htmlG += `
+  <div class="day-card" id="gcard-${dayNum}">
+    <div class="day-top">
+      <div class="day-num">${dayNum}</div>
+      <div class="day-info">
+        <div class="day-chapters">Day ${dayNum} — ${item.round}</div>
+        <div class="gk-round-label">Book Subjects (~1.5 hr)</div>
+        ${blocksHtml}
+        <div class="static-gk-card gk-block" id="gitem-${dayNum}-static" onclick="toggleGkItem(${dayNum},'static')">
+          <span class="mini-chk">✓</span>
+          <span class="gk-subj">Static GK (Current Affairs Source)</span>
+          <span class="gk-pages">30 min</span>
+        </div>
+      </div>
+      <div class="checkbox" id="gchk-${dayNum}" onclick="toggleDayGk(${dayNum})">✓</div>
+    </div>
+  </div>`;
+});
+trackerGk.innerHTML = htmlG;
+
+function toggleGkItem(dayNum, key){
+  const el = document.getElementById('gitem-'+dayNum+'-'+key);
+  const isDone = el.classList.toggle('item-checked');
+  localStorage.setItem('gitem-'+dayNum+'-'+key, isDone); playTick(isDone);
+}
+function toggleDayGk(i){
+  const chk = document.getElementById('gchk-'+i); const card = document.getElementById('gcard-'+i);
+  const isDone = chk.classList.toggle('checked'); card.classList.toggle('done', isDone);
+  localStorage.setItem('gday'+i+'_done', isDone); playTick(isDone); updateProgressGk();
+}
+function loadStateGk(){
+  gkPlan.forEach(item=>{
+    const i = item.day;
+    const done = localStorage.getItem('gday'+i+'_done') === 'true';
+    if(done){ document.getElementById('gchk-'+i).classList.add('checked'); document.getElementById('gcard-'+i).classList.add('done'); }
+    item.blocks.forEach((b,bi)=>{
+      if(localStorage.getItem('gitem-'+i+'-'+bi) === 'true'){
+        const el = document.getElementById('gitem-'+i+'-'+bi);
+        if(el) el.classList.add('item-checked');
+      }
+    });
+    if(localStorage.getItem('gitem-'+i+'-static') === 'true'){
+      const el = document.getElementById('gitem-'+i+'-static');
+      if(el) el.classList.add('item-checked');
+    }
+  });
+  updateProgressGk();
+}
+function updateProgressGk(){
+  let count=0;
+  for(let i=1;i<=30;i++){ if(localStorage.getItem('gday'+i+'_done')==='true') count++; }
+  const pct = Math.round((count/30)*100);
+  document.getElementById('progressTextGk').textContent = count + ' / 30 days complete';
+  document.getElementById('progressPctGk').textContent = pct + '%';
+  document.getElementById('progressFillGk').style.width = pct + '%';
+}
+function resetAllGk(){
+  if(confirm('GK progress reset karna hai?')){
+    gkPlan.forEach(item=>{
+      const i = item.day;
+      localStorage.removeItem('gday'+i+'_done');
+      item.blocks.forEach((b,bi)=>localStorage.removeItem('gitem-'+i+'-'+bi));
+      localStorage.removeItem('gitem-'+i+'-static');
+    });
+    location.reload();
+  }
+}
+loadStateGk();
+
+// ===================== ALL-IN-ONE DAILY PLAN (UNIFIED, FULL DETAIL) =====================
+// Ye section Math/Reasoning/English/GK ke poore detailed day-cards ko
+// (jo upar hidden containers mein already ban chuke hain) seedha yahin
+// ek hi daily card ke andar move kar deta hai — koi bhi detail (mock scores,
+// vocab categories, GK subject blocks) miss nahi hota.
+const trackerPlan = document.getElementById('trackerPlan');
+for(let day=1; day<=30; day++){
+  const roundNum = Math.floor((day-1)/15) + 1;
+  const planCard = document.createElement('div');
+  planCard.className = 'plan-card';
+  planCard.id = 'pcard-'+day;
+  planCard.innerHTML = `
+    <div class="plan-day-head">
+      <div class="plan-day-badge">
+        <span class="plan-day-num">DAY ${day}</span>
+        <span class="plan-day-round">Round ${roundNum} of 2</span>
+      </div>
+      <div class="checkbox" id="pchk-${day}" onclick="togglePlanDay(${day})">✓</div>
+    </div>
+    <div class="plan-section-label" style="color:var(--accent);">🎯 FULL MOCK (Score/Correct/Wrong/Time + Subject-wise yahin bharo)</div>
+    <div class="mock-card detailed" id="prow-${day}-fullmock" style="margin:8px 12px 12px;">
+      <div class="mtitle"><span>FULL MOCK — DAY ${day}</span><div class="mock-tick" id="fmtick-${day}" onclick="toggleFullMock(${day})">✓</div></div>
+      <input type="number" id="fmscore-${day}" placeholder="Total Score (out of 200)" min="0" max="200" onchange="saveFullMock(${day},'score')">
+      <div class="mock-subrow">
+        <input type="number" id="fmcorrect-${day}" placeholder="✓ Correct" min="0" onchange="saveFullMock(${day},'correct')">
+        <input type="number" id="fmwrong-${day}" placeholder="✗ Wrong" min="0" onchange="saveFullMock(${day},'wrong')">
+      </div>
+      <input type="text" id="fmmistakes-${day}" class="mock-time" placeholder="Mistakes" onchange="saveFullMock(${day},'mistakes')">
+      <div class="mock-subrow" style="margin-top:8px;">
+        <input type="number" id="fmmath-${day}" placeholder="Math Score" min="0" onchange="saveFullMock(${day},'math')">
+        <input type="number" id="fmreasoning-${day}" placeholder="Reasoning Score" min="0" onchange="saveFullMock(${day},'reasoning')">
+      </div>
+      <div class="mock-subrow">
+        <input type="number" id="fmenglish-${day}" placeholder="English Score" min="0" onchange="saveFullMock(${day},'english')">
+        <input type="number" id="fmgk-${day}" placeholder="GK Score" min="0" onchange="saveFullMock(${day},'gk')">
+      </div>
+    </div>
+    <div class="plan-section-label">🧮 MATHS + REASONING SECTIONAL (scores/correct/wrong/time yahin bharo)</div>
+    <div class="plan-embed" id="pembed-math-${day}"></div>
+    <div class="plan-section-label eng">📖 ENGLISH (vocab categories, idioms, grammar, RC/PQRS/Cloze)</div>
+    <div class="plan-embed" id="pembed-eng-${day}"></div>
+    <div class="plan-section-label gk">🌍 GK (subject-wise pages + static GK)</div>
+    <div class="plan-embed" id="pembed-gk-${day}"></div>
+  `;
+  trackerPlan.appendChild(planCard);
+  const mCard = document.getElementById('card-'+day);
+  const eCard = document.getElementById('ecard-'+day);
+  const gCard = document.getElementById('gcard-'+day);
+  if(mCard) document.getElementById('pembed-math-'+day).appendChild(mCard);
+  if(eCard) document.getElementById('pembed-eng-'+day).appendChild(eCard);
+  if(gCard) document.getElementById('pembed-gk-'+day).appendChild(gCard);
+}
+
+// ===== Admin Day-Lock =====
+// When this tracker is embedded inside the main app (same-origin iframe),
+// the parent controls which Day is currently unlocked (see app.js:
+// loadStudy30Day / setStudy30Day, set from the Admin Panel). Only that
+// Day's card stays usable here — every other card gets a lock overlay.
+// Standalone use (opened directly, no parent, or a different origin) never
+// locks anything, so this file keeps working on its own too.
+async function applyStudy30Lock(){
+  let unlockedDay = null;
+  let bypass = false;
+  try{
+    if(window.parent && window.parent !== window && typeof window.parent.loadStudy30Day === 'function'){
+      unlockedDay = await window.parent.loadStudy30Day();
+      bypass = typeof window.parent.isMeAdmin === 'function' && window.parent.isMeAdmin();
+    }
+  }catch(e){ unlockedDay = null; }
+  if(!unlockedDay) return; // standalone / not embedded / cross-origin — no lock
+  for(let day=1; day<=30; day++){
+    const card = document.getElementById('pcard-'+day);
+    if(!card) continue;
+    const shouldLock = !bypass && day !== unlockedDay;
+    card.classList.toggle('plan-locked', shouldLock);
+    let overlay = card.querySelector('.plan-lock-overlay');
+    if(shouldLock){
+      if(!overlay){
+        overlay = document.createElement('div');
+        overlay.className = 'plan-lock-overlay';
+        overlay.innerHTML = day < unlockedDay
+          ? `🔒 Ye din pehle unlock ho chuka tha`
+          : `🔒 Admin abhi tak unlock nahi kiya — Abhi sirf Day ${unlockedDay} khula hai`;
+        card.appendChild(overlay);
+      }
+    } else if(overlay){
+      overlay.remove();
+    }
+  }
+}
+applyStudy30Lock();
+setInterval(applyStudy30Lock, 25000);
+
+const fullMockFields = ['score','correct','wrong','mistakes','math','reasoning','english','gk'];
+function toggleFullMock(day){
+  const tick = document.getElementById('fmtick-'+day); const card = document.getElementById('prow-'+day+'-fullmock');
+  const isDoneNow = tick.classList.toggle('checked');
+  card.classList.toggle('done', isDoneNow); card.classList.toggle('item-checked', isDoneNow);
+  localStorage.setItem('day'+day+'_fullmock_done', isDoneNow); playTick(isDoneNow);
+  syncPlanDay(day);
+}
+function saveFullMock(day, field){
+  const val = document.getElementById('fm'+field+'-'+day).value;
+  localStorage.setItem('day'+day+'_fullmock_'+field, val);
+  if(field==='score' && val !== ''){
+    const tick = document.getElementById('fmtick-'+day); const card = document.getElementById('prow-'+day+'-fullmock');
+    if(!tick.classList.contains('checked')){
+      tick.classList.add('checked'); card.classList.add('done'); card.classList.add('item-checked');
+      localStorage.setItem('day'+day+'_fullmock_done', true);
+      syncPlanDay(day);
+    }
+  }
+}
+function isDayFullyDone(day){
+  const m = document.getElementById('chk-'+day);
+  const e = document.getElementById('echk-'+day);
+  const g = document.getElementById('gchk-'+day);
+  const f = document.getElementById('prow-'+day+'-fullmock');
+  return !!(m && m.classList.contains('checked') &&
+            e && e.classList.contains('checked') &&
+            g && g.classList.contains('checked') &&
+            f && f.classList.contains('item-checked'));
+}
+function syncPlanDay(day){
+  const done = isDayFullyDone(day);
+  const chk = document.getElementById('pchk-'+day); const card = document.getElementById('pcard-'+day);
+  if(!chk || !card) return;
+  chk.classList.toggle('checked', done); card.classList.toggle('done', done);
+  localStorage.setItem('pday'+day+'_done', done);
+  updateProgressPlan();
+}
+function togglePlanDay(day){
+  const target = !isDayFullyDone(day);
+  const mChk = document.getElementById('chk-'+day);
+  const eChk = document.getElementById('echk-'+day);
+  const gChk = document.getElementById('gchk-'+day);
+  const fRow = document.getElementById('prow-'+day+'-fullmock');
+  if(mChk && mChk.classList.contains('checked') !== target) toggleDay(day);
+  if(eChk && eChk.classList.contains('checked') !== target) toggleDayEng(day);
+  if(gChk && gChk.classList.contains('checked') !== target) toggleDayGk(day);
+  if(fRow && fRow.classList.contains('item-checked') !== target) toggleFullMock(day);
+  syncPlanDay(day);
+}
+function loadStatePlan(){
+  for(let day=1; day<=30; day++){
+    const scoreEl = document.getElementById('fmscore-'+day);
+    if(scoreEl){
+      fullMockFields.forEach(f=>{
+        const el = document.getElementById('fm'+f+'-'+day);
+        if(el) el.value = localStorage.getItem('day'+day+'_fullmock_'+f) || '';
+      });
+      if(localStorage.getItem('day'+day+'_fullmock_done') === 'true'){
+        const tick = document.getElementById('fmtick-'+day); const card = document.getElementById('prow-'+day+'-fullmock');
+        tick.classList.add('checked'); card.classList.add('done'); card.classList.add('item-checked');
+      }
+    }
+    syncPlanDay(day);
+  }
+}
+function updateProgressPlan(){
+  let count=0;
+  for(let day=1; day<=30; day++){ if(localStorage.getItem('pday'+day+'_done')==='true') count++; }
+  const pct = Math.round((count/30)*100);
+  document.getElementById('progressTextPlan').textContent = count + ' / 30 days complete';
+  document.getElementById('progressPctPlan').textContent = pct + '%';
+  document.getElementById('progressFillPlan').style.width = pct + '%';
+}
+function resetAllPlan(){
+  if(confirm('Poora unified daily plan (Math + Reasoning + English + GK + Full Mock) reset karna hai?')){
+    for(let i=1;i<=30;i++){
+      localStorage.removeItem('day'+i+'_done'); localStorage.removeItem('day'+i+'_actual'); localStorage.removeItem('day'+i+'_formula');
+      mockKeys.forEach(m=>{
+        localStorage.removeItem('day'+i+'_mock'+m);
+        localStorage.removeItem('day'+i+'_mockscore'+m);
+        localStorage.removeItem('day'+i+'_mockcorrect'+m);
+        localStorage.removeItem('day'+i+'_mockwrong'+m);
+        localStorage.removeItem('day'+i+'_mocktime'+m);
+      });
+      localStorage.removeItem('eday'+i+'_done');
+      const eItem = englishPlan[i-1];
+      const eKeys = eItem.vocab_cats.map((c,ci)=>'vocab-'+ci).concat(['idiom','grammar','error','phrasal','homonym','spelling','rc','pqrs','cloze']);
+      eKeys.forEach(k=>localStorage.removeItem('eitem-'+i+'-'+k));
+      localStorage.removeItem('gday'+i+'_done');
+      localStorage.removeItem('day'+i+'_fullmock_done');
+      fullMockFields.forEach(f=>localStorage.removeItem('day'+i+'_fullmock_'+f));
+      localStorage.removeItem('pday'+i+'_done');
+    }
+    gkPlan.forEach(item=>{
+      const i = item.day;
+      item.blocks.forEach((b,bi)=>localStorage.removeItem('gitem-'+i+'-'+bi));
+      localStorage.removeItem('gitem-'+i+'-static');
+    });
+    location.reload();
+  }
+}
+loadStatePlan();
+
+// Master day-checkbox ko Math/English/GK ke apne-apne checkbox ke saath sync rakhna
+const _toggleDay = toggleDay; toggleDay = function(i){ _toggleDay(i); syncPlanDay(i); };
+const _toggleDayEng = toggleDayEng; toggleDayEng = function(i){ _toggleDayEng(i); syncPlanDay(i); };
+const _toggleDayGk = toggleDayGk; toggleDayGk = function(i){ _toggleDayGk(i); syncPlanDay(i); };
+
+</script>
+
+<script>
+
+const STORAGE_KEY = "tts_tracker_data_v1";
+const CUSTOM_KEY = "tts_custom_mocks_v2";
+
+function loadCustom(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || []; }catch(e){ return []; } }
+function saveCustom(c){ localStorage.setItem(CUSTOM_KEY, JSON.stringify(c)); }
+function seedFixedMocks(){
+  const list = [];
+  const start = new Date(todayISO()+"T00:00:00");
+  for(let i=1;i<=30;i++){
+    const d = new Date(start);
+    d.setDate(d.getDate() + (i-1));
+    const p = n => String(n).padStart(2,'0');
+    list.push({ id:i, name:`Day ${i} Full Mock`, type:"LIVE mock", date:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}` });
+  }
+  return list;
+}
+let customMocks = loadCustom();
+if(!customMocks.length){ customMocks = seedFixedMocks(); saveCustom(customMocks); }
+
+function getSchedule(){
+  // Sort by date, then by insertion order (id) for entries on same date
+  return [...customMocks].sort((a,b)=>{
+    if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return a.id - b.id;
+  });
+}
+
+function nextMockName(name){
+  const m = name.match(/^(.*?)(\d+)\s*$/);
+  if(m){ return m[1] + (parseInt(m[2],10)+1); }
+  return (name && name.trim()) ? name.trim() + " 2" : "Mock 2";
+}
+
+const fieldDefs = [
+  {k:"score",label:"Total Score"},
+  {k:"maths",label:"Maths"},
+  {k:"english",label:"English"},
+  {k:"gk",label:"GK"},
+  {k:"reasoning",label:"Reasoning"},
+  {k:"percentile",label:"Percentile"},
+  {k:"rank",label:"Rank"}
+];
+const scopeDefs = [
+  {k:"scopeMaths",label:"Maths"},
+  {k:"scopeEnglish",label:"English"},
+  {k:"scopeGK",label:"GK"},
+  {k:"scopeReasoning",label:"Reasoning"}
+];
+
+function loadData(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }catch(e){ return {}; } }
+function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+let data = loadData();
+
+function fmtDate(iso){
+  const d = new Date(iso+"T00:00:00");
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',weekday:'short'});
+}
+function todayISO(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function isDone(e){ return e && e.score !== undefined && e.score !== "" && e.score !== null; }
+
+function toast(msg, actionLabel, onAction){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span>${msg}</span>` + (actionLabel ? `<button>${actionLabel}</button>` : '');
+  host.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  let done = false;
+  const remove = ()=>{ if(done) return; done = true; el.classList.remove('show'); setTimeout(()=>el.remove(), 220); };
+  if(actionLabel){
+    el.querySelector('button').addEventListener('click', ()=>{ onAction && onAction(); remove(); });
+  }
+  setTimeout(remove, 4500);
+}
+
+function computeStats(){
+  const schedule = getSchedule();
+  let doneCount=0, scores=[];
+  schedule.forEach(item=>{
+    const e = data[item.id] || {};
+    if(isDone(e)){ doneCount++; scores.push(Number(e.score)); }
+  });
+  return {doneCount, scores};
+}
+
+function renderStrip(){
+  const schedule = getSchedule();
+  const strip = document.getElementById('strip');
+  strip.innerHTML = "";
+  const {doneCount} = computeStats();
+  document.getElementById('stripCount').textContent = doneCount+"/"+schedule.length;
+  schedule.forEach(item=>{
+    const e = data[item.id] || {};
+    const c = document.createElement('div');
+    c.className = "cell" + (isDone(e)?" done":"") + (item.type==="PYQ"?" pyq-tick":"");
+    c.title = (item.name ? item.name+" — " : "") + fmtDate(item.date);
+    strip.appendChild(c);
+  });
+}
+
+function computeStreak(){
+  const schedule = getSchedule();
+  const doneDates = new Set();
+  schedule.forEach(item=>{
+    const e = data[item.id] || {};
+    if(isDone(e)) doneDates.add(item.date);
+  });
+  if(!doneDates.size) return 0;
+  let streak = 0;
+  let cur = new Date(todayISO()+"T00:00:00");
+  // if today has no attempt yet, start counting from yesterday
+  if(!doneDates.has(todayISO())) cur.setDate(cur.getDate()-1);
+  while(doneDates.has(fmtISO(cur))){
+    streak++;
+    cur.setDate(cur.getDate()-1);
+  }
+  return streak;
+}
+function fmtISO(d){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+function renderStats(){
+  const schedule = getSchedule();
+  const {doneCount, scores} = computeStats();
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
+  const best = scores.length ? Math.max(...scores) : "—";
+  const last = scores.length ? scores[scores.length-1] : "—";
+  const streak = computeStreak();
+  let trend = "—";
+  if(scores.length >= 2){
+    const diff = scores[scores.length-1] - scores[scores.length-2];
+    trend = (diff > 0 ? "▲" : diff < 0 ? "▼" : "＝") + Math.abs(diff).toFixed(1);
+  }
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><b>${doneCount}/${schedule.length}</b><span>Attempted</span></div>
+    <div class="stat"><b>${avg}</b><span>Average</span></div>
+    <div class="stat"><b>${best}</b><span>Best</span></div>
+    <div class="stat"><b>${last}</b><span>Latest</span></div>
+    <div class="stat"><b>${trend}</b><span>Trend</span></div>
+    <div class="stat"><b>${streak}🔥</b><span>Day Streak</span></div>
+  `;
+}
+
+const subjKeys = [
+  {k:"maths", short:"Maths"},
+  {k:"english", short:"Eng"},
+  {k:"gk", short:"GK"},
+  {k:"reasoning", short:"Reas"},
+  {k:"percentile", short:"%ile"},
+  {k:"rank", short:"Rank"}
+];
+function renderSubjects(){
+  const schedule = getSchedule();
+  const grid = document.getElementById('subjGrid');
+  const cards = subjKeys.map(sk=>{
+    const vals = schedule.map(item=>data[item.id]).filter(e=>e && e[sk.k] !== undefined && e[sk.k] !== "" && !isNaN(Number(e[sk.k]))).map(e=>Number(e[sk.k]));
+    const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
+    return `<div class="subj-card"><b>${avg}</b><span>${sk.short} Avg</span></div>`;
+  });
+  grid.innerHTML = cards.join('');
+}
+
+function renderSparkline(){
+  const schedule = getSchedule();
+  const canvas = document.getElementById('sparkCanvas');
+  const points = schedule.map(item=>data[item.id]).map((e,i)=>({e, item: schedule[i]}))
+    .filter(p=>isDone(p.e)).map(p=>({date:p.item.date, score:Number(p.e.score)}));
+  const rangeEl = document.getElementById('sparkRange');
+  rangeEl.textContent = points.length ? `${points.length} attempts` : "";
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const h = 56;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,w,h);
+
+  if(points.length < 2){
+    ctx.fillStyle = '#7d8499'; ctx.font = '11px Space Grotesk, sans-serif';
+    ctx.fillText(points.length ? 'Need more attempts to plot a trend' : 'No scores yet', 4, h/2+4);
+    return;
+  }
+  const vals = points.map(p=>p.score);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const pad = 6;
+  const range = (max - min) || 1;
+  const stepX = (w - pad*2) / (points.length - 1);
+  const coords = points.map((p,i)=>({
+    x: pad + i*stepX,
+    y: pad + (h - pad*2) * (1 - (p.score - min)/range)
+  }));
+
+  ctx.beginPath();
+  coords.forEach((c,i)=> i===0 ? ctx.moveTo(c.x,c.y) : ctx.lineTo(c.x,c.y));
+  ctx.lineTo(coords[coords.length-1].x, h);
+  ctx.lineTo(coords[0].x, h);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(224,179,85,0.12)';
+  ctx.fill();
+
+  ctx.beginPath();
+  coords.forEach((c,i)=> i===0 ? ctx.moveTo(c.x,c.y) : ctx.lineTo(c.x,c.y));
+  ctx.strokeStyle = '#e0b355'; ctx.lineWidth = 1.8; ctx.stroke();
+
+  coords.forEach((c,i)=>{
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, i===coords.length-1 ? 3 : 2, 0, Math.PI*2);
+    ctx.fillStyle = i===coords.length-1 ? '#e2665a' : '#eef0f6';
+    ctx.fill();
+  });
+}
+
+
+
+function render(){
+  const fullSchedule = getSchedule();
+  const list = document.getElementById('list');
+  const filterType = document.getElementById('filterType').value;
+  const filterStatus = document.getElementById('filterStatus').value;
+  const sortOrder = document.getElementById('sortOrder').value;
+  const searchTerm = (document.getElementById('searchBox').value || "").trim().toLowerCase();
+  list.innerHTML = "";
+
+  const {scores: allScores} = computeStats();
+  const bestScore = allScores.length ? Math.max(...allScores) : null;
+
+  // chronologically-previous done score, for up/down comparison (based on true date order, not display sort)
+  const prevScoreMap = {};
+  let lastSeen = null;
+  fullSchedule.forEach(item=>{
+    const e = data[item.id] || {};
+    if(lastSeen !== null) prevScoreMap[item.id] = lastSeen;
+    if(isDone(e)) lastSeen = Number(e.score);
+  });
+
+  let schedule = fullSchedule.slice();
+  if(searchTerm){
+    schedule = schedule.filter(item=> (item.name||"").toLowerCase().includes(searchTerm));
+  }
+  schedule = schedule.filter(item=>{
+    const entry = data[item.id] || {};
+    if(filterType !== "all" && item.type !== filterType) return false;
+    if(filterStatus === "done" && !isDone(entry)) return false;
+    if(filterStatus === "pending" && isDone(entry)) return false;
+    return true;
+  });
+  if(sortOrder === "date_desc") schedule.reverse();
+  else if(sortOrder === "score_desc" || sortOrder === "score_asc"){
+    schedule.sort((a,b)=>{
+      const ea = data[a.id] || {}, eb = data[b.id] || {};
+      const sa = isDone(ea) ? Number(ea.score) : -Infinity;
+      const sb = isDone(eb) ? Number(eb.score) : -Infinity;
+      return sortOrder === "score_desc" ? sb - sa : sa - sb;
+    });
+  }
+
+  schedule.forEach(item=>{
+    const entry = data[item.id] || {};
+
+    const card = document.createElement('div');
+    card.className = "card" + (isDone(entry) ? " done-card" : "");
+    card.id = "card-"+item.id;
+
+    const badgeClass = item.type === "PYQ" ? "pyq" : "live";
+    const mockLabel = item.name && item.name.trim() ? item.name.trim() : (item.type === "PYQ" ? "PYQ attempt" : "Live Mock Test");
+
+    const isPB = isDone(entry) && bestScore !== null && Number(entry.score) === bestScore;
+    let pillClass = "score-pill";
+    if(isDone(entry) && prevScoreMap[item.id] !== undefined){
+      const diff = Number(entry.score) - prevScoreMap[item.id];
+      if(diff > 0) pillClass += " up"; else if(diff < 0) pillClass += " down";
+    }
+
+    card.innerHTML = `
+      <div class="card-head" data-id="${item.id}">
+        <div class="left">
+          <span class="date">${mockLabel} <span class="badge ${badgeClass}">${item.type === 'PYQ' ? 'PYQ' : 'LIVE'}</span></span>
+          <span class="meta">${fmtDate(item.date)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${isDone(entry) ? `<span class="${pillClass}">${entry.score}${isPB ? '<span class=\"pb-badge\">PB</span>' : ''}</span>` : ''}
+          <span class="chev">▾</span>
+        </div>
+      </div>
+      <div class="body"><div class="body-inner">
+        <div class="group-title">Mock Performance</div>
+        <div class="grid">
+          ${fieldDefs.map(f=>`
+            <div class="field">
+              <label>${f.label}</label>
+              <input type="number" inputmode="decimal" data-id="${item.id}" data-key="${f.k}"
+                value="${entry[f.k] ?? ''}" placeholder="—">
+            </div>`).join('')}
+        </div>
+        <div class="group-title scope">Scope of Improvement</div>
+        <div class="grid">
+          ${scopeDefs.map(f=>`
+            <div class="field scope-field">
+              <label>${f.label}</label>
+              <input type="text" data-id="${item.id}" data-key="${f.k}"
+                value="${entry[f.k] ?? ''}" placeholder="Time / silly mistake...">
+            </div>`).join('')}
+        </div>
+        <div class="field">
+          <label>Remark</label>
+          <textarea data-id="${item.id}" data-key="remark" placeholder="Overall notes about this attempt...">${entry.remark ?? ''}</textarea>
+        </div>
+        <span class="saved-flag" id="saved-${item.id}">✓ saved</span>
+      </div></div>
+    `;
+    list.appendChild(card);
+  });
+
+  if(!list.children.length){
+    list.innerHTML = `<div class="empty"><span class="big">📄</span>No mocks match this filter.</div>`;
+  }
+
+  renderStats();
+  renderStrip();
+  renderSubjects();
+  renderSparkline();
+  renderDailyTarget();
+  renderTargetHistory();
+
+  document.querySelectorAll('.card-head').forEach(h=>{
+    h.addEventListener('click', (ev)=>{
+      if(ev.target.closest('.del-mock')) return;
+      const wasOpen = document.getElementById('card-'+h.dataset.id).classList.contains('open');
+      document.querySelectorAll('.card.open').forEach(c=>c.classList.remove('open'));
+      if(!wasOpen) document.getElementById('card-'+h.dataset.id).classList.add('open');
+    });
+  });
+
+  document.querySelectorAll('.edit-mock').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const id = btn.dataset.edit;
+      const m = customMocks.find(mm=>String(mm.id)===id);
+      if(!m) return;
+      const newName = prompt("Mock ka naam:", m.name || "");
+      if(newName === null) return;
+      m.name = newName.trim();
+      saveCustom(customMocks);
+      render();
+    });
+  });
+
+  document.querySelectorAll('.del-mock').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const idToDel = btn.dataset.del;
+      const removedMock = customMocks.find(m=>String(m.id) === idToDel);
+      const removedEntry = data[idToDel];
+      customMocks = customMocks.filter(m=>String(m.id) !== idToDel);
+      saveCustom(customMocks);
+      if(data[idToDel]){ delete data[idToDel]; saveData(data); }
+      render();
+      toast("Mock removed.", "UNDO", ()=>{
+        if(removedMock){ customMocks.push(removedMock); saveCustom(customMocks); }
+        if(removedEntry !== undefined){ data[idToDel] = removedEntry; saveData(data); }
+        render();
+      });
+    });
+  });
+
+  document.querySelectorAll('.dup-mock').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const id = btn.dataset.dup;
+      const m = customMocks.find(mm=>String(mm.id)===id);
+      if(!m) return;
+      const newId = Date.now();
+      customMocks.push({id:newId, name:(m.name||"").trim(), type:m.type, date: todayISO()});
+      saveCustom(customMocks);
+      render();
+      toast("Mock duplicated.");
+    });
+  });
+
+  document.querySelectorAll('input[data-key], textarea[data-key]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const d = inp.dataset.id, k = inp.dataset.key;
+      if(inp.type === 'number' && inp.value !== '' && Number(inp.value) < 0){
+        inp.value = 0;
+      }
+      if(!data[d]) data[d] = {};
+      data[d][k] = inp.value;
+      saveData(data);
+      const flag = document.getElementById('saved-'+d);
+      if(flag){ flag.classList.add('show'); setTimeout(()=>flag.classList.remove('show'), 900); }
+      if(k === 'score'){
+        // full re-render keeps PB badges, up/down coloring, trend chart, and subject
+        // averages in sync with the latest score without extra DOM patch logic
+        const openCard = document.getElementById('card-'+d);
+        const wasOpen = openCard && openCard.classList.contains('open');
+        render();
+        if(wasOpen){
+          const el = document.getElementById('card-'+d);
+          if(el) el.classList.add('open');
+        }
+      }
+    });
+  });
+}
+
+document.getElementById('filterType').addEventListener('change', render);
+document.getElementById('filterStatus').addEventListener('change', render);
+document.getElementById('sortOrder').addEventListener('change', render);
+let searchDebounce;
+document.getElementById('searchBox').addEventListener('input', ()=>{
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(render, 150);
+});
+
+document.getElementById('addToggle').addEventListener('click', ()=>{
+  const form = document.getElementById('addForm');
+  form.classList.toggle('open');
+  if(form.classList.contains('open')){
+    setTimeout(()=>document.getElementById('newName').focus(), 100);
+  }
+});
+
+document.getElementById('newName').addEventListener('keydown', (ev)=>{
+  if(ev.key === 'Enter'){ ev.preventDefault(); document.getElementById('confirmAdd').click(); }
+});
+
+document.getElementById('confirmAdd').addEventListener('click', ()=>{
+  const type = document.getElementById('newType').value;
+  const name = document.getElementById('newName').value.trim();
+  const id = Date.now();
+  const date = todayISO();
+
+  customMocks.push({id, name, type, date});
+  saveCustom(customMocks);
+  document.getElementById('newName').value = "";
+  document.getElementById('addForm').classList.remove('open');
+  render();
+
+  setTimeout(()=>{
+    const head = document.querySelector(`.card-head[data-id="${id}"]`);
+    if(head){ head.scrollIntoView({behavior:'smooth', block:'center'}); head.click(); }
+  }, 50);
+});
+
+function renderDailyTarget(){
+  const schedule = getSchedule();
+  const today = todayISO();
+  const hitToday = schedule.some(item=>{
+    if(item.date !== today) return false;
+    const e = data[item.id] || {};
+    return isDone(e);
+  });
+  const statusEl = document.getElementById('targetStatus');
+  if(!statusEl) return;
+  statusEl.textContent = hitToday ? "Done ✓" : "Pending";
+  statusEl.classList.toggle('hit', hitToday);
+}
+
+let targetHistoryOpen = false;
+function toggleTargetHistory(){
+  targetHistoryOpen = !targetHistoryOpen;
+  const el = document.getElementById('targetHistory');
+  const chev = document.getElementById('targetHistoryChev');
+  el.classList.toggle('open', targetHistoryOpen);
+  if(chev) chev.textContent = targetHistoryOpen ? '▴' : '▾';
+}
+function renderTargetHistory(){
+  const schedule = getSchedule();
+  const today = todayISO();
+  // distinct past dates (before today) that have at least one scheduled mock
+  const pastDates = [...new Set(schedule.filter(item=>item.date < today).map(item=>item.date))].sort().reverse();
+  const countEl = document.getElementById('targetHistoryCount');
+  if(countEl) countEl.textContent = '(' + pastDates.length + ' days)';
+  const historyEl = document.getElementById('targetHistory');
+  if(!historyEl) return;
+  if(!pastDates.length){
+    historyEl.innerHTML = `<div class="target-history-empty">Koi purana din abhi record nahi hua.</div>`;
+    return;
+  }
+  historyEl.innerHTML = pastDates.map(d=>{
+    const hit = schedule.some(item=> item.date === d && isDone(data[item.id] || {}));
+    return `<div class="target-history-row"><span class="thd-date">${fmtDate(d)}</span><span class="thd-status ${hit ? 'hit':'miss'}">${hit ? 'Hit ✓' : 'Missed'}</span></div>`;
+  }).join('');
+}
+
+render();
+renderDailyTarget();
+renderTargetHistory();
+
+// ===================== ANALYSIS TAB =====================
+function switchMainTab(name){
+  document.querySelectorAll('.tab-btn[data-maintab]').forEach(b=>b.classList.toggle('active', b.dataset.maintab===name));
+  document.getElementById('tab-plan').classList.toggle('active', name==='plan');
+  document.getElementById('tab-mock').classList.toggle('active', name==='mock');
+  if(name==='mock') renderAnalysis();
+  window.scrollTo({top:0, behavior:'instant'});
+}
+
+function anAvg(arr){ return arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null; }
+function anRound(n, d){ return n===null||n===undefined ? '—' : (Math.round(n*Math.pow(10,d||0))/Math.pow(10,d||0)); }
+
+function renderAnalysis(){
+  const el = document.getElementById('analysisContent');
+  if(!el) return;
+
+  // ---- Daily Plan completion (Math / English / GK / combined) ----
+  let mathDays=0, engDays=0, gkDays=0, planDays=0, formulaDays=0, mathSolved=0;
+  for(let i=1;i<=30;i++){
+    if(localStorage.getItem('day'+i+'_done')==='true') mathDays++;
+    if(localStorage.getItem('eday'+i+'_done')==='true') engDays++;
+    if(localStorage.getItem('gday'+i+'_done')==='true') gkDays++;
+    if(localStorage.getItem('pday'+i+'_done')==='true') planDays++;
+    if(localStorage.getItem('day'+i+'_formula')==='true') formulaDays++;
+    mathSolved += Number(localStorage.getItem('day'+i+'_actual')) || 0;
+  }
+
+  // ---- Sectional Mocks (Math Mock 1/2/3 + Reasoning) across Day 1-30 ----
+  const mockKeys=['1','2','3','R'];
+  let sectAttempted=0;
+  const sectTotal = 30 * mockKeys.length;
+  let mathScores=[], reasoningScores=[], totalCorrect=0, totalWrong=0;
+  for(let i=1;i<=30;i++){
+    mockKeys.forEach(m=>{
+      const done = localStorage.getItem('day'+i+'_mock'+m)==='true';
+      const score = localStorage.getItem('day'+i+'_mockscore'+m);
+      const correct = Number(localStorage.getItem('day'+i+'_mockcorrect'+m)) || 0;
+      const wrong = Number(localStorage.getItem('day'+i+'_mockwrong'+m)) || 0;
+      if(done) sectAttempted++;
+      if(score !== null && score !== ''){
+        if(m==='R') reasoningScores.push(Number(score)); else mathScores.push(Number(score));
+      }
+      totalCorrect += correct; totalWrong += wrong;
+    });
+  }
+  const sectAccuracy = (totalCorrect+totalWrong)>0 ? Math.round(totalCorrect/(totalCorrect+totalWrong)*100) : null;
+
+  // ---- Full Mocks (Mock Log / TTS tab) ----
+  const schedule = getSchedule();
+  let fullScores=[], subjTotals={maths:[],english:[],gk:[],reasoning:[]}, percentiles=[], ranks=[];
+  schedule.forEach(item=>{
+    const e = data[item.id] || {};
+    if(isDone(e)){
+      fullScores.push(Number(e.score));
+      ['maths','english','gk','reasoning'].forEach(k=>{ if(e[k]!==undefined && e[k]!=='' && e[k]!==null) subjTotals[k].push(Number(e[k])); });
+      if(e.percentile!==undefined && e.percentile!=='') percentiles.push(Number(e.percentile));
+      if(e.rank!==undefined && e.rank!=='') ranks.push(Number(e.rank));
+    }
+  });
+  const fullAvg = anAvg(fullScores);
+  const fullBest = fullScores.length ? Math.max(...fullScores) : null;
+  const fullWorst = fullScores.length ? Math.min(...fullScores) : null;
+  let trendHtml = '';
+  if(fullScores.length>=2){
+    const diff = fullScores[fullScores.length-1] - fullScores[fullScores.length-2];
+    const cls = diff>0?'up':diff<0?'down':'flat';
+    const arrow = diff>0?'▲':diff<0?'▼':'▬';
+    trendHtml = `<span class="an-trend ${cls}">${arrow} ${diff>0?'+':''}${anRound(diff,1)} vs last mock</span>`;
+  }
+
+  // ---- English & GK item-level completion ----
+  let engItemsChecked=0, engItemsTotal=0, gkItemsChecked=0, gkItemsTotal=0;
+  for(let i=1;i<=30;i++){
+    const eItem = (typeof englishPlan!=='undefined') ? englishPlan[i-1] : null;
+    if(eItem){
+      const keys = eItem.vocab_cats.map((c,ci)=>'vocab-'+ci).concat(['idiom','grammar','error','phrasal','homonym','spelling','rc','pqrs','cloze']);
+      keys.forEach(k=>{ engItemsTotal++; if(localStorage.getItem('eitem-'+i+'-'+k)==='true') engItemsChecked++; });
+    }
+    const gItem = (typeof gkPlan!=='undefined') ? gkPlan.find(x=>x.day===i) : null;
+    if(gItem){
+      gItem.blocks.forEach((b,bi)=>{ gkItemsTotal++; if(localStorage.getItem('gitem-'+i+'-'+bi)==='true') gkItemsChecked++; });
+      gkItemsTotal++; if(localStorage.getItem('gitem-'+i+'-static')==='true') gkItemsChecked++;
+    }
+  }
+
+  const bar = (label, done, total, color) => {
+    const pct = total>0 ? Math.round(done/total*100) : 0;
+    return `<div class="an-bar-row"><div class="an-bar-label">${label}</div><div class="an-bar-track"><div class="an-bar-fill" style="width:${pct}%; background:${color};"></div></div><div class="an-bar-pct">${pct}%</div></div>`;
+  };
+
+  let html = '';
+
+  html += `<div class="an-card"><h3>📅 Daily Plan Progress</h3>
+    <div class="an-grid" style="margin-bottom:12px;">
+      <div class="an-stat"><b>${planDays}/30</b><span>Overall Days Done</span></div>
+      <div class="an-stat"><b>${mathSolved}</b><span>Math Qs Solved</span></div>
+    </div>
+    ${bar('Maths', mathDays, 30, 'var(--accent2)')}
+    ${bar('English', engDays, 30, 'var(--eng)')}
+    ${bar('GK', gkDays, 30, 'var(--gk)')}
+    ${bar('Formula Rev.', formulaDays, 30, 'var(--accent)')}
+  </div>`;
+
+  html += `<div class="an-card"><h3>🧮 Sectional Mocks (Math + Reasoning)</h3>`;
+  if(sectAttempted===0){
+    html += `<div class="an-empty">Abhi tak koi sectional mock fill nahi hua.</div>`;
+  } else {
+    html += `<div class="an-grid">
+      <div class="an-stat"><b>${sectAttempted}/${sectTotal}</b><span>Mocks Attempted</span></div>
+      <div class="an-stat"><b>${sectAccuracy!==null?sectAccuracy+'%':'—'}</b><span>Overall Accuracy</span></div>
+      <div class="an-stat"><b>${mathScores.length?anRound(anAvg(mathScores),1):'—'}</b><span>Avg Math Score /30</span></div>
+      <div class="an-stat"><b>${reasoningScores.length?anRound(anAvg(reasoningScores),1):'—'}</b><span>Avg Reasoning /30</span></div>
+    </div>
+    <div style="margin-top:10px; font-size:0.72rem; color:var(--pencil); text-align:center;">✓ ${totalCorrect} Correct &nbsp;|&nbsp; ✗ ${totalWrong} Wrong</div>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="an-card"><h3>🎯 Full Mock Log</h3>`;
+  if(fullScores.length===0){
+    html += `<div class="an-empty">Abhi tak koi full mock log nahi hua.</div>`;
+  } else {
+    html += `<div class="an-grid">
+      <div class="an-stat"><b>${fullScores.length}</b><span>Mocks Taken</span></div>
+      <div class="an-stat"><b>${anRound(fullAvg,1)}</b><span>Average Score</span></div>
+      <div class="an-stat"><b>${fullBest}</b><span>Best Score</span></div>
+      <div class="an-stat"><b>${fullWorst}</b><span>Lowest Score</span></div>
+    </div>
+    <div style="margin-top:10px; text-align:center;">${trendHtml}</div>
+    <div style="margin-top:12px;">
+      ${['maths','english','gk','reasoning'].map(k=>{
+        const a = anAvg(subjTotals[k]);
+        return `<div class="an-subrow"><span>Avg ${k.charAt(0).toUpperCase()+k.slice(1)}</span><span>${a!==null?anRound(a,1):'—'}</span></div>`;
+      }).join('')}
+      ${percentiles.length ? `<div class="an-subrow"><span>Avg Percentile</span><span>${anRound(anAvg(percentiles),2)}</span></div>` : ''}
+      ${ranks.length ? `<div class="an-subrow"><span>Best Rank</span><span>${Math.min(...ranks)}</span></div>` : ''}
+    </div>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="an-card"><h3>📚 English & GK Coverage</h3>
+    ${bar('English Items', engItemsChecked, engItemsTotal, 'var(--eng)')}
+    ${bar('GK Items', gkItemsChecked, gkItemsTotal, 'var(--gk)')}
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// Auto-refresh analysis whenever any tracker data changes, anywhere in the app
+(function autoHookAnalysis(){
+  const hookNames = [
+    'toggleFormula','toggleMock','saveScore','saveMockDetail','toggleDay','saveActual',
+    'toggleItem','toggleDayEng','toggleGkItem','toggleDayGk','toggleFullMock','saveFullMock',
+    'togglePlanDay','saveData','saveCustom'
+  ];
+  hookNames.forEach(name=>{
+    if(typeof window[name] === 'function'){
+      const orig = window[name];
+      window[name] = function(...args){
+        const result = orig.apply(this, args);
+        try{ renderAnalysis(); }catch(e){}
+        return result;
+      };
+    }
+  });
+})();
+renderAnalysis();
+
+</script>
+
+<div class="toast" id="toastEl"></div>
+<div id="confettiLayer"></div>
+
+<script>
+/* ===== OVERHAUL: streak, backup/restore, celebration ===== */
+function showToast(msg){
+  const t = document.getElementById('toastEl');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function fireConfetti(){
+  const layer = document.getElementById('confettiLayer');
+  if(!layer) return;
+  const colors = ['#e0b355','#4fbf8b','#7ea6e0','#d97b6c','#eef0f6'];
+  for(let i=0;i<60;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random()*100)+'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.borderRadius = Math.random()>0.5 ? '50%' : '2px';
+    p.style.animationDuration = (2.2 + Math.random()*1.6)+'s';
+    p.style.animationDelay = (Math.random()*0.4)+'s';
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 4200);
+  }
+}
+
+function computeStartDate(){
+  let start = localStorage.getItem('trackerStartDate');
+  if(!start){
+    start = new Date().toISOString().slice(0,10);
+    localStorage.setItem('trackerStartDate', start);
+  }
+  return new Date(start+'T00:00:00');
+}
+
+function updateHeroStats(){
+  try{
+    let doneCount = 0;
+    let doneDaysArr = [];
+    for(let i=1;i<=30;i++){
+      const done = localStorage.getItem('pday'+i+'_done') === 'true';
+      if(done){ doneCount++; doneDaysArr.push(i); }
+    }
+    // streak = longest current run counting back from highest completed day number
+    let streak = 0;
+    for(let i=30;i>=1;i--){
+      if(localStorage.getItem('pday'+i+'_done') === 'true'){ streak++; }
+      else if(streak>0){ break; }
+    }
+    const totalEl = document.getElementById('totalDoneVal');
+    const streakEl = document.getElementById('streakVal');
+    const streakCard = document.getElementById('streakCard');
+    const todayEl = document.getElementById('todayDayVal');
+    if(totalEl) totalEl.textContent = doneCount+'/30';
+    if(streakEl) streakEl.textContent = streak;
+    if(streakCard) streakCard.classList.toggle('fire', streak>=3);
+    if(todayEl){
+      const start = computeStartDate();
+      const diffDays = Math.floor((new Date().setHours(0,0,0,0) - start.setHours(0,0,0,0)) / 86400000) + 1;
+      todayEl.textContent = (diffDays>=1 && diffDays<=30) ? ('Day '+diffDays) : (diffDays<1 ? 'Jald Shuru' : 'Poora!');
+    }
+    if(doneCount===30 && localStorage.getItem('celebrated30')!=='true'){
+      localStorage.setItem('celebrated30','true');
+      fireConfetti();
+      showToast('🎉 Badhai ho! Poora 30-Day Plan Complete!');
+    }
+    if(doneCount<30) localStorage.removeItem('celebrated30');
+  }catch(e){}
+}
+
+function collectAllTrackerData(){
+  const data = {};
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    data[key] = localStorage.getItem(key);
+  }
+  return data;
+}
+
+function exportTrackerData(){
+  try{
+    const data = collectAllTrackerData();
+    const blob = new Blob([JSON.stringify({exportedAt:new Date().toISOString(), data}, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'study-tracker-backup-'+stamp+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('✅ Backup file download ho gayi');
+  }catch(e){ showToast('⚠ Backup fail ho gaya'); }
+}
+
+function importTrackerData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      const data = parsed.data || parsed;
+      if(!data || typeof data !== 'object') throw new Error('bad file');
+      if(!confirm('Restore karne se current progress overwrite ho jaayega. Continue karein?')) return;
+      Object.keys(data).forEach(k=> localStorage.setItem(k, data[k]));
+      showToast('✅ Restore ho gaya — reloading...');
+      setTimeout(()=>location.reload(), 900);
+    }catch(err){ showToast('⚠ Invalid backup file'); }
+  };
+  reader.readAsText(file);
+}
+
+updateHeroStats();
+(function hookHeroStats(){
+  const names = ['togglePlanDay','toggleDay','toggleFormula','toggleMock','toggleDayEng','toggleDayGk','toggleItem','toggleGkItem','toggleFullMock','saveScore','saveFullMock','saveActual','saveMockDetail','saveCustom'];
+  names.forEach(name=>{
+    if(typeof window[name] === 'function'){
+      const orig = window[name];
+      window[name] = function(...args){
+        const r = orig.apply(this, args);
+        try{ updateHeroStats(); }catch(e){}
+        return r;
+      };
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
