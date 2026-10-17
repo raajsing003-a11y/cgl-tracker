@@ -1601,6 +1601,34 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('superreasoningBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Optional Elimination (tools/optional-elimination.html) — Super Reasoning ke neeche wala button.
+// Self-contained tool; progress iframe (same origin) ke localStorage mein save rehti hai.
+(function initOptElimPage(){
+  const openBtn = document.getElementById('calcOptElimBtn');
+  const frame = document.getElementById('optelimFrame');
+  if(openBtn) openBtn.addEventListener('click', () => {
+    if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+    showCalcPage('optelim');
+  });
+  const backBtn = document.getElementById('optelimBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+})();
+// English Comprehension (tools/reading.html) — do button: 98 Sets (?m=sets) aur
+// Cloze/RC/PQRS 10-10 Q sets (?m=type). Data data/reading/*.json; progress iframe ke localStorage mein.
+(function initReadingPages(){
+  [['calcReadingSetsBtn','readingsetsFrame','readingsetsBackBtn','readingsets'],
+   ['calcReadingTypeBtn','readingtypeFrame','readingtypeBackBtn','readingtype'],
+   ['calcReadingNewBtn','readingnewFrame','readingnewBackBtn','readingnew']].forEach(function(c){
+    const openBtn = document.getElementById(c[0]);
+    const frame = document.getElementById(c[1]);
+    if(openBtn) openBtn.addEventListener('click', () => {
+      if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+      showCalcPage(c[3]);
+    });
+    const backBtn = document.getElementById(c[2]);
+    if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+  });
+})();
 // Vocab Flash Cards — home button ab seedha iframe nahi kholta, pehle ek
 // chooser hub dikhata hai: "Vocab Flash Cards" (SRS iframe tool, jaisa
 // pehle tha) aur "Complete Vocab" (set98–set165 quiz sets, jo pehle Vocab
@@ -8217,7 +8245,7 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // browser Fullscreen API — avoids the "drag from top to exit fullscreen"
 // hint banner some mobile browsers/PWA hosts (e.g. GitHub Pages) show on
 // native fullscreen entry.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'grammarch'];
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'optelim', 'readingsets', 'readingtype', 'readingnew', 'grammarch'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8249,8 +8277,8 @@ function showCalcPage(name, _fromPopState){
   // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
   // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
   // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
-  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards' && name !== 'mockbank' && name !== 'superenglish' && name !== 'supermaths' && name !== 'superreasoning';
-  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning';
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards' && name !== 'mockbank' && name !== 'superenglish' && name !== 'supermaths' && name !== 'superreasoning' && name !== 'optelim' && name !== 'readingsets' && name !== 'readingtype' && name !== 'readingnew';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning' && prevName !== 'optelim' && prevName !== 'readingsets' && prevName !== 'readingtype' && prevName !== 'readingnew';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
   const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
   const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
@@ -8261,7 +8289,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
