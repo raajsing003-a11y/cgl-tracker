@@ -16529,7 +16529,9 @@ async function spvLoad(key, e){
     const arr = await spvJ(SPV_CH[key] + e.ch + '.json');
     qs = arr.slice(e.from, e.to).map(q => {
       const t = '<p>' + spvFmt(q.t) + '</p>', s = q.e ? '<p>' + spvFmt(q.e) + '</p>' : '';
-      return spvMk(t, t, q.o.map(spvFmt), q.o.map(spvFmt), q.a, s);
+      // Hindi (h / oh / eh) data/maths aur data/reasoning mein hai — na ho to English hi dikhao
+      const th = q.h ? '<p>' + spvFmt(q.h) + '</p>' : t, sh = q.eh ? '<p>' + spvFmt(q.eh) + '</p>' : s;
+      return spvMk(t, th, q.o.map(spvFmt), q.o.map((o, j) => spvFmt(q.oh && q.oh[j] != null ? q.oh[j] : o)), q.a, s, sh);
     });
   }else if(key === 'optelim'){
     const d = await spvJ('data/optelim/data.json');
