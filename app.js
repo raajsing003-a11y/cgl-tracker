@@ -1613,6 +1613,12 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('optelimBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Super Sets cards (Super English/Maths/Reasoning, Optional Elimination, Reading) — Super Practice jaisa native flow.
+(function initSuperSetCards(){
+  document.querySelectorAll('[data-spv]').forEach(function(b){
+    b.addEventListener('click', function(){ openSPSubject(b.getAttribute('data-spv'), b.getAttribute('data-spv-label'), true); });
+  });
+})();
 // English Comprehension (tools/reading.html) — do button: 98 Sets (?m=sets) aur
 // Cloze/RC/PQRS 10-10 Q sets (?m=type). Data data/reading/*.json; progress iframe ke localStorage mein.
 (function initReadingPages(){
@@ -5809,6 +5815,7 @@ function logEnglishMockToSectional(name, marks, correct, wrong, skip, autoSrc){
 // route whichever subject key was actually attempted into the matching
 // Score-tab Sectional bucket (only math/english/reasoning have one).
 function logSubjectMockToSectional(subjectKey, name, marks, correct, wrong, skip, autoSrc){
+  if(typeof SPV !== 'undefined' && SPV[subjectKey]) subjectKey = SPV[subjectKey].stats;
   if(subjectKey === 'quant') logMathMockToSectional(name, marks, correct, wrong, skip);
   else if(subjectKey === 'english') logEnglishMockToSectional(name, marks, correct, wrong, skip, autoSrc);
   else if(subjectKey === 'reasoning') logReasoningMockToSectional(name, marks, correct, wrong, skip);
@@ -8181,7 +8188,7 @@ function isLightThemePage(name){
 // are hidden while this is active (see .examFullscreenLight CSS).
 const FULLSCREEN_LIGHT_ALWAYS = ['reasoningmockexam','mathpyqexam','mmnativeexam','emnativeexam'];
 const FULLSCREEN_LIGHT_SUBJECT_AWARE = {
-  spnativeexam: ['english','gk','computer'],
+  spnativeexam: ['english','gk','computer','senglish','optelim','rd98','rdtype','rdnew'],
   p75nativeexam: ['english','gk']
 };
 function isFullscreenLightPage(name){
@@ -16391,6 +16398,150 @@ let spCurrentSubjectKey = null;
 let spCurrentSubjectLabel = null;
 let spCurrentEntries = [];
 
+let spDirectEntry = false; // true when the list was opened from a Super Sets card (back -> Calc menu)
+
+// ===== Super Sets: Super English / Maths / Reasoning, Optional Elimination and
+// the Reading sets run on the SAME native Super Practice engine (instructions ->
+// timed exam with palette -> result + solutions). Their question banks are plain
+// JSON under data/, so each "mock" is a slice built on the fly (no extra files).
+const SPV = {
+  sreasoning:{ label:'Super Reasoning',               stats:'reasoning', perQ:0.9 },
+  senglish:  { label:'Super English',                 stats:'english',   perQ:0.6 },
+  smaths:    { label:'Super Maths',                   stats:'quant',     perQ:1.2 },
+  optelim:   { label:'Optional Elimination',          stats:null,        perQ:0.6 },
+  rd98:      { label:'PYQ Reading — 98 Sets',         stats:'english',   perQ:0.8 },
+  rdtype:    { label:'PYQ Reading Practice',          stats:'english',   perQ:0.8 },
+  rdnew:     { label:'NEW Reading — Advanced Sets',   stats:'english',   perQ:0.8 }
+};
+const SPV_CH = { sreasoning:'data/reasoning/', senglish:'data/superenglish/', smaths:'data/maths/' };
+const spvCache = {};
+function spvJ(url){
+  if(spvCache[url]) return Promise.resolve(spvCache[url]);
+  return fetch(url).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }).then(d => { spvCache[url] = d; return d; });
+}
+function spvFmt(s){
+  const h = String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/&lt;(\/?)(b|u|i|sup|sub)&gt;/g,'<$1$2>')
+    .replace(/&lt;img src="(https:\/\/[^"\s<>]+)"&gt;/g,'<img src="$1" style="max-width:100%;height:auto;vertical-align:middle">');
+  return h.replace(/\n/g,'<br>');
+}
+function spvMk(qh, qhi, oen, ohi, ans, sol, solhi){
+  return { q_en:qh, q_hi:qhi, options_en:oen, options_hi:ohi, answer:ans,
+           solution_en:sol || '<p>Explanation available nahi.</p>', solution_hi:solhi || sol || '<p>Explanation available nahi.</p>',
+           marks:1, neg:0.25 };
+}
+function spvBand(i, size, total){ // "Sets 001-010" style chapter bands (sorted as given)
+  const a = Math.floor(i / size) * size + 1, b = Math.min(total, a + size - 1);
+  const p = n => String(n).padStart(3,'0');
+  return 'Sets ' + p(a) + '–' + p(b);
+}
+async function spvEntries(key){
+  if(SPV_CH[key]){
+    const idx = await spvJ(SPV_CH[key] + 'index.json');
+    const out = []; let n = 0;
+    idx.chapters.forEach(ch => {
+      const sets = Math.ceil(ch.n / 10);
+      for(let k = 0; k < sets; k++){
+        n++;
+        out.push({ n:n, q:Math.min(10, ch.n - k * 10), file:ch.key + '_' + (k + 1) + '.html', topic:(ch.icon ? ch.icon + ' ' : '') + ch.label,
+                   label:'Set ' + (k + 1), ch:ch.key, from:k * 10, to:Math.min(ch.n, k * 10 + 10) });
+      }
+    });
+    return out;
+  }
+  if(key === 'optelim'){
+    const d = await spvJ('data/optelim/data.json');
+    return d.S.map((lst, i) => ({ n:i + 1, q:lst.length, file:'set_' + (i + 1) + '.html', topic:spvBand(i, 10, d.S.length), label:'Set ' + (i + 1) + ' · ' + lst.length + ' Q', idx:lst }));
+  }
+  if(key === 'rd98' || key === 'rdnew' || key === 'rdtype'){
+    const by = await spvReadingUnits(key === 'rdnew');
+    const mk = (ids) => spvReadingQs(by, ids).length;
+    if(key === 'rdtype'){
+      const idx = await spvJ('data/reading/index.json');
+      const names = { c:'PYQ Cloze Test', r:'PYQ Reading Comprehension', p:'PYQ PQRS · Para Jumbles' };
+      const out = []; let n = 0;
+      ['c','r','p'].forEach(g => idx.ten[g].forEach((ids, k) => {
+        n++; out.push({ n:n, q:mk(ids), file:g + '_' + (k + 1) + '.html', topic:names[g], label:'PYQ Set ' + (k + 1), ids:ids });
+      }));
+      return out;
+    }
+    const src = key === 'rdnew' ? (await spvJ('data/reading/adv.json')) : (await spvJ('data/reading/index.json'));
+    return src.sets.map((s, i) => {
+      const ids = s.c.concat(s.r, s.p);
+      const tag = ' · Cloze ' + s.c.length + ' · RC ' + s.r.length + ' · PQRS ' + s.p.length;
+      return key === 'rdnew'
+        ? { n:s.n, q:mk(ids), file:'set_' + s.n + '.html', topic:'NEW Advanced Sets (Hard)', label:'NEW Set ' + s.n + tag, ids:ids }
+        : { n:s.n, q:mk(ids), file:'set_' + s.n + '.html', topic:spvBand(i, 10, src.sets.length), label:'PYQ Set ' + s.n + tag, ids:ids };
+    });
+  }
+  return [];
+}
+async function spvReadingUnits(adv){
+  const by = {};
+  if(adv){ (await spvJ('data/reading/adv.json')).units.forEach(u => by[u.i] = u); return by; }
+  const all = await Promise.all(['c','r','p'].map(k => spvJ('data/reading/' + k + '.json')));
+  all.forEach(arr => arr.forEach(u => by[u.i] = u));
+  return by;
+}
+function spvReadingQs(by, ids){
+  const out = [];
+  ids.forEach(id => {
+    const u = by[id]; if(!u) return;
+    const isPJ = /^x?p/.test(u.i);
+    u.q.forEach(q => {
+      let ans = q.a, opts = q.o, extra = '';
+      if(q.raw){
+        const m = /\(\s*([a-d])\s*\)/i.exec(q.al || '');
+        if(!m) return;                      // no usable answer in the source -> skip
+        ans = 'abcd'.indexOf(m[1].toLowerCase());
+        extra = '<div style="font-size:12px;opacity:.75;margin:8px 0 4px">⚠️ Source PDF mein options garbled hain — neeche jaise hain waise:</div>' +
+          (q.o || []).map(o => '<div style="font-size:13px;opacity:.9;border:1px dashed rgba(127,127,127,.5);border-radius:8px;padding:6px 8px;margin-bottom:6px;max-height:160px;overflow:auto">' + spvFmt(o) + '</div>').join('');
+        opts = ['(a)','(b)','(c)','(d)'];
+      }
+      if(!(ans >= 0 && ans < opts.length)) return;
+      const lines = isPJ ? (q.pp || []) : (u.p || []);
+      let h = '';
+      if(q.sr) h += '<div style="font-size:11px;opacity:.65;margin-bottom:6px">' + spvFmt(q.sr) + '</div>';
+      if(lines.length) h += '<div style="background:rgba(127,127,127,.12);border-left:3px solid #f59e0b;border-radius:8px;padding:10px 12px;margin-bottom:10px;line-height:1.6;font-size:15px">' +
+        lines.map(l => '<p style="margin:0 0 6px">' + spvFmt(l) + '</p>').join('') + '</div>';
+      (q.t || []).forEach(t => { h += '<p>' + spvFmt(t) + '</p>'; });
+      h += extra;
+      const sol = (q.e || q.raw) ? '<p>' + spvFmt((q.raw && q.al ? q.al + '\n\n' : '') + (q.e || '')) + '</p>' : '';
+      out.push(spvMk(h, h, opts.map(spvFmt), opts.map(spvFmt), ans, sol));
+    });
+  });
+  return out;
+}
+function spvSplitBi(o){
+  const i = String(o).lastIndexOf(' / ');
+  if(i > 0 && /[\u0900-\u097F]/.test(o.slice(i + 3))) return [o.slice(0, i), o.slice(i + 3)];
+  return [o, o];
+}
+async function spvLoad(key, e){
+  let qs;
+  if(SPV_CH[key]){
+    const arr = await spvJ(SPV_CH[key] + e.ch + '.json');
+    qs = arr.slice(e.from, e.to).map(q => {
+      const t = '<p>' + spvFmt(q.t) + '</p>', s = q.e ? '<p>' + spvFmt(q.e) + '</p>' : '';
+      return spvMk(t, t, q.o.map(spvFmt), q.o.map(spvFmt), q.a, s);
+    });
+  }else if(key === 'optelim'){
+    const d = await spvJ('data/optelim/data.json');
+    qs = e.idx.map(i => {
+      const q = d.Q[i];
+      const src = q.src ? '<div style="font-size:11px;opacity:.65;margin-top:6px">' + spvFmt(q.src) + '</div>' : '';
+      const en = '<p>' + spvFmt(q.q[0]) + '</p>' + src, hi = '<p>' + spvFmt(q.q[1] || q.q[0]) + '</p>' + src;
+      const bi = q.o.map(spvSplitBi);
+      const sol = (q.t || []).map(x => '<p><b>' + spvFmt(d.T[x[0]] || 'Trick') + '</b><br>' + spvFmt(x[1]) + '</p>').join('');
+      return spvMk(en, hi, bi.map(x => spvFmt(x[0])), bi.map(x => spvFmt(x[1])), q.a, sol);
+    });
+  }else{
+    const by = await spvReadingUnits(key === 'rdnew');
+    qs = spvReadingQs(by, e.ids);
+  }
+  return { title:SPV[key].label + ' — ' + e.label, duration_min:Math.max(5, Math.ceil(qs.length * SPV[key].perQ)), questions:qs };
+}
+
 async function ensureSPManifest(){
   if(spManifest) return spManifest;
   try{
@@ -16436,7 +16587,8 @@ function renderSPSubjectGrid(){
   });
 }
 
-async function openSPSubject(key, label){
+async function openSPSubject(key, label, direct){
+  spDirectEntry = !!direct;
   spCurrentSubjectKey = key;
   const titleEl = document.getElementById('superpracticeListTitle');
   if(titleEl) titleEl.textContent = '🔥 ' + label + ' — Choose a Mock';
@@ -16444,7 +16596,9 @@ async function openSPSubject(key, label){
   const grid = document.getElementById('superpracticeListGrid');
   if(grid) grid.innerHTML = '<div class="losshint">Loading mocks…</div>';
   const manifest = await ensureSPManifest();
-  const entries = (manifest && manifest[key]) || [];
+  let entries = [];
+  if(SPV[key]){ try{ entries = await spvEntries(key); }catch(err){ entries = []; } }
+  else entries = (manifest && manifest[key]) || [];
   spCurrentSubjectLabel = label;
   spCurrentEntries = entries;
   const searchBox = document.getElementById('superpracticeSearchInput');
@@ -16550,7 +16704,9 @@ function groupSPEntries(entries){
     map.get(key).push(e);
   });
   const chapters = Array.from(map.entries()).map(([topic, items]) => ({ topic, items }));
-  if(spCurrentSubjectKey === 'math'){
+  if(SPV[spCurrentSubjectKey]){
+    /* Super Sets: chapters/sets stay in the order they were built */
+  } else if(spCurrentSubjectKey === 'math'){
     chapters.forEach(ch => {
       ch.items.sort((a, b) => {
         const ai = OLIVEBOARD_MATH_LABEL_ORDER.indexOf((a.label || '').trim());
@@ -16824,8 +16980,8 @@ async function openSPMock(key, file, label, entry){
   if(startBtn){ startBtn.disabled = true; startBtn.textContent = '⏳ Mock download ho raha hai...'; }
   let data;
   try{
-    const res = await fetch('superpractice/data/' + key + '/' + jsonFile);
-    data = await res.json();
+    if(SPV[key]){ data = await spvLoad(key, entry); }
+    else{ const res = await fetch('superpractice/data/' + key + '/' + jsonFile); data = await res.json(); }
     data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
@@ -17154,7 +17310,7 @@ function initSuperPracticeQuiz(){
   const menuBackBtn = document.getElementById('superpracticeMenuBackBtn');
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('superpracticeListBackBtn');
-  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('superpracticemenu'));
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage(spDirectEntry ? 'menu' : 'superpracticemenu'));
   const searchBox = document.getElementById('superpracticeSearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterSPMockGrid(searchBox.value));
 
