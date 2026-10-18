@@ -1616,7 +1616,13 @@ window.addEventListener('message', function(e){
 // Super Sets cards (Super English/Maths/Reasoning, Optional Elimination, Reading) — Super Practice jaisa native flow.
 (function initSuperSetCards(){
   document.querySelectorAll('[data-spv]').forEach(function(b){
-    b.addEventListener('click', function(){ openSPSubject(b.getAttribute('data-spv'), b.getAttribute('data-spv-label'), true); });
+    b.addEventListener('click', function(){ openSPSubject(b.getAttribute('data-spv'), b.getAttribute('data-spv-label'), b.getAttribute('data-spv-back') || true); });
+  });
+  const hub = document.getElementById('calcReadingHubBtn');
+  if(hub) hub.addEventListener('click', function(){ showCalcPage('readingmenu'); });
+  const hubBack = document.getElementById('readingMenuBackBtn');
+  if(hubBack) hubBack.addEventListener('click', function(){ showCalcPage('menu'); });
+  (function(){
   });
 })();
 // English Comprehension (tools/reading.html) — do button: 98 Sets (?m=sets) aur
@@ -16588,7 +16594,7 @@ function renderSPSubjectGrid(){
 }
 
 async function openSPSubject(key, label, direct){
-  spDirectEntry = !!direct;
+  spDirectEntry = direct || false;
   spCurrentSubjectKey = key;
   const titleEl = document.getElementById('superpracticeListTitle');
   if(titleEl) titleEl.textContent = '🔥 ' + label + ' — Choose a Mock';
@@ -17310,7 +17316,7 @@ function initSuperPracticeQuiz(){
   const menuBackBtn = document.getElementById('superpracticeMenuBackBtn');
   if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const listBackBtn = document.getElementById('superpracticeListBackBtn');
-  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage(spDirectEntry ? 'menu' : 'superpracticemenu'));
+  if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage(spDirectEntry ? (typeof spDirectEntry === 'string' ? spDirectEntry : 'menu') : 'superpracticemenu'));
   const searchBox = document.getElementById('superpracticeSearchInput');
   if(searchBox) searchBox.addEventListener('input', () => filterSPMockGrid(searchBox.value));
 
