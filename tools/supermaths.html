@@ -45,6 +45,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .opt.bad{border-color:var(--rd);background:#f8717118}.opt.bad .l{background:var(--rd);color:#08070a;border-color:var(--rd)}
 .opt:disabled{opacity:1;cursor:default}
 .ex{background:#0d1117;border:1px solid var(--bd);border-left:3px solid var(--ac);border-radius:10px;padding:12px;margin:12px 0;font-size:14px;white-space:pre-wrap;line-height:1.65}
+.hi{display:block;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd);color:#e6e2ea}
+.opt .oh{display:block;color:var(--mu);font-size:14px;margin-top:2px}
 .ex h4{margin:0 0 6px;font-size:12px;color:var(--ac);letter-spacing:1px}
 .nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,transparent,var(--bg) 30%);}
 .nav button{flex:1;border:1px solid var(--bd);background:var(--cd);border-radius:12px;padding:13px;font-weight:600}
@@ -146,11 +148,11 @@ function showQ(){
   ST.pos[cur.pk]=cur.i;
   var long=q.t.length>420;
   var h='<div class="qh"><span>Q '+(cur.i+1)+' / '+n+'</span><span>'+stat(cur.qs).c+' sahi · '+stat(cur.qs).w+' galat</span></div><div class="qprog"><i style="width:'+((cur.i+1)/n*100)+'%"></i></div>';
-  h+='<div class="q'+(long?' long':'')+'">'+fmt(q.t)+'</div>';
+  h+='<div class="q'+(long?' long':'')+'">'+fmt(q.t)+(q.h?'<span class="hi">'+fmt(q.h)+'</span>':'')+'</div>';
   q.o.forEach(function(o,j){
     var c='opt';if(st){if(j===q.a)c+=' ok';else if(j===st.a)c+=' bad'}
-    h+='<button class="'+c+'" data-j="'+j+'"'+(st?' disabled':'')+'><span class="l">'+'ABCDEFGH'[j]+'</span><span>'+fmt(o)+'</span></button>'});
-  if(st){h+='<div class="ex"><h4>'+(st.ok?'✅ SAHI':'❌ GALAT — sahi answer: '+'ABCDEFGH'[q.a])+'</h4>'+(q.e?fmt(q.e):'Explanation available nahi.')+'</div>'}
+    h+='<button class="'+c+'" data-j="'+j+'"'+(st?' disabled':'')+'><span class="l">'+'ABCDEFGH'[j]+'</span><span>'+fmt(o)+(q.oh&&q.oh[j]?'<span class="oh">'+fmt(q.oh[j])+'</span>':'')+'</span></button>'});
+  if(st){h+='<div class="ex"><h4>'+(st.ok?'✅ SAHI':'❌ GALAT — sahi answer: '+'ABCDEFGH'[q.a])+'</h4>'+(q.e||q.eh?(q.e?fmt(q.e):'')+(q.eh?'<span class="hi">'+fmt(q.eh)+'</span>':''):'Explanation available nahi.')+'</div>'}
   app.innerHTML=h;
   app.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){pick(+b.dataset.j)}});
   var last=cur.i===n-1;
