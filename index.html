@@ -3265,6 +3265,32 @@
     z-index:9000 !important;max-width:none !important;
     padding-top:env(safe-area-inset-top,0px);
   }
+
+  /* ===== Focus Desk — hero button + floating Start + overlay ===== */
+  @keyframes fdSpin{to{transform:rotate(360deg)}}
+  @keyframes fdPulse{0%,100%{box-shadow:0 0 0 0 rgba(125,255,176,.55)}50%{box-shadow:0 0 0 10px rgba(125,255,176,0)}}
+  @keyframes fdShine{0%{transform:translateX(-120%) skewX(-20deg)}60%,100%{transform:translateX(260%) skewX(-20deg)}}
+  .fdHero{position:relative;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:16px 16px;margin-bottom:14px;border:0;border-radius:20px;overflow:hidden;cursor:pointer;text-align:left;font-family:var(--font-main);color:#fff;background:#0b0d1a;isolation:isolate;box-shadow:0 10px 30px -8px rgba(229,72,77,.55),0 0 40px -12px rgba(125,255,176,.45)}
+  .fdHero::before{content:"";position:absolute;inset:-60%;z-index:-2;background:conic-gradient(from 0deg,#e5484d,#f2b544,#7dffb0,#60a5fa,#c084fc,#e5484d);animation:fdSpin 5s linear infinite}
+  .fdHero::after{content:"";position:absolute;inset:2px;z-index:-1;border-radius:18px;background:linear-gradient(135deg,#14172b,#0b0d1a 60%,#190c14)}
+  .fdHero .fdShine{position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);animation:fdShine 3.4s ease-in-out infinite;pointer-events:none}
+  .fdHero:active{transform:scale(.97)}
+  .fdOrb{flex-shrink:0;width:50px;height:50px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(145deg,#e5484d,#f2b544);box-shadow:0 0 20px rgba(229,72,77,.6),inset 0 1px 0 rgba(255,255,255,.4)}
+  .fdHero.run .fdOrb{background:linear-gradient(145deg,#2dd4bf,#7dffb0);animation:fdPulse 1.6s infinite}
+  .fdTxt{flex:1;min-width:0}
+  .fdTitle{display:block;font-weight:900;font-size:17px;letter-spacing:.02em;background:linear-gradient(90deg,#fff,#ffd27a 60%,#7dffb0);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fdSub{display:block;font-size:11px;font-weight:600;color:#b8bbd0;margin-top:2px;line-height:1.35}
+  .fdStat{display:block;margin-top:6px;font-size:12px;font-weight:800;color:#7dffb0}
+  .fdGo{flex-shrink:0;padding:9px 14px;border-radius:99px;font-weight:900;font-size:13px;color:#111;background:linear-gradient(135deg,#fff,#ffd27a);box-shadow:0 6px 18px -6px #f2b544}
+  .fdHero.run .fdGo{background:linear-gradient(135deg,#7dffb0,#2dd4bf)}
+  #fdFab{position:fixed;right:14px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:400;display:flex;align-items:center;gap:8px;height:52px;padding:0 18px 0 14px;border:0;border-radius:99px;cursor:pointer;font-family:var(--font-main);font-weight:900;font-size:15px;color:#111;background:linear-gradient(135deg,#ffd27a,#f2b544 55%,#e5484d);box-shadow:0 10px 28px -6px rgba(229,72,77,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+  #fdFab:active{transform:scale(.94)}
+  #fdFab.run{background:linear-gradient(135deg,#7dffb0,#2dd4bf);animation:fdPulse 1.6s infinite;box-shadow:0 10px 28px -6px rgba(45,212,191,.7)}
+  #fdFab .fdFi{font-size:20px;line-height:1}
+  body.gkReaderFullscreen #fdFab,body.appQuizFullscreen #fdFab,body.examFullscreenLight #fdFab{display:none !important}
+  #fdOverlay{position:fixed;inset:0;z-index:950;background:#07080b;display:none}
+  #fdOverlay.open{display:block}
+  #fdOverlay iframe{width:100%;height:100%;border:0;display:block;background:#07080b}
 </style>
 
 
@@ -4017,6 +4043,17 @@
   <div class="tabview" id="tab-calc" data-tabview="calc">
 
     <div class="calcPage active" id="calcPage-menu">
+
+      <button type="button" class="fdHero" id="fdOpenBtn" aria-label="Focus Desk">
+        <span class="fdShine"></span>
+        <span class="fdOrb">⏱️</span>
+        <span class="fdTxt">
+          <span class="fdTitle">FOCUS DESK</span>
+          <span class="fdSub">Study time auto-count · tracker me save · ₹ earning · target complete</span>
+          <span class="fdStat" id="fdHeroStat">Aaj: 0m padhe · ₹0 kamaye</span>
+        </span>
+        <span class="fdGo" id="fdHeroGo">▶ START</span>
+      </button>
 
       <button type="button" class="calcLongBtn" id="calcMockBankBtn">
         <span class="calcLongIcon">📚</span>
@@ -8900,6 +8937,8 @@
 
 </div>
 
+<button type="button" id="fdFab" aria-label="Study Start"><span class="fdFi">▶</span><span id="fdFabTxt">Start</span></button>
+<div id="fdOverlay"><iframe id="fdFrame" data-src="./tools/focus-desk.html" allow="autoplay; fullscreen; wake-lock" title="Focus Desk"></iframe></div>
 <div class="tabbar" id="tabbar">
   <button class="tabbtn active" data-tab="home">
     <span class="tabIconBadge tabIconBadge-home">

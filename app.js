@@ -20807,3 +20807,85 @@ if('serviceWorker' in navigator){
     initEditorialReading();
   }
 })();
+
+
+// ===== Focus Desk (premium study timer) <-> Tracker bridge =====
+// tools/focus-desk.html ek iframe overlay me chalta hai (band karne par bhi
+// chalta rehta hai). Study seconds har ~15s par yahan aate hain ->
+// addStudySeconds() -> d.studyMin me save (Firebase sync ke saath), target
+// ka time poora hote hi task auto-tick -> ₹ earning + reward.
+(function initFocusDeskBridge(){
+  const ov = document.getElementById('fdOverlay');
+  const fr = document.getElementById('fdFrame');
+  const fab = document.getElementById('fdFab');
+  const hero = document.getElementById('fdOpenBtn');
+  if(!ov || !fr || !fab) return;
+  let fdRunning = false, fdLabel = '', fdReady = false, pendingStart = false;
+
+  function snap(){
+    const tn = todayDayNum(), d = getDay(tn);
+    const vals = dayTaskValues(d);
+    const er = dayEarnLoss(d, tn);
+    let last = ''; try{ last = localStorage.getItem('fdk') || ''; }catch(e){}
+    return {
+      type:'fd-state',
+      tasks: TASKS.map((name,i)=>({ key:'task'+i, name, dur:TASK_DURATIONS_MIN[i]||0, val:Math.round(vals[i]||0), studied:Math.round((Number(d.studyMin['task'+i])||0)*100)/100, done:!!d.tasks[i] })),
+      earned: Math.round(er.earned||0), daily: Math.round(DAILY_TARGET), totalMin: todayStudyTotalMin(), last
+    };
+  }
+  function push(){
+    try{ if(fdReady) fr.contentWindow.postMessage(snap(), '*'); }catch(e){}
+    paint();
+  }
+  function paint(){
+    const s = document.getElementById('fdHeroStat');
+    if(s){
+      let earned = 0; try{ const tn=todayDayNum(); earned = Math.round(dayEarnLoss(getDay(tn), tn).earned||0); }catch(e){}
+      s.textContent = fdRunning ? ('🟢 Chal raha hai · '+fdLabel+' · Aaj '+todayStudyTotalMin()+'m') : ('Aaj: '+todayStudyTotalMin()+'m padhe · ₹'+earned.toLocaleString('en-IN')+' kamaye');
+    }
+    if(hero) hero.classList.toggle('run', fdRunning);
+    const go = document.getElementById('fdHeroGo'); if(go) go.textContent = fdRunning ? '⏱ OPEN' : '▶ START';
+    fab.classList.toggle('run', fdRunning);
+    fab.querySelector('.fdFi').textContent = fdRunning ? '⏱' : '▶';
+    document.getElementById('fdFabTxt').textContent = fdRunning ? fdLabel : 'Start';
+  }
+  function openFD(autostart){
+    if(!fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
+    ov.classList.add('open');
+    if(autostart && !fdRunning){
+      if(fdReady){ push(); fr.contentWindow.postMessage({type:'fd-start'}, '*'); }
+      else pendingStart = true;
+    } else if(fdReady) push();
+  }
+  function closeFD(){ ov.classList.remove('open'); push(); }
+  window.openFocusDesk = openFD;
+
+  window.addEventListener('message', function(ev){
+    if(ev.source !== fr.contentWindow) return;
+    const m = ev.data || {};
+    if(m.type === 'fd-ready'){
+      fdReady = true; push();
+      if(pendingStart){ pendingStart = false; setTimeout(()=>{ try{ fr.contentWindow.postMessage({type:'fd-start'}, '*'); }catch(e){} }, 150); }
+    } else if(m.type === 'fd-flush'){
+      const sec = Number(m.sec), mm = /^task(\d+)$/.exec(String(m.key||''));
+      if(!mm || !TASKS[+mm[1]] || !(sec > 0) || sec > 7200) return;
+      const idx = +mm[1], d = getDay(todayDayNum()), wasDone = !!d.tasks[idx];
+      addStudySeconds(m.key, sec);
+      const d2 = getDay(todayDayNum());
+      if(!wasDone && d2.tasks[idx]){
+        const v = Math.round(dayTaskValues(d2)[idx]||0);
+        try{ fr.contentWindow.postMessage({type:'fd-done', name:TASKS[idx], val:v}, '*'); }catch(e){}
+      }
+      push();
+    } else if(m.type === 'fd-status'){
+      const changed = (fdRunning !== !!m.running) || (fdLabel !== String(m.label||''));
+      fdRunning = !!m.running; fdLabel = String(m.label||'');
+      if(changed) paint();
+    } else if(m.type === 'fd-close'){ closeFD(); }
+  });
+
+  fab.addEventListener('click', ()=> openFD(!fdRunning));
+  if(hero) hero.addEventListener('click', ()=> openFD(false));
+  setInterval(()=>{ if(!ov.classList.contains('open')) paint(); }, 5000);
+  paint();
+})();
