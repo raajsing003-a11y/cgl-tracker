@@ -1,8 +1,9 @@
+// BUILD 20261019-2140 (Focus Desk)
 // CGL Tracker — Service Worker (v3 — FASTEST UPDATE MODE)
 // Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
 // Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
 
-const CACHE_VERSION = 'v' + Date.now();
+const CACHE_VERSION = 'v20261019-2140-' + Date.now();
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
 // Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,

@@ -1,3 +1,4 @@
+// BUILD 20261019-2140 (Focus Desk)
 // START_DATE / TOTAL_DAYS used to be fixed constants. They are now `let`
 // because each player can set their own custom target (how many days,
 // starting when) — see applyTargetSettings() further below, which loads
