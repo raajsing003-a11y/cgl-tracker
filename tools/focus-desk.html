@@ -917,4 +917,45 @@ b.onclick=()=>{if(on()){sv=Object.assign({},CF.amb);AM.forEach(([k],i)=>{CF.amb[
 $('#ambw').addEventListener('input',lab);lab();
 })();
 </script>
+<script>
+/* ===== YouTube v2: IFrame Player API + auto-fallback + reliable save ===== */
+(()=>{
+const w=$('#ytw');let P=null,apiP=null,cur=null,failT=null,skips=0,ub=0;
+const idOk=s=>/^[\w-]{11}$/.test(s||''),kOf=q=>q.list?'l:'+q.list:'v:'+q.id,
+ url=q=>q.id?'https://www.youtube.com/watch?v='+q.id+(q.list?'&list='+q.list:''):'https://www.youtube.com/playlist?list='+q.list,
+ st=t=>{const e=$('#yts');if(e)e.textContent=t},busy=()=>{try{return P&&P.getPlayerState()===1}catch(e){return false}};
+window.ytId=function(v){v=(v||'').trim();let id=null,list=null;
+ if(idOk(v))id=v;else{try{const u=new URL(/^https?:/i.test(v)?v:'https://'+v),p=u.pathname.split('/').filter(Boolean);list=u.searchParams.get('list');id=u.searchParams.get('v');
+  if(!id&&/(^|\.)youtu\.be$/.test(u.hostname))id=p[0];if(!id&&/^(embed|shorts|live|v)$/.test(p[0]||''))id=p[1]}catch(e){}}
+ if(!idOk(id))id=null;if(list&&(!/^[\w-]{10,}$/.test(list)||(id&&/^RD/.test(list))))list=id?null:list;return{id,list}};
+function api(){return apiP||(apiP=new Promise((res,rej)=>{if(window.YT&&YT.Player)return res();const o=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{o&&o();res()};
+ const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>{apiP=null;rej()};document.head.append(s);setTimeout(()=>{apiP=null;rej()},10000)}))}
+function fb(q,why){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;
+ w.innerHTML='<div class="stat" style="text-align:center"><div class="mu" style="margin-bottom:10px">⚠ '+why+'<br>Yahan nahi chal raha, par YouTube par 100% chalega.</div><a class="pill" target="_blank" rel="noopener" href="'+url(q)+'" style="display:inline-block;background:var(--ac);border-color:transparent;text-decoration:none;color:#fff">▶ YouTube par kholo</a></div>'}
+function nm(q,pl){try{const t=(pl.getVideoData()||{}).title,e=YL.find(x=>x.k===kOf(q));if(t&&e&&/^YouTube /.test(e.n)){e.n=(q.list&&!q.id?'📃 ':'')+t.slice(0,70);W('fdyt',YL);ytRender()}}catch(e){}}
+window.stopYT=function(){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;cur=null;w.innerHTML=''};
+window.ytEmbed=function(q){A.pause();$('#pp').textContent='▶';stopYT();cur=q;skips=0;
+ w.innerHTML='<div id="ytp0" style="min-height:200px"></div><p class="mu" id="yts" style="margin:6px 0 0">YouTube load ho raha hai…</p>';
+ const web=/^https?:$/.test(location.protocol);
+ api().then(()=>{if(cur!==q)return;
+  P=new YT.Player('ytp0',{width:'100%',height:200,host:'https://www.youtube-nocookie.com',videoId:q.id||undefined,
+   playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},q.list?{listType:'playlist',list:q.list}:{},web?{origin:location.origin}:{}),
+   events:{onReady:e=>{clearTimeout(failT);st('Ready — play dabao agar auto-play na ho');nm(q,e.target);try{e.target.playVideo()}catch(x){}},
+    onStateChange:e=>{if(e.data===1){clearTimeout(failT);st('▶ Chal raha hai');nm(q,e.target)}},
+    onError:e=>{const c=e.data;if(q.list&&[100,101,150].includes(c)&&skips++<8){try{P.nextVideo();st('Ek video embed nahi ho sakta, agla chala raha hu…');return}catch(x){}}
+     fb(q,c===153?'Is page ka origin YouTube ko nahi mila (file/iframe me khola hai).':c===100?'Video private ya hata diya gaya hai.':(c===101||c===150)?'Video owner ne embed band kiya hua hai.':'Video play nahi ho paya (code '+c+').')}}});
+  failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000)}).catch(()=>fb(q,'YouTube player load nahi ho paya (internet ya blocker).'))};
+window.ytSave=async function(q){const key=kOf(q);if(YL.some(x=>x.k===key))return;
+ const e={k:key,id:q.id||null,list:q.list||null,n:q.list&&!q.id?'YouTube playlist '+q.list.slice(-6):'YouTube video '+q.id};YL.push(e);W('fdyt',YL);ytRender();
+ let ok=false;try{ok=!!localStorage.getItem('fdyt')}catch(x){}if(!ok)toast('⚠ Browser save block kar raha hai (private mode / iframe)');
+ try{const r=await fetch('https://www.youtube.com/oembed?format=json&url='+encodeURIComponent(url(q)));if(r.ok){const j=await r.json();if(j.title&&/^YouTube /.test(e.n)){e.n=j.title.slice(0,70);W('fdyt',YL);ytRender()}}}catch(x){}};
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+$('#ytx').onclick=()=>stopYT();
+$('#yt').addEventListener('keydown',e=>{if(e.key==='Enter')$('#ytg').click()});
+addEventListener('click',e=>{if(e.target.closest('#pp,#mtg,#nx,#pv,#pl,#mf,#mfab'))ub=Date.now()},true);
+const _pl=play;play=function(){if(busy()&&Date.now()-ub>600)return;_pl()};
+A.addEventListener('play',()=>{if(P||cur)stopYT()});
+ytRender();
+})();
+</script>
 </body></html>
