@@ -1,4 +1,4 @@
-// BUILD 20261020-0930 (Focus Desk)
+// BUILD 20261020-1120 (Focus Desk)
 // START_DATE / TOTAL_DAYS used to be fixed constants. They are now `let`
 // because each player can set their own custom target (how many days,
 // starting when) — see applyTargetSettings() further below, which loads
@@ -19588,7 +19588,7 @@ function closeFocusModal(){
     btn.addEventListener('click', ()=> openFocusModal(btn.getAttribute('data-mode')));
   });
   const quickStudyBtn = document.getElementById('quickStudyBtn');
-  if(quickStudyBtn) quickStudyBtn.addEventListener('click', ()=> openFocusModal());
+  if(quickStudyBtn) quickStudyBtn.addEventListener('click', ()=> (typeof window.openFocusDesk === 'function' ? window.openFocusDesk() : openFocusModal()));
   document.querySelectorAll('#focusModeTabs .focusModeTab').forEach(tab=>{
     tab.addEventListener('click', ()=> switchFocusMode(tab.getAttribute('data-mode')));
   });

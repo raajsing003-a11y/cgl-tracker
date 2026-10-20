@@ -1,4 +1,4 @@
-<!-- BUILD 20261020-0930 (Focus Desk) -->
+<!-- BUILD 20261020-1200 (Focus Desk) -->
 <!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Focus Desk</title>
 <style>
 :root{--bg:#07080b;--tx:#f4f3ee;--mu:#8b8d96;--pn:rgba(14,15,20,.88);--ln:rgba(255,255,255,.12);--ac:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -97,7 +97,7 @@ main{overflow-y:auto;padding:64px 12px 76px;gap:12px}
 main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!important}main>:first-child{margin-top:auto}main>:last-child{margin-bottom:auto}
 #hud{padding:9px 13px}#hud .hb{margin:6px 0 5px}
 .modes button{padding:6px 11px!important;font-size:13px}
-@media(max-height:830px){#qt{display:none}}
+#qt{display:none}
 
 @media(max-width:480px){.dock{gap:4px}.dock .ib{width:34px;height:34px;font-size:15px}.dock.l{left:8px}.dock.r{right:8px}}
 /* ===== Eye exercise ===== */
@@ -113,6 +113,30 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 #eye .ec{display:flex;gap:10px 14px;flex-wrap:wrap;justify-content:center;align-items:center;padding:10px 12px 2px;font-size:13px;color:#8b8d96}
 #eye .ec select{background:#111;color:#f4f3ee;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px 10px;font:inherit}
 #eye .ec input[type=range]{width:100px}#eye .ec label{display:flex;align-items:center;gap:6px}
+
+/* ===== Mini / Floating ===== */
+.fw{position:fixed;z-index:30;left:14px;top:96px;border-radius:14px;padding:6px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;min-width:calc(120px*var(--s,1));text-align:center;cursor:grab}
+.fw:active{cursor:grabbing}
+.fwh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:calc(12px*var(--s,1));opacity:.75;font-weight:700}
+.fwa{display:flex;gap:3px}.fwa button{padding:1px 8px;font-size:13px;border-radius:6px;border:1px solid currentColor;opacity:.8}
+.fwt{font-weight:800;font-variant-numeric:tabular-nums;font-size:calc(40px*var(--s,1));line-height:1.1;font-family:var(--tf,inherit);white-space:nowrap}
+.fws{font-size:calc(12px*var(--s,1));opacity:.7;max-width:calc(240px*var(--s,1));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto;min-height:1em}
+.fwc{display:flex;gap:8px;justify-content:center;margin-top:4px}.fwc button{border:1px solid currentColor;border-radius:99px;padding:2px 16px;font-size:calc(16px*var(--s,1))}
+.fwg{position:absolute;right:2px;bottom:2px;width:20px;height:20px;cursor:nwse-resize;touch-action:none;opacity:.6;background:linear-gradient(135deg,transparent 48%,currentColor 48%,currentColor 56%,transparent 56%,transparent 70%,currentColor 70%,currentColor 78%,transparent 78%)}
+.fsw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px var(--ln)}.fsw.on{border-color:var(--tx);box-shadow:0 0 0 2px var(--ac)}
+#p-mini input[type=range]{width:100%;display:block;margin-top:4px}#p-mini .opt{display:flex;gap:8px;align-items:center;padding:6px 0;font-size:15px}
+#p-mini .pill.on{background:var(--ac);border-color:transparent}
+
+/* ===== Music on-screen button ===== */
+#mfab{position:fixed;z-index:6;right:10px;top:50%;transform:translateY(-50%)}
+#mtg{width:48px;height:48px;font-size:22px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#mtg.on{border-color:var(--ac);background:#3a0f16;animation:mpl 2.4s ease-in-out infinite}
+@keyframes mpl{50%{box-shadow:0 0 0 7px rgba(229,72,77,.18)}}
+#p-music .opt{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px}
+#bg{transition:background 1s,filter .25s,transform .25s;will-change:filter}
+#mq{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:3;width:min(300px,calc(100vw - 32px));text-align:center;font-size:11.5px;line-height:1.35;font-style:italic;color:rgba(244,243,238,.62);text-shadow:0 1px 6px rgba(0,0,0,.85);pointer-events:none;opacity:0;transition:opacity .7s ease}
+#mq.on{opacity:1}body.dnd #mq{opacity:0!important}#mq.off{display:none}
+.bgctl{margin:0 0 12px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px}.bgctl label.mu{display:block;margin:0 0 6px}.bgctl .opt{padding:2px 0;font-size:14px}
 </style></head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
@@ -123,13 +147,13 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <div class="row" id="chips" style="display:none"><button class="pill" data-d="25">25</button><button class="pill" data-d="45">45</button><button class="pill" data-d="60">60</button><button class="pill" data-d="90">90 min</button></div>
 <div id="clk"></div><div class="mu" id="cd" style="margin-top:-8px"></div><div id="time">25:00</div><div id="pb"><i></i></div><ol id="laps" class="mu"></ol>
 <input type="text" id="task" placeholder="Aap kis par kaam kar rahe ho?" aria-label="Working on">
-<div class="row"><button class="ib" id="reset" title="Reset">↺</button><button class="ib" id="lap" title="Lap" style="display:none">⚑</button><button id="start">Start</button><button class="ib" id="dis" title="Distraction hui? Tap karo (D)">🚨<small id="disn">0</small></button><button class="ib" id="pop" title="Mini timer">⧉</button></div>
-<div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
+<div class="row"><button class="ib" id="reset" title="Reset">↺</button><button class="ib" id="lap" title="Lap" style="display:none">⚑</button><button id="start">Start</button><button class="ib" id="dis" title="Distraction hui? Tap karo (D)">🚨<small id="disn">0</small></button><button class="ib" id="pop" data-p="mini" title="Mini / Floating stopwatch + clock">⧉</button></div>
+<div id="mq" aria-live="off"></div><div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
 <div class="mu" id="cfg">Focus <input type="number" id="fm" value="25" min="1" max="180" style="width:56px"> min · Break <input type="number" id="bm" value="5" min="1" max="60" style="width:56px"> min · Long <input type="number" id="lm" value="15" min="1" max="90" style="width:56px"> min</div>
 <div class="row"><button class="pill" data-z="-">A−</button><button class="pill" data-z="+">A+</button></div></main>
 <div class="dock l"><button class="ib" data-p="scene" title="Scene">☁</button><button class="ib" data-p="music" title="Music">♫</button><button class="ib" data-p="bgp" title="Background">▣</button><button class="ib" id="nb" title="Sticky note">✎</button><button class="ib" id="bt" title="1 minute breathing (B)">🫁</button><button class="ib" id="ey" title="Eye exercise (E)">👁</button></div>
 <div class="dock r"><button class="ib" data-p="tasks" title="Tasks">☑</button><button class="ib" data-p="amb" title="Ambient sounds">≋</button><button class="ib on" id="dnd" title="Deep focus (hide UI)">⚡</button></div>
-<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div>
+<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div><div id="mfab"><button class="ib" id="mtg" title="Music on/off (M)">🔇</button></div>
 <div id="rsm"><b id="rst"></b><div class="mu" id="rss"></div><div class="row"><button class="pill" id="rsy" style="background:var(--ac);border-color:transparent">▶ Resume</button><button class="pill" id="rsn">Discard</button></div></div>
 <div id="rvw"><b id="rvt"></b><div class="mu" id="rvs"></div><div class="row"><span id="stars"></span><button class="pill" id="rvx">Skip</button></div></div>
 <div id="br"><div id="bc"></div><div id="bw">Taiyar ho jao</div><button class="pill" id="bx">✕ Band karo</button></div>
@@ -138,8 +162,17 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <div id="eya" class="show"><canvas id="eyc"></canvas><div class="ec"><select id="eyr" aria-label="Routine"><option value="all">Full routine (auto)</option><option value="h">Left ↔ Right</option><option value="v">Up ↕ Down</option><option value="d1">Diagonal ⤢</option><option value="d2">Diagonal ⤡</option><option value="c">Circle</option><option value="f8">Figure 8 ∞</option><option value="box">Box</option><option value="sp">Spiral</option><option value="rnd">Random jumps</option><option value="zoom">Near ↔ Far focus</option></select><label>Speed<input type="range" id="eys" min="0.3" max="3" step="0.1" value="1"></label><label>Size<input type="range" id="eyz" min="6" max="40" step="1" value="18"></label><label><input type="checkbox" id="eyg"> Grid</label><button class="pill" id="eyp">⏸ Pause</button></div></div>
 <video id="eyv" controls playsinline preload="none" controlslist="nodownload" style="display:none"></video></div>
 
+<section class="panel" id="p-mini"><button class="x" data-c>×</button><h3>Mini / Floating</h3>
+<p class="mu" style="margin:0 0 4px">Kya float karna hai?</p>
+<label class="opt"><input type="checkbox" id="fwSw"> ⏱ Stopwatch / Timer</label><label class="opt"><input type="checkbox" id="fwCk"> 🕐 Clock</label>
+<div class="row" style="margin:10px 0"><button class="pill" id="fwPage">📌 Page ke andar float</button><button class="pill" id="fwPip">🪟 Sabse upar float</button></div>
+<label class="mu">Size (bada / chhota)<input type="range" id="fwSc" min=".5" max="3" step=".05"></label>
+<label class="mu" style="display:block;margin-top:8px">Opacity<input type="range" id="fwOp" min=".3" max="1" step=".05"></label>
+<div class="mu" style="margin:10px 0 6px">Background colour</div><div class="row" id="fwBg" style="justify-content:flex-start"></div>
+<p class="mu" id="fwHint" style="font-size:12px"></p></section>
 <section class="panel" id="p-scene"><button class="x" data-c>×</button><h3>Weather</h3><div class="grid" id="wg"></div></section>
 <section class="panel" id="p-bgp"><button class="x" data-c>×</button><h3>Set your focus scene</h3>
+<div class="bgctl"><label class="mu">🌫 Background blur: <b id="blv">0</b> px<input type="range" id="blr" min="0" max="24" step="1" value="0" aria-label="Background blur"></label><label class="opt"><input type="checkbox" id="mqOn" checked> 💬 Motivation msg (har 2 min me naya)</label></div>
 <p class="mu" style="margin:0 0 6px">✨ Vibes (ek tap me poora mahaul)</p><div class="row" id="vb" style="justify-content:flex-start;margin-bottom:12px"></div>
 <div class="tabs"><button class="on" data-t="motion">Motion</button><button data-t="photos">Photos</button><button data-t="stills">Stills</button><button data-t="mine">Personalize</button></div>
 <div class="grid" id="bgrid"></div><div id="mine" style="display:none"><input type="file" id="up" accept="image/*"><p class="mu">Apni photo lagao (sirf is device me save hogi).</p></div></section>
@@ -151,7 +184,17 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <p class="mu">YouTube link ya playlist:</p><div class="row"><input type="text" id="yt" placeholder="youtube.com/watch?v=..." style="flex:1"><button class="pill" id="ytg">Play</button></div>
 <div class="row" style="margin-top:8px"><button class="pill" id="ytp">Alag window me chalao</button><button class="pill" id="ytx">YouTube band</button></div>
 <p class="mu" style="margin-top:12px">Saved YouTube (hamesha save rehta hai):</p><ul id="ytl"></ul><div id="ytw" style="margin-top:10px"></div><p class="mu">Video "unavailable" dikhe to "Alag window me chalao" dabao, wo hamesha chalta hai. Apni music files is device me save rehti hain.</p>
-<label class="mu"><input type="checkbox" id="ac"> Timer start par music chalao</label></section>
+<label class="mu"><input type="checkbox" id="ac"> Timer start par music chalao</label><div class="mu" style="margin:12px 0 2px"><b>Music options</b></div>
+<label class="opt"><input type="checkbox" id="mAuto"> Open karte hi music auto-start</label>
+<label class="opt"><input type="checkbox" id="mBp"> Break me music pause, focus me wapas</label>
+<label class="opt"><input type="checkbox" id="mTp"> Timer pause hone par music bhi pause</label>
+<label class="opt"><input type="checkbox" id="mRs"> Pichhli jagah se aage chalao</label>
+<label class="mu">Sleep timer <select id="mSl"><option value="0">Off</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select></label>
+<div class="mu" style="margin:10px 0 2px"><b>Aur options</b></div>
+<label class="opt"><input type="checkbox" id="oAs"> Open karte hi stopwatch bhi start</label>
+<label class="opt"><input type="checkbox" id="oFs"> Start dabate hi fullscreen</label>
+<p class="mu" style="font-size:12px">Keys: M music · ↑/↓ volume · N agla track</p>
+</section>
 <section class="panel" id="p-amb"><button class="x" data-c>×</button><h3>Ambient sounds</h3><div id="ambw"></div><p class="mu">Music ke saath mix kar sakte ho.</p></section>
 <section class="panel" id="p-set"><button class="x" data-c>×</button><h3>Settings</h3>
 <label class="mu">Timer / Stopwatch size<input type="range" data-k="tsc" min=".5" max="2.5" step=".05"></label>
@@ -200,11 +243,11 @@ $('#pop').onclick=async()=>{try{const v=document.createElement('canvas');v.width
 $$('[data-p]').forEach(b=>b.onclick=()=>{const p=$('#p-'+b.dataset.p),o=p.classList.contains('show');$$('.panel').forEach(x=>x.classList.remove('show'));if(!o){p.classList.add('show');if(b.dataset.p==='stats')upd()}});
 $$('[data-c]').forEach(b=>b.onclick=()=>b.parentElement.classList.remove('show'));
 document.onkeydown=e=>{if(e.key==='Escape')$$('.panel').forEach(x=>x.classList.remove('show'))};
-let hide=false;$('#dnd').onclick=()=>{hide=!hide;$('#dnd').classList.toggle('on',!hide);$$('.top .logo,.top .row,.dock.l,#cfg,.modes').forEach(x=>x.style.opacity=hide?0:1)};
+let hide=false;$('#dnd').onclick=()=>{hide=!hide;document.body.classList.toggle('dnd',hide);$('#dnd').classList.toggle('on',!hide);$$('.top .logo,.top .row,.dock.l,#cfg,.modes').forEach(x=>x.style.opacity=hide?0:1)};
 $('#nb').onclick=()=>{const n=$('#note');n.style.display=n.style.display==='block'?'none':'block'};$('#note').value=S('note','');$('#note').oninput=e=>W('note',e.target.value);
 // backgrounds
 const M=[['✕ None','none',null],['🌧 Cafe rain + glow','rain','cafe'],['🌲 Forest rays + fireflies','leaves','forest'],['🌊 Beach waves','none','beach'],['❄ Winter snow + glow','snow','bar'],['🌌 Aurora','none','aurora'],['✨ Starry night','none','stars'],['🪲 Fireflies','none','flies'],['🫧 Lava bubbles','none','bubbles'],['⚡ Thunderstorm','heavy','thunder'],['🌫 Drifting fog','none','fog'],['☀ Sun rays','none','rays']];
-const PH=[['Mountain mist','mountain-mist'],['Forest creek','creek-light'],['Moon forest','moon-forest'],['Moon bokeh','moon-bokeh'],['Flower','flower'],['Wet leaves','wet-leaves']];
+const PH=[['Mountain mist','mountain-mist'],['Forest creek','creek-light'],['Moon forest','moon-forest'],['Moon bokeh','moon-bokeh'],['Flower','flower'],['Wet leaves','wet-leaves'],['Milky Way peaks','milkyway-peaks'],['Autumn lake','autumn-lake'],['Alpine road','alpine-road'],['Pampas night','pampas-night'],['Storm river','storm-river'],['Green fog valley','green-fog-valley'],['Dark fog forest','dark-fog-forest'],['City night','city-night'],['Dune climb','dune-climb']];
 const ST=[['Midnight','#07080b'],['Deep navy','#0b1330'],['Charcoal','#1b1c1f'],['Plum','#23102b'],['Moss','#10231a'],['Ember','#2a1410']];
 let bgSel=S('bg',null),scene=S('scene',null);function setBg(v){$('#bg').style.background=v;bgSel=v;W('bg',v)}
 function grid(t){const g=$('#bgrid');g.innerHTML='';$('#mine').style.display=t==='mine'?'block':'none';g.style.display=t==='mine'?'none':'grid';if(t==='mine')return;
@@ -521,5 +564,188 @@ function x2(){const n=new Date(),d0=new Date(n.getFullYear(),n.getMonth(),n.getD
 upd();
 })();
 </script>
+<script>
+/* ===== Mini / Floating: stopwatch + clock (drag, resize, always-on-top window) ===== */
+(()=>{
+const FW=Object.assign({sw:true,ck:true,page:false,op:1,bg:'#f6e58d',pz:1},S('fw',{}));
+FW.sc=Object.assign({sw:1,ck:1},FW.sc||{});FW.pos=Object.assign({sw:[14,96],ck:[14,236]},FW.pos||{});
+const sv=()=>W('fw',FW),KS=['sw','ck'],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+const BGS=['#f6e58d','#f8e1d4','#d7e8b4','#c6e9de','#9bd8d8','#f7c6d0','#fcd96b','#f8cba8','#dcdcc4','#1c1d24'];
+const lum=h=>{const n=parseInt(h.slice(1),16);return(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/255};
+const fg=()=>lum(FW.bg)<.45?'#f4f3ee':'#1d1d1f';
+const lab=()=>mode==='stop'?'Stopwatch':mode==='focus'?'Focus':'Break';
+const swT=()=>$('#time').textContent,ckT=()=>$('#clk').textContent,ckD=()=>$('#cd').textContent;
+const E={};let pip=null;
+
+function place(k){const d=E[k];if(!d)return;const x=cl(FW.pos[k][0],0,Math.max(0,innerWidth-d.offsetWidth)),y=cl(FW.pos[k][1],0,Math.max(0,innerHeight-d.offsetHeight));FW.pos[k]=[x,y];d.style.left=x+'px';d.style.top=y+'px'}
+function paint(k){const d=E[k];if(!d)return;d.style.setProperty('--s',FW.sc[k]);d.style.background=FW.bg;d.style.color=fg();d.style.opacity=FW.op;place(k)}
+function mk(k){
+ const d=document.createElement('div');d.className='fw';
+ d.innerHTML='<div class="fwh"><span class="fwl">'+(k==='sw'?'Stopwatch':'Clock')+'</span><span class="fwa"><button data-a="-" title="Chhota">A−</button><button data-a="+" title="Bada">A+</button><button data-a="x" title="Band">✕</button></span></div><div class="fwt"></div><div class="fws"></div>'+(k==='sw'?'<div class="fwc"><button data-a="go">▶</button><button data-a="rs">↺</button></div>':'')+'<i class="fwg" title="Kheench kar size badlo"></i>';
+ document.body.append(d);E[k]=d;
+ d.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='-'||a==='+'){FW.sc[k]=cl(+(FW.sc[k]*(a==='+'?1.12:1/1.12)).toFixed(2),.4,4);sv();paint(k);ui()}
+  else if(a==='x'){FW[k]=false;sv();sync()}
+  else if(a==='go')$('#start').click();else if(a==='rs')$('#reset').click();upd()});
+ d.addEventListener('pointerdown',e=>{
+  if(e.target.closest('button')||e.target.classList.contains('fwg'))return;
+  const r=d.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;d.setPointerCapture(e.pointerId);
+  d.onpointermove=ev=>{FW.pos[k]=[ev.clientX-ox,ev.clientY-oy];place(k)};
+  d.onpointerup=d.onpointercancel=()=>{d.onpointermove=d.onpointerup=d.onpointercancel=null;sv()}});
+ const g=d.querySelector('.fwg');
+ g.addEventListener('pointerdown',e=>{e.stopPropagation();g.setPointerCapture(e.pointerId);const s0=FW.sc[k],w0=d.offsetWidth,sx=e.clientX,sy=e.clientY;
+  g.onpointermove=ev=>{FW.sc[k]=cl(+(s0*(1+((ev.clientX-sx)+(ev.clientY-sy))/(2*w0))).toFixed(2),.4,4);paint(k)};
+  g.onpointerup=g.onpointercancel=()=>{g.onpointermove=g.onpointerup=g.onpointercancel=null;sv();ui()}});
+ paint(k)}
+function sync(){KS.forEach(k=>{if(FW.page&&FW[k]){if(!E[k])mk(k);paint(k)}else if(E[k]){E[k].remove();delete E[k]}});upd();ui();if(pip)pipBuild()}
+function upd(){
+ if(E.sw){E.sw.querySelector('.fwt').textContent=swT();E.sw.querySelector('.fwl').textContent=lab();E.sw.querySelector('.fws').textContent=$('#task').value||'';E.sw.querySelector('[data-a=go]').textContent=run?'⏸':'▶'}
+ if(E.ck){E.ck.querySelector('.fwt').textContent=ckT();E.ck.querySelector('.fws').textContent=ckD()}
+ pipUpd()}
+setInterval(upd,250);
+addEventListener('resize',()=>KS.forEach(place));
+
+/* ---- always-on-top window (Document Picture-in-Picture) ---- */
+function pipBuild(){
+ const w=pip;if(!w)return;const d=w.document;
+ d.title='Focus mini';d.head.innerHTML='';d.body.innerHTML='';
+ const st=d.createElement('style');
+ st.textContent='html,body{margin:0;height:100%;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif}body{display:flex;flex-direction:column;background:'+FW.bg+';color:'+fg()+'}.b{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;position:relative}.b+.b{border-top:1px solid rgba(128,128,128,.4)}.t{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}.s{opacity:.7;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}.c{display:flex;gap:8px;margin-top:4px}button{font:inherit;border:1px solid rgba(128,128,128,.6);background:rgba(128,128,128,.18);color:inherit;border-radius:99px;padding:2px 14px;cursor:pointer;font-size:15px}.z{position:absolute;right:4px;top:4px;display:flex;gap:4px}.z button{padding:0 7px;font-size:12px;border-radius:6px}';
+ d.head.append(st);
+ let h='';
+ if(FW.sw)h+='<div class="b" id="bs"><div class="z"><button id="a1" title="Chhota">A−</button><button id="a2" title="Bada">A+</button></div><div class="t" id="ts"></div><div class="s" id="ss"></div><div class="c"><button id="go">▶</button><button id="rs">↺</button></div></div>';
+ if(FW.ck)h+='<div class="b" id="bc">'+(FW.sw?'':'<div class="z"><button id="a1" title="Chhota">A−</button><button id="a2" title="Bada">A+</button></div>')+'<div class="t" id="tc"></div><div class="s" id="sd"></div></div>';
+ d.body.innerHTML=h;
+ const g=i=>d.getElementById(i),z=m=>{FW.pz=cl(+(FW.pz*m).toFixed(2),.4,3);sv();pipUpd()};
+ if(g('a1'))g('a1').onclick=()=>z(1/1.12);if(g('a2'))g('a2').onclick=()=>z(1.12);
+ if(g('go'))g('go').onclick=()=>{$('#start').click();pipUpd()};if(g('rs'))g('rs').onclick=()=>{$('#reset').click();pipUpd()};
+ pipUpd()}
+function pipUpd(){
+ if(!pip)return;
+ try{
+  if(run&&document.hidden)tick();
+  const d=pip.document,g=i=>d.getElementById(i);
+  if(g('ts')){g('ts').textContent=swT();g('ss').textContent=lab()+($('#task').value?' · '+$('#task').value:'');g('go').textContent=run?'⏸':'▶'}
+  if(g('tc')){g('tc').textContent=ckT();g('sd').textContent=ckD()}
+  const bl=[...d.querySelectorAll('.b')],W_=pip.innerWidth,bh=pip.innerHeight/Math.max(1,bl.length);
+  bl.forEach(b=>{const t=b.querySelector('.t'),n=Math.max(4,t.textContent.length);t.style.fontSize=Math.max(10,Math.min((W_-16)/(n*.62),(bh-(b.id==='bs'?62:34))*.85)*FW.pz)+'px'});
+ }catch(e){pip=null;ui()}}
+async function pipToggle(){
+ if(pip){try{pip.close()}catch(e){}pip=null;ui();return}
+ if(!FW.sw&&!FW.ck){toast('Pehle Stopwatch ya Clock chuno');return}
+ const c=[];try{if(window.documentPictureInPicture)c.push(window.documentPictureInPicture)}catch(e){}
+ try{if(parent!==window&&parent.documentPictureInPicture)c.push(parent.documentPictureInPicture)}catch(e){}
+ let w=null;const two=FW.sw&&FW.ck;
+ for(const a of c){try{w=await a.requestWindow({width:two?320:300,height:two?260:150});break}catch(e){}}
+ if(!w)return vidPip();
+ pip=w;w.addEventListener('pagehide',()=>{pip=null;ui()});w.addEventListener('resize',pipUpd);
+ w.setInterval(pipUpd,250);pipBuild();ui()}
+/* ---- fallback: video Picture-in-Picture (mobile / purane browser) ---- */
+async function vidPip(){
+ try{
+  if(!FW.sw&&!FW.ck)throw 0;if(!document.pictureInPictureEnabled)throw 0;
+  const cv=document.createElement('canvas');cv.width=360;cv.height=FW.sw&&FW.ck?250:130;
+  const c=cv.getContext('2d'),vd=document.createElement('video');vd.muted=true;vd.playsInline=true;
+  const draw=()=>{c.fillStyle=FW.bg;c.fillRect(0,0,cv.width,cv.height);c.fillStyle=fg();c.textAlign='center';c.textBaseline='middle';
+   const a=(FW.sw?[swT()]:[]).concat(FW.ck?[ckT()]:[]),bh=cv.height/a.length;
+   a.forEach((t,i)=>{c.font='800 '+Math.min(340/(t.length*.62),bh*.62)*FW.pz+'px sans-serif';c.fillText(t,180,bh*i+bh/2)})};
+  draw();const id=setInterval(draw,250);vd.srcObject=cv.captureStream(10);
+  await vd.play();await vd.requestPictureInPicture();vd.addEventListener('leavepictureinpicture',()=>clearInterval(id));
+ }catch(e){toast('Is browser me floating window nahi chali — "Page ke andar float" use karo')}}
+
+/* ---- panel UI ---- */
+function ui(){
+ $('#fwSw').checked=FW.sw;$('#fwCk').checked=FW.ck;
+ $('#fwPage').classList.toggle('on',FW.page);$('#fwPage').textContent=FW.page?'📌 Page float: ON':'📌 Page ke andar float';
+ $('#fwPip').classList.toggle('on',!!pip);$('#fwPip').textContent=pip?'🪟 Float band karo':'🪟 Sabse upar float';
+ $('#fwSc').value=(FW.sc.sw+FW.sc.ck)/2;$('#fwOp').value=FW.op;
+ $$('#fwBg .fsw').forEach(b=>b.classList.toggle('on',b.dataset.c===FW.bg))}
+BGS.forEach(c=>{const b=document.createElement('button');b.className='fsw';b.dataset.c=c;b.style.background=c;b.onclick=()=>{FW.bg=c;sv();KS.forEach(paint);if(pip)pipBuild();ui()};$('#fwBg').append(b)});
+$('#fwSw').onchange=e=>{FW.sw=e.target.checked;sv();sync()};
+$('#fwCk').onchange=e=>{FW.ck=e.target.checked;sv();sync()};
+$('#fwPage').onclick=()=>{if(!FW.page&&!FW.sw&&!FW.ck){toast('Pehle Stopwatch ya Clock chuno');return}FW.page=!FW.page;sv();sync();if(FW.page)$$('.panel').forEach(x=>x.classList.remove('show'))};
+$('#fwPip').onclick=pipToggle;
+$('#fwSc').oninput=e=>{FW.sc.sw=FW.sc.ck=+e.target.value;FW.pz=+e.target.value;sv();KS.forEach(paint);pipUpd()};
+$('#fwOp').oninput=e=>{FW.op=+e.target.value;sv();KS.forEach(paint)};
+let dp=false;try{dp=!!(window.documentPictureInPicture||(parent!==window&&parent.documentPictureInPicture))}catch(e){}
+$('#fwHint').textContent=(dp?'📌 Page float: is page ke andar kahin bhi drag karo, kone se kheench kar size badlo. 🪟 Sabse upar float: alag chhoti window banti hai jo doosre app/tab ke upar bhi dikhti hai — use bhi drag aur resize kar sakte ho (A−/A+ se text size).':'📌 Page float: is page ke andar drag + resize. 🪟 Sabse upar float: is browser me sirf simple video-mini chalega (Chrome desktop me poori window milti hai).');
+addEventListener('pagehide',()=>{try{pip&&pip.close()}catch(e){}});
+sync();
+})();
+</script>
+<script>
+/* ===== Music: auto-start, hamesha repeat, on-screen button, extras ===== */
+(()=>{
+const tv=()=>CF.vol!=null?CF.vol:.6;let off=false,fv=null,slp=null,armed=false;
+if(CF.mauto===undefined)CF.mauto=true;
+if(!CF.rpv2){CF.rp='one';CF.rpv2=1}
+if(CF.mrs===undefined)CF.mrs=false;
+W('cf',CF);
+function fade(to,ms,done){clearInterval(fv);const s0=A.volume,n=Math.max(1,ms/25);let i=0;fv=setInterval(()=>{i++;A.volume=Math.max(0,Math.min(1,s0+(to-s0)*i/n));if(i>=n){clearInterval(fv);done&&done()}},25)}
+function sync(){const on=!A.paused;$('#mtg').textContent=on?'🔊':'🔇';$('#mtg').classList.toggle('on',on);$('#pp').textContent=on?'❚❚':'▶';
+ try{if(navigator.mediaSession){navigator.mediaSession.metadata=new MediaMetadata({title:trk[ci].n,artist:'Focus Desk'});navigator.mediaSession.playbackState=on?'playing':'paused'}}catch(e){}}
+function start(){stopYT();A.volume=0;return A.play().then(()=>{fade(tv(),1200);sync();return true}).catch(()=>{A.volume=tv();sync();return false})}
+function halt(){fade(0,500,()=>{A.pause();A.volume=tv();sync()})}
+function arm(){if(armed)return;armed=true;const go=()=>{['pointerdown','keydown','touchstart'].forEach(t=>removeEventListener(t,go,true));armed=false;if(!off&&CF.mauto!==false&&A.paused)start()};['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,go,true))}
+function toggle(){if(A.paused){off=false;start()}else{off=true;halt()}}
+$('#mtg').onclick=toggle;
+$('#mfab').addEventListener('wheel',e=>{e.preventDefault();vol((tv()*100)+(e.deltaY<0?5:-5))},{passive:false});
+function vol(p){p=Math.max(0,Math.min(100,Math.round(p)));A.volume=p/100;CF.vol=A.volume;W('cf',CF);$('#vol').value=p;toast('Volume '+p+'%')}
+// panel play/pause bhi on/off yaad rakhe
+$('#pp').addEventListener('click',()=>setTimeout(()=>{off=A.paused;sync()},60));
+A.addEventListener('play',sync);A.addEventListener('pause',sync);
+// hamesha repeat (gapless)
+setInterval(()=>{A.loop=CF.rp!=='off'&&(CF.rp==='one'||trk.length===1)},1000);A.loop=true;
+// resume position
+setInterval(()=>{if(CF.mrs&&ci===0&&!A.paused&&A.currentTime>1)W('mpos',A.currentTime)},5000);
+// Break / timer pause rules
+const _sm=setMode;setMode=function(m){_sm(m);if(!CF.mbp||off)return;if(m==='short'||m==='long'){if(!A.paused)fade(0,600,()=>{A.pause();A.volume=tv();sync()})}else if(A.paused)start()};
+$('#start').addEventListener('click',()=>setTimeout(()=>{if(!CF.mtp||off)return;if(run){if(A.paused)start()}else if(!A.paused)fade(0,500,()=>{A.pause();A.volume=tv();sync()})},40));
+$('#start').addEventListener('click',()=>setTimeout(()=>{if(CF.ofs&&run&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{})},0));
+// sleep timer
+$('#mSl').onchange=e=>{clearTimeout(slp);const m=+e.target.value;if(m){slp=setTimeout(()=>{off=true;halt();$('#mSl').value='0';toast('Sleep timer: music band')},m*60000);toast('Music '+m+' min baad band hoga')}};
+// keys
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.metaKey)return;const k=e.key;if(k==='ArrowUp'){e.preventDefault();vol(tv()*100+5)}else if(k==='ArrowDown'){e.preventDefault();vol(tv()*100-5)}else if(k==='n'||k==='N')nxt(1)});
+// M key: fab ki tarah on/off
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.metaKey)return;if(e.key==='m'||e.key==='M')setTimeout(()=>{off=A.paused;sync()},80)});
+// media session (headphones / lockscreen)
+try{const ms=navigator.mediaSession;if(ms){ms.setActionHandler('play',()=>{off=false;start()});ms.setActionHandler('pause',()=>{off=true;halt()});ms.setActionHandler('nexttrack',()=>nxt(1));ms.setActionHandler('previoustrack',()=>nxt(-1))}}catch(e){}
+// settings checkboxes
+[['mAuto','mauto'],['mBp','mbp'],['mTp','mtp'],['mRs','mrs'],['oAs','oas'],['oFs','ofs']].forEach(([id,k])=>{const el=$('#'+id);el.checked=k==='mauto'?CF.mauto!==false:!!CF[k];el.onchange=()=>{CF[k]=el.checked;W('cf',CF)}});
+// OPEN par auto-start
+function boot(){
+ if(CF.mrs&&ci===0){const t=S('mpos',0);if(t>1)A.addEventListener('loadedmetadata',()=>{try{A.currentTime=Math.min(t,(A.duration||t)-2)}catch(e){}},{once:true})}
+ if(CF.mauto!==false){start().then(ok=>{if(!ok){arm();toast('Music ke liye screen par kahin tap karo')}})}else sync();
+ if(CF.oas)setTimeout(()=>{if(!run)$('#start').click()},700)}
+sync();boot();
+})();
+</script>
 <script>setMode('stop');</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const g=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},w=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+// ---- blur
+const bg=$('#bg'),sl=$('#blr'),lb=$('#blv');
+function blur(b,save){b=Math.max(0,Math.min(24,+b||0));lb.textContent=b;sl.value=b;
+ bg.style.filter=b?'blur('+b+'px)':'';
+ bg.style.transform=b?'scale('+(1+b*4.4/Math.max(280,Math.min(innerWidth,innerHeight))).toFixed(3)+')':'';
+ if(save)w('bgblur',b)}
+sl.addEventListener('input',()=>blur(sl.value,true));
+addEventListener('resize',()=>blur(g('bgblur',0)));
+blur(g('bgblur',0));
+// ---- motivation msg (2 min)
+const Q=["Aaj ka din wapas nahi aayega — jo bhi ghante milein, poore laga do.", "Jo log result ke baad successful dikhte hain, unhone aise hi normal din grind kiye the.", "50 din ka plan bana hai — bas aaj wala din jeetna hai, poora plan apne aap ban jayega.", "Chhoti si progress bhi progress hai. Zero se aage har kadam count hota hai.", "Exam hall mein confidence wahi cheez degi jo aaj practice ki.", "Thakaan aayegi, bahaana bhi aayega — dono ko cross karke aage nikal jao.", "Tumhare competitors abhi so rahe hain ya scroll kar rahe hain. Ye tumhara window hai.", "Ek achha din pura mat samjho jab tak wallet full na ho jaye.", "Selection ek din mein nahi, roz ke choton se milti hai — aaj wo choti jeet lo.", "Jitna time aaj bachaoge utna hi kal ka pressure kam hoga.", "Mushkil lag raha hai matlab tum sahi cheez pe kaam kar rahe ho.", "Har mock, har revision — sab compound hoke result banata hai.", "Aaj ka target chhota lag sakta hai, par 50 din baad yehi difference banayega.", "Distraction ek ghanta churata hai, focus ek raat ki neend jitna return deta hai.", "Consistency boring lagti hai, par yahi cheez topper aur baaki mein farak karti hai.", "Jo galti aaj samajh aayi, wo exam mein dobara nahi hogi — isliye mistakes bhi progress hain.", "Apne aap se competition karo — kal ke apne se aaj thoda better bano.", "Result door lag raha hoga, par har din uska ek chhota hissa hai.", "Tumhare paas already ek plan hai — bas usse follow karna hai, dobara sochna nahi.", "Aaj thoda aur push karo — future wala tum isi din ko thank you bolega.", "Speed se zyada zaroori hai roz dikhna — jo roz dikhta hai wahi finish line tak pahunchta hai.", "Har task jo tick hota hai, ek chhota sa proof hai ki tum serious ho.", "Kisi aur se tulna mat karo — sirf apna schedule follow karo, baaki apne aap set ho jayega.", "Mehnat dikhti nahi, sirf result dikhta hai — is beech ka phase yehi hai.", "Aaj clear karo, kal fresh mind se aur mushkil topic uthao.", "Jo aaj avoid karoge wahi kal double hoke wapas aayega — abhi nipta do.", "Preparation ka matlab hai ready hona jab opportunity aaye — aaj wahi ready hone ka din hai.", "Chhota sa consistent effort, bade burst se zyada powerful hota hai.", "Tumne shuru kiya tha kisi wajah se — us wajah ko aaj yaad karo aur kaam pe lag jao.", "Har din jo pura hota hai, exam wale din ka darr thoda kam karta hai.", "The harder you work for something, the better you'll feel when you achieve it.", "Don't limit your challenges. Challenge your limits.", "Nothing is impossible. The word itself says 'I'm possible!'", "Fall seven times, stand up eight.", "Opportunities don't happen. You create them.", "The man who moves a mountain begins by carrying away small stones.", "Action is the foundational key to all success.", "It's not about having time. It's about making time.", "Small daily improvements over time lead to stunning results.", "Your time is limited, don't waste it living someone else's life.", "Your 'I Can' is more important than your IQ.", "If the WHY is powerful, the HOW is easy.", "To be everywhere is to be nowhere.", "Reality cannot be ignored except at a price — and the longer you ignore it, the higher and uglier that price gets.", "Your mind is a garden; your subconscious, the soil. Sow light, and you'll reap clarity. Sow darkness, and you'll reap confusion.", "We have two lives, and the second begins when we realise we only have one.", "अगर आप खुद फैसले नहीं लेते, तो आपके लिए फैसले ले लिए जाते हैं..!", "अभी भी वक़्त है.. हम्म, अभी भी वक़्त है — पूरा खेल बदल सकता है, अगर सही जगह पहुँचकर सही काम कर लिया तो।", "A moment of pain is worth a lifetime of glory.", "Legends aren't built on the days they feel motivated, but the days they feel like quitting.", "अभी भी वक़्त है... 2400 से 2800 करने का, 2800 से 4600 करने का, 4600 से 4600 'H' करने का, और 27 से 26 में ही करने का।", "The magic you're looking for is in the work you're avoiding.", "है जो सही वो करना नहीं, ग़लत होने की यही तो शुरुआत है..", "अभ्यास में जितना ज्यादा पसीना बहाओगे, युद्ध में उतना ही कम खून बहेगा।", "खुद को आगे बढ़ाएं, क्योंकि कोई और आपके लिए ऐसा नहीं करने वाला है।", "सफलता उससे नहीं मिलती जो आप कभी-कभी करते हैं, बल्कि उससे मिलती है जो आप लगातार करते हैं।", "आज आप जो दर्द महसूस कर रहे हैं, कल वही आपकी ताकत बनेगा।", "नदी चट्टान को अपनी ताकत से नहीं, बल्कि अपनी लगातार कोशिश से काटती है।", "बड़े सपने देखें, ध्यान केंद्रित रखें और उन्हें सच कर दिखाएं।", "तब तक न रुकें जब तक आपको खुद पर गर्व न हो।", "आपके सपनों और हकीकत के बीच की दूरी को 'कर्म' कहते हैं।", "हर सुबह आपके पास दो विकल्प होते हैं: अपने सपनों के साथ सोते रहें, या उठें और उनका पीछा करें।", "महान बनने के लिए शुरुआत करने की जरूरत नहीं है, बल्कि महान बनने के लिए शुरुआत करना जरूरी है।", "या तो अनुशासन का दर्द सह लें, या फिर पछतावे का दर्द सहें।", "बहाने हमेशा आपके पास रहेंगे, लेकिन अवसर नहीं।", "खामोशी से कड़ी मेहनत करें, अपनी सफलता को शोर मचाने दें।", "सबसे खराब अभ्यास (वर्कआउट) वही है जो आपने किया ही नहीं।", "बिना किसी समय-सीमा वाले लक्ष्य सिर्फ एक सपना होते हैं।", "अगर कोई चीज आपको चुनौती नहीं देती, तो वह आपको बदल भी नहीं सकती।", "अपने सामने वाली सीढ़ी पर ध्यान दें, पूरी सीढ़ियों पर नहीं।", "आपकी एकमात्र सीमा आप खुद हैं।", "परिणाम समय के साथ आते हैं, रातों-रात नहीं। कड़ी मेहनत करें, लगातार लगे रहें, और धैर्य रखें।", "अपने सबसे बड़े बहाने से ज्यादा मजबूत बनें।", "दिमाग सबसे जरूरी मांसपेशी है। इसे हर स्थिति में अच्छा देखने के लिए प्रशिक्षित करें।", "अवसर का इंतज़ार न करें। इसे खुद बनाएं।", "थोड़ा-थोड़ा करके, इंसान बहुत दूर तक का सफर तय कर लेता है।", "मुश्किल वक्त कभी टिकता नहीं, लेकिन मजबूत लोग टिकते हैं।", "विश्वास करें कि आप कर सकते हैं, और आपने आधा रास्ता तय कर लिया।", "जो व्यक्ति कभी हार नहीं मानता, उसे हराना बहुत मुश्किल होता है।", "शरीर वही हासिल करता है जिस पर दिमाग विश्वास करता है।", "अपने जीवन को एक मास्टरपीस बनाएं; यह कल्पना करें कि आप जो बन सकते हैं, पा सकते हैं या कर सकते हैं, उसकी कोई सीमा नहीं है।", "सफलता उन छोटे-छोटे प्रयासों का जोड़ है, जिन्हें रोजाना लगातार किया जाता है।", "आपकी आखिरी गलती ही आपकी सबसे अच्छी शिक्षक होती है।", "जो आज की रात किताबों पर झुकता है, वही कल दुनिया पर राज करता है।", "थकान से मत रुको, मंजिल के करीब पहुँचकर हार मानना सबसे बड़ी गलती है।", "सफलता का कोई शॉर्टकट नहीं होता, हर पन्ना पढ़ना पड़ता है और हर कदम दौड़ना पड़ता है।", "पसीने की स्याही से जो अपने इरादे लिखते हैं, उनके मुकद्दर के पन्ने कभी कोरे नहीं होते।", "आज की मेहनत कल का सुकून है, इसलिए आज खुद को तपाने से पीछे मत हटो।", "समय का हर एक सेकंड कीमती है, इसे गँवाने का मतलब है अपनी मंजिल को दूर करना।", "जब दुनिया सो रही हो, तब तुम्हारी जागकर की गई मेहनत ही तुम्हें सबसे अलग बनाएगी।", "दर्द और थकान सिर्फ दिमाग का वहम हैं, तुम्हारा संकल्प इनसे कहीं ज्यादा मजबूत है।", "लक्ष्य जितना बड़ा होगा, सफर उतना ही कठिन होगा, और जीत उतनी ही शानदार होगी।", "खुद को साबित करने का मौका बार-बार नहीं मिलता, जो समय हाथ में है उसे अपना सबसे बड़ा हथियार बनाओ।", "मैदान में हारा हुआ इंसान फिर से जीत सकता है, लेकिन मन से हारा हुआ इंसान कभी नहीं जीत सकता।", "हर दिन खुद से एक वादा करो कि आज का दिन कल से बेहतर और ज्यादा प्रोडक्टिव होगा।", "किस्मत के भरोसे बैठने वालों को सिर्फ उतना मिलता है, जितना कोशिश करने वाले छोड़ देते हैं।", "जब भी हार मानने का ख्याल आए, तो याद करना कि तुमने इतनी दूर तक का सफर क्यों तय किया था।", "सफलता एक दिन में नहीं मिलती, लेकिन एक-एक दिन की गई निरंतर मेहनत से जरूर मिलती है।", "तुम्हारी सबसे बड़ी प्रतियोगिता खुद से है, हर दिन अपने पिछले रिकॉर्ड को तोड़ने का प्रयास करो।", "जो बहाने बनाते हैं वो इतिहास नहीं बनाते, और जो इतिहास बनाते हैं वो बहाने नहीं बनाते।", "डर को अपने ऊपर हावी मत होने दो, अपने हौसले को इतना बड़ा कर लो कि डर खुद छोटा हो जाए।", "जिस दिन तुमने सोच लिया कि तुम कर सकते हो, समझो तुमने आधी बाज़ी वहीं जीत ली।", "अगर रास्ता मुश्किल लग रहा है, तो समझ लो कि तुम सही दिशा में आगे बढ़ रहे हो।", "कोई भी लक्ष्य इंसान के साहस से बड़ा नहीं होता, हारता वही है जो दिल से लड़ता नहीं।", "अपनी कमजोरियों को अपनी ताकत बनाओ, क्योंकि यही तुम्हें सबसे अलग पहचान दिलाएंगी।", "हर सुबह एक नया अवसर है, या तो इसे सोकर गुजार दो, या उठकर अपने सपनों के पीछे दौड़ो।", "जब तक तुम्हारा लक्ष्य पूरा न हो जाए, तब तक न रुको, न थको और न ही मुड़कर देखो।", "तुम्हारी सफलता का शोर उसी दिन मचेगा, जिस दिन तुम्हारी खामोशी की मेहनत पूरी होगी।", "सिर्फ सोचने से कुछ नहीं होता, सफलता पाने के लिए उस सोच को कर्म में बदलना पड़ता है।", "अनुशासन वो पुल है जो तुम्हारे सपनों और तुम्हारी उपलब्धियों को जोड़ता है।", "जो पानी से नहाता है वो सिर्फ लिबास बदलता है, पर जो पसीने से नहाता है वो इतिहास बदलता है।", "हारना कोई बुरी बात नहीं है, लेकिन हार मान लेना सबसे बुरी बात है।", "अगर सूरज की तरह चमकना चाहते हो, तो पहले सूरज की तरह जलना और तपना सीखो।"];
+const el=$('#mq'),ck=$('#mqOn');let order=[],pos=0,tm=null;
+function shuf(){order=Q.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}pos=0}
+function next(first){if(!Q.length)return;if(pos>=order.length)shuf();const t=Q[order[pos++]];
+ if(first){el.textContent=t;el.classList.add('on');return}
+ el.classList.remove('on');setTimeout(()=>{el.textContent=t;el.classList.add('on')},750)}
+function start(){stop();shuf();next(true);tm=setInterval(()=>{if(!document.hidden)next(false)},120000)}
+function stop(){if(tm)clearInterval(tm);tm=null}
+function apply(on,save){ck.checked=on;el.classList.toggle('off',!on);if(save)w('mq',on);if(on)start();else{stop();el.classList.remove('on')}}
+ck.addEventListener('change',()=>apply(ck.checked,true));
+apply(g('mq',true),false);
+})();
+</script>
 </body></html>
