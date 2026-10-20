@@ -24544,13 +24544,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
       <div class="rt" id="cxCamRt">● 0:00</div>
       <div class="bot"><div class="car" id="cxCamCar"></div>
-        <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span style="width:42px"></span></div>
+        <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span id="cxCamBtySlot" style="width:46px;display:flex;justify-content:flex-end"></span></div>
         <div class="hint">Tap = photo · Dabaye rakho = video</div></div>`;
     document.body.appendChild(el);
     $('cxCamX').onclick = close;
     $('cxCamFlip').onclick = flip;
     $('cxCamGal').onclick = ()=>{ close(); const i = $('cxInGal'); if(i) i.click(); };
-    $('cxCamCar').addEventListener('click', (e)=>{ const b = e.target.closest('[data-f]'); if(!b || !st) return; st.sel = b.dataset.f; st.f.parts = []; paintCar(); });
+    $('cxCamCar').addEventListener('click', (e)=>{ const b = e.target.closest('[data-f]'); if(!b || !st) return; st.sel = b.dataset.f; st.f.parts = []; try{ localStorage.setItem('cxc-sel', st.sel); }catch(_){} paintCar(); });
     const sh = $('cxCamShut');
     sh.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(!st) return; try{ sh.setPointerCapture(e.pointerId); }catch(_){} st.hold = false; st.holdT = setTimeout(()=>{ st.hold = true; recStart(); }, 380); });
     const up = ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.hold){ st.hold = false; recStop(); } else if(!st.rec && st.down !== false){ photo(); } };
@@ -24627,6 +24627,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   async function flip(){
     if(!st || st.rec) return;
     st.facing = st.facing === 'user' ? 'environment' : 'user';
+    try{ localStorage.setItem('cxc-face', st.facing); }catch(_){}
     try{ await startStream(); }catch(e){ toast('Camera palat nahi paayi.'); }
   }
   function close(){
@@ -24647,7 +24648,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const cvs = $('cxCamCv'), vid = document.createElement('video');
     vid.muted = true; vid.playsInline = true; vid.autoplay = true;
     const ctx = cvs.getContext('2d');
-    st = { cvs, ctx, vid, stream: null, facing: 'user', sel: 'none', f: { canF: ('filter' in ctx), parts: [] } };
+    let sf = 'user', ss = 'none';
+    try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; ss = localStorage.getItem('cxc-sel') || 'none'; if(!window.cxFX.list.some(x => x.id === ss)) ss = 'none'; }catch(_){}
+    st = { cvs, ctx, vid, stream: null, facing: sf, sel: ss, f: { canF: ('filter' in ctx), parts: [] } };
     $('cxCamTo').textContent = 'Message ' + chatPeer.name;
     $('cxCam').classList.add('open');
     paintCar();
@@ -24672,11 +24675,25 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
   const clamp = (x, a, b)=> Math.max(a, Math.min(b, x));
   const LSK = 'cxb-p';
-  const D = { smooth: 0, bright: 0, dark: 0, slim: 0, nose: 0, eyes: 0, teeth: 0, plump: 0, lip: 0, lipC: '#c2185b', blush: 0, liner: 0, lash: 0, contour: 0, hair: 0, hairC: '#b91c1c', night: 0, enhance: 0, center: 0, flicker: 0 };
+  const D = { smooth: 0, bright: 0, dark: 0, slim: 0, nose: 0, eyes: 0, teeth: 0, plump: 0, lip: 0, lipC: '#c2185b', blush: 0, liner: 0, lash: 0, contour: 0, hair: 0, hairC: '#b91c1c', night: 0, enhance: 0, center: 0, flicker: 0, dbg: 0 };
   let P = Object.assign({}, D);
-  try{ Object.assign(P, JSON.parse(localStorage.getItem(LSK) || '{}')); }catch(e){}
+  // AUTO-SAVE: har change turant localStorage me; app dobara khulne par wahi settings wapas (sanitised)
+  const COLK = { lipC: 1, hairC: 1 };
+  function loadP(){
+    let o = {}; try{ o = JSON.parse(localStorage.getItem(LSK) || '{}') || {}; }catch(e){}
+    const r = Object.assign({}, D);
+    Object.keys(D).forEach(k => {
+      if(!(k in o)) return;
+      if(COLK[k]){ if(/^#[0-9a-fA-F]{6}$/.test(o[k])) r[k] = o[k]; }
+      else { const n = Number(o[k]); if(isFinite(n)) r[k] = clamp(n, 0, 100); }
+    });
+    return r;
+  }
+  P = loadP();
+  let tabSaved = 'face'; try{ tabSaved = localStorage.getItem('cxb-tab') || 'face'; }catch(e){}
   const save = ()=>{ try{ localStorage.setItem(LSK, JSON.stringify(P)); }catch(e){} };
-  const faceOn = ()=> !!(P.smooth || P.bright || P.dark || P.slim || P.nose || P.eyes || P.teeth || P.plump || P.lip || P.blush || P.liner || P.lash || P.contour);
+  window.addEventListener('pagehide', save); document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+  const faceOn = ()=> !!(P.smooth || P.bright || P.dark || P.slim || P.nose || P.eyes || P.teeth || P.plump || P.lip || P.blush || P.liner || P.lash || P.contour || P.dbg);
   const active = ()=> !!(faceOn() || P.hair || P.night || P.enhance || P.center || P.flicker);
   window.cxBeautyActive = active;
 
@@ -24709,7 +24726,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     lmP = (async()=>{
       try{
         const v = await loadVision();
-        const mk = (delegate)=> v.mod.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate }, runningMode: 'VIDEO', numFaces: 1, minFaceDetectionConfidence: .3, minFacePresenceConfidence: .3, minTrackingConfidence: .3 });
+        const mk = (delegate)=> v.mod.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate }, runningMode: 'VIDEO', numFaces: 1, minFaceDetectionConfidence: .45, minFacePresenceConfidence: .45, minTrackingConfidence: .5, outputFaceBlendshapes: false, outputFacialTransformationMatrixes: false });
         try{ lm = await mk(cpuTried ? 'CPU' : 'GPU'); lmDel = cpuTried ? 'CPU' : 'GPU'; }catch(e){ lm = await mk('CPU'); lmDel = 'CPU'; }
         setStat('none');
       }catch(e){ failOnce(e); }
@@ -24738,13 +24755,39 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   M16.c.width = M16.c.height = 16;
   let frameN = 0, lastTs = 0, hsTs = 0;
   let X = new Float32Array(478), Y = new Float32Array(478), prevL = null, lostN = 0, haveFace = false;
+  let lastVT = -1, oeT = 0, roll = 0, axx = 1, axy = 0, rollS = 0;
+  const oeDx = new Float32Array(478), oeDy = new Float32Array(478);
+  // One-Euro filter: ruka hua chehra = bilkul stable (no jitter), tez hilta chehra = zero lag (effect chipka rehta hai)
+  const OE_MIN = 1.3, OE_BETA = 9, OE_D = 1.0;
+  const oeA = (cut, dt)=>{ const tau = 1 / (2 * Math.PI * cut); return 1 / (1 + tau / dt); };
+  function smoothFace(face, now){
+    const n = Math.min(face.length, 478);
+    if(!prevL || prevL.length !== n){
+      prevL = new Array(n); for(let i = 0; i < n; i++) prevL[i] = { x: face[i].x, y: face[i].y };
+      oeDx.fill(0); oeDy.fill(0); oeT = now; return;
+    }
+    const dt = clamp((now - oeT) / 1000, .008, .25); oeT = now;
+    const fwn = Math.max(.05, Math.hypot(face[454].x - face[234].x, face[454].y - face[234].y)), aD = oeA(OE_D, dt);
+    for(let i = 0; i < n; i++){
+      const p = prevL[i], f = face[i];
+      const dx = (f.x - p.x) / dt / fwn, dy = (f.y - p.y) / dt / fwn;
+      oeDx[i] += (dx - oeDx[i]) * aD; oeDy[i] += (dy - oeDy[i]) * aD;
+      const a = oeA(OE_MIN + OE_BETA * Math.hypot(oeDx[i], oeDy[i]), dt);
+      p.x += (f.x - p.x) * a; p.y += (f.y - p.y) * a;
+    }
+  }
+  function faceAxes(){
+    // head roll (sar jhukane) ke hisaab se face ke axes — slim/nose/dark-circle/blush sab tilt ke saath chalte hain
+    const dx = X[454] - X[234], dy = Y[454] - Y[234], l = Math.hypot(dx, dy) || 1;
+    axx = dx / l; axy = dy / l; roll = Math.atan2(dy, dx);
+  }
   let lumaSlow = 0, lumaNow = 0, gS = 1, rS = 1;
   let cz = 1, ccx = .5, ccy = .5, hairOk = false;
   const BIG = 4000;
 
   function detect(v){
     if(!lm || v.readyState < 2) return null;
-    const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts;
+    const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts; lastVT = v.currentTime;
     try{
       const r = lm.detectForVideo(v, ts), f = (r && r.faceLandmarks && r.faceLandmarks[0]) || null;
       if(f){ nullRun = 0; setStat('ok'); }
@@ -24800,8 +24843,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }
     if(P.dark){
       [[145, 33, 133], [374, 263, 362]].forEach(([b, o, n])=>{
-        const ew = dist(o, n), cx = X[b], cy = Y[b] + ew * .28;
-        tc.save(); tc.translate(cx, cy); tc.scale(1, .42);
+        const ew = dist(o, n), cx = X[b] - axy * ew * .28, cy = Y[b] + axx * ew * .28;
+        tc.save(); tc.translate(cx, cy); tc.rotate(roll); tc.scale(1, .42);
         const g = tc.createRadialGradient(0, 0, 0, 0, 0, ew * .75);
         g.addColorStop(0, 'rgba(255,226,208,' + (P.dark / 100 * .5) + ')'); g.addColorStop(1, 'rgba(255,226,208,0)');
         tc.globalCompositeOperation = 'screen'; tc.fillStyle = g; tc.fillRect(-ew, -ew, ew * 2, ew * 2); tc.restore();
@@ -24850,7 +24893,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }
     if(P.blush){
       const a = P.blush / 100 * .5;
-      [205, 425].forEach(i => ell(X[i], Y[i] - fw * .01, fw * .17, fw * .11, 0, '255,105,135', a, 'multiply'));
+      [205, 425].forEach(i => ell(X[i] + axy * fw * .01, Y[i] - axx * fw * .01, fw * .17, fw * .11, roll, '255,105,135', a, 'multiply'));
     }
     if(P.contour){
       const a = P.contour / 100;
@@ -24923,13 +24966,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const nx = X[4];
     if(P.slim){
       const s = P.slim / 100 * .24, r = fw * .17;
-      [[93, 1], [132, 1], [172, 1], [323, -1], [361, -1], [397, -1]].forEach(([i, dir])=> ops.push({ t: 'p', x: X[i], y: Y[i], r, s, ux: dir, uy: 0 }));
-      ops.push({ t: 'p', x: X[152], y: Y[152] - fw * .02, r: fw * .16, s: P.slim / 100 * .12, ux: 0, uy: -1 });
+      [[93, 1], [132, 1], [172, 1], [323, -1], [361, -1], [397, -1]].forEach(([i, dir])=> ops.push({ t: 'p', x: X[i], y: Y[i], r, s, ux: dir * axx, uy: dir * axy }));
+      ops.push({ t: 'p', x: X[152] + axy * fw * .02, y: Y[152] - axx * fw * .02, r: fw * .16, s: P.slim / 100 * .12, ux: axy, uy: -axx });
     }
     if(P.nose){
       const nw = dist(129, 358), s = P.nose / 100 * .36;
-      ops.push({ t: 'p', x: X[129], y: Y[129], r: nw * .85, s, ux: 1, uy: 0 });
-      ops.push({ t: 'p', x: X[358], y: Y[358], r: nw * .85, s, ux: -1, uy: 0 });
+      ops.push({ t: 'p', x: X[129], y: Y[129], r: nw * .85, s, ux: axx, uy: axy });
+      ops.push({ t: 'p', x: X[358], y: Y[358], r: nw * .85, s, ux: -axx, uy: -axy });
       ops.push({ t: 'b', x: nx, y: (Y[4] + Y[6]) / 2 + nw * .1, r: nw * 1.3, s: -P.nose / 100 * .16 });
     }
     if(P.eyes){
@@ -24987,6 +25030,14 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     tc.putImageData(id, 0, 0);
   }
 
+  // ---------------- tracking check (mesh dikhao) ----------------
+  function debugMesh(){
+    tc.save(); tc.lineWidth = Math.max(1, T.width * .0025); tc.strokeStyle = 'rgba(0,255,160,.9)'; tc.fillStyle = 'rgba(0,255,160,.9)';
+    [OVAL, LIPS_OUT, EYE_L, EYE_R, BROW_L, BROW_R].forEach(p => { polyPath(tc, p); tc.stroke(); });
+    [1, 4, 152, 10, 234, 454].forEach(i => { tc.beginPath(); tc.arc(X[i], Y[i], Math.max(2, T.width * .005), 0, 6.2832); tc.fill(); });
+    tc.restore();
+  }
+
   // ---------------- main render ----------------
   // perf: render time EMA; agar bahut slow ho to alternate frames skip (last processed frame dobara dikhta hai)
   let rMs = 0, skipTog = 0;
@@ -24998,14 +25049,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(T.width !== w || T.height !== h){ [T, MK.c, LAY.c, TINT.c].forEach(c => { c.width = w; c.height = h; }); }
     // face detect (full video frame) - har 2nd frame (landmarks smooth hote hain), slow device pe har 3rd
     let face = null, didDetect = false;
-    if((faceOn() || P.center) && (frameN % (rMs > 30 ? 3 : 2) === 1 || !prevL)){ face = detect(v); didDetect = true; }
+    if((faceOn() || P.center) && (v.currentTime !== lastVT || !prevL) && (rMs < 30 || frameN % 2 === 0 || !prevL)){ face = detect(v); didDetect = true; }
     if(!didDetect){ /* pichle smoothed landmarks reuse */ }
     else if(face){
-      lostN = 0;
-      if(!prevL){ prevL = face.map(p => ({ x: p.x, y: p.y })); }
-      else for(let i = 0; i < face.length && i < prevL.length; i++){ prevL[i].x = prevL[i].x * .45 + face[i].x * .55; prevL[i].y = prevL[i].y * .45 + face[i].y * .55; }
-      haveFace = true;
-    } else if(++lostN > 4){ haveFace = false; prevL = null; }
+      lostN = 0; smoothFace(face, performance.now()); haveFace = true;
+    } else if(++lostN > 8){ haveFace = false; prevL = null; }   // ~8 miss tak purani position pakad ke rakho (blink/halka blur me effect na gayab ho)
     // center stage
     let tz = 1, tx = .5, ty = .5;
     if(P.center && haveFace && prevL){ tz = 1.5; tx = prevL[1].x; ty = (prevL[1].y + prevL[10].y) / 2 + .02; }
@@ -25017,6 +25065,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const useFace = faceOn() && haveFace && prevL;
     if(useFace){
       for(let i = 0; i < 478 && i < prevL.length; i++){ X[i] = (prevL[i].x * vw - sx) / sw * w; Y[i] = (prevL[i].y * vh - sy) / sh * h; }
+      faceAxes();
       if(P.smooth || P.bright || P.dark) skin(w, h);
       if(P.teeth) teeth(w, h);
       makeup(w, h);
@@ -25024,6 +25073,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(P.hair){ hairStep(v); hairPaint(w, h, { sx, sy, sw, sh, vw, vh }); }
     if(useFace && (P.slim || P.nose || P.eyes || P.plump)) warps(w, h);
     if(P.enhance) sharpen(w, h);
+    if(P.dbg && useFace) debugMesh();
     rMs = rMs ? rMs + (performance.now() - t0 - rMs) * .1 : (performance.now() - t0);
     return T;
   }
@@ -25056,10 +25106,10 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     makeup: [['lip', 'Lipstick'], ['blush', 'Blush'], ['liner', 'Eyeliner'], ['lash', 'Eyelashes'], ['contour', 'Contour + highlight'], ['hair', 'Hair colour']],
     quality: []
   };
-  const TG = [['night', '🌙 Low-light / Night mode'], ['flicker', '💡 Anti-flicker (tubelight/LED)'], ['enhance', '🔍 HD Enhance (sharp)'], ['center', '🎯 Center stage (face follow)']];
+  const TG = [['dbg', '🟢 Face tracking check (mesh dikhao)'], ['night', '🌙 Low-light / Night mode'], ['flicker', '💡 Anti-flicker (tubelight/LED)'], ['enhance', '🔍 HD Enhance (sharp)'], ['center', '🎯 Center stage (face follow)']];
   const LIPC = ['#c2185b', '#d6336c', '#e03131', '#b5485d', '#d6708a', '#ff7f7f', '#7b2d3b', '#9c36b5'];
   const HAIRC = ['#b91c1c', '#e8c468', '#2563eb', '#ec4899', '#7c3aed', '#7c4a1e', '#10b981', '#1f2937'];
-  let tab = 'face';
+  let tab = (tabSaved === 'makeup' || tabSaved === 'quality') ? tabSaved : 'face';
 
   function styles(){
     if($('cxp7Styles')) return;
@@ -25091,7 +25141,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #callBty{display:none}
     .callOv.vid.conn #callBty{display:block}
     #callBty::before{background-image:url("data:image/svg+xml;utf8,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='13' r='7.5'/><path d='M9 12.5h.01M15 12.5h.01M9.5 15.5a3.5 3.5 0 0 0 5 0M19 3v4M17 5h4'/></svg>")}")}
-    #callBty.on{background:linear-gradient(135deg,#f472b6,#a855f7)!important}`;
+    #callBty.on,#cxCamBty.on{background:linear-gradient(135deg,#f472b6,#a855f7)!important}
+    #cxCamBty{width:46px;height:46px}`;
     document.head.appendChild(s);
   }
   function build(){
@@ -25100,12 +25151,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const el = document.createElement('div'); el.id = 'cxBty';
     el.innerHTML = `<div class="sh"><div class="hd"><button data-p="off">Off</button><button data-p="natural">Natural</button><button data-p="glam">Glam</button><button data-p="fresh">Fresh</button><span class="sp"></span><button data-x="1">✕</button></div>
       <div class="tabs"><button data-t="face">🧑 Face</button><button data-t="makeup">💄 Makeup</button><button data-t="quality">🎥 Quality</button></div>
-      <div class="nt" id="cxBtySt" style="padding:0 14px 4px;opacity:.85"></div><div class="bd" id="cxBtyBd"></div></div>`;
+      <div class="nt" id="cxBtySt" style="padding:0 14px 2px;opacity:.85"></div><div class="nt" style="padding:0 14px 4px">💾 Auto-save ON — sab settings yaad rahengi</div><div class="bd" id="cxBtyBd"></div></div>`;
     document.body.appendChild(el); setStat(stat);
     el.addEventListener('click', (e)=>{
       const x = e.target.closest('[data-x]'); if(x){ el.classList.remove('open'); return; }
-      const t = e.target.closest('[data-t]'); if(t){ tab = t.dataset.t; paint(); return; }
-      const p = e.target.closest('[data-p]'); if(p){ const keep = {}; if(p.dataset.p !== 'off') ['night', 'flicker', 'enhance', 'center'].forEach(k => keep[k] = P[k]); P = Object.assign({}, D, PRESETS[p.dataset.p], keep); changed(); paint(); return; }
+      const t = e.target.closest('[data-t]'); if(t){ tab = t.dataset.t; try{ localStorage.setItem('cxb-tab', tab); }catch(_){} paint(); return; }
+      const p = e.target.closest('[data-p]'); if(p){ const keep = {}; if(p.dataset.p !== 'off') ['night', 'flicker', 'enhance', 'center'].forEach(k => keep[k] = P[k]); keep.dbg = P.dbg; P = Object.assign({}, D, PRESETS[p.dataset.p], keep); changed(); paint(); return; }
       const sw = e.target.closest('[data-c]'); if(sw){ P[sw.dataset.k] = sw.dataset.c; if(sw.dataset.k === 'hairC' && !P.hair) P.hair = 60; if(sw.dataset.k === 'lipC' && !P.lip) P.lip = 50; changed(); paint(); return; }
       const g = e.target.closest('[data-g]'); if(g){ P[g.dataset.g] = P[g.dataset.g] ? 0 : 1; changed(); paint(); }
     });
@@ -25141,14 +25192,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   // buttons inject (camera top bar + call buttons)
   const BTY_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M9 12.5h.01M15 12.5h.01M9.5 15.5a3.5 3.5 0 0 0 5 0M19 3v4M17 5h4"/></svg>';
   function inject(){
-    const top = document.querySelector('#cxCam .top');
-    if(top && !$('cxCamBty')){
+    const slot = $('cxCamBtySlot');
+    if(slot && !$('cxCamBty')){
       styles();
       const b = document.createElement('button'); b.type = 'button'; b.id = 'cxCamBty'; b.className = 'ib'; b.setAttribute('aria-label', 'Beauty'); b.innerHTML = BTY_ICON;
-      const flip = $('cxCamFlip'); top.insertBefore(b, flip); b.addEventListener('click', open);
-      // title ko beech me rakhne ke liye wrapper: flip + beauty ek group
-      const grp = document.createElement('div'); grp.style.cssText = 'display:flex;gap:8px'; top.insertBefore(grp, b); grp.appendChild(b); grp.appendChild(flip);
+      slot.appendChild(b); b.addEventListener('click', open);
     }
+    const cb = $('cxCamBty'); if(cb) cb.classList.toggle('on', active());
     const bt = document.querySelector('#callOv .callBtns');
     if(bt && !$('callBty')){
       styles();
@@ -25160,6 +25210,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(active() && window.cxFxRefresh && !(window.cxFxRunning && window.cxFxRunning())) window.cxFxRefresh();
   }
   setInterval(inject, 700);
+  // camera/call khulte hi saved beauty ke models apne aap load (user ko dobara on na karna pade)
+  setInterval(()=>{ const cam = $('cxCam'), call = $('callOv'); if(((cam && cam.classList.contains('open')) || (call && call.classList.contains('open'))) && active() && !lm && !lmP && !failed) ensureModels(); }, 900);
   // camera band hone par panel band
   setInterval(()=>{ const cam = $('cxCam'), call = $('callOv'); const open_ = (cam && cam.classList.contains('open')) || (call && call.classList.contains('open')); if(!open_){ const p = $('cxBty'); if(p) p.classList.remove('open'); } }, 800);
   if(active()) ensureModels();
@@ -26234,15 +26286,7 @@ const SlideType = (function(){
   #stHint{position:absolute;left:0;right:0;top:50%;text-align:center;color:rgba(255,255,255,.35);font-size:16px;pointer-events:none;transition:opacity .3s}`;
   document.head.appendChild(css);
 
-  const btn = document.createElement('button');
-  btn.type='button'; btn.id='slideTypeBtn'; btn.title='Slide typing'; btn.setAttribute('aria-label','Slide typing'); btn.textContent='✍️';
-  btn.addEventListener('mousedown', (e)=> e.preventDefault()); // text field ka focus/keyboard na jaye
-  btn.addEventListener('click', ()=>{
-    if(ov){ close(); return; }
-    if(!field()){ alert('Pehle koi text box (jaise message/notes) tap karo, phir ✍️ dabao.'); return; }
-    btn.classList.add('on'); open();
-  });
-  document.body.appendChild(btn);
+  // (floating ✍️ button hata diya — ab sirf chat ke "+" menu me 'Slide typing' hai)
   function toggleFor(el){ if(ov){ close(); return; } if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
   return { open, close, decode, toggleFor };
 })();
@@ -26290,15 +26334,93 @@ const SlideType = (function(){
     const ov = document.getElementById('chatOverlay');
     document.body.classList.toggle('cxChatOpen', !!(ov && ov.classList.contains('open')));
     const comp = document.querySelector('#chatOverlay .chatComposer');
-    if(!comp || comp.querySelector('#cxSlideBtn')) return;
-    const b = document.createElement('button');
-    b.type='button'; b.id='cxSlideBtn'; b.title='Slide typing'; b.setAttribute('aria-label','Slide typing'); b.textContent='✍️';
-    b.addEventListener('mousedown', e=> e.preventDefault());
-    b.addEventListener('click', ()=>{ const t = document.getElementById('chatInput'); SlideType.toggleFor(t); b.classList.toggle('on', document.getElementById('slideTypeOv')!==null); });
-    comp.insertBefore(b, document.getElementById('chatSendBtn'));
+    if(!comp || comp.dataset.cxSend) return;
+    comp.dataset.cxSend = '1';
     const send = document.getElementById('chatSendBtn');
     if(send) send.addEventListener('click', ()=>{ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} });
   }
   new MutationObserver(sync).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   sync();
+})();
+
+
+// ============================================================================
+// CHAT PLUS 12: MINIMAL COMPOSER  (message box lamba; baaki sab "+" menu ke andar)
+//   Composer = [ + ]  [ lamba message box ]  [ Send ]
+//   "+" menu me: Camera, Gallery, File, Voice note, Audio, Video, Sticker, Text style,
+//                Smart keyboard, Slide typing (✍️)
+// ============================================================================
+(function chatPlus12(){
+  const $ = (id)=> document.getElementById(id);
+  if(!$('cxC12Style')){
+    const s = document.createElement('style'); s.id = 'cxC12Style';
+    s.textContent = `
+    #chatOverlay .chatComposer #cxPCam,#chatOverlay .chatComposer #cxMicBtn,#chatOverlay .chatComposer #cxPGal,
+    #chatOverlay .chatComposer #cxPStk,#chatOverlay .chatComposer #cxEmojiBtn,#chatOverlay .chatComposer #cxSlideBtn{display:none!important}
+    #chatOverlay .chatComposer{gap:4px!important;padding:6px 8px!important;border-radius:28px!important}
+    #chatOverlay .chatComposer #cxAttachBtn{order:1!important;flex:none!important;width:44px!important;height:44px!important;border-radius:50%!important;display:flex!important;align-items:center;justify-content:center;background:transparent!important}
+    #chatOverlay .chatComposer #cxAttachBtn svg{width:26px;height:26px}
+    #chatOverlay .chatComposer #chatInput{order:2!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;min-height:50px!important;padding:14px 10px!important;font-size:18px!important}
+    #chatOverlay .chatComposer #chatSendBtn{order:3!important}
+    #chatOverlay .chatComposer .cxMenu{left:8px!important;right:auto!important;width:min(320px,calc(100vw - 32px));display:none;grid-template-columns:1fr 1fr;gap:2px}
+    #chatOverlay .chatComposer .cxMenu.open{display:grid!important}
+    #chatOverlay .chatComposer .cxMenu button{padding:12px 10px;font-size:15px;white-space:nowrap}`;
+    document.head.appendChild(s);
+  }
+  function inject(){
+    const m = $('cxMenu'); if(!m || m.dataset.c12) return;
+    m.dataset.c12 = '1';
+    m.insertAdjacentHTML('afterbegin',
+      '<button type="button" data-c12="vn"><span>🎤</span>Voice note</button>' +
+      '<button type="button" data-c12="st"><span>✍️</span>Slide typing</button>');
+    m.addEventListener('click', (e)=>{
+      const b = e.target.closest('[data-c12]'); if(!b) return;
+      m.classList.remove('open');
+      if(b.dataset.c12 === 'vn'){ const mic = $('cxMicBtn'); if(mic) mic.click(); }
+      else { try{ SlideType.toggleFor($('chatInput')); }catch(err){} }
+    });
+  }
+  setInterval(()=>{ try{ inject(); }catch(e){} }, 500);
+  inject();
+})();
+
+
+// ============================================================================
+// CHAT PLUS 13: EYE-FRIENDLY FINAL THEME  (sabse last => Premium Skin ke gradient/glow ko override)
+//   Dark soft background + FADE WHITE BIG text. Koi bright gradient / glow nahi.
+//   Colours badalne ho to sirf :root variables badlo.
+// ============================================================================
+(function chatPlus13(){
+  if(document.getElementById('cxC13Style')) return;
+  const s = document.createElement('style'); s.id = 'cxC13Style';
+  s.textContent = `
+  #chatOverlay{--eb-bg:#101114;--eb-panel:#17181c;--eb-bubble-them:#1d1f24;--eb-bubble-me:#2b2e36;--eb-text:#cfd0d4;--eb-dim:#8b8d95;--eb-line:#25272d;
+    background:var(--eb-bg)!important;color:var(--eb-text)!important}
+  #chatOverlay .chatHead{background:var(--eb-bg)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-bottom:1px solid var(--eb-line)!important;box-shadow:none!important}
+  #chatOverlay .chatAv,#chatOverlay #chatPeerAv .chatAv{box-shadow:none!important}
+  #chatOverlay .chatPeerName{color:var(--eb-text)!important;font-size:19px!important}
+  #chatOverlay .chatPeerStatus{color:var(--eb-dim)!important;font-size:13.5px!important;text-shadow:none!important}
+  #chatOverlay .chatPeerStatus.on{color:#8fd1a0!important;text-shadow:none!important}
+  #chatOverlay .chatHead .chatIconBtn{background:transparent!important;border:0!important;color:var(--eb-text)!important}
+  #chatOverlay .chatMsgs{background:var(--eb-bg)!important;padding:14px 12px 12px!important;gap:7px!important}
+  #chatOverlay .cbub{font-size:19px!important;line-height:1.5!important;padding:10px 14px 7px!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;animation:none!important;letter-spacing:.1px}
+  #chatOverlay .cmsg.them .cbub{background:var(--eb-bubble-them)!important;border:0!important;color:var(--eb-text)!important}
+  #chatOverlay .cmsg.me .cbub{background:var(--eb-bubble-me)!important;background-image:none!important;border:0!important;color:var(--eb-text)!important}
+  #chatOverlay .cmsg .cbub a{color:#aac4f5!important}
+  #chatOverlay .cmeta{font-size:12px!important;opacity:1!important;color:var(--eb-dim)!important}
+  #chatOverlay .cmsg.me .cbub .cmeta,#chatOverlay .cmsg.me .cbub .chatTick{color:#9a9ca5!important}
+  #chatOverlay .chatTick.seen{color:#8fb8e8!important;text-shadow:none!important}
+  #chatOverlay .chatLockNote,#chatOverlay .chatDaySep span{background:var(--eb-panel)!important;border:1px solid var(--eb-line)!important;color:var(--eb-dim)!important;font-size:13px!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #chatOverlay .chatComposer{background:var(--eb-panel)!important;border:1px solid var(--eb-line)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
+  #chatOverlay .chatComposer #chatInput{color:var(--eb-text)!important;font-size:18px!important;caret-color:#cfd0d4}
+  #chatOverlay .chatComposer #chatInput::placeholder{color:#6f7179!important}
+  #chatOverlay .chatComposer .cxBtn,#chatOverlay .chatComposer .cxPB,#chatOverlay .chatComposer #cxAttachBtn{color:var(--eb-text)!important}
+  #chatOverlay .chatComposer #chatSendBtn{background:#2b2e36!important;background-image:none!important;color:var(--eb-text)!important;box-shadow:none!important;font-size:16px!important}
+  #chatOverlay .chatComposer .cxMenu{background:#1b1c21!important;border:1px solid var(--eb-line)!important;box-shadow:0 10px 28px rgba(0,0,0,.5)!important}
+  #chatOverlay .chatComposer .cxMenu button{color:var(--eb-text)!important}
+  #chatOverlay .chatComposer .cxMenu button:active{background:#25272d!important}
+  #chatOverlay .chatNewPill,#chatOverlay .chatUnread{background:#2b2e36!important;background-image:none!important;color:var(--eb-text)!important;box-shadow:none!important}
+  #chatOverlay #chatSearch{background:var(--eb-panel)!important;border:1px solid var(--eb-line)!important;color:var(--eb-text)!important}
+  #chatOverlay .chatRowTime.unread{color:var(--eb-text)!important}`;
+  document.head.appendChild(s);
 })();
