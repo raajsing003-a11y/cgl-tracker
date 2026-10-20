@@ -191,6 +191,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 #p-style .grid button{font-size:13px;padding:12px 4px}.cpk{width:34px;height:30px;padding:0;border:0;background:none;border-radius:8px}
 *{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}
 #edbar{flex-wrap:wrap;justify-content:center;white-space:normal;border-radius:18px;row-gap:6px}body.editing .edt.edsel{outline:2px solid #fff;background-color:rgba(229,72,77,.14)}
+#eyy{display:none;flex:1;min-height:0;width:100%}#eyy iframe{width:100%;height:100%;border:0;background:#000;display:block}#eyy .fbk{margin:auto;text-align:center;padding:24px}
 </style></head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
@@ -213,8 +214,9 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <div id="br"><div id="bc"></div><div id="bw">Taiyar ho jao</div><button class="pill" id="bx">✕ Band karo</button></div>
 <div id="eye"><div class="et"><div><b>👁 Eye Exercise</b><div class="mu">Sir sthir rakho, sirf aankhein dot ko follow karein · Esc / E se band</div></div><button class="pill" id="eyx">✕ Band karo</button></div>
 <div class="tb"><button class="on" data-et="anim">Animation</button></div>
+<div class="ec" id="eyadd" style="padding:4px 12px 0"><input type="text" id="eyyt" placeholder="YouTube link (video / playlist) jodo" style="width:min(340px,70vw)"><button class="pill" id="eyya">＋ Add</button><button class="pill" id="eyyd" style="display:none">🗑 Ye hatao</button></div>
 <div id="eya" class="show"><canvas id="eyc"></canvas><div class="ec"><select id="eyr" aria-label="Routine"><option value="all">Full routine (auto)</option><option value="h">Left ↔ Right</option><option value="v">Up ↕ Down</option><option value="d1">Diagonal ⤢</option><option value="d2">Diagonal ⤡</option><option value="c">Circle</option><option value="f8">Figure 8 ∞</option><option value="box">Box</option><option value="sp">Spiral</option><option value="rnd">Random jumps</option><option value="zoom">Near ↔ Far focus</option></select><label>Speed<input type="range" id="eys" min="0.3" max="3" step="0.1" value="1"></label><label>Size<input type="range" id="eyz" min="6" max="40" step="1" value="18"></label><label><input type="checkbox" id="eyg"> Grid</label><button class="pill" id="eyp">⏸ Pause</button></div></div>
-<video id="eyv" controls playsinline preload="none" controlslist="nodownload" style="display:none"></video></div>
+<div id="eyy"></div><video id="eyv" controls playsinline preload="none" controlslist="nodownload" style="display:none"></video></div>
 
 <section class="panel" id="p-mini"><button class="x" data-c>×</button><h3>Mini / Floating</h3>
 <p class="mu" style="margin:0 0 4px">Kya float karna hai?</p>
@@ -572,7 +574,8 @@ function eyDraw(ts){
 function eyStart(){if(!eyRaf){eyLast=0;eyRaf=requestAnimationFrame(eyDraw)}}
 function eyStop(){cancelAnimationFrame(eyRaf);eyRaf=0}
 let eyVids=[],eyProbed=false;
-function eyTabSet(t){eyTab=t;const v=$('#eyv'),a=$('#eya'),au=$('#aud');
+function eyTabSet(t){if(window.__eyY&&t[0]==='y'){eyTab=t;$$('#eye .tb button').forEach(b=>b.classList.toggle('on',b.dataset.et===t));const v0=$('#eyv'),a0=$('#eya'),u0=$('#aud');v0.pause();v0.style.display='none';a0.classList.remove('show');eyStop();if(u0&&!u0.paused){eyWas=true;u0.pause()}window.__eyY.show(+t.slice(1));return}
+ if(window.__eyY)window.__eyY.hide();eyTab=t;const v=$('#eyv'),a=$('#eya'),au=$('#aud');
  $$('#eye .tb button').forEach(b=>b.classList.toggle('on',b.dataset.et===t));
  if(t!=='anim'){a.classList.remove('show');eyStop();v.style.display='block';const src=eyVids[+t.slice(1)].src;if(v.getAttribute('src')!==src)v.src=src;if(au&&!au.paused){eyWas=true;au.pause()}v.play().catch(()=>{})}
  else{v.pause();v.style.display='none';a.classList.add('show');if(eyWas&&au){au.play().catch(()=>{});eyWas=false}eyStart()}}
@@ -581,9 +584,9 @@ async function eyProbe(){if(eyProbed)return;eyProbed=true;let nm={};
  for(let n=1;n<=30;n++){const src=n===1?'./eye-exercise.mp4':'./eye-exercise-'+n+'.mp4';
   try{const r=await fetch(src,{method:'HEAD',cache:'no-store'});if(!r.ok||!/video|octet/i.test(r.headers.get('content-type')||''))break}catch(e){break}
   const k=eyVids.length;eyVids.push({src});const b=document.createElement('button');b.dataset.et='v'+k;b.textContent=nm[n]||('Video '+n);b.onclick=()=>eyTabSet('v'+k);$('#eye .tb').appendChild(b)}}
-function eyOpen(){$('#eye').classList.add('show');eyTabSet(eyTab);eyProbe()}
-function eyClose(){$('#eyv').pause();eyStop();$('#eye').classList.remove('show');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});const au=$('#aud');if(eyWas&&au)au.play().catch(()=>{});eyWas=false}
-$('#ey').onclick=eyOpen;$('#eyx').onclick=eyClose;
+function eyOpen(){$('#eye').classList.add('show');eyTabSet(eyTab);eyProbe().then(()=>window.__eyY&&window.__eyY.render())}
+function eyClose(){window.__eyY&&window.__eyY.hide();$('#eyv').pause();eyStop();$('#eye').classList.remove('show');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});const au=$('#aud');if(eyWas&&au)au.play().catch(()=>{});eyWas=false}
+window.__eyTab=eyTabSet;$('#ey').onclick=eyOpen;$('#eyx').onclick=eyClose;
 $('#eye .tb button').onclick=()=>eyTabSet('anim');
 $('#eyp').onclick=()=>{eyPaused=!eyPaused;$('#eyp').textContent=eyPaused?'▶ Resume':'⏸ Pause'};
 $('#eyr').onchange=()=>{eyT=0;eyAllT=0};
@@ -1000,6 +1003,61 @@ $('#sdApply').onclick=()=>{const D=window.FD_DEFAULT;if(!D||!D.ls){note('Abhi is
  if(!confirm('Default style lagayein? Aapki abhi ki style badal jayegi.'))return;
  Object.entries(D.ls).forEach(([k,v])=>{if(k==='cf'){Object.assign(CF,v);W('cf',CF)}else if(k==='fw')W('fw',Object.assign(rd('fw')||{},v));else W(k,v)});location.reload()};
 note(window.FD_DEFAULT&&window.FD_DEFAULT.ls?'✓ Is file me default style set hai.':'Abhi koi default set nahi. Style banao, fir 💾 dabao.');
+})();
+</script>
+<script>
+/* ===== Eye exercise: YouTube videos (save) + sabke liye auto default ===== */
+(()=>{
+const rdL=k=>{try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return[]}};
+let EL=rdL('fdeye'),P=null,cur=-1,failT=null;const box=$('#eyy');
+const save=()=>{try{localStorage.setItem('fdeye',JSON.stringify(EL))}catch(e){toast('⚠ Browser save block kar raha hai')}};
+const kOf=q=>q.list?'l:'+q.list:'v:'+q.id,url=q=>q.id?'https://www.youtube.com/watch?v='+q.id+(q.list?'&list='+q.list:''):'https://www.youtube.com/playlist?list='+q.list;
+function api(){return new Promise((res,rej)=>{if(window.YT&&YT.Player)return res();
+ if(!document.querySelector('script[src*="iframe_api"]')){const o=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=()=>{o&&o()};const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>rej();document.head.append(s)}
+ let n=0;const t=setInterval(()=>{if(window.YT&&YT.Player){clearInterval(t);res()}else if(++n>50){clearInterval(t);rej()}},200)})}
+function nm(q,pl){try{const t=(pl.getVideoData()||{}).title,e=EL.find(x=>x.k===kOf(q));if(t&&e&&/^YouTube /.test(e.n)){e.n=t.slice(0,70);save();render()}}catch(e){}}
+function fb(q,why){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;box.innerHTML='<div class="fbk"><div class="mu" style="margin-bottom:12px">⚠ '+why+'<br>Yahan nahi chal raha, par YouTube par 100% chalega.</div><a class="pill" target="_blank" rel="noopener" href="'+url(q)+'" style="display:inline-block;background:var(--ac);border-color:transparent;text-decoration:none;color:#fff">▶ YouTube par kholo</a></div>'}
+function hide(){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;cur=-1;box.innerHTML='';box.style.display='none';$('#eyyd').style.display='none'}
+function show(i){const q=EL[i];if(!q)return;try{P&&P.destroy()}catch(e){}P=null;cur=i;box.style.display='block';$('#eyyd').style.display='';box.innerHTML='<div id="eyp0"></div>';let sk=0;
+ api().then(()=>{if(cur!==i)return;
+  P=new YT.Player('eyp0',{width:'100%',height:'100%',host:'https://www.youtube-nocookie.com',videoId:q.id||undefined,
+   playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},q.list?{listType:'playlist',list:q.list}:{},/^https?:$/.test(location.protocol)?{origin:location.origin}:{}),
+   events:{onReady:e=>{clearTimeout(failT);nm(q,e.target);try{e.target.playVideo()}catch(x){}},onStateChange:e=>{if(e.data===1){clearTimeout(failT);nm(q,e.target)}},
+    onError:e=>{const c=e.data;if(q.list&&[100,101,150].includes(c)&&sk++<8){try{P.nextVideo();return}catch(x){}}
+     fb(q,c===153?'Is page ka origin YouTube ko nahi mila.':c===100?'Video private ya hata diya gaya hai.':(c===101||c===150)?'Video owner ne embed band kiya hua hai.':'Video play nahi ho paya (code '+c+').')}}});
+  failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000)}).catch(()=>fb(q,'YouTube load nahi ho paya (internet ya blocker).'))}
+function render(){const tb=$('#eye .tb');tb.querySelectorAll('[data-yt]').forEach(b=>b.remove());
+ EL.forEach((q,i)=>{const b=document.createElement('button');b.dataset.et='y'+i;b.dataset.yt='1';b.textContent='▶ '+q.n.slice(0,24);b.title=q.n;b.onclick=()=>window.__eyTab('y'+i);b.classList.toggle('on',i===cur);tb.appendChild(b)})}
+async function add(){const q=ytId($('#eyyt').value);if(!q.id&&!q.list)return toast('Sahi YouTube link daalo');const key=kOf(q);let i=EL.findIndex(x=>x.k===key);
+ if(i<0){const e={k:key,id:q.id||null,list:q.list||null,n:q.list&&!q.id?'YouTube playlist '+q.list.slice(-6):'YouTube video '+q.id};EL.push(e);i=EL.length-1;save();
+  fetch('https://www.youtube.com/oembed?format=json&url='+encodeURIComponent(url(q))).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.title&&/^YouTube /.test(e.n)){e.n=j.title.slice(0,70);save();render()}}).catch(()=>{})}
+ $('#eyyt').value='';render();window.__eyTab('y'+i);toast('YouTube video save ho gaya')}
+$('#eyya').onclick=add;$('#eyyt').addEventListener('keydown',e=>{if(e.key==='Enter')add()});
+$('#eyyd').onclick=()=>{if(cur<0||!confirm('Ye video list se hata dein?'))return;EL.splice(cur,1);save();hide();render();window.__eyTab('anim')};
+window.__eyY={show,hide,render};render();
+})();
+</script>
+<script>
+/* ===== Sabke liye auto default: tools/focus-default.json (ya app se bridge) ===== */
+(()=>{
+const LISTK=['fdyt','fdeye'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout','fdyt','fdeye'],CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12'],FWX=['pos','pw','ph','pipOn','page'];
+const rd=k=>{try{const v=localStorage.getItem(k);return v===null?undefined:JSON.parse(v)}catch(e){}},note=t=>{const n=$('#sdNote');if(n)n.textContent=t};
+function snap(){const ls={cf:{}};CFK.forEach(k=>{if(CF[k]!==undefined)ls.cf[k]=CF[k]});const fw=rd('fw');if(fw){FWX.forEach(k=>delete fw[k]);ls.fw=fw}
+ KS.forEach(k=>{const v=rd(k);if(v===undefined||v===null)return;if(/(data|blob):/.test(JSON.stringify(v)))return;ls[k]=v});return{v:Date.now(),ls}}
+function put(D){Object.entries(D.ls||{}).forEach(([k,v])=>{try{
+ if(LISTK.includes(k)){const cur=rd(k)||[],ks=new Set(v.map(x=>x.k));localStorage.setItem(k,JSON.stringify(v.concat(cur.filter(x=>!ks.has(x.k)))))}
+ else if(k==='cf'||k==='fw')localStorage.setItem(k,JSON.stringify(Object.assign(rd(k)||{},v)));else localStorage.setItem(k,JSON.stringify(v))}catch(e){}})}
+function take(D,force){if(!D||!D.ls||!D.v)return false;window.__fdRemote=D;if(!force&&D.v<=(+localStorage.getItem('fdDefV')||0))return false;put(D);try{localStorage.setItem('fdDefV',String(D.v))}catch(e){}return true}
+function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('#sdSave').textContent='💾 Sabke liye publish (default file)';
+$('#sdSave').onclick=()=>{const D=snap();dl(JSON.stringify(D),'focus-default.json','application/json');try{parent!==window&&parent.postMessage({type:'fd-global-save',data:D},'*')}catch(e){}
+ note('✅ focus-default.json download hua. Isse tools/ folder me (focus-desk.html ke saath) daalo aur GitHub par push karo. Uske baad har user ke app me agli baar kholte hi ye style, YouTube music links aur eye videos apne aap aa jayenge.')};
+$('#sdApply').onclick=()=>{const D=window.__fdRemote||window.FD_DEFAULT;if(!D||!D.ls){note('Abhi koi default published nahi hai.');return}if(!confirm('Default style lagayein? Aapki abhi ki style badal jayegi.'))return;take(D,true);location.reload()};
+note('Style / YouTube links / eye videos badlo, fir 💾 dabao — wo file sabke liye default ban jati hai.');
+const go=D=>{if(take(D,false))location.reload()};
+fetch('./focus-default.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>j&&go(j)).catch(()=>{});
+addEventListener('message',e=>{if(parent===window||e.source!==parent)return;const m=e.data||{};if(m.type==='fd-global'&&m.data)go(m.data)});
+try{parent!==window&&parent.postMessage({type:'fd-global-get'},'*')}catch(e){}
 })();
 </script>
 </body></html>
