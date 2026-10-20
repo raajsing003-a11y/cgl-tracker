@@ -189,6 +189,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 #clk[data-cs=outl]{opacity:1;color:transparent;-webkit-text-stroke:1.5px var(--ccol,var(--tx));text-shadow:none}
 #clk[data-cs=bold]{opacity:1;font-family:"Playfair Display",Georgia,serif;font-weight:900;text-shadow:3px 3px 0 var(--ac)}
 #p-style .grid button{font-size:13px;padding:12px 4px}.cpk{width:34px;height:30px;padding:0;border:0;background:none;border-radius:8px}
+*{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}
 </style></head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
@@ -263,7 +264,11 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <section class="panel" id="p-style"><button class="x" data-c>×</button><h3>🎨 Clock &amp; Stopwatch style</h3>
 <div class="mu" style="margin:0 0 6px">Stopwatch / Timer style</div><div class="grid" id="tsg"></div>
 <div class="mu" style="margin:14px 0 6px">Clock style</div><div class="grid" id="csg"></div>
-<div id="stcol"></div><button class="pill" id="strs" style="margin-top:16px">↺ Default style</button>
+<div id="stcol"></div><button class="pill" id="strs" style="margin-top:16px">↺ Style reset</button>
+<div class="mu" style="margin:20px 0 6px"><b>🌐 Sabke liye default</b></div>
+<button class="pill" id="sdSave">💾 Poori style ko default banao</button>
+<button class="pill" id="sdApply" style="margin-top:8px">↺ Default style lagao</button>
+<p class="mu" id="sdNote" style="font-size:12px"></p>
 <p class="mu" style="font-size:12px">Font ⚙ Settings me alag se badal sakte ho. Floating mini window ka colour Mini panel (⧉) me hai.</p></section>
 <section class="panel" id="p-tasks"><button class="x" data-c>×</button><h3>Tasks</h3><ul id="tl"></ul><div class="row"><input type="text" id="ti" placeholder="New task" style="flex:1"><button class="pill" id="ta">Add</button></div></section>
 <section class="panel" id="p-stats"><button class="x" data-c>×</button><h3>Activities summary</h3>
@@ -276,6 +281,9 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <p class="mu" style="margin:14px 0 0">Target-wise time</p><ul id="tw"></ul>
 <h3 style="margin-top:16px">Review sessions</h3><ul id="rv"></ul><button class="pill" id="clr">Clear data</button></section>
 
+<script id="fd-default">window.FD_DEFAULT=null;</script>
+<script>(function(){var D=window.FD_DEFAULT;if(!D||!D.ls)return;try{for(var k in D.ls){var c=localStorage.getItem(k),d=D.ls[k];if(c===null){localStorage.setItem(k,JSON.stringify(d));continue}
+if(k==='cf'||k==='fw'){var o=JSON.parse(c)||{},ch=0;for(var q in d)if(o[q]===undefined){o[q]=d[q];ch=1}if(ch)localStorage.setItem(k,JSON.stringify(o))}}}catch(e){}})();</script>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const S=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},W=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
@@ -933,7 +941,7 @@ function api(){return apiP||(apiP=new Promise((res,rej)=>{if(window.YT&&YT.Playe
 function fb(q,why){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;
  w.innerHTML='<div class="stat" style="text-align:center"><div class="mu" style="margin-bottom:10px">⚠ '+why+'<br>Yahan nahi chal raha, par YouTube par 100% chalega.</div><a class="pill" target="_blank" rel="noopener" href="'+url(q)+'" style="display:inline-block;background:var(--ac);border-color:transparent;text-decoration:none;color:#fff">▶ YouTube par kholo</a></div>'}
 function nm(q,pl){try{const t=(pl.getVideoData()||{}).title,e=YL.find(x=>x.k===kOf(q));if(t&&e&&/^YouTube /.test(e.n)){e.n=(q.list&&!q.id?'📃 ':'')+t.slice(0,70);W('fdyt',YL);ytRender()}}catch(e){}}
-window.stopYT=function(){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;cur=null;w.innerHTML=''};
+window.stopYT=function(){clearTimeout(failT);const was=!!P;try{P&&P.destroy()}catch(e){}P=null;cur=null;w.innerHTML='';if(was){const m=$('#mtg');m.textContent=A.paused?'🔇':'🔊';m.classList.toggle('on',!A.paused)}};
 window.ytEmbed=function(q){A.pause();$('#pp').textContent='▶';stopYT();cur=q;skips=0;
  w.innerHTML='<div id="ytp0" style="min-height:200px"></div><p class="mu" id="yts" style="margin:6px 0 0">YouTube load ho raha hai…</p>';
  const web=/^https?:$/.test(location.protocol);
@@ -941,7 +949,7 @@ window.ytEmbed=function(q){A.pause();$('#pp').textContent='▶';stopYT();cur=q;s
   P=new YT.Player('ytp0',{width:'100%',height:200,host:'https://www.youtube-nocookie.com',videoId:q.id||undefined,
    playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},q.list?{listType:'playlist',list:q.list}:{},web?{origin:location.origin}:{}),
    events:{onReady:e=>{clearTimeout(failT);st('Ready — play dabao agar auto-play na ho');nm(q,e.target);try{e.target.playVideo()}catch(x){}},
-    onStateChange:e=>{if(e.data===1){clearTimeout(failT);st('▶ Chal raha hai');nm(q,e.target)}},
+    onStateChange:e=>{setTimeout(ytBtn,50);if(e.data===1){clearTimeout(failT);st('▶ Chal raha hai');nm(q,e.target)}},
     onError:e=>{const c=e.data;if(q.list&&[100,101,150].includes(c)&&skips++<8){try{P.nextVideo();st('Ek video embed nahi ho sakta, agla chala raha hu…');return}catch(x){}}
      fb(q,c===153?'Is page ka origin YouTube ko nahi mila (file/iframe me khola hai).':c===100?'Video private ya hata diya gaya hai.':(c===101||c===150)?'Video owner ne embed band kiya hua hai.':'Video play nahi ho paya (code '+c+').')}}});
   failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000)}).catch(()=>fb(q,'YouTube player load nahi ho paya (internet ya blocker).'))};
@@ -955,7 +963,35 @@ $('#yt').addEventListener('keydown',e=>{if(e.key==='Enter')$('#ytg').click()});
 addEventListener('click',e=>{if(e.target.closest('#pp,#mtg,#nx,#pv,#pl,#mf,#mfab'))ub=Date.now()},true);
 const _pl=play;play=function(){if(busy()&&Date.now()-ub>600)return;_pl()};
 A.addEventListener('play',()=>{if(P||cur)stopYT()});
+/* same on/off button + M key + wheel volume => YouTube bhi control */
+const mt=$('#mtg'),ytOn=()=>!!P;
+function ytBtn(){if(!ytOn())return;const on=busy();mt.textContent=on?'🔊':'🔇';mt.classList.toggle('on',on)}
+const ytTog=()=>{try{busy()?P.pauseVideo():P.playVideo()}catch(x){}setTimeout(ytBtn,300)};
+mt.addEventListener('click',e=>{if(!ytOn())return;e.stopImmediatePropagation();e.preventDefault();ytTog()},true);
+addEventListener('keydown',e=>{if(!ytOn()||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.metaKey)return;if(e.key.toLowerCase()==='m'){e.stopImmediatePropagation();ytTog()}},true);
+$('#mfab').addEventListener('wheel',e=>{if(!ytOn())return;e.stopImmediatePropagation();e.preventDefault();try{const v=Math.max(0,Math.min(100,P.getVolume()+(e.deltaY<0?5:-5)));P.setVolume(v);toast('YouTube volume '+v+'%')}catch(x){}},{passive:false,capture:true});
 ytRender();
+})();
+</script>
+<script>
+/* ===== Poori style ko default banao (sabke liye) ===== */
+(()=>{
+const CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout'],FWX=['pos','pw','ph','pipOn','page'];
+const note=t=>{$('#sdNote').textContent=t},rd=k=>{try{const v=localStorage.getItem(k);return v===null?undefined:JSON.parse(v)}catch(e){}};
+function snap(){const ls={cf:{}};CFK.forEach(k=>{if(CF[k]!==undefined)ls.cf[k]=CF[k]});
+ const fw=rd('fw');if(fw){FWX.forEach(k=>delete fw[k]);ls.fw=fw}
+ KS.forEach(k=>{const v=rd(k);if(v===undefined||v===null)return;if(/^(data|blob):|url\(["']?(data|blob):/.test(JSON.stringify(v)))return;ls[k]=v});
+ return{v:Date.now(),ls}}
+function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+const RX=/<script id="fd-default">[^<]*<\/script>/;
+$('#sdSave').onclick=async()=>{const code='window.FD_DEFAULT='+JSON.stringify(snap()).replace(/</g,'\\u003c')+';';let src=null;
+ try{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});if(r.ok)src=await r.text()}catch(e){}
+ if(src&&RX.test(src)){dl(src.replace(RX,()=>'<script id="fd-default">'+code+'<\/script>'),'focus-desk.html','text/html');note('✅ Naya focus-desk.html download hua. Isse server par purani file ki jagah daalo — fir sabhi naye users ko yehi style default milegi (jo users ne apni style pehle se badli hai unki nahi badlegi; wo "Default style lagao" dabayen).')}
+ else{try{await navigator.clipboard.writeText(code)}catch(e){}dl(code,'fd-default.js','text/javascript');note('Is mode me file khud update nahi ho sakti. Code copy + fd-default.js download ho gaya: focus-desk.html me <script id="fd-default"> wali line ke andar paste karo (https par khologe to seedha nayi HTML milegi).')}};
+$('#sdApply').onclick=()=>{const D=window.FD_DEFAULT;if(!D||!D.ls){note('Abhi is file me koi default save nahi hai.');return}
+ if(!confirm('Default style lagayein? Aapki abhi ki style badal jayegi.'))return;
+ Object.entries(D.ls).forEach(([k,v])=>{if(k==='cf'){Object.assign(CF,v);W('cf',CF)}else if(k==='fw')W('fw',Object.assign(rd('fw')||{},v));else W(k,v)});location.reload()};
+note(window.FD_DEFAULT&&window.FD_DEFAULT.ls?'✓ Is file me default style set hai.':'Abhi koi default set nahi. Style banao, fir 💾 dabao.');
 })();
 </script>
 </body></html>
