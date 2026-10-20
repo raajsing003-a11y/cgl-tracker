@@ -21413,6 +21413,7 @@ function chatOnMsg(peer, id, m){
   if(mine || wasBottom){ chatScrollBottom(); }
   else if(!mine){ const np = chatEl('chatNewPill'); if(np) np.hidden = false; }
   if(!mine) chatMarkRead();
+  if(!mine){ try{ AIReply.onIncoming(peer, id, m); }catch(e){} }
 }
 function chatRenderAll(keepPos){
   const box = chatEl('chatMsgs');
@@ -26372,12 +26373,12 @@ const SlideType = (function(){
     m.dataset.c12 = '1';
     m.insertAdjacentHTML('afterbegin',
       '<button type="button" data-c12="vn"><span>🎤</span>Voice note</button>' +
-      '<button type="button" data-c12="st"><span>✍️</span>Slide typing</button>');
+      '<button type="button" data-c12="st"><span>✍️</span>Draw to type</button>');
     m.addEventListener('click', (e)=>{
       const b = e.target.closest('[data-c12]'); if(!b) return;
       m.classList.remove('open');
       if(b.dataset.c12 === 'vn'){ const mic = $('cxMicBtn'); if(mic) mic.click(); }
-      else { try{ SlideType.toggleFor($('chatInput')); }catch(err){} }
+      else { try{ HandWrite.toggleFor($('chatInput')); }catch(err){} }
     });
   }
   setInterval(()=>{ try{ inject(); }catch(e){} }, 500);
@@ -26423,4 +26424,291 @@ const SlideType = (function(){
   #chatOverlay #chatSearch{background:var(--eb-panel)!important;border:1px solid var(--eb-line)!important;color:var(--eb-text)!important}
   #chatOverlay .chatRowTime.unread{color:var(--eb-text)!important}`;
   document.head.appendChild(s);
+})();
+
+
+// ============================================================================
+// CHAT PLUS 14: DRAW TO TYPE (handwriting -> chat box)   [Slide typing ki jagah]
+//   Screen par ungli se shabd likho/draw karo -> ruko (~0.9 sec) -> apne aap
+//   recognize hoke chat box me aa jata hai. English + Hindi. Candidates tap karke badlo.
+//   Recognition: Google Input Tools handwriting (internet chahiye).
+// ============================================================================
+const HandWrite = (function(){
+  const ENDPOINT = 'https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8';
+  const IDLE_MS = 900;
+  let ov = null, cv = null, ctx = null, target = null;
+  let strokes = [], cur = null, drawing = false, t0 = 0, timer = null, busy = false;
+  let lang = 'en', last = null; // last = {start,end,cands}
+  try{ lang = localStorage.getItem('hwLang') || 'en'; }catch(e){}
+
+  const field = ()=> target || document.getElementById('chatInput');
+  const fire = (el)=>{ el.dispatchEvent(new Event('input',{bubbles:true})); };
+  const mirror = ()=>{ if(!ov) return; const el = field(); const p = ov.querySelector('#hwPrev'); p.textContent = el && el.value ? el.value : 'Yahan likha hua dikhega…'; p.classList.toggle('empty', !(el && el.value)); p.scrollTop = p.scrollHeight; };
+
+  function insertText(txt){
+    const el = field(); if(!el) return;
+    const s = el.value.length;
+    el.setRangeText(txt, s, s, 'end'); fire(el);
+    last = { start:s, end:s+txt.length, cands:[] };
+    mirror();
+  }
+  function replaceLast(txt){
+    const el = field(); if(!el || !last) return;
+    el.setRangeText(txt, last.start, last.end, 'end'); fire(el);
+    last.end = last.start + txt.length; mirror();
+  }
+  function backspace(){
+    const el = field(); if(!el || !el.value) return;
+    let v = el.value;
+    // pura akhri shabd hatao (trailing space ke saath)
+    const m = v.match(/(\s*\S+\s*|\s+)$/);
+    v = m ? v.slice(0, v.length - m[0].length) : v.slice(0,-1);
+    el.value = v; fire(el); last = null; showCands([]); mirror();
+  }
+
+  function showCands(list){
+    const box = ov.querySelector('#hwCands'); box.innerHTML = '';
+    list.slice(0,6).forEach((c,i)=>{
+      const b = document.createElement('button'); b.type='button'; b.textContent = c; if(i===0) b.className='main';
+      b.addEventListener('pointerdown',(e)=>{ e.preventDefault(); replaceLast(c + ' '); box.querySelectorAll('button').forEach(x=>x.classList.remove('main')); b.classList.add('main'); });
+      box.appendChild(b);
+    });
+  }
+
+  // ---- drawing ----
+  function size(){
+    const r = cv.getBoundingClientRect(), d = window.devicePixelRatio||1;
+    cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d);
+    ctx = cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); redraw();
+  }
+  function redraw(){
+    if(!ctx) return; const r = cv.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    // baseline guide
+    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(14, r.height*0.68); ctx.lineTo(r.width-14, r.height*0.68); ctx.stroke();
+    ctx.strokeStyle = '#e8e6ee'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    strokes.concat(cur?[cur]:[]).forEach(s=>{
+      if(!s.length) return; ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y);
+      if(s.length===1) ctx.lineTo(s[0].x+0.1, s[0].y);
+      for(let i=1;i<s.length;i++) ctx.lineTo(s[i].x, s[i].y);
+      ctx.stroke();
+    });
+  }
+  function pt(e){ const r = cv.getBoundingClientRect(); return { x:e.clientX-r.left, y:e.clientY-r.top, t:Math.round(performance.now()-t0) }; }
+
+  async function recognize(){
+    if(busy || !strokes.length) return;
+    busy = true; const hint = ov.querySelector('#hwHint'); hint.textContent = '…pehchan raha hoon'; hint.style.opacity = 1;
+    const r = cv.getBoundingClientRect();
+    const ink = strokes.map(s=>[ s.map(p=>Math.round(p.x)), s.map(p=>Math.round(p.y)), s.map(p=>p.t) ]);
+    const el = field(); const pre = el ? el.value.slice(-24) : '';
+    const body = { app_version:0.4, api_level:'537.36', device:navigator.userAgent, input_type:0, options:'enable_pre_space',
+      requests:[{ writing_guide:{ writing_area_width:Math.round(r.width), writing_area_height:Math.round(r.height) }, pre_context:pre, max_num_items:6, language: lang==='hi'?'hi':'en', ink }] };
+    const snapshot = strokes; 
+    try{
+      const res = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      const j = await res.json();
+      if(j[0] !== 'SUCCESS') throw new Error('fail');
+      const cands = (j[1] && j[1][0] && j[1][0][1]) || [];
+      if(!cands.length) throw new Error('empty');
+      if(strokes === snapshot){ strokes = []; cur = null; redraw(); }
+      insertText(cands[0] + ' '); last.cands = cands; showCands(cands);
+      hint.style.opacity = 0;
+    }catch(err){
+      hint.textContent = navigator.onLine ? 'Samajh nahi aaya — thoda saaf likho' : 'Internet chahiye (handwriting recognition online hai)';
+      hint.style.opacity = 1; strokes = []; cur = null; redraw();
+      setTimeout(()=>{ if(ov) hint.style.opacity = 0; }, 2200);
+    }finally{ busy = false; }
+  }
+  function schedule(){ clearTimeout(timer); timer = setTimeout(recognize, IDLE_MS); }
+
+  function open(el){
+    if(ov) return;
+    target = el || document.getElementById('chatInput');
+    if(!target){ alert('Pehle chat kholo.'); return; }
+    ov = document.createElement('div'); ov.id = 'hwOv';
+    ov.innerHTML =
+      '<div id="hwTop"><div id="hwPrev" class="empty"></div></div>' +
+      '<div id="hwCands"></div>' +
+      '<div id="hwPad"><canvas></canvas><div id="hwHint">Yahan ungli se likho ✍️ — ruko, apne aap chat box me aa jayega</div></div>' +
+      '<div id="hwBar"><button type="button" id="hwLang"></button><button type="button" id="hwBs">⌫</button><button type="button" id="hwSp">space</button><button type="button" id="hwEnter">↵</button><button type="button" id="hwClr">🗑</button><button type="button" id="hwSend">➤</button><button type="button" id="hwClose">✕</button></div>';
+    document.body.appendChild(ov);
+    cv = ov.querySelector('canvas'); cv.style.touchAction = 'none';
+    const lb = ov.querySelector('#hwLang'); const setLang = ()=>{ lb.textContent = lang==='hi' ? 'हिं' : 'EN'; }; setLang();
+    const press = (id, fn)=> ov.querySelector(id).addEventListener('pointerdown',(e)=>{ e.preventDefault(); fn(); });
+    press('#hwLang', ()=>{ lang = lang==='hi' ? 'en' : 'hi'; try{ localStorage.setItem('hwLang', lang); }catch(e){} setLang(); });
+    press('#hwBs', ()=>{ if(strokes.length){ strokes = []; cur = null; redraw(); clearTimeout(timer); } else backspace(); });
+    press('#hwSp', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText(' ', s, s, 'end'); fire(el); last = null; mirror(); } });
+    press('#hwEnter', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText('\n', s, s, 'end'); fire(el); last = null; mirror(); } });
+    press('#hwClr', ()=>{ strokes = []; cur = null; clearTimeout(timer); redraw(); });
+    press('#hwSend', ()=>{ const b = document.getElementById('chatSendBtn'); if(b) b.click(); setTimeout(mirror, 150); showCands([]); last = null; });
+    press('#hwClose', close);
+    cv.addEventListener('pointerdown',(e)=>{
+      e.preventDefault(); cv.setPointerCapture(e.pointerId); clearTimeout(timer);
+      if(!strokes.length) t0 = performance.now();
+      drawing = true; cur = [pt(e)]; ov.querySelector('#hwHint').style.opacity = 0; redraw();
+    });
+    cv.addEventListener('pointermove',(e)=>{ if(!drawing) return; (e.getCoalescedEvents?e.getCoalescedEvents():[e]).forEach(ev=> cur.push(pt(ev))); redraw(); });
+    const end = ()=>{ if(!drawing) return; drawing = false; if(cur && cur.length){ strokes.push(cur); } cur = null; redraw(); schedule(); };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    window.addEventListener('resize', size);
+    size(); mirror();
+  }
+  function close(){
+    if(!ov) return; clearTimeout(timer);
+    window.removeEventListener('resize', size);
+    ov.remove(); ov = null; cv = null; ctx = null; strokes = []; cur = null; last = null;
+    const el = field(); if(el) el.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  function toggleFor(el){ if(ov) close(); else open(el); }
+
+  const css = document.createElement('style');
+  css.textContent = `
+  #hwOv{position:fixed;left:0;right:0;bottom:0;height:min(78vh,560px);z-index:2147483100;background:#14151a;border-top:1px solid #34363f;border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0);user-select:none;-webkit-user-select:none;touch-action:none}
+  #hwTop{padding:10px 12px 4px}
+  #hwPrev{max-height:64px;overflow:auto;background:#1d1f26;border:1px solid #2e313a;border-radius:12px;padding:8px 12px;color:#cfd0d4;font-size:17px;line-height:1.35;white-space:pre-wrap;word-break:break-word;min-height:40px}
+  #hwPrev.empty{color:#6d707a}
+  #hwCands{display:flex;gap:8px;padding:4px 12px;overflow-x:auto;min-height:44px;align-items:center}
+  #hwCands button{flex:none;height:38px;border-radius:19px;border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;font-size:17px;padding:0 14px}
+  #hwCands button.main{background:#3a3550;border-color:#6a5fa0}
+  #hwPad{position:relative;flex:1;margin:4px 12px;border:1px dashed #3a3d47;border-radius:14px;background:#101114;overflow:hidden}
+  #hwPad canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #hwHint{position:absolute;left:0;right:0;top:42%;text-align:center;color:rgba(255,255,255,.35);font-size:15px;padding:0 20px;pointer-events:none;transition:opacity .3s}
+  #hwBar{display:flex;gap:6px;padding:6px 12px 10px}
+  #hwBar button{flex:1;height:44px;border-radius:12px;border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;font-size:16px;font-weight:600;padding:0}
+  #hwSp{flex:2!important}#hwSend{background:#2d4a3a!important;border-color:#3f6b52!important}#hwClose{background:#3a1d22!important;color:#ff8a98!important}`;
+  document.head.appendChild(css);
+  return { open, close, toggleFor };
+})();
+
+// Draw to type button: chat box ke bilkul paas (composer me, input ke baad)
+(function hwComposerBtn(){
+  const s = document.createElement('style');
+  s.textContent = `#chatOverlay .chatComposer #cxDrawBtn{order:3!important;flex:none!important;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#cfd0d4;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  #chatOverlay .chatComposer #cxDrawBtn:active,#chatOverlay .chatComposer #cxDrawBtn.on{background:#2b2e36}`;
+  document.head.appendChild(s);
+  function put(){
+    const inp = document.getElementById('chatInput'); if(!inp) return;
+    const comp = inp.closest('.chatComposer'); if(!comp || comp.querySelector('#cxDrawBtn')) return;
+    const b = document.createElement('button'); b.type='button'; b.id='cxDrawBtn'; b.setAttribute('aria-label','Draw to type'); b.textContent='✍️';
+    b.addEventListener('pointerdown',(e)=>{ e.preventDefault(); });
+    b.addEventListener('click',(e)=>{ e.preventDefault(); try{ HandWrite.toggleFor(inp); }catch(err){} });
+    inp.insertAdjacentElement('afterend', b);
+  }
+  setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
+})();
+
+
+// ============================================================================
+// CHAT PLUS 15: AI REPLY SUGGEST (🤖) — incoming message ka reply AI SUGGEST karta hai
+//   🤖 ON karo -> naya message aate hi composer ke upar 3 suggestion chips aate hain.
+//   Chip tap = reply chat box me aa jata hai (edit kar sakte ho), phir Send aap dabate ho.
+//   AI khud se kuch bhejta nahi. Chip ke saath ➤ dabao to turant send.
+//   Source: AI_PROXY_URL (claude-sonnet-4-6). Sirf khuli conversation me, app khula ho tab.
+// ============================================================================
+const AIReply = (function(){
+  const DEBOUNCE_MS = 1200;
+  const MAX_AGE_MS = 3*60*1000;
+  let on = false; try{ on = localStorage.getItem('aiReplyOn') === '1'; }catch(e){}
+  let timer = null, seen = new Set(), seq = 0;
+
+  function setBtn(){ const b = document.getElementById('cxAiBtn'); if(b) b.classList.toggle('on', on); }
+  function bar(){
+    let el = document.getElementById('cxAiSug');
+    if(el) return el;
+    const comp = document.querySelector('#chatOverlay .chatComposer'); if(!comp) return null;
+    el = document.createElement('div'); el.id = 'cxAiSug'; el.hidden = true;
+    comp.parentNode.insertBefore(el, comp);
+    return el;
+  }
+  function clearBar(){ const el = document.getElementById('cxAiSug'); if(el){ el.hidden = true; el.innerHTML = ''; } }
+  function showBar(list){
+    const el = bar(); if(!el) return; el.innerHTML = '';
+    list.forEach(t=>{
+      const row = document.createElement('div'); row.className = 'aiRow';
+      const b = document.createElement('button'); b.type='button'; b.className='aiChip'; b.textContent = t;
+      b.addEventListener('pointerdown',(e)=> e.preventDefault());
+      b.addEventListener('click',()=>{ const ta = chatEl('chatInput'); if(!ta) return; ta.value = t; ta.dispatchEvent(new Event('input',{bubbles:true})); try{ chatAutosize(); }catch(e){} clearBar(); });
+      const s = document.createElement('button'); s.type='button'; s.className='aiGo'; s.textContent='➤'; s.setAttribute('aria-label','Seedha bhejo');
+      s.addEventListener('pointerdown',(e)=> e.preventDefault());
+      s.addEventListener('click', async ()=>{ const ta = chatEl('chatInput'); if(!ta) return; const draft = ta.value; ta.value = t; clearBar(); await chatSend(); if(draft){ ta.value = draft; try{ chatAutosize(); }catch(e){} } });
+      row.appendChild(b); row.appendChild(s); el.appendChild(row);
+    });
+    const x = document.createElement('button'); x.type='button'; x.className='aiX'; x.textContent='✕'; x.addEventListener('pointerdown',(e)=>e.preventDefault()); x.addEventListener('click', clearBar); el.appendChild(x);
+    el.hidden = !list.length;
+    try{ chatScrollBottom(); }catch(e){}
+  }
+  function note(t){ const el = bar(); if(!el) return; el.innerHTML = '<div class="aiNote">'+t+'</div>'; el.hidden = false; }
+
+  function toggle(){
+    on = !on; try{ localStorage.setItem('aiReplyOn', on?'1':'0'); }catch(e){}
+    setBtn(); clearTimeout(timer); seq++; clearBar();
+    try{ chatToastMsg(on ? '🤖 AI suggest ON — naye message par reply suggest honge' : '🤖 AI suggest OFF'); }catch(e){}
+  }
+  function onIncoming(peer, id, m){
+    if(!on || seen.has(id)) return; seen.add(id);
+    const age = Date.now() - (Number(m.ts)||Date.now());
+    if(age > MAX_AGE_MS) return;                             // purane (load hue) messages ignore
+    clearTimeout(timer); timer = setTimeout(()=> suggest(peer), DEBOUNCE_MS);
+  }
+  function buildMessages(){
+    const me = chatMyKey(); const out = [];
+    chatSortedIds().slice(-14).forEach(id=>{
+      const m = chatMsgs.get(id); if(!m || !m.t) return;
+      const role = m.f === me ? 'assistant' : 'user';
+      const t = String(m.t);
+      if(out.length && out[out.length-1].role === role) out[out.length-1].content += '\n' + t;
+      else out.push({ role, content: t });
+    });
+    while(out.length && out[0].role !== 'user') out.shift();
+    return out;
+  }
+  async function suggest(peer){
+    if(!on || chatPeer !== peer) return;
+    const msgs = buildMessages(); if(!msgs.length || msgs[msgs.length-1].role !== 'user') return;
+    const my = ++seq; note('🤖 reply soch raha hai…');
+    try{
+      const nm = myName || 'user';
+      const system = 'Tum '+nm+' ke liye uske contact '+peer.name+' ke last message ka reply SUGGEST kar rahe ho. Exactly 3 alag-alag chhote reply options do (har ek 1-2 line, Hinglish Roman script, natural dost jaisa, '+nm+' ke naam se pehle purush me). Options ka tone/matlab thoda alag ho (jaise haan / na / poochh-tachh ya casual / seedha). Pehle ke messages me assistant role '+nm+' ke apne purane messages hain — unka style copy karo. Paisa, password, address, personal/sensitive info ya pakka commitment mat likho. Output SIRF ek JSON array of 3 strings, aur kuch nahi.';
+      const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:400, system, messages: msgs }) });
+      if(!resp.ok) throw new Error('ai '+resp.status);
+      const j = await resp.json();
+      const raw = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join('\n').trim();
+      let list = [];
+      try{ const mt = raw.match(/\[[\s\S]*\]/); list = JSON.parse(mt ? mt[0] : raw); }catch(e){ list = raw.split('\n').map(s=>s.replace(/^[\s\-\*\d\.\)"]+|["\s,]+$/g,'')).filter(Boolean); }
+      list = list.map(s=>String(s).trim()).filter(Boolean).slice(0,3);
+      if(!list.length) throw new Error('empty');
+      if(my !== seq || !on || chatPeer !== peer) return;     // naya msg aaya / OFF / chat badli
+      showBar(list);
+    }catch(e){
+      console.error('AI suggest failed', e);
+      if(my === seq) note('🤖 suggestion nahi ban paya — internet check karo');
+      setTimeout(()=>{ if(my === seq){ const el = document.getElementById('cxAiSug'); if(el && el.querySelector('.aiNote')) clearBar(); } }, 2500);
+    }
+  }
+
+  const s = document.createElement('style');
+  s.textContent = `#chatOverlay .chatComposer #cxAiBtn{order:3!important;flex:none!important;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#cfd0d4;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;opacity:.55;-webkit-tap-highlight-color:transparent}
+  #chatOverlay .chatComposer #cxAiBtn.on{opacity:1;background:#2d4a3a;box-shadow:0 0 0 2px #3f6b52 inset}
+  #cxAiSug{display:flex;flex-direction:column;gap:6px;padding:6px 10px 2px;position:relative}
+  #cxAiSug[hidden]{display:none}
+  #cxAiSug .aiRow{display:flex;gap:6px}
+  #cxAiSug .aiChip{flex:1;min-width:0;text-align:left;background:#1d1f26;border:1px solid #3a3d47;color:#cfd0d4;font-size:16px;line-height:1.3;padding:9px 12px;border-radius:14px;font-family:inherit}
+  #cxAiSug .aiChip:active{background:#2b2e36}
+  #cxAiSug .aiGo{flex:none;width:40px;border-radius:14px;border:1px solid #3f6b52;background:#2d4a3a;color:#cfd0d4;font-size:16px}
+  #cxAiSug .aiX{align-self:flex-end;background:transparent;border:0;color:#8a8d97;font-size:15px;padding:2px 8px}
+  #cxAiSug .aiNote{color:#8a8d97;font-size:14px;padding:6px 4px}`;
+  document.head.appendChild(s);
+  function put(){
+    const inp = document.getElementById('chatInput'); if(!inp) return;
+    const comp = inp.closest('.chatComposer'); if(!comp || comp.querySelector('#cxAiBtn')) return;
+    const b = document.createElement('button'); b.type='button'; b.id='cxAiBtn'; b.setAttribute('aria-label','AI reply suggest'); b.textContent='🤖';
+    b.addEventListener('pointerdown',(e)=> e.preventDefault());
+    b.addEventListener('click',(e)=>{ e.preventDefault(); toggle(); });
+    const d = comp.querySelector('#cxDrawBtn');
+    (d || inp).insertAdjacentElement('afterend', b); setBtn();
+  }
+  setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
+  return { toggle, onIncoming };
 })();
