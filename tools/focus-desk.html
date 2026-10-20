@@ -190,6 +190,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 #clk[data-cs=bold]{opacity:1;font-family:"Playfair Display",Georgia,serif;font-weight:900;text-shadow:3px 3px 0 var(--ac)}
 #p-style .grid button{font-size:13px;padding:12px 4px}.cpk{width:34px;height:30px;padding:0;border:0;background:none;border-radius:8px}
 *{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}
+#edbar{flex-wrap:wrap;justify-content:center;white-space:normal;border-radius:18px;row-gap:6px}body.editing .edt.edsel{outline:2px solid #fff;background-color:rgba(229,72,77,.14)}
 </style></head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
@@ -206,7 +207,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <div class="row"><button class="pill" data-z="-">A−</button><button class="pill" data-z="+">A+</button></div></main>
 <div class="dock l"><button class="ib" data-p="scene" title="Scene">☁</button><button class="ib" data-p="music" title="Music">♫</button><button class="ib" data-p="bgp" title="Background">▣</button><button class="ib" id="nb" title="Sticky note">✎</button><button class="ib" id="bt" title="1 minute breathing (B)">🫁</button><button class="ib" id="ey" title="Eye exercise (E)">👁</button></div>
 <div class="dock r"><button class="ib" data-p="tasks" title="Tasks">☑</button><button class="ib" data-p="style" title="Clock &amp; Stopwatch style">🎨</button><button class="ib" data-p="amb" title="Ambient sounds">≋</button><button class="ib on" id="dnd" title="Deep focus (hide UI)">⚡</button></div>
-<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div><div id="edbar"><span>✎ Kheench kar jagah badlo</span><button id="edrs">↺ Reset</button><button class="ok" id="edok">✔ Done</button></div><div id="mfab"><button class="ib" id="mtg" title="Music on/off (M)">🔇</button></div>
+<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div><div id="edbar"><span>✎ Kheench kar jagah badlo · chuno, fir size</span><b id="edn" style="color:var(--ac)">Cheez chuno</b><button id="edm" title="Chhota">A−</button><button id="edp" title="Bada">A+</button><button id="edrs">↺ Reset</button><button class="ok" id="edok">✔ Done</button></div><div id="mfab"><button class="ib" id="mtg" title="Music on/off (M)">🔇</button></div>
 <div id="rsm"><b id="rst"></b><div class="mu" id="rss"></div><div class="row"><button class="pill" id="rsy" style="background:var(--ac);border-color:transparent">▶ Resume</button><button class="pill" id="rsn">Discard</button></div></div>
 <div id="rvw"><b id="rvt"></b><div class="mu" id="rvs"></div><div class="row"><span id="stars"></span><button class="pill" id="rvx">Skip</button></div></div>
 <div id="br"><div id="bc"></div><div id="bw">Taiyar ho jao</div><button class="pill" id="bx">✕ Band karo</button></div>
@@ -857,21 +858,28 @@ const tg=$('#tag'),tgr=tg&&tg.closest('.row');if(tgr)tgr.id='tag-row';
 const sb=$('#start'),sbr=sb&&sb.closest('.row');if(sbr)sbr.id='btn-row';
 const zb=document.querySelector('[data-z]'),zr=zb&&zb.closest('.row');if(zr)zr.id='zoom-row';
 let LY=g('fdLayout',{});const nodes=()=>TG.map(([k,s])=>[k,document.querySelector(s)]).filter(x=>x[1]);
-function applyL(){nodes().forEach(([k,n])=>{n.classList.add('edt');const v=LY[k];n.style.translate=v?v[0]+'px '+v[1]+'px':''})}
+const ORG={dockl:'0 100%',dockr:'100% 100%',topr:'100% 0',logo:'0 0',mfab:'100% 50%'};
+function applyL(){nodes().forEach(([k,n])=>{n.classList.add('edt');const v=LY[k];n.style.translate=v?v[0]+'px '+v[1]+'px':'';n.style.scale=v&&v[2]&&v[2]!==1?v[2]:'';n.style.transformOrigin=ORG[k]||''})}
 function offscreen(n){const r=n.getBoundingClientRect();return r.width>0&&(r.right<36||r.left>innerWidth-36||r.bottom<36||r.top>innerHeight-36)}
 function fixOff(){if(innerWidth<60)return;nodes().forEach(([k,n])=>{if(LY[k]&&offscreen(n)){delete LY[k];n.style.translate=''}});w('fdLayout',LY)}
 applyL();
 // edit class sirf edit mode me asar karti hai (CSS body.editing .edt) — normal me kuch nahi badalti
-let editing=false;
-function setEdit(on){editing=on;document.body.classList.toggle('editing',on);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));if(!on)fixOff()}
+let editing=false,SEL=null;
+const NM={ring:'Timer / Stopwatch',hud:'₹ target box',modes:'Mode buttons',chips:'Minute chips',clk:'Clock',cd:'Date',pb:'Progress bar',task:'Task box',tag:'Target row',btns:'Start buttons',cfg:'Minutes setting',zoom:'A+/A− row',logo:'Logo',topr:'Top bar',dockl:'Left dock',dockr:'Right dock',mfab:'Music button',note:'Sticky note'};
+function selUi(){nodes().forEach(([k,n])=>n.classList.toggle('edsel',k===SEL));const l=$('#edn');if(l)l.textContent=SEL?NM[SEL]:'Cheez chuno'}
+function select(k){SEL=k;selUi()}
+function sc(m){if(!SEL){toast('Pehle koi cheez chuno');return}const v=LY[SEL]||[0,0,1],s=cl(+((v[2]||1)*m).toFixed(2),.4,2.5);LY[SEL]=[v[0],v[1],s];applyL();w('fdLayout',LY)}
+function setEdit(on){editing=on;SEL=null;selUi();document.body.classList.toggle('editing',on);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));if(!on)fixOff()}
 $('#edt').addEventListener('click',()=>setEdit(!editing));
 $('#edok').addEventListener('click',()=>setEdit(false));
 $('#edrs').addEventListener('click',()=>{LY={};w('fdLayout',LY);applyL();box=null;box0={s:1};w('mqbox',{s:1});place()});
 document.addEventListener('keydown',e=>{if(editing&&e.key==='Escape')setEdit(false)});
+$('#edm').onclick=()=>sc(1/1.1);$('#edp').onclick=()=>sc(1.1);
+document.addEventListener('wheel',e=>{if(!editing)return;const n=e.target.closest&&e.target.closest('.edt'),hit=n&&nodes().find(x=>x[1]===n);if(!hit)return;e.preventDefault();select(hit[0]);sc(e.deltaY<0?1.06:1/1.06)},{passive:false});
 document.addEventListener('pointerdown',e=>{if(!editing)return;const n=e.target.closest('.edt');if(!n)return;
  const hit=nodes().find(x=>x[1]===n);if(!hit)return;const k=hit[0];e.preventDefault();e.stopPropagation();
- const v0=LY[k]||[0,0],sx=e.clientX,sy=e.clientY;n.setPointerCapture(e.pointerId);n.classList.add('edg');let last=v0;
- n.onpointermove=ev=>{const v=[Math.round(v0[0]+ev.clientX-sx),Math.round(v0[1]+ev.clientY-sy)];n.style.translate=v[0]+'px '+v[1]+'px';if(offscreen(n)){n.style.translate=last[0]+'px '+last[1]+'px'}else last=v};
+ const v0=LY[k]||[0,0,1],sx=e.clientX,sy=e.clientY;select(k);n.setPointerCapture(e.pointerId);n.classList.add('edg');let last=v0;
+ n.onpointermove=ev=>{const v=[Math.round(v0[0]+ev.clientX-sx),Math.round(v0[1]+ev.clientY-sy),v0[2]||1];n.style.translate=v[0]+'px '+v[1]+'px';if(offscreen(n)){n.style.translate=last[0]+'px '+last[1]+'px'}else last=v};
  n.onpointerup=n.onpointercancel=()=>{n.onpointermove=n.onpointerup=n.onpointercancel=null;n.classList.remove('edg');LY[k]=last;w('fdLayout',LY)}},true);
 document.addEventListener('click',e=>{if(editing&&!e.target.closest('#edbar,#edt'))e.stopPropagation()},true);
 setTimeout(fixOff,1500);
