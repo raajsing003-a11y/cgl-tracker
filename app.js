@@ -1,4 +1,4 @@
-// BUILD 20261019-2140 (Focus Desk)
+// BUILD 20261020-0930 (Focus Desk)
 // START_DATE / TOTAL_DAYS used to be fixed constants. They are now `let`
 // because each player can set their own custom target (how many days,
 // starting when) — see applyTargetSettings() further below, which loads
@@ -20818,10 +20818,10 @@ if('serviceWorker' in navigator){
 (function initFocusDeskBridge(){
   const ov = document.getElementById('fdOverlay');
   const fr = document.getElementById('fdFrame');
-  const fab = document.getElementById('fdFab');
   const hero = document.getElementById('fdOpenBtn');
-  if(!ov || !fr || !fab) return;
-  let fdRunning = false, fdLabel = '', fdReady = false, pendingStart = false;
+  if(!ov || !fr) return;
+  let fdRunning = false, fdLabel = '';
+  let fdReady = false;
 
   function snap(){
     const tn = todayDayNum(), d = getDay(tn);
@@ -20846,17 +20846,12 @@ if('serviceWorker' in navigator){
     }
     if(hero) hero.classList.toggle('run', fdRunning);
     const go = document.getElementById('fdHeroGo'); if(go) go.textContent = fdRunning ? '⏱ OPEN' : '▶ START';
-    fab.classList.toggle('run', fdRunning);
-    fab.querySelector('.fdFi').textContent = fdRunning ? '⏱' : '▶';
-    document.getElementById('fdFabTxt').textContent = fdRunning ? fdLabel : 'Start';
   }
-  function openFD(autostart){
+  // Timer kabhi apne aap start nahi hota — sirf Focus Desk khulta hai.
+  function openFD(){
     if(!fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
     ov.classList.add('open');
-    if(autostart && !fdRunning){
-      if(fdReady){ push(); fr.contentWindow.postMessage({type:'fd-start'}, '*'); }
-      else pendingStart = true;
-    } else if(fdReady) push();
+    if(fdReady) push();
   }
   function closeFD(){ ov.classList.remove('open'); push(); }
   window.openFocusDesk = openFD;
@@ -20866,12 +20861,17 @@ if('serviceWorker' in navigator){
     const m = ev.data || {};
     if(m.type === 'fd-ready'){
       fdReady = true; push();
-      if(pendingStart){ pendingStart = false; setTimeout(()=>{ try{ fr.contentWindow.postMessage({type:'fd-start'}, '*'); }catch(e){} }, 150); }
     } else if(m.type === 'fd-flush'){
-      const sec = Number(m.sec), mm = /^task(\d+)$/.exec(String(m.key||''));
-      if(!mm || !TASKS[+mm[1]] || !(sec > 0) || sec > 7200) return;
+      const sec = Number(m.sec), key = String(m.key||''), mm = /^task(\d+)$/.exec(key);
+      if(!(sec > 0) || sec > 7200) return;
+      if(!mm){
+        // Apna (custom) target: sirf study time save hota hai (aaj ke total me judta hai)
+        if(/^x:.{1,60}$/.test(key)) addStudySeconds(key, sec);
+        push(); return;
+      }
+      if(!TASKS[+mm[1]]) return;
       const idx = +mm[1], d = getDay(todayDayNum()), wasDone = !!d.tasks[idx];
-      addStudySeconds(m.key, sec);
+      addStudySeconds(key, sec);
       const d2 = getDay(todayDayNum());
       if(!wasDone && d2.tasks[idx]){
         const v = Math.round(dayTaskValues(d2)[idx]||0);
@@ -20885,8 +20885,46 @@ if('serviceWorker' in navigator){
     } else if(m.type === 'fd-close'){ closeFD(); }
   });
 
-  fab.addEventListener('click', ()=> openFD(!fdRunning));
-  if(hero) hero.addEventListener('click', ()=> openFD(false));
+  if(hero) hero.addEventListener('click', ()=> openFD());
   setInterval(()=>{ if(!ov.classList.contains('open')) paint(); }, 5000);
   paint();
+})();
+
+
+// ===== Cache Clean + Refresh shortcut =====
+// Service worker unregister + saare Cache Storage delete + hard reload.
+// localStorage / progress / login ko TOUCH NAHI karta.
+// Shortcuts: More tab ka "🧹 Cache Clean + Refresh" button, URL me ?clean=1,
+// ya keyboard par Ctrl/Cmd + Shift + R.
+(function initCacheClean(){
+  async function cleanAndReload(){
+    try{
+      if('serviceWorker' in navigator){
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    }catch(e){}
+    try{
+      if(window.caches){
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    }catch(e){}
+    const u = new URL(location.href);
+    u.searchParams.delete('clean');
+    u.searchParams.set('_r', Date.now());
+    location.replace(u.toString());
+  }
+  window.cleanCacheAndReload = cleanAndReload;
+  const btn = document.getElementById('cacheCleanBtn');
+  if(btn) btn.addEventListener('click', function(){
+    btn.disabled = true; btn.textContent = '⏳ Clean ho raha hai...';
+    cleanAndReload();
+  });
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'R' || e.key === 'r')){
+      e.preventDefault(); cleanAndReload();
+    }
+  });
+  try{ if(new URLSearchParams(location.search).get('clean') === '1') cleanAndReload(); }catch(e){}
 })();

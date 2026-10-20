@@ -1,9 +1,9 @@
-// BUILD 20261019-2140 (Focus Desk)
+// BUILD 20261020-0930 (Focus Desk)
 // CGL Tracker — Service Worker (v3 — FASTEST UPDATE MODE)
 // Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
 // Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
 
-const CACHE_VERSION = 'v20261019-2140-' + Date.now();
+const CACHE_VERSION = 'v20261020-0930-' + Date.now();
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
 // Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,
@@ -43,6 +43,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  // Video / Range requests: SW ko bypass (seek chale, 10MB cache me na bhare)
+  if (req.headers.has('range') || /\.mp4(\?|$)/i.test(req.url)) return;
 
   event.respondWith(
     fetch(req, { cache: 'no-store' }) // browser ka apna HTTP cache bhi bypass karo
