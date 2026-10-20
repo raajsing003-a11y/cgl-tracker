@@ -1,4 +1,4 @@
-<!-- BUILD 20261020-1230 (Focus Desk) -->
+<!-- BUILD 20261020-1300 (Focus Desk) -->
 <!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Focus Desk</title>
 <style>
 :root{--bg:#07080b;--tx:#f4f3ee;--mu:#8b8d96;--pn:rgba(14,15,20,.88);--ln:rgba(255,255,255,.12);--ac:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -134,13 +134,65 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 @keyframes mpl{50%{box-shadow:0 0 0 7px rgba(229,72,77,.18)}}
 #p-music .opt{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px}
 #bg{transition:background 1s,filter .25s,transform .25s;will-change:filter}
-#mq{position:fixed;right:14px;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:3;width:min(250px,calc(100vw - 28px));padding:10px 13px;border-radius:14px;text-align:left;font-size:12.5px;line-height:1.45;color:rgba(244,243,238,.94);background:rgba(12,13,18,.5);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 8px 28px rgba(0,0,0,.35);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .7s ease}#mq.left{right:auto;left:14px}
+#mq{position:fixed;right:14px;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:3;--ms:1;font-size:calc(12.5px*var(--ms));width:min(20em,calc(100vw - 20px));padding:.8em 1.1em .8em 1em;border-radius:1.1em;text-align:left;line-height:1.45;color:rgba(244,243,238,.94);background:rgba(12,13,18,.5);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 8px 28px rgba(0,0,0,.35);text-shadow:0 1px 3px rgba(0,0,0,.6);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;opacity:0;pointer-events:none;transition:opacity .7s ease}#mq.on{pointer-events:auto}#mq.left{right:auto;left:14px}#mq.drag{cursor:grabbing;transition:none}
+#mq .mqg{position:absolute;right:2px;bottom:2px;width:22px;height:22px;cursor:nwse-resize;opacity:.55;background:linear-gradient(135deg,transparent 52%,rgba(255,255,255,.7) 52% 60%,transparent 60% 72%,rgba(255,255,255,.7) 72% 80%,transparent 80%);border-radius:0 0 1.1em 0;touch-action:none}
 #mq.on{opacity:1}body.dnd #mq{opacity:0!important}#mq.off{display:none}
 .bgctl{margin:0 0 12px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px}.bgctl label.mu{display:block;margin:0 0 6px}.bgctl .opt{padding:2px 0;font-size:14px}
+.top .edb{background:var(--pn);border:1px solid var(--ln);border-radius:99px;padding:7px 13px;font-size:14px;opacity:.7}.top .edb:hover{opacity:1}
+#edbar{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:99px;background:rgba(14,15,20,.94);border:1px solid var(--ac);font-size:12.5px;white-space:nowrap;max-width:calc(100vw - 16px)}
+body.editing #edbar{display:flex}#edbar button{padding:5px 12px;border-radius:99px;border:1px solid var(--ln);background:var(--pn)}#edbar .ok{background:var(--ac);border-color:transparent}
+body.editing .edt{outline:2px dashed rgba(229,72,77,.9);outline-offset:3px;cursor:move;touch-action:none;opacity:1!important;user-select:none;-webkit-user-select:none}
+body.editing .edt *{pointer-events:none!important}
+body.editing .edt.edg{outline-style:solid;background-color:rgba(229,72,77,.08)}
+body.editing #mq{outline:2px dashed rgba(229,72,77,.9);outline-offset:3px;opacity:1!important;pointer-events:auto}
+body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-events:none!important}
+
+/* ===== Side drawers (all panels open from left or right) ===== */
+.panel{top:0!important;bottom:0!important;height:100dvh;max-height:none!important;width:min(390px,92vw)!important;border-radius:0!important;transform:none!important;animation:none!important;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
+.panel.L{left:0!important;right:auto!important;border-radius:0 22px 22px 0!important;animation:dsl .26s ease!important}
+.panel.R{right:0!important;left:auto!important;border-radius:22px 0 0 22px!important;animation:dsr .26s ease!important}
+@keyframes dsl{from{transform:translateX(-100%)}}@keyframes dsr{from{transform:translateX(100%)}}
+#dscrim{position:fixed;inset:0;z-index:8;display:none}
+.panel h3{padding-right:34px}.x{font-size:26px;width:38px;height:38px;right:8px;top:calc(8px + env(safe-area-inset-top,0px))}
+/* ===== Time / stopwatch styles ===== */
+#ringw #time{color:var(--tcol,var(--tx))}
+#ringw .rg{}#adial,#cA{display:none}
+#ringw #adial{position:absolute;inset:auto;left:11%;top:11%;width:78%;height:78%;transform:none;color:var(--tcol,var(--tx))}
+#ringw[data-ts=analog] #adial{display:block}
+#ringw[data-ts=analog] #time{position:absolute;left:50%;top:63%;transform:translateX(-50%);font-size:calc(var(--rs)*.1*var(--tsc,1));padding:.1em .45em;border-radius:.4em;background:var(--bcol,rgba(0,0,0,.5))}
+#ringw[data-ts=analog] #rsub{position:absolute;left:50%;top:27%;transform:translateX(-50%);white-space:nowrap}
+#ringw[data-ts=neon] #time{font-family:Orbitron,sans-serif;font-size:calc(var(--rs)*.165*var(--tsc,1));color:var(--tcol,var(--ac));text-shadow:0 0 6px currentColor,0 0 22px currentColor,0 0 50px currentColor}
+#ringw[data-ts=neon] .pg{stroke-width:3.6;filter:drop-shadow(0 0 7px var(--ac))}
+#ringw[data-ts=thin] .rg,#ringw[data-ts=led] .rg,#ringw[data-ts=term] .rg,#ringw[data-ts=flip] .rg{display:none}
+#ringw[data-ts=thin]::before,#ringw[data-ts=led]::before,#ringw[data-ts=term]::before,#ringw[data-ts=flip]::before{display:none}
+#ringw[data-ts=thin] #time{font-weight:200;letter-spacing:.1em;font-size:calc(var(--rs)*.24*var(--tsc,1));text-shadow:none}
+#ringw[data-ts=led] #time{font-family:Orbitron,sans-serif;font-weight:900;font-size:calc(var(--rs)*.17*var(--tsc,1));color:var(--tcol,#ff3b30);background:var(--bcol,#0a0304);padding:.25em .4em;border:2px solid #2a2a2a;border-radius:.2em;box-shadow:inset 0 0 22px #000;text-shadow:0 0 10px currentColor,0 0 28px currentColor;max-width:none}
+#ringw[data-ts=term] #time{font-family:"Space Mono",ui-monospace,monospace;font-size:calc(var(--rs)*.18*var(--tsc,1));color:var(--tcol,#39ff14);background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),var(--bcol,#021006);padding:.3em .5em;border:1px solid currentColor;border-radius:8px;text-shadow:0 0 8px currentColor;max-width:none}
+#ringw[data-ts=flip] #time{font-family:"Space Mono",ui-monospace,monospace;font-weight:900;font-size:calc(var(--rs)*.19*var(--tsc,1));background:linear-gradient(180deg,rgba(255,255,255,.07) 0 49.4%,rgba(0,0,0,.85) 49.4% 50.6%,rgba(0,0,0,.2) 50.6%),var(--bcol,#24262e);padding:.15em .35em;border-radius:.15em;box-shadow:0 12px 32px rgba(0,0,0,.55);max-width:none;text-shadow:none}
+#ringw[data-ts=glass] #time{padding:.2em .5em;border-radius:.4em;background:var(--bcol,rgba(255,255,255,.1));border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,.35);max-width:none;font-size:calc(var(--rs)*.18*var(--tsc,1))}
+#ringw[data-ts=grad] #time{background:linear-gradient(135deg,var(--tcol,#fff),var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+#ringw[data-ts=outl] #time{color:transparent;-webkit-text-stroke:2px var(--tcol,var(--tx));text-shadow:none}
+#ringw[data-ts=bold] #time{font-family:"Playfair Display",Georgia,serif;font-weight:900;text-shadow:4px 4px 0 var(--ac)}
+#ringw.hh[data-ts] #time{font-size:calc(var(--rs)*.095*var(--tsc,1))}
+/* ===== Clock styles ===== */
+#clk{color:var(--ccol,var(--tx))}
+#clk[data-cs=analog]{display:none!important}
+#cA{width:calc(var(--csc,1)*clamp(96px,16vh,140px));height:calc(var(--csc,1)*clamp(96px,16vh,140px));color:var(--ccol,var(--tx));flex:none}
+#clk[data-cs=neon],#clk[data-cs=led]{font-family:Orbitron,sans-serif;font-size:min(calc(var(--csc,1)*clamp(24px,4.8vh,42px)),calc(var(--cmax,15vw)*.75),30vh);opacity:1}
+#clk[data-cs=neon]{color:var(--ccol,var(--ac));text-shadow:0 0 6px currentColor,0 0 20px currentColor,0 0 44px currentColor}
+#clk[data-cs=thin]{font-weight:200;letter-spacing:.22em;text-shadow:none;opacity:.85}
+#clk[data-cs=led]{color:var(--ccol,#ff3b30);background:var(--bcol,#0a0304);padding:.15em .4em;border-radius:6px;border:1px solid #2a2a2a;text-shadow:0 0 8px currentColor}
+#clk[data-cs=term]{font-family:"Space Mono",ui-monospace,monospace;color:var(--ccol,#39ff14);background:var(--bcol,#021006);padding:.15em .5em;border:1px solid currentColor;border-radius:6px;opacity:1;text-shadow:0 0 6px currentColor}
+#clk[data-cs=flip]{font-family:"Space Mono",ui-monospace,monospace;font-weight:900;opacity:1;text-shadow:none;padding:.1em .35em;border-radius:.15em;background:linear-gradient(180deg,rgba(255,255,255,.07) 0 49%,rgba(0,0,0,.85) 49% 51%,rgba(0,0,0,.2) 51%),var(--bcol,#24262e)}
+#clk[data-cs=glass]{opacity:1;padding:.1em .6em;border-radius:99px;background:var(--bcol,rgba(255,255,255,.1));border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(14px);text-shadow:none}
+#clk[data-cs=grad]{opacity:1;background:linear-gradient(135deg,var(--ccol,#fff),var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+#clk[data-cs=outl]{opacity:1;color:transparent;-webkit-text-stroke:1.5px var(--ccol,var(--tx));text-shadow:none}
+#clk[data-cs=bold]{opacity:1;font-family:"Playfair Display",Georgia,serif;font-weight:900;text-shadow:3px 3px 0 var(--ac)}
+#p-style .grid button{font-size:13px;padding:12px 4px}.cpk{width:34px;height:30px;padding:0;border:0;background:none;border-radius:8px}
 </style></head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
-<div class="top"><span class="logo">Focus Desk</span><div class="row"><button class="pill" id="xit" title="Tracker">✕</button><span class="pill" id="stk" title="Streak">🔥0</span><span class="pill" id="tot">0m</span><button class="pill" data-p="stats">Stats</button><button class="pill" data-p="set">⚙</button><button class="pill" id="fs">⛶</button></div></div>
+<div class="top"><span class="logo">Focus Desk</span><button class="edb" id="edt" title="Layout edit: kisi bhi cheez ki jagah badlo">✎ Edit</button><div class="row"><button class="pill" id="xit" title="Tracker">✕</button><span class="pill" id="stk" title="Streak">🔥0</span><span class="pill" id="tot">0m</span><button class="pill" data-p="stats">Stats</button><button class="pill" data-p="set">⚙</button><button class="pill" id="fs">⛶</button></div></div>
 <main>
 <div class="row" style="flex-wrap:nowrap;max-width:100%"><select id="tag" aria-label="Target" style="min-width:0;flex:1"><option value="">🎯 Target chuno</option></select><button class="pill" id="addT" title="Apna target jodo">＋ Apna</button><button class="pill" id="delT" title="Ye apna target hatao" style="display:none">🗑</button></div><div class="row" id="addRow" style="display:none;flex-wrap:nowrap;width:100%;max-width:420px"><input type="text" id="addIn" maxlength="50" placeholder="Apna target likho (jaise Revision)" style="flex:1;min-width:0"><button class="pill" id="addOk">Add</button></div><div id="hud"><div class="hr"><b id="hE">₹0</b><small>/ <span id="hD">₹5,000</span> aaj</small><span id="hT">0m</span></div><div class="hb"><i id="hbi"></i></div><div class="hs" id="hS">Pehle apna target chuno</div></div>
 <div class="modes"><button class="on" data-m="stop">Stopwatch</button><button data-m="focus">Focus</button><button data-m="short">Short break</button><button data-m="long">Long break</button></div>
@@ -148,12 +200,12 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <div id="clk"></div><div class="mu" id="cd" style="margin-top:-8px"></div><div id="time">25:00</div><div id="pb"><i></i></div><ol id="laps" class="mu"></ol>
 <input type="text" id="task" placeholder="Aap kis par kaam kar rahe ho?" aria-label="Working on">
 <div class="row"><button class="ib" id="reset" title="Reset">↺</button><button class="ib" id="lap" title="Lap" style="display:none">⚑</button><button id="start">Start</button><button class="ib" id="dis" title="Distraction hui? Tap karo (D)">🚨<small id="disn">0</small></button><button class="ib" id="pop" data-p="mini" title="Mini / Floating stopwatch + clock">⧉</button></div>
-<div id="mq" aria-live="off"></div><div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
+<div id="mq" aria-live="off"><span id="mqt"></span><i class="mqg" title="Kheench kar bada/chhota karo"></i></div><div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
 <div class="mu" id="cfg">Focus <input type="number" id="fm" value="25" min="1" max="180" style="width:56px"> min · Break <input type="number" id="bm" value="5" min="1" max="60" style="width:56px"> min · Long <input type="number" id="lm" value="15" min="1" max="90" style="width:56px"> min</div>
 <div class="row"><button class="pill" data-z="-">A−</button><button class="pill" data-z="+">A+</button></div></main>
 <div class="dock l"><button class="ib" data-p="scene" title="Scene">☁</button><button class="ib" data-p="music" title="Music">♫</button><button class="ib" data-p="bgp" title="Background">▣</button><button class="ib" id="nb" title="Sticky note">✎</button><button class="ib" id="bt" title="1 minute breathing (B)">🫁</button><button class="ib" id="ey" title="Eye exercise (E)">👁</button></div>
-<div class="dock r"><button class="ib" data-p="tasks" title="Tasks">☑</button><button class="ib" data-p="amb" title="Ambient sounds">≋</button><button class="ib on" id="dnd" title="Deep focus (hide UI)">⚡</button></div>
-<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div><div id="mfab"><button class="ib" id="mtg" title="Music on/off (M)">🔇</button></div>
+<div class="dock r"><button class="ib" data-p="tasks" title="Tasks">☑</button><button class="ib" data-p="style" title="Clock &amp; Stopwatch style">🎨</button><button class="ib" data-p="amb" title="Ambient sounds">≋</button><button class="ib on" id="dnd" title="Deep focus (hide UI)">⚡</button></div>
+<textarea id="note" placeholder="Sticky note..." aria-label="Sticky note"></textarea><div id="toast"></div><div id="edbar"><span>✎ Kheench kar jagah badlo</span><button id="edrs">↺ Reset</button><button class="ok" id="edok">✔ Done</button></div><div id="mfab"><button class="ib" id="mtg" title="Music on/off (M)">🔇</button></div>
 <div id="rsm"><b id="rst"></b><div class="mu" id="rss"></div><div class="row"><button class="pill" id="rsy" style="background:var(--ac);border-color:transparent">▶ Resume</button><button class="pill" id="rsn">Discard</button></div></div>
 <div id="rvw"><b id="rvt"></b><div class="mu" id="rvs"></div><div class="row"><span id="stars"></span><button class="pill" id="rvx">Skip</button></div></div>
 <div id="br"><div id="bc"></div><div id="bw">Taiyar ho jao</div><button class="pill" id="bx">✕ Band karo</button></div>
@@ -165,6 +217,7 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <section class="panel" id="p-mini"><button class="x" data-c>×</button><h3>Mini / Floating</h3>
 <p class="mu" style="margin:0 0 4px">Kya float karna hai?</p>
 <label class="opt"><input type="checkbox" id="fwSw"> ⏱ Stopwatch / Timer</label><label class="opt"><input type="checkbox" id="fwCk"> 🕐 Clock</label>
+<label class="opt"><input type="checkbox" id="fwAuto"> ⚡ App se bahar jaate hi auto mini float</label>
 <div class="row" style="margin:10px 0"><button class="pill" id="fwPage">📌 Page ke andar float</button><button class="pill" id="fwPip">🪟 Sabse upar float</button></div>
 <label class="mu">Size (bada / chhota)<input type="range" id="fwSc" min=".5" max="3" step=".05"></label>
 <label class="mu" style="display:block;margin-top:8px">Opacity<input type="range" id="fwOp" min=".3" max="1" step=".05"></label>
@@ -195,7 +248,7 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <label class="opt"><input type="checkbox" id="oFs"> Start dabate hi fullscreen</label>
 <p class="mu" style="font-size:12px">Keys: M music · ↑/↓ volume · N agla track</p>
 </section>
-<section class="panel" id="p-amb"><button class="x" data-c>×</button><h3>Ambient sounds</h3><div id="ambw"></div><p class="mu">Music ke saath mix kar sakte ho.</p></section>
+<section class="panel" id="p-amb"><button class="x" data-c>×</button><h3>Ambient sounds</h3><button class="pill" id="ambOff" style="margin-bottom:12px">🔇 Sab ambient band karo</button><div id="ambw"></div><p class="mu">Music ke saath mix kar sakte ho.</p></section>
 <section class="panel" id="p-set"><button class="x" data-c>×</button><h3>Settings</h3>
 <label class="mu">Timer / Stopwatch size<input type="range" data-k="tsc" min=".5" max="2.5" step=".05"></label>
 <label class="mu">Clock size<input type="range" data-k="csc" min=".5" max="2.5" step=".05"></label>
@@ -207,6 +260,11 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 <label class="mu">Stopwatch milestone chime <select data-k="ms"><option value="0">Off</option><option value="15">Har 15 min</option><option value="25">Har 25 min</option><option value="45">Har 45 min</option><option value="60">Har 60 min</option></select></label><label class="opt"><input type="checkbox" data-k="ad"> App/tab se bahar jaane par distraction count karo</label>
 <button class="pill" id="nt">Notifications on</button>
 <p class="mu">Keys: Space start/pause · R reset · F fullscreen · M music · + / − size</p></section>
+<section class="panel" id="p-style"><button class="x" data-c>×</button><h3>🎨 Clock &amp; Stopwatch style</h3>
+<div class="mu" style="margin:0 0 6px">Stopwatch / Timer style</div><div class="grid" id="tsg"></div>
+<div class="mu" style="margin:14px 0 6px">Clock style</div><div class="grid" id="csg"></div>
+<div id="stcol"></div><button class="pill" id="strs" style="margin-top:16px">↺ Default style</button>
+<p class="mu" style="font-size:12px">Font ⚙ Settings me alag se badal sakte ho. Floating mini window ka colour Mini panel (⧉) me hai.</p></section>
 <section class="panel" id="p-tasks"><button class="x" data-c>×</button><h3>Tasks</h3><ul id="tl"></ul><div class="row"><input type="text" id="ti" placeholder="New task" style="flex:1"><button class="pill" id="ta">Add</button></div></section>
 <section class="panel" id="p-stats"><button class="x" data-c>×</button><h3>Activities summary</h3>
 <div class="tabs"><button class="on" data-r="day">Today</button><button data-r="week">This week</button><button data-r="all">All</button></div>
@@ -567,17 +625,17 @@ upd();
 <script>
 /* ===== Mini / Floating: stopwatch + clock (drag, resize, always-on-top window) ===== */
 (()=>{
-const FW=Object.assign({sw:true,ck:true,page:false,op:1,bg:'#f6e58d',pz:1},S('fw',{}));
+const FW=Object.assign({sw:true,ck:true,page:false,op:1,bg:'#f6e58d',pz:1},S('fw',{}));if(!FW.v){FW.v=2;FW.bg='#16171f'}if(FW.auto==null)FW.auto=true;
 FW.sc=Object.assign({sw:1,ck:1},FW.sc||{});FW.pos=Object.assign({sw:[14,96],ck:[14,236]},FW.pos||{});
 const sv=()=>W('fw',FW),KS=['sw','ck'],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
-const BGS=['#f6e58d','#f8e1d4','#d7e8b4','#c6e9de','#9bd8d8','#f7c6d0','#fcd96b','#f8cba8','#dcdcc4','#1c1d24'];
+const BGS=['#16171f','#0f1b2d','#1f1230','#10231a','#f6e58d','#f8e1d4','#d7e8b4','#c6e9de','#9bd8d8','#f7c6d0','#fcd96b','#f8cba8','#dcdcc4','#1c1d24'];
 const lum=h=>{const n=parseInt(h.slice(1),16);return(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/255};
 const fg=()=>lum(FW.bg)<.45?'#f4f3ee':'#1d1d1f';
 const lab=()=>mode==='stop'?'Stopwatch':mode==='focus'?'Focus':'Break';
 const swT=()=>$('#time').textContent,ckT=()=>$('#clk').textContent,ckD=()=>$('#cd').textContent;
-const E={};let pip=null;
+const E={};let pip=null,closing=false,pst=null;
 
-function place(k){const d=E[k];if(!d)return;const x=cl(FW.pos[k][0],0,Math.max(0,innerWidth-d.offsetWidth)),y=cl(FW.pos[k][1],0,Math.max(0,innerHeight-d.offsetHeight));FW.pos[k]=[x,y];d.style.left=x+'px';d.style.top=y+'px'}
+function place(k){const d=E[k];if(!d||innerWidth<60||innerHeight<60)return;const x=cl(FW.pos[k][0],0,Math.max(0,innerWidth-d.offsetWidth)),y=cl(FW.pos[k][1],0,Math.max(0,innerHeight-d.offsetHeight));d.style.left=x+'px';d.style.top=y+'px'}
 function paint(k){const d=E[k];if(!d)return;d.style.setProperty('--s',FW.sc[k]);d.style.background=FW.bg;d.style.color=fg();d.style.opacity=FW.op;place(k)}
 function mk(k){
  const d=document.createElement('div');d.className='fw';
@@ -590,7 +648,7 @@ function mk(k){
  d.addEventListener('pointerdown',e=>{
   if(e.target.closest('button')||e.target.classList.contains('fwg'))return;
   const r=d.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;d.setPointerCapture(e.pointerId);
-  d.onpointermove=ev=>{FW.pos[k]=[ev.clientX-ox,ev.clientY-oy];place(k)};
+  d.onpointermove=ev=>{FW.pos[k]=[cl(ev.clientX-ox,0,Math.max(0,innerWidth-d.offsetWidth)),cl(ev.clientY-oy,0,Math.max(0,innerHeight-d.offsetHeight))];place(k)};
   d.onpointerup=d.onpointercancel=()=>{d.onpointermove=d.onpointerup=d.onpointercancel=null;sv()}});
  const g=d.querySelector('.fwg');
  g.addEventListener('pointerdown',e=>{e.stopPropagation();g.setPointerCapture(e.pointerId);const s0=FW.sc[k],w0=d.offsetWidth,sx=e.clientX,sy=e.clientY;
@@ -607,14 +665,21 @@ addEventListener('resize',()=>KS.forEach(place));
 
 /* ---- always-on-top window (Document Picture-in-Picture) ---- */
 function pipBuild(){
- const w=pip;if(!w)return;const d=w.document;
+ const w=pip;if(!w)return;const d=w.document,ac=CF.ac||'#e5484d',tf=FN[CF.font][1],tc=CF.tc||fg(),cc=CF.cc||fg();
  d.title='Focus mini';d.head.innerHTML='';d.body.innerHTML='';
+ document.querySelectorAll('link[rel=stylesheet]').forEach(l=>{const n=d.createElement('link');n.rel='stylesheet';n.href=l.href;d.head.append(n)});
  const st=d.createElement('style');
- st.textContent='html,body{margin:0;height:100%;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif}body{display:flex;flex-direction:column;background:'+FW.bg+';color:'+fg()+'}.b{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;position:relative}.b+.b{border-top:1px solid rgba(128,128,128,.4)}.t{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1}.s{opacity:.7;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}.c{display:flex;gap:8px;margin-top:4px}button{font:inherit;border:1px solid rgba(128,128,128,.6);background:rgba(128,128,128,.18);color:inherit;border-radius:99px;padding:2px 14px;cursor:pointer;font-size:15px}.z{position:absolute;right:4px;top:4px;display:flex;gap:4px}.z button{padding:0 7px;font-size:12px;border-radius:6px}';
+ st.textContent='html,body{margin:0;height:100%;overflow:hidden;font-family:"Trebuchet MS",system-ui,sans-serif;user-select:none}body{display:flex;flex-direction:column;color:'+fg()+';background:radial-gradient(120% 80% at 50% 0,color-mix(in srgb,'+ac+' 22%,transparent),transparent 65%),linear-gradient(160deg,'+FW.bg+',color-mix(in srgb,'+FW.bg+' 65%,#000))}'+
+ '.b{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px 10px 12px;position:relative}.b+.b{border-top:1px solid rgba(128,128,128,.22)}'+
+ '.l{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.75;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;background:'+ac+';opacity:.4}.on .dot{opacity:1;box-shadow:0 0 9px '+ac+';animation:p 1.4s ease-in-out infinite}@keyframes p{50%{opacity:.3}}'+
+ '.t{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1;font-family:'+tf+'}#ts{color:'+tc+';text-shadow:0 0 26px color-mix(in srgb,'+ac+' 55%,transparent)}#tc{color:'+cc+'}'+
+ '.s{opacity:.7;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92%}.pb{width:80%;height:4px;border-radius:9px;background:rgba(128,128,128,.25);overflow:hidden}.pb i{display:block;height:100%;width:0;background:'+ac+';box-shadow:0 0 10px '+ac+';transition:width .3s linear}'+
+ '.c{display:flex;gap:10px;margin-top:3px}button{font:inherit;cursor:pointer;color:inherit;width:34px;height:34px;border-radius:50%;border:1px solid rgba(128,128,128,.45);background:rgba(128,128,128,.16);font-size:15px;padding:0;transition:transform .12s}button:active{transform:scale(.92)}#go{width:46px;height:46px;background:'+ac+';border:0;color:#fff;font-size:18px;box-shadow:0 6px 18px -4px '+ac+'}'+
+ '.z{position:absolute;right:6px;top:6px;display:flex;gap:4px;opacity:.45}.z:hover{opacity:1}.z button{width:auto;height:22px;border-radius:7px;padding:0 7px;font-size:11px}';
  d.head.append(st);
  let h='';
- if(FW.sw)h+='<div class="b" id="bs"><div class="z"><button id="a1" title="Chhota">A−</button><button id="a2" title="Bada">A+</button></div><div class="t" id="ts"></div><div class="s" id="ss"></div><div class="c"><button id="go">▶</button><button id="rs">↺</button></div></div>';
- if(FW.ck)h+='<div class="b" id="bc">'+(FW.sw?'':'<div class="z"><button id="a1" title="Chhota">A−</button><button id="a2" title="Bada">A+</button></div>')+'<div class="t" id="tc"></div><div class="s" id="sd"></div></div>';
+ if(FW.sw)h+='<div class="b" id="bs"><div class="z"><button id="a1" title="Chhota">A−</button><button id="a2" title="Bada">A+</button></div><div class="l"><i class="dot"></i><span id="lb"></span></div><div class="t" id="ts"></div><div class="pb"><i id="pf"></i></div><div class="s" id="ss"></div><div class="c"><button id="rs" title="Reset">↺</button><button id="go">▶</button></div></div>';
+ if(FW.ck)h+='<div class="b" id="bc">'+(FW.sw?'':'<div class="z"><button id="a1">A−</button><button id="a2">A+</button></div>')+'<div class="l">Clock</div><div class="t" id="tc"></div><div class="s" id="sd"></div></div>';
  d.body.innerHTML=h;
  const g=i=>d.getElementById(i),z=m=>{FW.pz=cl(+(FW.pz*m).toFixed(2),.4,3);sv();pipUpd()};
  if(g('a1'))g('a1').onclick=()=>z(1/1.12);if(g('a2'))g('a2').onclick=()=>z(1.12);
@@ -625,20 +690,21 @@ function pipUpd(){
  try{
   if(run&&document.hidden)tick();
   const d=pip.document,g=i=>d.getElementById(i);
-  if(g('ts')){g('ts').textContent=swT();g('ss').textContent=lab()+($('#task').value?' · '+$('#task').value:'');g('go').textContent=run?'⏸':'▶'}
+  if(g('ts')){g('ts').textContent=swT();g('lb').textContent=lab();g('ss').textContent=$('#task').value||'';g('go').textContent=run?'⏸':'▶';g('bs').classList.toggle('on',run);
+   const fr=mode==='stop'?(elapsed%3600)/3600:Math.min(1,Math.max(0,1-left/dur()));g('pf').style.width=(fr*100)+'%'}
   if(g('tc')){g('tc').textContent=ckT();g('sd').textContent=ckD()}
   const bl=[...d.querySelectorAll('.b')],W_=pip.innerWidth,bh=pip.innerHeight/Math.max(1,bl.length);
-  bl.forEach(b=>{const t=b.querySelector('.t'),n=Math.max(4,t.textContent.length);t.style.fontSize=Math.max(10,Math.min((W_-16)/(n*.62),(bh-(b.id==='bs'?62:34))*.85)*FW.pz)+'px'});
+  bl.forEach(b=>{const t=b.querySelector('.t'),n=Math.max(4,t.textContent.length);t.style.fontSize=Math.max(10,Math.min((W_-20)/(n*.62),(bh-(b.id==='bs'?112:50))*.8)*FW.pz)+'px'});
  }catch(e){pip=null;ui()}}
-async function pipToggle(){
- if(pip){try{pip.close()}catch(e){}pip=null;ui();return}
+async function pipToggle(silent){
+ if(pip){FW.pipOn=false;sv();try{pip.close()}catch(e){}pip=null;ui();return}
  if(!FW.sw&&!FW.ck){toast('Pehle Stopwatch ya Clock chuno');return}
  const c=[];try{if(window.documentPictureInPicture)c.push(window.documentPictureInPicture)}catch(e){}
  try{if(parent!==window&&parent.documentPictureInPicture)c.push(parent.documentPictureInPicture)}catch(e){}
  let w=null;const two=FW.sw&&FW.ck;
- for(const a of c){try{w=await a.requestWindow({width:two?320:300,height:two?260:150});break}catch(e){}}
- if(!w)return vidPip();
- pip=w;w.addEventListener('pagehide',()=>{pip=null;ui()});w.addEventListener('resize',pipUpd);
+ for(const a of c){try{w=await a.requestWindow({width:(FW.pw&&FW.pw[0])||(two?320:300),height:(FW.ph&&FW.ph[0])||(two?260:150)});break}catch(e){}}
+ if(!w)return silent?0:vidPip();
+ pip=w;FW.pipOn=true;sv();w.addEventListener('pagehide',()=>{pip=null;if(!closing){FW.pipOn=false;sv()}ui()});w.addEventListener('resize',()=>{pipUpd();clearTimeout(pst);pst=setTimeout(()=>{try{FW.pw=[w.innerWidth];FW.ph=[w.innerHeight];sv()}catch(e){}},400)});
  w.setInterval(pipUpd,250);pipBuild();ui()}
 /* ---- fallback: video Picture-in-Picture (mobile / purane browser) ---- */
 async function vidPip(){
@@ -655,7 +721,7 @@ async function vidPip(){
 
 /* ---- panel UI ---- */
 function ui(){
- $('#fwSw').checked=FW.sw;$('#fwCk').checked=FW.ck;
+ $('#fwAuto').checked=!!FW.auto;$('#fwSw').checked=FW.sw;$('#fwCk').checked=FW.ck;
  $('#fwPage').classList.toggle('on',FW.page);$('#fwPage').textContent=FW.page?'📌 Page float: ON':'📌 Page ke andar float';
  $('#fwPip').classList.toggle('on',!!pip);$('#fwPip').textContent=pip?'🪟 Float band karo':'🪟 Sabse upar float';
  $('#fwSc').value=(FW.sc.sw+FW.sc.ck)/2;$('#fwOp').value=FW.op;
@@ -664,13 +730,21 @@ BGS.forEach(c=>{const b=document.createElement('button');b.className='fsw';b.dat
 $('#fwSw').onchange=e=>{FW.sw=e.target.checked;sv();sync()};
 $('#fwCk').onchange=e=>{FW.ck=e.target.checked;sv();sync()};
 $('#fwPage').onclick=()=>{if(!FW.page&&!FW.sw&&!FW.ck){toast('Pehle Stopwatch ya Clock chuno');return}FW.page=!FW.page;sv();sync();if(FW.page)$$('.panel').forEach(x=>x.classList.remove('show'))};
-$('#fwPip').onclick=pipToggle;
+$('#fwPip').onclick=()=>pipToggle();
+/* ---- app se bahar jaate hi auto mini ---- */
+let autoOp=false;
+function autoOpen(){if(!FW.auto||pip||(!FW.sw&&!FW.ck))return;pipToggle(true).then(()=>{if(pip){autoOp=true;FW.pipOn=false;sv()}}).catch(()=>{})}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)autoOpen();else if(autoOp&&pip){autoOp=false;try{pip.close()}catch(e){}pip=null;ui()}});
+addEventListener('blur',()=>{if(document.hidden)autoOpen()});
+try{navigator.mediaSession.setActionHandler('enterpictureinpicture',autoOpen)}catch(e){}
+$('#fwAuto').onchange=e=>{FW.auto=e.target.checked;sv()};
 $('#fwSc').oninput=e=>{FW.sc.sw=FW.sc.ck=+e.target.value;FW.pz=+e.target.value;sv();KS.forEach(paint);pipUpd()};
 $('#fwOp').oninput=e=>{FW.op=+e.target.value;sv();KS.forEach(paint)};
 let dp=false;try{dp=!!(window.documentPictureInPicture||(parent!==window&&parent.documentPictureInPicture))}catch(e){}
 $('#fwHint').textContent=(dp?'📌 Page float: is page ke andar kahin bhi drag karo, kone se kheench kar size badlo. 🪟 Sabse upar float: alag chhoti window banti hai jo doosre app/tab ke upar bhi dikhti hai — use bhi drag aur resize kar sakte ho (A−/A+ se text size).':'📌 Page float: is page ke andar drag + resize. 🪟 Sabse upar float: is browser me sirf simple video-mini chalega (Chrome desktop me poori window milti hai).');
-addEventListener('pagehide',()=>{try{pip&&pip.close()}catch(e){}});
+addEventListener('pagehide',()=>{closing=true;try{pip&&pip.close()}catch(e){}});
 sync();
+if(FW.pipOn){const go=()=>{['pointerup','keydown'].forEach(t=>removeEventListener(t,go,true));if(!pip&&FW.pipOn)pipToggle().then(()=>toast('Mini float wapas khul gaya'))};['pointerup','keydown'].forEach(t=>addEventListener(t,go,true))}
 })();
 </script>
 <script>
@@ -736,18 +810,111 @@ addEventListener('resize',()=>blur(g('bgblur',0)));
 blur(g('bgblur',0));
 // ---- motivation msg (2 min)
 const Q=["Aaj ka din wapas nahi aayega — jo bhi ghante milein, poore laga do.", "Jo log result ke baad successful dikhte hain, unhone aise hi normal din grind kiye the.", "50 din ka plan bana hai — bas aaj wala din jeetna hai, poora plan apne aap ban jayega.", "Chhoti si progress bhi progress hai. Zero se aage har kadam count hota hai.", "Exam hall mein confidence wahi cheez degi jo aaj practice ki.", "Thakaan aayegi, bahaana bhi aayega — dono ko cross karke aage nikal jao.", "Tumhare competitors abhi so rahe hain ya scroll kar rahe hain. Ye tumhara window hai.", "Ek achha din pura mat samjho jab tak wallet full na ho jaye.", "Selection ek din mein nahi, roz ke choton se milti hai — aaj wo choti jeet lo.", "Jitna time aaj bachaoge utna hi kal ka pressure kam hoga.", "Mushkil lag raha hai matlab tum sahi cheez pe kaam kar rahe ho.", "Har mock, har revision — sab compound hoke result banata hai.", "Aaj ka target chhota lag sakta hai, par 50 din baad yehi difference banayega.", "Distraction ek ghanta churata hai, focus ek raat ki neend jitna return deta hai.", "Consistency boring lagti hai, par yahi cheez topper aur baaki mein farak karti hai.", "Jo galti aaj samajh aayi, wo exam mein dobara nahi hogi — isliye mistakes bhi progress hain.", "Apne aap se competition karo — kal ke apne se aaj thoda better bano.", "Result door lag raha hoga, par har din uska ek chhota hissa hai.", "Tumhare paas already ek plan hai — bas usse follow karna hai, dobara sochna nahi.", "Aaj thoda aur push karo — future wala tum isi din ko thank you bolega.", "Speed se zyada zaroori hai roz dikhna — jo roz dikhta hai wahi finish line tak pahunchta hai.", "Har task jo tick hota hai, ek chhota sa proof hai ki tum serious ho.", "Kisi aur se tulna mat karo — sirf apna schedule follow karo, baaki apne aap set ho jayega.", "Mehnat dikhti nahi, sirf result dikhta hai — is beech ka phase yehi hai.", "Aaj clear karo, kal fresh mind se aur mushkil topic uthao.", "Jo aaj avoid karoge wahi kal double hoke wapas aayega — abhi nipta do.", "Preparation ka matlab hai ready hona jab opportunity aaye — aaj wahi ready hone ka din hai.", "Chhota sa consistent effort, bade burst se zyada powerful hota hai.", "Tumne shuru kiya tha kisi wajah se — us wajah ko aaj yaad karo aur kaam pe lag jao.", "Har din jo pura hota hai, exam wale din ka darr thoda kam karta hai.", "The harder you work for something, the better you'll feel when you achieve it.", "Don't limit your challenges. Challenge your limits.", "Nothing is impossible. The word itself says 'I'm possible!'", "Fall seven times, stand up eight.", "Opportunities don't happen. You create them.", "The man who moves a mountain begins by carrying away small stones.", "Action is the foundational key to all success.", "It's not about having time. It's about making time.", "Small daily improvements over time lead to stunning results.", "Your time is limited, don't waste it living someone else's life.", "Your 'I Can' is more important than your IQ.", "If the WHY is powerful, the HOW is easy.", "To be everywhere is to be nowhere.", "Reality cannot be ignored except at a price — and the longer you ignore it, the higher and uglier that price gets.", "Your mind is a garden; your subconscious, the soil. Sow light, and you'll reap clarity. Sow darkness, and you'll reap confusion.", "We have two lives, and the second begins when we realise we only have one.", "अगर आप खुद फैसले नहीं लेते, तो आपके लिए फैसले ले लिए जाते हैं..!", "अभी भी वक़्त है.. हम्म, अभी भी वक़्त है — पूरा खेल बदल सकता है, अगर सही जगह पहुँचकर सही काम कर लिया तो।", "A moment of pain is worth a lifetime of glory.", "Legends aren't built on the days they feel motivated, but the days they feel like quitting.", "अभी भी वक़्त है... 2400 से 2800 करने का, 2800 से 4600 करने का, 4600 से 4600 'H' करने का, और 27 से 26 में ही करने का।", "The magic you're looking for is in the work you're avoiding.", "है जो सही वो करना नहीं, ग़लत होने की यही तो शुरुआत है..", "अभ्यास में जितना ज्यादा पसीना बहाओगे, युद्ध में उतना ही कम खून बहेगा।", "खुद को आगे बढ़ाएं, क्योंकि कोई और आपके लिए ऐसा नहीं करने वाला है।", "सफलता उससे नहीं मिलती जो आप कभी-कभी करते हैं, बल्कि उससे मिलती है जो आप लगातार करते हैं।", "आज आप जो दर्द महसूस कर रहे हैं, कल वही आपकी ताकत बनेगा।", "नदी चट्टान को अपनी ताकत से नहीं, बल्कि अपनी लगातार कोशिश से काटती है।", "बड़े सपने देखें, ध्यान केंद्रित रखें और उन्हें सच कर दिखाएं।", "तब तक न रुकें जब तक आपको खुद पर गर्व न हो।", "आपके सपनों और हकीकत के बीच की दूरी को 'कर्म' कहते हैं।", "हर सुबह आपके पास दो विकल्प होते हैं: अपने सपनों के साथ सोते रहें, या उठें और उनका पीछा करें।", "महान बनने के लिए शुरुआत करने की जरूरत नहीं है, बल्कि महान बनने के लिए शुरुआत करना जरूरी है।", "या तो अनुशासन का दर्द सह लें, या फिर पछतावे का दर्द सहें।", "बहाने हमेशा आपके पास रहेंगे, लेकिन अवसर नहीं।", "खामोशी से कड़ी मेहनत करें, अपनी सफलता को शोर मचाने दें।", "सबसे खराब अभ्यास (वर्कआउट) वही है जो आपने किया ही नहीं।", "बिना किसी समय-सीमा वाले लक्ष्य सिर्फ एक सपना होते हैं।", "अगर कोई चीज आपको चुनौती नहीं देती, तो वह आपको बदल भी नहीं सकती।", "अपने सामने वाली सीढ़ी पर ध्यान दें, पूरी सीढ़ियों पर नहीं।", "आपकी एकमात्र सीमा आप खुद हैं।", "परिणाम समय के साथ आते हैं, रातों-रात नहीं। कड़ी मेहनत करें, लगातार लगे रहें, और धैर्य रखें।", "अपने सबसे बड़े बहाने से ज्यादा मजबूत बनें।", "दिमाग सबसे जरूरी मांसपेशी है। इसे हर स्थिति में अच्छा देखने के लिए प्रशिक्षित करें।", "अवसर का इंतज़ार न करें। इसे खुद बनाएं।", "थोड़ा-थोड़ा करके, इंसान बहुत दूर तक का सफर तय कर लेता है।", "मुश्किल वक्त कभी टिकता नहीं, लेकिन मजबूत लोग टिकते हैं।", "विश्वास करें कि आप कर सकते हैं, और आपने आधा रास्ता तय कर लिया।", "जो व्यक्ति कभी हार नहीं मानता, उसे हराना बहुत मुश्किल होता है।", "शरीर वही हासिल करता है जिस पर दिमाग विश्वास करता है।", "अपने जीवन को एक मास्टरपीस बनाएं; यह कल्पना करें कि आप जो बन सकते हैं, पा सकते हैं या कर सकते हैं, उसकी कोई सीमा नहीं है।", "सफलता उन छोटे-छोटे प्रयासों का जोड़ है, जिन्हें रोजाना लगातार किया जाता है।", "आपकी आखिरी गलती ही आपकी सबसे अच्छी शिक्षक होती है।", "जो आज की रात किताबों पर झुकता है, वही कल दुनिया पर राज करता है।", "थकान से मत रुको, मंजिल के करीब पहुँचकर हार मानना सबसे बड़ी गलती है।", "सफलता का कोई शॉर्टकट नहीं होता, हर पन्ना पढ़ना पड़ता है और हर कदम दौड़ना पड़ता है।", "पसीने की स्याही से जो अपने इरादे लिखते हैं, उनके मुकद्दर के पन्ने कभी कोरे नहीं होते।", "आज की मेहनत कल का सुकून है, इसलिए आज खुद को तपाने से पीछे मत हटो।", "समय का हर एक सेकंड कीमती है, इसे गँवाने का मतलब है अपनी मंजिल को दूर करना।", "जब दुनिया सो रही हो, तब तुम्हारी जागकर की गई मेहनत ही तुम्हें सबसे अलग बनाएगी।", "दर्द और थकान सिर्फ दिमाग का वहम हैं, तुम्हारा संकल्प इनसे कहीं ज्यादा मजबूत है।", "लक्ष्य जितना बड़ा होगा, सफर उतना ही कठिन होगा, और जीत उतनी ही शानदार होगी।", "खुद को साबित करने का मौका बार-बार नहीं मिलता, जो समय हाथ में है उसे अपना सबसे बड़ा हथियार बनाओ।", "मैदान में हारा हुआ इंसान फिर से जीत सकता है, लेकिन मन से हारा हुआ इंसान कभी नहीं जीत सकता।", "हर दिन खुद से एक वादा करो कि आज का दिन कल से बेहतर और ज्यादा प्रोडक्टिव होगा।", "किस्मत के भरोसे बैठने वालों को सिर्फ उतना मिलता है, जितना कोशिश करने वाले छोड़ देते हैं।", "जब भी हार मानने का ख्याल आए, तो याद करना कि तुमने इतनी दूर तक का सफर क्यों तय किया था।", "सफलता एक दिन में नहीं मिलती, लेकिन एक-एक दिन की गई निरंतर मेहनत से जरूर मिलती है।", "तुम्हारी सबसे बड़ी प्रतियोगिता खुद से है, हर दिन अपने पिछले रिकॉर्ड को तोड़ने का प्रयास करो।", "जो बहाने बनाते हैं वो इतिहास नहीं बनाते, और जो इतिहास बनाते हैं वो बहाने नहीं बनाते।", "डर को अपने ऊपर हावी मत होने दो, अपने हौसले को इतना बड़ा कर लो कि डर खुद छोटा हो जाए।", "जिस दिन तुमने सोच लिया कि तुम कर सकते हो, समझो तुमने आधी बाज़ी वहीं जीत ली।", "अगर रास्ता मुश्किल लग रहा है, तो समझ लो कि तुम सही दिशा में आगे बढ़ रहे हो।", "कोई भी लक्ष्य इंसान के साहस से बड़ा नहीं होता, हारता वही है जो दिल से लड़ता नहीं।", "अपनी कमजोरियों को अपनी ताकत बनाओ, क्योंकि यही तुम्हें सबसे अलग पहचान दिलाएंगी।", "हर सुबह एक नया अवसर है, या तो इसे सोकर गुजार दो, या उठकर अपने सपनों के पीछे दौड़ो।", "जब तक तुम्हारा लक्ष्य पूरा न हो जाए, तब तक न रुको, न थको और न ही मुड़कर देखो।", "तुम्हारी सफलता का शोर उसी दिन मचेगा, जिस दिन तुम्हारी खामोशी की मेहनत पूरी होगी।", "सिर्फ सोचने से कुछ नहीं होता, सफलता पाने के लिए उस सोच को कर्म में बदलना पड़ता है।", "अनुशासन वो पुल है जो तुम्हारे सपनों और तुम्हारी उपलब्धियों को जोड़ता है।", "जो पानी से नहाता है वो सिर्फ लिबास बदलता है, पर जो पसीने से नहाता है वो इतिहास बदलता है।", "हारना कोई बुरी बात नहीं है, लेकिन हार मान लेना सबसे बुरी बात है।", "अगर सूरज की तरह चमकना चाहते हो, तो पहले सूरज की तरह जलना और तपना सीखो।"];
-const el=$('#mq'),ck=$('#mqOn');let order=[],pos=0,tm=null;
+const el=$('#mq'),tx=$('#mqt'),ck=$('#mqOn');let order=[],pos=0,tm=null;
 function shuf(){order=Q.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}pos=0}
 function next(first){if(!Q.length)return;if(pos>=order.length)shuf();const t=Q[order[pos++]];
- if(first){el.textContent=t;el.classList.add('on');return}
- el.classList.remove('on');setTimeout(()=>{el.textContent=t;el.classList.add('on')},750)}
+ if(first){tx.textContent=t;el.classList.add('on');place();return}
+ el.classList.remove('on');setTimeout(()=>{tx.textContent=t;el.classList.add('on');place()},750)}
 function start(){stop();shuf();next(true);tm=setInterval(()=>{if(!document.hidden)next(false)},120000)}
 function stop(){if(tm)clearInterval(tm);tm=null}
 function apply(on,save){ck.checked=on;el.classList.toggle('off',!on);if(save)w('mq',on);if(on)start();else{stop();el.classList.remove('on')}}
 ck.addEventListener('change',()=>apply(ck.checked,true));
 const sd=$('#mqSide');function side(v,save){v=v==='left'?'left':'right';sd.value=v;el.classList.toggle('left',v==='left');if(save)w('mqSide',v)}
-sd.addEventListener('change',()=>side(sd.value,true));side(g('mqSide','right'),false);
+sd.addEventListener('change',()=>{side(sd.value,true);box=null;w('mqbox',{s:box0.s});place()});side(g('mqSide','right'),false);
 apply(g('mq',true),false);
+
+// ---- motivation box: drag + resize (position/size save)
+var box0=g('mqbox',{}),box=box0.fx!=null?box0:null;const cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+el.style.setProperty('--ms',box0.s||1);
+function place(){if(!box0||innerWidth<60||innerHeight<60)return;el.style.setProperty('--ms',box0.s||1);
+ if(!box){el.style.left=el.style.top=el.style.right=el.style.bottom='';return}
+ const x=cl(box.fx*innerWidth,0,Math.max(0,innerWidth-el.offsetWidth)),y=cl(box.fy*innerHeight,0,Math.max(0,innerHeight-el.offsetHeight));
+ el.style.left=x+'px';el.style.top=y+'px';el.style.right='auto';el.style.bottom='auto'}
+function savebox(){w('mqbox',Object.assign({},box||{},{s:box0.s||1}));}
+el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('mqg'))return;e.preventDefault();
+ const r=el.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;el.setPointerCapture(e.pointerId);el.classList.add('drag');
+ el.onpointermove=ev=>{const x=cl(ev.clientX-ox,0,Math.max(0,innerWidth-el.offsetWidth)),y=cl(ev.clientY-oy,0,Math.max(0,innerHeight-el.offsetHeight));box={fx:x/innerWidth,fy:y/innerHeight};box0=Object.assign(box0,box);place()};
+ el.onpointerup=el.onpointercancel=()=>{el.onpointermove=el.onpointerup=el.onpointercancel=null;el.classList.remove('drag');savebox()}});
+const gp=el.querySelector('.mqg');
+gp.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();gp.setPointerCapture(e.pointerId);const s0=box0.s||1,w0=Math.max(80,el.offsetWidth),sx=e.clientX,sy=e.clientY;
+ // resize ke time position fix rakho (agar abhi tak default corner me hai to usi jagah pin karo)
+ if(!box){const r=el.getBoundingClientRect();box={fx:r.left/innerWidth,fy:r.top/innerHeight};box0=Object.assign(box0,box)}
+ gp.onpointermove=ev=>{box0.s=cl(+(s0*(1+((ev.clientX-sx)+(ev.clientY-sy))/(2*w0))).toFixed(2),.6,3);place()};
+ gp.onpointerup=gp.onpointercancel=()=>{gp.onpointermove=gp.onpointerup=gp.onpointercancel=null;savebox()}});
+addEventListener('resize',place);place();
+
+// ---- Layout edit: kisi bhi cheez ko drag karke jagah badlo (save rehta hai)
+const TG=[['ring','#ringw'],['hud','#hud'],['modes','.modes'],['chips','#chips'],['clk','#clk'],['cd','#cd'],['pb','#pb'],['task','#task'],['tag','#tag-row'],['btns','#btn-row'],['cfg','#cfg'],['zoom','#zoom-row'],['logo','.top .logo'],['topr','.top .row'],['dockl','.dock.l'],['dockr','.dock.r'],['mfab','#mfab'],['note','#note']];
+const tg=$('#tag'),tgr=tg&&tg.closest('.row');if(tgr)tgr.id='tag-row';
+const sb=$('#start'),sbr=sb&&sb.closest('.row');if(sbr)sbr.id='btn-row';
+const zb=document.querySelector('[data-z]'),zr=zb&&zb.closest('.row');if(zr)zr.id='zoom-row';
+let LY=g('fdLayout',{});const nodes=()=>TG.map(([k,s])=>[k,document.querySelector(s)]).filter(x=>x[1]);
+function applyL(){nodes().forEach(([k,n])=>{n.classList.add('edt');const v=LY[k];n.style.translate=v?v[0]+'px '+v[1]+'px':''})}
+function offscreen(n){const r=n.getBoundingClientRect();return r.width>0&&(r.right<36||r.left>innerWidth-36||r.bottom<36||r.top>innerHeight-36)}
+function fixOff(){if(innerWidth<60)return;nodes().forEach(([k,n])=>{if(LY[k]&&offscreen(n)){delete LY[k];n.style.translate=''}});w('fdLayout',LY)}
+applyL();
+// edit class sirf edit mode me asar karti hai (CSS body.editing .edt) — normal me kuch nahi badalti
+let editing=false;
+function setEdit(on){editing=on;document.body.classList.toggle('editing',on);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));if(!on)fixOff()}
+$('#edt').addEventListener('click',()=>setEdit(!editing));
+$('#edok').addEventListener('click',()=>setEdit(false));
+$('#edrs').addEventListener('click',()=>{LY={};w('fdLayout',LY);applyL();box=null;box0={s:1};w('mqbox',{s:1});place()});
+document.addEventListener('keydown',e=>{if(editing&&e.key==='Escape')setEdit(false)});
+document.addEventListener('pointerdown',e=>{if(!editing)return;const n=e.target.closest('.edt');if(!n)return;
+ const hit=nodes().find(x=>x[1]===n);if(!hit)return;const k=hit[0];e.preventDefault();e.stopPropagation();
+ const v0=LY[k]||[0,0],sx=e.clientX,sy=e.clientY;n.setPointerCapture(e.pointerId);n.classList.add('edg');let last=v0;
+ n.onpointermove=ev=>{const v=[Math.round(v0[0]+ev.clientX-sx),Math.round(v0[1]+ev.clientY-sy)];n.style.translate=v[0]+'px '+v[1]+'px';if(offscreen(n)){n.style.translate=last[0]+'px '+last[1]+'px'}else last=v};
+ n.onpointerup=n.onpointercancel=()=>{n.onpointermove=n.onpointerup=n.onpointercancel=null;n.classList.remove('edg');LY[k]=last;w('fdLayout',LY)}},true);
+document.addEventListener('click',e=>{if(editing&&!e.target.closest('#edbar,#edt'))e.stopPropagation()},true);
+setTimeout(fixOff,1500);
+})();
+</script>
+
+<script>
+/* ===== Side drawers + Clock/Stopwatch styles & colours ===== */
+(()=>{
+const ps=$$('.panel'),sc=document.createElement('div');sc.id='dscrim';document.body.append(sc);let side='R';
+document.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b){const r=b.getBoundingClientRect();side=r.left+r.width/2<innerWidth/2?'L':'R'}},true);
+function ds(){const o=ps.some(p=>p.classList.contains('show'));sc.style.display=o?'block':'none';const w=side==='L'?'L':'R',x=w==='L'?'R':'L';ps.forEach(p=>{if(p.classList.contains('show')&&(!p.classList.contains(w)||p.classList.contains(x))){p.classList.remove(x);p.classList.add(w)}})}
+ps.forEach(p=>new MutationObserver(ds).observe(p,{attributes:true,attributeFilter:['class']}));
+sc.onclick=()=>ps.forEach(p=>p.classList.remove('show'));
+
+const TS=[['ring','◯ Classic ring'],['neon','✦ Neon'],['thin','▭ Minimal'],['led','▮ LED'],['term','>_ Terminal'],['flip','▤ Flip card'],['glass','◫ Glass'],['grad','◐ Gradient'],['outl','◌ Outline'],['bold','■ Bold'],['analog','🕘 Analog']];
+const CS=[['plain','Aa Plain']].concat(TS.slice(1));
+const PAL=['#ffffff','#f5c542','#ff9f0a','#ff453a','#ff375f','#bf5af2','#5e5ce6','#0a84ff','#64d2ff','#30d158','#39ff14','#111111'];
+const rw=$('#ringw'),clk=$('#clk'),rg=rw.querySelector('svg');rg.classList.add('rg');
+const dial=(c)=>'<svg viewBox="0 0 100 100" id="'+c+'"><circle cx="50" cy="50" r="48" style="fill:var(--bcol,rgba(255,255,255,.05));stroke:currentColor" stroke-width="1.4"/>'+[...Array(12)].map((_,i)=>'<line x1="50" y1="'+(i%3?6:4)+'" x2="50" y2="'+(i%3?9:11)+'" transform="rotate('+i*30+' 50 50)" style="stroke:currentColor" stroke-width="'+(i%3?1:2)+'"/>').join('')+'<line class="h" x1="50" y1="50" x2="50" y2="29" style="stroke:currentColor" stroke-width="3" stroke-linecap="round"/><line class="m" x1="50" y1="50" x2="50" y2="17" style="stroke:currentColor" stroke-width="2" stroke-linecap="round"/><line class="s" x1="50" y1="56" x2="50" y2="12" style="stroke:var(--ac)" stroke-width="1.1" stroke-linecap="round"/><circle cx="50" cy="50" r="2.6" style="fill:var(--ac)"/></svg>';
+rw.insertAdjacentHTML('beforeend',dial('adial'));clk.insertAdjacentHTML('afterend',dial('cA'));
+const ad=$('#adial'),cA=$('#cA'),rot=(el,a)=>el.setAttribute('transform','rotate('+a+' 50 50)');
+function hands(){const d=new Date(),s=d.getSeconds()+d.getMilliseconds()/1e3;
+ if(CF.cs==='analog'){const q=x=>cA.querySelector(x);rot(q('.h'),(d.getHours()%12+d.getMinutes()/60)*30);rot(q('.m'),(d.getMinutes()+s/60)*6);rot(q('.s'),s*6)}
+ if(CF.ts==='analog'){const t=mode==='stop'?elapsed:left,q=x=>ad.querySelector(x);rot(q('.h'),(t/3600%12)*30);rot(q('.m'),(t/60%60)*6);rot(q('.s'),(t%60)*6)}}
+setInterval(hands,200);
+const gs={ts:$('#tsg'),cs:$('#csg')},rows={};
+[['ts',TS],['cs',CS]].forEach(([k,L])=>L.forEach(([id,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=id;b.onclick=()=>{CF[k]=id;W('cf',CF);fx()};gs[k].append(b)}));
+function pick(k,v){if(k==='ac'&&!v)v='#e5484d';CF[k]=v;W('cf',CF);k==='ac'?apply():fx()}
+[['tc','Stopwatch / Timer colour'],['cc','Clock colour'],['ac','Ring / accent colour'],['bc','Card / dial background']].forEach(([k,n])=>{const w=document.createElement('div');w.innerHTML='<div class="mu" style="margin:14px 0 6px">'+n+'</div><div class="row" style="justify-content:flex-start;gap:6px"></div>';const r=w.lastChild;rows[k]=r;
+ PAL.forEach(c=>{const b=document.createElement('button');b.className='fsw';b.style.background=c;b.dataset.c=c;b.onclick=()=>pick(k,c);r.append(b)});
+ const i=document.createElement('input');i.type='color';i.className='cpk';i.title='Apna colour';i.oninput=()=>pick(k,i.value);const a=document.createElement('button');a.className='pill';a.textContent='Auto';a.onclick=()=>pick(k,'');r.append(i,a);$('#stcol').append(w)});
+$('#strs').onclick=()=>{CF.ts='ring';CF.cs='plain';CF.tc=CF.cc=CF.bc='';W('cf',CF);fx()};
+function fx(){const r=document.documentElement.style,v=(k,x)=>x?r.setProperty(k,x):r.removeProperty(k);
+ v('--tcol',CF.tc);v('--ccol',CF.cc);v('--bcol',CF.bc);
+ const ts=CF.ts||'ring',cs=CF.cs||'plain';rw.dataset.ts=ts;clk.dataset.cs=cs;
+ cA.style.display=cs==='analog'&&CF.show!==false?'block':'none';
+ ['ts','cs'].forEach(k=>[...gs[k].children].forEach(b=>b.classList.toggle('on',b.dataset.v===(CF[k]||(k==='ts'?'ring':'plain')))));
+ Object.entries(rows).forEach(([k,r])=>{const c=r.querySelector('input');if(CF[k]&&document.activeElement!==c)c.value=CF[k];[...r.querySelectorAll('.fsw')].forEach(b=>b.classList.toggle('on',b.dataset.c===CF[k]))});hands()}
+const _ap=apply;apply=function(){_ap();fx()};fx();
+})();
+</script>
+<script>
+/* ===== Ambient: ek tap me sab off / wapas on ===== */
+(()=>{const b=$('#ambOff'),d=$('[data-p=amb]'),ins=()=>$$('#ambw input');let sv=null;
+const on=()=>AM.some(([k])=>CF.amb[k]>0);
+function lab(){const o=on();b.textContent=o?'🔇 Sab ambient band karo':sv?'🔊 Pichhli awaaz wapas chalao':'✓ Sab ambient band hai';d&&d.classList.toggle('on',o)}
+b.onclick=()=>{if(on()){sv=Object.assign({},CF.amb);AM.forEach(([k],i)=>{CF.amb[k]=0;ins()[i].value=0;if(AMB[k])amb(k,0)})}
+ else if(sv){AM.forEach(([k],i)=>{const v=sv[k]||0;CF.amb[k]=v;ins()[i].value=v*100;if(v)amb(k,v)});sv=null}
+ W('cf',CF);lab()};
+$('#ambw').addEventListener('input',lab);lab();
 })();
 </script>
 </body></html>
