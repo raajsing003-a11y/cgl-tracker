@@ -1,4 +1,4 @@
-// BUILD 20261020-1120 (Focus Desk)
+// BUILD 20261020-1300 (Private Chat)
 // START_DATE / TOTAL_DAYS used to be fixed constants. They are now `let`
 // because each player can set their own custom target (how many days,
 // starting when) — see applyTargetSettings() further below, which loads
@@ -20928,3 +20928,725 @@ if('serviceWorker' in navigator){
   });
   try{ if(new URLSearchParams(location.search).get('clean') === '1') cleanAndReload(); }catch(e){}
 })();
+
+// =====================================================================
+// ===== PRIVATE CHAT (1-to-1, sirf do log) ============================
+// =====================================================================
+// Topbar ke 💬 se khulta hai. Do member ke beech ki chat sirf unhi dono ke
+// liye hai — app me koi aur member (admin bhi) ye chat nahi dekh sakta.
+//
+// Speed / data ka hisaab (app slow na ho):
+//  - Koi polling nahi. Messages Firebase ke live listener (onChildAdded)
+//    se aate hain — sirf tab update hota hai jab koi message bheje.
+//  - Inbox ke liye ek hi chhota node sunte hain: _chatIdx/{me}.
+//  - Conversation khulne par sirf aakhri 40 message load hote hain,
+//    purane "Purane messages" dabane par.
+//  - Online status wahi presence heartbeat (har ~15s) use karta hai jo
+//    pehle se chal raha hai; chat screen me status text sirf local
+//    timer (8s) se refresh hota hai — koi extra network call nahi.
+//
+// Firebase layout (rooms/{room}/ ke andar):
+//   _chats/{pair}/meta            {a,b,an,bn}  (pair = do naam-keys sorted, '|' se jude)
+//   _chats/{pair}/m/{pushId}      {f:fromKey, t:text, ts}
+//   _chats/{pair}/r/{userKey}     us user ne kab tak padha (ticks ke liye)
+//   _chatIdx/{userKey}/{peerKey}  {n,l,ts,f,u}  inbox row: naam, last msg, time, kisne bheja, unread count
+//   _chatOwner/{userKey}          uid (optional rules ke liye, FIREBASE_RULES_CHAT.txt dekho)
+const CHAT_PAGE = 40;
+const CHAT_MAX_LEN = 1000;
+let chatInited = false;
+let chatIdx = {};
+let chatIdxFirst = true;
+let chatView = 'closed';            // 'closed' | 'inbox' | 'conv'
+let chatPeer = null;                // { key, name, pair }
+let chatMsgUnsub = null;
+let chatReadUnsub = null;
+let chatPeerReadTs = 0;
+let chatMsgs = new Map();           // pushId -> {f,t,ts}
+let chatPending = new Set();
+let chatNoMoreOlder = false;
+let chatLastIncomingTs = 0;
+let chatReadSentTs = 0;
+let chatHistDepth = 0;
+let chatIgnorePop = 0;
+let chatStatusTimer = null;
+let chatMarkReadTimer = null;
+let chatToastTimer = null;
+let chatMembers = [];               // [{name,key}]
+let chatListSeq = 0;
+
+function chatEl(id){ return document.getElementById(id); }
+function chatMyKey(){ return chatSeenKey(myName); }
+function chatPairKey(a, b){ return [a, b].sort().join('|'); }
+function chatBase(){ return 'rooms/' + getRoomCode(); }
+function chatHue(name){
+  let h = 0; const s = String(name||'?').toLowerCase();
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) % 360; }
+  return h;
+}
+function chatAvatarHtml(name, cls){
+  const ch = (String(name||'?').trim()[0] || '?').toUpperCase();
+  return `<div class="chatAv ${cls||''}" style="background:hsl(${chatHue(name)} 45% 36%)">${escapeHtml(ch)}</div>`;
+}
+function chatTimeStr(ts){
+  try{ return new Date(ts).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; }
+}
+function chatDayLabel(ts){
+  const d = new Date(ts), now = new Date();
+  const start = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((start(now) - start(d)) / 86400000);
+  if(diff === 0) return 'Aaj';
+  if(diff === 1) return 'Kal';
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year: d.getFullYear()===now.getFullYear()?undefined:'numeric'});
+}
+function chatListTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts), now = new Date();
+  const same = d.toDateString() === now.toDateString();
+  return same ? chatTimeStr(ts) : chatDayLabel(ts);
+}
+function chatLinkify(escaped){
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, (u)=>{
+    return `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`;
+  });
+}
+function chatFormatText(t){
+  return chatLinkify(escapeHtml(t)).replace(/\n/g, '<br>');
+}
+
+// ---------- boot ----------
+(function chatBoot(){
+  let tries = 0;
+  const t = setInterval(()=>{
+    tries++;
+    if(typeof myName === 'string' && myName && stateReady){
+      clearInterval(t);
+      chatStart();
+    } else if(tries > 240){ clearInterval(t); }
+  }, 500);
+  // Chat button pehle se bind ho jaye (boot se pehle bhi tap chale)
+  document.addEventListener('DOMContentLoaded', ()=>{ chatInjectUI(); });
+  if(document.readyState !== 'loading') chatInjectUI();
+})();
+
+async function chatStart(){
+  if(chatInited) return;
+  chatInited = true;
+  chatInjectUI();
+  try{
+    await waitForFirebase();
+    await window.__fbReadyPromise;
+    chatClaimOwner();
+    try{ ensurePresenceTracking(); }catch(e){}
+    await window.__fbListenReady(`${chatBase()}/_chatIdx/${chatMyKey()}`, chatOnIdx);
+  }catch(e){
+    console.error('chat start failed', e);
+    chatInited = false;
+    setTimeout(chatStart, 15000);
+  }
+}
+
+// Naam ko is device ke Firebase uid se ek baar bandh do (sirf tab kaam aata hai
+// jab FIREBASE_RULES_CHAT.txt wale rules lagaye jaayein; rules ke bina harmless).
+async function chatClaimOwner(){
+  try{
+    await window.__fbReadyPromise;
+    const uid = window.__fbUid && window.__fbUid();
+    if(!uid) return;
+    const p = `${chatBase()}/_chatOwner/${chatMyKey()}`;
+    const cur = await window.__fbGet(p);
+    if(cur === null) await window.__fbSet(p, uid);
+  }catch(e){ /* best-effort */ }
+}
+
+// ---------- inbox index (live, tiny node) ----------
+function chatTotalUnread(){
+  let n = 0;
+  Object.keys(chatIdx).forEach(k=>{ const u = Number(chatIdx[k] && chatIdx[k].u) || 0; if(u > 0) n += u; });
+  return n;
+}
+function chatUpdateBadge(){
+  const b = chatEl('chatBadge');
+  if(!b) return;
+  const n = chatTotalUnread();
+  b.textContent = n > 99 ? '99+' : String(n);
+  b.style.display = n > 0 ? 'flex' : 'none';
+}
+function chatOnIdx(val){
+  val = val || {};
+  const prev = chatIdx;
+  chatIdx = val;
+  if(!chatIdxFirst){
+    const me = chatMyKey();
+    Object.keys(val).forEach(k=>{
+      const cur = val[k], old = prev[k];
+      if(cur && cur.f && cur.f !== me && (!old || cur.ts !== old.ts)){
+        const viewing = chatView === 'conv' && chatPeer && chatPeer.key === k && !document.hidden;
+        if(!viewing) chatNotifyIncoming(cur, k);
+      }
+    });
+  }
+  chatIdxFirst = false;
+  chatUpdateBadge();
+  if(chatView === 'inbox') chatRenderInbox();
+}
+function chatNotifyIncoming(e, key){
+  const name = e.n || 'Kisi member';
+  const txt = e.l || '';
+  if(document.hidden){
+    try{ fireNotification('💬 ' + name, txt); }catch(_){}
+    return;
+  }
+  if(chatView === 'inbox') return; // list khud update ho rahi hai
+  const t = chatEl('chatToast');
+  if(!t) return;
+  t.innerHTML = `<b>${escapeHtml(name)}</b><span>${escapeHtml(txt)}</span>`;
+  t.dataset.name = name;
+  t.hidden = false;
+  clearTimeout(chatToastTimer);
+  chatToastTimer = setTimeout(()=>{ t.hidden = true; }, 4500);
+}
+
+// ---------- open / close / navigation ----------
+function chatPushHist(kind){
+  try{ history.pushState({cgl50Chat: kind}, '', location.href); chatHistDepth++; }catch(e){}
+}
+function chatShowPane(which){
+  const inbox = chatEl('chatInbox'), conv = chatEl('chatConv');
+  if(inbox) inbox.hidden = (which !== 'inbox');
+  if(conv) conv.hidden = (which !== 'conv');
+}
+function chatSetOpen(open){
+  const ov = chatEl('chatOverlay');
+  if(!ov) return;
+  ov.classList.toggle('open', !!open);
+  ov.setAttribute('aria-hidden', open ? 'false' : 'true');
+  document.documentElement.classList.toggle('chatLock', !!open);
+  chatFitViewport();
+}
+function chatOpenInbox(){
+  chatInjectUI();
+  if(!chatInited) chatStart();
+  const t = chatEl('chatToast'); if(t) t.hidden = true;
+  chatTeardownConv();
+  const wasClosed = (chatView === 'closed');
+  chatView = 'inbox';
+  chatSetOpen(true);
+  chatShowPane('inbox');
+  if(wasClosed) chatPushHist('inbox');
+  const s = chatEl('chatSearch'); if(s) s.value = '';
+  chatRenderInbox();
+  chatLoadMembers();
+  chatStartStatusTimer();
+}
+function chatClose(){
+  chatTeardownConv();
+  chatView = 'closed';
+  chatSetOpen(false);
+  clearInterval(chatStatusTimer); chatStatusTimer = null;
+  if(chatHistDepth > 0){
+    const d = chatHistDepth; chatHistDepth = 0; chatIgnorePop++;
+    try{ history.go(-d); }catch(e){ chatIgnorePop = 0; }
+  }
+}
+function chatBack(){
+  if(chatView === 'conv'){
+    if(chatHistDepth >= 2){ try{ history.back(); return; }catch(e){} }
+    chatGoInbox();
+  } else {
+    chatClose();
+  }
+}
+function chatGoInbox(){
+  chatTeardownConv();
+  chatView = 'inbox';
+  chatShowPane('inbox');
+  chatRenderInbox();
+  chatLoadMembers();
+}
+window.addEventListener('popstate', ()=>{
+  if(chatIgnorePop > 0){ chatIgnorePop--; return; }
+  if(chatView === 'closed') return;
+  if(chatHistDepth > 0) chatHistDepth--;
+  if(chatView === 'conv' && chatHistDepth >= 1){ chatGoInbox(); }
+  else { chatTeardownConv(); chatView = 'closed'; chatSetOpen(false); clearInterval(chatStatusTimer); chatStatusTimer = null; chatHistDepth = 0; }
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && chatView !== 'closed'){ chatBack(); }
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) return;
+  try{ markMyPresence(); }catch(e){}
+  if(chatView === 'conv') chatMarkRead();
+});
+function chatFitViewport(){
+  const ov = chatEl('chatOverlay');
+  if(!ov) return;
+  const vv = window.visualViewport;
+  if(vv){
+    ov.style.height = vv.height + 'px';
+    ov.style.top = vv.offsetTop + 'px';
+  } else {
+    ov.style.height = '';
+    ov.style.top = '0px';
+  }
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', ()=>{ chatFitViewport(); if(chatView==='conv') chatScrollBottom(); });
+  window.visualViewport.addEventListener('scroll', chatFitViewport);
+}
+
+// ---------- inbox UI ----------
+async function chatLoadMembers(){
+  const seq = ++chatListSeq;
+  let names = [];
+  try{ await refreshRoomMeta(); }catch(e){}
+  try{ names = await loadRoomRegistry(); }catch(e){}
+  let friends = [];
+  try{ friends = loadFriendsList() || []; }catch(e){}
+  let all = [...friends, ...names];
+  try{ all = visibleNamesFor([myName, ...all]); }catch(e){}
+  const me = chatMyKey();
+  const seen = new Set();
+  const out = [];
+  all.forEach(n=>{
+    if(!n) return;
+    const k = chatSeenKey(n);
+    if(k === me || seen.has(k)) return;
+    seen.add(k); out.push({ name: n, key: k });
+  });
+  if(seq !== chatListSeq) return;
+  chatMembers = out;
+  if(chatView === 'inbox') chatRenderInbox();
+}
+function chatRenderInbox(){
+  const list = chatEl('chatList');
+  if(!list) return;
+  const q = ((chatEl('chatSearch') || {}).value || '').trim().toLowerCase();
+  const rows = new Map();
+  chatMembers.forEach(m=> rows.set(m.key, { name: m.name, key: m.key, idx: chatIdx[m.key] || null }));
+  Object.keys(chatIdx).forEach(k=>{
+    if(!rows.has(k)){ const e = chatIdx[k] || {}; rows.set(k, { name: e.n || k, key: k, idx: e }); }
+  });
+  let arr = Array.from(rows.values());
+  if(q) arr = arr.filter(r=> r.name.toLowerCase().includes(q));
+  arr.sort((a,b)=>{
+    const ta = (a.idx && a.idx.ts) || 0, tb = (b.idx && b.idx.ts) || 0;
+    if(ta !== tb) return tb - ta;
+    return a.name.localeCompare(b.name);
+  });
+  if(!arr.length){
+    list.innerHTML = `<div class="chatEmpty">${q ? 'Is naam ka koi member nahi mila.' : 'Abhi koi member nahi mila — thodi der baad dekho.'}</div>`;
+    return;
+  }
+  const me = chatMyKey();
+  list.innerHTML = arr.map(r=>{
+    const e = r.idx;
+    const pr = presenceStatusFor(r.name);
+    const u = Number(e && e.u) || 0;
+    let prev = e && e.l ? e.l : 'Naya chat shuru karo 👋';
+    if(e && e.l && e.f === me) prev = 'Tum: ' + prev;
+    return `<button type="button" class="chatRow" data-name="${escapeHtml(r.name)}">
+      <div class="chatAvWrap">${chatAvatarHtml(r.name)}${pr.online ? '<span class="chatDot"></span>' : ''}</div>
+      <div class="chatRowMain">
+        <div class="chatRowTop"><span class="chatRowName">${escapeHtml(r.name)}</span><span class="chatRowTime ${u>0?'unread':''}">${escapeHtml(chatListTime(e && e.ts))}</span></div>
+        <div class="chatRowBot"><span class="chatRowPrev ${u>0?'unread':''}">${escapeHtml(prev)}</span>${u>0 ? `<span class="chatUnread">${u>99?'99+':u}</span>` : ''}</div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+// ---------- conversation ----------
+function chatTeardownConv(){
+  if(chatMsgUnsub){ try{ chatMsgUnsub(); }catch(e){} chatMsgUnsub = null; }
+  if(chatReadUnsub){ try{ chatReadUnsub(); }catch(e){} chatReadUnsub = null; }
+  clearTimeout(chatMarkReadTimer);
+  chatPeer = null;
+  chatMsgs = new Map();
+  chatPending = new Set();
+}
+async function chatOpenConv(name){
+  if(!name) return;
+  chatTeardownConv();
+  const wasConv = (chatView === 'conv');
+  const key = chatSeenKey(name);
+  const peer = { key, name, pair: chatPairKey(chatMyKey(), key) };
+  chatPeer = peer;
+  chatView = 'conv';
+  chatNoMoreOlder = false;
+  chatLastIncomingTs = 0;
+  chatReadSentTs = 0;
+  chatPeerReadTs = 0;
+  chatShowPane('conv');
+  if(!wasConv) chatPushHist('conv');
+  chatEl('chatPeerName').textContent = name;
+  chatEl('chatPeerAv').innerHTML = chatAvatarHtml(name);
+  chatEl('chatMsgs').innerHTML = chatLockNote();
+  const np = chatEl('chatNewPill'); if(np) np.hidden = true;
+  chatRefreshStatus();
+  const base = `${chatBase()}/_chats/${peer.pair}`;
+  try{
+    const un1 = await window.__fbChatListen(`${base}/m`, CHAT_PAGE, (id, m)=> chatOnMsg(peer, id, m));
+    if(chatPeer !== peer){ try{ un1(); }catch(e){} return; }
+    chatMsgUnsub = un1;
+    const un2 = await window.__fbListenReady(`${base}/r/${key}`, (v)=>{
+      if(chatPeer !== peer) return;
+      chatPeerReadTs = Number(v) || 0;
+      chatRefreshTicks();
+    });
+    if(chatPeer !== peer){ try{ un2(); }catch(e){} return; }
+    chatReadUnsub = un2;
+  }catch(e){
+    console.error('chat open failed', e);
+    chatToastMsg('Chat load nahi ho payi — internet check karo.');
+  }
+  setTimeout(()=>{ if(chatPeer === peer) chatMarkRead(); }, 600);
+  const ta = chatEl('chatInput'); if(ta){ ta.value = ''; chatAutosize(); }
+}
+function chatLockNote(){
+  return `<div class="chatOlderWrap" id="chatOlderWrap" hidden><button type="button" id="chatOlderBtn" class="chatOlderBtn">⬆ Purane messages</button></div><div class="chatLockNote">🔒 Ye chat sirf tum dono ke beech hai.</div>`;
+}
+function chatSortedIds(){ return Array.from(chatMsgs.keys()).sort(); }
+function chatBubbleHtml(id, m){
+  const mine = m.f === chatMyKey();
+  const pending = chatPending.has(id);
+  const seen = mine && !pending && Number(m.ts) <= chatPeerReadTs;
+  const tick = mine ? `<span class="chatTick ${seen?'seen':''}">${pending ? '🕓' : (seen ? '✓✓' : '✓')}</span>` : '';
+  return `<div class="cmsg ${mine?'me':'them'}" data-id="${escapeHtml(id)}" data-ts="${Number(m.ts)||0}"><div class="cbub"><span class="ctext">${chatFormatText(String(m.t||''))}</span><span class="cmeta">${escapeHtml(chatTimeStr(m.ts))}${tick}</span></div></div>`;
+}
+function chatDaySepHtml(ts){
+  return `<div class="chatDaySep" data-day="${new Date(ts).toDateString()}"><span>${escapeHtml(chatDayLabel(ts))}</span></div>`;
+}
+function chatNearBottom(){
+  const box = chatEl('chatMsgs');
+  return !box || (box.scrollHeight - box.scrollTop - box.clientHeight) < 90;
+}
+function chatScrollBottom(){
+  const box = chatEl('chatMsgs');
+  if(box) box.scrollTop = box.scrollHeight;
+}
+function chatOnMsg(peer, id, m){
+  if(chatPeer !== peer || !m || chatMsgs.has(id)) return;
+  const box = chatEl('chatMsgs');
+  if(!box) return;
+  const ids = chatSortedIds();
+  const last = ids.length ? ids[ids.length - 1] : null;
+  const wasBottom = chatNearBottom();
+  chatMsgs.set(id, m);
+  const mine = m.f === chatMyKey();
+  if(!mine){
+    chatLastIncomingTs = Math.max(chatLastIncomingTs, Number(m.ts) || 0);
+  }
+  if(last === null || id > last){
+    // normal case: bottom me jodo
+    const allEls = box.querySelectorAll('.cmsg');
+    const lastEl = allEls.length ? allEls[allEls.length - 1] : null;
+    const lastDay = lastEl ? new Date(Number(lastEl.dataset.ts)).toDateString() : null;
+    const day = new Date(Number(m.ts) || Date.now()).toDateString();
+    let html = '';
+    if(lastDay !== day) html += chatDaySepHtml(Number(m.ts) || Date.now());
+    html += chatBubbleHtml(id, m);
+    box.insertAdjacentHTML('beforeend', html);
+  } else {
+    chatRenderAll(true);
+  }
+  chatUpdateOlderBtn();
+  if(mine || wasBottom){ chatScrollBottom(); }
+  else if(!mine){ const np = chatEl('chatNewPill'); if(np) np.hidden = false; }
+  if(!mine) chatMarkRead();
+}
+function chatRenderAll(keepPos){
+  const box = chatEl('chatMsgs');
+  if(!box) return;
+  const prevH = box.scrollHeight, prevTop = box.scrollTop;
+  const ids = chatSortedIds();
+  let html = chatLockNote();
+  let lastDay = null;
+  ids.forEach(id=>{
+    const m = chatMsgs.get(id);
+    const day = new Date(Number(m.ts) || 0).toDateString();
+    if(day !== lastDay){ html += chatDaySepHtml(Number(m.ts) || 0); lastDay = day; }
+    html += chatBubbleHtml(id, m);
+  });
+  box.innerHTML = html;
+  chatUpdateOlderBtn();
+  if(keepPos) box.scrollTop = prevTop + (box.scrollHeight - prevH);
+  else chatScrollBottom();
+}
+function chatUpdateOlderBtn(){
+  const w = chatEl('chatOlderWrap');
+  if(w) w.hidden = chatNoMoreOlder || chatMsgs.size < CHAT_PAGE;
+}
+async function chatLoadOlder(){
+  if(!chatPeer || chatNoMoreOlder) return;
+  const peer = chatPeer;
+  const ids = chatSortedIds();
+  if(!ids.length) return;
+  const btn = chatEl('chatOlderBtn'); if(btn){ btn.disabled = true; btn.textContent = '⏳ Load ho raha hai...'; }
+  try{
+    const arr = await window.__fbChatOlder(`${chatBase()}/_chats/${peer.pair}/m`, ids[0], CHAT_PAGE);
+    if(chatPeer !== peer) return;
+    arr.forEach(([id, m])=> chatMsgs.set(id, m));
+    if(arr.length < CHAT_PAGE) chatNoMoreOlder = true;
+    chatRenderAll(true);
+  }catch(e){
+    chatToastMsg('Purane messages load nahi hue.');
+    if(btn){ btn.disabled = false; btn.textContent = '⬆ Purane messages'; }
+  }
+}
+function chatRefreshTicks(){
+  const box = chatEl('chatMsgs');
+  if(!box) return;
+  box.querySelectorAll('.cmsg.me').forEach(el=>{
+    const id = el.dataset.id;
+    const tk = el.querySelector('.chatTick');
+    if(!tk) return;
+    const pending = chatPending.has(id);
+    const seen = !pending && Number(el.dataset.ts) <= chatPeerReadTs;
+    tk.textContent = pending ? '🕓' : (seen ? '✓✓' : '✓');
+    tk.classList.toggle('seen', seen);
+  });
+}
+function chatMarkRead(){
+  if(!chatPeer || document.hidden) return;
+  clearTimeout(chatMarkReadTimer);
+  chatMarkReadTimer = setTimeout(()=>{
+    const p = chatPeer;
+    if(!p || document.hidden) return;
+    const idx = chatIdx[p.key];
+    const needIdx = !!(idx && Number(idx.u) > 0);
+    const needRead = chatLastIncomingTs > chatReadSentTs;
+    if(!needIdx && !needRead) return;
+    const b = `${chatBase()}/_chats/${p.pair}/r/${chatMyKey()}`;
+    const up = {};
+    if(needRead) up[b] = { '.sv': 'timestamp' };
+    if(needIdx) up[`${chatBase()}/_chatIdx/${chatMyKey()}/${p.key}/u`] = 0;
+    if(needRead) chatReadSentTs = chatLastIncomingTs;
+    window.__fbUpdate(up).catch(()=>{});
+  }, 400);
+}
+
+// ---------- send ----------
+async function chatSend(){
+  const ta = chatEl('chatInput');
+  if(!ta || !chatPeer) return;
+  const text = ta.value.replace(/\s+$/,'').slice(0, CHAT_MAX_LEN);
+  if(!text.trim()) return;
+  const peer = chatPeer;
+  const me = chatMyKey();
+  const b = chatBase();
+  ta.value = '';
+  chatAutosize();
+  ta.focus();
+  const id = window.__fbKey(`${b}/_chats/${peer.pair}/m`);
+  chatPending.add(id);
+  const TS = { '.sv': 'timestamp' };
+  const preview = text.replace(/\s+/g, ' ').slice(0, 80);
+  const [ka, kb] = [me, peer.key].sort();
+  const up = {};
+  up[`${b}/_chats/${peer.pair}/meta`] = {
+    a: ka, b: kb,
+    an: ka === me ? myName : peer.name,
+    bn: kb === me ? myName : peer.name
+  };
+  up[`${b}/_chats/${peer.pair}/m/${id}`] = { f: me, t: text, ts: TS };
+  up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
+  up[`${b}/_chatIdx/${me}/${peer.key}/n`] = peer.name;
+  up[`${b}/_chatIdx/${me}/${peer.key}/l`] = preview;
+  up[`${b}/_chatIdx/${me}/${peer.key}/ts`] = TS;
+  up[`${b}/_chatIdx/${me}/${peer.key}/f`] = me;
+  up[`${b}/_chatIdx/${me}/${peer.key}/u`] = 0;
+  up[`${b}/_chatIdx/${peer.key}/${me}/n`] = myName;
+  up[`${b}/_chatIdx/${peer.key}/${me}/l`] = preview;
+  up[`${b}/_chatIdx/${peer.key}/${me}/ts`] = TS;
+  up[`${b}/_chatIdx/${peer.key}/${me}/f`] = me;
+  up[`${b}/_chatIdx/${peer.key}/${me}/u`] = { '.sv': { increment: 1 } };
+  try{
+    await window.__fbUpdate(up);
+    chatPending.delete(id);
+    chatRefreshTicks();
+  }catch(e){
+    console.error('chat send failed', e);
+    chatPending.delete(id);
+    chatMsgs.delete(id);
+    const el = chatEl('chatMsgs') && chatEl('chatMsgs').querySelector(`.cmsg[data-id="${id}"]`);
+    if(el) el.remove();
+    if(chatPeer === peer && !ta.value) ta.value = text;
+    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission/i.test(String(e.message||'')));
+    chatToastMsg(denied ? 'Message nahi gaya — is naam ki chat kisi aur device se bandhi hai.' : 'Message nahi gaya — internet check karo.');
+  }
+}
+function chatAutosize(){
+  const ta = chatEl('chatInput');
+  if(!ta) return;
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+}
+function chatToastMsg(msg){
+  const t = chatEl('chatToast');
+  if(!t) return;
+  t.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+  delete t.dataset.name;
+  t.hidden = false;
+  clearTimeout(chatToastTimer);
+  chatToastTimer = setTimeout(()=>{ t.hidden = true; }, 3500);
+}
+
+// ---------- online status (local refresh only, koi network call nahi) ----------
+function chatRefreshStatus(){
+  if(chatView === 'conv' && chatPeer){
+    const p = presenceLabel(chatPeer.name);
+    const el = chatEl('chatPeerStatus');
+    if(el){ el.textContent = p.dot + ' ' + p.text; el.classList.toggle('on', p.cls === 'on'); }
+  } else if(chatView === 'inbox'){
+    chatRenderInbox();
+  }
+}
+function chatStartStatusTimer(){
+  clearInterval(chatStatusTimer);
+  chatStatusTimer = setInterval(()=>{ if(!document.hidden) chatRefreshStatus(); }, 8000);
+}
+
+// ---------- DOM + CSS (JS se inject, index.html me sirf 💬 button badla hai) ----------
+function chatInjectUI(){
+  if(!document.body || chatEl('chatOverlay')) return;
+  const st = document.createElement('style');
+  st.id = 'chatStyles';
+  st.textContent = `
+  #chatBtn{position:relative;}
+  .chatBadge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;box-sizing:border-box;border:1.5px solid var(--bg,#08070a);line-height:1;}
+  html.chatLock, html.chatLock body{overflow:hidden;}
+  .chatOv{display:none;position:fixed;left:0;right:0;top:0;height:100dvh;z-index:800;background:var(--bg,#08070a);color:var(--text,#c6c3cb);font-family:var(--font-main,system-ui,sans-serif);}
+  .chatOv.open{display:block;}
+  .chatPane{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;position:relative;}
+  .chatPane[hidden]{display:none;}
+  .chatHead{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--panel,#111013);border-bottom:1px solid var(--border,#333038);flex-shrink:0;}
+  .chatIconBtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border-strong,#726d7a);background:var(--panel2,#1a181d);color:var(--accent,#fbbf24);font-size:18px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;}
+  .chatIconBtn:active{transform:scale(.92);}
+  .chatTitle{font-size:18px;font-weight:800;color:var(--white,#eeecf0);letter-spacing:.2px;}
+  .chatHeadTxt{min-width:0;flex:1;}
+  .chatPeerName{font-size:16px;font-weight:800;color:var(--white,#eeecf0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chatPeerStatus{font-size:12px;color:var(--muted,#aaa5ad);font-weight:600;margin-top:1px;}
+  .chatPeerStatus.on{color:var(--gain,#4ade80);}
+  .chatAv{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;flex-shrink:0;}
+  .chatSearchWrap{padding:10px 12px;flex-shrink:0;}
+  #chatSearch{width:100%;box-sizing:border-box;padding:11px 14px;border-radius:12px;border:1px solid var(--border,#333038);background:var(--panel2,#1a181d);color:var(--text,#c6c3cb);font-size:15px;font-family:inherit;outline:none;}
+  #chatSearch:focus{border-color:var(--accent,#fbbf24);}
+  .chatList{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 6px 8px;}
+  .chatRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--border,#333038);padding:11px 8px;cursor:pointer;color:inherit;font-family:inherit;}
+  .chatRow:active{background:var(--panel2,#1a181d);}
+  .chatAvWrap{position:relative;flex-shrink:0;}
+  .chatDot{position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:var(--gain,#4ade80);border:2px solid var(--bg,#08070a);}
+  .chatRowMain{flex:1;min-width:0;}
+  .chatRowTop,.chatRowBot{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .chatRowName{font-size:15.5px;font-weight:800;color:var(--white,#eeecf0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chatRowTime{font-size:11.5px;color:var(--muted,#aaa5ad);flex-shrink:0;font-weight:600;}
+  .chatRowTime.unread{color:var(--accent,#fbbf24);}
+  .chatRowPrev{font-size:13px;color:var(--muted,#aaa5ad);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .chatRowPrev.unread{color:var(--text,#c6c3cb);font-weight:700;}
+  .chatUnread{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent,#fbbf24);color:#120d00;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;flex-shrink:0;margin-top:2px;}
+  .chatEmpty{padding:36px 18px;text-align:center;color:var(--muted,#aaa5ad);font-size:14px;font-weight:600;}
+  .chatSupport{display:block;text-align:center;padding:12px 10px calc(12px + env(safe-area-inset-bottom,0px));font-size:12.5px;color:var(--muted,#aaa5ad);text-decoration:none;border-top:1px solid var(--border,#333038);flex-shrink:0;font-weight:600;}
+  .chatMsgs{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:10px 12px 8px;display:flex;flex-direction:column;gap:3px;-webkit-overflow-scrolling:touch;}
+  .chatLockNote{align-self:center;margin:6px 0 8px;padding:6px 12px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038);font-size:11.5px;color:var(--muted,#aaa5ad);font-weight:600;text-align:center;}
+  .chatOlderWrap{align-self:center;margin:2px 0 6px;}
+  .chatOlderBtn{background:var(--panel2,#1a181d);border:1px solid var(--border-strong,#726d7a);color:var(--accent,#fbbf24);border-radius:14px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .chatDaySep{align-self:center;margin:10px 0 6px;}
+  .chatDaySep span{display:inline-block;padding:3px 11px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038);font-size:11px;font-weight:700;color:var(--muted,#aaa5ad);}
+  .cmsg{display:flex;max-width:100%;}
+  .cmsg.me{justify-content:flex-end;}
+  .cmsg.them{justify-content:flex-start;}
+  .cbub{max-width:82%;padding:7px 10px 5px;border-radius:15px;font-size:15px;line-height:1.38;word-break:break-word;overflow-wrap:anywhere;position:relative;}
+  .cmsg.me .cbub{background:var(--accent,#fbbf24);color:#120d00;border-bottom-right-radius:5px;}
+  .cmsg.them .cbub{background:var(--panel2,#1a181d);border:1px solid var(--border,#333038);color:var(--text,#c6c3cb);border-bottom-left-radius:5px;}
+  .cbub a{color:inherit;text-decoration:underline;}
+  .cmeta{display:inline-flex;align-items:center;gap:4px;float:right;margin:7px 0 0 10px;font-size:10.5px;opacity:.7;font-weight:600;line-height:1;}
+  .chatTick.seen{color:#1d4ed8;opacity:1;font-weight:800;}
+  .chatNewPill{position:absolute;left:50%;transform:translateX(-50%);bottom:78px;background:var(--accent,#fbbf24);color:#120d00;border:0;border-radius:16px;padding:7px 14px;font-size:12.5px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer;z-index:2;font-family:inherit;}
+  .chatNewPill[hidden]{display:none;}
+  .chatComposer{display:flex;align-items:flex-end;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:var(--panel,#111013);border-top:1px solid var(--border,#333038);flex-shrink:0;}
+  #chatInput{flex:1;resize:none;box-sizing:border-box;min-height:42px;max-height:120px;padding:10px 14px;border-radius:21px;border:1px solid var(--border,#333038);background:var(--panel2,#1a181d);color:var(--text,#c6c3cb);font-size:15px;line-height:1.35;font-family:inherit;outline:none;}
+  #chatInput:focus{border-color:var(--accent,#fbbf24);}
+  .chatSend{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent,#fbbf24);color:#120d00;font-size:19px;font-weight:800;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;}
+  .chatSend:active{transform:scale(.92);}
+  .chatToast{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));max-width:480px;margin:0 auto;z-index:900;background:var(--panel,#111013);border:1px solid var(--accent,#fbbf24);border-radius:14px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);color:var(--text,#c6c3cb);font-size:13.5px;display:flex;flex-direction:column;gap:2px;cursor:pointer;font-family:var(--font-main,system-ui,sans-serif);}
+  .chatToast[hidden]{display:none;}
+  .chatToast b{color:var(--accent,#fbbf24);font-size:13px;}
+  .chatToast span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  `;
+  document.head.appendChild(st);
+
+  const ov = document.createElement('div');
+  ov.id = 'chatOverlay';
+  ov.className = 'chatOv';
+  ov.setAttribute('aria-hidden', 'true');
+  ov.innerHTML = `
+    <section class="chatPane" id="chatInbox">
+      <header class="chatHead">
+        <button type="button" class="chatIconBtn" id="chatCloseBtn" aria-label="Band karo">✕</button>
+        <div class="chatTitle">💬 Chats</div>
+      </header>
+      <div class="chatSearchWrap"><input type="text" id="chatSearch" placeholder="🔍 Naam dhoondho…" autocomplete="off"></div>
+      <div class="chatList" id="chatList"></div>
+      <a class="chatSupport" href="https://t.me/Yuvrajsisodiya89" target="_blank" rel="noopener noreferrer">✈️ Yuvraj se Telegram pe baat karo</a>
+    </section>
+    <section class="chatPane" id="chatConv" hidden>
+      <header class="chatHead">
+        <button type="button" class="chatIconBtn" id="chatBackBtn" aria-label="Wapas">←</button>
+        <div id="chatPeerAv"></div>
+        <div class="chatHeadTxt"><div class="chatPeerName" id="chatPeerName"></div><div class="chatPeerStatus" id="chatPeerStatus"></div></div>
+      </header>
+      <div class="chatMsgs" id="chatMsgs"></div>
+      <button type="button" class="chatNewPill" id="chatNewPill" hidden>⬇ Naya message</button>
+      <div class="chatComposer">
+        <textarea id="chatInput" rows="1" maxlength="${CHAT_MAX_LEN}" placeholder="Message likho…"></textarea>
+        <button type="button" class="chatSend" id="chatSendBtn" aria-label="Bhejo">➤</button>
+      </div>
+    </section>`;
+  document.body.appendChild(ov);
+
+  const toast = document.createElement('div');
+  toast.id = 'chatToast';
+  toast.className = 'chatToast';
+  toast.hidden = true;
+  document.body.appendChild(toast);
+
+  // events
+  chatEl('chatCloseBtn').addEventListener('click', chatClose);
+  chatEl('chatBackBtn').addEventListener('click', chatBack);
+  chatEl('chatSearch').addEventListener('input', chatRenderInbox);
+  chatEl('chatList').addEventListener('click', (e)=>{
+    const row = e.target.closest('.chatRow');
+    if(row) chatOpenConv(row.getAttribute('data-name'));
+  });
+  chatEl('chatMsgs').addEventListener('click', (e)=>{
+    if(e.target.closest('#chatOlderBtn')) chatLoadOlder();
+  });
+  chatEl('chatMsgs').addEventListener('scroll', ()=>{
+    if(chatNearBottom()){ const np = chatEl('chatNewPill'); if(np) np.hidden = true; }
+  }, { passive: true });
+  chatEl('chatNewPill').addEventListener('click', ()=>{ chatScrollBottom(); chatEl('chatNewPill').hidden = true; });
+  chatEl('chatSendBtn').addEventListener('mousedown', (e)=> e.preventDefault()); // keyboard band na ho
+  chatEl('chatSendBtn').addEventListener('click', chatSend);
+  const ta = chatEl('chatInput');
+  ta.addEventListener('input', chatAutosize);
+  ta.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches){
+      e.preventDefault(); chatSend();
+    }
+  });
+  ta.addEventListener('focus', ()=> setTimeout(()=>{ chatFitViewport(); chatScrollBottom(); }, 250));
+  toast.addEventListener('click', ()=>{
+    const nm = toast.dataset.name;
+    toast.hidden = true;
+    if(nm){
+      if(chatView === 'closed') chatOpenInbox();
+      chatOpenConv(nm);
+    }
+  });
+  const btn = chatEl('chatBtn');
+  if(btn && !btn.dataset.chatBound){
+    btn.dataset.chatBound = '1';
+    btn.addEventListener('click', (e)=>{ e.preventDefault(); chatOpenInbox(); });
+  }
+  chatUpdateBadge();
+}
