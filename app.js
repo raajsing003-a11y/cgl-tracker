@@ -24222,3 +24222,1130 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const prevTear = chatTeardownConv;
   chatTeardownConv = function(){ close(); prevTear(); };
 })();
+
+
+// ============================================================================
+// CHAT PLUS 5 (section 4): Instagram-style icons + premium look + CALL EFFECTS
+//  - Line (SVG) icons: header (back/phone/video/options), composer
+//    (blue camera, mic, gallery, sticker, plus, send), call buttons
+//  - Pill composer, gradient bubbles, glass call buttons
+//  - Video call Effects (✨ button): filters, portrait focus, hearts/stars/
+//    snow/party particles, cinema bars. Canvas pipeline -> sender.replaceTrack,
+//    so dusre ko bhi effect dikhta hai. Screen share ke saath safe.
+// ============================================================================
+(function chatPlus5(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const P = {
+    back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    video: '<rect x="2" y="6" width="13" height="12" rx="3"/><path d="M15 10l6-3v10l-6-3z"/>',
+    videoOff: '<rect x="2" y="6" width="13" height="12" rx="3"/><path d="M15 10l6-3v10l-6-3zM3 3l18 18"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+    micOff: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/>',
+    gallery: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+    sticker: '<path d="M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v5l-7 7H8a4 4 0 0 1-4-4z"/><path d="M20 13h-3a4 4 0 0 0-4 4v3M9 9.5h.01M15 9.5h.01M9 13a3.5 3.5 0 0 0 4 1"/>',
+    plus: '<circle cx="12" cy="12" r="9.5"/><path d="M12 8v8M8 12h8"/>',
+    camera: '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.8"/>',
+    opts: '<circle cx="11" cy="13" r="8"/><path d="M8 13.5a3.5 3.5 0 0 0 6 0M9 10h.01M13 10h.01M19 3v5M16.5 5.5h5"/>',
+    spark: '<path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"/><path d="M19 15v5M16.5 17.5h5"/>',
+    screen: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    flip: '<path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/>'
+  };
+  const svg = (k, sz)=> `<svg viewBox="0 0 24 24" width="${sz || 24}" height="${sz || 24}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k]}</svg>`;
+  const uri = (k)=> `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>${P[k]}</svg>`)}")`;
+  const cico = (sel, k)=> `${sel}::before{background-image:${uri(k)};}`;
+
+  // ---------------- styles ----------------
+  function styles(){
+    if($('cxp5Styles')) return;
+    const s = document.createElement('style'); s.id = 'cxp5Styles';
+    s.textContent = `
+    .chatHead .chatIconBtn{background:transparent;border:0;color:#fff;width:40px;height:40px}
+    .chatHead .chatIconBtn svg{display:block}
+    #chatPeerAv .chatAv{box-shadow:0 0 0 2px #0b0c10,0 0 0 4px #c13584;width:40px;height:40px}
+    .chatPeerName{font-weight:700;letter-spacing:.1px}
+    .cmsg.me .cbub{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#2563eb 100%);color:#fff;border-radius:20px;border-bottom-right-radius:6px;box-shadow:0 2px 10px rgba(79,70,229,.28)}
+    .cmsg.me .cbub .cmeta,.cmsg.me .cbub .chatTick{color:rgba(255,255,255,.72)}
+    .cmsg.me .cbub a{color:#dbeafe}
+    .cmsg.them .cbub{background:#24272f;border:0;color:#f1f1f4;border-radius:20px;border-bottom-left-radius:6px}
+    .chatComposer{margin:6px 10px calc(8px + env(safe-area-inset-bottom,0px))!important;padding:5px 6px!important;border-radius:28px;background:#20232b!important;border:1px solid rgba(255,255,255,.08)!important;align-items:center!important;gap:2px!important}
+    .chatComposer #chatInput{order:2;background:transparent!important;border:0!important;box-shadow:none!important;min-height:38px;padding:9px 6px!important;color:#fff}
+    .chatComposer #chatInput::placeholder{color:#8b90a0}
+    .chatComposer .cxBtn{width:38px!important;height:38px!important;color:#fff!important;font-size:0!important;padding:0}
+    .chatComposer .cxBtn svg{display:block}
+    .chatComposer #cxPCam{order:1;flex:none;width:40px;height:40px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f7bff,#6d4bff);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+    .chatComposer #cxMicBtn{order:3}
+    .chatComposer #cxPGal{order:4}
+    .chatComposer #cxPStk{order:5}
+    .chatComposer #cxAttachBtn{order:6}
+    .chatComposer .cxPB{flex:none;width:38px;height:38px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+    .chatComposer #chatSendBtn{order:7;display:none;width:auto;height:36px;border-radius:18px;padding:0 14px;background:transparent;color:#6aa0ff;font-size:15px;font-weight:700}
+    .chatComposer.hasText #chatSendBtn{display:flex}
+    .chatComposer.hasText #cxMicBtn,.chatComposer.hasText #cxPGal,.chatComposer.hasText #cxPStk{display:none}
+    .chatComposer .cxMenu{left:auto!important;right:8px;bottom:calc(100% + 8px)!important;background:#20232b;border-color:rgba(255,255,255,.1)}
+    /* call */
+    .callBtns{flex-wrap:wrap;gap:12px!important;max-width:100%}
+    .callBtn{width:54px!important;height:54px!important;font-size:0!important;position:relative;background:rgba(255,255,255,.16)!important;border:1px solid rgba(255,255,255,.2)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+    .callBtn[hidden]{display:none!important}
+    .callBtn::before{content:'';position:absolute;inset:0;margin:auto;width:24px;height:24px;background-position:center;background-size:contain;background-repeat:no-repeat}
+    .callBtn.off{background:rgba(239,68,68,.85)!important}
+    .callBtn.ok{background:#22c55e!important}
+    .callBtn.end{background:#ef4444!important;width:62px!important;height:62px!important}
+    .callBtn.end::before{transform:rotate(135deg)}
+    ${cico('#callMute', 'mic')}${cico('#callMute.off', 'micOff')}
+    ${cico('#callCam', 'video')}${cico('#callCam.off', 'videoOff')}
+    ${cico('#callFlip', 'flip')}${cico('#callShare', 'screen')}${cico('#callFx', 'spark')}
+    ${cico('#callAcc', 'phone')}${cico('#callEnd', 'phone')}
+    #callFx{display:none}
+    .callOv.vid.conn #callFx{display:block}
+    #callFx.on{background:linear-gradient(135deg,#a855f7,#ec4899)!important}
+    #cxFxStrip{position:absolute;left:0;right:0;bottom:calc(128px + env(safe-area-inset-bottom,0px));z-index:3;display:none;gap:12px;overflow-x:auto;padding:10px 16px;-webkit-overflow-scrolling:touch;background:linear-gradient(0deg,rgba(0,0,0,.55),transparent)}
+    #cxFxStrip.open{display:flex}
+    #cxFxStrip button{flex:none;width:62px;background:transparent;border:0;color:#fff;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;cursor:pointer}
+    #cxFxStrip i{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:24px;border:2px solid rgba(255,255,255,.35)}
+    #cxFxStrip button.on i{border-color:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.85)}`;
+    document.head.appendChild(s);
+  }
+
+  // ---------------- icons / composer ----------------
+  const hasText = ()=>{ const t = $('chatInput'); return !!(t && t.value.trim()); };
+  function syncText(){ const c = document.querySelector('#chatConv .chatComposer'); if(c) c.classList.toggle('hasText', hasText()); }
+  function decorate(){
+    styles();
+    const set = (id, k, sz)=>{ const b = $(id); if(b && b.dataset.cxi !== k){ b.innerHTML = svg(k, sz); b.dataset.cxi = k; } };
+    set('chatBackBtn', 'back'); set('cxCallA', 'phone'); set('cxCallV', 'video'); set('cxxBtn', 'opts');
+    set('cxMicBtn', 'mic'); set('cxAttachBtn', 'plus');
+    const comp = document.querySelector('#chatConv .chatComposer');
+    if(comp && !$('cxPCam')){
+      const mk = (id, k, cls, fn)=>{ const b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = cls; b.setAttribute('aria-label', k); b.innerHTML = svg(k, k === 'camera' ? 21 : 24); b.addEventListener('mousedown', (e)=> e.preventDefault()); b.addEventListener('click', fn); return b; };
+      comp.insertBefore(mk('cxPCam', 'camera', '', ()=>{ if(window.cxOpenCam && window.cxOpenCam()) return; const i = $('cxInCam'); if(i) i.click(); }), comp.firstChild);
+      comp.appendChild(mk('cxPGal', 'gallery', 'cxPB', ()=>{ const i = $('cxInGal'); if(i) i.click(); }));
+      comp.appendChild(mk('cxPStk', 'sticker', 'cxPB', ()=>{ const b = document.querySelector('#cxMenu [data-xs]'); if(b) b.click(); else toast('Sticker abhi available nahi.'); }));
+      const t = $('chatInput'); if(t){ t.placeholder = 'Message…'; t.addEventListener('input', syncText); }
+      const sb = $('chatSendBtn'); if(sb) sb.textContent = 'Send';
+    }
+    syncText();
+  }
+  const prevAuto = chatAutosize;
+  chatAutosize = function(){ prevAuto.apply(this, arguments); syncText(); };
+  setInterval(()=>{ if(document.hidden) return; syncText(); }, 400);
+
+  // ---------------- CALL EFFECTS ----------------
+  const FX = [
+    { id: 'none', n: 'Normal', e: '⭕', g: '#3a3f4c' },
+    { id: 'glow', n: 'Glow', e: '🌸', g: 'linear-gradient(135deg,#fbc2eb,#a6c1ee)', f: 'blur(.7px) brightness(1.12) contrast(.96) saturate(1.15)', tint: ['rgba(255,200,220,.12)', 'soft-light'] },
+    { id: 'warm', n: 'Warm', e: '🌅', g: 'linear-gradient(135deg,#f6d365,#fda085)', f: 'sepia(.3) saturate(1.4) brightness(1.05)', tint: ['rgba(255,140,40,.16)', 'soft-light'] },
+    { id: 'cool', n: 'Cool', e: '🧊', g: 'linear-gradient(135deg,#89f7fe,#66a6ff)', f: 'hue-rotate(165deg) saturate(1.2) brightness(1.05)', tint: ['rgba(40,120,255,.18)', 'soft-light'] },
+    { id: 'mono', n: 'Mono', e: '🎞️', g: 'linear-gradient(135deg,#cfcfcf,#333)', f: 'grayscale(1) contrast(1.12)', tint: ['rgba(128,128,128,1)', 'saturation'] },
+    { id: 'vintage', n: 'Vintage', e: '📷', g: 'linear-gradient(135deg,#d4a373,#7f5539)', f: 'sepia(.6) contrast(.92) brightness(1.08)', vig: 1, tint: ['rgba(160,100,40,.18)', 'multiply'] },
+    { id: 'vivid', n: 'Vivid', e: '🌈', g: 'linear-gradient(135deg,#f093fb,#f5576c)', f: 'saturate(1.8) contrast(1.12)' },
+    { id: 'neon', n: 'Neon', e: '💜', g: 'linear-gradient(135deg,#7f00ff,#e100ff)', f: 'hue-rotate(270deg) saturate(2.2) contrast(1.2)', tint: ['rgba(255,0,200,.14)', 'screen'] },
+    { id: 'portrait', n: 'Portrait', e: '🧑', g: 'linear-gradient(135deg,#434343,#000)', focus: 1 },
+    { id: 'cinema', n: 'Cinema', e: '🎬', g: 'linear-gradient(135deg,#232526,#414345)', f: 'contrast(1.15) saturate(.9)', bars: 1, vig: 1 },
+    { id: 'hearts', n: 'Hearts', e: '❤️', g: 'linear-gradient(135deg,#ff9a9e,#fad0c4)', f: 'saturate(1.15)', p: ['❤️', '💖', '💕', '💗'], dir: -1 },
+    { id: 'stars', n: 'Sparkle', e: '✨', g: 'linear-gradient(135deg,#fceabb,#f8b500)', f: 'brightness(1.05)', p: ['✨', '⭐', '🌟', '💫'], dir: 1 },
+    { id: 'snow', n: 'Snow', e: '❄️', g: 'linear-gradient(135deg,#e0eafc,#cfdef3)', f: 'brightness(1.05) saturate(.9)', p: ['❄️', '❅', '❆'], dir: 1, slow: 1 },
+    { id: 'party', n: 'Party', e: '🎉', g: 'linear-gradient(135deg,#43e97b,#38f9d7)', p: ['🎉', '🎊', '🥳', '🎈'], dir: 1 }
+  ];
+  let fx = null, fxSel = 'none';
+  const camTrack = (s)=> s && s.stream && s.stream.getVideoTracks()[0];
+  const sender = (s)=> s && s.pc && s.pc.getSenders().find(z => z.track && z.track.kind === 'video');
+  const curS = ()=> (window.__cxCallS && window.__cxCallS()) || null;
+
+  function paintStrip(){
+    const st = $('cxFxStrip'); if(!st) return;
+    st.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.fx === fxSel));
+    const f = $('callFx'); if(f) f.classList.toggle('on', fxSel !== 'none');
+  }
+  function stopFx(restore){
+    if(!fx) return;
+    const f = fx; fx = null;
+    clearInterval(f.timer);
+    try{
+      if(restore){
+        const s = f.s, ct = camTrack(s), sd = sender(s);
+        if(s && sd && sd.track === f.track && ct) sd.replaceTrack(ct).catch(()=>{});
+        const loc = $('callLocal'); if(loc && s && loc.srcObject === f.out) loc.srcObject = s.stream;
+      }
+      f.track.stop(); f.vid.srcObject = null;
+    }catch(e){}
+    fxSel = 'none'; paintStrip();
+  }
+  function startFx(s){
+    if(fx) return fx;
+    const cvs = document.createElement('canvas'); cvs.width = 480; cvs.height = 640;
+    const ctx = cvs.getContext('2d');
+    const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.autoplay = true;
+    const out = cvs.captureStream(24), track = out.getVideoTracks()[0];
+    fx = { s, cvs, ctx, vid, out, track, src: null, parts: [], id: 'none', n: 0, canF: ('filter' in ctx) };
+    fx.timer = setInterval(frame, 42);
+    return fx;
+  }
+  function spawn(def, w, h){
+    const sz = 20 + Math.random() * 26;
+    const up = def.dir === -1;
+    return { x: Math.random() * w, y: up ? h + sz : -sz, vx: (Math.random() - .5) * (def.slow ? .6 : 1.4), vy: (up ? -1 : 1) * ((def.slow ? .8 : 1.6) + Math.random() * 2), s: sz, c: def.p[Math.floor(Math.random() * def.p.length)], r: Math.random() * 6.28, vr: (Math.random() - .5) * .08 };
+  }
+  function frame(){
+    const f = fx; if(!f) return;
+    const s = curS();
+    if(!s || s !== f.s || !s.pc){ stopFx(false); return; }
+    const ct = camTrack(s);
+    if(ct && f.src !== ct){ f.src = ct; f.vid.srcObject = new MediaStream([ct]); f.vid.play().catch(()=>{}); }
+    // sender sync (flip / screen share ke baad)
+    f.n++;
+    if(f.n % 10 === 0){
+      const sd = sender(s);
+      if(sd && sd.track !== f.track){
+        const isCam = s.stream.getVideoTracks().indexOf(sd.track) >= 0;
+        if(isCam){ sd.replaceTrack(f.track).then(()=>{ const loc = $('callLocal'); if(loc) loc.srcObject = f.out; }).catch(()=>{}); }
+      }
+    }
+    const v = f.vid, vw = v.videoWidth, vh = v.videoHeight;
+    if(!vw || !vh) return;
+    const w = Math.min(vw, 640), h = Math.round(vh * w / vw);
+    if(f.cvs.width !== w || f.cvs.height !== h){ f.cvs.width = w; f.cvs.height = h; }
+    window.cxFX.draw(f.ctx, v, w, h, FX.find(x => x.id === f.id) || FX[0], f);
+  }
+  function drawFx(c, v, w, h, def, f){
+    c.save();
+    if(def.focus){
+      if(f.canF){ c.filter = 'blur(9px) brightness(.92)'; c.drawImage(v, 0, 0, w, h); c.filter = 'none'; }
+      c.beginPath(); c.ellipse(w / 2, h * .46, w * .4, h * .42, 0, 0, 6.2832); c.clip();
+      c.drawImage(v, 0, 0, w, h);
+    } else {
+      if(f.canF && def.f) c.filter = def.f;
+      c.drawImage(v, 0, 0, w, h);
+      if(f.canF) c.filter = 'none';
+    }
+    c.restore();
+    if(def.tint){ c.save(); c.globalCompositeOperation = def.tint[1]; c.fillStyle = def.tint[0]; c.fillRect(0, 0, w, h); c.restore(); }
+    if(def.vig){ const g = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .3, w / 2, h / 2, Math.max(w, h) * .7); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+    if(def.bars){ c.fillStyle = '#000'; c.fillRect(0, 0, w, h * .1); c.fillRect(0, h * .9, w, h * .1); }
+    if(def.p){
+      if(f.parts.length < 22 && Math.random() < .35) f.parts.push(spawn(def, w, h));
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      f.parts = f.parts.filter(p => p.y > -60 && p.y < h + 60);
+      f.parts.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.font = Math.round(p.s * w / 480) + 'px serif'; c.fillText(p.c, 0, 0); c.restore();
+      });
+    }
+  }
+  window.cxFX = { list: FX, draw: drawFx };
+  async function setFx(id){
+    const s = curS();
+    if(!s || !s.pc || s.type !== 'v'){ toast('Effects sirf video call me chalte hain.'); return; }
+    if(id === 'none' && !(window.cxBeautyActive && window.cxBeautyActive())){ stopFx(true); return; }
+    const f = startFx(s);
+    f.id = id; f.parts = []; fxSel = id; paintStrip();
+    const sd = sender(s);
+    if(sd && sd.track !== f.track && s.stream.getVideoTracks().indexOf(sd.track) >= 0){
+      try{ await sd.replaceTrack(f.track); const loc = $('callLocal'); if(loc) loc.srcObject = f.out; }catch(e){ toast('Effect lag nahi paaya.'); stopFx(true); }
+    } else if(sd && sd.track !== f.track){
+      toast('Screen share ke baad effect lagega.');
+    }
+  }
+  window.cxFxRunning = ()=> !!fx;
+  window.cxFxRefresh = function(){
+    const s = curS(); if(!s || !s.pc || s.type !== 'v') return;
+    if(window.cxBeautyActive && window.cxBeautyActive()){ if(!fx) setFx(fxSel); }
+    else if(fx && fxSel === 'none') stopFx(true);
+  };
+  function ensureFxUi(){
+    const ov = $('callOv'); if(!ov) return;
+    const bt = ov.querySelector('.callBtns');
+    if(bt && !$('callFx')){
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'callFx'; b.className = 'callBtn'; b.setAttribute('aria-label', 'Effects');
+      const end = $('callEnd'); bt.insertBefore(b, end || null);
+      b.addEventListener('click', ()=>{ const st = $('cxFxStrip'); if(st) st.classList.toggle('open'); });
+    }
+    if(!$('cxFxStrip')){
+      const st = document.createElement('div'); st.id = 'cxFxStrip';
+      st.innerHTML = FX.map(x => `<button type="button" data-fx="${x.id}"><i style="background:${x.g}">${x.e}</i><span>${x.n}</span></button>`).join('');
+      st.addEventListener('click', (e)=>{ const b = e.target.closest('[data-fx]'); if(b) setFx(b.dataset.fx); });
+      ov.appendChild(st);
+      paintStrip();
+    }
+  }
+  // call khatam / band hone par strip band + effect reset
+  setInterval(()=>{
+    const ov = $('callOv');
+    if(ov && !ov.classList.contains('open')){ const st = $('cxFxStrip'); if(st) st.classList.remove('open'); if(fx) stopFx(false); }
+  }, 700);
+
+  function all(){ try{ decorate(); ensureFxUi(); }catch(e){ console.error(e); } }
+  const prevInject = chatInjectUI;
+  chatInjectUI = function(){ prevInject(); all(); };
+  const prevOpen = chatOpenConv;
+  chatOpenConv = async function(){ const r = await prevOpen.apply(this, arguments); all(); return r; };
+  all();
+  setTimeout(all, 800);
+  // header buttons baad me ban sakte hain (✦ / call) — thoda wait karke dobara
+  let n = 0; const iv = setInterval(()=>{ all(); if(++n > 20) clearInterval(iv); }, 1000);
+})();
+
+
+// ============================================================================
+// CHAT PLUS 6 (section 5): In-app Camera with live FILTERS (Instagram-style)
+//  - Composer ke neele camera button se khulta hai (window.cxOpenCam)
+//  - Neeche gol filter carousel (call effects wale hi filters: window.cxFX)
+//  - Tap = photo, dabaye rakho = video (max 30s). Result purane photo editor /
+//    video trimmer flow me jaata hai (cxInGal 'change' ke through)
+// ============================================================================
+(function chatPlus6(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  let st = null;   // { stream, vid, cvs, ctx, timer, facing, sel, f:{canF,parts}, rec, recT, holdT, t0 }
+
+  function styles(){
+    if($('cxp6Styles')) return;
+    const s = document.createElement('style'); s.id = 'cxp6Styles';
+    s.textContent = `
+    #cxCam{position:fixed;inset:0;z-index:100002;background:#000;display:none;flex-direction:column;color:#fff;font-family:inherit}
+    #cxCam.open{display:flex}
+    #cxCam .cv{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(190px + env(safe-area-inset-bottom,0px));border-radius:0 0 22px 22px;overflow:hidden;background:#111}
+    #cxCam canvas{width:100%;height:100%;object-fit:cover;display:block}
+    #cxCam .top{position:absolute;left:0;right:0;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:2}
+    #cxCam .top b{font-size:15px;font-weight:600;background:rgba(0,0,0,.35);padding:7px 16px;border-radius:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+    #cxCam .ib{width:42px;height:42px;border-radius:50%;border:0;background:rgba(0,0,0,.35);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;padding:0}
+    #cxCam .bot{position:absolute;left:0;right:0;bottom:0;height:calc(190px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;justify-content:center}
+    #cxCam .car{display:flex;gap:14px;overflow-x:auto;padding:6px 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    #cxCam .car::-webkit-scrollbar{display:none}
+    #cxCam .car button{flex:none;width:56px;background:transparent;border:0;color:#fff;font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;opacity:.8}
+    #cxCam .car button.on{opacity:1}
+    #cxCam .car i{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:22px;border:2px solid rgba(255,255,255,.35)}
+    #cxCam .car button.on i{border-color:#fff;transform:scale(1.12);box-shadow:0 0 0 3px rgba(168,85,247,.85)}
+    #cxCam .row{display:flex;align-items:center;justify-content:space-between;padding:10px 34px 4px}
+    #cxCam .shut{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:transparent;padding:5px;position:relative;touch-action:none;cursor:pointer}
+    #cxCam .shut::after{content:'';display:block;width:100%;height:100%;border-radius:50%;background:#fff;transition:.15s}
+    #cxCam .shut.rec{border-color:#ef4444}
+    #cxCam .shut.rec::after{background:#ef4444;transform:scale(.55);border-radius:14px}
+    #cxCam .rt{position:absolute;left:50%;transform:translateX(-50%);top:calc(60px + env(safe-area-inset-top,0px));background:#ef4444;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:700;display:none;z-index:2}
+    #cxCam .rt.on{display:block}
+    #cxCam .hint{text-align:center;font-size:11px;opacity:.65;padding-bottom:2px}`;
+    document.head.appendChild(s);
+  }
+  const ic = {
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    flip: '<path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/>',
+    gal: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/>'
+  };
+  const svg = (k)=> `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ic[k]}</svg>`;
+
+  function build(){
+    if($('cxCam')) return;
+    styles();
+    const el = document.createElement('div'); el.id = 'cxCam';
+    el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas></div>
+      <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
+      <div class="rt" id="cxCamRt">● 0:00</div>
+      <div class="bot"><div class="car" id="cxCamCar"></div>
+        <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span style="width:42px"></span></div>
+        <div class="hint">Tap = photo · Dabaye rakho = video</div></div>`;
+    document.body.appendChild(el);
+    $('cxCamX').onclick = close;
+    $('cxCamFlip').onclick = flip;
+    $('cxCamGal').onclick = ()=>{ close(); const i = $('cxInGal'); if(i) i.click(); };
+    $('cxCamCar').addEventListener('click', (e)=>{ const b = e.target.closest('[data-f]'); if(!b || !st) return; st.sel = b.dataset.f; st.f.parts = []; paintCar(); });
+    const sh = $('cxCamShut');
+    sh.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(!st) return; try{ sh.setPointerCapture(e.pointerId); }catch(_){} st.hold = false; st.holdT = setTimeout(()=>{ st.hold = true; recStart(); }, 380); });
+    const up = ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.hold){ st.hold = false; recStop(); } else if(!st.rec && st.down !== false){ photo(); } };
+    sh.addEventListener('pointerup', up);
+    sh.addEventListener('pointercancel', ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.rec) recStop(); });
+  }
+  function paintCar(){
+    const car = $('cxCamCar'); if(!car || !window.cxFX) return;
+    if(!car.children.length) car.innerHTML = window.cxFX.list.map(x => `<button type="button" data-f="${x.id}"><i style="background:${x.g}">${x.e}</i><span>${x.n}</span></button>`).join('');
+    car.querySelectorAll('button').forEach(b => b.classList.toggle('on', st && b.dataset.f === st.sel));
+  }
+  async function startStream(){
+    if(st.stream){ st.stream.getTracks().forEach(t => t.stop()); st.stream = null; }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: st.facing, width: { ideal: 1280 }, height: { ideal: 960 } } });
+    if(!st){ stream.getTracks().forEach(t => t.stop()); return; }
+    st.stream = stream; st.vid.srcObject = stream; try{ await st.vid.play(); }catch(e){}
+  }
+  function loop(){
+    if(!st) return;
+    const v = st.vid, vw = v.videoWidth, vh = v.videoHeight;
+    if(!vw || !vh) return;
+    const w = Math.min(vw, 720), h = Math.round(vh * w / vw);
+    if(st.cvs.width !== w || st.cvs.height !== h){ st.cvs.width = w; st.cvs.height = h; }
+    const def = window.cxFX.list.find(x => x.id === st.sel) || window.cxFX.list[0], c = st.ctx;
+    c.save();
+    if(st.facing === 'user'){ c.translate(w, 0); c.scale(-1, 1); }
+    window.cxFX.draw(c, v, w, h, def, st.f);
+    c.restore();
+    if(st.rec){ const sec = (Date.now() - st.t0) / 1000; const r = $('cxCamRt'); if(r) r.textContent = '● ' + Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0'); if(sec >= 30) recStop(); }
+  }
+  function toGal(file){
+    const inp = $('cxInGal'); if(!inp){ toast('Gallery input nahi mila.'); return; }
+    try{
+      const dt = new DataTransfer(); dt.items.add(file);
+      inp.files = dt.files;
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }catch(e){ console.error(e); toast('Photo aage nahi bheji ja saki.'); }
+  }
+  function photo(){
+    if(!st || !st.cvs.width) return;
+    st.cvs.toBlob((b)=>{
+      if(!b){ toast('Photo nahi li ja saki.'); return; }
+      const f = new File([b], 'photo_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      close(); toGal(f);
+    }, 'image/jpeg', 0.92);
+  }
+  async function recStart(){
+    if(!st || st.rec || !window.MediaRecorder) return;
+    const out = st.cvs.captureStream(30);
+    try{ const a = await navigator.mediaDevices.getUserMedia({ audio: true }); st.aStream = a; a.getAudioTracks().forEach(t => out.addTrack(t)); }catch(e){}
+    if(!st || !st.hold){ if(st && st.aStream){ st.aStream.getTracks().forEach(t => t.stop()); st.aStream = null; } return; }   // ungli pehle hi hat gayi
+    const mt = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const chunks = [];
+    try{ st.rec = new MediaRecorder(out, mt ? { mimeType: mt, videoBitsPerSecond: 1500000 } : undefined); }
+    catch(e){ toast('Video record nahi ho paayi.'); return; }
+    st.rec.ondataavailable = (e)=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    const rec = st.rec;
+    rec.onstop = ()=>{
+      const type = rec.mimeType || 'video/webm', secs = st ? (Date.now() - st.t0) / 1000 : 0;
+      if(st && st.aStream){ st.aStream.getTracks().forEach(t => t.stop()); st.aStream = null; }
+      if(secs < 0.8 || !chunks.length){ toast('Video bahut chhoti thi.'); return; }
+      const f = new File([new Blob(chunks, { type })], 'video_' + Date.now() + (/mp4/.test(type) ? '.mp4' : '.webm'), { type });
+      close(); toGal(f);
+    };
+    st.t0 = Date.now(); rec.start(500);
+    $('cxCamShut').classList.add('rec'); $('cxCamRt').classList.add('on');
+  }
+  function recStop(){
+    if(!st || !st.rec) return;
+    const r = st.rec; st.rec = null;
+    $('cxCamShut').classList.remove('rec'); $('cxCamRt').classList.remove('on');
+    try{ if(r.state !== 'inactive') r.stop(); }catch(e){}
+  }
+  async function flip(){
+    if(!st || st.rec) return;
+    st.facing = st.facing === 'user' ? 'environment' : 'user';
+    try{ await startStream(); }catch(e){ toast('Camera palat nahi paayi.'); }
+  }
+  function close(){
+    const el = $('cxCam'); if(el) el.classList.remove('open');
+    if(!st) return;
+    const s = st; st = null;
+    clearInterval(s.timer); clearTimeout(s.holdT);
+    try{ if(s.rec && s.rec.state !== 'inactive'){ s.rec.onstop = null; s.rec.stop(); } }catch(e){}
+    try{ s.stream && s.stream.getTracks().forEach(t => t.stop()); }catch(e){}
+    try{ s.aStream && s.aStream.getTracks().forEach(t => t.stop()); }catch(e){}
+    const r = $('cxCamRt'); if(r) r.classList.remove('on');
+    const sh = $('cxCamShut'); if(sh) sh.classList.remove('rec');
+  }
+  window.cxOpenCam = function(){
+    if(!chatPeer || st || !window.cxFX || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    if(window.__cxCallS && window.__cxCallS()){ toast('Call chal rahi hai — camera abhi use me hai.'); return true; }
+    build();
+    const cvs = $('cxCamCv'), vid = document.createElement('video');
+    vid.muted = true; vid.playsInline = true; vid.autoplay = true;
+    const ctx = cvs.getContext('2d');
+    st = { cvs, ctx, vid, stream: null, facing: 'user', sel: 'none', f: { canF: ('filter' in ctx), parts: [] } };
+    $('cxCamTo').textContent = 'Message ' + chatPeer.name;
+    $('cxCam').classList.add('open');
+    paintCar();
+    startStream().then(()=>{ if(st) st.timer = setInterval(loop, 33); }).catch(()=>{ toast('Camera ki permission do.'); close(); });
+    return true;
+  };
+  const prevTear = chatTeardownConv;
+  chatTeardownConv = function(){ close(); prevTear(); };
+})();
+
+
+// ============================================================================
+// CHAT PLUS 7 (section 6): BEAUTY STUDIO (camera + video call)
+//  Face AI = Google MediaPipe Face Landmarker (CDN se, pehli baar load hota hai)
+//  Face: skin smooth, brighten, dark circles, face slim (V), nose, eyes, teeth, lip plump
+//  Makeup: lipstick, blush, eyeliner, eyelashes, contour/highlight, hair colour (hair segmenter)
+//  Quality: low-light/night, anti-flicker, HD enhance (sharpen), center stage
+//  Hook: window.cxFX.draw wrap -> camera (chatPlus6) + call effects (chatPlus5) dono me chalta hai
+// ============================================================================
+(function chatPlus7(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const clamp = (x, a, b)=> Math.max(a, Math.min(b, x));
+  const LSK = 'cxb-p';
+  const D = { smooth: 0, bright: 0, dark: 0, slim: 0, nose: 0, eyes: 0, teeth: 0, plump: 0, lip: 0, lipC: '#c2185b', blush: 0, liner: 0, lash: 0, contour: 0, hair: 0, hairC: '#b91c1c', night: 0, enhance: 0, center: 0, flicker: 0 };
+  let P = Object.assign({}, D);
+  try{ Object.assign(P, JSON.parse(localStorage.getItem(LSK) || '{}')); }catch(e){}
+  const save = ()=>{ try{ localStorage.setItem(LSK, JSON.stringify(P)); }catch(e){} };
+  const faceOn = ()=> !!(P.smooth || P.bright || P.dark || P.slim || P.nose || P.eyes || P.teeth || P.plump || P.lip || P.blush || P.liner || P.lash || P.contour);
+  const active = ()=> !!(faceOn() || P.hair || P.night || P.enhance || P.center || P.flicker);
+  window.cxBeautyActive = active;
+
+  // ---------------- landmark index sets (MediaPipe 478) ----------------
+  const OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+  const EYE_L = [33,246,161,160,159,158,157,173,133,155,154,153,145,144,163,7];
+  const EYE_R = [362,398,384,385,386,387,388,466,263,249,390,373,374,380,381,382];
+  const BROW_L = [70,63,105,66,107,55,65,52,53,46];
+  const BROW_R = [300,293,334,296,336,285,295,282,283,276];
+  const LIPS_OUT = [61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146];
+  const INNER = [78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95];
+  const UP_L = [33,246,161,160,159,158,157,173,133];
+  const UP_R = [263,466,388,387,386,385,384,398,362];
+
+  // ---------------- models (lazy, CDN) ----------------
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+  const HAIR_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/latest/hair_segmenter.tflite';
+  let vis = null, visP = null, lm = null, lmP = null, hs = null, hsP = null, failed = false;
+  async function loadVision(){
+    if(vis) return vis;
+    if(!visP) visP = (async()=>{ const mod = await import(MP + '/vision_bundle.mjs'); const fs = await mod.FilesetResolver.forVisionTasks(MP + '/wasm'); vis = { mod, fs }; return vis; })();
+    return visP;
+  }
+  function failOnce(e){ console.error('beauty AI load failed', e); if(!failed){ failed = true; toast('Face AI load nahi hua (internet check karo). Night / Enhance / Center chalte rahenge.'); } }
+  async function ensureFace(){
+    if(lm || lmP || failed) return;
+    toast('Beauty AI load ho raha hai… (pehli baar)');
+    lmP = (async()=>{
+      try{
+        const v = await loadVision();
+        const mk = (delegate)=> v.mod.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate }, runningMode: 'VIDEO', numFaces: 1 });
+        try{ lm = await mk('GPU'); }catch(e){ lm = await mk('CPU'); }
+      }catch(e){ failOnce(e); }
+    })();
+  }
+  async function ensureHair(){
+    if(hs || hsP || failed) return;
+    toast('Hair AI load ho raha hai…');
+    hsP = (async()=>{
+      try{
+        const v = await loadVision();
+        const mk = (delegate)=> v.mod.ImageSegmenter.createFromOptions(v.fs, { baseOptions: { modelAssetPath: HAIR_MODEL, delegate }, runningMode: 'VIDEO', outputCategoryMask: true, outputConfidenceMasks: false });
+        try{ hs = await mk('GPU'); }catch(e){ hs = await mk('CPU'); }
+      }catch(e){ failOnce(e); }
+    })();
+  }
+  function ensureModels(){ if(faceOn()) ensureFace(); if(P.hair) ensureHair(); }
+
+  // ---------------- canvases ----------------
+  const mkC = (willRead)=>{ const c = document.createElement('canvas'); return { c, x: c.getContext('2d', willRead ? { willReadFrequently: true } : undefined) }; };
+  const TT = mkC(true), MK = mkC(), LAY = mkC(), SM = mkC(), TINT = mkC(), M16 = mkC(true), TM = mkC(true), HM = mkC(true);
+  const T = TT.c, tc = TT.x;
+  M16.c.width = M16.c.height = 16;
+  let frameN = 0, lastTs = 0, hsTs = 0;
+  let X = new Float32Array(478), Y = new Float32Array(478), prevL = null, lostN = 0, haveFace = false;
+  let lumaSlow = 0, lumaNow = 0, gS = 1, rS = 1;
+  let cz = 1, ccx = .5, ccy = .5, hairOk = false;
+  const BIG = 4000;
+
+  function detect(v){
+    if(!lm || v.readyState < 2) return null;
+    const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts;
+    try{ const r = lm.detectForVideo(v, ts); return (r && r.faceLandmarks && r.faceLandmarks[0]) || null; }catch(e){ return null; }
+  }
+  function polyPath(c, idx, ox){ c.beginPath(); for(let k = 0; k < idx.length; k++){ const i = idx[k], x = X[i] + (ox || 0), y = Y[i]; k ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); }
+  function softFill(c, idx, blur){ c.save(); c.shadowColor = '#fff'; c.shadowBlur = blur; c.shadowOffsetX = BIG; c.fillStyle = '#fff'; polyPath(c, idx, -BIG); c.fill(); c.restore(); }
+  const dist = (a, b)=> Math.hypot(X[a] - X[b], Y[a] - Y[b]);
+
+  // ---------------- exposure (night / anti-flicker) ----------------
+  function exposure(w, h){
+    if(frameN % 3 === 0){
+      M16.x.drawImage(T, 0, 0, 16, 16);
+      const d = M16.x.getImageData(0, 0, 16, 16).data; let sum = 0;
+      for(let i = 0; i < d.length; i += 4) sum += d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114;
+      lumaNow = sum / 256; lumaSlow = lumaSlow ? lumaSlow + (lumaNow - lumaSlow) * .06 : lumaNow;
+    }
+    let g = 1;
+    if(P.night){ const tg = clamp(125 / Math.max(20, lumaSlow), 1, 2.6); gS += (tg - gS) * .08; g *= gS; } else gS = 1;
+    if(P.flicker && lumaNow){ const r = clamp(lumaSlow / Math.max(10, lumaNow), .85, 1.18); rS += (r - rS) * .6; g *= rS; } else rS = 1;
+    if(g > 1.03){
+      let cur = 1; tc.save(); tc.globalCompositeOperation = 'lighter';
+      while(cur < g - .02){ const step = Math.min(2, g / cur); tc.globalAlpha = step - 1; tc.drawImage(T, 0, 0); cur *= step; }
+      tc.restore();
+    } else if(g < .97){ tc.save(); tc.globalAlpha = 1 - g; tc.fillStyle = '#000'; tc.fillRect(0, 0, w, h); tc.restore(); }
+  }
+
+  // ---------------- skin ----------------
+  function skin(w, h){
+    const mc = MK.x; mc.clearRect(0, 0, w, h);
+    softFill(mc, OVAL, w * .012);
+    mc.globalCompositeOperation = 'destination-out';
+    [EYE_L, EYE_R, LIPS_OUT, BROW_L, BROW_R].forEach(p => softFill(mc, p, w * .006));
+    mc.globalCompositeOperation = 'source-over';
+    if(P.smooth){
+      const k = .3, sw = Math.max(8, Math.round(w * k)), sh = Math.max(8, Math.round(h * k));
+      if(SM.c.width !== sw){ SM.c.width = sw; SM.c.height = sh; }
+      SM.x.drawImage(T, 0, 0, sw, sh);
+      const l = LAY.x; l.globalCompositeOperation = 'source-over'; l.clearRect(0, 0, w, h);
+      l.imageSmoothingEnabled = true; l.imageSmoothingQuality = 'high';
+      l.drawImage(SM.c, 0, 0, w, h);
+      l.globalCompositeOperation = 'destination-in'; l.drawImage(MK.c, 0, 0);
+      tc.save(); tc.globalAlpha = clamp(P.smooth / 100 * .85, 0, .85); tc.drawImage(LAY.c, 0, 0); tc.restore();
+    }
+    if(P.bright){
+      const tt = TINT.x; tt.globalCompositeOperation = 'source-over'; tt.clearRect(0, 0, w, h);
+      tt.fillStyle = 'rgb(255,238,230)'; tt.fillRect(0, 0, w, h);
+      tt.globalCompositeOperation = 'destination-in'; tt.drawImage(MK.c, 0, 0);
+      tc.save(); tc.globalCompositeOperation = 'soft-light'; tc.globalAlpha = P.bright / 100 * .9; tc.drawImage(TINT.c, 0, 0);
+      tc.globalCompositeOperation = 'screen'; tc.globalAlpha = P.bright / 100 * .22; tc.drawImage(TINT.c, 0, 0); tc.restore();
+    }
+    if(P.dark){
+      [[145, 33, 133], [374, 263, 362]].forEach(([b, o, n])=>{
+        const ew = dist(o, n), cx = X[b], cy = Y[b] + ew * .28;
+        tc.save(); tc.translate(cx, cy); tc.scale(1, .42);
+        const g = tc.createRadialGradient(0, 0, 0, 0, 0, ew * .75);
+        g.addColorStop(0, 'rgba(255,226,208,' + (P.dark / 100 * .5) + ')'); g.addColorStop(1, 'rgba(255,226,208,0)');
+        tc.globalCompositeOperation = 'screen'; tc.fillStyle = g; tc.fillRect(-ew, -ew, ew * 2, ew * 2); tc.restore();
+      });
+    }
+  }
+
+  // ---------------- teeth ----------------
+  function teeth(w, h){
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    INNER.forEach(i => { x0 = Math.min(x0, X[i]); x1 = Math.max(x1, X[i]); y0 = Math.min(y0, Y[i]); y1 = Math.max(y1, Y[i]); });
+    x0 = Math.max(0, Math.floor(x0) - 1); y0 = Math.max(0, Math.floor(y0) - 1);
+    const bw = Math.min(w - x0, Math.ceil(x1 - x0) + 3), bh = Math.min(h - y0, Math.ceil(y1 - y0) + 3);
+    if(bw < 6 || bh < Math.max(3, w * .008)) return;   // muh band
+    if(TM.c.width !== bw) TM.c.width = bw; if(TM.c.height !== bh) TM.c.height = bh;
+    const m = TM.x; m.clearRect(0, 0, bw, bh); m.fillStyle = '#fff'; m.beginPath();
+    INNER.forEach((i, k)=>{ const x = X[i] - x0, y = Y[i] - y0; k ? m.lineTo(x, y) : m.moveTo(x, y); }); m.closePath(); m.fill();
+    const md = m.getImageData(0, 0, bw, bh).data, id = tc.getImageData(x0, y0, bw, bh), d = id.data, t = P.teeth / 100 * .6;
+    for(let i = 0; i < d.length; i += 4){
+      if(md[i + 3] < 128) continue;
+      const r = d[i], g = d[i + 1], b = d[i + 2], l = r * .299 + g * .587 + b * .114;
+      if(l > 85 && (r - g) < 75){ d[i] = r + (255 - r) * t; d[i + 1] = g + (255 - g) * t; d[i + 2] = b + (255 - b) * t * 1.3; }
+    }
+    tc.putImageData(id, x0, y0);
+  }
+
+  // ---------------- makeup ----------------
+  function hexRgb(hx){ const n = parseInt(String(hx).replace('#', ''), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function ell(cx, cy, rx, ry, rot, col, a, mode){
+    tc.save(); tc.translate(cx, cy); tc.rotate(rot || 0); tc.scale(1, ry / rx);
+    const g = tc.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
+    tc.globalCompositeOperation = mode || 'source-over'; tc.fillStyle = g; tc.fillRect(-rx, -rx, rx * 2, rx * 2); tc.restore();
+  }
+  function makeup(w, h){
+    const fw = dist(234, 454);
+    if(P.lip){
+      const a = P.lip / 100, [r, g, b] = hexRgb(P.lipC), col = r + ',' + g + ',' + b;
+      tc.save(); tc.shadowColor = 'rgba(' + col + ',.6)'; tc.shadowBlur = Math.max(1, w * .004);
+      tc.beginPath();
+      LIPS_OUT.forEach((i, k)=> k ? tc.lineTo(X[i], Y[i]) : tc.moveTo(X[i], Y[i])); tc.closePath();
+      INNER.forEach((i, k)=> k ? tc.lineTo(X[i], Y[i]) : tc.moveTo(X[i], Y[i])); tc.closePath();
+      tc.fillStyle = 'rgba(' + col + ',' + (a * .55) + ')'; tc.globalCompositeOperation = 'multiply'; tc.fill('evenodd');
+      tc.globalCompositeOperation = 'color'; tc.fillStyle = 'rgba(' + col + ',' + (a * .6) + ')'; tc.fill('evenodd');
+      tc.restore();
+    }
+    if(P.blush){
+      const a = P.blush / 100 * .5;
+      [205, 425].forEach(i => ell(X[i], Y[i] - fw * .01, fw * .17, fw * .11, 0, '255,105,135', a, 'multiply'));
+    }
+    if(P.contour){
+      const a = P.contour / 100;
+      [[234, 205], [454, 425]].forEach(([e, c])=> ell(X[e] + (X[c] - X[e]) * .5, Y[e] + (Y[c] - Y[e]) * .62, fw * .2, fw * .075, Math.atan2(Y[c] - Y[e], X[c] - X[e]) + .2, '110,62,42', a * .38, 'multiply'));
+      ell((X[168] + X[4]) / 2 - fw * .06, (Y[168] + Y[4]) / 2, fw * .04, fw * .2, 0, '110,62,42', a * .22, 'multiply');
+      ell((X[168] + X[4]) / 2 + fw * .06, (Y[168] + Y[4]) / 2, fw * .04, fw * .2, 0, '110,62,42', a * .22, 'multiply');
+      ell((X[168] + X[4]) / 2, (Y[168] + Y[4]) / 2, fw * .03, fw * .22, 0, '255,250,240', a * .4, 'screen');
+      [205, 425].forEach(i => ell(X[i], Y[i] - fw * .1, fw * .12, fw * .05, 0, '255,248,235', a * .3, 'screen'));
+      ell(X[10] + (X[9] - X[10]) * .25, Y[10] + fw * .08, fw * .16, fw * .06, 0, '255,248,235', a * .2, 'screen');
+    }
+    if(P.liner || P.lash){
+      [[UP_L, 33, 133, 159], [UP_R, 263, 362, 386]].forEach(([up, outer, inner])=>{
+        const cx = (X[outer] + X[inner]) / 2, cy = (Y[outer] + Y[inner]) / 2, ew = dist(outer, inner);
+        if(P.liner){
+          const lw = Math.max(1, w * .0055 * (.6 + P.liner / 100));
+          tc.save(); tc.strokeStyle = 'rgba(15,8,8,' + (.5 + P.liner / 200) + ')'; tc.lineWidth = lw; tc.lineCap = 'round'; tc.lineJoin = 'round';
+          tc.beginPath(); up.forEach((i, k)=> k ? tc.lineTo(X[i], Y[i]) : tc.moveTo(X[i], Y[i]));
+          const dx = X[outer] - X[inner], dy = Y[outer] - Y[inner], dl = Math.hypot(dx, dy) || 1, L = ew * .28 * (P.liner / 100 + .4);
+          tc.lineTo(X[outer] + dx / dl * L, Y[outer] + dy / dl * L - L * .45); tc.stroke(); tc.restore();
+        }
+        if(P.lash){
+          tc.save(); tc.strokeStyle = 'rgba(10,6,6,' + (.45 + P.lash / 200) + ')'; tc.lineWidth = Math.max(1, w * .0028); tc.lineCap = 'round'; tc.beginPath();
+          up.forEach((i, k)=>{
+            if(k % 1) return;
+            let nx = X[i] - cx, ny = Y[i] - cy; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny = ny / nl - .45;
+            const L = ew * .16 * (P.lash / 100 + .5) * (k === 0 || k === up.length - 1 ? .7 : 1);
+            tc.moveTo(X[i], Y[i]); tc.lineTo(X[i] + nx * L, Y[i] + ny * L);
+          });
+          tc.stroke(); tc.restore();
+        }
+      });
+    }
+    if(P.eyes){
+      [[33, 133], [263, 362]].forEach(([o, n])=> ell((X[o] + X[n]) / 2, (Y[o] + Y[n]) / 2, dist(o, n) * .5, dist(o, n) * .2, 0, '255,255,255', P.eyes / 100 * .22, 'soft-light'));
+    }
+  }
+
+  // ---------------- hair colour ----------------
+  function hairStep(v){
+    if(!hs) return;
+    if(frameN % 3 === 0 && v.readyState >= 2){
+      const ts = Math.max(performance.now(), hsTs + 1); hsTs = ts;
+      try{
+        hs.segmentForVideo(v, ts, (res)=>{
+          const m = res && res.categoryMask; if(!m) return;
+          const arr = m.getAsUint8Array(), mw = m.width, mh = m.height;
+          if(HM.c.width !== mw || HM.c.height !== mh){ HM.c.width = mw; HM.c.height = mh; }
+          const id = HM.x.createImageData(mw, mh), d = id.data;
+          for(let i = 0, n = mw * mh; i < n; i++){ const k = i * 4; d[k] = d[k + 1] = d[k + 2] = 255; d[k + 3] = arr[i] === 1 ? 255 : 0; }
+          HM.x.putImageData(id, 0, 0); hairOk = true;
+        });
+      }catch(e){}
+    }
+  }
+  function hairPaint(w, h, crop){
+    if(!hairOk || !HM.c.width) return;
+    const mw = HM.c.width, mh = HM.c.height, l = LAY.x;
+    l.globalCompositeOperation = 'source-over'; l.clearRect(0, 0, w, h); l.imageSmoothingEnabled = true;
+    l.drawImage(HM.c, crop.sx / crop.vw * mw, crop.sy / crop.vh * mh, crop.sw / crop.vw * mw, crop.sh / crop.vh * mh, 0, 0, w, h);
+    l.globalCompositeOperation = 'source-in'; l.fillStyle = P.hairC; l.fillRect(0, 0, w, h);
+    const [r, g, b] = hexRgb(P.hairC), lum = r * .299 + g * .587 + b * .114;
+    tc.save(); tc.globalCompositeOperation = 'color'; tc.globalAlpha = clamp(P.hair / 100 * .9, 0, .9); tc.drawImage(LAY.c, 0, 0);
+    if(lum > 150){ tc.globalCompositeOperation = 'screen'; tc.globalAlpha = P.hair / 100 * .25; tc.drawImage(LAY.c, 0, 0); }
+    tc.restore();
+  }
+
+  // ---------------- warps (slim / nose / eyes / lips) ----------------
+  function warps(w, h){
+    const ops = [], fw = dist(234, 454);
+    const nx = X[4];
+    if(P.slim){
+      const s = P.slim / 100 * .24, r = fw * .17;
+      [[93, 1], [132, 1], [172, 1], [323, -1], [361, -1], [397, -1]].forEach(([i, dir])=> ops.push({ t: 'p', x: X[i], y: Y[i], r, s, ux: dir, uy: 0 }));
+      ops.push({ t: 'p', x: X[152], y: Y[152] - fw * .02, r: fw * .16, s: P.slim / 100 * .12, ux: 0, uy: -1 });
+    }
+    if(P.nose){
+      const nw = dist(129, 358), s = P.nose / 100 * .36;
+      ops.push({ t: 'p', x: X[129], y: Y[129], r: nw * .85, s, ux: 1, uy: 0 });
+      ops.push({ t: 'p', x: X[358], y: Y[358], r: nw * .85, s, ux: -1, uy: 0 });
+      ops.push({ t: 'b', x: nx, y: (Y[4] + Y[6]) / 2 + nw * .1, r: nw * 1.3, s: -P.nose / 100 * .16 });
+    }
+    if(P.eyes){
+      [[33, 133], [263, 362]].forEach(([o, n])=> ops.push({ t: 'b', x: (X[o] + X[n]) / 2, y: (Y[o] + Y[n]) / 2, r: dist(o, n) * 1.45, s: P.eyes / 100 * .34 }));
+    }
+    if(P.plump){
+      const mw = dist(61, 291);
+      ops.push({ t: 'b', x: (X[13] + X[14]) / 2, y: (Y[13] + Y[14]) / 2, r: mw * .72, s: P.plump / 100 * .26 });
+    }
+    if(!ops.length) return;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    OVAL.forEach(i => { x0 = Math.min(x0, X[i]); x1 = Math.max(x1, X[i]); y0 = Math.min(y0, Y[i]); y1 = Math.max(y1, Y[i]); });
+    const pad = fw * .12;
+    const bx = Math.max(0, Math.floor(x0 - pad)), by = Math.max(0, Math.floor(y0 - pad));
+    const bw = Math.min(w, Math.ceil(x1 + pad)) - bx, bh = Math.min(h, Math.ceil(y1 + pad)) - by;
+    if(bw < 8 || bh < 8) return;
+    const src = tc.getImageData(bx, by, bw, bh), sd = src.data, dst = new ImageData(new Uint8ClampedArray(sd), bw, bh), dd = dst.data;
+    ops.forEach(o=>{
+      const r2 = o.r * o.r;
+      const ya = Math.max(0, Math.floor(o.y - o.r - by)), yb = Math.min(bh - 1, Math.ceil(o.y + o.r - by));
+      const xa = Math.max(0, Math.floor(o.x - o.r - bx)), xb = Math.min(bw - 1, Math.ceil(o.x + o.r - bx));
+      for(let y = ya; y <= yb; y++){
+        for(let x = xa; x <= xb; x++){
+          const px = x + bx, py = y + by, dx = px - o.x, dy = py - o.y, d2 = dx * dx + dy * dy;
+          if(d2 >= r2) continue;
+          const t = 1 - Math.sqrt(d2) / o.r; let sx, sy;
+          if(o.t === 'b'){ const f = 1 - o.s * t * t; sx = o.x + dx * f - bx; sy = o.y + dy * f - by; }
+          else { const m = o.s * o.r * t * t; sx = px - o.ux * m - bx; sy = py - o.uy * m - by; }
+          sx = clamp(sx, 0, bw - 1.001); sy = clamp(sy, 0, bh - 1.001);
+          const ix = sx | 0, iy = sy | 0, fx = sx - ix, fy = sy - iy, i00 = (iy * bw + ix) * 4, i10 = i00 + 4, i01 = i00 + bw * 4, i11 = i01 + 4, di = (y * bw + x) * 4;
+          for(let c = 0; c < 3; c++){
+            dd[di + c] = (sd[i00 + c] * (1 - fx) + sd[i10 + c] * fx) * (1 - fy) + (sd[i01 + c] * (1 - fx) + sd[i11 + c] * fx) * fy;
+          }
+        }
+      }
+    });
+    tc.putImageData(dst, bx, by);
+  }
+
+  // ---------------- enhance (sharpen) ----------------
+  let sbuf = null;
+  function sharpen(w, h){
+    const id = tc.getImageData(0, 0, w, h), s = id.data;
+    if(!sbuf || sbuf.length !== s.length) sbuf = new Uint8ClampedArray(s.length);
+    sbuf.set(s);
+    const k = .55, c0 = 1 + 4 * k, w4 = w * 4;
+    for(let y = 1; y < h - 1; y++){
+      for(let x = 1; x < w - 1; x++){
+        const i = (y * w + x) * 4;
+        s[i] = sbuf[i] * c0 - k * (sbuf[i - 4] + sbuf[i + 4] + sbuf[i - w4] + sbuf[i + w4]);
+        s[i + 1] = sbuf[i + 1] * c0 - k * (sbuf[i - 3] + sbuf[i + 5] + sbuf[i + 1 - w4] + sbuf[i + 1 + w4]);
+        s[i + 2] = sbuf[i + 2] * c0 - k * (sbuf[i - 2] + sbuf[i + 6] + sbuf[i + 2 - w4] + sbuf[i + 2 + w4]);
+      }
+    }
+    tc.putImageData(id, 0, 0);
+  }
+
+  // ---------------- main render ----------------
+  // perf: render time EMA; agar bahut slow ho to alternate frames skip (last processed frame dobara dikhta hai)
+  let rMs = 0, skipTog = 0;
+  function render(v, w, h){
+    frameN++;
+    if(rMs > 42 && T.width === w && T.height === h && (skipTog ^= 1)) return T;
+    const t0 = performance.now();
+    const vw = v.videoWidth || w, vh = v.videoHeight || h;
+    if(T.width !== w || T.height !== h){ [T, MK.c, LAY.c, TINT.c].forEach(c => { c.width = w; c.height = h; }); }
+    // face detect (full video frame) - har 2nd frame (landmarks smooth hote hain), slow device pe har 3rd
+    let face = null, didDetect = false;
+    if((faceOn() || P.center) && (frameN % (rMs > 30 ? 3 : 2) === 1 || !prevL)){ face = detect(v); didDetect = true; }
+    if(!didDetect){ /* pichle smoothed landmarks reuse */ }
+    else if(face){
+      lostN = 0;
+      if(!prevL){ prevL = face.map(p => ({ x: p.x, y: p.y })); }
+      else for(let i = 0; i < face.length && i < prevL.length; i++){ prevL[i].x = prevL[i].x * .45 + face[i].x * .55; prevL[i].y = prevL[i].y * .45 + face[i].y * .55; }
+      haveFace = true;
+    } else if(++lostN > 4){ haveFace = false; prevL = null; }
+    // center stage
+    let tz = 1, tx = .5, ty = .5;
+    if(P.center && haveFace && prevL){ tz = 1.5; tx = prevL[1].x; ty = (prevL[1].y + prevL[10].y) / 2 + .02; }
+    cz += (tz - cz) * .08; ccx += (tx - ccx) * .08; ccy += (ty - ccy) * .08;
+    const sw = vw / cz, sh = vh / cz, sx = clamp(ccx * vw - sw / 2, 0, vw - sw), sy = clamp(ccy * vh - sh / 2, 0, vh - sh);
+    tc.globalCompositeOperation = 'source-over'; tc.globalAlpha = 1;
+    tc.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
+    if(P.night || P.flicker) exposure(w, h);
+    const useFace = faceOn() && haveFace && prevL;
+    if(useFace){
+      for(let i = 0; i < 478 && i < prevL.length; i++){ X[i] = (prevL[i].x * vw - sx) / sw * w; Y[i] = (prevL[i].y * vh - sy) / sh * h; }
+      if(P.smooth || P.bright || P.dark) skin(w, h);
+      if(P.teeth) teeth(w, h);
+      makeup(w, h);
+    }
+    if(P.hair){ hairStep(v); hairPaint(w, h, { sx, sy, sw, sh, vw, vh }); }
+    if(useFace && (P.slim || P.nose || P.eyes || P.plump)) warps(w, h);
+    if(P.enhance) sharpen(w, h);
+    rMs = rMs ? rMs + (performance.now() - t0 - rMs) * .1 : (performance.now() - t0);
+    return T;
+  }
+
+  // ---------------- hook into cxFX.draw ----------------
+  function hook(){
+    if(!window.cxFX || window.cxFX.__bty) return !!(window.cxFX && window.cxFX.__bty);
+    const orig = window.cxFX.draw;
+    window.cxFX.draw = function(c, v, w, h, def, f){
+      if(!active() || !v || !v.videoWidth) return orig(c, v, w, h, def, f);
+      let src = v;
+      try{ src = render(v, w, h); }catch(e){ console.error('beauty render', e); }
+      return orig(c, src, w, h, def, f);
+    };
+    window.cxFX.__bty = 1;
+    return true;
+  }
+  hook();
+  let hn = 0; const hiv = setInterval(()=>{ if(hook() || ++hn > 40) clearInterval(hiv); }, 500);
+
+  // ---------------- UI ----------------
+  const PRESETS = {
+    off: Object.assign({}, D),
+    natural: { smooth: 45, bright: 25, dark: 30, eyes: 15, teeth: 30, lip: 25, lipC: '#d6708a', blush: 20 },
+    glam: { smooth: 60, bright: 35, dark: 40, slim: 30, nose: 20, eyes: 30, teeth: 45, plump: 20, lip: 55, lipC: '#c2185b', blush: 40, liner: 60, lash: 50, contour: 45 },
+    fresh: { smooth: 30, bright: 45, dark: 50, eyes: 20, teeth: 40, lip: 20, lipC: '#ff7f7f', blush: 15 }
+  };
+  const SL = {
+    face: [['smooth', 'Skin smooth'], ['bright', 'Gora / Glow'], ['dark', 'Dark circles hatao'], ['slim', 'Face slim (V-shape)'], ['nose', 'Naak patli/sharp'], ['eyes', 'Aankhein bigger + chamak'], ['teeth', 'Teeth whitening'], ['plump', 'Lip plump']],
+    makeup: [['lip', 'Lipstick'], ['blush', 'Blush'], ['liner', 'Eyeliner'], ['lash', 'Eyelashes'], ['contour', 'Contour + highlight'], ['hair', 'Hair colour']],
+    quality: []
+  };
+  const TG = [['night', '🌙 Low-light / Night mode'], ['flicker', '💡 Anti-flicker (tubelight/LED)'], ['enhance', '🔍 HD Enhance (sharp)'], ['center', '🎯 Center stage (face follow)']];
+  const LIPC = ['#c2185b', '#d6336c', '#e03131', '#b5485d', '#d6708a', '#ff7f7f', '#7b2d3b', '#9c36b5'];
+  const HAIRC = ['#b91c1c', '#e8c468', '#2563eb', '#ec4899', '#7c3aed', '#7c4a1e', '#10b981', '#1f2937'];
+  let tab = 'face';
+
+  function styles(){
+    if($('cxp7Styles')) return;
+    const s = document.createElement('style'); s.id = 'cxp7Styles';
+    s.textContent = `
+    #cxBty{position:fixed;left:0;right:0;bottom:0;z-index:100010;display:none;justify-content:center;pointer-events:none}
+    #cxBty.open{display:flex}
+    #cxBty .sh{pointer-events:auto;width:100%;max-width:520px;max-height:46vh;display:flex;flex-direction:column;background:rgba(14,16,22,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:#fff;border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+    #cxBty .hd{display:flex;align-items:center;gap:6px;padding:10px 12px 6px}
+    #cxBty .hd button{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:14px;padding:6px 11px;font-size:12.5px;font-weight:600}
+    #cxBty .hd .sp{flex:1}
+    #cxBty .tabs{display:flex;gap:4px;padding:0 12px 6px}
+    #cxBty .tabs button{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;color:#9aa0b0;font-size:13px;font-weight:700;padding:7px 0}
+    #cxBty .tabs button.on{color:#fff;border-color:#a855f7}
+    #cxBty .bd{overflow-y:auto;padding:4px 14px 12px;-webkit-overflow-scrolling:touch}
+    #cxBty .r{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+    #cxBty .r label{flex:0 0 140px}
+    #cxBty .r input[type=range]{flex:1;accent-color:#a855f7;min-width:0}
+    #cxBty .r b{width:26px;text-align:right;font-size:12px;opacity:.7;font-weight:600}
+    #cxBty .sw{display:flex;gap:9px;margin:2px 0 8px 150px;flex-wrap:wrap}
+    #cxBty .sw i{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.3)}
+    #cxBty .sw i.on{border-color:#fff;box-shadow:0 0 0 2px #a855f7}
+    #cxBty .tg{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.07);border-radius:12px;padding:11px 13px;margin:8px 0;font-size:13.5px}
+    #cxBty .tg button{width:44px;height:25px;border-radius:13px;border:0;background:#444;position:relative;flex:none}
+    #cxBty .tg button::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s}
+    #cxBty .tg button.on{background:#22c55e}#cxBty .tg button.on::after{left:22px}
+    #cxBty .nt{font-size:11px;opacity:.55;margin-top:6px;line-height:1.4}
+    #cxCamBty,#callBty{cursor:pointer}
+    #callBty{display:none}
+    .callOv.vid.conn #callBty{display:block}
+    #callBty::before{background-image:url("data:image/svg+xml;utf8,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='13' r='7.5'/><path d='M9 12.5h.01M15 12.5h.01M9.5 15.5a3.5 3.5 0 0 0 5 0M19 3v4M17 5h4'/></svg>")}")}
+    #callBty.on{background:linear-gradient(135deg,#f472b6,#a855f7)!important}`;
+    document.head.appendChild(s);
+  }
+  function build(){
+    if($('cxBty')) return;
+    styles();
+    const el = document.createElement('div'); el.id = 'cxBty';
+    el.innerHTML = `<div class="sh"><div class="hd"><button data-p="off">Off</button><button data-p="natural">Natural</button><button data-p="glam">Glam</button><button data-p="fresh">Fresh</button><span class="sp"></span><button data-x="1">✕</button></div>
+      <div class="tabs"><button data-t="face">🧑 Face</button><button data-t="makeup">💄 Makeup</button><button data-t="quality">🎥 Quality</button></div>
+      <div class="bd" id="cxBtyBd"></div></div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click', (e)=>{
+      const x = e.target.closest('[data-x]'); if(x){ el.classList.remove('open'); return; }
+      const t = e.target.closest('[data-t]'); if(t){ tab = t.dataset.t; paint(); return; }
+      const p = e.target.closest('[data-p]'); if(p){ const keep = {}; if(p.dataset.p !== 'off') ['night', 'flicker', 'enhance', 'center'].forEach(k => keep[k] = P[k]); P = Object.assign({}, D, PRESETS[p.dataset.p], keep); changed(); paint(); return; }
+      const sw = e.target.closest('[data-c]'); if(sw){ P[sw.dataset.k] = sw.dataset.c; if(sw.dataset.k === 'hairC' && !P.hair) P.hair = 60; if(sw.dataset.k === 'lipC' && !P.lip) P.lip = 50; changed(); paint(); return; }
+      const g = e.target.closest('[data-g]'); if(g){ P[g.dataset.g] = P[g.dataset.g] ? 0 : 1; changed(); paint(); }
+    });
+    el.addEventListener('input', (e)=>{
+      const r = e.target.closest('input[type=range]'); if(!r) return;
+      P[r.dataset.k] = Number(r.value); const b = r.parentNode.querySelector('b'); if(b) b.textContent = r.value; changed(true);
+    });
+  }
+  function paint(){
+    const el = $('cxBty'); if(!el) return;
+    el.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+    const bd = $('cxBtyBd'); let h = '';
+    SL[tab].forEach(([k, n])=>{
+      h += `<div class="r"><label>${n}</label><input type="range" min="0" max="100" value="${P[k] || 0}" data-k="${k}"><b>${P[k] || 0}</b></div>`;
+      if(k === 'lip') h += '<div class="sw">' + LIPC.map(c => `<i data-k="lipC" data-c="${c}" class="${P.lipC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
+      if(k === 'hair') h += '<div class="sw">' + HAIRC.map(c => `<i data-k="hairC" data-c="${c}" class="${P.hairC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
+    });
+    if(tab === 'quality'){
+      h += TG.map(([k, n]) => `<div class="tg"><span>${n}</span><button type="button" data-g="${k}" class="${P[k] ? 'on' : ''}"></button></div>`).join('');
+      h += '<div class="nt">HD Enhance sharpness badhata hai (asli AI upscaling nahi). Auto-focus lock browser/camera hardware par hota hai — Center stage face ke saath frame follow karta hai.</div>';
+    } else if(tab === 'face') h += '<div class="nt">Face AI pehli baar internet se load hota hai (kuch MB). Sirf ek chehra track hota hai.</div>';
+    bd.innerHTML = h;
+  }
+  function changed(soft){
+    save(); ensureModels();
+    if(window.cxFxRefresh) window.cxFxRefresh();
+    const f = $('callBty'); if(f) f.classList.toggle('on', active());
+    const c = $('cxCamBty'); if(c) c.classList.toggle('on', active());
+  }
+  function open(){ build(); paint(); $('cxBty').classList.add('open'); ensureModels(); }
+  window.cxOpenBeauty = open;
+
+  // buttons inject (camera top bar + call buttons)
+  const BTY_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M9 12.5h.01M15 12.5h.01M9.5 15.5a3.5 3.5 0 0 0 5 0M19 3v4M17 5h4"/></svg>';
+  function inject(){
+    const top = document.querySelector('#cxCam .top');
+    if(top && !$('cxCamBty')){
+      styles();
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'cxCamBty'; b.className = 'ib'; b.setAttribute('aria-label', 'Beauty'); b.innerHTML = BTY_ICON;
+      const flip = $('cxCamFlip'); top.insertBefore(b, flip); b.addEventListener('click', open);
+      // title ko beech me rakhne ke liye wrapper: flip + beauty ek group
+      const grp = document.createElement('div'); grp.style.cssText = 'display:flex;gap:8px'; top.insertBefore(grp, b); grp.appendChild(b); grp.appendChild(flip);
+    }
+    const bt = document.querySelector('#callOv .callBtns');
+    if(bt && !$('callBty')){
+      styles();
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'callBty'; b.className = 'callBtn'; b.setAttribute('aria-label', 'Beauty');
+      bt.insertBefore(b, $('callFx') || $('callEnd') || null); b.addEventListener('click', open);
+    }
+    const fb = $('callBty'); if(fb) fb.classList.toggle('on', active());
+    // call chalu ho gayi + beauty on => pipeline apne aap
+    if(active() && window.cxFxRefresh && !(window.cxFxRunning && window.cxFxRunning())) window.cxFxRefresh();
+  }
+  setInterval(inject, 700);
+  // camera band hone par panel band
+  setInterval(()=>{ const cam = $('cxCam'), call = $('callOv'); const open_ = (cam && cam.classList.contains('open')) || (call && call.classList.contains('open')); if(!open_){ const p = $('cxBty'); if(p) p.classList.remove('open'); } }, 800);
+  if(active()) ensureModels();
+})();
+
+
+// ============================================================================
+// CHAT PLUS 8: (1) paperclip menu ka "Camera" -> in-app camera (effects + beauty + photo/video)
+//              (2) Sticker panel me "GIF" tab: Mere GIFs (gallery se save, IndexedDB) + optional Giphy search
+//  Giphy: free API key chahiye (developers.giphy.com) -> GIF tab me key add karo (localStorage 'cxg-key')
+// ============================================================================
+(function chatPlus8(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const readDU = (blob)=> new Promise((res, rej)=>{ const r = new FileReader(); r.onload = ()=> res(r.result); r.onerror = ()=> rej(r.error); r.readAsDataURL(blob); });
+  const esc = (s)=> String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+  // ---------- (1) Camera menu item -> in-app camera ----------
+  document.addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('#cxMenu [data-pick="cam"]');
+    if(!b) return;
+    let ok = false;
+    try{ ok = !!(window.cxOpenCam && window.cxOpenCam()); }catch(err){ ok = false; }
+    if(ok){ e.stopImmediatePropagation(); e.preventDefault(); const m = $('cxMenu'); if(m) m.classList.remove('open'); }
+    // ok false (camera API nahi / call me) => purana native camera input chalega
+  }, true);
+
+  // ---------- (2) GIF tab ----------
+  const MAXG = 20, KEYK = 'cxg-key';
+  const getKey = ()=>{ try{ return localStorage.getItem(KEYK) || ''; }catch(e){ return ''; } };
+  const setKey = (k)=>{ try{ k ? localStorage.setItem(KEYK, k) : localStorage.removeItem(KEYK); }catch(e){} };
+  function idb(){ return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-gifs', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('g', { keyPath: 'id' }); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } }); }
+  async function gAll(){ const d = await idb(); return new Promise((res, rej)=>{ const q = d.transaction('g').objectStore('g').getAll(); q.onsuccess = ()=> res((q.result || []).sort((a, b)=> b.ts - a.ts)); q.onerror = ()=> rej(q.error); }); }
+  async function gPut(o){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').put(o); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
+  async function gDel(id){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').delete(id); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
+
+  let on = false, del = false, saved = [], urls = [], online = [], busy = false, lastQ = null;
+
+  function styles(){
+    if($('cxp8Styles')) return;
+    const s = document.createElement('style'); s.id = 'cxp8Styles';
+    s.textContent = `
+    #cxsk4Gif{flex:1;overflow:auto;display:none;padding:8px 10px}
+    #cxsk4Gif.on{display:block}
+    #cxsk4Gif .gtop{display:flex;gap:6px;margin-bottom:8px}
+    #cxsk4Gif .gtop input{flex:1;min-width:0;background:#20242e;color:#eee;border:0;border-radius:10px;padding:8px 10px;font-size:14px}
+    #cxsk4Gif .gtop button{background:#20242e;color:#ddd;border:0;border-radius:10px;padding:8px 11px;font-size:14px}
+    #cxsk4Gif .gtop button.on{background:#c0392b;color:#fff}
+    #cxsk4Gif .h{font-size:12px;opacity:.6;margin:8px 2px 4px}
+    #cxsk4Gif .gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+    #cxsk4Gif .gg button{background:#20242e;border:0;border-radius:10px;padding:0;aspect-ratio:1;position:relative;overflow:hidden;color:#8a93a8;font-size:28px}
+    #cxsk4Gif .gg button img{width:100%;height:100%;object-fit:cover;display:block}
+    #cxsk4Gif .gg .x{position:absolute;top:2px;right:2px;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center}
+    #cxsk4Gif .nt{font-size:12.5px;opacity:.65;padding:10px 4px;line-height:1.45}`;
+    document.head.appendChild(s);
+  }
+  function revoke(){ urls.forEach(u => { try{ URL.revokeObjectURL(u); }catch(e){} }); urls = []; }
+
+  function build(){
+    const p = $('cxsk4'); if(!p) return false;
+    const tb = p.querySelector('.tb'), pn = p.querySelector('.pn'), gd = $('cxsk4Gd');
+    if(!tb || !pn || !gd) return false;
+    if($('cxsk4Gif')) return true;
+    styles();
+    const btn = document.createElement('button'); btn.type = 'button'; btn.id = 'cxsk4GifBtn'; btn.dataset.t = 'gif'; btn.textContent = 'GIF';
+    tb.insertBefore(btn, tb.querySelector('.sp') || null);
+    const box = document.createElement('div'); box.id = 'cxsk4Gif';
+    box.innerHTML = '<div class="gtop"><input type="search" id="cxgQ" placeholder="GIF search (Giphy)"><button type="button" data-g="go">&#128269;</button><button type="button" data-g="add">&#10133;</button><button type="button" data-g="del" id="cxgDel">&#128465;</button></div><div id="cxgBody"></div>';
+    gd.parentNode.insertBefore(box, gd.nextSibling);
+    const inp = document.createElement('input'); inp.type = 'file'; inp.id = 'cxgF'; inp.accept = 'image/gif'; inp.multiple = true; inp.hidden = true; p.appendChild(inp);
+    inp.addEventListener('change', async (e)=>{
+      const fs = Array.from(e.target.files || []).filter(f => f.type === 'image/gif'); e.target.value = '';
+      let n = 0;
+      for(const f of fs){
+        if(f.size > CHAT_FILE_MAX){ toast(f.name + ' badi hai (max 1.5 MB)'); continue; }
+        if(saved.length + n >= MAXG){ toast('Max ' + MAXG + ' GIF save ho sakti hain.'); break; }
+        try{ await gPut({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), blob: f, name: f.name || 'anim.gif', size: f.size, ts: Date.now() + n }); n++; }catch(err){ toast('GIF save nahi hui (jagah/permission).'); break; }
+      }
+      await refreshSaved(); paint();
+    });
+    // tab clicks: capture phase (purane handler se pehle)
+    tb.addEventListener('click', (e)=>{
+      const b = e.target.closest('[data-t]'); if(!b) return;
+      if(b.dataset.t === 'gif'){ e.stopImmediatePropagation(); e.preventDefault(); show(); return; }
+      hide();   // baaki tabs purane handler se chalte hain
+    }, true);
+    box.addEventListener('click', onClick);
+    $('cxgQ').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); search(); } });
+    return true;
+  }
+  function show(){
+    if(!build()) return;
+    on = true; del = false;
+    const p = $('cxsk4');
+    p.querySelectorAll('.tb [data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === 'gif'));
+    const ed = $('cxsk4Ed'); if(ed) ed.hidden = true;
+    $('cxsk4Gd').style.display = 'none'; $('cxsk4Gif').classList.add('on');
+    $('cxgQ').parentNode.style.display = getKey() ? 'flex' : 'flex';
+    refreshSaved().then(()=>{ paint(); if(getKey() && !online.length && lastQ === null) search(true); });
+  }
+  function hide(){
+    if(!on) return;
+    on = false; revoke();
+    const g = $('cxsk4Gd'); if(g) g.style.display = '';
+    const b = $('cxsk4Gif'); if(b) b.classList.remove('on');
+    const gb = $('cxsk4GifBtn'); if(gb) gb.classList.remove('on');
+  }
+  async function refreshSaved(){ try{ saved = await gAll(); }catch(e){ saved = []; } }
+
+  function paint(){
+    const body = $('cxgBody'); if(!body || !on) return;
+    revoke();
+    const dbtn = $('cxgDel'); if(dbtn) dbtn.classList.toggle('on', del);
+    let h = '';
+    if(!getKey()) h += '<div class="nt">Online GIF search ke liye <b>Giphy API key</b> chahiye (free: developers.giphy.com).<br><button type="button" data-g="key" style="margin-top:6px;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:7px 12px;font-size:13px">&#128273; Key add karo</button></div>';
+    h += '<div class="h">Meri GIFs ' + (del ? '&mdash; hatane ke liye tap karo' : '') + '</div><div class="gg">';
+    h += '<button type="button" data-g="add" aria-label="GIF add">&#10133;</button>';
+    saved.forEach((g, i)=>{ const u = URL.createObjectURL(g.blob); urls.push(u); h += '<button type="button" data-s="' + i + '"><img src="' + u + '" alt="">' + (del ? '<span class="x">&#10005;</span>' : '') + '</button>'; });
+    h += '</div>';
+    if(getKey()){
+      h += '<div class="h">' + (lastQ ? 'Search: ' + esc(lastQ) : 'Trending') + (busy ? ' ...' : '') + '</div><div class="gg">';
+      online.forEach((o, i)=>{ h += '<button type="button" data-o="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"></button>'; });
+      h += '</div>';
+      h += '<div class="nt"><button type="button" data-g="key" style="background:transparent;color:#8a93a8;border:0;font-size:12px;text-decoration:underline">Giphy key badlo / hatao</button></div>';
+    }
+    body.innerHTML = h;
+  }
+
+  async function search(trend){
+    const k = getKey();
+    if(!k){ toast('Pehle Giphy API key add karo.'); return; }
+    const q = trend === true ? '' : ($('cxgQ').value || '').trim();
+    lastQ = q; busy = true; paint();
+    try{
+      const base = q ? 'https://api.giphy.com/v1/gifs/search?q=' + encodeURIComponent(q) + '&' : 'https://api.giphy.com/v1/gifs/trending?';
+      const r = await fetch(base + 'api_key=' + encodeURIComponent(k) + '&limit=24&rating=pg-13');
+      if(!r.ok) throw new Error('http ' + r.status);
+      const j = await r.json();
+      online = (j.data || []).map(d => {
+        const im = d.images || {};
+        const pick = (x)=> x && x.url ? x.url : '';
+        return { p: pick(im.fixed_height_small_still) && pick(im.fixed_height_small) || pick(im.fixed_height), u: [pick(im.fixed_height), pick(im.fixed_height_small), pick(im.downsized_small)].filter(Boolean), n: (d.slug || 'giphy') + '.gif' };
+      }).filter(o => o.p && o.u.length);
+      if(!online.length) toast('Koi GIF nahi mili.');
+    }catch(e){ online = []; toast('Giphy search nahi chali (key/internet check karo).'); }
+    busy = false; paint();
+  }
+
+  async function sendBlob(blob, name){
+    if(blob.size > CHAT_FILE_MAX){ toast('GIF badi hai (max 1.5 MB).'); return; }
+    if(!window.cxSend){ toast('Send abhi available nahi.'); return; }
+    const p = $('cxsk4'); if(p) p.classList.remove('open');
+    try{
+      toast('GIF bhej rahe hain');
+      const gif = blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' });
+      const data = await readDU(gif);
+      const im = await new Promise((res, rej)=>{ const i = new Image(); i.onload = ()=> res(i); i.onerror = rej; i.src = data; });
+      const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      await window.cxSend({ k: 'i', a: { n: name || 'anim.gif', s: blob.size, mt: 'image/gif', w: im.width, h: im.height, th: c.toDataURL('image/jpeg', 0.6), gif: 1 } }, data, ' GIF');
+    }catch(e){ toast('GIF nahi gayi.'); }
+  }
+  async function sendOnline(o){
+    toast('GIF le rahe hain...');
+    for(const u of o.u){
+      try{
+        const r = await fetch(u); if(!r.ok) continue;
+        const b = await r.blob();
+        if(b.size <= CHAT_FILE_MAX){ await sendBlob(b, o.n); return; }
+      }catch(e){}
+    }
+    toast('Ye GIF bhejne layak chhoti nahi mili / download fail.');
+  }
+
+  async function onClick(e){
+    const b = e.target.closest('button'); if(!b) return;
+    const g = b.dataset.g;
+    if(g === 'add'){ if(saved.length >= MAXG){ toast('Max ' + MAXG + ' GIF. Pehle kuch hatao.'); return; } $('cxgF').click(); return; }
+    if(g === 'del'){ del = !del; paint(); return; }
+    if(g === 'go'){ search(); return; }
+    if(g === 'key'){
+      const cur = getKey();
+      const v = prompt('Giphy API key paste karo (khaali chhodo = hata do):', cur);
+      if(v === null) return;
+      setKey(v.trim()); online = []; lastQ = null; paint(); if(getKey()) search(true);
+      return;
+    }
+    if(b.dataset.s != null){
+      const i = Number(b.dataset.s), it = saved[i]; if(!it) return;
+      if(del){ try{ await gDel(it.id); }catch(err){} await refreshSaved(); paint(); }
+      else sendBlob(it.blob, it.name);
+      return;
+    }
+    if(b.dataset.o != null){ const o = online[Number(b.dataset.o)]; if(o) sendOnline(o); }
+  }
+
+  // panel lazily banta hai -> tab inject karte rehna; sticker menu dabane par GIF view band
+  setInterval(()=>{ try{ build(); }catch(e){} }, 600);
+  document.addEventListener('click', (e)=>{ if(e.target && e.target.closest && e.target.closest('[data-xs]')) hide(); }, true);
+})();
