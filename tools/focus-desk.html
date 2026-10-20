@@ -1,5 +1,5 @@
 <!-- BUILD 20261020-1300 (Focus Desk) -->
-<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Focus Desk</title>
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><link rel="preconnect" href="https://www.youtube.com"><link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://s.ytimg.com"><link rel="preconnect" href="https://i.ytimg.com"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Focus Desk</title>
 <style>
 :root{--bg:#07080b;--tx:#f4f3ee;--mu:#8b8d96;--pn:rgba(14,15,20,.88);--ln:rgba(255,255,255,.12);--ac:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
@@ -262,6 +262,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <label class="mu">Daily goal (min) <input type="number" data-k="goal" min="0" max="1000" style="width:70px"></label>
 <label class="mu">Long break har <input type="number" data-k="lint" min="1" max="12" style="width:56px"> focus ke baad</label>
 <label class="mu">Stopwatch milestone chime <select data-k="ms"><option value="0">Off</option><option value="15">Har 15 min</option><option value="25">Har 25 min</option><option value="45">Har 45 min</option><option value="60">Har 60 min</option></select></label><label class="opt"><input type="checkbox" data-k="ad"> App/tab se bahar jaane par distraction count karo</label>
+<label class="mu">👁 Eye break reminder (stopwatch chalte time) <select data-k="eb"><option value="0">Off</option><option value="1">Har 1 min (test)</option><option value="20">Har 20 min</option><option value="25">Har 25 min</option><option value="30">Har 30 min</option><option value="45">Har 45 min</option></select></label>
 <button class="pill" id="nt">Notifications on</button>
 <p class="mu">Keys: Space start/pause · R reset · F fullscreen · M music · + / − size</p></section>
 <section class="panel" id="p-style"><button class="x" data-c>×</button><h3>🎨 Clock &amp; Stopwatch style</h3>
@@ -290,7 +291,7 @@ if(k==='cf'||k==='fw'){var o=JSON.parse(c)||{},ch=0;for(var q in d)if(o[q]===und
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const S=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},W=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-const FN=[['Modern','"Trebuchet MS",system-ui,sans-serif',.68],['Digital','Orbitron,"Trebuchet MS",sans-serif',.92],['Classic','"Playfair Display",Georgia,serif',.74],['Mono','"Space Mono",ui-monospace,monospace',.66]],ACS=['#e5484d','#f5a524','#30c48d','#3b82f6','#a855f7','#ec4899'];const CF=Object.assign({tsc:1,csc:1,ac:'#e5484d',font:0,goal:120,auto:false,lint:4,snd:true,sec:true,show:true,h12:false,sh:false,rp:'all',amb:{}},S('cf',{}));let mode='focus',left=1500,run=false,iv=null,startTs=0,elapsed=0,log=S('log',[]),tasks=S('tasks',[]);
+const FN=[['Modern','"Trebuchet MS",system-ui,sans-serif',.68],['Digital','Orbitron,"Trebuchet MS",sans-serif',.92],['Classic','"Playfair Display",Georgia,serif',.74],['Mono','"Space Mono",ui-monospace,monospace',.66]],ACS=['#e5484d','#f5a524','#30c48d','#3b82f6','#a855f7','#ec4899'];const CF=Object.assign({tsc:1,csc:1,ac:'#e5484d',font:0,goal:120,auto:false,lint:4,snd:true,sec:true,show:true,h12:false,sh:false,rp:'all',amb:{},eb:25},S('cf',{}));let mode='focus',left=1500,run=false,iv=null,startTs=0,elapsed=0,log=S('log',[]),tasks=S('tasks',[]);
 const dur=()=>({focus:$('#fm').value,short:$('#bm').value,long:$('#lm').value}[mode]*60);
 const f=n=>String(n).padStart(2,'0');
 function draw(){const t=mode==='stop'?elapsed:left;$('#time').textContent=f(Math.floor(t/60))+':'+f(t%60);document.title=$('#time').textContent+' - '+(mode==='focus'?'Focus':mode==='stop'?'Stopwatch':'Break')}
@@ -595,6 +596,20 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey)return;const open=$('#eye
  if(open){if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&k!=='escape')return;e.stopImmediatePropagation();
   if(k==='escape'||k==='e')eyClose();else if(k===' '&&eyTab==='anim'){e.preventDefault();$('#eyp').click()}return}
  if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(k==='e')eyOpen()},true);
+
+// ---- eye break reminder: stopwatch chalte time har N min (default 25) -> notification + popup + saved YouTube video auto-play
+let ebNext=0,ebWarm=false;
+const ebStep=()=>Math.max(0,+CF.eb||0)*60;
+function ebOpen(){if($('#eye').classList.contains('show'))return;const Y=window.__eyY,i=Y?Y.pick():-1;eyTab=i>=0?'y'+i:'anim';eyOpen()}
+function ebFire(){beep();
+ try{if('Notification' in window&&Notification.permission==='granted'){const n=new Notification('👁 Eye exercise time!',{body:Math.round(ebStep()/60)+' min ho gaye — 1 min aankhon ko aaram do',tag:'fd-eye',renotify:true,requireInteraction:true});n.onclick=()=>{try{window.focus()}catch(e){}n.close();try{window.__eyY&&window.__eyY.resume()}catch(e){}}}}catch(e){}
+ ebOpen()}
+setInterval(()=>{const s=ebStep();if(!run||mode!=='stop'||!s){ebNext=0;ebWarm=false;return}
+ if(!ebNext||elapsed<ebNext-s)ebNext=(Math.floor(elapsed/s)+1)*s;
+ const rem=ebNext-elapsed;
+ if(rem<=20&&rem>0&&!ebWarm){ebWarm=true;try{window.__eyY&&window.__eyY.prewarm()}catch(e){}}
+ if(elapsed>=ebNext){ebNext=(Math.floor(elapsed/s)+1)*s;ebWarm=false;ebFire()}},1000);
+$('#start').addEventListener('click',()=>{try{if(+CF.eb&&'Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}});
 
 apply();draw();upd();
 })();
@@ -987,7 +1002,7 @@ ytRender();
 <script>
 /* ===== Poori style ko default banao (sabke liye) ===== */
 (()=>{
-const CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout'],FWX=['pos','pw','ph','pipOn','page'];
+const CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12','eb'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout'],FWX=['pos','pw','ph','pipOn','page'];
 const note=t=>{$('#sdNote').textContent=t},rd=k=>{try{const v=localStorage.getItem(k);return v===null?undefined:JSON.parse(v)}catch(e){}};
 function snap(){const ls={cf:{}};CFK.forEach(k=>{if(CF[k]!==undefined)ls.cf[k]=CF[k]});
  const fw=rd('fw');if(fw){FWX.forEach(k=>delete fw[k]);ls.fw=fw}
@@ -1017,15 +1032,25 @@ function api(){return new Promise((res,rej)=>{if(window.YT&&YT.Player)return res
  let n=0;const t=setInterval(()=>{if(window.YT&&YT.Player){clearInterval(t);res()}else if(++n>50){clearInterval(t);rej()}},200)})}
 function nm(q,pl){try{const t=(pl.getVideoData()||{}).title,e=EL.find(x=>x.k===kOf(q));if(t&&e&&/^YouTube /.test(e.n)){e.n=t.slice(0,70);save();render()}}catch(e){}}
 function fb(q,why){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;box.innerHTML='<div class="fbk"><div class="mu" style="margin-bottom:12px">⚠ '+why+'<br>Yahan nahi chal raha, par YouTube par 100% chalega.</div><a class="pill" target="_blank" rel="noopener" href="'+url(q)+'" style="display:inline-block;background:var(--ac);border-color:transparent;text-decoration:none;color:#fff">▶ YouTube par kholo</a></div>'}
-function hide(){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;cur=-1;box.innerHTML='';box.style.display='none';$('#eyyd').style.display='none'}
-function show(i){const q=EL[i];if(!q)return;try{P&&P.destroy()}catch(e){}P=null;cur=i;box.style.display='block';$('#eyyd').style.display='';box.innerHTML='<div id="eyp0"></div>';let sk=0;
- api().then(()=>{if(cur!==i)return;
+let pre=-1,pkG=0,rdy=false,wantPlay=false;
+function pick(){if(!EL.length)return -1;let k=null;try{k=localStorage.getItem('fdeyeSel')}catch(e){}const i=EL.findIndex(x=>x.k===k);return i>=0?i:0}
+function hide(){clearTimeout(failT);pkG++;pre=-1;rdy=false;wantPlay=false;try{P&&P.destroy()}catch(e){}P=null;cur=-1;box.innerHTML='';box.style.display='none';$('#eyyd').style.display='none'}
+function guard(){setTimeout(()=>{try{if(!P||cur<0)return;const s=P.getPlayerState();if(s===-1||s===5){P.mute();P.playVideo();toast('🔇 Browser ne sound roka — video chal raha hai, sound ke liye unmute karo')}}catch(e){}},3000)}
+function mk(i){const q=EL[i];try{P&&P.destroy()}catch(e){}P=null;rdy=false;box.innerHTML='<div id="eyp0"></div>';let sk=0;const my=++pkG;
+ return api().then(()=>{if(my!==pkG)return;
   P=new YT.Player('eyp0',{width:'100%',height:'100%',host:'https://www.youtube-nocookie.com',videoId:q.id||undefined,
-   playerVars:Object.assign({autoplay:1,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},q.list?{listType:'playlist',list:q.list}:{},/^https?:$/.test(location.protocol)?{origin:location.origin}:{}),
-   events:{onReady:e=>{clearTimeout(failT);nm(q,e.target);try{e.target.playVideo()}catch(x){}},onStateChange:e=>{if(e.data===1){clearTimeout(failT);nm(q,e.target)}},
+   playerVars:Object.assign({autoplay:wantPlay?1:0,playsinline:1,rel:0,modestbranding:1,enablejsapi:1},q.list?{listType:'playlist',list:q.list}:{},/^https?:$/.test(location.protocol)?{origin:location.origin}:{}),
+   events:{onReady:e=>{if(my!==pkG)return;rdy=true;clearTimeout(failT);nm(q,e.target);if(wantPlay){try{e.target.playVideo();guard()}catch(x){}}},onStateChange:e=>{if(e.data===1){clearTimeout(failT);nm(q,e.target)}},
     onError:e=>{const c=e.data;if(q.list&&[100,101,150].includes(c)&&sk++<8){try{P.nextVideo();return}catch(x){}}
      fb(q,c===153?'Is page ka origin YouTube ko nahi mila.':c===100?'Video private ya hata diya gaya hai.':(c===101||c===150)?'Video owner ne embed band kiya hua hai.':'Video play nahi ho paya (code '+c+').')}}});
-  failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000)}).catch(()=>fb(q,'YouTube load nahi ho paya (internet ya blocker).'))}
+  if(wantPlay)failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000)}).catch(()=>{if(wantPlay)fb(q,'YouTube load nahi ho paya (internet ya blocker).')})}
+function show(i){const q=EL[i];if(!q)return;try{localStorage.setItem('fdeyeSel',q.k)}catch(e){}
+ cur=i;box.style.display='block';$('#eyyd').style.display='';wantPlay=true;
+ if(P&&pre===i){pre=-1;if(rdy){try{P.playVideo();guard()}catch(x){}}else failT=setTimeout(()=>fb(q,'Player load nahi hua.'),12000);return}
+ pre=-1;mk(i)}
+/* reminder se ~20 sec pehle player chupke se load kar lo => popup aate hi video turant chale */
+function prewarm(){const i=pick();if(i<0||cur>=0||(P&&pre===i))return;pre=i;wantPlay=false;box.style.display='block';mk(i)}
+function resume(){try{if(P&&rdy&&cur>=0)P.playVideo()}catch(e){}}
 function render(){const tb=$('#eye .tb');tb.querySelectorAll('[data-yt]').forEach(b=>b.remove());
  EL.forEach((q,i)=>{const b=document.createElement('button');b.dataset.et='y'+i;b.dataset.yt='1';b.textContent='▶ '+q.n.slice(0,24);b.title=q.n;b.onclick=()=>window.__eyTab('y'+i);b.classList.toggle('on',i===cur);tb.appendChild(b)})}
 async function add(){const q=ytId($('#eyyt').value);if(!q.id&&!q.list)return toast('Sahi YouTube link daalo');const key=kOf(q);let i=EL.findIndex(x=>x.k===key);
@@ -1034,13 +1059,13 @@ async function add(){const q=ytId($('#eyyt').value);if(!q.id&&!q.list)return toa
  $('#eyyt').value='';render();window.__eyTab('y'+i);toast('YouTube video save ho gaya')}
 $('#eyya').onclick=add;$('#eyyt').addEventListener('keydown',e=>{if(e.key==='Enter')add()});
 $('#eyyd').onclick=()=>{if(cur<0||!confirm('Ye video list se hata dein?'))return;EL.splice(cur,1);save();hide();render();window.__eyTab('anim')};
-window.__eyY={show,hide,render};render();
+window.__eyY={show,hide,render,prewarm,pick,resume};render();if(EL.length)setTimeout(()=>{api().catch(()=>{})},1200);
 })();
 </script>
 <script>
 /* ===== Sabke liye auto default: tools/focus-default.json (ya app se bridge) ===== */
 (()=>{
-const LISTK=['fdyt','fdeye'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout','fdyt','fdeye'],CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12'],FWX=['pos','pw','ph','pipOn','page'];
+const LISTK=['fdyt','fdeye'],KS=['bg','scene','wx','bgblur','mq','mqSide','mqbox','fdLayout','fdyt','fdeye'],CFK=['ts','cs','tc','cc','bc','ac','font','tsc','csc','show','sec','h12','eb'],FWX=['pos','pw','ph','pipOn','page'];
 const rd=k=>{try{const v=localStorage.getItem(k);return v===null?undefined:JSON.parse(v)}catch(e){}},note=t=>{const n=$('#sdNote');if(n)n.textContent=t};
 function snap(){const ls={cf:{}};CFK.forEach(k=>{if(CF[k]!==undefined)ls.cf[k]=CF[k]});const fw=rd('fw');if(fw){FWX.forEach(k=>delete fw[k]);ls.fw=fw}
  KS.forEach(k=>{const v=rd(k);if(v===undefined||v===null)return;if(/(data|blob):/.test(JSON.stringify(v)))return;ls[k]=v});return{v:Date.now(),ls}}
