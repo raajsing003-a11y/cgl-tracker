@@ -24558,6 +24558,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const GKEY = 'cxc-grade';
   const HUEG = 'linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
   const ADJ = [
+    { k: 'aiEnh', n: 'AI Enhance', e: '🤖', min: 0 },
+    { k: 'denoise', n: 'Denoise', e: '🧼', min: 0 },
+    { k: 'detail', n: 'Detail Boost', e: '🔍', min: 0 },
+    { k: 'lowlight', n: 'Low-light', e: '🌙', min: 0 },
+    { k: 'skinSm', n: 'Skin Smooth', e: '🧴', min: 0 },
     { k: 'exposure', n: 'Exposure', e: '☀️' },
     { k: 'brightness', n: 'Brightness', e: '🔆' },
     { k: 'contrast', n: 'Contrast', e: '◐' },
@@ -24579,9 +24584,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     { k: 'hiHue', n: 'Highlight Color', e: '🟠', min: 0, max: 360, tr: HUEG },
     { k: 'hiAmt', n: 'Highlight Mix', e: '🎚️', min: 0 }
   ];
+  const AUTO_HD = { aiEnh: 40, denoise: 22, detail: 28, sharpen: 18, contrast: 8, vibrance: 14, skinSm: 12 };
   const lo = (a)=> a.min == null ? -100 : a.min, hi = (a)=> a.max == null ? 100 : a.max;
   const loadG = ()=>{
     const g = {}; ADJ.forEach(a => { g[a.k] = 0; });
+    if(localStorage.getItem(GKEY) === null){ Object.assign(g, AUTO_HD); }
     try{ const o = JSON.parse(localStorage.getItem(GKEY) || '{}'); ADJ.forEach(a => { const v = Number(o[a.k]); if(isFinite(v)) g[a.k] = Math.max(lo(a), Math.min(hi(a), v)); }); }catch(_){}
     return g;
   };
@@ -24599,11 +24606,52 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 v; uniform sampler2D t; uniform vec2 px;
-uniform float ex,br,co,sa,vi,tp,tn,hl,sh,wh,bk,fd,hu,sp,vg,gr,tm,sA,hA;
+uniform float ex,br,co,sa,vi,tp,tn,hl,sh,wh,bk,fd,hu,sp,vg,gr,tm,sA,hA,ai,dn,dt,ll,ss;
 uniform vec3 sC,hC;
 const vec3 W=vec3(.2126,.7152,.0722);
+void acc(vec3 x,vec3 c,inout vec3 sum,inout float ws){float g=exp(-16.*dot(abs(x-c),vec3(1.)));sum+=x*g;ws+=g;}
 void main(){
   vec3 c=texture2D(t,v).rgb;
+  if(ai>0.||dn>0.||dt>0.||ll>0.||ss>0.){
+    vec3 n=texture2D(t,v+vec2(0.,-px.y)).rgb, s=texture2D(t,v+vec2(0.,px.y)).rgb, w=texture2D(t,v+vec2(-px.x,0.)).rgb, e=texture2D(t,v+vec2(px.x,0.)).rgb;
+    vec3 nw=texture2D(t,v+vec2(-px.x,-px.y)).rgb, ne=texture2D(t,v+vec2(px.x,-px.y)).rgb, sw=texture2D(t,v+vec2(-px.x,px.y)).rgb, se=texture2D(t,v+vec2(px.x,px.y)).rgb;
+    vec3 avg=(n+s+w+e+nw+ne+sw+se)/8.;
+    float dnA=max(dn,ll*.6);
+    if(dnA>0.){
+      vec3 sum=c; float ws=1.;
+      acc(n,c,sum,ws);acc(s,c,sum,ws);acc(w,c,sum,ws);acc(e,c,sum,ws);acc(nw,c,sum,ws);acc(ne,c,sum,ws);acc(sw,c,sum,ws);acc(se,c,sum,ws);
+      c=mix(c,sum/ws,clamp(dnA*1.1,0.,1.));
+    }
+    if(ll>0.){
+      float L0=dot(c,W);
+      c=pow(max(c,vec3(0.)),vec3(1.-ll*.38));
+      c+=ll*.06*(1.-smoothstep(0.,.5,L0));
+      c=mix(vec3(dot(c,W)),c,1.+ll*.2);
+    }
+    if(ss>0.){
+      float cb=-.169*c.r-.331*c.g+.5*c.b, cr=.5*c.r-.419*c.g-.081*c.b;
+      float sk=smoothstep(-.19,-.15,cb)*(1.-smoothstep(-.03,0.,cb))*smoothstep(.02,.05,cr)*(1.-smoothstep(.17,.22,cr));
+      float lc=dot(c,W);
+      float em=abs(dot(n,W)-lc)+abs(dot(s,W)-lc)+abs(dot(w,W)-lc)+abs(dot(e,W)-lc);
+      float prot=1.-smoothstep(.045,.2,em);
+      c=mix(c,c*.4+avg*.6,clamp(sk*prot*ss,0.,1.));
+    }
+    if(ai>0.){
+      float gx=dot((ne+2.*e+se)-(nw+2.*w+sw),W), gy=dot((sw+2.*s+se)-(nw+2.*n+ne),W);
+      float edge=smoothstep(.015,1.,pow(sqrt(gx*gx+gy*gy)*3.4,.5));
+      vec3 pushed=c+(c-avg)*ai*3.2*edge;
+      vec3 wide=(texture2D(t,v+vec2(0.,-2.*px.y)).rgb+texture2D(t,v+vec2(0.,2.*px.y)).rgb+texture2D(t,v+vec2(-2.*px.x,0.)).rgb+texture2D(t,v+vec2(2.*px.x,0.)).rgb+avg*2.)/6.;
+      vec3 clar=c+(c-wide)*ai*2.2;
+      vec3 lo=min(min(min(n,s),min(w,e)),min(min(nw,ne),min(sw,se)));
+      vec3 hi=max(max(max(n,s),max(w,e)),max(max(nw,ne),max(sw,se)));
+      vec3 str=clamp((c-lo)/max(hi-lo,vec3(.05)),0.,1.);
+      vec3 ad=mix(c,str,ai*.35*edge);
+      c=clamp(mix(pushed,clar,.55),0.,1.); c=clamp(mix(c,ad,.5),0.,1.);
+      c=clamp((c-.5)*(1.+ai*.2)+.5,0.,1.);
+      float lm=dot(c,W); c=mix(vec3(lm),c,1.+ai*.12);
+    }
+    if(dt>0.) c+=(c-avg)*dt*1.4;
+  }
   if(sp>0.){
     vec3 b=texture2D(t,v+vec2(px.x,0.)).rgb+texture2D(t,v-vec2(px.x,0.)).rgb+texture2D(t,v+vec2(0.,px.y)).rgb+texture2D(t,v-vec2(0.,px.y)).rgb;
     c+=(c*4.-b)*sp*.6;
@@ -24661,7 +24709,7 @@ void main(){
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      ['px', 'ex', 'br', 'co', 'sa', 'vi', 'tp', 'tn', 'hl', 'sh', 'wh', 'bk', 'fd', 'hu', 'sp', 'vg', 'gr', 'tm', 'sA', 'hA', 'sC', 'hC'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
+      ['px', 'ex', 'br', 'co', 'sa', 'vi', 'tp', 'tn', 'hl', 'sh', 'wh', 'bk', 'fd', 'hu', 'sp', 'vg', 'gr', 'tm', 'sA', 'hA', 'ai', 'dn', 'dt', 'll', 'ss', 'sC', 'hC'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
       glc.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); glFail = true; gl = null; });
       return true;
     }catch(e){ console.error('grade gl', e); glFail = true; gl = null; return false; }
@@ -24680,6 +24728,7 @@ void main(){
       gl.uniform1f(U.sh, n('shadows')); gl.uniform1f(U.wh, n('whites')); gl.uniform1f(U.bk, n('blacks')); gl.uniform1f(U.fd, n('fade'));
       gl.uniform1f(U.hu, n('hue')); gl.uniform1f(U.sp, n('sharpen')); gl.uniform1f(U.vg, n('vignette')); gl.uniform1f(U.gr, n('grain'));
       gl.uniform1f(U.tm, (performance.now() % 1000) * 7.13);
+      gl.uniform1f(U.ai, n('aiEnh')); gl.uniform1f(U.dn, n('denoise')); gl.uniform1f(U.dt, n('detail')); gl.uniform1f(U.ll, n('lowlight')); gl.uniform1f(U.ss, n('skinSm'));
       gl.uniform1f(U.sA, n('shAmt')); gl.uniform1f(U.hA, n('hiAmt'));
       const a = hsv(G.shHue / 360), b = hsv(G.hiHue / 360);
       gl.uniform3f(U.sC, a[0], a[1], a[2]); gl.uniform3f(U.hC, b[0], b[1], b[2]);
@@ -24727,6 +24776,7 @@ void main(){
     $('cxGrRs').onclick = ()=>{ const a = curAdj(); G[a.k] = 0; saveG(); paintCar(); };
     $('cxCamCar').addEventListener('click', (e)=>{
       const b = e.target.closest('[data-g]'); if(!b) return;
+      if(b.dataset.g === '_auto'){ ADJ.forEach(a => { G[a.k] = 0; }); Object.assign(G, AUTO_HD); flushG(); paintCar(); toast('⚡ Auto HD lag gaya'); return; }
       if(b.dataset.g === '_reset'){ ADJ.forEach(a => { G[a.k] = 0; }); flushG(); paintCar(); toast('Sab settings reset.'); return; }
       gSel = b.dataset.g; try{ localStorage.setItem('cxc-gsel', gSel); }catch(_){}
       paintCar(); try{ b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }catch(_){}
@@ -24742,9 +24792,9 @@ void main(){
   }
   function paintCar(){
     const car = $('cxCamCar'); if(!car) return;
-    if(!car.children.length) car.innerHTML = ADJ.map(a => `<button type="button" data-g="${a.k}"><i></i><span>${a.n}</span></button>`).join('') + '<button type="button" data-g="_reset"><i>↺</i><span>Reset all</span></button>';
+    if(!car.children.length) car.innerHTML = ADJ.map(a => `<button type="button" data-g="${a.k}"><i></i><span>${a.n}</span></button>`).join('') + '<button type="button" data-g="_auto"><i>⚡</i><span>Auto HD</span></button><button type="button" data-g="_reset"><i>↺</i><span>Reset all</span></button>';
     car.querySelectorAll('[data-g]').forEach(b => {
-      const k = b.dataset.g; if(k === '_reset') return;
+      const k = b.dataset.g; if(k === '_reset' || k === '_auto') return;
       const a = ADJ.find(x => x.k === k), v = G[k], mod = v !== 0;
       b.classList.toggle('on', k === gSel); b.classList.toggle('mod', mod);
       b.firstChild.textContent = mod ? String(Math.round(v)) : a.e;
@@ -24753,15 +24803,21 @@ void main(){
   }
   async function startStream(){
     if(st.stream){ st.stream.getTracks().forEach(t => t.stop()); st.stream = null; }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: st.facing, width: { ideal: 1280 }, height: { ideal: 960 } } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: st.facing, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 60 } } });
     if(!st){ stream.getTracks().forEach(t => t.stop()); return; }
-    st.stream = stream; st.vid.srcObject = stream; try{ await st.vid.play(); }catch(e){}
+    st.stream = stream;
+    try{ const tr = stream.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {}, adv = {};
+      if(cap.focusMode && cap.focusMode.indexOf('continuous') > -1) adv.focusMode = 'continuous';
+      if(cap.exposureMode && cap.exposureMode.indexOf('continuous') > -1) adv.exposureMode = 'continuous';
+      if(cap.whiteBalanceMode && cap.whiteBalanceMode.indexOf('continuous') > -1) adv.whiteBalanceMode = 'continuous';
+      if(Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); }catch(e){}
+    st.vid.srcObject = stream; try{ await st.vid.play(); }catch(e){}
   }
   function loop(){
     if(!st) return;
     const v = st.vid, vw = v.videoWidth, vh = v.videoHeight;
     if(!vw || !vh) return;
-    const w = Math.min(vw, 720), h = Math.round(vh * w / vw);
+    const w = Math.min(vw, 1280), h = Math.round(vh * w / vw);
     if(st.cvs.width !== w || st.cvs.height !== h){ st.cvs.width = w; st.cvs.height = h; }
     if(!st.raw){ st.raw = document.createElement('canvas'); st.rctx = st.raw.getContext('2d'); }
     if(st.raw.width !== w || st.raw.height !== h){ st.raw.width = w; st.raw.height = h; }
@@ -24788,17 +24844,18 @@ void main(){
     st.cvs.toBlob((b)=>{
       if(!b){ toast('Photo nahi li ja saki.'); return; }
       const f = new File([b], 'photo_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      try{ window.cxAutoSave && window.cxAutoSave(f); }catch(e){}
       close(); toGal(f);
-    }, 'image/jpeg', 0.92);
+    }, 'image/jpeg', 0.96);
   }
   async function recStart(){
     if(!st || st.rec || !window.MediaRecorder) return;
     const out = st.cvs.captureStream(30);
     try{ const a = await navigator.mediaDevices.getUserMedia({ audio: true }); st.aStream = a; a.getAudioTracks().forEach(t => out.addTrack(t)); }catch(e){}
     if(!st || !st.hold){ if(st && st.aStream){ st.aStream.getTracks().forEach(t => t.stop()); st.aStream = null; } return; }   // ungli pehle hi hat gayi
-    const mt = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const mt = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
     const chunks = [];
-    try{ st.rec = new MediaRecorder(out, mt ? { mimeType: mt, videoBitsPerSecond: 1500000 } : undefined); }
+    try{ st.rec = new MediaRecorder(out, mt ? { mimeType: mt, videoBitsPerSecond: 6000000, audioBitsPerSecond: 128000 } : undefined); }
     catch(e){ toast('Video record nahi ho paayi.'); return; }
     st.rec.ondataavailable = (e)=>{ if(e.data && e.data.size) chunks.push(e.data); };
     const rec = st.rec;
@@ -24807,6 +24864,7 @@ void main(){
       if(st && st.aStream){ st.aStream.getTracks().forEach(t => t.stop()); st.aStream = null; }
       if(secs < 0.8 || !chunks.length){ toast('Video bahut chhoti thi.'); return; }
       const f = new File([new Blob(chunks, { type })], 'video_' + Date.now() + (/mp4/.test(type) ? '.mp4' : '.webm'), { type });
+      try{ window.cxAutoSave && window.cxAutoSave(f); }catch(e){}
       close(); toGal(f);
     };
     st.t0 = Date.now(); rec.start(500);
@@ -24918,7 +24976,7 @@ void main(){
   function failOnce(e, hair){ console.error('beauty AI load failed', e); if(hair) failedH = true; else failed = true; setStat('fail'); toast((hair ? 'Hair AI' : 'Face AI') + ' load nahi hua (internet check karo). Panel dobara khologe to retry hoga.'); }
   async function ensureFace(){
     if(lm || lmP || failed) return;
-    setStat('load'); toast('Beauty AI load ho raha hai… (pehli baar)');
+    setStat('load');
     lmP = (async()=>{
       try{
         const v = await loadVision();
@@ -26758,6 +26816,7 @@ const HandWrite = (function(){
   // toolbar ko composer ke theek upar rakho (chat box + messages dikhte rahein)
   function place(){
     if(!bar) return;
+    if(target && target.getClientRects().length === 0){ close(); return; }   // chat band hui -> draw bhi band
     const comp = document.querySelector('#chatOverlay .chatComposer');
     let b = 8;
     if(comp){ const r = comp.getBoundingClientRect(); if(r.height > 0) b = Math.max(8, window.innerHeight - r.top + 6); }
@@ -26792,14 +26851,43 @@ const HandWrite = (function(){
     press('#hwSend', ()=>{ const b = document.getElementById('chatSendBtn'); if(b) b.click(); showCands([]); last = null; fixSeq++; });
     press('#hwClose', close);
     cv.style.touchAction = 'none';
+    // Controls (send, +, camera, menu, header, bubbles...) draw mode me bhi chalte rahein:
+    // touch kisi button/input par shuru ho to draw nahi hota, tap seedha us control ko jata hai.
+    const CTRL = 'button, a, input, textarea, select, label, summary, [role="button"], [data-act], [onclick], .cimg, .cfile, .cvoice';
+    let tap = null;
+    function ctrlAt(x, y){
+      cv.style.pointerEvents = 'none';
+      let el = null; try{ el = document.elementFromPoint(x, y); }catch(err){}
+      cv.style.pointerEvents = passThru ? 'none' : 'auto';
+      if(!el || el === document.body || el === document.documentElement) return null;
+      return el.closest(CTRL);
+    }
     cv.addEventListener('pointerdown',(e)=>{
+      const c = ctrlAt(e.clientX, e.clientY);
+      if(c){ tap = { el:c, x:e.clientX, y:e.clientY, id:e.pointerId }; return; }
+      tap = null;
       e.preventDefault(); cv.setPointerCapture(e.pointerId); clearTimeout(timer);
       if(!strokes.length) t0 = performance.now();
       drawing = true; cur = [pt(e)]; hint(''); redraw();
     });
     cv.addEventListener('pointermove',(e)=>{ if(!drawing) return; (e.getCoalescedEvents?e.getCoalescedEvents():[e]).forEach(ev=> cur.push(pt(ev))); redraw(); });
     const end = ()=>{ if(!drawing) return; drawing = false; if(cur && cur.length){ strokes.push(cur); } cur = null; redraw(); schedule(); };
-    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('pointerup', async (e)=>{
+      if(tap){
+        const t = tap; tap = null;
+        if(Math.hypot(e.clientX - t.x, e.clientY - t.y) > 12) return;      // drag tha, tap nahi
+        const el = t.el;
+        const isSend = !!el.closest('#chatSendBtn');
+        if(isSend && strokes.length && !busy){ clearTimeout(timer); await recognize(); }   // likha hua pehle box me aaye, phir send
+        if(!document.contains(el)) return;
+        if(/^(INPUT|TEXTAREA)$/.test(el.tagName)){ try{ el.focus(); }catch(err){} }
+        else { try{ el.click(); }catch(err){} }
+        if(isSend){ showCands([]); last = null; fixSeq++; }
+        return;
+      }
+      end();
+    });
+    cv.addEventListener('pointercancel', ()=>{ tap = null; end(); });
     window.addEventListener('resize', size);
     size(); place(); posTimer = setInterval(place, 300);
     const b = document.getElementById('cxDrawBtn'); if(b) b.classList.add('on');
@@ -26984,4 +27072,103 @@ const AIReply = (function(){
   @keyframes cpShine{0%,55%{background-position:150% 0}100%{background-position:-50% 0}}
   @media (prefers-reduced-motion:reduce){#chatBtn::before{animation:none}}`;
   document.head.appendChild(s);
+})();
+
+
+// ============================================================================
+// CHAT PLUS 17: GALLERY SAVE (camera + chat media) + draw mode me sab controls chalte hain
+//   - Camera se photo/video lete hi apne aap phone me save (localStorage 'cxAutoGal' = '0' kare to band).
+//   - Chat ke har photo/video ke neeche "⬇ Gallery" button + viewer ka ⬇ bhi seedha save karta hai.
+//   - Android: file Downloads me jati hai aur Gallery/Photos me "Download" album me dikhti hai.
+//   - iPhone: browser seedha gallery me nahi likh sakta -> Share sheet khulti hai, "Save Image/Video" dabao.
+//   - Draw mode (HandWrite): send, +, camera, menu, header sab ke taps ab seedha kaam karte hain.
+// ============================================================================
+(function cxGallery(){
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const EXT = { 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif', 'video/mp4':'mp4', 'video/webm':'webm', 'video/quicktime':'mov' };
+
+  async function toBlob(src){
+    if(src instanceof Blob) return src;
+    if(typeof src === 'string'){ const r = await fetch(src); return await r.blob(); }
+    throw new Error('bad src');
+  }
+  function fixName(name, blob, kind){
+    let n = String(name || '').replace(/[\\/:*?"<>|]+/g, '_');
+    const ext = EXT[blob.type] || (kind === 'v' ? 'webm' : 'jpg');
+    if(!/\.[a-z0-9]{2,4}$/i.test(n)) n = (n && n !== 'file' ? n : 'chat_' + Date.now()) + '.' + ext;
+    return n;
+  }
+  async function save(src, name, kind, quiet){
+    try{
+      const blob = await toBlob(src);
+      const fname = fixName(name, blob, kind);
+      const file = new File([blob], fname, { type: blob.type || (kind === 'v' ? 'video/webm' : 'image/jpeg') });
+      if(isIOS && navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({ files:[file] });                       // Save Image / Save Video
+        return true;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = fname; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 30000);
+      if(!quiet) toast('✅ Phone me save ho gaya (Gallery → Download album)');
+      return true;
+    }catch(err){
+      if(err && err.name === 'AbortError') return false;               // user ne share sheet band ki
+      console.error('gallery save', err); toast('Save nahi ho paya.'); return false;
+    }
+  }
+  window.cxGallerySave = save;
+  window.cxAutoSave = function(file){
+    try{ if(localStorage.getItem('cxAutoGal') === '0') return; }catch(e){}
+    if(isIOS) return;                                                  // iOS par share sheet auto nahi khul sakti
+    save(file, file.name, /^video/.test(file.type) ? 'v' : 'i', true).then(ok=>{ if(ok) toast('📥 Camera ki file phone me save ho gayi'); });
+  };
+
+  // viewer ke ⬇ buttons (dono viewers) -> seedha gallery save
+  document.addEventListener('click', (e)=>{
+    const b = e.target.closest && e.target.closest('#cxvSave, #cxVsave'); if(!b) return;
+    const v = b.closest('#cxvOv, #cxView'); if(!v || !v.dataset.src) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    const isVid = !!v.querySelector('video');
+    save(v.dataset.src, v.dataset.name, isVid ? 'v' : 'i');
+  }, true);
+
+  // chat bubbles: photo/video ke neeche "⬇ Gallery"
+  const css = document.createElement('style');
+  css.textContent = '.cxDl{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;padding:7px 13px;border-radius:16px;border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;font-size:14px;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}.cxDl:active{background:#3a3550}.cxDl[disabled]{opacity:.6}';
+  document.head.appendChild(css);
+  async function onDl(e){
+    e.preventDefault(); e.stopPropagation();
+    const b = e.currentTarget; if(b.disabled) return; b.disabled = true; const t0 = b.textContent; b.textContent = '…';
+    try{
+      const d = await window.cxGetFile(b.dataset.fid);
+      const blob = (typeof d === 'string') ? await (await fetch(d)).blob() : (d instanceof Blob ? d : null);
+      if(!blob) throw new Error('no data');
+      await save(blob, b.dataset.n, b.dataset.k);
+    }catch(err){ console.error(err); toast('Ye file load nahi ho paayi.'); }
+    b.disabled = false; b.textContent = t0;
+  }
+  function scan(){
+    if(!window.cxGetFile) return;
+    document.querySelectorAll('#chatMsgs img.cimg[data-fid]:not([data-dl]), #chatMsgs .cfile[data-act="vid"][data-fid]:not([data-dl])').forEach(el=>{
+      el.setAttribute('data-dl', '1');
+      const fid = el.dataset.fid; if(!fid) return;
+      const isVid = el.classList.contains('cfile');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cxDl'; b.textContent = '⬇ Gallery';
+      b.dataset.fid = fid; b.dataset.k = isVid ? 'v' : 'i'; b.dataset.n = isVid ? (el.dataset.n || 'video') : 'photo_' + Date.now() + '.jpg';
+      b.addEventListener('click', onDl);
+      el.insertAdjacentElement('afterend', b);
+    });
+  }
+  setInterval(()=>{ try{ scan(); }catch(e){} }, 700);
+
+  // camera khule to draw overlay band (warna camera ke upar overlay aa jata)
+  const t = setInterval(()=>{
+    if(typeof window.cxOpenCam !== 'function' || window.cxOpenCam.__hw) return;
+    const orig = window.cxOpenCam;
+    window.cxOpenCam = function(){ try{ HandWrite.close(); }catch(e){} return orig.apply(this, arguments); };
+    window.cxOpenCam.__hw = true; clearInterval(t);
+  }, 400);
 })();
