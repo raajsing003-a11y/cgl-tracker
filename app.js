@@ -21928,8 +21928,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     .cbub .cvbar{flex:1;height:4px;border-radius:3px;background:#0003;overflow:hidden;}
     .cbub .cvbar i{display:block;height:100%;width:0;background:currentColor;}
     .cbub .ccall{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;}
-    .cbub .ccall.miss{color:#ef4444;}
-    .cmsg.me .cbub .ccall.miss{color:#7f1d1d;}
+    .cbub .ccall.miss{color:#ff6b6b;}
+    .cmsg.me .cbub .ccall.miss{color:#ffe0e0;text-shadow:0 1px 2px rgba(0,0,0,.25);}
     .cxView{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;}
     .cxView.open{display:flex;}
     .cxView img,.cxView video{max-width:100%;max-height:82vh;object-fit:contain;}
@@ -24269,17 +24269,19 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     .cmsg.me .cbub .cmeta,.cmsg.me .cbub .chatTick{color:rgba(255,255,255,.72)}
     .cmsg.me .cbub a{color:#dbeafe}
     .cmsg.them .cbub{background:#24272f;border:0;color:#f1f1f4;border-radius:20px;border-bottom-left-radius:6px}
-    .chatComposer{margin:6px 10px calc(8px + env(safe-area-inset-bottom,0px))!important;padding:5px 6px!important;border-radius:28px;background:#20232b!important;border:1px solid rgba(255,255,255,.08)!important;align-items:center!important;gap:2px!important}
-    .chatComposer #chatInput{order:2;background:transparent!important;border:0!important;box-shadow:none!important;min-height:38px;padding:9px 6px!important;color:#fff}
+    .chatComposer{margin:6px 8px calc(8px + env(safe-area-inset-bottom,0px))!important;padding:7px 8px!important;border-radius:30px;background:#20232b!important;border:1px solid rgba(255,255,255,.08)!important;align-items:center!important;gap:2px!important}
+    .chatComposer #chatInput{order:2;flex:1 1 auto!important;min-width:0!important;background:transparent!important;border:0!important;box-shadow:none!important;min-height:48px!important;max-height:150px;padding:13px 8px!important;font-size:16px!important;line-height:1.35!important;color:#fff;overflow-y:auto;scrollbar-width:none}
+    .chatComposer #chatInput::-webkit-scrollbar{display:none}
+    .chatComposer #cxEmojiBtn{display:none!important}
     .chatComposer #chatInput::placeholder{color:#8b90a0}
-    .chatComposer .cxBtn{width:38px!important;height:38px!important;color:#fff!important;font-size:0!important;padding:0}
+    .chatComposer .cxBtn{width:40px!important;height:40px!important;color:#fff!important;font-size:0!important;padding:0}
     .chatComposer .cxBtn svg{display:block}
-    .chatComposer #cxPCam{order:1;flex:none;width:40px;height:40px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f7bff,#6d4bff);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+    .chatComposer #cxPCam{order:1;flex:none;width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#4f7bff,#6d4bff);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
     .chatComposer #cxMicBtn{order:3}
     .chatComposer #cxPGal{order:4}
     .chatComposer #cxPStk{order:5}
     .chatComposer #cxAttachBtn{order:6}
-    .chatComposer .cxPB{flex:none;width:38px;height:38px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+    .chatComposer .cxPB{flex:none;width:40px;height:40px;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
     .chatComposer #chatSendBtn{order:7;display:none;width:auto;height:36px;border-radius:18px;padding:0 14px;background:transparent;color:#6aa0ff;font-size:15px;font-weight:700}
     .chatComposer.hasText #chatSendBtn{display:flex}
     .chatComposer.hasText #cxMicBtn,.chatComposer.hasText #cxPGal,.chatComposer.hasText #cxPStk{display:none}
@@ -24693,36 +24695,41 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
   const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
   const HAIR_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/latest/hair_segmenter.tflite';
-  let vis = null, visP = null, lm = null, lmP = null, hs = null, hsP = null, failed = false;
+  let vis = null, visP = null, lm = null, lmP = null, hs = null, hsP = null, failed = false, failedH = false, lmDel = '', nullRun = 0, cpuTried = false, stat = 'idle';
+  const setStat = (t)=>{ stat = t; const e = $('cxBtySt'); if(e) e.textContent = ({ idle: '', load: '⏳ Face AI load ho raha hai…', ok: '✅ Face mil gaya — tracking chal rahi hai', none: '😶 Face nahi mil raha — camera seedha rakho, roshni badhao, poora chehra frame me lao', fail: '❌ Face AI load nahi hua — internet check karo (dobara koshish ho rahi hai)' })[t] || ''; };
   async function loadVision(){
     if(vis) return vis;
     if(!visP) visP = (async()=>{ const mod = await import(MP + '/vision_bundle.mjs'); const fs = await mod.FilesetResolver.forVisionTasks(MP + '/wasm'); vis = { mod, fs }; return vis; })();
     return visP;
   }
-  function failOnce(e){ console.error('beauty AI load failed', e); if(!failed){ failed = true; toast('Face AI load nahi hua (internet check karo). Night / Enhance / Center chalte rahenge.'); } }
+  function failOnce(e, hair){ console.error('beauty AI load failed', e); if(hair) failedH = true; else failed = true; setStat('fail'); toast((hair ? 'Hair AI' : 'Face AI') + ' load nahi hua (internet check karo). Panel dobara khologe to retry hoga.'); }
   async function ensureFace(){
     if(lm || lmP || failed) return;
-    toast('Beauty AI load ho raha hai… (pehli baar)');
+    setStat('load'); toast('Beauty AI load ho raha hai… (pehli baar)');
     lmP = (async()=>{
       try{
         const v = await loadVision();
-        const mk = (delegate)=> v.mod.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate }, runningMode: 'VIDEO', numFaces: 1 });
-        try{ lm = await mk('GPU'); }catch(e){ lm = await mk('CPU'); }
+        const mk = (delegate)=> v.mod.FaceLandmarker.createFromOptions(v.fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate }, runningMode: 'VIDEO', numFaces: 1, minFaceDetectionConfidence: .3, minFacePresenceConfidence: .3, minTrackingConfidence: .3 });
+        try{ lm = await mk(cpuTried ? 'CPU' : 'GPU'); lmDel = cpuTried ? 'CPU' : 'GPU'; }catch(e){ lm = await mk('CPU'); lmDel = 'CPU'; }
+        setStat('none');
       }catch(e){ failOnce(e); }
+      lmP = null;
     })();
   }
   async function ensureHair(){
-    if(hs || hsP || failed) return;
+    if(hs || hsP || failedH) return;
     toast('Hair AI load ho raha hai…');
     hsP = (async()=>{
       try{
         const v = await loadVision();
         const mk = (delegate)=> v.mod.ImageSegmenter.createFromOptions(v.fs, { baseOptions: { modelAssetPath: HAIR_MODEL, delegate }, runningMode: 'VIDEO', outputCategoryMask: true, outputConfidenceMasks: false });
         try{ hs = await mk('GPU'); }catch(e){ hs = await mk('CPU'); }
-      }catch(e){ failOnce(e); }
+      }catch(e){ failOnce(e, true); }
+      hsP = null;
     })();
   }
   function ensureModels(){ if(faceOn()) ensureFace(); if(P.hair) ensureHair(); }
+  function retryModels(){ if(!lm){ failed = false; } if(!hs){ failedH = false; } ensureModels(); }
 
   // ---------------- canvases ----------------
   const mkC = (willRead)=>{ const c = document.createElement('canvas'); return { c, x: c.getContext('2d', willRead ? { willReadFrequently: true } : undefined) }; };
@@ -24738,7 +24745,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   function detect(v){
     if(!lm || v.readyState < 2) return null;
     const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts;
-    try{ const r = lm.detectForVideo(v, ts); return (r && r.faceLandmarks && r.faceLandmarks[0]) || null; }catch(e){ return null; }
+    try{
+      const r = lm.detectForVideo(v, ts), f = (r && r.faceLandmarks && r.faceLandmarks[0]) || null;
+      if(f){ nullRun = 0; setStat('ok'); }
+      else { setStat('none'); if(++nullRun > 90 && lmDel === 'GPU' && !cpuTried){ cpuTried = true; nullRun = 0; try{ lm.close(); }catch(e){} lm = null; lmP = null; lmDel = ''; ensureFace(); } }
+      return f;
+    }catch(e){ console.error('detect err', e); if(lmDel === 'GPU' && !cpuTried){ cpuTried = true; try{ lm.close(); }catch(_){} lm = null; lmP = null; lmDel = ''; ensureFace(); } return null; }
   }
   function polyPath(c, idx, ox){ c.beginPath(); for(let k = 0; k < idx.length; k++){ const i = idx[k], x = X[i] + (ox || 0), y = Y[i]; k ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); }
   function softFill(c, idx, blur){ c.save(); c.shadowColor = '#fff'; c.shadowBlur = blur; c.shadowOffsetX = BIG; c.fillStyle = '#fff'; polyPath(c, idx, -BIG); c.fill(); c.restore(); }
@@ -25088,8 +25100,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const el = document.createElement('div'); el.id = 'cxBty';
     el.innerHTML = `<div class="sh"><div class="hd"><button data-p="off">Off</button><button data-p="natural">Natural</button><button data-p="glam">Glam</button><button data-p="fresh">Fresh</button><span class="sp"></span><button data-x="1">✕</button></div>
       <div class="tabs"><button data-t="face">🧑 Face</button><button data-t="makeup">💄 Makeup</button><button data-t="quality">🎥 Quality</button></div>
-      <div class="bd" id="cxBtyBd"></div></div>`;
-    document.body.appendChild(el);
+      <div class="nt" id="cxBtySt" style="padding:0 14px 4px;opacity:.85"></div><div class="bd" id="cxBtyBd"></div></div>`;
+    document.body.appendChild(el); setStat(stat);
     el.addEventListener('click', (e)=>{
       const x = e.target.closest('[data-x]'); if(x){ el.classList.remove('open'); return; }
       const t = e.target.closest('[data-t]'); if(t){ tab = t.dataset.t; paint(); return; }
@@ -25123,7 +25135,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const f = $('callBty'); if(f) f.classList.toggle('on', active());
     const c = $('cxCamBty'); if(c) c.classList.toggle('on', active());
   }
-  function open(){ build(); paint(); $('cxBty').classList.add('open'); ensureModels(); }
+  function open(){ build(); paint(); $('cxBty').classList.add('open'); retryModels(); }
   window.cxOpenBeauty = open;
 
   // buttons inject (camera top bar + call buttons)
@@ -25348,4 +25360,945 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   // panel lazily banta hai -> tab inject karte rehna; sticker menu dabane par GIF view band
   setInterval(()=>{ try{ build(); }catch(e){} }, 600);
   document.addEventListener('click', (e)=>{ if(e.target && e.target.closest && e.target.closest('[data-xs]')) hide(); }, true);
+})();
+
+
+// ============================================================================
+// CHAT PLUS 9: SMART KEYBOARD (opt-in; default OFF => sirf phone ka keyboard)
+//  Phone ka keyboard wahi rehta hai; ON karne par composer ke upar "Smart bar" aata hai.
+//  ON/OFF + saari settings localStorage 'cxk-s' me yaad rehti hain (baar baar on nahi karna padta).
+//  Menu: paperclip menu -> "Smart keyboard"  (ya Smart bar ka gear)
+//  Features: suggestions (calculator, text shortcuts, emoji, next-word), fonts (+live), clipboard history,
+//   swipe/hold delete, spacebar-slide cursor, translate (online), haptics, typing sounds, themes, bg photo, one-hand.
+//  Nahi ho sakta (web limit): glide typing, handwriting, floating keyboard, grammar/tone AI.
+// ============================================================================
+(function chatPlus9(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const esc = (s)=> String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const LSK = 'cxk-s', BGK = 'cxk-bg', CBK = 'cxk-clip', LRK = 'cxk-learn', SEENK = 'cxk-seen';
+  const jget = (k, d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; }catch(e){ return d; } };
+  const jset = (k, v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } };
+  const DEF = { on: false, hap: 0, snd: 'off', theme: 'default', hand: 'off', emo: true, calc: true, next: true, auto: true, live: '', livemode: false, sc: { omw: 'On my way!', brb: 'Be right back', ty: 'Thank you!' } };
+  let S = Object.assign({}, DEF, jget(LSK, {}));
+  if(!S.sc || typeof S.sc !== 'object') S.sc = Object.assign({}, DEF.sc);
+  const save = ()=> jset(LSK, S);
+  const T = ()=> $('chatInput');
+  let internal = false;
+
+  // ---------------- text helpers ----------------
+  const before = ()=>{ const t = T(); return t ? t.value.slice(0, t.selectionStart) : ''; };
+  const after = ()=>{ const t = T(); return t ? t.value.slice(t.selectionEnd) : ''; };
+  function setVal(v, cur){
+    const t = T(); if(!t) return;
+    internal = true;
+    t.value = v;
+    const c = cur == null ? v.length : cur;
+    try{ t.setSelectionRange(c, c); }catch(e){}
+    try{ t.dispatchEvent(new Event('input', { bubbles: true })); }catch(e){}
+    internal = false;
+    try{ chatAutosize(); }catch(e){}
+    try{ t.focus(); }catch(e){}
+    refresh();
+  }
+  function ins(str){ const b = before(); setVal(b + str + after(), (b + str).length); }
+  function replaceBefore(n, str){ const b = before(), nb = b.slice(0, b.length - n) + str; setVal(nb + after(), nb.length); }
+  function autoExpand(){
+    if(!S.auto) return;
+    const m = /(^|\s)(\S+) $/.exec(before());
+    if(m && S.sc[m[2].toLowerCase()]) replaceBefore(m[2].length + 1, S.sc[m[2].toLowerCase()] + ' ');
+  }
+
+  // ---------------- fonts ----------------
+  const FONTS = [['bold', 'Bold', 0x1D400, 0x1D41A, 0x1D7CE], ['italic', 'Italic', 0x1D434, 0x1D44E, null], ['bi', 'Bold Italic', 0x1D468, 0x1D482, null], ['script', 'Cursive', 0x1D4D0, 0x1D4EA, null], ['gothic', 'Gothic', 0x1D56C, 0x1D586, null], ['mono', 'Mono', 0x1D670, 0x1D68A, 0x1D7F6], ['bubble', 'Bubble', 0x24B6, 0x24D0, 'bub']];
+  function mapCh(f, ch){
+    const c = ch.charCodeAt(0);
+    if(c >= 65 && c <= 90) return String.fromCodePoint(f[2] + c - 65);
+    if(c >= 97 && c <= 122){ if(f[0] === 'italic' && ch === 'h') return '\u210E'; return String.fromCodePoint(f[3] + c - 97); }
+    if(c >= 48 && c <= 57){ if(f[4] === 'bub') return c === 48 ? '\u24EA' : String.fromCodePoint(0x2460 + c - 49); if(f[4]) return String.fromCodePoint(f[4] + c - 48); }
+    return ch;
+  }
+  const conv = (s, id)=>{ const f = FONTS.find(x => x[0] === id); if(!f) return s; let o = ''; for(const ch of s) o += ch.length === 1 ? mapCh(f, ch) : ch; return o; };
+  const REV = new Map();
+  FONTS.forEach(f=>{ for(let i = 0; i < 62; i++){ const p = i < 26 ? String.fromCharCode(65 + i) : i < 52 ? String.fromCharCode(97 + i - 26) : String.fromCharCode(48 + i - 52); const m = mapCh(f, p); if(m !== p) REV.set(m, p); } });
+  const plain = (s)=>{ let o = ''; for(const ch of s) o += REV.get(ch) || ch; return o; };
+  function applyFont(id){
+    const t = T(); if(!t) return;
+    const s = t.selectionStart, v = t.value;
+    const f = (x)=> id === 'plain' ? plain(x) : conv(plain(x), id);
+    const pre = f(v.slice(0, s)), post = f(v.slice(s));
+    if(pre + post === v) return;
+    setVal(pre + post, pre.length);
+  }
+
+  // ---------------- calculator ----------------
+  const CALCRE = /((?:\(*\d+(?:\.\d+)?\)*%?\s*[-+*\/x\u00d7\u00f7^]\s*)+\(*\d+(?:\.\d+)?\)*%?)\s*=?\s*$/;
+  function calcEval(src){
+    const s = src.replace(/x/gi, '*').replace(/\u00d7/g, '*').replace(/\u00f7/g, '/').replace(/\s+/g, '');
+    let i = 0;
+    const peek = ()=> s[i];
+    function num(){ const m = /^\d+(?:\.\d+)?/.exec(s.slice(i)); if(!m) throw 0; i += m[0].length; return parseFloat(m[0]); }
+    function post(v){ while(peek() === '%'){ i++; v /= 100; } return v; }
+    function prim(){ if(peek() === '('){ i++; const v = expr(); if(peek() !== ')') throw 0; i++; return post(v); } return post(num()); }
+    function un(){ if(peek() === '-'){ i++; return -un(); } return prim(); }
+    function pw(){ const b = un(); if(peek() === '^'){ i++; return Math.pow(b, pw()); } return b; }
+    function term(){ let v = pw(); while(peek() === '*' || peek() === '/'){ const o = s[i++], r = pw(); v = o === '*' ? v * r : v / r; } return v; }
+    function expr(){ let v = term(); while(peek() === '+' || peek() === '-'){ const o = s[i++], r = term(); v = o === '+' ? v + r : v - r; } return v; }
+    try{ const v = expr(); return i === s.length ? v : NaN; }catch(e){ return NaN; }
+  }
+
+  // ---------------- emoji keywords ----------------
+  const EMO = { party: '\ud83c\udf89\ud83e\udd73\ud83c\udf8a', birthday: '\ud83c\udf82\ud83c\udf89\ud83e\udd73', bday: '\ud83c\udf82\ud83c\udf89\ud83e\udd73', happy: '\ud83d\ude0a\ud83d\ude04\ud83e\udd70', khush: '\ud83d\ude0a\ud83d\ude04', sad: '\ud83d\ude22\ud83d\ude14\ud83d\udc94', love: '\u2764\ufe0f\ud83d\ude0d\ud83e\udd70', pyaar: '\u2764\ufe0f\ud83d\ude0d', haha: '\ud83d\ude02\ud83e\udd23', lol: '\ud83d\ude02\ud83e\udd23', funny: '\ud83d\ude02\ud83e\udd23', thanks: '\ud83d\ude4f\ud83d\ude0a', thank: '\ud83d\ude4f\ud83d\ude0a', shukriya: '\ud83d\ude4f\ud83d\ude0a', ok: '\ud83d\udc4d\ud83d\udc4c', okay: '\ud83d\udc4d\ud83d\udc4c', yes: '\ud83d\udc4d\u2705', haan: '\ud83d\udc4d\u2705', no: '\ud83d\ude45\u274c', nahi: '\ud83d\ude45\u274c', good: '\ud83d\udc4d\ud83d\ude0a', morning: '\ud83c\udf1e\u2615', night: '\ud83c\udf19\ud83d\ude34', gn: '\ud83c\udf19\ud83d\ude34', gm: '\ud83c\udf1e\u2615', food: '\ud83c\udf55\ud83c\udf54\ud83d\ude0b', khana: '\ud83c\udf5b\ud83d\ude0b', eat: '\ud83c\udf7d\ufe0f\ud83d\ude0b', pizza: '\ud83c\udf55', chai: '\u2615', tea: '\u2615', coffee: '\u2615', sleep: '\ud83d\ude34\ud83d\udecc', neend: '\ud83d\ude34', angry: '\ud83d\ude21\ud83d\ude24', gussa: '\ud83d\ude21\ud83d\ude24', cry: '\ud83d\ude2d\ud83d\ude22', miss: '\ud83e\udd7a\ud83d\udc94', congrats: '\ud83c\udf89\ud83d\udc4f', badhai: '\ud83c\udf89\ud83d\udc4f', wow: '\ud83d\ude2e\ud83e\udd29', hello: '\ud83d\udc4b\ud83d\ude0a', hi: '\ud83d\udc4b\ud83d\ude0a', hey: '\ud83d\udc4b\ud83d\ude0a', bye: '\ud83d\udc4b', cool: '\ud83d\ude0e', fire: '\ud83d\udd25', study: '\ud83d\udcda\u270d\ufe0f', padhai: '\ud83d\udcda\u270d\ufe0f', exam: '\ud83d\udcdd\ud83d\ude30', work: '\ud83d\udcbc\ud83d\udcaa', home: '\ud83c\udfe0', ghar: '\ud83c\udfe0', call: '\ud83d\udcde', cricket: '\ud83c\udfcf', football: '\u26bd', gym: '\ud83d\udcaa\ud83c\udfcb\ufe0f', rain: '\ud83c\udf27\ufe0f\u2614', baarish: '\ud83c\udf27\ufe0f\u2614', sun: '\u2600\ufe0f', hot: '\ud83e\udd75\ud83d\udd25', cold: '\ud83e\udd76', money: '\ud83d\udcb0\ud83e\udd11', paisa: '\ud83d\udcb0', gift: '\ud83c\udf81', flower: '\ud83c\udf39\ud83d\udc90', kiss: '\ud83d\ude18', hug: '\ud83e\udd17', sorry: '\ud83d\ude4f\ud83d\ude14', please: '\ud83d\ude4f', pls: '\ud83d\ude4f', plz: '\ud83d\ude4f', tired: '\ud83d\ude29\ud83d\ude34', bored: '\ud83d\ude11', confused: '\ud83d\ude15\ud83e\udd14', think: '\ud83e\udd14', idea: '\ud83d\udca1', time: '\u23f0' };
+
+  // ---------------- next-word learning (apni sent text se, sirf is phone me) ----------------
+  let LR = jget(LRK, { u: {}, b: {} }); if(!LR || !LR.u || !LR.b) LR = { u: {}, b: {} };
+  let seen = new Set(jget(SEENK, []));
+  const WRE = /[\p{L}\p{N}']+/gu;
+  function learn(text){
+    const ws = (String(text).toLowerCase().match(WRE) || []).slice(0, 60);
+    let p = null;
+    ws.forEach(w=>{
+      if(w.length > 24){ p = null; return; }
+      LR.u[w] = (LR.u[w] || 0) + 1;
+      if(p){ const o = LR.b[p] || (LR.b[p] = {}); o[w] = (o[w] || 0) + 1; }
+      p = w;
+    });
+  }
+  function prune(){
+    const keys = Object.keys(LR.u);
+    if(keys.length <= 2500) return;
+    keys.sort((a, b)=> LR.u[a] - LR.u[b]).slice(0, 700).forEach(k=>{ delete LR.u[k]; delete LR.b[k]; });
+    Object.keys(LR.b).forEach(k=>{ const o = LR.b[k]; Object.keys(o).forEach(w=>{ if(!LR.u[w]) delete o[w]; }); if(!Object.keys(o).length) delete LR.b[k]; });
+  }
+  function learnMsgs(){
+    if(!S.on || !S.next || typeof chatMsgs === 'undefined') return;
+    let me; try{ me = chatMyKey(); }catch(e){ return; }
+    let n = 0;
+    chatMsgs.forEach((m, id)=>{
+      if(seen.has(id) || !m || m.f !== me) return;
+      seen.add(id);
+      if(typeof m.t === 'string' && m.t && !m.sk && !m.k){ learn(m.t); n++; }
+    });
+    if(n){ prune(); jset(LRK, LR); jset(SEENK, Array.from(seen).slice(-600)); }
+  }
+  setInterval(learnMsgs, 6000);
+  const topN = (o, n)=> Object.keys(o).sort((a, b)=> o[b] - o[a]).slice(0, n);
+
+  // ---------------- haptic + sound ----------------
+  let ac = null, lastT = 0;
+  function tick(){
+    if(S.snd === 'off') return;
+    const now = performance.now(); if(now - lastT < 22) return; lastT = now;
+    try{
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if(ac.state === 'suspended') ac.resume();
+      const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      if(S.snd === 'click'){ o.type = 'square'; o.frequency.setValueAtTime(1900, t); g.gain.setValueAtTime(.04, t); g.gain.exponentialRampToValueAtTime(.0001, t + .025); o.start(t); o.stop(t + .03); }
+      else if(S.snd === 'mech'){ o.type = 'triangle'; o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(90, t + .05); g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.0001, t + .06); o.start(t); o.stop(t + .07); }
+      else { o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(320, t + .05); g.gain.setValueAtTime(.1, t); g.gain.exponentialRampToValueAtTime(.0001, t + .06); o.start(t); o.stop(t + .07); }
+    }catch(e){}
+  }
+  function buzz(){
+    if(S.hap && navigator.vibrate){ try{ navigator.vibrate([0, 6, 12, 24][S.hap] || 6); }catch(e){} }
+    tick();
+  }
+
+  // ---------------- clipboard history ----------------
+  let CB = jget(CBK, []); if(!Array.isArray(CB)) CB = [];
+  function cbAdd(s){
+    s = String(s || '').trim(); if(!s || s.length > 2000) return;
+    CB = CB.filter(x => x !== s); CB.unshift(s); CB = CB.slice(0, 25); jset(CBK, CB);
+  }
+  function onCopy(){
+    if(!S.on) return;
+    try{
+      const a = document.activeElement; let s = '';
+      if(a && a.selectionStart != null && typeof a.value === 'string') s = a.value.slice(a.selectionStart, a.selectionEnd); else s = String(window.getSelection());
+      cbAdd(s);
+    }catch(e){}
+  }
+  document.addEventListener('copy', onCopy, true);
+  document.addEventListener('cut', onCopy, true);
+  document.addEventListener('paste', (e)=>{ if(S.on && e.clipboardData) cbAdd(e.clipboardData.getData('text')); }, true);
+  try{
+    const w = navigator.clipboard && navigator.clipboard.writeText;
+    if(w) navigator.clipboard.writeText = function(t){ if(S.on) cbAdd(t); return w.apply(this, arguments); };
+  }catch(e){}
+
+  // ---------------- suggestions ----------------
+  let cur = [];
+  function suggestions(){
+    const out = [];
+    if(!S.on) return out;
+    if(S.live){ const f = FONTS.find(x => x[0] === S.live); out.push({ l: 'Live font: ' + (f ? f[1] : S.live) + ' \u2715', a: ()=>{ S.live = ''; save(); refresh(); } }); return out; }
+    const b = before();
+    if(S.calc){
+      const m = CALCRE.exec(b.slice(-80));
+      if(m){ const r = calcEval(m[1]); if(isFinite(r)){ const rs = String(parseFloat(r.toFixed(10))); out.push({ l: '= ' + rs, a: ()=> replaceBefore(m[0].length, rs) }); } }
+    }
+    const mw = /(\S+)$/.exec(b), w = mw ? mw[1] : '', wl = w.toLowerCase();
+    if(wl && S.sc[wl]) out.push({ l: wl + ' \u2192 ' + S.sc[wl].slice(0, 24), a: ()=> replaceBefore(w.length, S.sc[wl] + ' ') });
+    if(S.emo){
+      const me = /(\S+)\s?$/.exec(b);
+      const key = me ? me[1].toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') : '';
+      const e = key && EMO[key];
+      if(e) Array.from(e).filter(c => c !== '\ufe0f').slice(0, 4).forEach(c => out.push({ l: c, em: 1, a: ()=> ins((/\s$/.test(before()) || !before() ? '' : ' ') + c) }));
+    }
+    if(S.next){
+      const ends = /\s$/.test(b), ws = b.toLowerCase().match(WRE) || [];
+      if(ends && ws.length){ const o = LR.b[ws[ws.length - 1]]; if(o) topN(o, 3).forEach(x => out.push({ l: x, a: ()=> ins(x + ' ') })); }
+      else if(!ends && ws.length && /[\p{L}\p{N}']$/u.test(b)){
+        const p = ws[ws.length - 1];
+        if(p.length >= 2) Object.keys(LR.u).filter(x => x !== p && x.startsWith(p)).sort((a, c)=> LR.u[c] - LR.u[a]).slice(0, 3).forEach(x => out.push({ l: x, a: ()=> replaceBefore(p.length, x + ' ') }));
+      }
+    }
+    return out.slice(0, 9);
+  }
+  let rq = 0;
+  function refresh(){ if(rq) return; rq = requestAnimationFrame(()=>{ rq = 0; paintSug(); }); }
+  function paintSug(){
+    const box = $('cxkSug'); if(!box) return;
+    cur = suggestions();
+    box.innerHTML = cur.length ? cur.map((c, i)=> '<span class="c' + (c.em ? ' em' : '') + '" data-i="' + i + '">' + esc(c.l) + '</span>').join('') : '<span class="hint">Smart keyboard ON</span>';
+  }
+
+  // ---------------- look (themes / bg / one-hand) ----------------
+  const THEMES = [['default', 'Default'], ['neon', 'Neon RGB'], ['pink', 'Pink'], ['green', 'Green'], ['blue', 'Blue'], ['gold', 'Gold']];
+  function bgGet(){ try{ return localStorage.getItem(BGK) || ''; }catch(e){ return ''; } }
+  function applyLook(){
+    const cl = document.body.classList;
+    Array.from(cl).filter(c => c.indexOf('cxk-') === 0).forEach(c => cl.remove(c));
+    if(!S.on) return;
+    if(S.theme && S.theme !== 'default') cl.add('cxk-th-' + S.theme);
+    if(S.hand === 'left') cl.add('cxk-hl'); else if(S.hand === 'right') cl.add('cxk-hr');
+    const bg = bgGet();
+    if(bg){ cl.add('cxk-bg'); document.documentElement.style.setProperty('--cxk-bg', 'url("' + bg + '")'); }
+  }
+  function styles(){
+    if($('cxp9Styles')) return;
+    const s = document.createElement('style'); s.id = 'cxp9Styles';
+    s.textContent = `
+    #cxkBar{margin:4px 10px 0;padding:5px 6px;background:#1b1e26;border:1px solid rgba(255,255,255,.08);border-radius:18px;color:#eee;flex-shrink:0;position:relative;z-index:2}
+    #cxkBar .sg{display:flex;gap:6px;overflow-x:auto;min-height:34px;align-items:center;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    #cxkBar .sg::-webkit-scrollbar{display:none}
+    #cxkBar .c{flex:none;background:#2a2f3b;border-radius:14px;padding:6px 12px;font-size:14px;white-space:nowrap;cursor:pointer;user-select:none}
+    #cxkBar .c.em{font-size:20px;padding:3px 11px}
+    #cxkBar .c:active{background:#3b4254}
+    #cxkBar .hint{font-size:12px;opacity:.5;padding:0 6px}
+    #cxkBar .tl{display:flex;gap:6px;align-items:center;margin-top:5px}
+    #cxkBar .tl button,#cxkBar .dl{flex:none;width:40px;height:34px;border-radius:10px;border:0;background:#2a2f3b;color:#eee;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}
+    #cxkBar .tl button:active,#cxkBar .dl:active{background:#3b4254}
+    #cxkBar .pad{flex:1;height:34px;border-radius:10px;background:#2a2f3b;color:#8a93a8;font-size:12px;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none}
+    #cxkSh{position:fixed;left:0;right:0;bottom:0;z-index:100020;display:none;justify-content:center}
+    #cxkSh.open{display:flex}
+    #cxkSh .pn{width:100%;max-width:520px;max-height:64vh;display:flex;flex-direction:column;background:#171a21;color:#eee;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.55);padding-bottom:env(safe-area-inset-bottom,0px)}
+    #cxkSh .hd{display:flex;align-items:center;padding:10px 14px;font-weight:700;border-bottom:1px solid #2a3040}
+    #cxkSh .hd span{flex:1}
+    #cxkSh .hd button{background:#20242e;color:#ddd;border:0;border-radius:9px;padding:6px 11px}
+    #cxkSh .bd{overflow-y:auto;padding:8px 14px 14px;-webkit-overflow-scrolling:touch}
+    #cxkSh .tg{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin:7px 0;font-size:14px}
+    #cxkSh .tg small{display:block;opacity:.6;font-size:11.5px;margin-top:2px;font-weight:400}
+    #cxkSh .tg.big{font-size:15px}
+    #cxkSh .sw{width:44px;height:25px;border-radius:13px;border:0;background:#444;position:relative;flex:none}
+    #cxkSh .sw::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s}
+    #cxkSh .sw.on{background:#22c55e}#cxkSh .sw.on::after{left:22px}
+    #cxkSh .h{font-size:12px;opacity:.6;margin:10px 2px 4px}
+    #cxkSh .sgm{display:flex;gap:6px;flex-wrap:wrap}
+    #cxkSh .sgm button,#cxkSh .row button,#cxkSh .fb{background:#20242e;color:#ddd;border:0;border-radius:10px;padding:8px 12px;font-size:13.5px}
+    #cxkSh .sgm button.on{background:#2563eb;color:#fff}
+    #cxkSh .row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    #cxkSh .sc{display:flex;gap:8px;align-items:center;margin:5px 0;font-size:13px}
+    #cxkSh .sc b{flex:none;min-width:56px}#cxkSh .sc span{flex:1;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #cxkSh .sc input{flex:1;min-width:0;background:#20242e;color:#eee;border:0;border-radius:9px;padding:8px}
+    #cxkSh .sc button{background:#20242e;color:#ddd;border:0;border-radius:9px;padding:7px 11px}
+    #cxkSh .nt{font-size:12px;opacity:.6;line-height:1.45;margin:8px 2px}
+    #cxkSh .fl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    #cxkSh .fl .fb{text-align:left;font-size:16px;padding:12px}
+    #cxkSh .ci{display:flex;gap:8px;align-items:center;background:#20242e;border-radius:10px;padding:9px 11px;margin:6px 0;font-size:13.5px}
+    #cxkSh .ci span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #cxkSh .ci i{font-style:normal;opacity:.6;padding:0 4px}
+    body.cxk-th-neon #chatConv .chatComposer,body.cxk-th-neon #cxkBar{border:1px solid #ff2d95!important;animation:cxkNeon 4s linear infinite}
+    @keyframes cxkNeon{0%,100%{border-color:#ff2d95;box-shadow:0 0 10px #ff2d9566}33%{border-color:#00e5ff;box-shadow:0 0 10px #00e5ff66}66%{border-color:#7cff3a;box-shadow:0 0 10px #7cff3a66}}
+    body.cxk-th-pink #chatConv .chatComposer,body.cxk-th-pink #cxkBar{background:#3a1f2e!important;border-color:#f472b6!important}
+    body.cxk-th-green #chatConv .chatComposer,body.cxk-th-green #cxkBar{background:#12301f!important;border-color:#22c55e!important}
+    body.cxk-th-blue #chatConv .chatComposer,body.cxk-th-blue #cxkBar{background:#12253f!important;border-color:#3b82f6!important}
+    body.cxk-th-gold #chatConv .chatComposer,body.cxk-th-gold #cxkBar{background:#3a3010!important;border-color:#ffd23f!important}
+    body.cxk-bg #chatConv .chatComposer,body.cxk-bg #cxkBar{background-image:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.5)),var(--cxk-bg)!important;background-size:cover!important;background-position:center!important}
+    body.cxk-hl #chatConv .chatComposer,body.cxk-hl #cxkBar{max-width:86%;margin-right:auto!important}
+    body.cxk-hr #chatConv .chatComposer,body.cxk-hr #cxkBar{max-width:86%;margin-left:auto!important}`;
+    document.head.appendChild(s);
+  }
+
+  // ---------------- smart bar ----------------
+  function bindDel(el){
+    let down = false, sx = 0, moved = 0, timer = null, rep = null, repeated = false, swiped = false, n = 0;
+    const delChar = ()=>{ const b = before(); if(!b) return false; const c = b.charCodeAt(b.length - 1), k = (c >= 0xDC00 && c <= 0xDFFF) ? 2 : 1, nb = b.slice(0, b.length - k); setVal(nb + after(), nb.length); return true; };
+    const delWord = ()=>{ const b = before(); if(!b) return false; const nb = b.replace(/\S+\s*$|\s+$/, ''); setVal(nb + after(), nb.length); return true; };
+    const stop = ()=>{ clearTimeout(timer); clearInterval(rep); };
+    el.addEventListener('pointerdown', (e)=>{
+      e.preventDefault(); down = true; sx = e.clientX; moved = 0; repeated = false; swiped = false; n = 0;
+      try{ el.setPointerCapture(e.pointerId); }catch(x){}
+      buzz();
+      timer = setTimeout(()=>{ repeated = true; rep = setInterval(()=>{ n++; const ok = n > 12 ? delWord() : delChar(); if(!ok) clearInterval(rep); buzz(); }, 70); }, 380);
+    });
+    el.addEventListener('pointermove', (e)=>{
+      if(!down) return;
+      const dx = sx - e.clientX; moved = Math.max(moved, Math.abs(dx));
+      if(dx > 26){ stop(); swiped = true; const steps = Math.floor(dx / 26); for(let i = 0; i < steps; i++) delWord(); sx = e.clientX; buzz(); }
+    });
+    const up = ()=>{ if(!down) return; down = false; stop(); if(!repeated && !swiped && moved < 8) delChar(); };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', ()=>{ down = false; stop(); });
+  }
+  function bindPad(el){
+    let down = false, sx = 0, moved = 0, steps = 0;
+    el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); down = true; sx = e.clientX; moved = 0; steps = 0; try{ el.setPointerCapture(e.pointerId); }catch(x){} });
+    el.addEventListener('pointermove', (e)=>{
+      if(!down) return;
+      const dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx));
+      const st = Math.trunc(dx / 9);
+      if(st !== steps){
+        const t = T(); if(!t) return;
+        const pos = Math.max(0, Math.min(t.value.length, t.selectionStart + (st - steps)));
+        steps = st;
+        try{ t.focus(); t.setSelectionRange(pos, pos); }catch(x){}
+        buzz();
+      }
+    });
+    el.addEventListener('pointerup', ()=>{ if(!down) return; down = false; if(moved < 6){ buzz(); ins(' '); autoExpand(); } });
+    el.addEventListener('pointercancel', ()=>{ down = false; });
+  }
+  function buildBar(comp){
+    styles();
+    const bar = document.createElement('div'); bar.id = 'cxkBar';
+    bar.innerHTML = '<div class="sg" id="cxkSug"></div><div class="tl"><button type="button" data-k="font" aria-label="Font">Aa</button><button type="button" data-k="clip" aria-label="Clipboard">\ud83d\udccb</button><div class="dl" id="cxkDel" aria-label="Delete">\u232b</div><div class="pad" id="cxkPad">\u25c0 space / slide \u25b6</div><button type="button" data-k="tr" aria-label="Translate">\ud83c\udf10</button><button type="button" data-k="set" aria-label="Settings">\u2699</button></div>';
+    comp.parentNode.insertBefore(bar, comp);
+    bar.addEventListener('mousedown', (e)=>{ if(!e.target.closest('input')) e.preventDefault(); });
+    bar.addEventListener('click', (e)=>{
+      const c = e.target.closest('.c[data-i]');
+      if(c){ const it = cur[Number(c.dataset.i)]; if(it){ buzz(); it.a(); } return; }
+      const k = e.target.closest('[data-k]'); if(!k) return;
+      buzz();
+      const v = k.dataset.k;
+      if(v === 'font') openSheet('font'); else if(v === 'clip') openSheet('clip'); else if(v === 'tr') openSheet('tr'); else openSheet('set');
+    });
+    bindDel($('cxkDel')); bindPad($('cxkPad'));
+    paintSug();
+  }
+
+  // ---------------- sheet ----------------
+  let view = '';
+  function sheetEl(){
+    let el = $('cxkSh'); if(el) return el;
+    styles();
+    el = document.createElement('div'); el.id = 'cxkSh';
+    el.innerHTML = '<div class="pn"><div class="hd"><span id="cxkShT"></span><button type="button" data-x="1">\u2715</button></div><div class="bd" id="cxkShB"></div></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click', onSheet);
+    return el;
+  }
+  const TITLES = { font: 'Fonts', clip: 'Clipboard history', tr: 'Translate', set: 'Smart keyboard' };
+  function closeSh(){ const el = $('cxkSh'); if(el) el.classList.remove('open'); view = ''; }
+  function openSheet(v){ const el = sheetEl(); view = v; $('cxkShT').textContent = TITLES[v] || ''; renderSheet(); el.classList.add('open'); }
+  function openSettings(){ openSheet('set'); }
+  function renderSheet(){
+    const b = $('cxkShB'); if(!b) return;
+    const sc = b.scrollTop;
+    b.innerHTML = view === 'font' ? fontHtml() : view === 'clip' ? clipHtml() : view === 'tr' ? trHtml() : setHtml();
+    b.scrollTop = sc;
+  }
+  function fontHtml(){
+    let h = '<div class="tg"><span>Live typing isi font me<small>ON ho to font chunne ke baad aage ka text bhi isi style me banta hai</small></span><button type="button" class="sw ' + (S.livemode ? 'on' : '') + '" data-live="1"></button></div><div class="fl">';
+    h += '<button type="button" class="fb" data-f="plain">Normal</button>';
+    FONTS.forEach(f => { h += '<button type="button" class="fb" data-f="' + f[0] + '">' + esc(conv('Hello 123', f[0])) + '</button>'; });
+    return h + '</div><div class="nt">Pehle textbox me kuch likho, phir font dabao. Ye Unicode letters hain, isliye sab ko dikhte hain (kuch purane phones par box dikh sakte hain). Sirf English letters/numbers badalte hain, Hindi nahi.</div>';
+  }
+  function clipHtml(){
+    let h = '<div class="row"><button type="button" data-act="cbpaste">\ud83d\udce5 Clipboard se lo</button>' + (CB.length ? '<button type="button" data-act="clrclip">Saaf karo</button>' : '') + '</div>';
+    h += CB.length ? CB.map((s, i)=> '<div class="ci" data-ci="' + i + '"><span>' + esc(s.slice(0, 120)) + '</span><i data-cx="' + i + '">\u2715</i></div>').join('') : '<div class="nt">Abhi khaali. App ke andar jo text copy/paste karoge wo yahan jama hoga. Doosre apps ka copy dekhne ke liye "Clipboard se lo" dabao (browser permission maangega). Sirf text; images nahi.</div>';
+    return h;
+  }
+  function trHtml(){ return '<div class="nt">Textbox ka text translate hoga (online, free MyMemory). Hinglish me accuracy kam ho sakti hai; max ~450 characters.</div><div class="row"><button type="button" data-tr="en">\u2192 English</button><button type="button" data-tr="hi">\u2192 Hindi</button></div>'; }
+  function setHtml(){
+    const seg = (k, opts)=> '<div class="sgm">' + opts.map(([v, l])=> '<button type="button" data-seg="' + k + '" data-v="' + v + '" class="' + (String(S[k]) === String(v) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
+    const tg = (k, l)=> '<div class="tg"><span>' + l + '</span><button type="button" class="sw ' + (S[k] ? 'on' : '') + '" data-tg="' + k + '"></button></div>';
+    let h = '<div class="tg big"><span><b>\u2328\ufe0f Smart Keyboard</b><small>Phone ka keyboard wahi rahega; ye uske upar ek smart bar lagata hai. ON karne ke baad setting yaad rehti hai.</small></span><button type="button" class="sw ' + (S.on ? 'on' : '') + '" data-tg="on"></button></div>';
+    if(!S.on) return h;
+    h += tg('emo', 'Emoji suggestions') + tg('calc', 'Calculator (450+120)') + tg('next', 'Next-word suggestions<small>sirf tumhari bheji hui chat se, is phone me seekhta hai</small>') + tg('auto', 'Shortcut space dabate hi expand');
+    h += '<div class="h">Haptic (vibration; sirf Android)</div>' + seg('hap', [[0, 'Off'], [1, 'Light'], [2, 'Medium'], [3, 'Strong']]);
+    h += '<div class="h">Typing sound</div>' + seg('snd', [['off', 'Off'], ['click', 'Click'], ['mech', 'Mechanical'], ['pop', 'Pop']]);
+    h += '<div class="h">One-handed</div>' + seg('hand', [['off', 'Off'], ['left', 'Left'], ['right', 'Right']]);
+    h += '<div class="h">Theme</div>' + seg('theme', THEMES);
+    h += '<div class="row"><button type="button" data-act="bg">\ud83d\uddbc\ufe0f Background photo</button>' + (bgGet() ? '<button type="button" data-act="bgx">Hatao</button>' : '') + '</div>';
+    h += '<div class="h">Text shortcuts</div>' + Object.keys(S.sc).map(k => '<div class="sc"><b>' + esc(k) + '</b><span>' + esc(S.sc[k]) + '</span><button type="button" data-rm="' + esc(k) + '">\u2715</button></div>').join('');
+    h += '<div class="sc"><input id="cxkScK" placeholder="shortcut (omw)" maxlength="16"><input id="cxkScV" placeholder="poora text" maxlength="200"><button type="button" data-act="addsc">+</button></div>';
+    h += '<div class="row"><button type="button" data-act="clrlearn">Seekhe words hatao</button></div>';
+    h += '<div class="nt">Glide typing, handwriting, floating keyboard aur grammar/tone checker web app me possible nahi (ye phone ke keyboard ka kaam hai).</div>';
+    return h;
+  }
+  function pickBg(){
+    let f = $('cxkBgF');
+    if(!f){
+      f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*'; f.id = 'cxkBgF'; f.hidden = true; document.body.appendChild(f);
+      f.addEventListener('change', ()=>{
+        const file = f.files && f.files[0]; f.value = ''; if(!file) return;
+        const url = URL.createObjectURL(file), im = new Image();
+        im.onload = ()=>{
+          let out = '', S0 = 720;
+          for(let n = 0; n < 3; n++){
+            const sc = Math.min(1, S0 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(im.width * sc)); c.height = Math.max(1, Math.round(im.height * sc));
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            out = c.toDataURL('image/jpeg', n ? 0.5 : 0.7);
+            if(out.length < 600000) break;
+            S0 = Math.round(S0 * 0.7);
+          }
+          URL.revokeObjectURL(url);
+          try{ localStorage.setItem(BGK, out); applyLook(); renderSheet(); toast('Background laga diya.'); }catch(e){ toast('Photo save nahi hui (jagah kam).'); }
+        };
+        im.onerror = ()=>{ URL.revokeObjectURL(url); toast('Photo nahi khuli.'); };
+        im.src = url;
+      });
+    }
+    f.click();
+  }
+  async function translate(to){
+    const t = T(), v = t && t.value.trim();
+    if(!v){ toast('Pehle textbox me kuch likho.'); return; }
+    if(v.length > 450){ toast('Text bahut lamba hai (max ~450).'); return; }
+    toast('Translate ho raha hai...');
+    try{
+      const lp = to === 'en' ? 'Autodetect|en' : 'en|hi';
+      const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(plain(v)) + '&langpair=' + encodeURIComponent(lp));
+      const j = await r.json(), out = j && j.responseData && j.responseData.translatedText;
+      if(!out || /MYMEMORY WARNING/i.test(out)) throw new Error('x');
+      closeSh(); setVal(out);
+    }catch(e){ toast('Translate nahi hua (internet / daily limit).'); }
+  }
+  async function onSheet(e){
+    const el = e.target;
+    if(el.closest('[data-x]')){ closeSh(); return; }
+    let b;
+    if((b = el.closest('[data-tg]'))){
+      const k = b.dataset.tg; S[k] = !S[k]; save();
+      if(k === 'on'){ applyLook(); const bar = $('cxkBar'); if(bar) bar.style.display = S.on ? '' : 'none'; if(S.on) toast('Smart keyboard ON (yaad rahega)'); else toast('Smart keyboard OFF'); }
+      renderSheet(); refresh(); return;
+    }
+    if((b = el.closest('[data-seg]'))){
+      const k = b.dataset.seg, v = b.dataset.v;
+      S[k] = (k === 'hap') ? Number(v) : v; save(); applyLook(); renderSheet();
+      if(k === 'hap' || k === 'snd') buzz();
+      return;
+    }
+    if((b = el.closest('[data-live]'))){ S.livemode = !S.livemode; if(!S.livemode) S.live = ''; save(); renderSheet(); return; }
+    if((b = el.closest('[data-f]'))){
+      const id = b.dataset.f; applyFont(id);
+      S.live = (id !== 'plain' && S.livemode) ? id : ''; save(); refresh(); return;
+    }
+    if((b = el.closest('[data-tr]'))){ translate(b.dataset.tr); return; }
+    if((b = el.closest('[data-cx]'))){ CB.splice(Number(b.dataset.cx), 1); jset(CBK, CB); renderSheet(); return; }
+    if((b = el.closest('[data-ci]'))){ const s = CB[Number(b.dataset.ci)]; if(s != null){ closeSh(); ins(s); } return; }
+    if((b = el.closest('[data-rm]'))){ delete S.sc[b.dataset.rm]; save(); renderSheet(); return; }
+    if((b = el.closest('[data-act]'))){
+      const a = b.dataset.act;
+      if(a === 'bg') pickBg();
+      else if(a === 'bgx'){ try{ localStorage.removeItem(BGK); }catch(x){} document.documentElement.style.removeProperty('--cxk-bg'); applyLook(); renderSheet(); }
+      else if(a === 'clrclip'){ CB = []; jset(CBK, CB); renderSheet(); }
+      else if(a === 'clrlearn'){ LR = { u: {}, b: {} }; seen = new Set(); jset(LRK, LR); jset(SEENK, []); toast('Seekhe hue words hata diye.'); }
+      else if(a === 'cbpaste'){
+        try{ const s = await navigator.clipboard.readText(); if(s && s.trim()){ cbAdd(s); renderSheet(); } else toast('Clipboard khaali hai.'); }catch(x){ toast('Clipboard permission nahi mili.'); }
+      }
+      else if(a === 'addsc'){
+        const k = (($('cxkScK') || {}).value || '').trim().toLowerCase().replace(/\s+/g, ''), v = (($('cxkScV') || {}).value || '').trim();
+        if(!k || !v){ toast('Shortcut aur poora text dono likho.'); return; }
+        S.sc[k] = v; save(); renderSheet();
+      }
+    }
+  }
+
+  // ---------------- input hooks ----------------
+  document.addEventListener('input', (e)=>{
+    if(!S.on || internal || !e.target || e.target.id !== 'chatInput') return;
+    const it = e.inputType || '';
+    if(it.indexOf('insert') === 0 || it.indexOf('delete') === 0) buzz();
+    if(S.live && /[A-Za-z0-9]/.test(e.target.value)){ applyFont(S.live); return; }
+    if(it === 'insertText' && e.data === ' ') autoExpand();
+    refresh();
+  }, true);
+  document.addEventListener('selectionchange', ()=>{ if(S.on) refresh(); });
+
+  // ---------------- menu entries + inject loop ----------------
+  function injectMenu(){
+    const m = $('cxMenu'); if(!m || m.dataset.cxk) return;
+    m.dataset.cxk = '1';
+    m.insertAdjacentHTML('beforeend', '<button type="button" data-xk="1"><span>\u2328\ufe0f</span>Smart keyboard</button>');
+    m.addEventListener('click', (e)=>{ if(e.target.closest('[data-xk]')){ m.classList.remove('open'); openSettings(); } });
+  }
+  try{ window.cxxExtra = (window.cxxExtra || []).concat([ ()=> ({ ico: '\u2328\ufe0f', label: 'Smart keyboard ' + (S.on ? '(ON)' : '(OFF)'), fn: openSettings }) ]); }catch(e){}
+  setInterval(()=>{
+    try{
+      injectMenu();
+      const conv = $('chatConv'), comp = conv && conv.querySelector('.chatComposer'), bar = $('cxkBar');
+      if(S.on && comp && !bar) buildBar(comp);
+      else if(bar) bar.style.display = S.on ? '' : 'none';
+    }catch(e){}
+  }, 600);
+  applyLook();
+  window.__cxk = { calcEval, conv, plain, CALCRE, FONTS };
+})();
+
+
+// ============================================================================
+// CHAT PLUS 10: NAYE EFFECTS (camera carousel + video call strip dono me, Normal ke baad SABSE AAGE)
+//  2014, Aesthetic Brown, Indonesia (flag), Blue Flame, Retro Cam
+//  Ye chatPlus5 ki window.cxFX.list me jodte hain; cxFX.draw ke upar extras (grain/bloom/flame/date stamp) lagate hain.
+// ============================================================================
+(function chatPlus10(){
+  if(!window.cxFX || !window.cxFX.list) return;
+  const $ = (id)=> document.getElementById(id);
+  const L = window.cxFX.list;
+  const NEW = [
+    { id: 'y2014', n: '2014', e: '\ud83d\udcfc', g: 'linear-gradient(135deg,#ffd9cf,#f7a8b8)', f: 'brightness(1.08) contrast(.88) saturate(.88) sepia(.16)', x: 'y2014' },
+    { id: 'abrown', n: 'Aesthetic Brown', e: '\ud83e\udd0e', g: 'linear-gradient(135deg,#a47148,#4a2e1b)', f: 'sepia(.5) saturate(.85) contrast(1.12) brightness(.96)', tint: ['rgba(120,70,30,.22)', 'multiply'], vig: 1, x: 'abrown' },
+    { id: 'idn', n: 'Indonesia', e: '\ud83c\uddee\ud83c\udde9', g: 'linear-gradient(180deg,#e70011 50%,#ffffff 50%)', f: 'brightness(1.06) contrast(.94) saturate(.95)', x: 'flag' },
+    { id: 'bflame', n: 'Blue Flame', e: '\ud83d\udd25', g: 'linear-gradient(135deg,#0b1d6e,#38bdf8)', f: 'contrast(1.1) saturate(1.2)', tint: ['rgba(40,90,255,.20)', 'soft-light'], x: 'flame' },
+    { id: 'retro', n: 'Retro Cam', e: '\ud83d\udcf8', g: 'linear-gradient(135deg,#f59e0b,#7c2d12)', f: 'contrast(1.12) saturate(1.25) brightness(1.04)', tint: ['rgba(255,150,60,.10)', 'soft-light'], vig: 1, x: 'retro' }
+  ];
+  // Normal ke turant baad (purane effects se pehle)
+  L.splice(1, 0, ...NEW.filter(n => !L.some(o => o.id === n.id)));
+
+  // ---------- grain ----------
+  let noise = null;
+  function noiseCv(){
+    if(noise) return noise;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), id = x.createImageData(128, 128), d = id.data;
+    for(let i = 0; i < d.length; i += 4){ const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+    x.putImageData(id, 0, 0);
+    return (noise = c);
+  }
+  function grain(c, W, H, a, mode){
+    const p = c.createPattern(noiseCv(), 'repeat'); if(!p) return;
+    c.save(); c.globalAlpha = a; c.globalCompositeOperation = mode || 'overlay';
+    c.translate(Math.random() * 128, Math.random() * 128);
+    c.fillStyle = p; c.fillRect(-128, -128, W + 256, H + 256);
+    c.restore();
+  }
+  const wash = (c, W, H, col, mode, y0, y1)=>{ c.save(); c.globalCompositeOperation = mode; c.fillStyle = col; c.fillRect(0, y0 == null ? 0 : y0, W, (y1 == null ? H : y1) - (y0 == null ? 0 : y0)); c.restore(); };
+  const vign = (c, W, H, a)=>{ const g = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,' + a + ')'); c.save(); c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore(); };
+
+  // ---------- extras ----------
+  function extras(c, def, f){
+    const cv = c.canvas, W = cv.width, H = cv.height;
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);   // camera ka mirror hata do: overlays seedhe canvas pixels par
+    c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    if(def.x === 'y2014'){
+      wash(c, W, H, 'rgba(255,200,205,.15)', 'screen');          // kaale halke (faded)
+      wash(c, W, H, 'rgba(255,170,150,.14)', 'soft-light');      // garam gulabi cast
+      if(f && f.canF){ c.save(); c.filter = 'blur(6px) brightness(1.2)'; c.globalAlpha = .18; c.globalCompositeOperation = 'screen'; c.drawImage(cv, 0, 0); c.restore(); }   // soft bloom
+      vign(c, W, H, .28);
+      grain(c, W, H, .10, 'overlay');
+    } else if(def.x === 'abrown'){
+      wash(c, W, H, 'rgba(70,45,60,.10)', 'screen');
+      vign(c, W, H, .35);
+      grain(c, W, H, .08, 'overlay');
+    } else if(def.x === 'flag'){
+      wash(c, W, H, 'rgba(227,0,24,.38)', 'soft-light', 0, H / 2);        // upar laal
+      wash(c, W, H, 'rgba(255,255,255,.24)', 'screen', H / 2, H);         // neeche safed
+      wash(c, W, H, 'rgba(255,255,255,.10)', 'screen');                   // halka haze
+      vign(c, W, H, .18);
+    } else if(def.x === 'flame'){
+      const g = c.createLinearGradient(0, H, 0, H * .6); g.addColorStop(0, 'rgba(30,80,255,.38)'); g.addColorStop(1, 'rgba(30,80,255,0)');
+      c.save(); c.globalCompositeOperation = 'screen'; c.fillStyle = g; c.fillRect(0, H * .6, W, H * .4); c.restore();
+      const P = (f && (f.fl || (f.fl = []))) || [], k = W / 480;
+      if(P.length < 30 && Math.random() < .7) P.push({ x: Math.random() * W, y: H + 12 * k, r: (14 + Math.random() * 26) * k, vy: -(2 + Math.random() * 3.5) * k, vx: (Math.random() - .5) * 1.2 * k, life: 1, ph: Math.random() * 6.28 });
+      for(let i = P.length - 1; i >= 0; i--){
+        const p = P[i]; p.y += p.vy; p.ph += .15; p.x += p.vx + Math.sin(p.ph) * .8 * k; p.life -= .012; p.r *= .992;
+        if(p.life <= 0 || p.y < -p.r){ P.splice(i, 1); continue; }
+        const a = Math.max(0, Math.min(1, p.life)), rg = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        rg.addColorStop(0, 'rgba(215,242,255,' + a + ')'); rg.addColorStop(.4, 'rgba(56,150,255,' + (a * .8) + ')'); rg.addColorStop(1, 'rgba(30,60,255,0)');
+        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = rg; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 6.2832); c.fill(); c.restore();
+      }
+    } else if(def.x === 'retro'){
+      const lg = c.createLinearGradient(W, 0, W * .5, H * .4); lg.addColorStop(0, 'rgba(255,120,40,.22)'); lg.addColorStop(1, 'rgba(255,120,40,0)');
+      c.save(); c.globalCompositeOperation = 'screen'; c.fillStyle = lg; c.fillRect(0, 0, W, H); c.restore();
+      grain(c, W, H, .16, 'overlay');
+      const d = new Date(), z = (n)=> String(n).padStart(2, '0'), s = "'" + String(d.getFullYear()).slice(2) + ' ' + z(d.getMonth() + 1) + ' ' + z(d.getDate());
+      c.save(); c.font = 'bold ' + Math.round(W * .05) + 'px "Courier New", monospace'; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
+      c.shadowColor = 'rgba(255,120,0,.8)'; c.shadowBlur = Math.max(2, W * .01); c.fillStyle = 'rgba(255,150,30,.95)'; c.fillText(s, W * .94, H * .95); c.restore();
+    }
+    c.restore();
+  }
+  const prevDraw = window.cxFX.draw;
+  window.cxFX.draw = function(c, v, w, h, def, f){
+    const r = prevDraw.apply(this, arguments);
+    if(def && def.x){ try{ extras(c, def, f); }catch(e){ if(window.__cxfxThrow) throw e; } }
+    return r;
+  };
+
+  // ---------- camera carousel: chuna hua effect beech me + naam ka pill ----------
+  function pill(name){
+    const cam = $('cxCam'); if(!cam) return;
+    let p = $('cxFxName');
+    if(!p){
+      p = document.createElement('div'); p.id = 'cxFxName';
+      p.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:calc(202px + env(safe-area-inset-bottom,0px));z-index:6;background:rgba(0,0,0,.55);color:#fff;font-weight:700;font-size:15px;padding:7px 16px;border-radius:18px;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap';
+      cam.appendChild(p);
+    }
+    p.textContent = name; p.style.opacity = '1'; clearTimeout(p._t); p._t = setTimeout(()=>{ p.style.opacity = '0'; }, 1400);
+  }
+  document.addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('#cxCamCar [data-f]'); if(!b) return;
+    try{ b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }catch(x){}
+    const d = L.find(x => x.id === b.dataset.f); if(d && d.id !== 'none') pill(d.n);
+  });
+})();
+
+
+// ============================================================================
+// CHAT PLUS 11: BLACK & WHITE EYE-COMFORT THEME (chat screen) - dim white text, bade fonts, no bright gradients
+// ============================================================================
+(function chatPlus11(){
+  if(document.getElementById('cxThemeBW')) return;
+  const s = document.createElement('style'); s.id = 'cxThemeBW';
+  s.textContent = `
+  #chatOverlay{background:#000!important;color:#cfcfcf!important}
+  #chatOverlay .chatHead{background:#000!important;border-bottom:1px solid #1f1f1f!important}
+  #chatOverlay .chatPeerName{color:#dedede!important;font-size:18px!important}
+  #chatOverlay .chatPeerStatus{color:#8c8c8c!important;font-size:13px!important}
+  #chatOverlay .chatPeerStatus.on{color:#8fd19e!important}
+  #chatOverlay .chatHead .chatIconBtn,#chatOverlay .chatHead .cxCall,#chatOverlay .chatHead .cxBtn{color:#cfcfcf!important}
+  #chatOverlay .chatMsgs{background:#000!important;gap:5px!important;padding:12px 12px 10px!important}
+  #chatOverlay .chatLockNote,#chatOverlay .chatDaySep span{background:#141414!important;border:1px solid #262626!important;color:#8c8c8c!important;font-size:12.5px!important}
+  #chatOverlay .cbub{font-size:17px!important;line-height:1.45!important;padding:8px 12px 6px!important;box-shadow:none!important}
+  #chatOverlay .cmsg.them .cbub{background:#1a1a1a!important;border:0!important;color:#cfcfcf!important}
+  #chatOverlay .cmsg.me .cbub{background:#37373b!important;border:0!important;color:#e4e4e4!important}
+  #chatOverlay .cmsg.me .cbub a,#chatOverlay .cmsg.them .cbub a{color:#bcd3ff!important}
+  #chatOverlay .cmeta{font-size:12px!important;opacity:1!important;color:#8a8a8a!important}
+  #chatOverlay .cmsg.me .cbub .cmeta,#chatOverlay .cmsg.me .cbub .chatTick{color:#a3a3a8!important}
+  #chatOverlay .cbub .ccall{font-size:16px!important}
+  #chatOverlay .cbub .ccall.miss{color:#ff8a8a!important}
+  #chatOverlay .cmsg.me .cbub .ccall.miss{color:#ffb3b3!important;text-shadow:none!important}
+  #chatOverlay .cbub .cfnm{font-size:15px!important}
+  #chatOverlay .cbub .cfsz{font-size:12.5px!important}
+  #chatOverlay .chatComposer{background:#141414!important;border:1px solid #262626!important}
+  #chatOverlay .chatComposer #chatInput{color:#d6d6d6!important;font-size:17px!important}
+  #chatOverlay .chatComposer #chatInput::placeholder{color:#707070!important}
+  #chatOverlay .chatComposer .cxBtn,#chatOverlay .chatComposer .cxPB{color:#cfcfcf!important}
+  #chatOverlay .chatComposer #cxPCam{background:#3a3a3e!important;color:#e0e0e0!important}
+  #chatOverlay .chatComposer #chatSendBtn{color:#e0e0e0!important}
+  #chatOverlay .chatNewPill{background:#2a2a2e!important;color:#dcdcdc!important}
+  `;
+  document.head.appendChild(s);
+})();
+
+// ===== Slide Typing (swipe/glide typing) =====
+// ✍️ button dabao -> poori screen par QWERTY layout aa jata hai. Kisi bhi
+// shabd ke letters par ungli slide karo, ungli uthate hi app guess karke
+// shabd last-focused text field me type kar deta hai (+ space). Upar 3
+// suggestions bhi dikhte hain — kisi par tap karo to shabd badal jata hai.
+// Decoder: SHARK2-style path matching (resampled gesture vs ideal key path).
+// Dictionary: built-in English+Hinglish list + page ka text + user ke
+// pehle likhe shabd (localStorage) — jitna use karoge utna smart hoga.
+const SlideType = (function(){
+  const BUILTIN = ('the be to of and a in that have i it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us is are was were been has had did said went made may must should shall might very much many more such here where why while through before between both each few those own same too does done being having let put set tell ask need feel try leave call keep begin seem help show hear play run move live believe bring happen write provide sit stand lose pay meet include continue learn change lead understand watch follow stop create speak read allow add spend grow open walk win offer remember love consider appear buy wait serve die send expect build stay fall cut reach kill remain suggest raise pass sell require report decide pull ' +
+  'question questions answer answers correct wrong option options exam exams mock test tests score marks percentile rank revision revise formula formulas notes note chapter chapters topic topics subject subjects maths math reasoning english hindi general knowledge current affairs history geography polity economy science physics chemistry biology static syllabus practice paper papers previous year solved solution solutions explanation concept concepts trick tricks shortcut shortcuts speed accuracy time attempt attempted unattempted negative positive percentage ratio average profit loss interest simple compound algebra geometry trigonometry mensuration number series analogy coding decoding blood relation direction ranking syllabus vocabulary grammar synonym antonym idiom idioms phrase phrases spelling error sentence improvement fill blanks cloze passage comprehension reading important daily weekly monthly target goal goals study plan schedule session break lunch morning evening night today tomorrow yesterday week month year hour minute second finished complete completed pending done mistake mistakes weak strong improve improvement focus discipline consistent consistency habit motivation tired sleep health water ' +
+  'hai hain tha thi the ho hoga hogi hua hui hue nahi nahin na mat kya kaise kab kahan kaun kyun kyunki kyon lekin magar par aur ya bhi toh to hi se ko ka ki ke me mein pe per tak wala wali wale mera meri mere tera teri tere apna apni apne hum tum aap yeh ye woh wo isko usko inko unko isme usme kuch koi sab sabhi bahut bohot thoda thodi zyada jyada kam bilkul abhi phir fir abhi aaj kal parso subah shaam raat din ghanta baje karna karo kar kiya kiye ki kari karenge karunga karungi kare karta karti karte padhna padho padha padhai padh likhna likho likha likhe samajh samjha samjhna samjho yaad bhool bhul bhulna dekho dekha dekhna suno suna bolo bola bolna jao jana gaya gayi gaye aao aana aaya aayi aaye lo lena liya liye do dena diya diye rakho rakhna rakha raha rahi rahe rehna reh chalo chalna chala chali chalega shuru khatam pura poora puri adhura baaki bacha bachi accha achha acha theek thik sahi galat jaldi jaldbaazi dhyan mehnat koshish dobara phirse pehle pehla pehli baad ab tab jab sirf bas hee nahi chahiye chahta chahti paisa kaam kamm mushkil aasan asaan mushkil sawal jawab jawaab uttar prashn galti galtiyan seekha seekhna seekh revision kitna kitni kitne itna itni itne jaisa jaise waise aise kaisa kaisi bhai dost yaar didi bhaiya sir madam ji haan han arre abey chalo thoda sa roz hamesha kabhi kabhi mujhe tujhe humein tumhe unhe use isse usse inse unse liye wajah isliye kyunki agar warna matlab dikkat problem solve tension chinta mast badhiya zabardast ' +
+  'hello hi thanks thank please sorry okay ok yes yeah message send chat group friend friends name email phone number address password login logout settings profile home back next previous submit save delete edit cancel confirm search find filter sort total result results report analysis analyse analyze summary list table chart graph data file files photo image video audio link page screen button tap click swipe slide typing keyboard text word words letter letters type').split(/\s+/);
+
+  const ROWS = ['qwertyuiop','asdfghjkl','zxcvbnm'];
+  const OFFS = [0, 0.5, 1.5];       // row indent in key-widths (centers)
+  const N = 32;                      // resample points
+  let words = null, rank = null, target = null, ov = null, ctx = null;
+  let pts = [], drawing = false, lastWord = null, lastCands = [], needSpace = false;
+
+  // ---- dictionary ----
+  function addWord(w, r){
+    if(!/^[a-z]{2,}$/.test(w) && !(w.length===1 && /[ai]/.test(w))) return;
+    if(!rank.has(w)){ rank.set(w, r); words.push(w); }
+  }
+  function buildDict(){
+    words = []; rank = new Map();
+    BUILTIN.forEach((w,i)=> addWord(w, i));
+    let learned = [];
+    try{ learned = JSON.parse(localStorage.getItem('slideTypeLearned')||'[]'); }catch(e){}
+    learned.forEach(w=> addWord(w, 400));
+    // page ka text (app me jo shabd dikhte hain) — rank peeche, par available
+    try{
+      const txt = (document.body.innerText||'').slice(0, 400000).toLowerCase();
+      const cnt = new Map();
+      (txt.match(/[a-z]{2,16}/g)||[]).forEach(w=> cnt.set(w,(cnt.get(w)||0)+1));
+      cnt.forEach((n,w)=>{ if(n>=1) addWord(w, 1200 - Math.min(n,100)*4); });
+    }catch(e){}
+    if(target && target.value) learnFrom(target.value, false);
+  }
+  function learnFrom(text, save){
+    const found = (text.toLowerCase().match(/[a-z]{3,16}/g)||[]);
+    if(!found.length) return;
+    found.forEach(w=> addWord(w, 300));
+    if(!save) return;
+    try{
+      const cur = JSON.parse(localStorage.getItem('slideTypeLearned')||'[]');
+      const set = new Set(cur); found.forEach(w=> set.add(w));
+      localStorage.setItem('slideTypeLearned', JSON.stringify([...set].slice(-3000)));
+    }catch(e){}
+  }
+
+  // ---- geometry (normalized 0..1 coordinates of keyboard area) ----
+  const keyPos = {};
+  ROWS.forEach((row,ri)=>{
+    [...row].forEach((ch,ci)=>{
+      keyPos[ch] = { x:(ci + 0.5 + OFFS[ri]*0.5*1 + (ri===0?0:0)) / 10.5, y:(ri + 0.5)/3 };
+    });
+  });
+  // row offsets: row1 half-key, row2 1.5 key (visual QWERTY stagger)
+  ROWS.forEach((row,ri)=>{ [...row].forEach((ch,ci)=>{ keyPos[ch].x = (ci + 0.5 + [0,0.5,1.5][ri]) / 10; }); });
+
+  function resample(p, n){
+    if(p.length===1) return Array.from({length:n}, ()=> p[0]);
+    let L=0; const d=[0];
+    for(let i=1;i<p.length;i++){ L+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y); d.push(L); }
+    if(L===0) return Array.from({length:n}, ()=> p[0]);
+    const out=[]; let j=1;
+    for(let k=0;k<n;k++){
+      const t = L*k/(n-1);
+      while(j<p.length-1 && d[j]<t) j++;
+      const seg = d[j]-d[j-1] || 1, u = (t-d[j-1])/seg;
+      out.push({ x:p[j-1].x+(p[j].x-p[j-1].x)*u, y:p[j-1].y+(p[j].y-p[j-1].y)*u });
+    }
+    return out;
+  }
+  function idealPath(w){
+    const seq=[]; for(const ch of w){ if(!seq.length || seq[seq.length-1]!==ch) seq.push(ch); }
+    const p = seq.map(c=> keyPos[c]);
+    return p.length===1 ? [p[0],{x:p[0].x+0.001,y:p[0].y}] : p;
+  }
+  function nearestKeys(pt, r){
+    const o=[]; for(const c in keyPos){ if(Math.hypot((keyPos[c].x-pt.x)*1.0,(keyPos[c].y-pt.y)*0.9) < r) o.push(c); }
+    return o;
+  }
+  function decode(path){
+    if(!words) buildDict();
+    if(path.length<2) { const k = nearestKeys(path[0],0.08)[0]; return k ? [k] : []; }
+    const g = resample(path, N);
+    const s = nearestKeys(path[0], 0.2), e = nearestKeys(path[path.length-1], 0.2);
+    const sSet = new Set(s), eSet = new Set(e);
+    const res=[];
+    for(const w of words){
+      if(!sSet.has(w[0]) || !eSet.has(w[w.length-1])) continue;
+      const ip = resample(idealPath(w), N);
+      let sum=0; for(let i=0;i<N;i++) sum += Math.hypot(g[i].x-ip[i].x, (g[i].y-ip[i].y)*0.9);
+      const score = sum/N + Math.log(2+rank.get(w))*0.006 + (w.length<3 ? 0.012 : 0);
+      res.push([score,w]);
+    }
+    res.sort((a,b)=> a[0]-b[0]);
+    return res.slice(0,3).map(r=> r[1]);
+  }
+
+  // ---- text insertion ----
+  function field(){
+    const a = document.activeElement;
+    if(a && (a.tagName==='TEXTAREA' || (a.tagName==='INPUT' && /^(text|search|)$/.test(a.type||'')))) return a;
+    return (target && document.contains(target)) ? target : null;
+  }
+  document.addEventListener('focusin', (e)=>{
+    const a = e.target;
+    if(a && (a.tagName==='TEXTAREA' || (a.tagName==='INPUT' && /^(text|search|)$/.test(a.type||'')))) target = a;
+  });
+  function fire(el){ el.dispatchEvent(new Event('input',{bubbles:true})); }
+  function insertWord(w, replace){
+    const el = field(); if(!el) return false;
+    el.focus({preventScroll:true});
+    let s = el.selectionStart==null ? el.value.length : el.selectionStart;
+    if(replace && lastWord){
+      const txt = lastWord + ' ';
+      if(el.value.slice(s-txt.length, s) === txt){ el.setSelectionRange(s-txt.length, s); }
+    }
+    const a = el.selectionStart, b = el.selectionEnd;
+    const before = el.value.slice(0, a);
+    const lead = (before && !/\s$/.test(before) && !(replace)) ? ' ' : '';
+    el.setRangeText(lead + w + ' ', a, b, 'end');
+    fire(el); lastWord = w;
+    return true;
+  }
+  function backspace(){
+    const el = field(); if(!el) return;
+    el.focus({preventScroll:true});
+    const a = el.selectionStart, b = el.selectionEnd;
+    if(a!==b){ el.setRangeText('', a, b, 'end'); }
+    else if(a>0){
+      // poora pichla shabd (trailing space ke saath) hatao
+      const before = el.value.slice(0,a);
+      const m = before.match(/(\S+\s*|\s+)$/);
+      const cut = m ? m[0].length : 1;
+      el.setRangeText('', a-cut, a, 'end');
+    }
+    fire(el); lastWord = null; showCands([]);
+  }
+
+  // ---- UI ----
+  function showCands(c){
+    lastCands = c;
+    const bar = ov.querySelector('#stCands');
+    bar.innerHTML = '';
+    c.forEach((w,i)=>{
+      const b = document.createElement('button'); b.type='button'; b.textContent = w;
+      if(i===0) b.className='main';
+      b.addEventListener('pointerdown', (e)=>{ e.preventDefault(); e.stopPropagation(); if(w!==lastWord) insertWord(w, true); showCands(c); });
+      bar.appendChild(b);
+    });
+  }
+  function draw(){
+    const r = ov.getBoundingClientRect();
+    const cv = ov.querySelector('canvas');
+    if(cv.width!==r.width*devicePixelRatio){ cv.width=r.width*devicePixelRatio; cv.height=r.height*devicePixelRatio; }
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    ctx.clearRect(0,0,r.width,r.height);
+    const kb = kbRect();
+    ctx.font = '700 '+Math.min(kb.w/10*0.5, 30)+'px system-ui,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const c in keyPos){
+      const kw = kb.w/10, kh = kb.h/3;
+      const x = kb.x + keyPos[c].x*kb.w, y = kb.y + keyPos[c].y*kb.h;
+      ctx.fillStyle='rgba(255,255,255,0.06)';
+      ctx.beginPath(); ctx.roundRect(x-kw/2+3, y-kh/2+3, kw-6, kh-6, 10); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fillText(c.toUpperCase(), x, y);
+    }
+    if(pts.length){
+      ctx.strokeStyle='#fbbf24'; ctx.lineWidth=6; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.shadowColor='#fbbf24'; ctx.shadowBlur=12;
+      ctx.beginPath(); pts.forEach((p,i)=>{ const x=kb.x+p.x*kb.w, y=kb.y+p.y*kb.h; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+      ctx.stroke(); ctx.shadowBlur=0;
+    }
+  }
+  function kbRect(){
+    const r = ov.getBoundingClientRect(), top = 64, bot = 64;
+    return { x:0, y:top, w:r.width, h:Math.max(120, r.height-top-bot) };
+  }
+  function toNorm(e){
+    const r = ov.getBoundingClientRect(), kb = kbRect();
+    return { x:(e.clientX-r.left-kb.x)/kb.w, y:(e.clientY-r.top-kb.y)/kb.h };
+  }
+  function open(){
+    if(ov) return;
+    target = field();
+    buildDict();
+    ov = document.createElement('div'); ov.id='slideTypeOv';
+    ov.innerHTML = '<div id="stTop"><div id="stCands"></div><button type="button" id="stClose" aria-label="Band">✕</button></div>'+
+      '<canvas></canvas><div id="stBot"><button type="button" id="stBs">⌫</button><button type="button" id="stSp">space</button><button type="button" id="stEnter">↵</button></div>'+
+      '<div id="stHint">Letters par slide karo ✍️</div>';
+    document.body.appendChild(ov);
+    ctx = ov.querySelector('canvas').getContext('2d');
+    const cv = ov.querySelector('canvas');
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointerdown', (e)=>{ e.preventDefault(); cv.setPointerCapture(e.pointerId); drawing=true; pts=[toNorm(e)]; ov.querySelector('#stHint').style.opacity=0; draw(); });
+    cv.addEventListener('pointermove', (e)=>{ if(!drawing) return; (e.getCoalescedEvents?e.getCoalescedEvents():[e]).forEach(ev=> pts.push(toNorm(ev))); draw(); });
+    const end = (e)=>{
+      if(!drawing) return; drawing=false;
+      const c = decode(pts);
+      if(c.length){ if(!field()){ alert('Pehle koi text box (jaise message/notes) tap karo, phir slide karo.'); } else { insertWord(c[0], false); } showCands(c); }
+      setTimeout(()=>{ pts=[]; draw(); }, 180);
+    };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    const press = (id, fn)=>{ const b = ov.querySelector(id); b.addEventListener('pointerdown', (e)=>{ e.preventDefault(); fn(); }); };
+    press('#stBs', backspace);
+    press('#stSp', ()=>{ const el=field(); if(!el) return; el.setRangeText(' ', el.selectionStart, el.selectionEnd, 'end'); fire(el); lastWord=null; });
+    press('#stEnter', ()=>{ const el=field(); if(!el) return; el.setRangeText('\n', el.selectionStart, el.selectionEnd, 'end'); fire(el); lastWord=null; });
+    press('#stClose', close);
+    window.addEventListener('resize', draw);
+    draw();
+    if(target) target.focus({preventScroll:true});
+  }
+  function close(){
+    if(!ov) return;
+    const el = field(); if(el){ learnFrom(el.value, true); el.dispatchEvent(new Event('change',{bubbles:true})); }
+    ov.remove(); ov=null; ctx=null; pts=[]; lastWord=null; window.removeEventListener('resize', draw);
+    const b = document.getElementById('slideTypeBtn'); if(b) b.classList.remove('on');
+  }
+
+  const css = document.createElement('style');
+  css.textContent = `
+  #slideTypeBtn{position:fixed;left:12px;bottom:84px;z-index:2147483000;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(30,30,36,.92);color:#fbbf24;font-size:21px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+  #slideTypeBtn.on{background:#fbbf24;color:#111}
+  #slideTypeOv{position:fixed;inset:0;z-index:2147483100;background:rgba(8,7,10,.9);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);touch-action:none;user-select:none;-webkit-user-select:none}
+  #slideTypeOv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #stTop{position:absolute;left:0;right:0;top:0;height:64px;display:flex;align-items:center;gap:8px;padding:0 10px;z-index:2;padding-top:env(safe-area-inset-top,0)}
+  #stCands{flex:1;display:flex;gap:8px;overflow:hidden}
+  #stCands button{flex:1;min-width:0;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#eee;font-size:17px;font-weight:600;padding:0 8px;overflow:hidden;text-overflow:ellipsis}
+  #stCands button.main{background:#fbbf24;color:#111;border-color:#fbbf24}
+  #stClose{width:44px;height:44px;border-radius:12px;border:0;background:#3a1d22;color:#ff8a98;font-size:18px}
+  #stBot{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;gap:8px;padding:8px 10px;z-index:2;padding-bottom:max(8px,env(safe-area-inset-bottom,0))}
+  #stBot button{height:100%;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#eee;font-size:17px;font-weight:600}
+  #stBs,#stEnter{flex:0 0 72px}#stSp{flex:1}
+  #stHint{position:absolute;left:0;right:0;top:50%;text-align:center;color:rgba(255,255,255,.35);font-size:16px;pointer-events:none;transition:opacity .3s}`;
+  document.head.appendChild(css);
+
+  const btn = document.createElement('button');
+  btn.type='button'; btn.id='slideTypeBtn'; btn.title='Slide typing'; btn.setAttribute('aria-label','Slide typing'); btn.textContent='✍️';
+  btn.addEventListener('mousedown', (e)=> e.preventDefault()); // text field ka focus/keyboard na jaye
+  btn.addEventListener('click', ()=>{
+    if(ov){ close(); return; }
+    if(!field()){ alert('Pehle koi text box (jaise message/notes) tap karo, phir ✍️ dabao.'); return; }
+    btn.classList.add('on'); open();
+  });
+  document.body.appendChild(btn);
+  function toggleFor(el){ if(ov){ close(); return; } if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
+  return { open, close, decode, toggleFor };
+})();
+
+
+// ===== Chat Premium Skin v2 =====
+// Sirf look & feel + micro-interactions: glass header, gradient bubbles,
+// smooth message-pop animation, glowing send button, pill composer,
+// aur composer ke andar hi ✍️ slide-typing button (chat me floating button hide).
+(function(){
+  const s = document.createElement('style');
+  s.textContent = `
+  #chatOverlay{background:radial-gradient(120% 60% at 50% -10%,#1b1f3d 0%,#0b0b12 55%,#07070b 100%)!important}
+  #chatOverlay .chatHead{background:rgba(18,19,30,.72)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid rgba(255,255,255,.07)!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  #chatOverlay .chatAv{box-shadow:0 0 0 2px rgba(255,255,255,.08),0 0 0 4px rgba(109,75,255,.35),0 6px 16px rgba(0,0,0,.4)}
+  #chatOverlay .chatPeerName{font-size:16.5px;letter-spacing:.1px}
+  #chatOverlay .chatPeerStatus.on{color:#5eead4;text-shadow:0 0 10px rgba(94,234,212,.45)}
+  #chatOverlay .chatIconBtn{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.1)!important;transition:transform .15s,background .2s}
+  #chatOverlay .chatIconBtn:active{background:rgba(255,255,255,.14)!important}
+  #chatOverlay .chatMsgs{gap:5px!important;padding:12px 12px 10px!important;scroll-behavior:smooth}
+  #chatOverlay .cbub{padding:8px 12px 6px!important;border-radius:20px!important;font-size:15.5px!important;line-height:1.42!important;box-shadow:0 2px 10px rgba(0,0,0,.28);animation:cxPop .22s cubic-bezier(.2,.9,.3,1.2) both}
+  #chatOverlay .cmsg.me .cbub{background:linear-gradient(135deg,#4f7bff 0%,#6d4bff 60%,#8b5cf6 100%)!important;color:#fff!important;border-bottom-right-radius:6px!important;box-shadow:0 4px 16px rgba(93,84,255,.38)}
+  #chatOverlay .cmsg.them .cbub{background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.09)!important;color:#e8e8f0!important;border-bottom-left-radius:6px!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  #chatOverlay .cmsg.me .cbub a{color:#fff}
+  #chatOverlay .chatTick.seen{color:#67e8f9!important;text-shadow:0 0 8px rgba(103,232,249,.6)}
+  #chatOverlay .cmeta{opacity:.62!important}
+  #chatOverlay .chatDaySep span{background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.08)!important;color:#b9bccc!important;font-weight:700;letter-spacing:.3px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  #chatOverlay .chatRow{border-radius:16px;margin:3px 0;border-bottom:0!important;transition:background .2s,transform .12s}
+  #chatOverlay .chatRow:active{background:rgba(255,255,255,.07)!important;transform:scale(.985)}
+  #chatOverlay .chatUnread{background:linear-gradient(135deg,#4f7bff,#8b5cf6)!important;color:#fff!important;box-shadow:0 0 12px rgba(109,75,255,.6)}
+  #chatOverlay .chatRowTime.unread{color:#8aa8ff!important}
+  #chatOverlay #chatSearch{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:16px!important}
+  #chatOverlay .chatComposer{background:rgba(14,15,24,.78)!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.07)!important}
+  #chatOverlay .chatComposer #chatSendBtn{background:linear-gradient(135deg,#4f7bff,#8b5cf6)!important;color:#fff!important;box-shadow:0 4px 16px rgba(109,75,255,.55);transition:transform .15s}
+  #chatOverlay .chatComposer #chatInput:focus{box-shadow:none!important}
+  #chatOverlay .chatNewPill{background:linear-gradient(135deg,#4f7bff,#8b5cf6)!important;color:#fff!important;box-shadow:0 6px 20px rgba(109,75,255,.5);border:0}
+  #cxSlideBtn{order:6;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fbbf24;font-size:18px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:transform .15s,background .2s}
+  #cxSlideBtn:active{transform:scale(.9)}#cxSlideBtn.on{background:#fbbf24;color:#111}
+  body.cxChatOpen #slideTypeBtn:not(.on){display:none}
+  @keyframes cxPop{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){#chatOverlay .cbub{animation:none}}`;
+  document.head.appendChild(s);
+
+  function sync(){
+    const ov = document.getElementById('chatOverlay');
+    document.body.classList.toggle('cxChatOpen', !!(ov && ov.classList.contains('open')));
+    const comp = document.querySelector('#chatOverlay .chatComposer');
+    if(!comp || comp.querySelector('#cxSlideBtn')) return;
+    const b = document.createElement('button');
+    b.type='button'; b.id='cxSlideBtn'; b.title='Slide typing'; b.setAttribute('aria-label','Slide typing'); b.textContent='✍️';
+    b.addEventListener('mousedown', e=> e.preventDefault());
+    b.addEventListener('click', ()=>{ const t = document.getElementById('chatInput'); SlideType.toggleFor(t); b.classList.toggle('on', document.getElementById('slideTypeOv')!==null); });
+    comp.insertBefore(b, document.getElementById('chatSendBtn'));
+    const send = document.getElementById('chatSendBtn');
+    if(send) send.addEventListener('click', ()=>{ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} });
+  }
+  new MutationObserver(sync).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  sync();
 })();
