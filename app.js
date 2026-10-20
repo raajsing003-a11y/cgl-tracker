@@ -24491,9 +24491,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
 
 
 // ============================================================================
-// CHAT PLUS 6 (section 5): In-app Camera with live FILTERS (Instagram-style)
+// CHAT PLUS 6 (section 5): In-app Camera with live COLOUR GRADING (effects hata diye)
 //  - Composer ke neele camera button se khulta hai (window.cxOpenCam)
-//  - Neeche gol filter carousel (call effects wale hi filters: window.cxFX)
+//  - Neeche gol tool carousel: Exposure, Brightness, Contrast, Saturation, Vibrance, Temperature, Tint,
+//    Highlights, Shadows, Whites, Blacks, Fade, Hue, Sharpness, Vignette, Grain, Shadow/Highlight colour grading
+//  - Sab values localStorage 'cxc-grade' me AUTO-SAVE (camera dobara kholne par wahi settings)
+//  - Preview dabake rakho = original (compare). Video call ke effects (window.cxFX) jaise the waise.
 //  - Tap = photo, dabaye rakho = video (max 30s). Result purane photo editor /
 //    video trimmer flow me jaata hai (cxInGal 'change' ke through)
 // ============================================================================
@@ -24508,12 +24511,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     s.textContent = `
     #cxCam{position:fixed;inset:0;z-index:100002;background:#000;display:none;flex-direction:column;color:#fff;font-family:inherit}
     #cxCam.open{display:flex}
-    #cxCam .cv{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(190px + env(safe-area-inset-bottom,0px));border-radius:0 0 22px 22px;overflow:hidden;background:#111}
+    #cxCam .cv{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(258px + env(safe-area-inset-bottom,0px));border-radius:0 0 22px 22px;overflow:hidden;background:#111}
     #cxCam canvas{width:100%;height:100%;object-fit:cover;display:block}
     #cxCam .top{position:absolute;left:0;right:0;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:2}
     #cxCam .top b{font-size:15px;font-weight:600;background:rgba(0,0,0,.35);padding:7px 16px;border-radius:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
     #cxCam .ib{width:42px;height:42px;border-radius:50%;border:0;background:rgba(0,0,0,.35);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;padding:0}
-    #cxCam .bot{position:absolute;left:0;right:0;bottom:0;height:calc(190px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;justify-content:center}
+    #cxCam .bot{position:absolute;left:0;right:0;bottom:0;height:calc(258px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;justify-content:center}
     #cxCam .car{display:flex;gap:14px;overflow-x:auto;padding:6px 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
     #cxCam .car::-webkit-scrollbar{display:none}
     #cxCam .car button{flex:none;width:56px;background:transparent;border:0;color:#fff;font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;opacity:.8}
@@ -24527,7 +24530,21 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #cxCam .shut.rec::after{background:#ef4444;transform:scale(.55);border-radius:14px}
     #cxCam .rt{position:absolute;left:50%;transform:translateX(-50%);top:calc(60px + env(safe-area-inset-top,0px));background:#ef4444;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:700;display:none;z-index:2}
     #cxCam .rt.on{display:block}
-    #cxCam .hint{text-align:center;font-size:11px;opacity:.65;padding-bottom:2px}`;
+    #cxCam .hint{text-align:center;font-size:11px;opacity:.65;padding-bottom:2px}
+    #cxCam .car{align-items:flex-start;gap:12px}
+    #cxCam .car button{width:62px}
+    #cxCam .car button span{text-align:center;line-height:1.15;max-width:62px}
+    #cxCam .car i{background:rgba(255,255,255,.1)}
+    #cxCam .car button.mod i{background:rgba(168,85,247,.35);border-color:#a855f7;font-size:14px;font-weight:700}
+    #cxCam .gr{padding:0 22px 6px}
+    #cxCam .gh{display:flex;align-items:center;justify-content:space-between;height:26px}
+    #cxCam .gh b{font-size:13px;font-weight:700}
+    #cxCam .gh span{display:flex;align-items:center;gap:8px}
+    #cxCam .gh em{font-style:normal;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+    #cxCam .gh button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:14px;padding:0;cursor:pointer}
+    #cxCam .gr input[type=range]{display:block;width:100%;height:6px;margin:8px 0;border-radius:3px;background:rgba(255,255,255,.3);-webkit-appearance:none;appearance:none;outline:0}
+    #cxCam .gr input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.85)}
+    #cxCam .gr input[type=range]::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.85)}`;
     document.head.appendChild(s);
   }
   const ic = {
@@ -24537,6 +24554,161 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   };
   const svg = (k)=> `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ic[k]}</svg>`;
 
+  // ---------------- COLOUR GRADING (effects ki jagah) ----------------
+  const GKEY = 'cxc-grade';
+  const HUEG = 'linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
+  const ADJ = [
+    { k: 'exposure', n: 'Exposure', e: '☀️' },
+    { k: 'brightness', n: 'Brightness', e: '🔆' },
+    { k: 'contrast', n: 'Contrast', e: '◐' },
+    { k: 'saturation', n: 'Saturation', e: '🎨' },
+    { k: 'vibrance', n: 'Vibrance', e: '💧' },
+    { k: 'temp', n: 'Temperature', e: '🌡️', tr: 'linear-gradient(90deg,#3b82f6,#e5e7eb,#f59e0b)' },
+    { k: 'tint', n: 'Tint', e: '🧪', tr: 'linear-gradient(90deg,#22c55e,#e5e7eb,#d946ef)' },
+    { k: 'highlights', n: 'Highlights', e: '🌤️' },
+    { k: 'shadows', n: 'Shadows', e: '🌑' },
+    { k: 'whites', n: 'Whites', e: '⚪' },
+    { k: 'blacks', n: 'Blacks', e: '⚫' },
+    { k: 'fade', n: 'Fade', e: '🌫️', min: 0 },
+    { k: 'hue', n: 'Hue', e: '🌈', tr: HUEG },
+    { k: 'sharpen', n: 'Sharpness', e: '🔺', min: 0 },
+    { k: 'vignette', n: 'Vignette', e: '⭕' },
+    { k: 'grain', n: 'Grain', e: '✨', min: 0 },
+    { k: 'shHue', n: 'Shadow Color', e: '🟣', min: 0, max: 360, tr: HUEG },
+    { k: 'shAmt', n: 'Shadow Mix', e: '🎚️', min: 0 },
+    { k: 'hiHue', n: 'Highlight Color', e: '🟠', min: 0, max: 360, tr: HUEG },
+    { k: 'hiAmt', n: 'Highlight Mix', e: '🎚️', min: 0 }
+  ];
+  const lo = (a)=> a.min == null ? -100 : a.min, hi = (a)=> a.max == null ? 100 : a.max;
+  const loadG = ()=>{
+    const g = {}; ADJ.forEach(a => { g[a.k] = 0; });
+    try{ const o = JSON.parse(localStorage.getItem(GKEY) || '{}'); ADJ.forEach(a => { const v = Number(o[a.k]); if(isFinite(v)) g[a.k] = Math.max(lo(a), Math.min(hi(a), v)); }); }catch(_){}
+    return g;
+  };
+  let G = loadG(), gSel = 'brightness', saveT = 0;
+  const flushG = ()=>{ clearTimeout(saveT); try{ localStorage.setItem(GKEY, JSON.stringify(G)); }catch(_){} };
+  const saveG = ()=>{ clearTimeout(saveT); saveT = setTimeout(flushG, 120); };   // AUTO-SAVE
+  const isId = ()=> ADJ.every(a => a.k === 'shHue' || a.k === 'hiHue' || !G[a.k]);
+  const hsv = (h)=>{ const f = (n)=>{ const k = (n + h * 6) % 6; return 1 - Math.max(0, Math.min(k, 4 - k, 1)); }; return [f(5), f(3), f(1)]; };
+
+  const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
+  const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 v; uniform sampler2D t; uniform vec2 px;
+uniform float ex,br,co,sa,vi,tp,tn,hl,sh,wh,bk,fd,hu,sp,vg,gr,tm,sA,hA;
+uniform vec3 sC,hC;
+const vec3 W=vec3(.2126,.7152,.0722);
+void main(){
+  vec3 c=texture2D(t,v).rgb;
+  if(sp>0.){
+    vec3 b=texture2D(t,v+vec2(px.x,0.)).rgb+texture2D(t,v-vec2(px.x,0.)).rgb+texture2D(t,v+vec2(0.,px.y)).rgb+texture2D(t,v-vec2(0.,px.y)).rgb;
+    c+=(c*4.-b)*sp*.6;
+  }
+  c*=exp2(ex*1.2);
+  c.r*=1.+tp*.28; c.b*=1.-tp*.28;
+  c.g*=1.-tn*.18; c.r*=1.+tn*.06; c.b*=1.+tn*.06;
+  c+=br*.25;
+  float l=dot(c,W);
+  c+=hl*.3*smoothstep(.45,1.,l);
+  c+=sh*.3*(1.-smoothstep(0.,.55,l));
+  c+=wh*.2*smoothstep(.7,1.,l);
+  c+=bk*.2*(1.-smoothstep(0.,.3,l));
+  c=(c-.5)*(1.+co*.7)+.5;
+  c=c*(1.-fd*.25)+fd*.1;
+  l=dot(c,W);
+  c=mix(vec3(l),c,1.+sa);
+  float mx=max(c.r,max(c.g,c.b)), mn=min(c.r,min(c.g,c.b));
+  c=mix(vec3(l),c,1.+vi*(1.-clamp(mx-mn,0.,1.)));
+  if(hu!=0.){
+    float a=hu*3.14159265, cs=cos(a), sn=sin(a);
+    vec3 m0=vec3(.213+.787*cs-.213*sn, .213-.213*cs+.143*sn, .213-.213*cs-.787*sn);
+    vec3 m1=vec3(.715-.715*cs-.715*sn, .715+.285*cs+.140*sn, .715-.715*cs+.715*sn);
+    vec3 m2=vec3(.072-.072*cs+.928*sn, .072-.072*cs-.283*sn, .072+.928*cs+.072*sn);
+    c=c.r*m0+c.g*m1+c.b*m2;
+  }
+  l=dot(c,W);
+  c+=(sC-dot(sC,W))*sA*.45*(1.-smoothstep(0.,.65,l));
+  c+=(hC-dot(hC,W))*hA*.45*smoothstep(.35,1.,l);
+  float d=distance(v,vec2(.5))*1.45;
+  float vm=smoothstep(.35,1.05,d);
+  if(vg>0.) c*=1.-vg*vm*.85; else c=mix(c,vec3(1.),-vg*vm*.75);
+  float n=fract(sin(dot(gl_FragCoord.xy+tm,vec2(12.9898,78.233)))*43758.5453);
+  c+=(n-.5)*gr*.3*(1.-abs(dot(c,W)-.5)*1.2);
+  gl_FragColor=vec4(clamp(c,0.,1.),1.);
+}`;
+  let gl = null, glc = null, glFail = false, glTex = null; const U = {};
+  function glInit(){
+    if(glFail) return false;
+    if(gl) return true;
+    try{
+      glc = document.createElement('canvas');
+      const o = { premultipliedAlpha: false, preserveDrawingBuffer: true, antialias: false, alpha: false };
+      gl = glc.getContext('webgl', o) || glc.getContext('experimental-webgl', o);
+      if(!gl) throw new Error('no webgl');
+      const mk = (ty, src)=>{ const sh = gl.createShader(ty); gl.shaderSource(sh, src); gl.compileShader(sh); if(!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
+      const pr = gl.createProgram();
+      gl.attachShader(pr, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr);
+      if(!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      gl.useProgram(pr);
+      const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      glTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, glTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      ['px', 'ex', 'br', 'co', 'sa', 'vi', 'tp', 'tn', 'hl', 'sh', 'wh', 'bk', 'fd', 'hu', 'sp', 'vg', 'gr', 'tm', 'sA', 'hA', 'sC', 'hC'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
+      glc.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); glFail = true; gl = null; });
+      return true;
+    }catch(e){ console.error('grade gl', e); glFail = true; gl = null; return false; }
+  }
+  function glGrade(src, w, h){
+    if(!glInit()) return null;
+    try{
+      if(glc.width !== w || glc.height !== h){ glc.width = w; glc.height = h; }
+      gl.viewport(0, 0, w, h);
+      gl.bindTexture(gl.TEXTURE_2D, glTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      const n = (k)=> G[k] / 100;
+      gl.uniform2f(U.px, 1 / w, 1 / h);
+      gl.uniform1f(U.ex, n('exposure')); gl.uniform1f(U.br, n('brightness')); gl.uniform1f(U.co, n('contrast')); gl.uniform1f(U.sa, n('saturation'));
+      gl.uniform1f(U.vi, n('vibrance')); gl.uniform1f(U.tp, n('temp')); gl.uniform1f(U.tn, n('tint')); gl.uniform1f(U.hl, n('highlights'));
+      gl.uniform1f(U.sh, n('shadows')); gl.uniform1f(U.wh, n('whites')); gl.uniform1f(U.bk, n('blacks')); gl.uniform1f(U.fd, n('fade'));
+      gl.uniform1f(U.hu, n('hue')); gl.uniform1f(U.sp, n('sharpen')); gl.uniform1f(U.vg, n('vignette')); gl.uniform1f(U.gr, n('grain'));
+      gl.uniform1f(U.tm, (performance.now() % 1000) * 7.13);
+      gl.uniform1f(U.sA, n('shAmt')); gl.uniform1f(U.hA, n('hiAmt'));
+      const a = hsv(G.shHue / 360), b = hsv(G.hiHue / 360);
+      gl.uniform3f(U.sC, a[0], a[1], a[2]); gl.uniform3f(U.hC, b[0], b[1], b[2]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      return glc;
+    }catch(e){ console.error('grade draw', e); glFail = true; gl = null; return null; }
+  }
+  // WebGL na chale to halka fallback (brightness/contrast/saturation/hue/temperature/tint/vignette)
+  function cssGrade(c, src, w, h, canF){
+    c.save();
+    if(canF){
+      const b = Math.pow(2, G.exposure / 100 * 1.2) * (1 + G.brightness / 100 * .5), k = 1 + G.contrast / 100 * .7, sa = (1 + G.saturation / 100) * (1 + G.vibrance / 200);
+      c.filter = 'brightness(' + b + ') contrast(' + k + ') saturate(' + sa + ') hue-rotate(' + (G.hue * 1.8) + 'deg)';
+    }
+    c.drawImage(src, 0, 0, w, h);
+    c.restore();
+    const wsh = (col, a, mode)=>{ c.save(); c.globalCompositeOperation = mode; c.fillStyle = 'rgba(' + col + ',' + a + ')'; c.fillRect(0, 0, w, h); c.restore(); };
+    if(G.temp) wsh(G.temp > 0 ? '255,150,40' : '60,130,255', Math.abs(G.temp) / 100 * .35, 'soft-light');
+    if(G.tint) wsh(G.tint > 0 ? '220,60,220' : '60,200,90', Math.abs(G.tint) / 100 * .3, 'soft-light');
+    if(G.vignette > 0){ const g = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .3, w / 2, h / 2, Math.max(w, h) * .7); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,' + (G.vignette / 100 * .8) + ')'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+  }
+  const curAdj = ()=> ADJ.find(a => a.k === gSel) || ADJ[1];
+  function paintSlider(){
+    const a = curAdj(), r = $('cxGrR'); if(!r) return;
+    r.min = lo(a); r.max = hi(a); r.value = G[a.k];
+    r.style.background = a.tr || '';
+    $('cxGrN').textContent = a.n; $('cxGrV').textContent = Math.round(G[a.k]);
+  }
+
   function build(){
     if($('cxCam')) return;
     styles();
@@ -24544,14 +24716,24 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas></div>
       <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
       <div class="rt" id="cxCamRt">● 0:00</div>
-      <div class="bot"><div class="car" id="cxCamCar"></div>
+      <div class="bot"><div class="gr"><div class="gh"><b id="cxGrN">Brightness</b><span><em id="cxGrV">0</em><button type="button" id="cxGrRs" aria-label="Reset">↺</button></span></div><input type="range" id="cxGrR" min="-100" max="100" step="1" value="0"></div><div class="car" id="cxCamCar"></div>
         <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span id="cxCamBtySlot" style="width:46px;display:flex;justify-content:flex-end"></span></div>
-        <div class="hint">Tap = photo · Dabaye rakho = video</div></div>`;
+        <div class="hint">Tap = photo · Dabaye rakho = video · Preview dabao = original</div></div>`;
     document.body.appendChild(el);
     $('cxCamX').onclick = close;
     $('cxCamFlip').onclick = flip;
     $('cxCamGal').onclick = ()=>{ close(); const i = $('cxInGal'); if(i) i.click(); };
-    $('cxCamCar').addEventListener('click', (e)=>{ const b = e.target.closest('[data-f]'); if(!b || !st) return; st.sel = b.dataset.f; st.f.parts = []; try{ localStorage.setItem('cxc-sel', st.sel); }catch(_){} paintCar(); });
+    $('cxGrR').addEventListener('input', ()=>{ const a = curAdj(); G[a.k] = Number($('cxGrR').value); saveG(); paintCar(); });
+    $('cxGrRs').onclick = ()=>{ const a = curAdj(); G[a.k] = 0; saveG(); paintCar(); };
+    $('cxCamCar').addEventListener('click', (e)=>{
+      const b = e.target.closest('[data-g]'); if(!b) return;
+      if(b.dataset.g === '_reset'){ ADJ.forEach(a => { G[a.k] = 0; }); flushG(); paintCar(); toast('Sab settings reset.'); return; }
+      gSel = b.dataset.g; try{ localStorage.setItem('cxc-gsel', gSel); }catch(_){}
+      paintCar(); try{ b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }catch(_){}
+    });
+    const cvBox = el.querySelector('.cv');
+    cvBox.addEventListener('pointerdown', ()=>{ if(st) st.cmp = true; });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => cvBox.addEventListener(ev, ()=>{ if(st) st.cmp = false; }));
     const sh = $('cxCamShut');
     sh.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(!st) return; try{ sh.setPointerCapture(e.pointerId); }catch(_){} st.hold = false; st.holdT = setTimeout(()=>{ st.hold = true; recStart(); }, 380); });
     const up = ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.hold){ st.hold = false; recStop(); } else if(!st.rec && st.down !== false){ photo(); } };
@@ -24559,9 +24741,15 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     sh.addEventListener('pointercancel', ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.rec) recStop(); });
   }
   function paintCar(){
-    const car = $('cxCamCar'); if(!car || !window.cxFX) return;
-    if(!car.children.length) car.innerHTML = window.cxFX.list.map(x => `<button type="button" data-f="${x.id}"><i style="background:${x.g}">${x.e}</i><span>${x.n}</span></button>`).join('');
-    car.querySelectorAll('button').forEach(b => b.classList.toggle('on', st && b.dataset.f === st.sel));
+    const car = $('cxCamCar'); if(!car) return;
+    if(!car.children.length) car.innerHTML = ADJ.map(a => `<button type="button" data-g="${a.k}"><i></i><span>${a.n}</span></button>`).join('') + '<button type="button" data-g="_reset"><i>↺</i><span>Reset all</span></button>';
+    car.querySelectorAll('[data-g]').forEach(b => {
+      const k = b.dataset.g; if(k === '_reset') return;
+      const a = ADJ.find(x => x.k === k), v = G[k], mod = v !== 0;
+      b.classList.toggle('on', k === gSel); b.classList.toggle('mod', mod);
+      b.firstChild.textContent = mod ? String(Math.round(v)) : a.e;
+    });
+    paintSlider();
   }
   async function startStream(){
     if(st.stream){ st.stream.getTracks().forEach(t => t.stop()); st.stream = null; }
@@ -24575,12 +24763,17 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(!vw || !vh) return;
     const w = Math.min(vw, 720), h = Math.round(vh * w / vw);
     if(st.cvs.width !== w || st.cvs.height !== h){ st.cvs.width = w; st.cvs.height = h; }
-    const def = window.cxFX.list.find(x => x.id === st.sel) || window.cxFX.list[0], c = st.ctx;
-    c.save();
-    if(st.facing === 'user'){ c.translate(w, 0); c.scale(-1, 1); }
-    window.cxFX.draw(c, v, w, h, def, st.f);
-    c.restore();
-    if(st.rec){ const sec = (Date.now() - st.t0) / 1000; const r = $('cxCamRt'); if(r) r.textContent = '● ' + Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0'); if(sec >= 30) recStop(); }
+    if(!st.raw){ st.raw = document.createElement('canvas'); st.rctx = st.raw.getContext('2d'); }
+    if(st.raw.width !== w || st.raw.height !== h){ st.raw.width = w; st.raw.height = h; }
+    const none = window.cxFX.list.find(x => x.id === 'none') || window.cxFX.list[0], r = st.rctx;
+    r.save();
+    if(st.facing === 'user'){ r.translate(w, 0); r.scale(-1, 1); }
+    window.cxFX.draw(r, v, w, h, none, st.f);   // sirf Normal (Beauty ON ho to wahi lagti hai)
+    r.restore();
+    const c = st.ctx;
+    if(st.cmp || isId()){ c.drawImage(st.raw, 0, 0); }
+    else{ const g = glGrade(st.raw, w, h); if(g) c.drawImage(g, 0, 0); else cssGrade(c, st.raw, w, h, st.f.canF); }
+    if(st.rec){ const sec = (Date.now() - st.t0) / 1000; const rr = $('cxCamRt'); if(rr) rr.textContent = '● ' + Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0'); if(sec >= 30) recStop(); }
   }
   function toGal(file){
     const inp = $('cxInGal'); if(!inp){ toast('Gallery input nahi mila.'); return; }
@@ -24633,6 +24826,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   function close(){
     const el = $('cxCam'); if(el) el.classList.remove('open');
+    flushG();
     if(!st) return;
     const s = st; st = null;
     clearInterval(s.timer); clearTimeout(s.holdT);
@@ -24649,9 +24843,10 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const cvs = $('cxCamCv'), vid = document.createElement('video');
     vid.muted = true; vid.playsInline = true; vid.autoplay = true;
     const ctx = cvs.getContext('2d');
-    let sf = 'user', ss = 'none';
-    try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; ss = localStorage.getItem('cxc-sel') || 'none'; if(!window.cxFX.list.some(x => x.id === ss)) ss = 'none'; }catch(_){}
-    st = { cvs, ctx, vid, stream: null, facing: sf, sel: ss, f: { canF: ('filter' in ctx), parts: [] } };
+    let sf = 'user';
+    G = loadG();
+    try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; const gs = localStorage.getItem('cxc-gsel'); if(gs && ADJ.some(a => a.k === gs)) gSel = gs; }catch(_){}
+    st = { cvs, ctx, vid, stream: null, facing: sf, cmp: false, f: { canF: ('filter' in ctx), parts: [] } };
     $('cxCamTo').textContent = 'Message ' + chatPeer.name;
     $('cxCam').classList.add('open');
     paintCar();
@@ -26435,76 +26630,113 @@ const SlideType = (function(){
 // ============================================================================
 const HandWrite = (function(){
   const ENDPOINT = 'https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8';
-  const IDLE_MS = 900;
-  let ov = null, cv = null, ctx = null, target = null;
+  const IDLE_MS = 1000;
+  let ov = null, cv = null, ctx = null, bar = null, target = null, posTimer = null;
   let strokes = [], cur = null, drawing = false, t0 = 0, timer = null, busy = false;
-  let lang = 'en', last = null; // last = {start,end,cands}
-  try{ lang = localStorage.getItem('hwLang') || 'en'; }catch(e){}
+  let lang = 'en', last = null, fixSeq = 0, passThru = false;
+  let aiOn = true;
+  try{ lang = localStorage.getItem('hwLang') || 'en'; aiOn = localStorage.getItem('hwAi') !== '0'; }catch(e){}
 
   const field = ()=> target || document.getElementById('chatInput');
-  const fire = (el)=>{ el.dispatchEvent(new Event('input',{bubbles:true})); };
-  const mirror = ()=>{ if(!ov) return; const el = field(); const p = ov.querySelector('#hwPrev'); p.textContent = el && el.value ? el.value : 'Yahan likha hua dikhega…'; p.classList.toggle('empty', !(el && el.value)); p.scrollTop = p.scrollHeight; };
+  const fire = (el)=>{ el.dispatchEvent(new Event('input',{bubbles:true})); try{ chatAutosize(); }catch(e){} };
 
   function insertText(txt){
     const el = field(); if(!el) return;
     const s = el.value.length;
     el.setRangeText(txt, s, s, 'end'); fire(el);
     last = { start:s, end:s+txt.length, cands:[] };
-    mirror();
   }
   function replaceLast(txt){
     const el = field(); if(!el || !last) return;
     el.setRangeText(txt, last.start, last.end, 'end'); fire(el);
-    last.end = last.start + txt.length; mirror();
+    last.end = last.start + txt.length;
   }
   function backspace(){
     const el = field(); if(!el || !el.value) return;
     let v = el.value;
-    // pura akhri shabd hatao (trailing space ke saath)
     const m = v.match(/(\s*\S+\s*|\s+)$/);
     v = m ? v.slice(0, v.length - m[0].length) : v.slice(0,-1);
-    el.value = v; fire(el); last = null; showCands([]); mirror();
+    el.value = v; fire(el); last = null; fixSeq++; showCands([]);
   }
-
   function showCands(list){
-    const box = ov.querySelector('#hwCands'); box.innerHTML = '';
-    list.slice(0,6).forEach((c,i)=>{
+    if(!bar) return;
+    const box = bar.querySelector('#hwCands'); box.innerHTML = '';
+    box.style.display = list.length ? 'flex' : 'none';
+    list.slice(0,7).forEach((c,i)=>{
       const b = document.createElement('button'); b.type='button'; b.textContent = c; if(i===0) b.className='main';
-      b.addEventListener('pointerdown',(e)=>{ e.preventDefault(); replaceLast(c + ' '); box.querySelectorAll('button').forEach(x=>x.classList.remove('main')); b.classList.add('main'); });
+      b.addEventListener('pointerdown',(e)=>{ e.preventDefault(); fixSeq++; replaceLast(c + ' '); box.querySelectorAll('button').forEach(x=>x.classList.remove('main')); b.classList.add('main'); });
       box.appendChild(b);
     });
   }
 
-  // ---- drawing ----
+  // ---- chat context for AI auto-correct ----
+  function chatContext(){
+    try{
+      const me = chatMyKey(); const out = [];
+      chatSortedIds().slice(-6).forEach(id=>{ const m = chatMsgs.get(id); if(m && m.t) out.push((m.f === me ? 'Me: ' : 'Them: ') + String(m.t).slice(0,160)); });
+      return out.join('\n');
+    }catch(e){ return ''; }
+  }
+  // ---- AI: recognized shabd ko meaningful/sahi banao ----
+  async function polish(raw, cands, mySeq){
+    if(!aiOn) return;
+    const el = field(); if(!el) return;
+    const before = el.value.slice(Math.max(0, last ? last.start - 80 : 0), last ? last.start : 0);
+    const system = 'Tum handwriting-to-text corrector ho. User ne screen par ungli se likha, recognizer ne galat ya adhura pehchana. Chat ke context ke hisaab se wahi text banao jo user likhna chahta tha. Rules: (1) user ki bhasha/script wahi rakho (Roman Hinglish, English ya Devanagari); (2) spelling theek karo, ALL CAPS ko normal sentence case me badlo; (3) ant me akela bacha 1, l, I, | jaisa nishan sawaal ho to ? ya ! laga do, bich me bekar nishan hata do; (4) naya matlab ya extra shabd mat jodo, sirf "Already in box" ke aage ka naya hissa theek karo; (5) output SIRF final naya text, koi quote ya explanation nahi.';
+    const content = 'Chat context:\n' + (chatContext() || '(koi nahi)') + '\n\nAlready in box: "' + before + '"\nRecognizer options: ' + cands.slice(0,6).join(' | ') + '\nLanguage: ' + (lang==='hi' ? 'Hindi' : 'English/Hinglish');
+    try{
+      const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:160, system, messages:[{ role:'user', content }] }) });
+      if(!resp.ok) throw new Error('ai '+resp.status);
+      const j = await resp.json();
+      let t = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join(' ').trim().replace(/^["'“”]+|["'“”]+$/g,'').trim();
+      if(!t || t.length > raw.length*3 + 25) return;
+      if(mySeq !== fixSeq || !last) return;            // user ne beech me kuch badla
+      const cur = field().value.slice(last.start, last.end);
+      if(cur.trim() === t) return;
+      replaceLast(t + ' ');
+      showCands([t].concat(cands.filter(c=>c !== t)));
+    }catch(e){ /* AI na chale to recognizer wala text hi rehta hai */ }
+  }
+
+  // ---- drawing (poori screen) ----
   function size(){
-    const r = cv.getBoundingClientRect(), d = window.devicePixelRatio||1;
-    cv.width = Math.round(r.width*d); cv.height = Math.round(r.height*d);
+    const d = window.devicePixelRatio||1;
+    cv.width = Math.round(window.innerWidth*d); cv.height = Math.round(window.innerHeight*d);
     ctx = cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); redraw();
   }
   function redraw(){
-    if(!ctx) return; const r = cv.getBoundingClientRect();
-    ctx.clearRect(0,0,r.width,r.height);
-    // baseline guide
-    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(14, r.height*0.68); ctx.lineTo(r.width-14, r.height*0.68); ctx.stroke();
-    ctx.strokeStyle = '#e8e6ee'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if(!ctx) return;
+    ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(0,0,0,.85)'; ctx.shadowBlur = 5;
     strokes.concat(cur?[cur]:[]).forEach(s=>{
       if(!s.length) return; ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y);
       if(s.length===1) ctx.lineTo(s[0].x+0.1, s[0].y);
       for(let i=1;i<s.length;i++) ctx.lineTo(s[i].x, s[i].y);
       ctx.stroke();
     });
+    ctx.shadowBlur = 0;
   }
-  function pt(e){ const r = cv.getBoundingClientRect(); return { x:e.clientX-r.left, y:e.clientY-r.top, t:Math.round(performance.now()-t0) }; }
+  function pt(e){ return { x:e.clientX, y:e.clientY, t:Math.round(performance.now()-t0) }; }
+  function hint(txt, keep){
+    const h = ov && ov.querySelector('#hwHint'); if(!h) return;
+    h.textContent = txt; h.style.opacity = txt ? 1 : 0;
+    if(txt && !keep) setTimeout(()=>{ if(h && h.textContent === txt) h.style.opacity = 0; }, 2200);
+  }
 
   async function recognize(){
     if(busy || !strokes.length) return;
-    busy = true; const hint = ov.querySelector('#hwHint'); hint.textContent = '…pehchan raha hoon'; hint.style.opacity = 1;
-    const r = cv.getBoundingClientRect();
-    const ink = strokes.map(s=>[ s.map(p=>Math.round(p.x)), s.map(p=>Math.round(p.y)), s.map(p=>p.t) ]);
+    busy = true; hint('…pehchan raha hoon', true);
+    // sirf likhe hue hisse ka bounding box bhejo -> screen par kahin bhi likho, sahi pehchan
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    strokes.forEach(s=>s.forEach(p=>{ x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x); y1=Math.max(y1,p.y); }));
+    const pad = 14, W = Math.max(80, Math.round(x1-x0+pad*2)), H = Math.max(80, Math.round(y1-y0+pad*2));
+    const ink = strokes.map(s=>[ s.map(p=>Math.round(p.x-x0+pad)), s.map(p=>Math.round(p.y-y0+pad)), s.map(p=>p.t) ]);
     const el = field(); const pre = el ? el.value.slice(-24) : '';
     const body = { app_version:0.4, api_level:'537.36', device:navigator.userAgent, input_type:0, options:'enable_pre_space',
-      requests:[{ writing_guide:{ writing_area_width:Math.round(r.width), writing_area_height:Math.round(r.height) }, pre_context:pre, max_num_items:6, language: lang==='hi'?'hi':'en', ink }] };
-    const snapshot = strokes; 
+      requests:[{ writing_guide:{ writing_area_width:W, writing_area_height:H }, pre_context:pre, max_num_items:6, language: lang==='hi'?'hi':'en', ink }] };
+    const snapshot = strokes;
     try{
       const res = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
       const j = await res.json();
@@ -26512,15 +26744,25 @@ const HandWrite = (function(){
       const cands = (j[1] && j[1][0] && j[1][0][1]) || [];
       if(!cands.length) throw new Error('empty');
       if(strokes === snapshot){ strokes = []; cur = null; redraw(); }
+      const mySeq = ++fixSeq;
       insertText(cands[0] + ' '); last.cands = cands; showCands(cands);
-      hint.style.opacity = 0;
+      hint('');
+      polish(cands[0], cands, mySeq);
     }catch(err){
-      hint.textContent = navigator.onLine ? 'Samajh nahi aaya — thoda saaf likho' : 'Internet chahiye (handwriting recognition online hai)';
-      hint.style.opacity = 1; strokes = []; cur = null; redraw();
-      setTimeout(()=>{ if(ov) hint.style.opacity = 0; }, 2200);
-    }finally{ busy = false; }
+      hint(navigator.onLine ? 'Samajh nahi aaya — thoda saaf likho' : 'Internet chahiye (handwriting recognition online hai)');
+      strokes = []; cur = null; redraw();
+    }finally{ busy = false; if(strokes.length) schedule(); }
   }
   function schedule(){ clearTimeout(timer); timer = setTimeout(recognize, IDLE_MS); }
+
+  // toolbar ko composer ke theek upar rakho (chat box + messages dikhte rahein)
+  function place(){
+    if(!bar) return;
+    const comp = document.querySelector('#chatOverlay .chatComposer');
+    let b = 8;
+    if(comp){ const r = comp.getBoundingClientRect(); if(r.height > 0) b = Math.max(8, window.innerHeight - r.top + 6); }
+    bar.style.bottom = b + 'px';
+  }
 
   function open(el){
     if(ov) return;
@@ -26528,55 +26770,63 @@ const HandWrite = (function(){
     if(!target){ alert('Pehle chat kholo.'); return; }
     ov = document.createElement('div'); ov.id = 'hwOv';
     ov.innerHTML =
-      '<div id="hwTop"><div id="hwPrev" class="empty"></div></div>' +
-      '<div id="hwCands"></div>' +
-      '<div id="hwPad"><canvas></canvas><div id="hwHint">Yahan ungli se likho ✍️ — ruko, apne aap chat box me aa jayega</div></div>' +
-      '<div id="hwBar"><button type="button" id="hwLang"></button><button type="button" id="hwBs">⌫</button><button type="button" id="hwSp">space</button><button type="button" id="hwEnter">↵</button><button type="button" id="hwClr">🗑</button><button type="button" id="hwSend">➤</button><button type="button" id="hwClose">✕</button></div>';
+      '<canvas id="hwCv"></canvas>' +
+      '<div id="hwHint">Poori screen par kahin bhi ungli se likho ✍️<br>ruko — apne aap sahi hoke chat box me aayega</div>' +
+      '<div id="hwBar"><div id="hwCands" style="display:none"></div>' +
+      '<div id="hwBtns"><button type="button" id="hwLang"></button><button type="button" id="hwAi">✨</button><button type="button" id="hwScroll">✋</button><button type="button" id="hwBs">⌫</button><button type="button" id="hwSp">␣</button><button type="button" id="hwEnter">↵</button><button type="button" id="hwClr">🗑</button><button type="button" id="hwSend">➤</button><button type="button" id="hwClose">✕</button></div></div>';
     document.body.appendChild(ov);
-    cv = ov.querySelector('canvas'); cv.style.touchAction = 'none';
-    const lb = ov.querySelector('#hwLang'); const setLang = ()=>{ lb.textContent = lang==='hi' ? 'हिं' : 'EN'; }; setLang();
-    const press = (id, fn)=> ov.querySelector(id).addEventListener('pointerdown',(e)=>{ e.preventDefault(); fn(); });
-    press('#hwLang', ()=>{ lang = lang==='hi' ? 'en' : 'hi'; try{ localStorage.setItem('hwLang', lang); }catch(e){} setLang(); });
+    cv = ov.querySelector('#hwCv'); bar = ov.querySelector('#hwBar');
+    const lb = ov.querySelector('#hwLang'), ab = ov.querySelector('#hwAi'), sb = ov.querySelector('#hwScroll');
+    const setLang = ()=>{ lb.textContent = lang==='hi' ? 'हिं' : 'EN'; };
+    const setAi = ()=>{ ab.classList.toggle('on', aiOn); };
+    const setPass = ()=>{ sb.classList.toggle('on', passThru); cv.style.pointerEvents = passThru ? 'none' : 'auto'; ov.classList.toggle('pass', passThru); };
+    setLang(); setAi(); setPass();
+    const press = (id, fn)=> ov.querySelector(id).addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); fn(); });
+    press('#hwLang', ()=>{ lang = lang==='hi' ? 'en' : 'hi'; try{ localStorage.setItem('hwLang', lang); }catch(e){} setLang(); hint(lang==='hi' ? 'Hindi likhai ON' : 'English/Hinglish likhai ON'); });
+    press('#hwAi', ()=>{ aiOn = !aiOn; try{ localStorage.setItem('hwAi', aiOn?'1':'0'); }catch(e){} setAi(); hint(aiOn ? '✨ Auto-correct ON — matlab ke hisaab se sahi karega' : '✨ Auto-correct OFF — jaisa pehchana waisa'); });
+    press('#hwScroll', ()=>{ passThru = !passThru; setPass(); hint(passThru ? '✋ Chat scroll kar sakte ho — wapas likhne ke liye ✋ dobara dabao' : 'Likhna chalu'); });
     press('#hwBs', ()=>{ if(strokes.length){ strokes = []; cur = null; redraw(); clearTimeout(timer); } else backspace(); });
-    press('#hwSp', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText(' ', s, s, 'end'); fire(el); last = null; mirror(); } });
-    press('#hwEnter', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText('\n', s, s, 'end'); fire(el); last = null; mirror(); } });
+    press('#hwSp', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText(' ', s, s, 'end'); fire(el); last = null; fixSeq++; } });
+    press('#hwEnter', ()=>{ const el = field(); if(el){ const s = el.value.length; el.setRangeText('\n', s, s, 'end'); fire(el); last = null; fixSeq++; } });
     press('#hwClr', ()=>{ strokes = []; cur = null; clearTimeout(timer); redraw(); });
-    press('#hwSend', ()=>{ const b = document.getElementById('chatSendBtn'); if(b) b.click(); setTimeout(mirror, 150); showCands([]); last = null; });
+    press('#hwSend', ()=>{ const b = document.getElementById('chatSendBtn'); if(b) b.click(); showCands([]); last = null; fixSeq++; });
     press('#hwClose', close);
+    cv.style.touchAction = 'none';
     cv.addEventListener('pointerdown',(e)=>{
       e.preventDefault(); cv.setPointerCapture(e.pointerId); clearTimeout(timer);
       if(!strokes.length) t0 = performance.now();
-      drawing = true; cur = [pt(e)]; ov.querySelector('#hwHint').style.opacity = 0; redraw();
+      drawing = true; cur = [pt(e)]; hint(''); redraw();
     });
     cv.addEventListener('pointermove',(e)=>{ if(!drawing) return; (e.getCoalescedEvents?e.getCoalescedEvents():[e]).forEach(ev=> cur.push(pt(ev))); redraw(); });
     const end = ()=>{ if(!drawing) return; drawing = false; if(cur && cur.length){ strokes.push(cur); } cur = null; redraw(); schedule(); };
     cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
     window.addEventListener('resize', size);
-    size(); mirror();
+    size(); place(); posTimer = setInterval(place, 300);
+    const b = document.getElementById('cxDrawBtn'); if(b) b.classList.add('on');
   }
   function close(){
-    if(!ov) return; clearTimeout(timer);
+    if(!ov) return; clearTimeout(timer); clearInterval(posTimer);
     window.removeEventListener('resize', size);
-    ov.remove(); ov = null; cv = null; ctx = null; strokes = []; cur = null; last = null;
+    ov.remove(); ov = null; cv = null; ctx = null; bar = null; strokes = []; cur = null; last = null; fixSeq++; passThru = false;
+    const b = document.getElementById('cxDrawBtn'); if(b) b.classList.remove('on');
     const el = field(); if(el) el.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function toggleFor(el){ if(ov) close(); else open(el); }
 
   const css = document.createElement('style');
   css.textContent = `
-  #hwOv{position:fixed;left:0;right:0;bottom:0;height:min(78vh,560px);z-index:2147483100;background:#14151a;border-top:1px solid #34363f;border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0);user-select:none;-webkit-user-select:none;touch-action:none}
-  #hwTop{padding:10px 12px 4px}
-  #hwPrev{max-height:64px;overflow:auto;background:#1d1f26;border:1px solid #2e313a;border-radius:12px;padding:8px 12px;color:#cfd0d4;font-size:17px;line-height:1.35;white-space:pre-wrap;word-break:break-word;min-height:40px}
-  #hwPrev.empty{color:#6d707a}
-  #hwCands{display:flex;gap:8px;padding:4px 12px;overflow-x:auto;min-height:44px;align-items:center}
-  #hwCands button{flex:none;height:38px;border-radius:19px;border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;font-size:17px;padding:0 14px}
+  #hwOv{position:fixed;inset:0;z-index:2147483100;pointer-events:none;user-select:none;-webkit-user-select:none}
+  #hwCv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:auto;background:rgba(8,9,12,.16);touch-action:none}
+  #hwOv.pass #hwCv{background:transparent}
+  #hwHint{position:absolute;left:0;right:0;top:38%;text-align:center;color:rgba(255,255,255,.75);font-size:19px;line-height:1.5;padding:0 28px;pointer-events:none;transition:opacity .3s;text-shadow:0 1px 6px #000,0 0 12px #000}
+  #hwBar{position:absolute;left:8px;right:8px;bottom:80px;display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+  #hwCands{gap:8px;overflow-x:auto;padding:2px 2px}
+  #hwCands button{flex:none;height:44px;border-radius:22px;border:1px solid #3a3d47;background:rgba(29,31,38,.96);color:#e6e7ea;font-size:19px;padding:0 16px}
   #hwCands button.main{background:#3a3550;border-color:#6a5fa0}
-  #hwPad{position:relative;flex:1;margin:4px 12px;border:1px dashed #3a3d47;border-radius:14px;background:#101114;overflow:hidden}
-  #hwPad canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-  #hwHint{position:absolute;left:0;right:0;top:42%;text-align:center;color:rgba(255,255,255,.35);font-size:15px;padding:0 20px;pointer-events:none;transition:opacity .3s}
-  #hwBar{display:flex;gap:6px;padding:6px 12px 10px}
-  #hwBar button{flex:1;height:44px;border-radius:12px;border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;font-size:16px;font-weight:600;padding:0}
-  #hwSp{flex:2!important}#hwSend{background:#2d4a3a!important;border-color:#3f6b52!important}#hwClose{background:#3a1d22!important;color:#ff8a98!important}`;
+  #hwBtns{display:flex;gap:6px;background:rgba(20,21,26,.94);border:1px solid #34363f;border-radius:16px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  #hwBtns button{flex:1;min-width:0;height:48px;border-radius:12px;border:1px solid #3a3d47;background:#23252d;color:#e6e7ea;font-size:19px;font-weight:600;padding:0}
+  #hwBtns button.on{background:#3a3550;border-color:#6a5fa0}
+  #hwSend{background:#2d4a3a!important;border-color:#3f6b52!important}#hwClose{background:#3a1d22!important;color:#ff8a98!important}`;
   document.head.appendChild(css);
   return { open, close, toggleFor };
 })();
@@ -26711,4 +26961,27 @@ const AIReply = (function(){
   }
   setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
   return { toggle, onIncoming };
+})();
+
+
+// ============================================================================
+// CHAT PLUS 16: PREMIUM HEADER CHAT BUTTON (#chatBtn)
+//   Gold gradient ring + soft glow + slow shimmer, SVG bubble icon, premium badge.
+// ============================================================================
+(function chatPremiumBtn(){
+  const s = document.createElement('style');
+  s.textContent = `
+  #chatBtn{width:40px!important;height:40px!important;border:0!important;overflow:visible;color:#fbbf24;
+    background:linear-gradient(145deg,#2a2112,#0f0c07)!important;
+    box-shadow:0 0 0 1.5px rgba(251,191,36,.85),0 0 0 4px rgba(251,191,36,.12),0 4px 14px rgba(251,191,36,.28),inset 0 1px 0 rgba(255,243,176,.25)!important;
+    transition:transform .15s,box-shadow .3s}
+  #chatBtn::before{content:"";position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none;
+    background:linear-gradient(115deg,transparent 35%,rgba(255,243,176,.35) 50%,transparent 65%);background-size:250% 100%;background-position:150% 0;animation:cpShine 4.5s ease-in-out infinite}
+  #chatBtn .chatPremIco{position:relative;filter:drop-shadow(0 1px 3px rgba(245,158,11,.55))}
+  #chatBtn:active{transform:scale(.92);box-shadow:0 0 0 1.5px #fbbf24,0 0 0 6px rgba(251,191,36,.2)!important}
+  #chatBtn .chatBadge{top:-6px!important;right:-6px!important;min-width:19px!important;height:19px!important;font-size:11px!important;
+    background:linear-gradient(135deg,#ff4d6d,#e11d48)!important;border:2px solid #0b0a0d!important;box-shadow:0 0 8px rgba(244,63,94,.7)}
+  @keyframes cpShine{0%,55%{background-position:150% 0}100%{background-position:-50% 0}}
+  @media (prefers-reduced-motion:reduce){#chatBtn::before{animation:none}}`;
+  document.head.appendChild(s);
 })();
