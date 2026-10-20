@@ -1091,9 +1091,13 @@ html main{overflow:hidden!important;padding:0!important}
 #fitw{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;align-items:center;gap:inherit;padding:0 12px;transform-origin:50% 0;box-sizing:border-box}
 /* ===== Wallpaper layers ===== */
 #wpw{position:fixed;inset:0;display:none;pointer-events:none;overflow:hidden;background:#000}
-#wpw .wpl{position:absolute;inset:0;background:#000 center/cover no-repeat;opacity:0;transition:opacity 1.5s ease;will-change:opacity}
+#wpw .wpl{position:absolute;inset:0;background:#000 center/cover no-repeat;opacity:0;transition:opacity 1.5s ease;will-change:opacity,transform}
 #wpw .wpl.on{opacity:1}
 @keyframes wpkb{from{transform:scale(1)}to{transform:scale(1.13)}}
+@keyframes wpdr{0%,100%{translate:0 0;scale:1.06}25%{translate:-1.3% -.8%;scale:1.075}50%{translate:-.4% 1.1%;scale:1.09}75%{translate:1.3% .4%;scale:1.07}}
+#wpw .wpl video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;background:transparent}
+#wpw .wpl.isv video{display:block}
+.wpt.v::before{content:"▶";position:absolute;left:6px;bottom:4px;font-size:11px;color:#fff;text-shadow:0 1px 3px #000;z-index:1}
 #wpd{position:absolute;inset:0}
 /* ===== Wallpaper panel ===== */
 #mine .wph{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 8px}
@@ -1175,33 +1179,40 @@ applyMob();
 
 /* ================= 3) WALLPAPER MANAGER + SLIDESHOW ================= */
 const bgEl=$('#bg');
-const wpw=document.createElement('div');wpw.id='wpw';wpw.innerHTML='<div class="wpl"></div><div class="wpl"></div><div id="wpd"></div>';bgEl.after(wpw);
-const layers=[...wpw.querySelectorAll('.wpl')],dimEl=$('#wpd');let act=0,tm=0,prev=null;
+const wpw=document.createElement('div');wpw.id='wpw';wpw.innerHTML='<div class="wpl"><video muted loop playsinline preload="auto"></video></div><div class="wpl"><video muted loop playsinline preload="auto"></video></div><div id="wpd"></div>';bgEl.after(wpw);
+const layers=[...wpw.querySelectorAll('.wpl')],vids=layers.map(l=>l.querySelector('video')),dimEl=$('#wpd');vids.forEach(v=>{v.muted=true;v.defaultMuted=true});let act=0,tm=0,prev=null;
 let dbp;const db=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('fdwp',1);r.onupgradeneeded=()=>r.result.createObjectStore('w',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}));
 const tx=(m,fn)=>db().then(d=>new Promise((res,rej)=>{const q=fn(d.transaction('w',m).objectStore('w'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
 const dbAll=()=>tx('readonly',s=>s.getAll()),dbAdd=r=>tx('readwrite',s=>s.add(r)),dbDel=id=>tx('readwrite',s=>s.delete(id)),dbClr=()=>tx('readwrite',s=>s.clear()),dbGet=id=>tx('readonly',s=>s.get(id));
-const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,kb:false,onlyRun:false,night:false};
+const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,kb:false,drift:true,onlyRun:false,night:false};
 let ST=Object.assign({},DEF,g('fdwp',{}));const save=()=>w('fdwp',ST);
 let L=[];const U=new Map();
 function vis(){const hr=new Date().getHours(),n=ST.night&&(hr>=21||hr<6),dm=Math.min(92,ST.dim+(n?25:0));
- layers.forEach(l=>{l.style.backgroundSize=ST.fit;l.style.filter='brightness('+ST.bri/100+') saturate('+ST.sat/100+')'});
+ vids.forEach(v=>v.style.objectFit=ST.fit);layers.forEach(l=>{l.style.backgroundSize=ST.fit;l.style.filter='brightness('+ST.bri/100+') saturate('+ST.sat/100+')'});
  const a=(dm/100).toFixed(3),v=(ST.vig/100*.9).toFixed(3);
  dimEl.style.background='radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,'+v+')),linear-gradient(rgba(0,0,0,'+a+'),rgba(0,0,0,'+a+'))'}
 async function urlOf(id){if(U.has(id))return U.get(id);const r=await dbGet(id);if(!r)return null;const u=URL.createObjectURL(r.blob);U.set(id,u);
  if(U.size>6)for(const k of U.keys()){if(k!==id&&k!==ST.cur&&k!==prev){URL.revokeObjectURL(U.get(k));U.delete(k);break}}return u}
-async function showId(id,instant){const u=await urlOf(id);if(!u)return false;
- await new Promise(r=>{const i=new Image();i.onload=i.onerror=()=>r();i.src=u;if(i.decode)i.decode().then(r,r)});
- const n=1-act,Ln=layers[n],Lo=layers[act],d=instant?'0s':ST.fade+'s';
- Ln.style.backgroundImage='url("'+u+'")';Ln.style.transitionDuration=d;Lo.style.transitionDuration=d;
- Ln.style.animation='none';void Ln.offsetWidth;Ln.style.animation=ST.kb?'wpkb '+Math.max(25,(ST.mode==='show'?ST.int:60)+ST.fade+2)+'s linear forwards':'';
- Ln.classList.add('on');Lo.classList.remove('on');act=n;prev=ST.cur;ST.cur=id;save();mark();return true}
+async function showId(id,instant){const it=L.find(x=>x.id===id),isV=!!(it&&it.type==='video'),u=await urlOf(id);if(!u)return false;
+ const n=1-act,Ln=layers[n],Lo=layers[act],vn=vids[n],vo=vids[act],d=instant?'0s':ST.fade+'s';
+ if(isV){vn.src=u;try{vn.load()}catch(e){}
+  const ok=await new Promise(r=>{const t=setTimeout(()=>r(false),8000);vn.onloadeddata=()=>{clearTimeout(t);r(true)};vn.onerror=()=>{clearTimeout(t);r(false)}});
+  if(!ok){toast('Ye video chal nahi raha — mp4 (H.264) ya webm try karo');return false}
+  vn.currentTime=0;vn.play().catch(()=>{});Ln.style.backgroundImage=it.tu?'url("'+it.tu+'")':'';Ln.classList.add('isv')}
+ else{await new Promise(r=>{const i=new Image();i.onload=i.onerror=()=>r();i.src=u;if(i.decode)i.decode().then(r,r)});
+  vn.pause();Ln.classList.remove('isv');Ln.style.backgroundImage='url("'+u+'")'}
+ Ln.style.transitionDuration=d;Lo.style.transitionDuration=d;
+ const an=[];if(ST.kb)an.push('wpkb '+Math.max(25,(ST.mode==='show'?ST.int:60)+ST.fade+2)+'s linear forwards');if(ST.drift)an.push('wpdr 30s ease-in-out infinite');
+ Ln.style.animation='none';void Ln.offsetWidth;Ln.style.animation=an.join(',');
+ Ln.classList.add('on');Lo.classList.remove('on');act=n;prev=ST.cur;ST.cur=id;save();mark();
+ setTimeout(()=>{if(!Lo.classList.contains('on')&&vo!==vids[act]){vo.pause();vo.removeAttribute('src');try{vo.load()}catch(e){}Lo.classList.remove('isv')}},(instant?0:ST.fade*1000)+300);return true}
 function nextId(dir){if(!L.length)return null;
  if(ST.order==='shuf'&&L.length>1){let k;do{k=L[Math.floor(Math.random()*L.length)].id}while(k===ST.cur);return k}
  const i=L.findIndex(x=>x.id===ST.cur);return L[(i+dir+L.length)%L.length].id}
 function sched(){clearTimeout(tm);if(ST.mode!=='show'||L.length<2)return;tm=setTimeout(tick,Math.max(5,ST.int)*1000)}
 function tick(){if(document.hidden||(ST.onlyRun&&$('#start').textContent!=='Pause')){tm=setTimeout(tick,4000);return}showId(nextId(1)).then(sched)}
 function nextNow(){if(ST.mode==='none'||L.length<2)return;clearTimeout(tm);showId(nextId(1)).then(sched)}
-function apply(){clearTimeout(tm);const off=ST.mode==='none'||!L.length;wpw.style.display=off?'none':'block';
+function apply(){clearTimeout(tm);const off=ST.mode==='none'||!L.length;wpw.style.display=off?'none':'block';if(off)vids.forEach(v=>v.pause());
  if(!off){if(!ST.cur||!L.some(x=>x.id===ST.cur))ST.cur=L[0].id;showId(ST.cur,true).then(()=>sched())}
  ui()}
 /* bg ka blur/zoom wallpaper layers par bhi */
@@ -1215,22 +1226,28 @@ async function prep(f){let b;try{b=await createImageBitmap(f)}catch(e){b=await n
  const thumb=await mk(Math.min(1,320/Math.max(W0,H0)),.8);
  const blob=(sc===1&&f.size<1.8e6&&/^image\/(jpeg|png|webp)$/.test(f.type))?f:await mk(sc,.88);
  return{name:(f.name||'photo').replace(/\.[^.]+$/,'').slice(0,40),blob,thumb,w:W0,h:H0,t:Date.now()}}
-async function addFiles(fl){const fs2=[...fl].filter(f=>/^image\//.test(f.type));if(!fs2.length)return;toast('Photos save ho rahi hain…');let n=0,first=null,last=null;
+async function prepVideo(f){const u=URL.createObjectURL(f),v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=u;
+ try{await new Promise((ok,no)=>{v.onloadeddata=ok;v.onerror=()=>no(new Error('codec'));setTimeout(()=>no(new Error('timeout')),20000)});
+  try{v.currentTime=Math.min(1,(v.duration||2)/3);await new Promise(r=>{v.onseeked=r;setTimeout(r,2500)})}catch(e){}
+  const W0=v.videoWidth,H0=v.videoHeight,s=Math.min(1,320/Math.max(W0,H0)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(W0*s));c.height=Math.max(1,Math.round(H0*s));c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  const thumb=await new Promise(r=>c.toBlob(r,'image/jpeg',.8));
+  return{name:(f.name||'video').replace(/\.[^.]+$/,'').slice(0,40),blob:f,thumb,w:W0,h:H0,t:Date.now(),type:'video'}}finally{URL.revokeObjectURL(u)}}
+async function addFiles(fl){const fs2=[...fl].filter(f=>/^(image|video)\//.test(f.type));if(!fs2.length)return;toast('Photos / video save ho rahe hain…');let n=0,first=null,last=null;
  for(const f of fs2){if(L.length>=80){toast('Max 80 photos');break}
-  try{const r=await prep(f),id=await dbAdd(r);L.push({id,name:r.name,tu:URL.createObjectURL(r.thumb)});if(first===null)first=id;last=id;n++}catch(e){toast('Save nahi hui (browser storage block?)')}}
+  try{const isV=/^video\//.test(f.type);if(isV&&f.size>300e6){toast('Video 300MB se chhota rakho');continue}const r=isV?await prepVideo(f):await prep(f),id=await dbAdd(r);L.push({id,name:r.name,type:isV?'video':'image',tu:URL.createObjectURL(r.thumb)});if(first===null)first=id;last=id;n++}catch(e){toast(/codec/.test(e&&e.message)?'Ye video format browser me nahi chalta — mp4 (H.264) ya webm do':'Save nahi hui (browser storage block?)')}}
  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
- if(!n)return;if(n>1){ST.mode='show';ST.cur=first}else{ST.mode='one';ST.cur=last}save();apply();toast('✔ '+n+' photo save ho gayi')}
+ if(!n)return;if(n>1){ST.mode='show';ST.cur=first}else{ST.mode='one';ST.cur=last}save();apply();toast('✔ '+n+' file save ho gayi')}
 async function delId(id){try{await dbDel(id)}catch(e){}const i=L.findIndex(x=>x.id===id);if(i<0)return;URL.revokeObjectURL(L[i].tu);L.splice(i,1);if(U.has(id)){URL.revokeObjectURL(U.get(id));U.delete(id)}
  if(ST.cur===id){ST.cur=null;if(!L.length)ST.mode='none'}save();apply()}
 /* ---- UI ---- */
 const mine=$('#mine');const tabB=$('.tabs [data-t="mine"]');if(tabB)tabB.textContent='📷 Meri';
-mine.innerHTML='<div class="wph"><label class="pill" style="background:var(--ac);border-color:transparent;color:#fff">＋ Photos jodo<input type="file" id="wpAdd" accept="image/*" multiple hidden></label><button class="pill" id="wpOff">🚫 Wallpaper hatao</button><button class="pill" id="wpClr">🗑 Sab photos</button></div>'
+mine.innerHTML='<div class="wph"><label class="pill" style="background:var(--ac);border-color:transparent;color:#fff">＋ Photos / Video jodo<input type="file" id="wpAdd" accept="image/*,video/*" multiple hidden></label><button class="pill" id="wpOff">🚫 Wallpaper hatao</button><button class="pill" id="wpClr">🗑 Sab photos</button></div>'
 +'<p class="mu" style="margin:0">Photos is device me hamesha save rehti hain. Tap = lagao · ✕ = hatao</p><div class="wpm" id="wpGrid"></div>'
 +'<div class="wpseg" id="wpMode"><button data-wm="none">Default</button><button data-wm="one">Ek photo</button><button data-wm="show">Slideshow</button></div>'
 +'<div id="wpSS"><label class="mu">⏱ Badlo har <select id="wpInt"><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="600">10 min</option><option value="900">15 min</option><option value="1800">30 min</option><option value="3600">1 ghanta</option></select></label>'
 +'<label class="mu">🔀 Order <select id="wpOrd"><option value="seq">Ek ke baad ek</option><option value="shuf">Random</option></select></label>'
 +'<label class="mu">🌗 Fade speed: <b id="wpFadeV"></b> sec<input type="range" id="wpFade" min="0" max="6" step=".5"></label>'
-+'<label class="opt"><input type="checkbox" id="wpKb"> 🎬 Dheere zoom (Ken Burns)</label><label class="opt"><input type="checkbox" id="wpRun"> ⏯ Sirf timer chalte time badlo</label>'
++'<label class="opt"><input type="checkbox" id="wpDr"> 🌊 Wallpaper halka hilta rahe (drift)</label><label class="opt"><input type="checkbox" id="wpKb"> 🎬 Dheere zoom (Ken Burns)</label><label class="opt"><input type="checkbox" id="wpRun"> ⏯ Sirf timer chalte time badlo</label>'
 +'<button class="pill" id="wpNext">⏭ Abhi agli photo (W)</button></div>'
 +'<h4>🎛 Adjust</h4><label class="mu">🖼 Fit <select id="wpFit"><option value="cover">Poori screen (crop)</option><option value="contain">Poori photo (kinare kaale)</option></select></label>'
 +'<label class="mu">🌑 Dim: <b id="wpDimV"></b>%<input type="range" id="wpDim" min="0" max="85" step="1"></label>'
@@ -1238,24 +1255,25 @@ mine.innerHTML='<div class="wph"><label class="pill" style="background:var(--ac)
 +'<label class="mu">☀ Brightness: <b id="wpBriV"></b>%<input type="range" id="wpBri" min="40" max="140" step="1"></label>'
 +'<label class="mu">🎨 Colour: <b id="wpSatV"></b>%<input type="range" id="wpSat" min="0" max="160" step="1"></label>'
 +'<label class="opt"><input type="checkbox" id="wpNight"> 🌙 Raat (9pm–6am) me extra dark</label><button class="pill" id="wpRst">↺ Adjust reset</button>';
-const BIND=[['wpInt','int','n'],['wpOrd','order','s'],['wpFade','fade','n'],['wpKb','kb','b'],['wpRun','onlyRun','b'],['wpFit','fit','s'],['wpDim','dim','n'],['wpVig','vig','n'],['wpBri','bri','n'],['wpSat','sat','n'],['wpNight','night','b']];
+const BIND=[['wpInt','int','n'],['wpOrd','order','s'],['wpFade','fade','n'],['wpKb','kb','b'],['wpDr','drift','b'],['wpRun','onlyRun','b'],['wpFit','fit','s'],['wpDim','dim','n'],['wpVig','vig','n'],['wpBri','bri','n'],['wpSat','sat','n'],['wpNight','night','b']];
 function ui(){BIND.forEach(([id,k,t])=>{const e=$('#'+id);if(!e)return;if(t==='b')e.checked=!!ST[k];else if(document.activeElement!==e)e.value=ST[k];const v=$('#'+id+'V');if(v)v.textContent=ST[k]});
  $$('#wpMode button').forEach(b=>b.classList.toggle('on',b.dataset.wm===ST.mode));$('#wpSS').style.display=ST.mode==='show'?'block':'none';vis()}
 function mark(){$$('#wpGrid .wpt').forEach(b=>b.classList.toggle('on',+b.dataset.id===ST.cur&&ST.mode!=='none'))}
 function grid(){const gd=$('#wpGrid');gd.innerHTML='';if(!L.length){gd.innerHTML='<div class="wpe">Abhi koi photo nahi. “＋ Photos jodo” dabao — ek saath kai photos chun sakte ho.</div>';return}
- L.forEach(x=>{const b=document.createElement('button');b.className='wpt';b.dataset.id=x.id;b.title=x.name;b.style.backgroundImage='url("'+x.tu+'")';
+ L.forEach(x=>{const b=document.createElement('button');b.className='wpt'+(x.type==='video'?' v':'');b.dataset.id=x.id;b.title=x.name;b.style.backgroundImage='url("'+x.tu+'")';
   b.onclick=e=>{if(e.target.closest('i'))return;if(ST.mode==='none')ST.mode='one';clearTimeout(tm);wpw.style.display='block';ST.cur=x.id;save();showId(x.id).then(sched);ui()};
   const d=document.createElement('i');d.textContent='✕';d.title='Ye photo hatao';d.onclick=e=>{e.stopPropagation();if(confirm('Ye photo hata dein?'))delId(x.id).then(grid)};b.append(d);gd.append(b)});mark()}
 $('#wpAdd').onchange=e=>{addFiles(e.target.files).then(()=>{grid();e.target.value=''})};
 $('#wpOff').onclick=()=>{ST.mode='none';save();try{localStorage.removeItem('bg')}catch(x){}bgEl.style.background='';lastSig=sig();apply();toast('Wallpaper hata diya — default screen')};
 $('#wpClr').onclick=async()=>{if(!L.length||!confirm('Sabhi saved photos hata dein?'))return;try{await dbClr()}catch(e){}L.forEach(x=>URL.revokeObjectURL(x.tu));U.forEach(u=>URL.revokeObjectURL(u));U.clear();L=[];ST.mode='none';ST.cur=null;save();apply();grid()};
 $$('#wpMode button').forEach(b=>b.onclick=()=>{const m=b.dataset.wm;if(m!=='none'&&!L.length){toast('Pehle photos jodo');return}ST.mode=m;if(m==='none'){try{localStorage.removeItem('bg')}catch(x){}bgEl.style.background='';lastSig=sig()}save();apply()});
-BIND.forEach(([id,k,t])=>{const e=$('#'+id);e.oninput=e.onchange=()=>{ST[k]=t==='b'?e.checked:t==='n'?+e.value:e.value;save();ui();if(k==='int'||k==='order')sched();if(k==='kb')showId(ST.cur,true)}});
+BIND.forEach(([id,k,t])=>{const e=$('#'+id);e.oninput=e.onchange=()=>{ST[k]=t==='b'?e.checked:t==='n'?+e.value:e.value;save();ui();if(k==='int'||k==='order')sched();if(k==='kb'||k==='drift')showId(ST.cur,true)}});
 $('#wpNext').onclick=nextNow;
 $('#wpRst').onclick=()=>{['dim','vig','bri','sat','fit','night'].forEach(k=>ST[k]=DEF[k]);save();ui()};
 addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(e.key.toLowerCase()==='w'&&ST.mode!=='none'&&L.length>1)nextNow()});
 setInterval(vis,600000);
-(async()=>{try{L=(await dbAll()).map(r=>({id:r.id,name:r.name,tu:URL.createObjectURL(r.thumb||r.blob)}))}catch(e){L=[]}
+document.addEventListener('visibilitychange',()=>{const v=vids[act];if(!v||!layers[act].classList.contains('isv'))return;if(document.hidden)v.pause();else v.play().catch(()=>{})});
+(async()=>{try{L=(await dbAll()).map(r=>({id:r.id,name:r.name,type:r.type==='video'?'video':'image',tu:URL.createObjectURL(r.thumb||r.blob)}))}catch(e){L=[]}
  if(ST.mode!=='none'&&!L.length){ST.mode='none';save()}ui();grid();apply()})();
 })();
 </script>
