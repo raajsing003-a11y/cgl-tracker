@@ -21991,6 +21991,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   async function xSend(msg, fileData, preview, noReply){
     const peer = chatPeer;
     if(!peer) return false;
+    const __t0 = performance.now();   // latency probe: window.__cxPerf
     if(window.cxCanSend && !(await window.cxCanSend(peer))) return false;
     const me = chatMyKey(), b = chatBase(), TS = { '.sv': 'timestamp' };
     const id = window.__fbKey(`${b}/_chats/${peer.pair}/m`);
@@ -22026,6 +22027,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
         const p1 = window.__fbUpdate(up), p2 = window.__fbSet(fp, fv);
         await Promise.all([p1, p2]);
       }else await window.__fbUpdate(up);
+      try{ const pf = (window.__cxPerf = window.__cxPerf || []); pf.push(Math.round(performance.now() - __t0)); if(pf.length > 30) pf.shift(); }catch(_){}
       chatPending.delete(id);
       chatRefreshTicks();
       return true;
@@ -29239,4 +29241,74 @@ const AIReply = (function(){
       }
     }catch(e){}
   }, 400);
+})();
+
+/* ===== CHAT PLUS 20: chat ke ANDAR bhi 🔒 Lock button (header me Aa ke baad) =====
+   PIN set hai -> tap = chat band + turant lock (wapas kholne par PIN). PIN set nahi -> PIN set karne ka screen.
+   Inbox wala 🔒/🔓 button jaisa tha waisa hi hai. */
+(function chatPlus20(){
+  function inject(){
+    const conv = document.getElementById('chatConv'); if(!conv || conv.hidden) return;
+    const h = conv.querySelector('.chatHead'); if(!h) return;
+    let b = document.getElementById('cxConvLock');
+    if(!b){
+      b = document.createElement('button'); b.type = 'button'; b.id = 'cxConvLock'; b.className = 'chatIconBtn'; b.setAttribute('aria-label', 'Chat lock');
+      b.addEventListener('click', ()=>{
+        try{
+          if(chatHasPin()){ chatClose(); }
+          else{ chatShowPinPane('set'); }
+        }catch(e){}
+      });
+      h.insertBefore(b, document.getElementById('cxMoreBtn') || null);
+    }
+    const t = chatHasPin() ? '🔒' : '🔓'; if(b.textContent !== t) b.textContent = t;
+  }
+  setInterval(()=>{ try{ inject(); }catch(e){} }, 800);
+})();
+
+/* ===== CHAT PLUS 21: HEADER FIT — buttons jyada hone se 🔒 lock screen se bahar nahi jaana chahiye =====
+   Inbox + chat header me bahut saare buttons (👁 🎨 📞 Aa 🔒 ⋮ …) the; ab sab chhote, kabhi shrink/clip nahi hote, sirf naam/title shrink hota hai (… ke saath). */
+(function chatPlus21(){
+  if(document.getElementById('cxP21css')) return;
+  const st = document.createElement('style'); st.id = 'cxP21css';
+  st.textContent = `
+  #chatOverlay .chatHead{gap:2px!important;padding-left:8px!important;padding-right:8px!important;overflow:visible!important;}
+  #chatOverlay .chatHead > *{flex-shrink:0;}
+  #chatOverlay .chatHead .chatTitle,#chatOverlay .chatHead .chatHeadTxt{flex:1 1 0!important;min-width:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #chatOverlay .chatHead .chatIconBtn,#chatOverlay .chatHead .cxCall,#chatOverlay .chatHead .cxMore{width:34px!important;min-width:34px!important;height:38px!important;padding:0!important;font-size:18px;flex:0 0 auto!important;display:inline-flex;align-items:center;justify-content:center;}
+  #chatOverlay .chatHead .cxCall,#chatOverlay .chatHead .cxMore{margin-left:0!important;}
+  #chatOverlay #chatLockBtn{margin-left:0!important;order:99;}
+  #chatOverlay #cxConvLock{order:98;}`;
+  document.head.appendChild(st);
+})();
+
+/* ===== CHAT PLUS 22: chat kholte hi seedha LATEST message par (scroll animation nahi) =====
+   Pehle: .chatMsgs{scroll-behavior:smooth} + messages ek-ek karke aate the -> upar se neeche scroll hota dikhta tha.
+   Ab: instant scroll; chat khulne ke baad ~2.5s tak (jab tak user khud scroll na kare) har naye message / image / video load par
+   paint se pehle hi bottom par pin rehta hai, to latest message wahi se khulta hai. */
+(function chatPlus22(){
+  const st = document.createElement('style');
+  st.textContent = '#chatOverlay .chatMsgs{scroll-behavior:auto!important;}';
+  document.head.appendChild(st);
+  let pinUntil = 0, mo = null, boundBox = null;
+  const pin = ()=>{ if(Date.now() > pinUntil) return; const b = document.getElementById('chatMsgs'); if(b) b.scrollTop = b.scrollHeight; };
+  function bind(){
+    const box = document.getElementById('chatMsgs'); if(!box || boundBox === box) return; boundBox = box;
+    mo = new MutationObserver(pin); mo.observe(box, { childList: true, subtree: true });
+    box.addEventListener('load', pin, true);            // img/video load hone par height badhti hai
+    box.addEventListener('loadedmetadata', pin, true);
+    const stop = ()=>{ pinUntil = 0; };
+    box.addEventListener('touchmove', stop, { passive: true });
+    box.addEventListener('wheel', stop, { passive: true });
+    box.addEventListener('pointerdown', (e)=>{ if(e.target && e.target.closest && e.target.closest('#chatOlderWrap')) stop(); }, true);
+  }
+  if(typeof chatOpenConv === 'function'){
+    const orig = chatOpenConv;
+    chatOpenConv = async function(name){
+      bind(); pinUntil = Date.now() + 2500;
+      const r = orig.apply(this, arguments);
+      pin();
+      return r;
+    };
+  }
 })();
