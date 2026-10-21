@@ -24045,7 +24045,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const hiddenFor = (name)=>{
     if(!name) return false;
     if(chatSeenKey(name) === chatMyKey()) return false;
-    if(myHidden()) return true;                              // reciprocal
+    // one-way: apna status chhupane par bhi dusron ka dikhta rahe (sirf jisne khud chhupaya uska hidden)
     const e = PROF[chatSeenKey(name)];
     return !!(e && e.o === 0);
   };
@@ -24131,7 +24131,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       if(!on){ await window.__fbSet(`${chatBase()}/presence/${presenceKey(myName)}`, 0); }
       else { markMyPresence(); }
     }catch(e){}
-    toast(on ? '🟢 Online status ab sabko dikhega' : '⚪ Online status chhupa diya (tumhe bhi dusron ka nahi dikhega)');
+    toast(on ? '🟢 Online status ab sabko dikhega' : '⚪ Tumhara online status chhup gaya (dusron ka tumhe dikhta rahega)');
   }
 
   // ---------- image -> 128px square jpeg ----------
@@ -24213,7 +24213,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     $('cxpDel').style.display = ME.p ? '' : 'none';
     const on = !myHidden();
     $('cxpTg').classList.toggle('on', on);
-    $('cxpSwSub').textContent = on ? 'Sabko tumhara Online / last active dikhta hai' : 'Chhupa hua — tumhe bhi dusron ka status nahi dikhega';
+    $('cxpSwSub').textContent = on ? 'Sabko tumhara Online / last active dikhta hai' : 'Chhupa hua — tumhe dusron ka status dikhta rahega';
   }
   function openSheet(){ styles(); ensureSheet(); refreshMe(); paintSheet(); $('cxpOv').classList.add('open'); }
 
