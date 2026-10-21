@@ -1,3 +1,21 @@
+/* ===== CXPOLL: chat/call/camera UI "inject" pollers sirf tab chalte hain jab wo screen khuli ho (aur tab hidden na ho) =====
+   Pehle 20+ setInterval (120-800ms) har waqt DOM scan karte the, chat band ho tab bhi -> main thread/battery. Ab idle me ~0 kaam.
+   Chat khulte hi kick('chat') se sab ek baar turant chalte hain (buttons pehle se jaldi). Band hone par ek aakhri cleanup run. */
+var cxPoll = (function(){
+  const reg = [], ids = { chat: 'chatOverlay', call: 'callOv', cam: 'cxCam' };
+  const isOpen = (sc)=>{ const o = document.getElementById(ids[sc]); return !!(o && o.classList.contains('open')); };
+  function poll(scope, fn, ms){
+    const r = { scope, fn, was: false }; reg.push(r);
+    return setInterval(()=>{
+      if(document.hidden) return;
+      const o = isOpen(scope);
+      if(o || r.was){ r.was = o; try{ const p = fn(); if(p && p.catch) p.catch(()=>{}); }catch(e){} }
+    }, ms);
+  }
+  poll.kick = (scope)=>{ reg.forEach(r=>{ if(r.scope === scope){ r.was = true; try{ const p = r.fn(); if(p && p.catch) p.catch(()=>{}); }catch(e){} } }); };
+  return poll;
+})();
+
 // BUILD 20261020-1330 (Chat Lock) + Chat Extras + Chat Pro chunk 1
 // START_DATE / TOTAL_DAYS used to be fixed constants. They are now `let`
 // because each player can set their own custom target (how many days,
@@ -20951,7 +20969,7 @@ if('serviceWorker' in navigator){
 //   _chats/{pair}/r/{userKey}     us user ne kab tak padha (ticks ke liye)
 //   _chatIdx/{userKey}/{peerKey}  {n,l,ts,f,u}  inbox row: naam, last msg, time, kisne bheja, unread count
 //   _chatOwner/{userKey}          uid (optional rules ke liye, FIREBASE_RULES_CHAT.txt dekho)
-const CHAT_PAGE = 40;
+const CHAT_PAGE = 25;   // FAST: chat khulte hi sirf aakhri 25 (pehle 40); purane "Older" button se
 const CHAT_MAX_LEN = 1000;
 let chatInited = false;
 let chatIdx = {};
@@ -21397,8 +21415,7 @@ function chatOnMsg(peer, id, m){
   }
   if(last === null || id > last){
     // normal case: bottom me jodo
-    const allEls = box.querySelectorAll('.cmsg');
-    const lastEl = allEls.length ? allEls[allEls.length - 1] : null;
+    let lastEl = box.lastElementChild; while(lastEl && !lastEl.classList.contains('cmsg')) lastEl = lastEl.previousElementSibling;
     const lastDay = lastEl ? new Date(Number(lastEl.dataset.ts)).toDateString() : null;
     const day = new Date(Number(m.ts) || Date.now()).toDateString();
     let html = '';
@@ -21413,7 +21430,7 @@ function chatOnMsg(peer, id, m){
   else if(!mine){ const np = chatEl('chatNewPill'); if(np) np.hidden = false; }
   if(!mine) chatMarkRead();
   if(!mine){ try{ AIReply.onIncoming(peer, id, m); }catch(e){} }
-  else { try{ AIReply.onMine(); }catch(e){} }
+  else { try{ AIReply.onMine(m); }catch(e){} }
 }
 function chatRenderAll(keepPos){
   const box = chatEl('chatMsgs');
@@ -21483,7 +21500,7 @@ function chatMarkRead(){
     if(needIdx) up[`${chatBase()}/_chatIdx/${chatMyKey()}/${p.key}/u`] = 0;
     if(needRead) chatReadSentTs = chatLastIncomingTs;
     window.__fbUpdate(up).catch(()=>{});
-  }, 400);
+  }, 120);
 }
 
 // ---------- send ----------
@@ -22570,6 +22587,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const starSet = ()=> new Set(LS(P() + 'star:' + pairOf(), []));
   const clrTs = ()=> LS(P() + 'clr:' + pairOf(), 0);
   const blockedByMe = ()=> new Set(LS(P() + 'blk', []));
+  // FAST: bubble render (har message ke liye) me localStorage JSON.parse baar-baar nahi — raw string same ho to parsed Set/number reuse (sirf padhne wale; badalne wale upar ke helpers hi)
+  const __roC = new Map();
+  const __ro = (k, mk)=>{ let raw = null; try{ raw = localStorage.getItem(k); }catch(_){} const c = __roC.get(k); if(c && c.raw === raw) return c.v; const v = mk(); __roC.set(k, { raw, v }); return v; };
+  const hidRO = ()=>{ const k = P() + 'hid:' + pairOf(); return __ro(k, ()=> new Set(LS(k, []))); };
+  const starRO = ()=>{ const k = P() + 'star:' + pairOf(); return __ro(k, ()=> new Set(LS(k, []))); };
+  const clrRO = ()=>{ const k = P() + 'clr:' + pairOf(); return __ro(k, ()=> LS(k, 0)); };
+  const blkRO = ()=>{ const k = P() + 'blk'; return __ro(k, ()=> new Set(LS(k, []))); };
   const mutedSet = ()=> new Set(LS(P() + 'mute', []));
   const previewOf = (m)=> m.k === 'i' ? '📷 Photo' : m.k === 'v' ? '🎬 Video' : m.k === 'a' ? '🎤 Voice message' : m.k === 'f' ? '📄 ' + ((m.a && m.a.n) || 'File') : m.k === 'c' ? '📞 Call' : String(m.t || '');
   const nameOf = (f)=> f === chatMyKey() ? 'Tum' : (chatPeer ? chatPeer.name : '');
@@ -22644,8 +22668,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(!chatPeer || !m) return prevBubble(id, m);
     const x = X[id] || {};
     const me = chatMyKey();
-    if(hidSet().has(id) || (Number(m.ts) || 0) <= clrTs()) return '';
-    if(m.f !== me && blockedByMe().has(m.f)) return '';
+    if(hidRO().has(id) || (Number(m.ts) || 0) <= clrRO()) return '';
+    if(m.f !== me && blkRO().has(m.f)) return '';
     let mm = m;
     if(x.del) mm = { f: m.f, ts: m.ts, t: '🚫 Ye message delete kar diya gaya' };
     else if(x.ed && x.ed.t != null) mm = Object.assign({}, m, { t: x.ed.t });
@@ -22657,7 +22681,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(pre) h = h.replace('<div class="cbub">', '<div class="cbub">' + pre);
     let mark = '';
     if(PIN && PIN.id === id) mark += '📌 ';
-    if(starSet().has(id)) mark += '⭐ ';
+    if(starRO().has(id)) mark += '⭐ ';
     if(x.ed && !x.del) mark += 'edited ';
     if(mark) h = h.replace('<span class="cmeta">', '<span class="cmeta">' + mark);
     const rx = x.rx && !x.del ? x.rx : null;
@@ -22816,7 +22840,15 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   function scrollToMsg(id){
     const el = $('chatMsgs') && $('chatMsgs').querySelector(`.cmsg[data-id="${CSS.escape(id)}"]`);
-    if(!el){ toast('Ye message abhi load nahi hai — "Purane messages" dabao.'); return; }
+    if(!el){
+      if(SRC.map.has(id)){   // search se mila purana message: uske baad ke sab msgs screen par jodo, phir wahan jao
+        for(const [k, v] of SRC.map) if(k >= id) { chatMsgs.set(k, v); SRC.map.delete(k); }
+        chatRenderAll(true);
+        const el2 = $('chatMsgs') && $('chatMsgs').querySelector(`.cmsg[data-id="${CSS.escape(id)}"]`);
+        if(el2){ el2.scrollIntoView({ block: 'center' }); el2.classList.add('flash'); setTimeout(()=> el2.classList.remove('flash'), 1600); return; }
+      }
+      toast('Ye message abhi load nahi hai — "Purane messages" dabao.'); return;
+    }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(()=> el.classList.remove('flash'), 1600);
   }
 
@@ -22923,20 +22955,39 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
 
   // ---------------- search ----------------
+  // SEARCH: chat ki POORI history (sirf text/meta, render nahi) alag cache me laao — screen par sirf 25 rehte hain, search sab me hota hai.
+  const SRC = { pair: null, map: new Map(), done: false };
+  const srcMsg = (id)=> chatMsgs.get(id) || SRC.map.get(id);
+  async function loadAllForSearch(){
+    const peer = chatPeer; if(!peer) return;
+    if(SRC.pair !== peer.pair){ SRC.pair = peer.pair; SRC.map = new Map(); SRC.done = false; }
+    const res = $('cxSearchRes');
+    while(chatPeer === peer && !SRC.done){
+      let oldest = null;
+      for(const k of chatMsgs.keys()) if(oldest === null || k < oldest) oldest = k;
+      for(const k of SRC.map.keys()) if(oldest === null || k < oldest) oldest = k;
+      if(oldest === null){ SRC.done = true; break; }
+      const arr = await window.__fbChatOlder(`${chatBase()}/_chats/${peer.pair}/m`, oldest, 400);
+      arr.forEach(([id, m])=> SRC.map.set(id, m));
+      if(arr.length < 400) SRC.done = true;
+      if(res && !($('cxSearchIn') && $('cxSearchIn').value.trim())) res.innerHTML = '<small style="padding:10px 14px;display:block;color:var(--muted)">Purane messages scan ho rahe hain… (' + (chatMsgs.size + SRC.map.size) + ')</small>';
+    }
+  }
   async function openSearch(){
     const bar = $('cxSearchBar'); bar.classList.add('on'); const inp = $('cxSearchIn'); inp.value = ''; $('cxSearchRes').innerHTML = ''; inp.focus();
     if(searchBusy) return; searchBusy = true;
     $('cxSearchRes').innerHTML = '<small style="padding:10px 14px;display:block;color:var(--muted)">Purane messages load ho rahe hain…</small>';
-    try{ let n = 0; while(chatPeer && !chatNoMoreOlder && n++ < 12){ await chatLoadOlder(); } }catch(e){}
+    try{ await loadAllForSearch(); }catch(e){}
     searchBusy = false; $('cxSearchRes').innerHTML = ''; runSearch();
   }
   function runSearch(){
     const q = $('cxSearchIn').value.trim().toLowerCase(); const out = $('cxSearchRes'); out.innerHTML = '';
     if(!q) return;
     const hid = hidSet(), clr = clrTs();
-    const rows = chatSortedIds().filter(id=>{ const m = chatMsgs.get(id), x = X[id] || {}; if(!m || x.del || hid.has(id) || (Number(m.ts) || 0) <= clr) return false; const t = String((x.ed && x.ed.t) || m.t || (m.a && m.a.n) || '').toLowerCase(); return t.includes(q); }).reverse().slice(0, 60);
+    const allIds = Array.from(new Set([...SRC.map.keys(), ...chatMsgs.keys()])).sort();
+    const rows = allIds.filter(id=>{ const m = srcMsg(id), x = X[id] || {}; if(!m || x.del || hid.has(id) || (Number(m.ts) || 0) <= clr) return false; const t = String((x.ed && x.ed.t) || m.t || (m.a && m.a.n) || '').toLowerCase(); return t.includes(q); }).reverse().slice(0, 60);
     if(!rows.length){ out.innerHTML = '<small style="padding:10px 14px;display:block;color:var(--muted)">Kuch nahi mila.</small>'; return; }
-    rows.forEach(id=>{ const m = chatMsgs.get(id), b = document.createElement('button'); b.innerHTML = '<span></span><small></small>'; b.firstChild.textContent = String((X[id] && X[id].ed && X[id].ed.t) || previewOf(m)).slice(0, 120); b.lastChild.textContent = nameOf(m.f) + ' · ' + new Date(Number(m.ts) || 0).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); b.onclick = ()=>{ $('cxSearchBar').classList.remove('on'); scrollToMsg(id); }; out.appendChild(b); });
+    rows.forEach(id=>{ const m = srcMsg(id), b = document.createElement('button'); b.innerHTML = '<span></span><small></small>'; b.firstChild.textContent = String((X[id] && X[id].ed && X[id].ed.t) || previewOf(m)).slice(0, 120); b.lastChild.textContent = nameOf(m.f) + ' · ' + new Date(Number(m.ts) || 0).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); b.onclick = ()=>{ $('cxSearchBar').classList.remove('on'); scrollToMsg(id); }; out.appendChild(b); });
   }
 
   // ---------------- chat menu (⋮) ----------------
@@ -24274,7 +24325,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const MAXS = 30, SKEY = 'cxs-my-stickers';
   const EMO = ['😂','🤣','😍','🥰','😘','😎','🤩','🥳','😭','😢','😡','🤯','😱','🤔','🙄','😴','🤗','😇','😜','🤪','🥺','😏','🤝','👍','👎','👏','🙏','💪','🔥','💯','❤️','💔','🎉','🎂','✨','🌹','😈','👀','🤡','💀','☕','🍕','📚','✅','❌','🚀','🏆','😅'];
   const getMy = ()=>{ const a = LSG(SKEY, []); return Array.isArray(a) ? a.filter(s => typeof s === 'string' && s.startsWith('data:image/')) : []; };
-  let tab = 'emo', del = false;
+  let tab = 'emo', del = false, pack = 'love', PK = null, PKP = null;
+  const PKRE = /^[a-z0-9_-]{1,20}$/, PNRE = /^\d{1,4}\.webp$/;
 
   function styles(){
     if($('cxs4Styles')) return;
@@ -24296,13 +24348,17 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #cxsk4 .gd img{width:100%;height:100%;object-fit:contain}
     #cxsk4 .gd .add{font-size:30px;border:2px dashed #3a4156;color:#8a93a8}
     #cxsk4 .gd .x{position:absolute;top:0;right:0;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center}
+    #cxsk4 .pkr{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+    #cxsk4 .gd .ch{font-size:13px;aspect-ratio:auto;padding:6px 12px;background:#20242e;color:#ddd;border-radius:14px;white-space:nowrap;flex:none}
+    #cxsk4 .gd .ch.on{background:#2563eb;color:#fff}
+    #cxsk4 .gd .pks{background:#1d212b}
     #cxsk4 .em{grid-column:1/-1;text-align:center;opacity:.6;font-size:13px;padding:14px}`;
     document.head.appendChild(s);
   }
   function panel(){
     let p = $('cxsk4'); if(p) return p;
     p = document.createElement('div'); p.id = 'cxsk4';
-    p.innerHTML = '<div class="pn"><div class="tb"><button type="button" data-t="emo">😀 Emoji</button><button type="button" data-t="my">🎭 Mere stickers</button><span class="sp"></span><button type="button" data-t="edit" id="cxsk4Ed" hidden>✏️</button><button type="button" data-t="close">✕</button></div><div class="gd" id="cxsk4Gd"></div></div><input type="file" id="cxsk4F" accept="image/*" hidden>';
+    p.innerHTML = '<div class="pn"><div class="tb"><button type="button" data-t="emo">😀 Emoji</button><button type="button" data-t="my">🎭 Mere stickers</button><button type="button" data-t="pk">📦 Packs</button><span class="sp"></span><button type="button" data-t="edit" id="cxsk4Ed" hidden>✏️</button><button type="button" data-t="close">✕</button></div><div class="gd" id="cxsk4Gd"></div></div><input type="file" id="cxsk4F" accept="image/*" hidden>';
     document.body.appendChild(p);
     p.addEventListener('click', (e)=>{ if(e.target === p) close(); });
     $('cxsk4F').addEventListener('change', onFile);
@@ -24317,6 +24373,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       const b = e.target.closest('button'); if(!b) return;
       if(b.dataset.add){ $('cxsk4F').click(); return; }
       if(b.dataset.e){ sendEmoji(b.dataset.e); return; }
+      if(b.dataset.p){ pack = b.dataset.p; render(); return; }
+      if(b.dataset.pk){ sendPack(b.dataset.pk, b.dataset.pn); return; }
       if(b.dataset.i != null){
         const i = Number(b.dataset.i), list = getMy();
         if(del){ list.splice(i, 1); LSS(SKEY, list); render(); }
@@ -24327,10 +24385,22 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   function render(){
     const p = panel();
-    p.querySelectorAll('.tb [data-t="emo"],.tb [data-t="my"]').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+    p.querySelectorAll('.tb [data-t="emo"],.tb [data-t="my"],.tb [data-t="pk"]').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     const ed = $('cxsk4Ed'); ed.hidden = tab !== 'my'; ed.classList.toggle('on', del);
     const gd = $('cxsk4Gd');
     if(tab === 'emo'){ gd.innerHTML = EMO.map(e => `<button type="button" data-e="${e}">${e}</button>`).join(''); return; }
+    if(tab === 'pk'){
+      if(!PK){
+        gd.innerHTML = '<div class="em">Packs load ho rahe hain…</div>';
+        loadPacks().then(()=>{ if(tab === 'pk') render(); }).catch(()=>{ if(tab === 'pk') gd.innerHTML = '<div class="em">Packs nahi mile (stickers/ folder upload hua?).</div>'; });
+        return;
+      }
+      const ks = Object.keys(PK).filter(k => PKRE.test(k));
+      if(!PK[pack]) pack = ks[0];
+      let h = '<div class="pkr">' + ks.map(k => `<button type="button" class="ch${k === pack ? ' on' : ''}" data-p="${k}">${String(PK[k].title || k).replace(/[<>&"]/g, '')}</button>`).join('') + '</div>';
+      h += ((PK[pack] || {}).files || []).filter(f => PNRE.test(f)).map(f => `<button type="button" class="pks" data-pk="${pack}" data-pn="${f}"><img loading="lazy" decoding="async" src="./stickers/${pack}/${f}" alt=""></button>`).join('');
+      gd.innerHTML = h; return;
+    }
     const list = getMy();
     let h = list.length < MAXS ? '<button type="button" class="add" data-add="1">＋</button>' : '';
     h += list.map((s, i) => `<button type="button" data-i="${i}"><img src="${s}" alt="">${del ? '<span class="x">✕</span>' : ''}</button>`).join('');
@@ -24340,10 +24410,30 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   function open(){ if(!chatPeer) return; styles(); panel(); del = false; render(); $('cxsk4').classList.add('open'); }
   function close(){ const p = $('cxsk4'); if(p) p.classList.remove('open'); }
+  window.cxStickerOpen = ()=>{ try{ open(); }catch(e){} };
 
   async function sendEmoji(e){
     close();
     if(window.cxSend) await window.cxSend({ t: e, sk: 1 }, null, e + ' Sticker', true);
+  }
+  async function loadPacks(){
+    if(PK) return PK;
+    if(!PKP) PKP = fetch('./stickers/packs.json').then(r => { if(!r.ok) throw new Error('packs'); return r.json(); }).then(j => (PK = j)).catch(e => { PKP = null; throw e; });
+    return PKP;
+  }
+  async function sendPack(pk, pn){
+    if(!PKRE.test(pk) || !PNRE.test(pn)) return;
+    close();
+    let th = '';
+    try{
+      const im = await new Promise((res, rej)=>{ const i = new Image(); i.onload = ()=> res(i); i.onerror = rej; i.src = `./stickers/${pk}/${pn}`; });
+      const sc = Math.min(1, 96 / Math.max(im.naturalWidth || 96, im.naturalHeight || 96)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round((im.naturalWidth || 96) * sc)); c.height = Math.max(1, Math.round((im.naturalHeight || 96) * sc));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      th = c.toDataURL('image/webp', 0.6);
+      if(!th.startsWith('data:image/')) th = c.toDataURL('image/jpeg', 0.6);
+    }catch(e){ toast('Sticker load nahi hua.'); return; }
+    if(window.cxSend) await window.cxSend({ k: 'i', t: '', a: { sk: 1, pk, pn, th, n: 'Sticker', mt: 'image/webp' } }, null, '🎭 Sticker', true);
   }
   async function sendImg(d){
     close();
@@ -24390,6 +24480,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     tab = 'my'; render();
   }
 
+  document.addEventListener('error', (e)=>{ const t = e.target; if(t && t.tagName === 'IMG' && t.dataset && t.dataset.th && t.src.indexOf('/stickers/') > -1){ const th = t.dataset.th; delete t.dataset.th; t.src = th; } }, true);
   // ---------- bubble ----------
   const prevBubble = chatBubbleHtml;
   chatBubbleHtml = function(id, m){
@@ -24397,6 +24488,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     try{
       if(m && h && m.sk){
         if(m.k === 'i') h = h.replace('class="cimg"', 'class="cimg csimg"').replace('data-act="img"', 'data-act="none"');
+        const A = m.a || {};
+        if(m.k === 'i' && PKRE.test(String(A.pk)) && PNRE.test(String(A.pn)))   // pack sticker: animated webp app ke apne folder se (message chhota rehta hai)
+          h = h.replace(/<img class="cimg csimg" src="([^"]*)"/, (t, th)=> `<img class="cimg csimg" data-th="${th}" src="./stickers/${A.pk}/${A.pn}"`);
         h = h.replace('<div class="cbub">', '<div class="cbub csk">');
       }
     }catch(e){}
@@ -24410,7 +24504,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     menu.dataset.cxs4 = '1';
     styles();
     menu.insertAdjacentHTML('beforeend', '<button type="button" data-xs="stk"><span>🎭</span>Sticker</button>');
-    menu.addEventListener('click', (e)=>{ const b = e.target.closest('[data-xs]'); if(!b) return; menu.classList.remove('open'); open(); });
+    menu.addEventListener('click', (e)=>{ const b = e.target.closest('[data-xs="stk"]'); if(!b) return; menu.classList.remove('open'); open(); });
   }
   const prevInject = chatInjectUI;
   chatInjectUI = function(){ prevInject(); inject(); };
@@ -24519,7 +24613,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       const mk = (id, k, cls, fn)=>{ const b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = cls; b.setAttribute('aria-label', k); b.innerHTML = svg(k, k === 'camera' ? 21 : 24); b.addEventListener('mousedown', (e)=> e.preventDefault()); b.addEventListener('click', fn); return b; };
       comp.insertBefore(mk('cxPCam', 'camera', '', ()=>{ if(window.cxOpenCam && window.cxOpenCam()) return; const i = $('cxInCam'); if(i) i.click(); }), comp.firstChild);
       comp.appendChild(mk('cxPGal', 'gallery', 'cxPB', ()=>{ const i = $('cxInGal'); if(i) i.click(); }));
-      comp.appendChild(mk('cxPStk', 'sticker', 'cxPB', ()=>{ const b = document.querySelector('#cxMenu [data-xs]'); if(b) b.click(); else toast('Sticker abhi available nahi.'); }));
+      comp.appendChild(mk('cxPStk', 'sticker', 'cxPB', ()=>{ const b = document.querySelector('#cxMenu [data-xs="stk"]'); if(b) b.click(); else toast('Sticker abhi available nahi.'); }));
       const t = $('chatInput'); if(t){ t.placeholder = 'Message…'; t.addEventListener('input', syncText); }
       const sb = $('chatSendBtn'); if(sb) sb.textContent = 'Send';
     }
@@ -24527,7 +24621,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   const prevAuto = chatAutosize;
   chatAutosize = function(){ prevAuto.apply(this, arguments); syncText(); };
-  setInterval(()=>{ if(document.hidden) return; syncText(); }, 400);
+  cxPoll('chat', ()=>{ if(document.hidden) return; syncText(); }, 400);
 
   // ---------------- CALL EFFECTS ----------------
   const FX = [
@@ -25876,7 +25970,7 @@ void main(){
     if(n !== H.seen){ H.seen = n; H.q = Date.now(); return; }   // abhi badal raha hai (slider drag)
     if(n !== H.last && Date.now() - H.q >= 400) hCommit();     // 400ms shant => ek step
   }
-  setInterval(()=>{ try{ hWatch(); apWatch(); }catch(_){} }, 250);
+  cxPoll('cam', ()=>{ try{ hWatch(); apWatch(); }catch(_){} }, 250);
 
   // ---- ADMIN SYNC: Room Admin jo bhi camera look/effect/Beauty/saved-look/quality set kare => room ke sabhi members ko automatic, aur camera wahi default khule ----
   // Firebase: rooms/<room>/_camdef (JSON string). Admin = loadRoomMeta().admin. Member ke liye cache 'cxc-camdef', applied version 'cxc-camdef-av'.
@@ -26896,7 +26990,7 @@ void main(){
   }
 
   // panel lazily banta hai -> tab inject karte rehna; sticker menu dabane par GIF view band
-  setInterval(()=>{ try{ build(); }catch(e){} }, 600);
+  cxPoll('chat', ()=>{ try{ build(); }catch(e){} }, 600);
   document.addEventListener('click', (e)=>{ if(e.target && e.target.closest && e.target.closest('[data-xs]')) hide(); }, true);
 })();
 
@@ -27866,7 +27960,7 @@ const SlideType = (function(){
       else { try{ HandWrite.toggleFor($('chatInput')); }catch(err){} }
     });
   }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 500);
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 500);
   inject();
 })();
 
@@ -28179,7 +28273,7 @@ const HandWrite = (function(){
     b.addEventListener('click',(e)=>{ e.preventDefault(); try{ HandWrite.toggleFor(inp); }catch(err){} });
     inp.insertAdjacentElement('afterend', b);
   }
-  setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
+  cxPoll('chat', ()=>{ try{ put(); }catch(e){} }, 500); put();
 })();
 
 
@@ -28196,7 +28290,7 @@ const AIReply = (function(){
   let on = false; try{ on = localStorage.getItem('aiReplyOn') === '1'; }catch(e){}
   let timer = null, seen = new Set(), seq = 0;
 
-  function setBtn(){ const b = document.getElementById('cxAiBtn'); if(b) b.classList.toggle('on', on); }
+  function setBtn(){ const b = document.querySelector('#cxMenu [data-xs="ai"]'); if(b) b.classList.toggle('on', on); }
   function bar(){
     let el = document.getElementById('cxAiSug');
     if(el) return el;
@@ -28414,8 +28508,8 @@ const AIReply = (function(){
   }
 
   const s = document.createElement('style');
-  s.textContent = `#chatOverlay .chatComposer #cxAiBtn{order:3!important;flex:none!important;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#cfd0d4;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;opacity:.55;-webkit-tap-highlight-color:transparent}
-  #chatOverlay .chatComposer #cxAiBtn.on{opacity:1;background:#2d4a3a;box-shadow:0 0 0 2px #3f6b52 inset}
+  s.textContent = `#chatOverlay .chatComposer #cxStkBtn{order:3!important;flex:none!important;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#cfd0d4;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;opacity:.55;-webkit-tap-highlight-color:transparent}
+  #cxMenu [data-xs="ai"].on{background:#2d4a3a}
   #cxAiSug{display:flex;flex-direction:column;gap:6px;padding:6px 10px 2px;position:relative}
   #cxAiSug[hidden]{display:none}
   #cxAiSug .aiRow{display:flex;gap:6px}
@@ -28447,12 +28541,21 @@ const AIReply = (function(){
   document.head.appendChild(s);
   function put(){
     const inp = document.getElementById('chatInput'); if(!inp) return;
-    const comp = inp.closest('.chatComposer'); if(!comp || comp.querySelector('#cxAiBtn')) return;
-    const b = document.createElement('button'); b.type='button'; b.id='cxAiBtn'; b.setAttribute('aria-label','AI reply suggest'); b.textContent='🤖';
+    const comp = inp.closest('.chatComposer'); if(!comp) return;
+    // 🤖 AI ab "+" menu me
+    const menu = document.getElementById('cxMenu');
+    if(menu && !menu.querySelector('[data-xs="ai"]')){
+      menu.insertAdjacentHTML('beforeend', '<button type="button" data-xs="ai"><span>🤖</span>AI reply</button>');
+      menu.querySelector('[data-xs="ai"]').addEventListener('click', (e)=>{ e.preventDefault(); menu.classList.remove('open'); toggle(); });
+      setBtn();
+    }
+    // composer me robot ki jagah 🎭 sticker button
+    if(comp.querySelector('#cxStkBtn')) return;
+    const b = document.createElement('button'); b.type='button'; b.id='cxStkBtn'; b.setAttribute('aria-label','Sticker'); b.textContent='🎭';
     b.addEventListener('pointerdown',(e)=> e.preventDefault());
-    b.addEventListener('click',(e)=>{ e.preventDefault(); toggle(); });
+    b.addEventListener('click',(e)=>{ e.preventDefault(); if(window.cxStickerOpen) window.cxStickerOpen(); });
     const d = comp.querySelector('#cxDrawBtn');
-    (d || inp).insertAdjacentElement('afterend', b); setBtn();
+    (d || inp).insertAdjacentElement('afterend', b);
   }
   setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
   return { toggle, onIncoming, onMine };
@@ -28569,7 +28672,7 @@ const AIReply = (function(){
       el.insertAdjacentElement('afterend', b);
     });
   }
-  setInterval(()=>{ try{ scan(); }catch(e){} }, 700);
+  cxPoll('chat', ()=>{ try{ scan(); }catch(e){} }, 700);
 
   // camera khule to draw overlay band (warna camera ke upar overlay aa jata)
   const t = setInterval(()=>{
@@ -28662,7 +28765,7 @@ const AIReply = (function(){
   }
   // pill ke bahar tap = band (sirf chat ke andar ka control)
   document.addEventListener('pointerdown', (e)=>{ if(shown && !(e.target.closest && e.target.closest('#cxFsPill,#cxFsBtn'))) setShown(false); }, true);
-  setInterval(()=>{ try{ tick(); }catch(e){} }, 400);
+  cxPoll('chat', ()=>{ try{ tick(); }catch(e){} }, 400);
 })();
 
 /* ===== CHAT PLUS 19: PIN + ARCHIVE chats (source: JosephPshine63/wacchat — favorites/archive) =====
@@ -28794,7 +28897,7 @@ const AIReply = (function(){
     apply();
   }
   if(mq){ const f = ()=>{ if(mode === 'auto') apply(); }; mq.addEventListener ? mq.addEventListener('change', f) : (mq.addListener && mq.addListener(f)); }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 600);
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 600);
   inject();
 })();
 
@@ -28868,7 +28971,7 @@ const AIReply = (function(){
       if(loc && muted && rms(loc) > 0.05){ if(!locAt) locAt = now; if(now - locAt > 500 && now - hintAt > 8000){ hintAt = now; hint(); } } else locAt = 0;
     }
   }
-  setInterval(()=>{ try{ tick(); }catch(e){} }, 120);
+  cxPoll('call', ()=>{ try{ tick(); }catch(e){} }, 120);
   window.__cxP21 = { tick, reset }; // test ke liye
 })();
 
@@ -28963,7 +29066,7 @@ const AIReply = (function(){
     const ref = document.getElementById('cxThemeBtn') || document.getElementById('chatLockBtn');
     head.insertBefore(b, ref || null);
   }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 600); inject();
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 600); inject();
   window.__cxP22 = { watch, load, render, open };
 })();
 
@@ -29037,7 +29140,7 @@ const AIReply = (function(){
     const ref = document.getElementById('cxCallsBtn') || document.getElementById('cxThemeBtn') || document.getElementById('chatLockBtn');
     head.insertBefore(b, ref || null); paint();
   }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 600); inject();
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 600); inject();
   window.__cxP23 = { ding, maybe, on };
 })();
 
@@ -29123,7 +29226,7 @@ const AIReply = (function(){
     b.addEventListener('click', ()=>{ if(typeof chatHasPin === 'function' && chatHasPin() && !chatUnlocked) return; showList(); });
     const lock = $('chatLockBtn'); head.insertBefore(b, lock || null);
   }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 1500);
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 1500);
   window.__cxAdminView = { showList, openPair, checkAdmin };
 })();
 
@@ -29263,7 +29366,7 @@ const AIReply = (function(){
     }
     const t = chatHasPin() ? '🔒' : '🔓'; if(b.textContent !== t) b.textContent = t;
   }
-  setInterval(()=>{ try{ inject(); }catch(e){} }, 800);
+  cxPoll('chat', ()=>{ try{ inject(); }catch(e){} }, 800);
 })();
 
 /* ===== CHAT PLUS 21: HEADER FIT — buttons jyada hone se 🔒 lock screen se bahar nahi jaana chahiye =====
@@ -29311,4 +29414,534 @@ const AIReply = (function(){
       return r;
     };
   }
+})();
+
+
+/* ===== CHAT PLUS 23: PREMIUM POLISH (glass header, grouped gradient bubbles, sticky day pills, scroll-to-bottom FAB, motion) =====
+   Sirf look/feel: koi chat logic nahi badla. Themes (cxk-th-*, cxk-bg) ke rang override nahi hote. prefers-reduced-motion ka dhyan. */
+(function chatPlus23(){
+  if(document.getElementById('cxP23css')) return;
+  const st = document.createElement('style'); st.id = 'cxP23css';
+  st.textContent = `
+  #chatOverlay .chatHead{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,0)),var(--panel,#111013)!important;border-bottom:1px solid rgba(255,255,255,.07)!important;box-shadow:0 6px 24px rgba(0,0,0,.28);position:relative;z-index:5;}
+  #chatOverlay .chatAv{box-shadow:0 0 0 2px var(--bg,#08070a),0 0 0 3.5px color-mix(in srgb,var(--accent,#fbbf24) 55%,transparent),0 4px 12px rgba(0,0,0,.35);}
+  #chatOverlay .chatPeerName{letter-spacing:.15px;}
+  #chatOverlay .chatPeerStatus.on{text-shadow:0 0 10px color-mix(in srgb,var(--gain,#4ade80) 55%,transparent);}
+  #chatOverlay .chatDot{box-shadow:0 0 0 0 rgba(74,222,128,.55);animation:cxP23pulse 2.4s ease-out infinite;}
+  @keyframes cxP23pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.5)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+  #chatOverlay .chatRow{border-bottom-color:rgba(255,255,255,.05)!important;border-radius:14px;transition:background .15s,transform .15s;}
+  #chatOverlay .chatRow:active{transform:scale(.985);}
+  #chatOverlay .chatUnread{box-shadow:0 2px 8px color-mix(in srgb,var(--accent,#fbbf24) 45%,transparent);}
+  #chatOverlay .chatMsgs{contain:content;gap:2px;padding:12px 12px 10px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent;}
+  #chatOverlay .chatMsgs::-webkit-scrollbar{width:4px}#chatOverlay .chatMsgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
+  #chatOverlay .cmsg.cxG1,#chatOverlay .cmsg.cxGm{margin-bottom:0}
+  #chatOverlay .cmsg.cxNewSender{margin-top:7px}
+  #chatOverlay .cbub{border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+  body:not([class*="cxk-th"]):not(.cxk-bg) #chatOverlay .cmsg.me .cbub{background:linear-gradient(145deg,color-mix(in srgb,var(--accent,#fbbf24) 100%,#fff 14%),color-mix(in srgb,var(--accent,#fbbf24) 100%,#000 14%));}
+  body:not([class*="cxk-th"]):not(.cxk-bg) #chatOverlay .cmsg.them .cbub{background:linear-gradient(160deg,color-mix(in srgb,var(--panel2,#1a181d) 100%,#fff 5%),var(--panel2,#1a181d));border-color:rgba(255,255,255,.07);}
+  /* grouping: same sender ke beech chhote corner, sirf aakhri bubble par "tail" */
+  #chatOverlay .cmsg.me.cxGrpPrev .cbub{border-top-right-radius:6px}
+  #chatOverlay .cmsg.me.cxGrpNext .cbub{border-bottom-right-radius:6px}
+  #chatOverlay .cmsg.me:not(.cxGrpNext) .cbub{border-bottom-right-radius:5px}
+  #chatOverlay .cmsg.them.cxGrpPrev .cbub{border-top-left-radius:6px}
+  #chatOverlay .cmsg.them.cxGrpNext .cbub{border-bottom-left-radius:6px}
+  #chatOverlay .cmsg.them:not(.cxGrpNext) .cbub{border-bottom-left-radius:5px}
+  #chatOverlay .cmsg.cxPop{animation:cxP23in .26s cubic-bezier(.2,.9,.3,1.15) both}
+  #chatOverlay .cmsg.me.cxPop{transform-origin:100% 100%}#chatOverlay .cmsg.them.cxPop{transform-origin:0 100%}
+  @keyframes cxP23in{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+  #chatOverlay .chatDaySep{position:sticky;top:6px;z-index:3;margin:12px 0 8px;pointer-events:none}
+  #chatOverlay .chatDaySep span{background:var(--panel2,#1a181d);border:1px solid rgba(255,255,255,.08);padding:4px 13px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.25);letter-spacing:.3px}
+  #chatOverlay .chatLockNote{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.07)}
+  #chatOverlay .chatComposer{border-top:1px solid rgba(255,255,255,.06)!important;box-shadow:0 -8px 24px rgba(0,0,0,.22);transition:box-shadow .2s,border-color .2s}
+  #chatOverlay .chatComposer:focus-within{box-shadow:0 -8px 24px rgba(0,0,0,.22),0 0 0 1px color-mix(in srgb,var(--accent,#fbbf24) 40%,transparent) inset}
+  #chatOverlay #chatSendBtn{box-shadow:0 4px 14px color-mix(in srgb,var(--accent,#fbbf24) 40%,transparent);transition:transform .15s}
+  #chatOverlay #chatSendBtn.cxSent{animation:cxP23send .3s ease}
+  @keyframes cxP23send{0%{transform:scale(1)}40%{transform:scale(.8) rotate(-12deg)}100%{transform:scale(1)}}
+  #cxP23Fab{position:absolute;right:14px;bottom:86px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:var(--panel2,#1a181d);color:var(--white,#eeecf0);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;box-shadow:0 6px 18px rgba(0,0,0,.4);opacity:0;transform:translateY(10px) scale(.85);pointer-events:none;transition:opacity .2s,transform .2s;padding:0}
+  #cxP23Fab.show{opacity:1;transform:none;pointer-events:auto}
+  #cxP23Fab:active{transform:scale(.9)}
+  #cxP23Fab b{position:absolute;top:-6px;right:-4px;min-width:19px;height:19px;border-radius:10px;padding:0 5px;box-sizing:border-box;background:var(--accent,#fbbf24);color:#120d00;font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  #cxP23Fab.has b{display:flex}
+  @media (prefers-reduced-motion:reduce){#chatOverlay .cmsg.cxPop,#chatOverlay .chatDot,#chatOverlay #chatSendBtn.cxSent{animation:none!important}#cxP23Fab{transition:none}}`;
+  document.head.appendChild(st);
+
+  let box = null, mo = null, fab = null, raf = 0, known = new Set(), primed = false, missed = 0, lastCount = 0;
+  const near = ()=> box ? (box.scrollHeight - box.scrollTop - box.clientHeight) < 140 : true;
+
+  function group(){
+    raf = 0; if(!box) return;
+    const ch = box.children; let prev = null, prevEl = null, sep = false, last = null;
+    for(let i = 0; i < ch.length; i++){
+      const el = ch[i];
+      if(el.classList.contains('chatDaySep')){ sep = true; continue; }
+      if(!el.classList.contains('cmsg')) continue;
+      const side = el.classList.contains('me') ? 'me' : 'them';
+      const ts = Number(el.getAttribute('data-ts')) || 0;
+      const same = !!prev && prev.side === side && !sep && (ts - prev.ts) < 300000;
+      if(el.classList.contains('cxGrpPrev') !== same) el.classList.toggle('cxGrpPrev', same);
+      if(prevEl && prevEl.classList.contains('cxGrpNext') !== same) prevEl.classList.toggle('cxGrpNext', same);
+      const ns = !same && !!prevEl; if(el.classList.contains('cxNewSender') !== ns) el.classList.toggle('cxNewSender', ns);
+      const id = el.getAttribute('data-id');
+      if(id && !known.has(id)){ known.add(id); if(primed){ el.classList.add('cxPop'); setTimeout(()=>el.classList.remove('cxPop'), 400); if(!near() && side === 'them') missed++; } }
+      prev = { side, ts }; prevEl = el; last = el; sep = false;
+    }
+    if(last) last.classList.remove('cxGrpNext');
+    if(!primed && prevEl) primed = true;
+    updFab();
+  }
+  const sched = ()=>{ if(!raf) raf = requestAnimationFrame(group); };
+
+  function updFab(){
+    if(!fab || !box) return;
+    const far = (box.scrollHeight - box.scrollTop - box.clientHeight) > 260;
+    if(!far) missed = 0;
+    fab.classList.toggle('show', far);
+    fab.classList.toggle('has', far && missed > 0);
+    const b = fab.querySelector('b'); if(b) b.textContent = missed > 99 ? '99+' : String(missed);
+  }
+
+  function bind(){
+    const b = document.getElementById('chatMsgs'); if(!b || b === box) return;
+    box = b; known = new Set(); primed = false; missed = 0;
+    if(mo) mo.disconnect();
+    mo = new MutationObserver(sched); mo.observe(box, { childList: true });
+    box.addEventListener('scroll', updFab, { passive: true });
+    const conv = document.getElementById('chatConv') || box.parentElement;
+    if(conv && !document.getElementById('cxP23Fab')){
+      fab = document.createElement('button'); fab.id = 'cxP23Fab'; fab.type = 'button'; fab.setAttribute('aria-label', 'Latest message par jao');
+      fab.innerHTML = '⌄<b></b>';
+      fab.addEventListener('click', ()=>{ box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); missed = 0; });
+      conv.appendChild(fab);
+    } else fab = document.getElementById('cxP23Fab');
+    sched();
+    // open ke baad purane msgs "known" ho jayein (animation sirf naye par)
+    setTimeout(()=>{ if(box === b){ primed = true; group(); } }, 900);
+  }
+
+  // send button par chhota pop + halka haptic
+  document.addEventListener('click', (e)=>{
+    const s = e.target && e.target.closest && e.target.closest('#chatSendBtn'); if(!s) return;
+    s.classList.remove('cxSent'); void s.offsetWidth; s.classList.add('cxSent');
+    try{ if(navigator.vibrate) navigator.vibrate(8); }catch(_){}
+  }, true);
+
+  if(typeof chatOpenConv === 'function'){
+    const orig = chatOpenConv;
+    chatOpenConv = async function(){ bind(); known = new Set(); primed = false; missed = 0; return orig.apply(this, arguments); };
+  }
+  cxPoll('chat', ()=>{ const b = document.getElementById('chatMsgs'); if(b && b !== box) bind(); }, 1500);
+  // chat overlay 'open' hote hi gated pollers ek baar turant chalao (buttons jaldi aayen)
+  (function bindKick(){ let n = 0; const t = setInterval(()=>{
+    const o = document.getElementById('chatOverlay');
+    if(o){ clearInterval(t); let was = o.classList.contains('open');
+      new MutationObserver(()=>{ const now = o.classList.contains('open'); if(now && !was){ try{ cxPoll.kick('chat'); }catch(e){} } was = now; }).observe(o, { attributes: true, attributeFilter: ['class'] }); }
+    else if(++n > 240) clearInterval(t);
+  }, 500); })();
+})();
+
+
+/* ===== CHAT PLUS 24: chat header — naam/online status dikhe (lock hata, baaki buttons chhote) =====
+   Karan: conv header me bahut buttons (📞🎥Aa⋮😊+🔓) naam + "online" ko dba dete the. Ab: conv me 🔒 button nahi (inbox ka lock waise hi), baaki sab chhote, naam ko flex jagah. */
+(function chatPlus24(){
+  if(document.getElementById('cxP24css')) return;
+  const st = document.createElement('style'); st.id = 'cxP24css';
+  st.textContent = `
+  #chatConv .chatHead #cxConvLock,#chatConv .chatHead #chatLockBtn,#chatConv .chatHead .chatLockBtn{display:none!important;}
+  #chatConv .chatHead{gap:0!important;padding-left:6px!important;padding-right:4px!important;}
+  #chatConv .chatHead > button,#chatConv .chatHead .chatIconBtn,#chatConv .chatHead .cxCall,#chatConv .chatHead .cxMore{width:28px!important;min-width:28px!important;height:32px!important;padding:0!important;font-size:14px!important;flex:0 0 auto!important;border:0!important;background:transparent!important;display:inline-flex!important;align-items:center;justify-content:center;}
+  #chatConv .chatHead > button svg,#chatConv .chatHead .chatIconBtn svg,#chatConv .chatHead .cxCall svg,#chatConv .chatHead .cxMore svg{width:18px!important;height:18px!important;}
+  #chatConv .chatHead #cxFsBtn{font-size:13px!important;font-weight:800;}
+  #chatConv .chatHead .chatAv{width:34px!important;height:34px!important;font-size:14px!important;margin:0 6px 0 2px;}
+  #chatConv .chatHead .chatHeadTxt{flex:1 1 auto!important;min-width:70px!important;overflow:hidden;}
+  #chatConv .chatHead .chatPeerName{font-size:15px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #chatConv .chatHead .chatPeerStatus{font-size:11.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}`;
+  document.head.appendChild(st);
+})();
+
+// ============================================================================
+// CHAT PLUS 25: ENTER = SEND + AUTO-SEND (typing rukne par countdown)
+//   "+" menu me 2 toggle: ↵ Enter = Send (default ON), ⏱ Auto-send (Off / 1.5s / 3s, default OFF)
+//   Auto-send: type karke ruko -> bar bharti hai "Bhej raha hoon…" -> ✕ se cancel.
+// ============================================================================
+(function chatAutoSend(){
+  const KE = 'cx-enter-send', KA = 'cx-auto-send', STEPS = [0, 1500, 3000];
+  const LG = (k, d)=>{ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } };
+  const LS = (k, v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+  let enterSend = LG(KE, true) !== false;
+  let autoMs = STEPS.indexOf(Number(LG(KA, 0))) > -1 ? Number(LG(KA, 0)) : 0;
+  let timer = 0, bar = null;
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const lab = (ms)=> ms ? (ms / 1000) + 's' : 'Off';
+
+  function styles(){
+    if($('cxAsStyles')) return;
+    const s = document.createElement('style'); s.id = 'cxAsStyles';
+    s.textContent = `#cxAutoBar{display:none;align-items:center;gap:10px;padding:6px 14px;font-size:13px;color:#cfd0d4;background:#1b1e25;position:relative;overflow:hidden}
+    #cxAutoBar.on{display:flex}
+    #cxAutoBar .p{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(63,107,82,.55);pointer-events:none}
+    #cxAutoBar.run .p{width:100%;transition:width var(--cxas,1.5s) linear}
+    #cxAutoBar span,#cxAutoBar button{position:relative}
+    #cxAutoBar span{flex:1}
+    #cxAutoBar button{background:#2b2e36;color:#fff;border:0;border-radius:12px;padding:4px 12px;font-size:13px}`;
+    document.head.appendChild(s);
+  }
+  function stop(){ clearTimeout(timer); timer = 0; if(bar){ bar.classList.remove('run', 'on'); } }
+  function isEditing(){ const rb = $('cxReplyBar'); return !!(rb && rb.classList.contains('on') && /edit karo/i.test(rb.textContent || '')); }
+  function arm(){
+    stop();
+    const ta = $('chatInput'); if(!ta || !autoMs || !bar) return;
+    if(!ta.value.trim() || isEditing()) return;
+    bar.style.setProperty('--cxas', (autoMs / 1000) + 's');
+    bar.classList.add('on'); void bar.offsetWidth; bar.classList.add('run');
+    timer = setTimeout(()=>{
+      timer = 0; stop();
+      const t = $('chatInput'), sb = $('chatSendBtn');
+      if(t && sb && t.value.trim() && t.offsetParent !== null) sb.click();
+    }, autoMs);
+  }
+  function hook(){
+    const ta = $('chatInput'); if(!ta || ta.dataset.cxAs) return;
+    ta.dataset.cxAs = '1';
+    styles();
+    const comp = ta.closest('.chatComposer');
+    if(comp && !$('cxAutoBar')){
+      bar = document.createElement('div'); bar.id = 'cxAutoBar';
+      bar.innerHTML = '<div class="p"></div><span>⏱ Bhej raha hoon…</span><button type="button">✕ Cancel</button>';
+      bar.querySelector('button').addEventListener('click', ()=> stop());
+      comp.insertAdjacentElement('beforebegin', bar);
+    }else bar = $('cxAutoBar');
+    try{ ta.setAttribute('enterkeyhint', enterSend ? 'send' : 'enter'); }catch(e){}
+    const doSend = ()=>{ stop(); const sb = $('chatSendBtn'); if(sb && ta.value.trim()) sb.click(); };
+    let modEnter = false;   // Shift/Ctrl/Alt+Enter = naya line (beforeinput me bhi na bhejo)
+    ta.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') modEnter = !!(e.shiftKey || e.ctrlKey || e.altKey);
+      if(!enterSend || e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey) return;
+      e.stopImmediatePropagation(); e.preventDefault(); doSend();
+    }, true);
+    // phone keyboards: Enter kabhi keydown nahi bhejte (IME) -> beforeinput se pakdo
+    ta.addEventListener('beforeinput', (e)=>{
+      if(!enterSend || modEnter || (e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph')) return;
+      e.preventDefault(); doSend();
+    }, true);
+    ta.addEventListener('keyup', ()=>{ modEnter = false; });
+    ta.addEventListener('input', arm);
+    ta.addEventListener('blur', ()=>{ if(!ta.value.trim()) stop(); });
+  }
+  function menuItems(){
+    const m = $('cxMenu'); if(!m) return;
+    if(!m.querySelector('[data-xs="enter"]')){
+      m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="enter"><span>↵</span><b></b></button><button type="button" data-xs="auto"><span>⏱</span><b></b></button>');
+      m.querySelector('[data-xs="enter"]').addEventListener('click', (e)=>{
+        e.preventDefault(); enterSend = !enterSend; LS(KE, enterSend); refresh(); m.classList.remove('open');
+        const t = $('chatInput'); if(t) t.setAttribute('enterkeyhint', enterSend ? 'send' : 'enter');
+        toast(enterSend ? 'Enter = Send ON (naya line: Shift+Enter)' : 'Enter = naya line');
+      });
+      m.querySelector('[data-xs="auto"]').addEventListener('click', (e)=>{
+        e.preventDefault(); autoMs = STEPS[(STEPS.indexOf(autoMs) + 1) % STEPS.length]; LS(KA, autoMs); stop(); refresh(); m.classList.remove('open');
+        toast(autoMs ? 'Auto-send ' + lab(autoMs) + ' — typing rukne par bhej dega' : 'Auto-send OFF');
+      });
+      refresh();
+    }
+  }
+  function refresh(){
+    const m = $('cxMenu'); if(!m) return;
+    const a = m.querySelector('[data-xs="enter"] b'), b = m.querySelector('[data-xs="auto"] b');
+    if(a) a.textContent = 'Enter = Send: ' + (enterSend ? 'ON' : 'OFF');
+    if(b) b.textContent = 'Auto-send: ' + lab(autoMs);
+  }
+  setInterval(()=>{ try{ hook(); menuItems(); if(!$('chatInput') || $('chatInput').offsetParent === null) stop(); }catch(e){} }, 500);
+  window.cxAutoSend = { get enter(){ return enterSend; }, get ms(){ return autoMs; }, stop };
+})();
+
+// ============================================================================
+// CHAT PLUS 26: 🤖 AUTOPILOT v2 — AI tumhari jagah is chat me reply kare (ON/OFF, har chat ka alag)
+//   "+" menu -> "🤖 Autopilot" (ON/OFF) + "⚙️ Autopilot settings" (speed / mere baare me / language / fallback / limit / label).
+//   Round 1 (Benojir/WhatsApp-Auto-Reply-Bot se): fallback reply, about-me notes, language, bot-name-free prompt, per-hour cap.
+//   v2 TEZ: debounce chhota + AI call turant; style samples + avg length + emoji + time-of-day prompt me; 1 retry; temperature 0.7.
+//   SIRF jab app khula ho aur wahi chat open ho. Sensitive msg par chup. Tum khud bhejo -> 2 min pause.
+//   Samne wala sachchi me poochhe "AI ho?" to AI mana nahi karta. (Repo ka "human ban ke chhupao" wala hissa JAAN-BOOJH ke nahi liya.)
+// ============================================================================
+(function chatAutopilot(){
+  const K = 'cx-autopilot', KC = 'cx-ap-cfg', KL = 'cx-ap-label', TAKE = 2 * 60 * 1000;
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const LG = (k, d)=>{ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } };
+  const LS = (k, v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+  const SPEEDS = { fast: ['⚡ Fast', 1200, 1800, 1200], normal: ['🙂 Normal', 2500, 3500, 3000], slow: ['🐢 Slow', 4500, 7000, 4500] };   // [label, debounce, minWait after last msg, typeCap]
+  const TONES = { auto: ['🎯 Auto (mere jaisa)', ''], friendly: ['😊 Friendly', 'Tone: warm, dostana, helpful.'], witty: ['😏 Witty', 'Tone: halka witty/mazaakiya, par kisi ko hurt ya beizzat mat karo.'], casual: ['😎 Casual', 'Tone: bilkul casual, dost jaisa, chhote vaakya.'], pro: ['💼 Professional', 'Tone: politely professional, saaf aur chhota, slang kam.'], short: ['✂️ Bahut chhota', 'Tone: sabse chhota reply (max ~8 shabd).'] };
+  const LANGS = { auto: 'Auto (jaisa chat me)', hinglish: 'Hinglish', english: 'English', hindi: 'Hindi (Devanagari)' };
+  let map = LG(K, {}); if(!map || typeof map !== 'object') map = {};
+  let cfg = Object.assign({ speed: 'fast', notes: '', rules: '', chats: {}, lang: 'auto', tone: 'auto', qr: '', fb: false, fbText: 'Abhi busy hoon, thodi der me khud baat karta hoon', cap: 10, label: LG(KL, true) !== false }, LG(KC, {}) || {});
+  if(!SPEEDS[cfg.speed]) cfg.speed = 'fast';
+  if(!LANGS[cfg.lang]) cfg.lang = 'auto';
+  if(!TONES[cfg.tone]) cfg.tone = 'auto';
+  cfg.cap = Math.max(1, Math.min(60, Number(cfg.cap) || 10));
+  if(!cfg.chats || typeof cfg.chats !== 'object') cfg.chats = {};
+  const ownG = ()=> { try{ return localStorage.getItem('aiGen') === 'f' ? 'f' : 'm'; }catch(e){ return 'm'; } };
+  let timer = 0, seq = 0, manualAt = 0, selfUntil = 0, status = '', lastInAt = 0;
+  const seen = new Set(), hist = {}, lastIn = {}, lastOut = {}, lastTxt = {};   // lastIn[pair] = {k, at, n} (same msg guard), lastOut[pair] = pichhla auto reply
+  const norm = (t)=> String(t || '').toLowerCase().replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim();
+  const isOn = (pair)=> !!(pair && map[pair]);
+  const SENS = /(\botp\b|password|\bpin\b|\bcvv\b|\bupi\b|paytm|gpay|phonepe|\bbank\b|account number|\bifsc\b|paise|paisa|rupay|rupee|₹|\bpay\b|udhaar|\bloan\b|emergency|accident|hospital|ambulance|police|suicide|marna chahta|marna chahti)/i;
+  const sleep = (ms)=> new Promise(r => setTimeout(r, ms));
+  const TRANSIENT = /\b(429|500|502|503|504|529)\b|overloaded|timeout|failed to fetch|networkerror|load failed|fetch failed/i;
+  const saveCfg = ()=> LS(KC, cfg);
+  if(typeof cfg.qr !== 'string') cfg.qr = '';
+  // ---- log (last 30) ----
+  const logE = (peer, kind, inn, out)=>{ try{ const a = LG('cx-ap-log', []); a.push({ at: Date.now(), p: peer && peer.name || '', k: kind, i: String(inn || '').slice(0, 80), o: String(out || '').slice(0, 120) }); LS('cx-ap-log', a.slice(-30)); }catch(e){} };
+  // ---- quick-reply rules: har line "keyword => reply" (AI ke bina turant) ----
+  function quickRule(text){
+    const t = String(text || '').toLowerCase(); if(!t) return null;
+    const lines = cfg.qr.split('\n');
+    for(let i = 0; i < lines.length; i++){
+      const ix = lines[i].indexOf('=>'); if(ix < 1) continue;
+      const pats = lines[i].slice(0, ix).split('|').map(x => x.trim().toLowerCase()).filter(Boolean), rp = lines[i].slice(ix + 2).trim();
+      if(rp && pats.some(x => t.includes(x))) return rp.slice(0, 300);
+    }
+    return null;
+  }
+
+  function styles(){
+    if($('cxApStyles')) return;
+    const s = document.createElement('style'); s.id = 'cxApStyles';
+    s.textContent = `#cxApBar{display:none;align-items:center;gap:10px;padding:6px 14px;font-size:13px;color:#d6efe1;background:#1f3a2c}
+    #cxApBar.on{display:flex}#cxApBar span{flex:1;min-width:0}
+    #cxApBar button{background:#2b2e36;color:#fff;border:0;border-radius:12px;padding:4px 12px;font-size:13px;flex:none}
+    #cxMenu [data-xs="ap"].on{background:#2d4a3a}
+    #cxApSet{position:fixed;inset:0;z-index:2147483200;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center}
+    #cxApSet.open{display:flex}
+    #cxApSet .pn{width:100%;max-width:480px;max-height:86vh;overflow:auto;background:#171a21;color:#eee;border-radius:16px 16px 0 0;padding:14px 16px 18px;box-sizing:border-box}
+    #cxApSet h3{margin:0 0 10px;font-size:16px}#cxApSet label{display:block;font-size:12px;opacity:.7;margin:12px 0 5px}
+    #cxApSet .row{display:flex;gap:6px;flex-wrap:wrap}
+    #cxApSet .ch{background:#20242e;color:#ddd;border:0;border-radius:14px;padding:7px 12px;font-size:13px}#cxApSet .ch.on{background:#2563eb;color:#fff}
+    #cxApSet textarea,#cxApSet input[type=text],#cxApSet input[type=number]{width:100%;box-sizing:border-box;background:#20242e;color:#eee;border:1px solid #2a3040;border-radius:10px;padding:8px 10px;font-size:14px;font-family:inherit}
+    #cxApSet textarea{min-height:64px;resize:vertical}
+    #cxApSet .ft{display:flex;gap:8px;margin-top:16px}#cxApSet .ft button{flex:1;border:0;border-radius:12px;padding:10px;font-size:15px;background:#20242e;color:#eee}#cxApSet .ft .ok{background:#2563eb;color:#fff}`;
+    document.head.appendChild(s);
+  }
+  function setOn(pair, v){ if(v) map[pair] = 1; else delete map[pair]; LS(K, map); clearTimeout(timer); seq++; status = ''; refresh(); }
+
+  // ---------- history -> messages + style ----------
+  const labelOf = (m)=>{
+    const t = m.t ? String(m.t) : '';
+    if(m.sk) return '[sticker] ' + t;
+    if(m.k === 'i') return '[photo]' + (t ? ' caption: ' + t : '');
+    if(m.k === 'v') return '[video]' + (t ? ' caption: ' + t : '');
+    if(m.k === 'f') return '[file/voice]' + (t ? ' ' + t : '');
+    return t;
+  };
+  function buildMsgs(){
+    const me = chatMyKey(), out = [];
+    chatSortedIds().slice(-40).forEach(id=>{
+      const m = chatMsgs.get(id); if(!m) return;
+      const t = labelOf(m); if(!t) return;
+      const role = m.f === me ? 'assistant' : 'user';
+      if(out.length && out[out.length - 1].role === role) out[out.length - 1].content += '\n' + t; else out.push({ role, content: t });
+    });
+    while(out.length && out[0].role !== 'user') out.shift();
+    return out;
+  }
+  function styleInfo(){     // tumhare apne (bot ke nahi) purane messages se andaaz
+    const me = chatMyKey(), own = [];
+    chatSortedIds().slice(-80).forEach(id=>{ const m = chatMsgs.get(id); if(m && m.f === me && !m.sk && !m.k && m.t){ const t = String(m.t).trim(); if(t && !/🤖\s*$/.test(t)) own.push(t); } });
+    if(!own.length) return '';
+    const last = own.slice(-25), words = last.map(t => t.split(/\s+/).length);
+    const avg = Math.max(1, Math.round(words.reduce((a, b)=> a + b, 0) / words.length));
+    let emo = 0; try{ emo = Math.round(100 * last.filter(t => /\p{Extended_Pictographic}/u.test(t)).length / last.length); }catch(e){}
+    return 'TUMHARE (' + ((typeof myName !== 'undefined' && myName) || 'user') + ' ke) APNE LIKHE NAMUNE (isi andaaz me likho):\n' + own.slice(-15).map(t => '- ' + t.slice(0, 100).replace(/\n/g, ' ')).join('\n')
+      + '\nAverage lambai ~' + avg + ' shabd; ' + emo + '% messages me emoji.';
+  }
+  async function ask(model, system, msgs){
+    const resp = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 220, temperature: 0.7, system, messages: msgs }) });
+    if(!resp.ok) throw new Error('ai ' + resp.status);
+    const j = await resp.json();
+    return (j.content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text).join('\n').trim();
+  }
+  async function gen(peer, msgs){
+    const nm = (typeof myName !== 'undefined' && myName) || 'user';
+    let when = ''; try{ when = new Date().toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true }); }catch(e){}
+    const lang = cfg.lang === 'auto' ? 'Bhasha/script wahi jisme samne wale ne ABHI likha hai (Roman Hinglish/English/Hindi), andaaz aur slang ' + nm + ' ke namunon jaisa.' : 'Hamesha ' + LANGS[cfg.lang] + ' me likho.';
+    const cc = cfg.chats[peer.pair] || {}, og = ownG();
+    const system = 'Tum ' + nm + ' ho aur apne contact "' + peer.name + '" se chat par baat kar rahe ho. ' + nm + ' abhi busy hai, isliye uski jagah reply likh rahe ho.\n'
+      + (when ? 'Abhi ka samay: ' + when + '.\n' : '')
+      + (cfg.notes.trim() ? nm + ' ke baare me (sirf zarurat ho tab use karo, kuch na banao):\n' + cfg.notes.trim().slice(0, 600) + '\n' : '')
+      + (String(cc.note || '').trim() ? '"' + peer.name + '" ke baare me / is chat ke liye (tone + rules):\n' + String(cc.note).trim().slice(0, 400) + '\n' : '')
+      + (cc.g === 'm' ? peer.name + ' purush hai (use "tu/tum aaya/gaya" jaisa).\n' : cc.g === 'f' ? peer.name + ' mahila hai (use "tu/tum aayi/gayi" jaisa).\n' : '')
+      + 'Tum khud ' + (og === 'f' ? 'mahila ho (raha->rahi, gaya->gayi, karta->karti)' : 'purush ho (raha, gaya, karta)') + '.\n'
+      + (cfg.rules.trim() ? 'KABHI MAT BOLO/KARO (rules):\n' + cfg.rules.trim().slice(0, 400) + '\n' : '')
+      + (TONES[cfg.tone][1] ? TONES[cfg.tone][1] + ' (namunon ka andaaz phir bhi follow karo.)\n' : '')
+      + styleInfo() + '\n'
+      + 'RULES:\n1) Conversation me assistant role ' + nm + ' ke apne purane messages hain — unki lambai, emoji aur andaaz bilkul copy karo. ' + lang + '\n'
+      + '2) SIRF EK reply, chhota (zyadatar 1 line, max 2). Sawaal ho to seedha jawab; na ho to natural follow-up. Pichhli baaton ka context yaad rakho, repeat mat karo.\n'
+      + '3) Paisa, OTP, password, address, personal/sensitive info, pakka vaada/appointment/commitment ya kisi ke baare me faisla — kuch mat do. Apni taraf se koi personal detail (rishta, paisa, pata, plans, health) KABHI mat banao — upar ke notes me na ho to maano pata nahi. Aisa kuch ho ya tumhe pakka na pata ho to sirf likho: SKIP\n'
+      + '4) Agar samne wala SACHCHI me poochhe ki tum AI/bot ho ya asli ' + nm + ' — jhooth mat bolo: bolo ki ye AI reply hai aur ' + nm + ' baad me khud jawab dega.\n'
+      + '5) Photo/video/sticker aaye to chhoti natural reaction do.\n'
+      + 'OUTPUT: sirf reply ka text (naam/quotes/explanation/label ke bina), ya sirf SKIP.';
+    let raw = null, fastOk = true; try{ fastOk = sessionStorage.getItem('aiFastNo') !== '1'; }catch(e){}
+    if(fastOk){ try{ raw = await ask('claude-haiku-4-5', system, msgs); }catch(e){ raw = null; try{ sessionStorage.setItem('aiFastNo', '1'); }catch(e2){} } }
+    if(!raw) raw = await ask('claude-sonnet-4-6', system, msgs);
+    return raw;
+  }
+  function clean(raw, nm){
+    let t = String(raw || '').replace(/<(think|thinking|reasoning)>[\s\S]*?<\/\1>/gi, '').replace(/^[\s\S]*?<\/(?:think|thinking|reasoning)>/i, '').replace(/<(?:think|thinking|reasoning)>[\s\S]*$/i, '').trim();
+    t = t.split('\n').filter((l, i, a)=> !(i < 2 && /^(thought|thinking|reasoning|analysis|final answer|answer|response|reply)\s*:/i.test(l.trim()))).join('\n').trim().replace(/^["'“”]+|["'“”]+$/g, '');
+    t = t.replace(new RegExp('^(' + String(nm || 'me').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '|me|assistant)\\s*[:\\-]\\s*', 'i'), '').replace(/\s*🤖\s*$/, '');
+    return t.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3).join('\n').slice(0, 400).trim();
+  }
+
+  // ---------- core ----------
+  function ok(peer, my){ return my === seq && isOn(peer.pair) && typeof chatPeer !== 'undefined' && chatPeer === peer && Date.now() - manualAt >= TAKE; }
+  async function deliver(peer, my, text, isFb){
+    const sp = SPEEDS[cfg.speed];
+    const wait = Math.max(0, lastInAt + sp[2] - Date.now()) + Math.min(sp[3], 400 + text.length * 25);   // insaan jaisa, par tez
+    await sleep(wait);
+    if(!ok(peer, my)){ status = ''; refresh(); return; }
+    selfUntil = Date.now() + 6000; lastOut[peer.pair] = { t: text, at: Date.now() }; (hist[peer.pair] = hist[peer.pair] || []).push(Date.now());
+    status = '';
+    if(!isFb) logE(peer, 'ai', lastTxt[peer.pair], text); else if(!quickRule(lastTxt[peer.pair]) || quickRule(lastTxt[peer.pair]) !== text) logE(peer, 'fb', lastTxt[peer.pair], text);
+    try{ if(window.cxSend) await window.cxSend({ t: text + (cfg.label ? ' 🤖' : '') }, null, text.replace(/\s+/g, ' '), true); }catch(e){ console.error(e); }
+    refresh();
+  }
+  async function run(peer, my, tries){
+    if(my !== seq || !isOn(peer.pair) || chatPeer !== peer) return;
+    if(Date.now() - manualAt < TAKE){ status = 'Tumne khud reply kiya — Autopilot kuch der ruka hai'; refresh(); return; }
+    const ta = $('chatInput');
+    if(ta && ta.value.trim()){ if((tries || 0) < 4) timer = setTimeout(()=> run(peer, my, (tries || 0) + 1), 4000); return; }   // tum type kar rahe ho
+    const now = Date.now(), h = (hist[peer.pair] = (hist[peer.pair] || []).filter(t => now - t < 3600000));
+    if(h.length >= cfg.cap){ status = 'Limit: ' + cfg.cap + ' auto-reply / ghanta — ab ruka hai'; refresh(); toast('🤖 Autopilot limit (' + cfg.cap + '/ghanta) — khud reply do'); return; }
+    const qrp = quickRule(lastTxt[peer.pair]);
+    if(qrp){ logE(peer, 'rule', lastTxt[peer.pair], qrp); return deliver(peer, my, qrp, true); }   // quick rule: AI nahi, turant
+    const msgs = buildMsgs(); if(!msgs.length || msgs[msgs.length - 1].role !== 'user') return;
+    status = '🤖 soch raha hai…'; refresh();
+    let raw = null, failed = false;
+    for(let a = 0; a < 3 && raw == null; a++){
+      try{ raw = await gen(peer, msgs); }
+      catch(e){
+        console.error('autopilot ai failed', e); if(my !== seq) return;
+        if(!TRANSIENT.test(String(e && e.message || e))) break;                       // 400/401/403 = fail fast
+        await sleep(400 * Math.pow(2, a) + Math.random() * 200);                      // 429/5xx/network = backoff retry
+      }
+    }
+    if(raw == null) failed = true;
+    if(!ok(peer, my)){ status = ''; refresh(); return; }
+    if(failed){
+      if(cfg.fb && cfg.fbText.trim()) return deliver(peer, my, cfg.fbText.trim().slice(0, 200), true);
+      logE(peer, 'err', lastTxt[peer.pair], 'AI se jawab nahi mila'); status = 'AI se jawab nahi mila — internet check karo'; refresh(); return;
+    }
+    const text = clean(raw, typeof myName !== 'undefined' ? myName : '');
+    if(!text || /^SKIP\b/i.test(text)){ logE(peer, 'skip', lastTxt[peer.pair], 'AI ne chhoda'); status = 'Ye message AI ne chhoda — khud reply do'; refresh(); toast('🤖 Autopilot ne is message ko chhoda — khud reply do'); return; }
+    const lo = lastOut[peer.pair];
+    if(lo && norm(lo.t) === norm(text) && Date.now() - lo.at < 600000){ status = 'AI wahi purana reply de raha tha — chhoda, khud reply do'; refresh(); toast('🤖 Same reply repeat hota — Autopilot ne chhoda'); return; }
+    return deliver(peer, my, text, false);
+  }
+  function incoming(peer, id, m){
+    if(!peer || !isOn(peer.pair) || seen.has(id)) return; seen.add(id);
+    if(Date.now() - (Number(m.ts) || Date.now()) > 120000) return;
+    const t = m.t ? String(m.t) : '';
+    if(/🤖\s*$/.test(t)) return;                    // samne wala bhi autopilot = bot-bot loop nahi
+    if(SENS.test(t)){ logE(peer, 'skip', t, 'Sensitive'); clearTimeout(timer); seq++; status = 'Sensitive message — khud reply do'; refresh(); toast('⚠️ Sensitive message — Autopilot chup hai, khud reply do'); return; }
+    const k = norm(t), li = lastIn[peer.pair], nowT = Date.now();
+    if(k && li && li.k === k && nowT - li.at < 300000){          // same msg 5 min me dobara (spam/repeat) -> dobara reply nahi
+      li.n++; li.at = nowT; if(li.n >= 2){ status = 'Same message baar-baar aaya — dobara reply nahi (5 min)'; refresh(); return; }
+    } else if(k) lastIn[peer.pair] = { k, at: nowT, n: 1 };
+    lastInAt = Date.now(); lastTxt[peer.pair] = t; clearTimeout(timer); const my = ++seq;
+    timer = setTimeout(()=> run(peer, my, 0), SPEEDS[cfg.speed][1]);   // chhota debounce; AI call turant, bhejna minWait ke baad
+  }
+  const pi = AIReply.onIncoming, pm = AIReply.onMine;
+  AIReply.onIncoming = function(peer, id, m){ try{ pi.apply(this, arguments); }catch(e){} try{ incoming(peer, id, m); }catch(e){ console.error(e); } };
+  AIReply.onMine = function(m){
+    try{ pm.apply(this, arguments); }catch(e){}
+    try{
+      if(Date.now() < selfUntil) return;                                          // ye Autopilot ka apna msg
+      if(m && Date.now() - (Number(m.ts) || 0) > 20000) return;                   // purani history load
+      manualAt = Date.now(); clearTimeout(timer); seq++;                          // tumne khud bheja -> tum sambhalo
+    }catch(e){}
+  };
+
+  // ---------- settings panel ----------
+  function openSettings(){
+    styles();
+    let p = $('cxApSet'); if(p) p.remove();
+    p = document.createElement('div'); p.id = 'cxApSet';
+    const chips = (obj, cur, attr)=> Object.keys(obj).map(k => `<button type="button" class="ch${k === cur ? ' on' : ''}" data-${attr}="${k}">${(Array.isArray(obj[k]) ? obj[k][0] : obj[k])}</button>`).join('');
+    p.innerHTML = '<div class="pn"><h3>⚙️ Autopilot settings</h3>'
+      + '<label>Speed (kitni jaldi reply)</label><div class="row" id="apSp">' + chips(SPEEDS, cfg.speed, 'sp') + '</div>'
+      + '<label>⚡ Quick replies — AI ke bina turant (har line: keyword | keyword => reply)</label><textarea id="apQr" maxlength="800" placeholder="jaise: kaha ho | kidhar => Ghar pe hi hoon\nexam date => Mujhe pakka nahi pata, baad me batata hoon"></textarea>'
+      + '<label>Tone (andaaz)</label><div class="row" id="apTn">' + chips(TONES, cfg.tone, 'tn') + '</div>'
+      + '<label>Bhasha</label><div class="row" id="apLg">' + chips(LANGS, cfg.lang, 'lg') + '</div>'
+      + '<label>Mere baare me (AI ko batao: kya karta hoon, kab free, pasand/napasand…)</label><textarea id="apNotes" maxlength="600" placeholder="jaise: main student hoon, raat ko padhta hoon, cricket pasand hai"></textarea>'
+      + '<label>Kabhi mat bolo / karo (rules)</label><textarea id="apRules" maxlength="400" placeholder="jaise: kabhi paise/price mat batao, plans confirm mat karo"></textarea>'
+      + (chatPeer ? '<label>Is chat (' + String(chatPeer.name).replace(/[<>&"]/g, '') + ') ke liye — kaun hai, tone, rules</label><textarea id="apCNote" maxlength="400" placeholder="jaise: close dost, mazaak chalta hai"></textarea><label>Samne wala</label><div class="row" id="apTg"><button type="button" class="ch" data-tg="">Auto</button><button type="button" class="ch" data-tg="m">♂ Purush</button><button type="button" class="ch" data-tg="f">♀ Mahila</button></div>' : '')
+      + '<label>Main (raha/rahi)</label><div class="row" id="apOg"><button type="button" class="ch" data-og="m">♂ Purush</button><button type="button" class="ch" data-og="f">♀ Mahila</button></div>'
+      + '<label>AI fail ho to ye bhejo (default OFF — placeholder samne wale ko ajeeb lag sakta hai)</label><div class="row"><button type="button" class="ch' + (cfg.fb ? ' on' : '') + '" id="apFbT">' + (cfg.fb ? 'ON' : 'OFF') + '</button></div><input type="text" id="apFb" maxlength="200" style="margin-top:6px">'
+      + '<label>Max auto-reply / ghanta (is chat me)</label><input type="number" id="apCap" min="1" max="60">'
+      + '<label>AI label 🤖 (reply ke end me — samne wale ko pata rahe)</label><div class="row"><button type="button" class="ch' + (cfg.label ? ' on' : '') + '" id="apLb">' + (cfg.label ? 'ON (salah)' : 'OFF') + '</button></div>'
+      + '<label>📜 Recent log</label><div class="row"><button type="button" class="ch" id="apLg2">Dikhao</button><button type="button" class="ch" id="apLgC">Saaf karo</button></div><div id="apLogBox" style="font-size:12px;opacity:.85;line-height:1.5;margin-top:6px"></div>'
+      + '<div class="ft"><button type="button" id="apX">Band</button><button type="button" class="ok" id="apOk">Save</button></div></div>';
+    document.body.appendChild(p);
+    p.querySelector('#apQr').value = cfg.qr; p.querySelector('#apNotes').value = cfg.notes; p.querySelector('#apRules').value = cfg.rules; p.querySelector('#apFb').value = cfg.fbText; p.querySelector('#apCap').value = cfg.cap;
+    const tmp = Object.assign({}, cfg), cpair = chatPeer ? chatPeer.pair : null, cc0 = (cpair && cfg.chats[cpair]) || {};
+    let tg = cc0.g || '', og = ownG();
+    if(cpair) p.querySelector('#apCNote').value = cc0.note || '';
+    const mark = (rowId, attr, cur)=> p.querySelectorAll(rowId + ' .ch').forEach(x => x.classList.toggle('on', (x.dataset[attr] || '') === cur));
+    mark('#apTg', 'tg', tg); mark('#apOg', 'og', og);
+    if(cpair) p.querySelector('#apTg').addEventListener('click', (e)=>{ const b = e.target.closest('[data-tg]'); if(!b) return; tg = b.dataset.tg; mark('#apTg', 'tg', tg); });
+    p.querySelector('#apOg').addEventListener('click', (e)=>{ const b = e.target.closest('[data-og]'); if(!b) return; og = b.dataset.og; mark('#apOg', 'og', og); });
+    const pick = (rowId, attr, key)=> p.querySelector(rowId).addEventListener('click', (e)=>{ const b = e.target.closest('[data-' + attr + ']'); if(!b) return; tmp[key] = b.dataset[attr]; p.querySelectorAll(rowId + ' .ch').forEach(x => x.classList.toggle('on', x === b)); });
+    pick('#apSp', 'sp', 'speed'); pick('#apLg', 'lg', 'lang'); pick('#apTn', 'tn', 'tone');
+    p.querySelector('#apFbT').addEventListener('click', (e)=>{ tmp.fb = !tmp.fb; e.target.classList.toggle('on', tmp.fb); e.target.textContent = tmp.fb ? 'ON' : 'OFF'; });
+    p.querySelector('#apLb').addEventListener('click', (e)=>{ tmp.label = !tmp.label; e.target.classList.toggle('on', tmp.label); e.target.textContent = tmp.label ? 'ON (salah)' : 'OFF'; });
+    const esc = (x)=> String(x).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    const ICO = { ai: '🤖', rule: '⚡', fb: '↩️', err: '⚠️', skip: '⏭️' };
+    p.querySelector('#apLg2').addEventListener('click', ()=>{ const a = LG('cx-ap-log', []).slice(-12).reverse(); p.querySelector('#apLogBox').innerHTML = a.length ? a.map(e => ICO[e.k] + ' ' + new Date(e.at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ' <b>' + esc(e.p) + '</b>: ' + esc(e.i) + ' → ' + esc(e.o)).join('<br>') : 'Abhi koi entry nahi'; });
+    p.querySelector('#apLgC').addEventListener('click', ()=>{ LS('cx-ap-log', []); p.querySelector('#apLogBox').textContent = 'Saaf ✅'; });
+    p.querySelector('#apX').addEventListener('click', ()=> p.remove());
+    p.addEventListener('click', (e)=>{ if(e.target === p) p.remove(); });
+    p.querySelector('#apOk').addEventListener('click', ()=>{
+      if(cpair){ const n = p.querySelector('#apCNote').value.trim().slice(0, 400); if(n || tg) cfg.chats[cpair] = { note: n, g: tg }; else delete cfg.chats[cpair]; }
+      tmp.chats = cfg.chats; try{ localStorage.setItem('aiGen', og); }catch(e){}
+      cfg = Object.assign(cfg, tmp, { qr: p.querySelector('#apQr').value.slice(0, 800), rules: p.querySelector('#apRules').value.slice(0, 400), notes: p.querySelector('#apNotes').value.slice(0, 600), fbText: p.querySelector('#apFb').value.trim().slice(0, 200), cap: Math.max(1, Math.min(60, Number(p.querySelector('#apCap').value) || 10)) });
+      saveCfg(); LS(KL, cfg.label); p.remove(); refresh(); toast('Autopilot settings save ✅');
+    });
+    p.classList.add('open');
+  }
+
+  // ---------- UI ----------
+  let bar = null;
+  function refresh(){
+    const m = $('cxMenu'), pair = typeof chatPeer !== 'undefined' && chatPeer ? chatPeer.pair : null;
+    const a = m && m.querySelector('[data-xs="ap"]');
+    if(a){ a.classList.toggle('on', isOn(pair)); a.querySelector('b').textContent = 'Autopilot: ' + (isOn(pair) ? 'ON' : 'OFF'); }
+    if(!bar) bar = $('cxApBar');
+    if(bar){
+      const on = isOn(pair); bar.classList.toggle('on', on);
+      if(on) bar.querySelector('span').textContent = '🤖 Autopilot ON — ' + (status || 'AI tumhari jagah reply karega (app khula rahe)');
+    }
+  }
+  function hook(){
+    styles();
+    const m = $('cxMenu');
+    if(m && !m.querySelector('[data-xs="ap"]')){
+      m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="ap"><span>🤖</span><b></b></button><button type="button" data-xs="apset"><span>⚙️</span>Autopilot settings</button>');
+      m.querySelector('[data-xs="ap"]').addEventListener('click', (e)=>{
+        e.preventDefault(); m.classList.remove('open');
+        const peer = chatPeer; if(!peer) return;
+        if(isOn(peer.pair)){ setOn(peer.pair, false); toast('🤖 Autopilot OFF'); return; }
+        if(!confirm('Autopilot ON karoge?\n\nAI is chat me tumhari jagah reply karega (purane messages padh ke, tumhare andaaz me) — sirf jab app khula ho aur ye chat open ho.\nSensitive msg (paisa/OTP/emergency) skip honge. Tum khud type karo to ruk jayega.')) return;
+        setOn(peer.pair, true); toast('🤖 Autopilot ON — ' + peer.name);
+      });
+      m.querySelector('[data-xs="apset"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); openSettings(); });
+    }
+    const ta = $('chatInput'), comp = ta && ta.closest('.chatComposer');
+    if(comp && !$('cxApBar')){
+      bar = document.createElement('div'); bar.id = 'cxApBar';
+      bar.innerHTML = '<span></span><button type="button">⏸ Band</button>';
+      bar.querySelector('button').addEventListener('click', ()=>{ if(chatPeer){ setOn(chatPeer.pair, false); toast('🤖 Autopilot OFF'); } });
+      comp.insertAdjacentElement('beforebegin', bar);
+    }
+    refresh();
+  }
+  setInterval(()=>{ try{ hook(); }catch(e){} }, 500);
+  window.cxAutopilot = { isOn, setOn, cfg: ()=> cfg, openSettings };
 })();
