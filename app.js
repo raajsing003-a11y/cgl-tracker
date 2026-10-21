@@ -111,13 +111,15 @@ function buildSPMockLabel(items, field, num, count, prefix){
 // everything else in the app keeps working unchanged either way (inside a
 // Claude.ai Artifact preview or hosted standalone, e.g. GitHub Pages).
 const AI_PROXY_URL = "https://white-fire-2957.crickrttop10.workers.dev/v1/messages";
+// Draw to type / Slide typing: BAND. Dobara chahiye to sirf true karo (menu item + buttons wapas aa jayenge).
+const CX_DRAW_ENABLED = false;
 
 // ---- Chat AI (Autopilot + AI reply suggest): provider chunao — proxy (default) / Gemini / Groq / OpenRouter ----
 // Key sirf is phone ke localStorage me ('cx-ai-key'); Autopilot settings > "AI provider" me daalo.
 // Gemini key app.js me NAHI (GitHub secret scanning + leak). Key Cloudflare Worker (gemini-worker.js) me secret hai; worker ka URL yahan daalo.
 const CX_GEM_PROXY = 'https://gemini-proxy.crickrttop10.workers.dev';   // jaise 'https://gemini-proxy.<naam>.workers.dev'  (khaali = purana Claude proxy / user ki apni key)
 try{ if(localStorage.getItem('cx-ai-prov') === null) localStorage.setItem('cx-ai-prov', 'gemini'); }catch(e){}
-const CX_AI_DEF = { gemini: 'gemini-flash-latest', groq: 'llama-3.3-70b-versatile', openrouter: 'meta-llama/llama-3.3-70b-instruct:free' };
+const CX_AI_DEF = { gemini: 'gemini-flash-lite-latest', groq: 'llama-3.3-70b-versatile', openrouter: 'meta-llama/llama-3.3-70b-instruct:free' };
 async function cxAiCall(model, system, msgs, maxTokens){
   let prov = 'proxy', key = '', mdl = '';
   try{ prov = localStorage.getItem('cx-ai-prov') || 'proxy'; key = (localStorage.getItem('cx-ai-key') || '').trim(); mdl = (localStorage.getItem('cx-ai-model') || '').trim(); }catch(e){}
@@ -27976,7 +27978,7 @@ const SlideType = (function(){
     const r = ov.getBoundingClientRect(), kb = kbRect();
     return { x:(e.clientX-r.left-kb.x)/kb.w, y:(e.clientY-r.top-kb.y)/kb.h };
   }
-  function open(){
+  function open(){ if(!CX_DRAW_ENABLED) return;
     if(ov) return;
     target = field();
     buildDict();
@@ -28031,7 +28033,7 @@ const SlideType = (function(){
   document.head.appendChild(css);
 
   // (floating ✍️ button hata diya — ab sirf chat ke "+" menu me 'Slide typing' hai)
-  function toggleFor(el){ if(ov){ close(); return; } if(Date.now() < (window.__cxNoDrawUntil||0)) return; if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
+  function toggleFor(el){ if(!CX_DRAW_ENABLED) return; if(ov){ close(); return; } if(Date.now() < (window.__cxNoDrawUntil||0)) return; if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
   return { open, close, decode, toggleFor };
 })();
 
@@ -28116,7 +28118,7 @@ const SlideType = (function(){
     m.dataset.c12 = '1';
     m.insertAdjacentHTML('afterbegin',
       '<button type="button" data-c12="vn"><span>🎤</span>Voice note</button>' +
-      '<button type="button" data-c12="st"><span>✍️</span>Draw to type</button>');
+      (CX_DRAW_ENABLED ? '<button type="button" data-c12="st"><span>✍️</span>Draw to type</button>' : ''));
     m.addEventListener('click', (e)=>{
       const b = e.target.closest('[data-c12]'); if(!b) return;
       m.classList.remove('open');
@@ -28326,7 +28328,7 @@ const HandWrite = (function(){
     bar.style.bottom = b + 'px';
   }
 
-  function open(el){
+  function open(el){ if(!CX_DRAW_ENABLED) return;
     if(ov) return;
     target = el || document.getElementById('chatInput');
     if(!target){ alert('Pehle chat kholo.'); return; }
@@ -28403,7 +28405,7 @@ const HandWrite = (function(){
     const b = document.getElementById('cxDrawBtn'); if(b) b.classList.remove('on');
     const el = field(); if(el) el.dispatchEvent(new Event('change',{bubbles:true}));
   }
-  function toggleFor(el){ if(ov) close(); else open(el); }
+  function toggleFor(el){ if(!CX_DRAW_ENABLED) return; if(ov) close(); else open(el); }
 
   const css = document.createElement('style');
   css.textContent = `
@@ -28432,6 +28434,7 @@ const HandWrite = (function(){
   function put(){
     // ✍️ ab composer me nahi — sirf chat ke "+" menu me 'Draw to type' hai (autopilot confirm tap-through bug fix)
     const old = document.getElementById('cxDrawBtn'); if(old) old.remove();
+    document.querySelectorAll('#slideTypeBtn,#cxSlideBtn,#hwOv,#stOv').forEach(x => x.remove());   // draw band: kuch bacha ho to hata do
   }
   cxPoll('chat', ()=>{ try{ put(); }catch(e){} }, 500); put();
 })();
@@ -29845,7 +29848,7 @@ const AIReply = (function(){
   const TRANSIENT = /\b(429|500|502|503|504|529)\b|overloaded|timeout|failed to fetch|networkerror|load failed|fetch failed/i;
   const saveCfg = ()=> LS(KC, cfg);
   if(typeof cfg.qr !== 'string') cfg.qr = '';
-  function warm(){ try{ fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }) }).catch(()=>{}); }catch(e){} }   // connection garam (pehla reply tez)
+  function warm(){ try{ cxAiCall('', 'Reply: ok', [{ role: 'user', content: 'hi' }], 4).catch(()=>{}); }catch(e){} }   // connection/worker garam (provider jo bhi ho)
   // ---- log (last 30) ----
   const logE = (peer, kind, inn, out)=>{ try{ const a = LG('cx-ap-log', []); a.push({ at: Date.now(), p: peer && peer.name || '', k: kind, i: String(inn || '').slice(0, 80), o: String(out || '').slice(0, 120) }); LS('cx-ap-log', a.slice(-30)); }catch(e){} };
   // ---- quick-reply rules: har line "keyword => reply" (AI ke bina turant) ----
