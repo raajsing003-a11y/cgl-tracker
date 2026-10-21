@@ -111,6 +111,45 @@ function buildSPMockLabel(items, field, num, count, prefix){
 // everything else in the app keeps working unchanged either way (inside a
 // Claude.ai Artifact preview or hosted standalone, e.g. GitHub Pages).
 const AI_PROXY_URL = "https://white-fire-2957.crickrttop10.workers.dev/v1/messages";
+
+// ---- Chat AI (Autopilot + AI reply suggest): provider chunao — proxy (default) / Gemini / Groq / OpenRouter ----
+// Key sirf is phone ke localStorage me ('cx-ai-key'); Autopilot settings > "AI provider" me daalo.
+// Gemini key app.js me NAHI (GitHub secret scanning + leak). Key Cloudflare Worker (gemini-worker.js) me secret hai; worker ka URL yahan daalo.
+const CX_GEM_PROXY = 'https://gemini-proxy.crickrttop10.workers.dev';   // jaise 'https://gemini-proxy.<naam>.workers.dev'  (khaali = purana Claude proxy / user ki apni key)
+try{ if(localStorage.getItem('cx-ai-prov') === null) localStorage.setItem('cx-ai-prov', 'gemini'); }catch(e){}
+const CX_AI_DEF = { gemini: 'gemini-flash-latest', groq: 'llama-3.3-70b-versatile', openrouter: 'meta-llama/llama-3.3-70b-instruct:free' };
+async function cxAiCall(model, system, msgs, maxTokens){
+  let prov = 'proxy', key = '', mdl = '';
+  try{ prov = localStorage.getItem('cx-ai-prov') || 'proxy'; key = (localStorage.getItem('cx-ai-key') || '').trim(); mdl = (localStorage.getItem('cx-ai-model') || '').trim(); }catch(e){}
+  if(prov === 'gemini' && !key && CX_GEM_PROXY){
+    const resp = await fetch(CX_GEM_PROXY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: mdl || CX_AI_DEF.gemini, system, messages: msgs, max_tokens: Math.max(maxTokens || 200, 300) }) });
+    if(!resp.ok) await bad(resp);
+    const j = await resp.json(); return String(j.text || '').trim();
+  }
+  if(prov === 'gemini' && !key && !CX_GEM_PROXY) prov = 'proxy';   // koi key/worker nahi => purana proxy
+  if(prov !== 'proxy' && !key) throw new Error('ai 401 | ' + prov + ' ki key nahi daali');
+  const bad = async (resp)=>{ let bd=''; try{ bd=(await resp.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){} window.__aiLastBody = bd; throw new Error('ai ' + resp.status + (bd ? ' | ' + bd : '')); };
+  if(prov === 'gemini'){
+    const m = mdl || CX_AI_DEF.gemini;
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: msgs.map(x => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] })), generationConfig: { maxOutputTokens: Math.max(maxTokens || 200, 300), temperature: 0.8 } }) });
+    if(!resp.ok) await bad(resp);
+    const j = await resp.json();
+    return (((j.candidates || [])[0] || {}).content || { parts: [] }).parts.map(p => p.text || '').join('\n').trim();
+  }
+  if(prov === 'groq' || prov === 'openrouter'){
+    const url = prov === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: mdl || CX_AI_DEF[prov], max_tokens: maxTokens || 200, temperature: 0.8, messages: [{ role: 'system', content: system }].concat(msgs) }) });
+    if(!resp.ok) await bad(resp);
+    const j = await resp.json();
+    return String((((j.choices || [])[0] || {}).message || {}).content || '').trim();
+  }
+  const resp = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: maxTokens || 200, system, messages: msgs }) });
+  if(!resp.ok) await bad(resp);
+  const j = await resp.json();
+  return (j.content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text).join('\n').trim();
+}
 const DAILY_TARGET = 5000;
 const DEFAULT_TASKS = [
   "Math Formula + GK Revise",
@@ -26821,7 +26860,8 @@ void main(){
 
   // ---------- (2) GIF tab ----------
   const MAXG = 40, KEYK = 'cxg-key', ROOMK = 'cxg-room', KAV = 'cxg-key-av';
-  const getKey = ()=>{ try{ return localStorage.getItem(KEYK) || ''; }catch(e){ return ''; } };
+  const CX_GIPHY_DEF = 'h0gvEhMVTdMBdfiv9M5tJV2CXNXEZNA0';   // built-in key: kisi ko alag se key nahi daalni; localStorage/admin key ho to wahi pehle
+  const getKey = ()=>{ try{ return localStorage.getItem(KEYK) || CX_GIPHY_DEF; }catch(e){ return CX_GIPHY_DEF; } };
   const setKey = (k)=>{ try{ k ? localStorage.setItem(KEYK, k) : localStorage.removeItem(KEYK); }catch(e){} };
   function idb(){ return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-gifs', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('g', { keyPath: 'id' }); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } }); }
   async function gAll(){ const d = await idb(); return new Promise((res, rej)=>{ const q = d.transaction('g').objectStore('g').getAll(); q.onsuccess = ()=> res((q.result || []).sort((a, b)=> b.ts - a.ts)); q.onerror = ()=> rej(q.error); }); }
@@ -28201,7 +28241,7 @@ const HandWrite = (function(){
       let resp = null;
       if(fastOk){ try{ resp = await call('claude-haiku-4-5'); }catch(e){ resp = null; } if(!resp || !resp.ok){ resp = null; try{ sessionStorage.setItem('hwFastNo', '1'); }catch(e){} } }
       if(!resp) resp = await call('claude-sonnet-4-6');
-      if(!resp.ok) throw new Error('ai '+resp.status);
+      if(!resp.ok){ let bd=''; try{ bd=(await resp.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){} window.__aiLastBody=bd; throw new Error('ai '+resp.status+(bd?' | '+bd:'')); }
       const j = await resp.json();
       let t = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join(' ').trim().replace(/^["'“”]+|["'“”]+$/g,'').trim();
       if(!t || t.length > raw.length*3 + 25) return;
@@ -28583,13 +28623,7 @@ const AIReply = (function(){
       return { e: '', t: String(x).trim() };
     }).filter(x=>x.t).slice(0,3);
   }
-  async function ask(model, system, msgs){
-    const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model, max_tokens:330, system, messages: msgs }) });
-    if(!resp.ok) throw new Error('ai '+resp.status);
-    const j = await resp.json();
-    return (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join('\n').trim();
-  }
+  async function ask(model, system, msgs){ return cxAiCall(model, system, msgs, 330); }
   async function suggest(peer, force, instant){
     if(!on || !peer || chatPeer !== peer) return;
     const msgs = buildMessages(); if(!msgs.length || msgs[msgs.length-1].role !== 'user') return;
@@ -28624,7 +28658,7 @@ const AIReply = (function(){
     }catch(e){
       console.error('AI suggest failed', e);
       if(my === seq){ const em = String(e && e.message || e), code = (em.match(/ai (\d{3})/) || [])[1];
-        note('🤖 suggestion nahi ban paya — ' + (code === '401' || code === '403' ? 'AI key/proxy ne mana kiya (' + code + ')' : code === '400' ? 'proxy ne request reject ki (400)' : code ? 'proxy error ' + code : em === 'empty' ? 'AI ka jawab samajh nahi aaya' : 'proxy tak network nahi pahunchi (' + em.slice(0, 30) + ')'), true); }
+        note('🤖 suggestion nahi ban paya — ' + (code === '401' || code === '403' ? 'AI key/proxy ne mana kiya (' + code + ')' : code === '400' ? 'proxy ne request reject ki (400)' : code ? 'proxy error ' + code + (window.__aiLastBody ? ' — ' + window.__aiLastBody.slice(0, 70) : '') : em === 'empty' ? 'AI ka jawab samajh nahi aaya' : 'proxy tak network nahi pahunchi (' + em.slice(0, 30) + ')'), true); }
     }
   }
 
@@ -29876,12 +29910,7 @@ const AIReply = (function(){
     return 'TUMHARE (' + ((typeof myName !== 'undefined' && myName) || 'user') + ' ke) APNE LIKHE NAMUNE (isi andaaz me likho):\n' + own.slice(-15).map(t => '- ' + t.slice(0, 100).replace(/\n/g, ' ')).join('\n')
       + '\nAverage lambai ~' + avg + ' shabd; ' + emo + '% messages me emoji.';
   }
-  async function ask(model, system, msgs){
-    const resp = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 160, system, messages: msgs }) });
-    if(!resp.ok) throw new Error('ai ' + resp.status);
-    const j = await resp.json();
-    return (j.content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text).join('\n').trim();
-  }
+  async function ask(model, system, msgs){ return cxAiCall(model, system, msgs, 160); }
   async function gen(peer, msgs){
     const nm = (typeof myName !== 'undefined' && myName) || 'user';
     let when = ''; try{ when = new Date().toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true }); }catch(e){}
@@ -30004,6 +30033,7 @@ const AIReply = (function(){
       + '<label>AI fail ho to ye bhejo (default OFF — placeholder samne wale ko ajeeb lag sakta hai)</label><div class="row"><button type="button" class="ch' + (cfg.fb ? ' on' : '') + '" id="apFbT">' + (cfg.fb ? 'ON' : 'OFF') + '</button></div><input type="text" id="apFb" maxlength="200" style="margin-top:6px">'
       + '<label>Max auto-reply / ghanta (is chat me)</label><input type="number" id="apCap" min="1" max="60">'
       + '<label>AI label 🤖 (reply ke end me — samne wale ko pata rahe)</label><div class="row"><button type="button" class="ch' + (cfg.label ? ' on' : '') + '" id="apLb">' + (cfg.label ? 'ON (salah)' : 'OFF') + '</button></div>'
+      + '<label>🧠 AI provider (proxy 500 de to Gemini/Groq ki free key daalo)</label><div class="row" id="apPv"><button type="button" class="ch" data-pv="proxy">Proxy</button><button type="button" class="ch" data-pv="gemini">Gemini</button><button type="button" class="ch" data-pv="groq">Groq</button><button type="button" class="ch" data-pv="openrouter">OpenRouter</button></div><input type="password" id="apKey" placeholder="API key (sirf is phone me save)" autocomplete="off" style="margin-top:6px"><input type="text" id="apMdl" placeholder="Model (khaali = default)" style="margin-top:6px"><div style="font-size:11.5px;opacity:.7;margin-top:4px">Free key: Gemini → aistudio.google.com/apikey · Groq → console.groq.com/keys</div>'
       + '<label>🧪 Autopilot check</label><div class="row"><button type="button" class="ch" id="apTest">AI test karo</button></div><div id="apTestOut" style="font-size:12.5px;line-height:1.5;margin-top:6px"></div>'
       + '<label>📜 Recent log</label><div class="row"><button type="button" class="ch" id="apLg2">Dikhao</button><button type="button" class="ch" id="apLgC">Saaf karo</button></div><div id="apLogBox" style="font-size:12px;opacity:.85;line-height:1.5;margin-top:6px"></div>'
       + '<div class="ft"><button type="button" id="apX">Band</button><button type="button" class="ok" id="apOk">Save</button></div></div>';
@@ -30018,10 +30048,14 @@ const AIReply = (function(){
     p.querySelector('#apOg').addEventListener('click', (e)=>{ const b = e.target.closest('[data-og]'); if(!b) return; og = b.dataset.og; mark('#apOg', 'og', og); });
     const pick = (rowId, attr, key)=> p.querySelector(rowId).addEventListener('click', (e)=>{ const b = e.target.closest('[data-' + attr + ']'); if(!b) return; tmp[key] = b.dataset[attr]; p.querySelectorAll(rowId + ' .ch').forEach(x => x.classList.toggle('on', x === b)); });
     pick('#apSp', 'sp', 'speed'); pick('#apLg', 'lg', 'lang'); pick('#apTn', 'tn', 'tone');
+    let pv = 'proxy'; try{ pv = localStorage.getItem('cx-ai-prov') || 'proxy'; p.querySelector('#apKey').value = localStorage.getItem('cx-ai-key') || ''; p.querySelector('#apMdl').value = localStorage.getItem('cx-ai-model') || ''; }catch(e){}
+    const saveAi = ()=>{ try{ localStorage.setItem('cx-ai-prov', pv); localStorage.setItem('cx-ai-key', p.querySelector('#apKey').value.trim()); localStorage.setItem('cx-ai-model', p.querySelector('#apMdl').value.trim()); sessionStorage.removeItem('aiFastNo'); }catch(e){} };
+    const markPv = ()=> p.querySelectorAll('#apPv .ch').forEach(x => x.classList.toggle('on', x.dataset.pv === pv));
+    markPv(); p.querySelector('#apPv').addEventListener('click', (e)=>{ const x = e.target.closest('[data-pv]'); if(!x) return; pv = x.dataset.pv; markPv(); });
     p.querySelector('#apFbT').addEventListener('click', (e)=>{ tmp.fb = !tmp.fb; e.target.classList.toggle('on', tmp.fb); e.target.textContent = tmp.fb ? 'ON' : 'OFF'; });
     p.querySelector('#apLb').addEventListener('click', (e)=>{ tmp.label = !tmp.label; e.target.classList.toggle('on', tmp.label); e.target.textContent = tmp.label ? 'ON (salah)' : 'OFF'; });
     p.querySelector('#apTest').addEventListener('click', async ()=>{
-      const o = p.querySelector('#apTestOut'); o.textContent = 'Test chal raha hai…'; const t0 = Date.now();
+      const o = p.querySelector('#apTestOut'); o.textContent = 'Test chal raha hai…'; const t0 = Date.now(); saveAi();
       try{
         const pr = chatPeer || { pair: 'test', name: 'Dost' };
         const raw = await gen(pr, [{ role: 'user', content: 'kya haal hai bhai?' }]);
@@ -30035,6 +30069,7 @@ const AIReply = (function(){
     p.querySelector('#apX').addEventListener('click', ()=> p.remove());
     p.addEventListener('click', (e)=>{ if(e.target === p) p.remove(); });
     p.querySelector('#apOk').addEventListener('click', ()=>{
+      saveAi();
       if(cpair){ const n = p.querySelector('#apCNote').value.trim().slice(0, 400); if(n || tg) cfg.chats[cpair] = { note: n, g: tg }; else delete cfg.chats[cpair]; }
       tmp.chats = cfg.chats; try{ localStorage.setItem('aiGen', og); }catch(e){}
       cfg = Object.assign(cfg, tmp, { qr: p.querySelector('#apQr').value.slice(0, 800), rules: p.querySelector('#apRules').value.slice(0, 400), notes: p.querySelector('#apNotes').value.slice(0, 600), fbText: p.querySelector('#apFb').value.trim().slice(0, 200), cap: Math.max(1, Math.min(60, Number(p.querySelector('#apCap').value) || 10)) });
