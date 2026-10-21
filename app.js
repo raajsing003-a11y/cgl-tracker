@@ -2409,6 +2409,7 @@ async function refreshRoomMeta(){
   // effective round-trip per tick instead of stacking up latency.
   const [meta, ann] = await Promise.all([ loadRoomMeta(), loadRoomAnnouncement() ]);
   currentRoomAdmin = meta.admin || null;
+  try{ claimLockedAdmin(meta).catch(()=>{}); }catch(e){}   // uv/uv99 (password verified) => room ka Admin ban jaye
   currentRoomSubAdmin = meta.subAdmin || null;
   currentRoomHidden = meta.hidden || {};
   currentRoomRestricted = meta.restricted || {};
@@ -2860,6 +2861,17 @@ async function askAdminPassword(name){
   else alert('❌ Galat password. Ye naam sirf Admin ke liye hai — naya naam chuno.');
   return ok;
 }
+let __claimTried = false;
+async function claimLockedAdmin(meta){
+  if(__claimTried) return;
+  const me = String(myName || '').trim().toLowerCase();
+  if(!me || ADMIN_LOCK_NAMES.indexOf(me) < 0 || !adminOkFor(me)) return;
+  const cur = meta && meta.admin ? String(meta.admin) : '';
+  if(cur && cur.toLowerCase() === me) return;
+  __claimTried = true;
+  if(cur && ADMIN_LOCK_NAMES.indexOf(cur.toLowerCase()) < 0 && !confirm('Abhi room ka Admin "' + cur + '" hai. Password sahi hai — kya tum ("' + myName + '") Admin banna chahte ho?')) return;
+  try{ await setRoomAdmin(myName); await refreshRoomMeta(); alert('👑 Ab "' + myName + '" room ka Admin hai.'); }catch(e){ console.error('claim admin', e); }
+}
 function adminOkFor(name){ try{ return localStorage.getItem(ADMIN_OK_KEY) === String(name || '').trim().toLowerCase(); }catch(e){ return false; } }
 async function getOrCreateMyNameAsync(){
   let name = null;
@@ -3271,6 +3283,7 @@ function renderProfileBar(){
         return;
       }
       const oldName = myName;
+      let wasAdmin = false; try{ const m0 = await loadRoomMeta(); wasAdmin = !!(m0 && m0.admin && String(m0.admin).toLowerCase() === String(oldName).toLowerCase()); }catch(e){}
       // Grab a fresh copy of the OLD name's saved progress before anything
       // else changes — this is what would otherwise get orphaned.
       const oldState = await loadPlayerState(oldName);
@@ -3284,6 +3297,7 @@ function renderProfileBar(){
       await save();
       await registerPlayer(myName);
       if(getRoomCode()) await addToRoomRegistry(myName);
+      if(wasAdmin){ try{ await setRoomAdmin(myName); await refreshRoomMeta(); }catch(e){ console.error('admin rename', e); } }   // naam badalne par Admin bhi naye naam par
       await switchViewing(myName);
       await renderCompetePanel();
     });
