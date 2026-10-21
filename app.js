@@ -21363,7 +21363,7 @@ async function chatOpenConv(name){
   const ta = chatEl('chatInput'); if(ta){ ta.value = ''; chatAutosize(); }
 }
 function chatLockNote(){
-  return `<div class="chatOlderWrap" id="chatOlderWrap" hidden><button type="button" id="chatOlderBtn" class="chatOlderBtn">⬆ Purane messages</button></div><div class="chatLockNote">🔒 Ye chat sirf tum dono ke beech hai.</div>`;
+  return `<div class="chatOlderWrap" id="chatOlderWrap" hidden><button type="button" id="chatOlderBtn" class="chatOlderBtn">⬆ Purane messages</button></div><div class="chatLockNote">🔒 Ye chat tum dono ke beech hai. Room Admin moderation ke liye dekh sakta hai.</div>`;
 }
 function chatSortedIds(){ return Array.from(chatMsgs.keys()).sort(); }
 function chatBubbleHtml(id, m){
@@ -24771,12 +24771,15 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #cxCam .qtog{position:absolute;right:14px;top:calc(62px + env(safe-area-inset-top,0px));z-index:3;width:38px;height:38px;border-radius:19px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:18px;line-height:1;padding:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
     #cxCam.qopen .qtog{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
     body:has(#cxCam.open) #cxFsPill,body:has(#callOv.open) #cxFsPill,body:has(#cxView.open) #cxFsPill{display:none!important}
-    #cxCam .qb2{position:absolute;left:14px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;z-index:3}
+    #cxCam .qb2{position:absolute;left:14px;top:calc(108px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;z-index:3}
     #cxCam .qb2 button{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:14px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;font-family:inherit;line-height:1}
     #cxCam .qb2 button.on{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
     /* ROUND 8 (Pizchat-/PizCamera): torch + hands-free record lock */
     #cxCam .tch{position:absolute;right:60px;top:calc(62px + env(safe-area-inset-top,0px));z-index:3;width:38px;height:38px;border-radius:19px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:17px;line-height:1;padding:0;display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
     #cxCam .tch.show{display:flex}
+    #cxCam .ur{position:absolute;left:14px;top:calc(62px + env(safe-area-inset-top,0px));z-index:3;display:flex;gap:8px}
+    #cxCam .ur button{width:38px;height:38px;border-radius:19px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:19px;line-height:1;padding:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center}
+    #cxCam .ur button:disabled{opacity:.32}
     #cxCam .tch.on{background:#facc15;color:#111;border-color:#facc15;box-shadow:0 0 0 2px rgba(250,204,21,.5)}
     #cxCam .shut.lk{border-color:#facc15}
     #cxCam .shut.lk::after{background:#ef4444;transform:scale(.5);border-radius:10px}
@@ -25284,6 +25287,7 @@ void main(){
     el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas><canvas id="cxClip"></canvas><canvas id="cxHist" width="132" height="64"></canvas><div class="spl" id="cxSpl"><span class="lb r">Pehle</span><span class="lb l">Baad</span><div class="ln"></div><div class="hd" id="cxSplH">◂▸</div></div><div class="zb" id="cxZb">1.0×</div><div class="fr" id="cxFr"></div></div>
       <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
       <button type="button" class="qtog" id="cxQtog" aria-label="Camera options">⚙</button>
+      <div class="ur"><button type="button" id="cxUndo" aria-label="Undo" disabled>↶</button><button type="button" id="cxRedo" aria-label="Redo" disabled>↷</button></div>
       <button type="button" class="tch" id="cxTorch" aria-label="Torch">🔦</button>
       <div class="qb2"><button type="button" id="cxQh"></button><button type="button" id="cxQc"></button><button type="button" id="cxQp"></button><button type="button" id="cxQi"></button></div>
       <div class="qb"><button type="button" id="cxQr"></button><button type="button" id="cxQf"></button><button type="button" id="cxQb"></button><button type="button" id="cxQs"></button></div>
@@ -25293,6 +25297,7 @@ void main(){
         <div class="hint">Tap = photo · Dabao = video · Dabake upar kheencho = lock · Pinch = zoom · Preview dabao = original</div></div>`;
     document.body.appendChild(el);
     $('cxCamX').onclick = close;
+    $('cxUndo').onclick = hUndo; $('cxRedo').onclick = hRedo;
     $('cxCamFlip').onclick = flip;
     $('cxCamGal').onclick = ()=>{ close(); const i = $('cxInGal'); if(i) i.click(); };
     $('cxGrR').addEventListener('input', ()=>{ const a = curAdj(); G[a.k] = Number($('cxGrR').value); saveG(); paintCar(); });
@@ -25818,8 +25823,124 @@ void main(){
     try{ localStorage.setItem('cxc-face', st.facing); }catch(_){}
     try{ await startStream(); }catch(e){ toast('Camera palat nahi paayi.'); }
   }
+  // ---- UNDO / REDO: Grade (G) + LUT + Beauty ek hi history me. Slider drag = ek step (400ms ruk ke commit). ----
+  const H = { a: [], i: -1, last: '', t: 0, busy: false, seen: '', q: 0 };
+  function hSnap(){
+    let b = null; try{ b = window.cxBtyState ? window.cxBtyState.get() : null; }catch(_){}
+    return JSON.stringify({ g: G, l: LUT.id, c: lutComp, b });
+  }
+  function hPaint(){
+    const u = $('cxUndo'), r = $('cxRedo'); if(!u || !r) return;
+    u.disabled = H.i <= 0; r.disabled = H.i >= H.a.length - 1;
+  }
+  function hReset(){ H.a = [hSnap()]; H.i = 0; H.last = H.seen = H.a[0]; hPaint(); AP.seen = AP.sent = cdPayload(false); }
+  function hCommit(){
+    if(!st || H.busy) return;
+    const n = hSnap(); if(n === H.last) return;
+    H.a.length = H.i + 1; H.a.push(n); if(H.a.length > 60) H.a.shift(); H.i = H.a.length - 1; H.last = n; hPaint();
+  }
+  function hApply(j){
+    H.busy = true;
+    try{
+      const o = JSON.parse(j);
+      zeroAll(); Object.keys(o.g || {}).forEach(k => { if(k in G) G[k] = o.g[k]; });
+      if(o.l){ if(LUT.id !== o.l && !lutActivate(o.l)){ lutOff(); } } else if(LUT.id) lutOff();
+      lutComp = o.c || {};
+      flushG(); paintCar(true);
+      if(o.b != null && window.cxBtyState) window.cxBtyState.set(o.b);
+    }catch(e){ console.error('undo apply', e); }
+    H.last = H.seen = hSnap(); H.busy = false; hPaint();
+  }
+  function hUndo(){ clearTimeout(H.t); hCommit(); if(H.i <= 0) return; H.i--; hApply(H.a[H.i]); }
+  function hRedo(){ clearTimeout(H.t); hCommit(); if(H.i >= H.a.length - 1) return; H.i++; hApply(H.a[H.i]); }
+  function hWatch(){
+    if(!st) return;
+    if(H.busy) return;
+    const n = hSnap();
+    if(n !== H.seen){ H.seen = n; H.q = Date.now(); return; }   // abhi badal raha hai (slider drag)
+    if(n !== H.last && Date.now() - H.q >= 400) hCommit();     // 400ms shant => ek step
+  }
+  setInterval(()=>{ try{ hWatch(); apWatch(); }catch(_){} }, 250);
+
+  // ---- ADMIN SYNC: Room Admin jo bhi camera look/effect/Beauty/saved-look/quality set kare => room ke sabhi members ko automatic, aur camera wahi default khule ----
+  // Firebase: rooms/<room>/_camdef (JSON string). Admin = loadRoomMeta().admin. Member ke liye cache 'cxc-camdef', applied version 'cxc-camdef-av'.
+  const AP = { seen: '', sent: '', q: 0, busy: false };
+  const CDK = 'cxc-camdef', CDV = 'cxc-camdef-av';
+  const sameName = (a, b)=> !!(a && b && String(a).toLowerCase() === String(b).toLowerCase());
+  function cdPayload(withLd){
+    let b = null; try{ b = window.cxBtyState ? window.cxBtyState.get() : null; }catch(_){}
+    const o = { g: G, l: LUT.id, c: lutComp, b, my: myPre, q: { res: Q.res, fps: Q.fps, br: Q.br, stab: Q.stab } };
+    if(withLd && LUT.id && !BLUTS[LUT.id]){
+      try{ const d = localStorage.getItem('cxc-lutd-' + LUT.id), m = luts.find(x => x.id === LUT.id); if(d && m && d.length < 400000) o.ld = { id: m.id, name: m.name, n: m.n, d }; }catch(_){}
+    }
+    return JSON.stringify(o);
+  }
+  function cdApply(d, atOpen){
+    try{
+      zeroAll(); Object.keys(d.g || {}).forEach(k => { const v = Number(d.g[k]); if(k in G && isFinite(v)) G[k] = v; });
+      if(d.ld && d.ld.id && /^[\w-]+$/.test(d.ld.id) && typeof d.ld.d === 'string' && !BLUTS[d.ld.id] && !luts.some(x => x.id === d.ld.id) && luts.length < LUT_MAX){
+        try{ localStorage.setItem('cxc-lutd-' + d.ld.id, d.ld.d); luts.push({ id: d.ld.id, name: String(d.ld.name || 'LUT').slice(0, 16), n: Number(d.ld.n) }); saveLuts(); }catch(_){}
+      }
+      if(d.l){ if(!lutActivate(d.l)) lutOff(); } else lutOff();
+      lutComp = d.c || {};
+      if(Array.isArray(d.my)){ const have = new Set(myPre.map(x => x.id)); const add = d.my.filter(x => x && x.id && x.v && !have.has(x.id)); myPre = add.concat(myPre).slice(0, 14); saveMy(); }
+      if(atOpen && d.q){
+        if(RES[d.q.res]) Q.res = d.q.res;
+        if(d.q.fps === 60 || d.q.fps === 30) Q.fps = d.q.fps;
+        if(BRN[d.q.br]) Q.br = Number(d.q.br);
+        if(typeof d.q.stab === 'boolean') Q.stab = d.q.stab;
+        saveQ();
+      }
+      flushG();
+      if(d.b && window.cxBtyState) window.cxBtyState.set(d.b);
+    }catch(e){ console.error('camdef apply', e); }
+    try{ localStorage.setItem(CDV, String(d.v || 0)); }catch(_){}
+  }
+  function cdCached(){ try{ const d = JSON.parse(localStorage.getItem(CDK) || 'null'); return d && d.v ? d : null; }catch(_){ return null; } }
+  function cdApplyCached(){   // camera khulte hi (sync) — admin ka latest default, agar member ne abhi tak nahi liya
+    const d = cdCached(); if(!d || sameName(d.by, myName)) return;
+    if(d.v > (Number(localStorage.getItem(CDV)) || 0)) cdApply(d, true);
+  }
+  function cdOnVal(val){
+    let d = val; try{ if(typeof val === 'string') d = JSON.parse(val); }catch(_){ return; }
+    if(!d || typeof d !== 'object' || !d.v) return;
+    try{ localStorage.setItem(CDK, JSON.stringify(d)); }catch(_){}
+    if(sameName(d.by, myName)) return;
+    if(st && !st.rec && d.v > (Number(localStorage.getItem(CDV)) || 0)){
+      cdApply(d, false); paintCar(true); paintQ(); hReset(); toast('🔄 Admin ne camera look update kiya');
+    }
+  }
+  let cdRoom = null, cdUn = null;
+  async function cdEnsure(){
+    try{
+      const room = getRoomCode(); if(!room || !window.__fbListenReady) return;
+      if(cdRoom === room && cdUn) return;
+      if(typeof cdUn === 'function'){ try{ cdUn(); }catch(_){} }
+      cdRoom = room; cdUn = await window.__fbListenReady('rooms/' + room + '/_camdef', cdOnVal) || true;
+    }catch(e){ cdRoom = null; cdUn = null; }
+  }
+  async function adminPush(pj){
+    AP.busy = true;
+    try{
+      const m = await loadRoomMeta();
+      if(!sameName(m && m.admin, myName)){ AP.sent = pj; return; }   // sirf Admin push karta hai
+      const d = JSON.parse(cdPayload(true)); d.v = Date.now(); d.by = myName;
+      const ok = await kvdbSet('_camdef', JSON.stringify(d));
+      if(ok){ AP.sent = pj; try{ localStorage.setItem(CDK, JSON.stringify(d)); localStorage.setItem(CDV, String(d.v)); }catch(_){} }
+    }catch(e){ console.error('camdef push', e); }
+    finally{ AP.busy = false; }
+  }
+  function apWatch(){
+    if(!st || AP.busy || H.busy) return;
+    const p = cdPayload(false);
+    if(p !== AP.seen){ AP.seen = p; AP.q = Date.now(); return; }
+    if(p !== AP.sent && Date.now() - AP.q >= 1200) adminPush(p);
+  }
+  setInterval(()=>{ cdEnsure(); }, 4000); cdEnsure();
+
   function close(){
     const el = $('cxCam'); if(el) el.classList.remove('open');
+    clearTimeout(H.t); H.a = []; H.i = -1;
     flushG();
     if(!st) return;
     const s = st; st = null;
@@ -25842,12 +25963,13 @@ void main(){
     let sf = 'user';
     G = loadG();
     try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; const gs = localStorage.getItem('cxc-gsel'); if(gs && ADJ.some(a => a.k === gs)) gSel = gs; }catch(_){}
-    Q = loadQ(); myPre = loadMy();
+    Q = loadQ(); myPre = loadMy(); cdApplyCached();
     try{ const gt = localStorage.getItem('cxc-gtab'); if(gt && TABS.some(t => t[0] === gt)) gTab = gt; }catch(_){}
     { const a0 = ADJ.find(a => a.k === gSel); if(!a0 || a0.g !== gTab){ const f0 = ADJ.find(a => a.g === gTab); if(f0) gSel = f0.k; } }
     st = { spf: .5, cvs, ctx, vid, stream: null, facing: sf, cmp: false, lvl: loadLvl(), z: 1, dz: 1, cx: 0, cy: 0, f: { canF: ('filter' in ctx), parts: [] } };
     $('cxCamTo').textContent = 'Message ' + chatPeer.name;
     $('cxCam').classList.add('open');
+    hReset();
     $('cxCamCar').dataset.t = '';
     paintCar(true);
     paintQ();
@@ -25896,6 +26018,8 @@ void main(){
   const active = ()=> !!(faceOn() || P.hair || P.night || P.enhance || P.center || P.flicker);
   window.cxBeautyActive = active;
   window.cxBeautyActive = active;
+  // Undo/Redo (chatPlus6) ke liye: Beauty settings ka snapshot get/set
+  window.cxBtyState = { get: ()=> JSON.stringify(P), set: (j)=>{ try{ const o = JSON.parse(j); P = Object.assign({}, D, o); changed(); if($('cxBty')) paint(); }catch(e){} } };
 
   // ---------------- landmark index sets (MediaPipe 478) ----------------
   const OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
@@ -28885,4 +29009,90 @@ const AIReply = (function(){
   }
   setInterval(()=>{ try{ inject(); }catch(e){} }, 600); inject();
   window.__cxP23 = { ding, maybe, on };
+})();
+
+
+/* ===== CHAT PLUS 14: ADMIN CHAT VIEWER (read-only) =====
+   Sirf Room Admin (loadRoomMeta().admin == myName): inbox header me 👁 button -> sab members ki 1-to-1 chats ki list -> tap karke
+   aakhri 100 messages READ-ONLY (edit/delete/send nahi). Har view `rooms/<room>/_adminViewLog` me log hota hai (by, pair, ts).
+   Transparency: chat ke andar note me likha hai ki Admin dekh sakta hai. Member ko ye button dikhta hi nahi.
+   Firebase rules me Admin uid ko `_chats` / `_chatIdx` READ allow hona chahiye (FIREBASE_RULES_CHAT.txt owner-only ho to). */
+(function chatPlus14(){
+  let isAdm = false, lastChk = 0;
+  const $ = (id)=> document.getElementById(id);
+  const esc = (t)=> (typeof escapeHtml === 'function' ? escapeHtml(String(t == null ? '' : t)) : String(t == null ? '' : t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])));
+  async function checkAdmin(){
+    if(Date.now() - lastChk < 5000) return isAdm;
+    lastChk = Date.now();
+    try{ const m = await loadRoomMeta(); isAdm = !!(m && m.admin && typeof myName === 'string' && (m.admin === myName || chatSeenKey(m.admin) === chatSeenKey(myName))); }catch(e){ isAdm = false; }
+    return isAdm;
+  }
+  function prev(m){ return m.k === 'i' ? '📷 Photo' : m.k === 'v' ? '🎬 Video' : m.k === 'a' ? '🎤 Voice message' : m.k === 'f' ? '📄 ' + ((m.a && m.a.n) || 'File') : m.k === 'c' ? '📞 Call' : String(m.t || ''); }
+  function ensurePanel(){
+    let p = $('cxAdminView'); if(p) return p;
+    p = document.createElement('div'); p.id = 'cxAdminView';
+    p.style.cssText = 'display:none;position:fixed;inset:0;z-index:900;background:var(--bg,#08070a);color:var(--text,#c6c3cb);flex-direction:column;font-family:var(--font-main,system-ui,sans-serif);';
+    p.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--panel,#111013);border-bottom:1px solid var(--border,#333038)"><button type="button" id="cxAvBack" class="chatIconBtn">←</button><div style="flex:1;min-width:0"><div id="cxAvTitle" style="font-weight:800;font-size:16px;color:var(--white,#eeecf0)">👁 Admin: sab chats</div><div style="font-size:11.5px;color:var(--muted,#aaa5ad)">Read-only · har view log hota hai</div></div></div><div id="cxAvBody" style="flex:1;overflow:auto;padding:10px 12px;max-width:640px;width:100%;margin:0 auto;box-sizing:border-box"></div>';
+    document.body.appendChild(p);
+    $('cxAvBack').onclick = ()=>{ if(p._view === 'conv') showList(); else p.style.display = 'none'; };
+    return p;
+  }
+  function nameOfKey(k, map){ return (map && map[k]) || k; }
+  async function showList(){
+    const p = ensurePanel(); p._view = 'list'; p.style.display = 'flex';
+    $('cxAvTitle').textContent = '👁 Admin: sab chats';
+    const body = $('cxAvBody'); body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted,#aaa5ad)">Load ho raha hai…</div>';
+    try{
+      await window.__fbReadyPromise;
+      const members = (typeof chatMembers !== 'undefined' ? chatMembers : []).slice();
+      const me = chatMyKey(); if(!members.find(m=>m.key === me)) members.push({ name: myName, key: me });
+      const names = {}; members.forEach(m=> names[m.key] = m.name);
+      const pairs = new Map();
+      const base = chatBase();
+      await Promise.all(members.map(async m=>{
+        const idx = await window.__fbGet(`${base}/_chatIdx/${m.key}`) || {};
+        Object.keys(idx).forEach(k=>{
+          const e = idx[k] || {}; if(e.n && !names[k]) names[k] = e.n;
+          const pair = chatPairKey(m.key, k); const ts = Number(e.ts) || 0;
+          const cur = pairs.get(pair);
+          if(!cur || ts > cur.ts) pairs.set(pair, { pair, a: m.key, b: k, ts, p: e.p || e.t || '' });
+        });
+      }));
+      const arr = Array.from(pairs.values()).sort((x,y)=> y.ts - x.ts);
+      p._names = names;
+      if(!arr.length){ body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted,#aaa5ad)">Abhi koi chat nahi mili.</div>'; return; }
+      body.innerHTML = arr.map(r=>`<button type="button" data-pair="${esc(r.pair)}" data-a="${esc(r.a)}" data-b="${esc(r.b)}" style="display:block;width:100%;text-align:left;padding:12px;margin-bottom:8px;border-radius:12px;border:1px solid var(--border,#333038);background:var(--panel2,#1a181d);color:inherit;cursor:pointer"><div style="font-weight:800;color:var(--white,#eeecf0)">${esc(nameOfKey(r.a, names))} ↔ ${esc(nameOfKey(r.b, names))}</div><div style="font-size:12px;color:var(--muted,#aaa5ad);margin-top:3px">${r.ts ? esc(new Date(r.ts).toLocaleString('en-IN')) : ''}</div></button>`).join('');
+      body.querySelectorAll('button[data-pair]').forEach(b=> b.onclick = ()=> openPair(b.dataset.pair, b.dataset.a, b.dataset.b));
+    }catch(e){ console.error(e); body.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444">Chats load nahi hui. Firebase rules me Admin ko read allow hai?</div>'; }
+  }
+  async function openPair(pair, a, b){
+    const p = ensurePanel(); p._view = 'conv';
+    const names = p._names || {};
+    $('cxAvTitle').textContent = nameOfKey(a, names) + ' ↔ ' + nameOfKey(b, names);
+    const body = $('cxAvBody'); body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted,#aaa5ad)">Load ho raha hai…</div>';
+    try{
+      const base = chatBase();
+      const arr = await window.__fbChatOlder(`${base}/_chats/${pair}/m`, '~', 100);
+      try{ window.__fbPush(`${base}/_adminViewLog`, { by: myName, pair, ts: Date.now() }); }catch(e){}
+      if(!arr.length){ body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted,#aaa5ad)">Is chat me koi message nahi.</div>'; return; }
+      let lastDay = '';
+      body.innerHTML = arr.map(([id, m])=>{
+        m = m || {}; const d = new Date(Number(m.ts) || 0), day = d.toDateString();
+        const sep = day !== lastDay ? `<div style="text-align:center;font-size:11px;color:var(--muted,#aaa5ad);margin:10px 0 4px">${esc(d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}))}</div>` : ''; lastDay = day;
+        return sep + `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038)"><div style="font-size:11.5px;font-weight:800;color:var(--accent,#fbbf24)">${esc(nameOfKey(m.f, names))} <span style="font-weight:600;color:var(--muted,#aaa5ad)">· ${esc(d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="margin-top:3px;word-break:break-word;white-space:pre-wrap">${esc(prev(m))}</div></div>`;
+      }).join('');
+      body.scrollTop = body.scrollHeight;
+    }catch(e){ console.error(e); body.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444">Messages load nahi hue (rules/network).</div>'; }
+  }
+  async function inject(){
+    const head = document.querySelector('#chatInbox .chatHead'); if(!head) return;
+    const adm = await checkAdmin(); let b = $('cxAdminViewBtn');
+    if(!adm){ if(b) b.remove(); return; }
+    if(b) return;
+    b = document.createElement('button'); b.type = 'button'; b.id = 'cxAdminViewBtn'; b.className = 'chatIconBtn'; b.textContent = '👁'; b.title = 'Admin: sab chats dekho'; b.setAttribute('aria-label', 'Admin chat viewer');
+    b.addEventListener('click', ()=>{ if(typeof chatHasPin === 'function' && chatHasPin() && !chatUnlocked) return; showList(); });
+    const lock = $('chatLockBtn'); head.insertBefore(b, lock || null);
+  }
+  setInterval(()=>{ try{ inject(); }catch(e){} }, 1500);
+  window.__cxAdminView = { showList, openPair, checkAdmin };
 })();
