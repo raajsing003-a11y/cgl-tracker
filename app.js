@@ -24603,6 +24603,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(f.cvs.width !== w || f.cvs.height !== h){ f.cvs.width = w; f.cvs.height = h; }
     const t0 = performance.now();
     window.cxFX.draw(f.ctx, v, w, h, FX.find(x => x.id === f.id) || FX[0], f);
+    try{ if(window.cxCallLookOn && window.cxCallLookOn()){ const g = window.cxGradeApply(f.cvs, w, h, f.canF); if(g) f.ctx.drawImage(g, 0, 0, w, h); } }catch(e){}
     f.ms += (performance.now() - t0 - f.ms) * .15;
     if(f.n % 30 === 0){ if(f.ms > 26) f.cap = Math.max(480, f.cap * .85); else if(f.ms < 11) f.cap = Math.min(1280, f.cap * 1.1); }
   }
@@ -24635,7 +24636,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   async function setFx(id){
     const s = curS();
     if(!s || !s.pc || s.type !== 'v'){ toast('Effects sirf video call me chalte hain.'); return; }
-    if(id === 'none' && !(window.cxBeautyActive && window.cxBeautyActive())){ stopFx(true); return; }
+    if(id === 'none' && !lookAct()){ stopFx(true); return; }
     const f = startFx(s);
     f.id = id; f.parts = []; fxSel = id; paintStrip();
     const sd = sender(s);
@@ -24645,10 +24646,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       toast('Screen share ke baad effect lagega.');
     }
   }
+  const lookAct = ()=> !!((window.cxBeautyActive && window.cxBeautyActive()) || (window.cxCallLookOn && window.cxCallLookOn()));
   window.cxFxRunning = ()=> !!fx;
   window.cxFxRefresh = function(){
     const s = curS(); if(!s || !s.pc || s.type !== 'v') return;
-    if(window.cxBeautyActive && window.cxBeautyActive()){ if(!fx) setFx(fxSel); }
+    if(lookAct()){ if(!fx) setFx(fxSel); }
     else if(fx && fxSel === 'none') stopFx(true);
   };
   function ensureFxUi(){
@@ -25232,6 +25234,16 @@ void main(){
   }
   if(localStorage.getItem(LUTA)) lutActivate(localStorage.getItem(LUTA));
   window.cxLutKit = { parse3dl, parseCube, lutLook, lutFit, lutStrip };   // test + debugging
+  // ROUND 31: video call / pre-call preview me camera ka saved grade+LUT lagane ke liye
+  let gTmp = null, gTmpX = null;
+  window.cxGradeActive = ()=> !isId();
+  window.cxGradeApply = function(src, w, h, canF){
+    if(isId()) return null;
+    const g = glGrade(src, w, h); if(g) return g;
+    if(!gTmp){ gTmp = document.createElement('canvas'); gTmpX = gTmp.getContext('2d'); }
+    if(gTmp.width !== w || gTmp.height !== h){ gTmp.width = w; gTmp.height = h; }
+    cssGrade(gTmpX, src, w, h, canF); return gTmp;
+  };
   function glGrade(src, w, h){
     if(!glInit()) return null;
     try{
@@ -29095,4 +29107,120 @@ const AIReply = (function(){
   }
   setInterval(()=>{ try{ inject(); }catch(e){} }, 1500);
   window.__cxAdminView = { showList, openPair, checkAdmin };
+})();
+
+
+/* ===== CHAT PLUS 15: VIDEO CALL — screen swap + camera look auto + pre-call face preview =====
+   1) Call me apni chhoti screen ya samne wali chhoti screen par tap = dono swap (sirf tumhare phone par, samne wale ko asar nahi).
+   2) Camera ka saved Grade/LUT/Beauty video call me auto lagta hai (window.cxCallLookOn). 🎨 button se call me ON/OFF.
+   3) 🎥 dabane par pehle apna face preview (look ke saath) -> "Call karo" / ✕. Ringing ke dauran bhi apna face bada dikhta hai. */
+(function chatPlus15(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  let lookOff = false, bound = false, pre = null, go = false;
+  window.cxCallLookOn = ()=> !lookOff && !!(window.cxGradeActive && window.cxGradeActive());
+  const S = ()=> (window.__cxCallS && window.__cxCallS()) || null;
+
+  const st = document.createElement('style');
+  st.textContent = `
+  .callOv.vid.conn #callRemote,.callOv.vid.conn #callLocal{cursor:pointer;}
+  .callOv.cxSwap #callRemote{inset:auto;right:14px;top:calc(14px + env(safe-area-inset-top,0px));width:96px;height:132px;border-radius:14px;border:2px solid #fff4;z-index:3;}
+  .callOv.cxSwap #callLocal{right:auto;left:0;top:0;width:100%;height:100%;border-radius:0;border:0;z-index:1;}
+  .callOv.vid.cxPre #callLocal{display:block;right:auto;left:0;top:0;width:100%;height:100%;border-radius:0;border:0;z-index:1;}
+  #cxPreCall{position:fixed;inset:0;z-index:1100;display:none;flex-direction:column;background:#000;color:#fff;font-family:var(--font-main,system-ui,sans-serif);}
+  #cxPreCall.open{display:flex;}
+  #cxPreCall canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  #cxPreCall .pcT{position:relative;z-index:2;text-align:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 0;font-weight:800;text-shadow:0 2px 8px #000a;}
+  #cxPreCall .pcT small{display:block;font-weight:600;opacity:.8;margin-top:4px;font-size:12px;}
+  #cxPreCall .pcB{position:relative;z-index:2;margin-top:auto;display:flex;gap:22px;justify-content:center;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));}
+  #cxPreCall .pcB button{width:64px;height:64px;border-radius:50%;border:0;font-size:26px;cursor:pointer;color:#fff;}
+  #cxPreCall .pcX{background:#ef4444;} #cxPreCall .pcOk{background:#22c55e;}`;
+  document.head.appendChild(st);
+
+  function stopPre(){
+    if(!pre) return;
+    const p = pre; pre = null; cancelAnimationFrame(p.raf);
+    try{ p.stream.getTracks().forEach(t => t.stop()); p.vid.srcObject = null; }catch(e){}
+    const o = $('cxPreCall'); if(o) o.classList.remove('open');
+  }
+  function ensurePre(){
+    let o = $('cxPreCall'); if(o) return o;
+    o = document.createElement('div'); o.id = 'cxPreCall';
+    o.innerHTML = '<canvas id="cxPreCv"></canvas><div class="pcT">Apna face dekh lo<small>Camera ka saved look / Beauty yahan bhi lagta hai</small></div><div class="pcB"><button type="button" class="pcX" id="cxPreNo" aria-label="Cancel">✕</button><button type="button" class="pcOk" id="cxPreGo" aria-label="Video call karo">🎥</button></div>';
+    document.body.appendChild(o);
+    $('cxPreNo').onclick = stopPre;
+    $('cxPreGo').onclick = ()=>{ stopPre(); go = true; const b = $('cxCallV'); if(b) b.click(); go = false; };
+    return o;
+  }
+  async function openPre(){
+    if(pre || S()) return;
+    const o = ensurePre();
+    let stream;
+    try{ stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 960 } }, audio: false }); }
+    catch(e){ toast('Camera ki permission do.'); return; }
+    o.classList.add('open');
+    const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.autoplay = true; vid.srcObject = stream; vid.play().catch(()=>{});
+    const cv = $('cxPreCv'), ctx = cv.getContext('2d');
+    const f = { canF: ('filter' in ctx), parts: [], n: 0, ms: 16, cap: 960 };
+    const none = (window.cxFX && window.cxFX.list.find(x => x.id === 'none')) || (window.cxFX && window.cxFX.list[0]);
+    const p = pre = { stream, vid, raf: 0 };
+    (function tick(){
+      if(pre !== p) return;
+      p.raf = requestAnimationFrame(tick);
+      const vw = vid.videoWidth, vh = vid.videoHeight; if(!vw || !vh) return;
+      const w = Math.min(vw, 720), h = Math.round(vh * w / vw);
+      if(cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+      f.n++;
+      try{
+        ctx.save(); ctx.translate(w, 0); ctx.scale(-1, 1);
+        window.cxFX.draw(ctx, vid, w, h, none, f);
+        ctx.restore();
+        if(window.cxGradeActive && window.cxGradeActive()){ const g = window.cxGradeApply(cv, w, h, f.canF); if(g) ctx.drawImage(g, 0, 0, w, h); }
+      }catch(e){ try{ ctx.restore(); }catch(_){} }
+    })();
+  }
+  // 🎥 intercept (capture): pehle preview, "Call karo" par asli call
+  document.addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('#cxCallV');
+    if(!b || go) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    openPre();
+  }, true);
+
+  function ensureLookBtn(){
+    const ov = $('callOv'); if(!ov) return;
+    const bt = ov.querySelector('.callBtns');
+    if(bt && !$('callLook')){
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'callLook'; b.className = 'callBtn'; b.textContent = '🎨'; b.setAttribute('aria-label', 'Camera look on/off');
+      bt.insertBefore(b, $('callEnd') || null);
+      b.addEventListener('click', ()=>{
+        if(!(window.cxGradeActive && window.cxGradeActive())){ toast('Camera me koi Grade/LUT set nahi hai.'); return; }
+        lookOff = !lookOff; b.style.opacity = lookOff ? '.45' : '1'; toast(lookOff ? '🎨 Camera look OFF' : '🎨 Camera look ON');
+        try{ window.cxFxRefresh && window.cxFxRefresh(); }catch(e){}
+      });
+    }
+    if(!bound){
+      bound = true;
+      ov.addEventListener('click', (e)=>{
+        if(!ov.classList.contains('conn') || !ov.classList.contains('vid')) return;
+        const small = ov.classList.contains('cxSwap') ? 'callRemote' : 'callLocal';
+        if(e.target && e.target.id === small) ov.classList.toggle('cxSwap');
+      });
+    }
+  }
+  setInterval(()=>{
+    try{
+      ensureLookBtn();
+      const ov = $('callOv'); if(!ov) return;
+      const s = S(), open = ov.classList.contains('open');
+      if(!open){ ov.classList.remove('cxSwap', 'cxPre'); lookOff = false; const lb = $('callLook'); if(lb) lb.style.opacity = '1'; return; }
+      const lb = $('callLook'); if(lb) lb.hidden = !(s && s.type === 'v');
+      ov.classList.toggle('cxPre', !!(s && s.type === 'v' && !s.incoming && !ov.classList.contains('conn')));
+      if(s && s.pc && s.type === 'v' && window.cxFxRefresh){
+        const act = !!((window.cxBeautyActive && window.cxBeautyActive()) || window.cxCallLookOn());
+        const run = !!(window.cxFxRunning && window.cxFxRunning());
+        if(act !== run) window.cxFxRefresh();
+      }
+    }catch(e){}
+  }, 400);
 })();
