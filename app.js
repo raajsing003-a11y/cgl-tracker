@@ -21890,7 +21890,8 @@ const CHAT_VOICE_MAX_S = 120;
 const CALL_RING_MS = 45000;
 // Optional TURN (agar kisi network par call connect na ho): [{urls:'turn:host:3478', username:'..', credential:'..'}]
 const CALL_TURN = [];
-const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }].concat(CALL_TURN);
+// Zyada STUN = connect jaldi. Asli fix mobile-data/strict NAT ke liye TURN hai (upar CALL_TURN me daalo; bina TURN ke kuch networks par call kabhi connect nahi hoti).
+const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }].concat(CALL_TURN);
 
 (function chatExtras(){
   const $x = (id)=> document.getElementById(id);
@@ -21929,6 +21930,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     .cbub .cplay{width:38px;height:38px;border-radius:50%;border:0;background:#0003;color:inherit;font-size:16px;cursor:pointer;flex-shrink:0;}
     .cbub .cvbar{flex:1;height:4px;border-radius:3px;background:#0003;overflow:hidden;}
     .cbub .cvbar i{display:block;height:100%;width:0;background:currentColor;}
+    .cbub .cwf{flex:1;min-width:90px;height:28px;display:flex;align-items:center;gap:2px;cursor:pointer;}
+    .cbub .cwf i{flex:1;min-width:2px;max-width:4px;border-radius:2px;background:currentColor;opacity:.35;transition:opacity .12s;}
+    .cbub .cwf i.p{opacity:1;}
     .cbub .ccall{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;}
     .cbub .ccall.miss{color:#ff6b6b;}
     .cmsg.me .cbub .ccall.miss{color:#ffe0e0;text-shadow:0 1px 2px rgba(0,0,0,.25);}
@@ -22066,9 +22070,19 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     try{ rec = new MediaRecorder(recStream, mt ? { mimeType: mt, audioBitsPerSecond: 24000 } : undefined); }
     catch(e){ recStream.getTracks().forEach(t => t.stop()); toast('Recording shuru nahi ho payi.'); return; }
     recChunks = []; recCancel = false;
+    // waveform: recording ke dauran ~12 baar/sec awaaz ka level naapo (WhatsApp jaisa)
+    let wfAmp = [], wfCtx = null, wfTimer = 0;
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){
+        wfCtx = new AC(); const src = wfCtx.createMediaStreamSource(recStream), an = wfCtx.createAnalyser(); an.fftSize = 512; src.connect(an);
+        const buf = new Uint8Array(an.fftSize);
+        wfTimer = setInterval(()=>{ an.getByteTimeDomainData(buf); let m = 0; for(let i = 0; i < buf.length; i++){ const v = Math.abs(buf[i] - 128); if(v > m) m = v; } wfAmp.push(m / 128); }, 80);
+      }
+    }catch(e){ wfAmp = []; }
     rec.ondataavailable = (e)=>{ if(e.data && e.data.size) recChunks.push(e.data); };
     rec.onstop = async ()=>{
-      clearInterval(recTimer);
+      clearInterval(recTimer); clearInterval(wfTimer); try{ wfCtx && wfCtx.close(); }catch(e){}
       window.cxTyping && window.cxTyping(null);
       recStream && recStream.getTracks().forEach(t => t.stop());
       $x('cxRec').classList.remove('on');
@@ -22077,7 +22091,14 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       const blob = new Blob(recChunks, { type: rec.mimeType || 'audio/webm' });
       if(blob.size > CHAT_FILE_MAX){ toast('Voice note bahut bada hai.'); return; }
       const data = await readAsDataURL(blob);
-      await xSend({ k: 'a', a: { n: 'Voice', s: Math.round(secs), mt: blob.type } }, data, '🎤 Voice message (' + fmtDur(secs) + ')');
+      // 40 bars me compress (max-per-bucket), 6..100 ke ints; sabse tez bar = 100
+      let wf = null;
+      if(wfAmp.length >= 4){
+        const N = 40, out = [];
+        for(let i = 0; i < N; i++){ const a0 = Math.floor(i * wfAmp.length / N), a1 = Math.max(a0 + 1, Math.floor((i + 1) * wfAmp.length / N)); let m = 0; for(let j = a0; j < a1 && j < wfAmp.length; j++) if(wfAmp[j] > m) m = wfAmp[j]; out.push(m); }
+        const mx = Math.max.apply(null, out) || 1; wf = out.map(v => Math.max(6, Math.round(Math.pow(v / mx, .8) * 100)));
+      }
+      await xSend({ k: 'a', a: Object.assign({ n: 'Voice', s: Math.round(secs), mt: blob.type }, wf ? { wf } : {}) }, data, '🎤 Voice message (' + fmtDur(secs) + ')');
     };
     rec.start(); recT0 = Date.now();
     window.cxTyping && window.cxTyping('r');
@@ -22107,7 +22128,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     } else if(m.k === 'f' || m.k === 'v'){
       body = `<div class="cfile" data-act="${m.k === 'v' ? 'vid' : 'file'}" data-fid="${e(a.fid || '')}" data-n="${e(a.n || 'file')}" data-mt="${e(a.mt || '')}"><div class="cfico">${m.k === 'v' ? '🎬' : '📄'}</div><div><div class="cfnm">${e(a.n || 'File')}</div><div class="cfsz">${e(fmtSize(Number(a.s) || 0))} · tap karo</div></div></div>`;
     } else if(m.k === 'a'){
-      body = `<div class="cvoice" data-fid="${e(a.fid || '')}" data-mt="${e(a.mt || '')}" data-s="${Number(a.s) || 0}"><button type="button" class="cplay" data-act="aud">▶</button><div class="cvbar"><i></i></div><span class="cfsz">${fmtDur(a.s)}</span></div>`;
+      body = `<div class="cvoice" data-fid="${e(a.fid || '')}" data-mt="${e(a.mt || '')}" data-s="${Number(a.s) || 0}"><button type="button" class="cplay" data-act="aud">▶</button>${Array.isArray(a.wf) && a.wf.length ? '<div class="cwf" data-act="seek">' + a.wf.slice(0, 60).map(v => '<i style="height:' + Math.max(6, Math.min(100, Number(v) || 6)) + '%"></i>').join('') + '</div>' : '<div class="cvbar"><i></i></div>'}<span class="cfsz">${fmtDur(a.s)}</span></div>`;
     } else if(m.k === 'c'){
       const ico = a.t === 'v' ? '🎥' : '📞';
       const lab = a.st === 'miss' ? (mine ? 'Koi jawab nahi' : 'Missed call') : a.st === 'dec' ? (mine ? 'Call decline hui' : 'Call decline ki') : a.st === 'busy' ? 'Busy tha' : 'Call' + (a.s ? ' · ' + fmtDur(a.s) : '');
@@ -22156,6 +22177,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
         const blob = dataToBlob(d), url = URL.createObjectURL(blob);
         if(act === 'vid') openViewer('vid', url, t.dataset.n);
         else { saveBlobUrl(url, t.dataset.n); setTimeout(()=> URL.revokeObjectURL(url), 30000); }
+      } else if(act === 'seek'){
+        // waveform par tap = us jagah se chalao (jo voice abhi chal rahi ho); band ho to play shuru
+        const wrap = t.closest('.cvoice'), r = t.getBoundingClientRect();
+        if(audioNow && audioBtn && wrap.contains(audioBtn) && audioNow.duration){ audioNow.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * audioNow.duration; }
+        else { const pb = wrap.querySelector('.cplay'); pb && pb.click(); }
       } else if(act === 'aud'){
         const wrap = t.closest('.cvoice');
         if(audioNow && audioBtn === t){ audioNow.pause(); audioNow = null; t.textContent = '▶'; return; }
@@ -22164,9 +22190,10 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
         const d = await getFileData(wrap.dataset.fid);
         const au = new Audio(URL.createObjectURL(dataToBlob(d)));
         audioNow = au; audioBtn = t;
-        const bar = wrap.querySelector('.cvbar i');
-        au.ontimeupdate = ()=>{ bar.style.width = (au.duration ? au.currentTime / au.duration * 100 : 0) + '%'; };
-        au.onended = ()=>{ t.textContent = '▶'; bar.style.width = '0'; audioNow = null; };
+        const bar = wrap.querySelector('.cvbar i'), wfb = wrap.querySelectorAll('.cwf i');
+        const prog = (f)=>{ if(bar) bar.style.width = f * 100 + '%'; const n = Math.round(f * wfb.length); wfb.forEach((b, i)=> b.classList.toggle('p', i < n)); };
+        au.ontimeupdate = ()=>{ prog(au.duration ? au.currentTime / au.duration : 0); };
+        au.onended = ()=>{ t.textContent = '▶'; prog(0); audioNow = null; };
         await au.play(); t.textContent = '❚❚';
       }
     }catch(err){ console.error(err); toast('Ye file load nahi ho paayi.'); try{ audioBtn && (audioBtn.textContent = '▶'); }catch(e2){} }
@@ -22271,10 +22298,56 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   function setCallStatus(t){ const e = $x('callSt'); if(e) e.textContent = t; }
 
   async function getMedia(type, facing){
-    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: type === 'v' ? { facingMode: facing || 'user' } : false });
+    // Highest quality maango (browser network ke hisaab se khud kam kar leta hai). Pehle default 640x480 mil raha tha.
+    const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } };
+    const video = { facingMode: facing || 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+    let st;
+    try{ st = await navigator.mediaDevices.getUserMedia({ audio, video: type === 'v' ? video : false }); }
+    catch(e){
+      if(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) throw e;
+      st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: type === 'v' ? { facingMode: facing || 'user' } : false });
+    }
+    try{ st.getAudioTracks().forEach(t => { t.contentHint = 'speech'; }); st.getVideoTracks().forEach(t => { t.contentHint = 'motion'; }); }catch(e){}
+    return st;
+  }
+  // SDP tuning: Opus (FEC + 64kbps voice) aur video start bitrate high (pehle ~300kbps se dheere dheere badhta tha = shuru me blurry)
+  function callTuneSdp(sdp){
+    try{
+      const nl = sdp.indexOf('\r\n') >= 0 ? '\r\n' : '\n', lines = sdp.split(nl), opus = {}, vid = {}, hasF = {};
+      lines.forEach(l => {
+        let m = /^a=rtpmap:(\d+) opus\/48000/i.exec(l); if(m) opus[m[1]] = 1;
+        m = /^a=rtpmap:(\d+) (VP8|VP9|H264|AV1)\/90000/i.exec(l); if(m) vid[m[1]] = 1;
+        m = /^a=fmtp:(\d+) /.exec(l); if(m) hasF[m[1]] = 1;
+      });
+      const OP = { useinbandfec: '1', stereo: '0', maxaveragebitrate: '64000', cbr: '0' };
+      const VP = { 'x-google-start-bitrate': '1200', 'x-google-max-bitrate': '4000' };
+      const merge = (cur, add)=>{ const o = {}, ord = []; String(cur || '').split(';').forEach(kv => { const t = kv.trim(); if(!t) return; const i = t.indexOf('='), k = i < 0 ? t : t.slice(0, i); if(!(k in o)) ord.push(k); o[k] = i < 0 ? null : t.slice(i + 1); }); Object.keys(add).forEach(k => { if(!(k in o)) ord.push(k); o[k] = add[k]; }); return ord.map(k => o[k] === null ? k : k + '=' + o[k]).join(';'); };
+      const out = [];
+      lines.forEach(l => {
+        let m = /^a=fmtp:(\d+) (.*)$/.exec(l);
+        if(m && opus[m[1]]){ out.push('a=fmtp:' + m[1] + ' ' + merge(m[2], OP)); return; }
+        if(m && vid[m[1]]){ out.push('a=fmtp:' + m[1] + ' ' + merge(m[2], VP)); return; }
+        out.push(l);
+        m = /^a=rtpmap:(\d+) /.exec(l);
+        if(m && !hasF[m[1]]){ if(opus[m[1]]) out.push('a=fmtp:' + m[1] + ' ' + merge('', OP)); else if(vid[m[1]]) out.push('a=fmtp:' + m[1] + ' ' + merge('', VP)); }
+      });
+      return out.join(nl);
+    }catch(e){ return sdp; }
+  }
+  // negotiation ke baad sender limits: audio 64k high priority, video 4 Mbps / 30fps
+  async function callTune(pc){
+    try{
+      for(const sd of pc.getSenders()){
+        if(!sd.track) continue;
+        const p = sd.getParameters(); if(!p.encodings || !p.encodings.length) p.encodings = [{}];
+        if(sd.track.kind === 'audio'){ p.encodings[0].maxBitrate = 64000; p.encodings[0].priority = 'high'; p.encodings[0].networkPriority = 'high'; }
+        else if(!sd.__share){ p.encodings[0].maxBitrate = 4000000; p.encodings[0].maxFramerate = 30; p.degradationPreference = 'balanced'; }
+        await sd.setParameters(p).catch(()=>{});
+      }
+    }catch(e){}
   }
   function makePc(s){
-    const pc = new RTCPeerConnection({ iceServers: CALL_ICE });
+    const pc = new RTCPeerConnection({ iceServers: CALL_ICE, bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require', iceCandidatePoolSize: 4 });
     s.pc = pc;
     s.stream.getTracks().forEach(t => pc.addTrack(t, s.stream));
     pc.onicecandidate = (e)=>{ if(e.candidate) window.__fbPush(`${cbase(s)}/ic/${chatMyKey()}`, JSON.stringify(e.candidate)).catch(()=>{}); };
@@ -22297,6 +22370,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   function onConnected(s){
     if(s.t0) return;
     s.t0 = Date.now(); clearTimeout(s.ringT); ringStop();
+    try{ callTune(s.pc); }catch(e){}
     $x('callOv').classList.add('conn');
     s.timer = setInterval(()=> setCallStatus(fmtDur((Date.now() - s.t0) / 1000)), 500);
     setCallStatus('0:00');
@@ -22314,7 +22388,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     $x('callLocal').srcObject = stream;
     try{
       const pc = makePc(s);
-      const offer = await pc.createOffer();
+      const offer0 = await pc.createOffer();
+      const offer = { type: offer0.type, sdp: callTuneSdp(offer0.sdp) };
       await pc.setLocalDescription(offer);
       const me = chatMyKey(), b = chatBase(), TS = { '.sv': 'timestamp' };
       const up = {};
@@ -22374,8 +22449,10 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       const off = await window.__fbGet(`${cbase(s)}/o`);
       if(!off) throw new Error('nooffer');
       await pc.setRemoteDescription(JSON.parse(off)); s.flushIce();
-      const ans = await pc.createAnswer();
+      const ans0 = await pc.createAnswer();
+      const ans = { type: ans0.type, sdp: callTuneSdp(ans0.sdp) };
       await pc.setLocalDescription(ans);
+      callTune(pc);
       listenIce(s);
       await window.__fbUpdate({ [`${cbase(s)}/an`]: JSON.stringify({ type: ans.type, sdp: ans.sdp }), [`${cbase(s)}/st`]: 'on', [`${chatBase()}/_callIn/${chatMyKey()}`]: null });
       const uS = await window.__fbListenReady(`${cbase(s)}/st`, (v)=>{ if(callS === s && (v === 'end')) callEnd('end', false); });
@@ -24406,9 +24483,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const cvs = document.createElement('canvas'); cvs.width = 480; cvs.height = 640;
     const ctx = cvs.getContext('2d');
     const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.autoplay = true;
-    const out = cvs.captureStream(24), track = out.getVideoTracks()[0];
-    fx = { s, cvs, ctx, vid, out, track, src: null, parts: [], id: 'none', n: 0, canF: ('filter' in ctx) };
-    fx.timer = setInterval(frame, 42);
+    const out = cvs.captureStream(30), track = out.getVideoTracks()[0];
+    fx = { s, cvs, ctx, vid, out, track, src: null, parts: [], id: 'none', n: 0, canF: ('filter' in ctx), cap: 960, ms: 16 };
+    fx.timer = setInterval(frame, 33);
     return fx;
   }
   function spawn(def, w, h){
@@ -24433,9 +24510,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }
     const v = f.vid, vw = v.videoWidth, vh = v.videoHeight;
     if(!vw || !vh) return;
-    const w = Math.min(vw, 640), h = Math.round(vh * w / vw);
+    // Beauty/effects ON me bhi HD: processing width 960 se shuru, phone dheema ho to khud 480 tak kam, tez ho to 1280 tak badhe
+    const w = Math.min(vw, Math.round(f.cap)), h = Math.round(vh * w / vw);
     if(f.cvs.width !== w || f.cvs.height !== h){ f.cvs.width = w; f.cvs.height = h; }
+    const t0 = performance.now();
     window.cxFX.draw(f.ctx, v, w, h, FX.find(x => x.id === f.id) || FX[0], f);
+    f.ms += (performance.now() - t0 - f.ms) * .15;
+    if(f.n % 30 === 0){ if(f.ms > 26) f.cap = Math.max(480, f.cap * .85); else if(f.ms < 11) f.cap = Math.min(1280, f.cap * 1.1); }
   }
   function drawFx(c, v, w, h, def, f){
     c.save();
@@ -24587,6 +24668,21 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #cxCam .tabs button.on{background:#a855f7}
     #cxCam .tabs button.mod::after{content:'';position:absolute;top:4px;right:7px;width:6px;height:6px;border-radius:50%;background:#facc15}
     #cxCam .car button.my i{background:linear-gradient(135deg,rgba(250,204,21,.45),rgba(236,72,153,.45));border-color:rgba(255,255,255,.5)}
+    /* ultra-clean: neeche sirf [gallery][shutter][beauty]; 🎨 Edit dabao to tabs+slider+presets khulen */
+    #cxCam .cv{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+    #cxCam .bot{height:calc(150px + env(safe-area-inset-bottom,0px))}
+    #cxCam.pedit .cv{bottom:calc(292px + env(safe-area-inset-bottom,0px))}
+    #cxCam.pedit .bot{height:calc(292px + env(safe-area-inset-bottom,0px))}
+    #cxCam:not(.pedit) .bot .tabs,#cxCam:not(.pedit) .bot .gr,#cxCam:not(.pedit) .bot .car{display:none}
+    #cxCam .bot .hint{display:none}
+    #cxCam .edtog{position:absolute;right:16px;top:-46px;z-index:4;height:36px;padding:0 14px;border-radius:18px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.5);color:#fff;font-size:13px;font-weight:700;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+    #cxCam.pedit .edtog{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
+    /* clean preview: quality chips default me chhupe; ⚙ dabao to dikhen */
+    #cxCam .qb,#cxCam .qb2{display:none}
+    #cxCam.qopen .qb,#cxCam.qopen .qb2{display:flex;top:calc(112px + env(safe-area-inset-top,0px))}
+    #cxCam .qtog{position:absolute;right:14px;top:calc(62px + env(safe-area-inset-top,0px));z-index:3;width:38px;height:38px;border-radius:19px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:18px;line-height:1;padding:0;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+    #cxCam.qopen .qtog{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
+    body:has(#cxCam.open) #cxFsPill,body:has(#callOv.open) #cxFsPill,body:has(#cxView.open) #cxFsPill{display:none!important}
     #cxCam .qb2{position:absolute;left:14px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;z-index:3}
     #cxCam .qb2 button{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:14px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;font-family:inherit;line-height:1}
     #cxCam .qb2 button.on{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
@@ -24864,10 +24960,11 @@ void main(){
     const el = document.createElement('div'); el.id = 'cxCam';
     el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas><canvas id="cxClip"></canvas><canvas id="cxHist" width="132" height="64"></canvas><div class="spl" id="cxSpl"><span class="lb r">Pehle</span><span class="lb l">Baad</span><div class="ln"></div><div class="hd" id="cxSplH">◂▸</div></div><div class="zb" id="cxZb">1.0×</div><div class="fr" id="cxFr"></div></div>
       <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
+      <button type="button" class="qtog" id="cxQtog" aria-label="Camera options">⚙</button>
       <div class="qb2"><button type="button" id="cxQh"></button><button type="button" id="cxQc"></button><button type="button" id="cxQp"></button><button type="button" id="cxQi"></button></div>
       <div class="qb"><button type="button" id="cxQr"></button><button type="button" id="cxQf"></button><button type="button" id="cxQb"></button><button type="button" id="cxQs"></button></div>
       <div class="rt" id="cxCamRt">● 0:00</div>
-      <div class="bot"><div class="tabs" id="cxTabs"></div><div class="gr"><div class="gh"><b id="cxGrN">Brightness</b><span><em id="cxGrV">0</em><button type="button" id="cxGrRs" aria-label="Reset">↺</button></span></div><input type="range" id="cxGrR" min="-100" max="100" step="1" value="0"></div><div class="car" id="cxCamCar"></div>
+      <div class="bot"><button type="button" class="edtog" id="cxEdTog">🎨 Edit</button><div class="tabs" id="cxTabs"></div><div class="gr"><div class="gh"><b id="cxGrN">Brightness</b><span><em id="cxGrV">0</em><button type="button" id="cxGrRs" aria-label="Reset">↺</button></span></div><input type="range" id="cxGrR" min="-100" max="100" step="1" value="0"></div><div class="car" id="cxCamCar"></div>
         <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span id="cxCamBtySlot" style="width:46px;display:flex;justify-content:flex-end"></span></div>
         <div class="hint">Tap = photo · Dabao = video · Pinch = zoom · Preview dabao = original</div></div>`;
     document.body.appendChild(el);
@@ -24991,6 +25088,13 @@ void main(){
     $('cxQr').onclick = ()=>{ if(lock()) return; const ks = ['720', '1080', 'max']; Q.res = ks[(ks.indexOf(Q.res) + 1) % 3]; saveQ(); paintQ(); if(Q.res === 'max') toast('Max = phone ka sabse bada size (4K tak). Heavy hai — auto-adjust chalega.'); restartStream(); };
     $('cxQf').onclick = ()=>{ if(lock()) return; Q.fps = Q.fps === 30 ? 60 : 30; saveQ(); paintQ(); restartStream(); };
     $('cxQb').onclick = ()=>{ if(lock()) return; const ks = [3, 6, 10]; Q.br = ks[(ks.indexOf(Q.br) + 1) % 3]; saveQ(); paintQ(); if(Q.br === 10) toast('Ultra = bahut badi file; chat me bhejna bhaari padega.'); };
+    { const cm = $('cxCam'), tg = $('cxQtog'); let o = false; try{ o = localStorage.getItem('cxc-qopen') === '1'; }catch(_){}
+      if(cm) cm.classList.toggle('qopen', o);
+      let pe = false; try{ pe = localStorage.getItem('cxc-edit') === '1'; }catch(_){}
+      if(cm) cm.classList.toggle('pedit', pe);
+      const et = $('cxEdTog'); if(et) et.onclick = ()=>{ const on = cm.classList.toggle('pedit'); try{ localStorage.setItem('cxc-edit', on ? '1' : '0'); }catch(_){} try{ paintCar(true); }catch(_){} };
+      try{ if(!localStorage.getItem('cxc-hint')){ localStorage.setItem('cxc-hint', '1'); toast('Tap = photo · Dabao = video · Pinch = zoom'); } }catch(_){}
+      if(tg) tg.onclick = ()=>{ const on = cm.classList.toggle('qopen'); try{ localStorage.setItem('cxc-qopen', on ? '1' : '0'); }catch(_){} }; }
     $('cxQh').onclick = ()=>{ Q.hist = !Q.hist; saveQ(); paintQ(); };
     $('cxQc').onclick = ()=>{ Q.clip = !Q.clip; saveQ(); paintQ(); if(Q.clip) toast('Laal = highlights ud rahe · Neela = shadows dab rahe'); };
     $('cxQp').onclick = ()=>{ if(lock()) return; Q.split = !Q.split; saveQ(); paintQ(); if(Q.split) toast('Handle ko ghumao: left = original, right = graded'); };
