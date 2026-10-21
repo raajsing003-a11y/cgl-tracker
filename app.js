@@ -23042,7 +23042,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       { ico: muted ? '🔔' : '🔕', label: muted ? 'Notifications on karo' : 'Notifications mute karo', fn: ()=>{ const s = mutedSet(); muted ? s.delete(key) : s.add(key); LW(P() + 'mute', [...s]); toast(muted ? 'Unmute ho gaya' : 'Mute ho gaya'); } },
       { ico: '📤', label: 'Chat export (txt)', fn: exportChat },
       { ico: '🧹', label: 'Chat clear karo (sirf mere liye)', bad: true, fn: ()=>{ if(confirm('Is chat ke saare messages sirf tumhare device se hat jayenge. Pakka?')){ LW(P() + 'clr:' + pairOf(), Date.now()); rerender(); toast('Chat clear ho gayi'); } } },
-      { ico: '🚫', label: blocked ? 'Unblock karo' : 'Block karo', bad: !blocked, fn: ()=> toggleBlock(key) },
+      (blocked || isMeAdmin()) ? { ico: '🚫', label: blocked ? 'Unblock karo' : 'Block karo', bad: !blocked, fn: ()=> toggleBlock(key) } : { ico: '🔒', label: 'Block sirf Admin kar sakta hai', fn: ()=>{} },
       { ico: '⚠️', label: 'Report karo', bad: true, fn: reportChat }
     ]);
   }
@@ -23060,7 +23060,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     toast('Sirf load hue messages export hue.');
   }
   function toggleBlock(key){
-    const s = blockedByMe(); const was = s.has(key); was ? s.delete(key) : s.add(key); LW(P() + 'blk', [...s]);
+    const s = blockedByMe(); const was = s.has(key);
+    if(!was && !isMeAdmin()){ toast('🔒 Block sirf Admin kar sakta hai'); return; } was ? s.delete(key) : s.add(key); LW(P() + 'blk', [...s]);
     window.__fbSet(`${chatBase()}/_chatBlock/${chatMyKey()}/${key}`, was ? null : 1).catch(()=>{});
     toast(was ? 'Unblock ho gaya' : 'Block ho gaya — ab unke message/call nahi dikhenge'); rerender(); updateBlockUI();
   }
@@ -24137,12 +24138,13 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const lsKey = ()=> 'cxp-me:' + (getRoomCode() || '') + ':' + chatMyKey();
   let ME = LSG(lsKey(), null) || { p: '', o: 1 };
   const refreshMe = ()=>{ ME = LSG(lsKey(), null) || ME || { p: '', o: 1 }; };
-  const myHidden = ()=> ME && ME.o === 0;
+  const myHidden = ()=> !!(ME && ME.o === 0 && isMeAdmin());   // sirf admin hide kar sakta
   const hiddenFor = (name)=>{
     if(!name) return false;
     if(chatSeenKey(name) === chatMyKey()) return false;
     // one-way: apna status chhupane par bhi dusron ka dikhta rahe (sirf jisne khud chhupaya uska hidden)
     const e = PROF[chatSeenKey(name)];
+    if(!(typeof currentRoomAdmin === 'string' && currentRoomAdmin && String(name).toLowerCase() === currentRoomAdmin.toLowerCase())) return false;   // admin ke alawa kisi ka hide nahi chalta
     return !!(e && e.o === 0);
   };
 
@@ -24222,6 +24224,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }catch(e){ console.error(e); toast('Profile server par save nahi ho paayi — internet check karo.'); }
   }
   async function setOnline(on){
+    if(!on && !isMeAdmin()){ toast('🔒 Online status / last seen sirf Admin hide kar sakta hai'); paintSheet(); return; }
     await save({ p: ME.p, o: on ? 1 : 0 });
     try{
       if(!on){ await window.__fbSet(`${chatBase()}/presence/${presenceKey(myName)}`, 0); }
@@ -24309,7 +24312,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     $('cxpDel').style.display = ME.p ? '' : 'none';
     const on = !myHidden();
     $('cxpTg').classList.toggle('on', on);
-    $('cxpSwSub').textContent = on ? 'Sabko tumhara Online / last active dikhta hai' : 'Chhupa hua — tumhe dusron ka status dikhta rahega';
+    $('cxpSwSub').textContent = !isMeAdmin() ? '🔒 Sirf Admin hide kar sakta hai — tumhara status sabko dikhega' : on ? 'Sabko tumhara Online / last active dikhta hai' : 'Chhupa hua — tumhe dusron ka status dikhta rahega';
   }
   function openSheet(){ styles(); ensureSheet(); refreshMe(); paintSheet(); $('cxpOv').classList.add('open'); }
 
@@ -24449,7 +24452,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     else if(del) h += '<div class="em">Hatane ke liye sticker par tap karo</div>';
     gd.innerHTML = h;
   }
-  function open(){ if(!chatPeer) return; styles(); panel(); del = false; render(); $('cxsk4').classList.add('open'); }
+  function open(){ if(!chatPeer) return; styles(); panel(); del = false; render(); $('cxsk4').classList.add('open'); loadPacks().then(()=>{ if(tab === 'pk' && $('cxsk4') && $('cxsk4').classList.contains('open')) render(); }).catch(()=>{}); }
   function close(){ const p = $('cxsk4'); if(p) p.classList.remove('open'); }
   window.cxStickerOpen = ()=>{ try{ open(); }catch(e){} };
 
@@ -24457,9 +24460,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     close();
     if(window.cxSend) await window.cxSend({ t: e, sk: 1 }, null, e + ' Sticker', true);
   }
+  let PKT = 0;
   async function loadPacks(){
-    if(PK) return PK;
-    if(!PKP) PKP = fetch('./stickers/packs.json').then(r => { if(!r.ok) throw new Error('packs'); return r.json(); }).then(j => (PK = j)).catch(e => { PKP = null; throw e; });
+    // packs.json har 2 min me taaza (Telegram bot se naye packs sabke paas auto aaye); cache nahi
+    if(PK && Date.now() - PKT < 120000) return PK;
+    if(!PKP) PKP = fetch('./stickers/packs.json?t=' + Math.floor(Date.now() / 60000), { cache: 'no-cache' }).then(r => { if(!r.ok) throw new Error('packs'); return r.json(); }).then(j => { PK = j; PKT = Date.now(); PKP = null; return PK; }).catch(e => { PKP = null; if(PK) return PK; throw e; });
     return PKP;
   }
   async function sendPack(pk, pn){
