@@ -26953,7 +26953,8 @@ void main(){
       const tot = j.pagination && Number(j.pagination.total_count);
       more = raw.length >= 24 && (!tot || off < tot) && off < 240;
       if(!online.length) toast('Koi GIF nahi mili.');
-    }catch(e){ if(my !== tok) return; if(!append) online = []; more = false; toast('Giphy search nahi chali (key/internet check karo).'); }
+    }catch(e){ if(my !== tok) return; if(!append) online = []; more = false; const em = String(e && e.message || e), c = (em.match(/http (\d{3})/) || [])[1];
+      toast(c === '401' || c === '403' ? 'Giphy key galat/band hai (' + c + ') — nayi key daalo (developers.giphy.com)' : c === '429' ? 'Giphy limit poori (429) — thodi der baad try karo ya production key lo' : c ? 'Giphy error ' + c : 'Giphy tak network nahi pahunchi — internet/VPN/adblock check karo'); }
     busy = false; paint();
   }
   async function randomG(){
@@ -28622,7 +28623,8 @@ const AIReply = (function(){
       showBar(list);
     }catch(e){
       console.error('AI suggest failed', e);
-      if(my === seq) note('🤖 suggestion nahi ban paya — internet check karo', true);
+      if(my === seq){ const em = String(e && e.message || e), code = (em.match(/ai (\d{3})/) || [])[1];
+        note('🤖 suggestion nahi ban paya — ' + (code === '401' || code === '403' ? 'AI key/proxy ne mana kiya (' + code + ')' : code === '400' ? 'proxy ne request reject ki (400)' : code ? 'proxy error ' + code : em === 'empty' ? 'AI ka jawab samajh nahi aaya' : 'proxy tak network nahi pahunchi (' + em.slice(0, 30) + ')'), true); }
     }
   }
 
@@ -29782,7 +29784,7 @@ const AIReply = (function(){
 //   Samne wala sachchi me poochhe "AI ho?" to AI mana nahi karta. (Repo ka "human ban ke chhupao" wala hissa JAAN-BOOJH ke nahi liya.)
 // ============================================================================
 (function chatAutopilot(){
-  const K = 'cx-autopilot', KC = 'cx-ap-cfg', KL = 'cx-ap-label', TAKE = 2 * 60 * 1000;
+  const K = 'cx-autopilot', KC = 'cx-ap-cfg', KL = 'cx-ap-label', TAKE = 20 * 1000;
   const $ = (id)=> document.getElementById(id);
   const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
   const LG = (k, d)=>{ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } };
@@ -29927,7 +29929,9 @@ const AIReply = (function(){
   }
   async function run(peer, my, tries){
     if(my !== seq || !isOn(peer.pair) || chatPeer !== peer) return;
-    if(Date.now() - manualAt < TAKE){ status = 'Tumne khud reply kiya — Autopilot kuch der ruka hai'; refresh(); return; }
+    if(Date.now() - manualAt < TAKE){ const left = Math.ceil((TAKE - (Date.now() - manualAt)) / 1000);
+      status = 'Tumne khud reply kiya — ' + left + 's ruka hai'; refresh();
+      clearTimeout(timer); timer = setTimeout(()=> run(peer, my, tries), (left + 1) * 1000); return; }   // pause khatam hote hi is msg ka reply
     const ta = $('chatInput');
     if(ta && ta.value.trim()){ if((tries || 0) < 4) timer = setTimeout(()=> run(peer, my, (tries || 0) + 1), 4000); return; }   // tum type kar rahe ho
     const now = Date.now(), h = (hist[peer.pair] = (hist[peer.pair] || []).filter(t => now - t < 3600000));
