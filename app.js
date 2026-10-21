@@ -21414,6 +21414,7 @@ function chatOnMsg(peer, id, m){
   else if(!mine){ const np = chatEl('chatNewPill'); if(np) np.hidden = false; }
   if(!mine) chatMarkRead();
   if(!mine){ try{ AIReply.onIncoming(peer, id, m); }catch(e){} }
+  else { try{ AIReply.onMine(); }catch(e){} }
 }
 function chatRenderAll(keepPos){
   const box = chatEl('chatMsgs');
@@ -22014,7 +22015,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     up[`${b}/_chatIdx/${peer.key}/${me}/u`] = { '.sv': { increment: 1 } };
     chatPending.add(id);
     try{
-      await window.__fbUpdate(up);
+      if(fileData && fileData.length > 40000){
+        // FAST: message + thumbnail turant jaate hain (samne wale ko bubble foran dikhe); badi file usi socket par peeche-peeche
+        const fp = `${b}/_chats/${peer.pair}/f/${m.a.fid}`, fv = up[fp]; delete up[fp];
+        const p1 = window.__fbUpdate(up), p2 = window.__fbSet(fp, fv);
+        await Promise.all([p1, p2]);
+      }else await window.__fbUpdate(up);
       chatPending.delete(id);
       chatRefreshTicks();
       return true;
@@ -22033,7 +22039,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     try{
       toast('Photo taiyaar ho rahi hai…');
       const im = await loadImg(file);
-      const full = drawScaled(im, 1280, 0.72), th = drawScaled(im, 240, 0.5);
+      const full = drawScaled(im, 1920, 0.9), th = drawScaled(im, 240, 0.5);   // Full HD
       await xSend({ k: 'i', a: { n: file.name || 'photo.jpg', s: Math.round(full.url.length * 0.75), mt: 'image/jpeg', w: full.w, h: full.h, th: th.url } }, full.url, '📷 Photo');
     }catch(e){ toast('Ye photo khul nahi paayi.'); }
   }
@@ -22116,7 +22122,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   async function getFileData(fid){
     if(!fid) throw new Error('nofid');
     if(fileCache.has(fid)) return fileCache.get(fid);
-    const v = await window.__fbGet(`${chatBase()}/_chats/${chatPeer.pair}/f/${fid}`);
+    let v = await window.__fbGet(`${chatBase()}/_chats/${chatPeer.pair}/f/${fid}`);
+    for(let i = 0; i < 6 && (!v || !v.d); i++){ await new Promise(r => setTimeout(r, 1200)); v = await window.__fbGet(`${chatBase()}/_chats/${chatPeer.pair}/f/${fid}`); }   // file abhi upload ho rahi ho sakti hai
     if(!v || !v.d) throw new Error('missing');
     fileCache.set(fid, v.d);
     return v.d;
@@ -22653,21 +22660,39 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   window.cxTakeReply = function(){ const r = reply; reply = null; updateBars(); return r; };
   const blkCache = new Map();
   window.cxIsBlocked = (k)=> blockedByMe().has(k);
-  window.cxCanSend = async function(peer){
+  // FAST SEND: "samne wale ne block kiya?" check ab send ko rokta nahi. Cache se turant jawab; cache purana/khali ho to
+  // message foran chala jaata hai aur check background me chalta hai (agli baar ke liye cache garam).
+  function warmBlk(peer){
+    if(!peer) return;
+    const c = blkCache.get(peer.key);
+    if(c && (c.v !== undefined) && Date.now() - c.t < 600000) return;
+    if(c && c.busy) return;
+    blkCache.set(peer.key, { v: c ? c.v : false, t: c ? c.t : 0, busy: true });
+    Promise.resolve().then(()=> window.__fbGet(`${chatBase()}/_chatBlock/${peer.key}/${chatMyKey()}`))
+      .then(v => { blkCache.set(peer.key, { v: !!v, t: Date.now() }); })
+      .catch(()=>{ blkCache.set(peer.key, { v: false, t: Date.now() - 540000 }); });
+  }
+  window.cxWarmBlk = warmBlk;
+  window.cxCanSend = function(peer){
     if(blockedByMe().has(peer.key)){ toast('Ye chat block hai — pehle unblock karo.'); return false; }
     const c = blkCache.get(peer.key);
-    let theyBlocked = c && Date.now() - c.t < 60000 ? c.v : null;
-    if(theyBlocked === null){
-      try{ theyBlocked = !!(await window.__fbGet(`${chatBase()}/_chatBlock/${peer.key}/${chatMyKey()}`)); blkCache.set(peer.key, { v: theyBlocked, t: Date.now() }); }catch(e){ theyBlocked = false; }
-    }
-    if(theyBlocked){ toast('Is user ne tumhe block kiya hai — message nahi ja sakta.'); return false; }
+    warmBlk(peer);
+    if(c && c.v){ toast('Is user ne tumhe block kiya hai — message nahi ja sakta.'); return false; }
     return true;
   };
   chatSend = async function(){
     const ta = $('chatInput'); if(!ta || !chatPeer) return;
     const text = ta.value.replace(/\s+$/, '').slice(0, CHAT_MAX_LEN);
     if(!text.trim()) return;
-    ta.value = ''; chatAutosize(); ta.focus(); cxTyping(null, true); closeEmoji();
+    ta.value = ''; chatAutosize(); ta.focus();
+    if(!editing){
+      const pr = window.cxSend({ t: text }, null, text.replace(/\s+/g, ' '));   // update turant queue me
+      setTimeout(()=>{ try{ cxTyping(null, true); closeEmoji(); }catch(e){} }, 0);
+      const ok0 = await pr;
+      if(!ok0 && chatPeer && !ta.value) ta.value = text;
+      return;
+    }
+    cxTyping(null, true); closeEmoji();
     if(editing){
       const id = editing; editing = null; updateBars();
       try{ await window.__fbSet(`${basePair()}/x/${id}/ed`, { t: text, ts: TSV }); }catch(e){ toast('Edit nahi hua — internet check karo.'); }
@@ -22681,7 +22706,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     send.dataset.cxPro = '1';
     send.addEventListener('click', (e)=>{ e.stopImmediatePropagation(); chatSend(); }, true);
     ta.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches){ e.stopImmediatePropagation(); e.preventDefault(); chatSend(); } }, true);
-    ta.addEventListener('input', ()=>{ if(ta.value.trim()) cxTyping('t'); else cxTyping(null); });
+    ta.addEventListener('input', ()=>{ if(ta.value.trim()){ cxTyping('t'); try{ warmBlk(chatPeer); }catch(e){} } else cxTyping(null); });
+    ta.addEventListener('focus', ()=>{ try{ warmBlk(chatPeer); }catch(e){} });
     ta.addEventListener('blur', ()=> cxTyping(null));
   }
 
@@ -23391,7 +23417,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       <div class="cxeBar"><input id="cxeCap" type="text" maxlength="200" placeholder="Caption jodo…"><button type="button" class="cxeIco" data-a="vo" id="cxeVo" aria-label="Ek baar dekho" title="Ek baar dekho">👁</button><button type="button" class="cxeSend" id="cxeSend">➤ Bhejo</button></div>`;
     document.body.appendChild(ov);
     const cv = ov.querySelector('#cxeCv'), g = cv.getContext('2d'), crop = ov.querySelector('#cxeCrop');
-    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, sc = Math.min(1, 1024 / Math.max(iw, ih));
+    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, sc = Math.min(1, 1920 / Math.max(iw, ih));   // Full HD editor
     cv.width = Math.max(1, Math.round(iw * sc)); cv.height = Math.max(1, Math.round(ih * sc));
     g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height);
     const E = ed = { ov, cv, g, mode: 'draw', color: COLORS[2], size: 6, stack: [], vo: false, done, sel: null, busy: false };
@@ -23453,7 +23479,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     ov.querySelector('#cxeSz').addEventListener('input', (e)=>{ E.size = +e.target.value; });
     async function edSend(){
       const cap = ov.querySelector('#cxeCap').value.trim();
-      const full = cv.toDataURL('image/jpeg', 0.72);
+      const full = cv.toDataURL('image/jpeg', 0.9);
       const t = document.createElement('canvas'), s = Math.min(1, 240 / Math.max(cv.width, cv.height));
       t.width = Math.max(1, Math.round(cv.width * s)); t.height = Math.max(1, Math.round(cv.height * s));
       t.getContext('2d').drawImage(cv, 0, 0, t.width, t.height);
@@ -24511,12 +24537,12 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     s.textContent = `
     #cxCam{position:fixed;inset:0;z-index:100002;background:#000;display:none;flex-direction:column;color:#fff;font-family:inherit}
     #cxCam.open{display:flex}
-    #cxCam .cv{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(258px + env(safe-area-inset-bottom,0px));border-radius:0 0 22px 22px;overflow:hidden;background:#111}
+    #cxCam .cv{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(292px + env(safe-area-inset-bottom,0px));border-radius:0 0 22px 22px;overflow:hidden;background:#111}
     #cxCam canvas{width:100%;height:100%;object-fit:cover;display:block}
     #cxCam .top{position:absolute;left:0;right:0;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:2}
     #cxCam .top b{font-size:15px;font-weight:600;background:rgba(0,0,0,.35);padding:7px 16px;border-radius:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
     #cxCam .ib{width:42px;height:42px;border-radius:50%;border:0;background:rgba(0,0,0,.35);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;padding:0}
-    #cxCam .bot{position:absolute;left:0;right:0;bottom:0;height:calc(258px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;justify-content:center}
+    #cxCam .bot{position:absolute;left:0;right:0;bottom:0;height:calc(292px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);display:flex;flex-direction:column;justify-content:center}
     #cxCam .car{display:flex;gap:14px;overflow-x:auto;padding:6px 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
     #cxCam .car::-webkit-scrollbar{display:none}
     #cxCam .car button{flex:none;width:56px;background:transparent;border:0;color:#fff;font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;opacity:.8}
@@ -24555,7 +24581,22 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     #cxCam .fr.go{animation:cxfr .9s ease-out forwards}
     @keyframes cxfr{0%{opacity:1;transform:scale(1.5)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
     #cxCam .car button.pre i{background:linear-gradient(135deg,rgba(168,85,247,.55),rgba(236,72,153,.55));border-color:rgba(255,255,255,.5)}
-    #cxCam .car .sep{flex:none;width:1px;align-self:stretch;margin:4px 2px;background:rgba(255,255,255,.22)}`;
+    #cxCam .car .sep{flex:none;width:1px;align-self:stretch;margin:4px 2px;background:rgba(255,255,255,.22)}
+    #cxCam .tabs{display:flex;justify-content:center;gap:6px;padding:0 14px 4px}
+    #cxCam .tabs button{flex:1;max-width:86px;border:0;border-radius:14px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:700;padding:6px 0;cursor:pointer;font-family:inherit;position:relative}
+    #cxCam .tabs button.on{background:#a855f7}
+    #cxCam .tabs button.mod::after{content:'';position:absolute;top:4px;right:7px;width:6px;height:6px;border-radius:50%;background:#facc15}
+    #cxCam .car button.my i{background:linear-gradient(135deg,rgba(250,204,21,.45),rgba(236,72,153,.45));border-color:rgba(255,255,255,.5)}
+    #cxCam .qb2{position:absolute;left:14px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;z-index:3}
+    #cxCam .qb2 button{border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.42);color:#fff;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:14px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer;font-family:inherit;line-height:1}
+    #cxCam .qb2 button.on{border-color:#a855f7;box-shadow:0 0 0 2px rgba(168,85,247,.55)}
+    #cxCam #cxHist{position:absolute;left:12px;bottom:12px;width:132px;height:64px;border-radius:8px;background:rgba(0,0,0,.5);display:none;z-index:3;pointer-events:none;object-fit:fill}
+    #cxCam #cxClip{position:absolute;left:0;top:0;width:100%;height:100%;display:none;z-index:2;pointer-events:none}
+    #cxCam .spl{position:absolute;top:0;bottom:0;width:0;display:none;z-index:4;pointer-events:none}
+    #cxCam .spl .ln{position:absolute;left:-1px;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.6)}
+    #cxCam .spl .hd{position:absolute;left:-19px;top:50%;margin-top:-19px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid #fff;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+    #cxCam .spl .lb{position:absolute;top:calc(112px + env(safe-area-inset-top,0px));font-size:10.5px;font-weight:700;background:rgba(0,0,0,.5);padding:2px 7px;border-radius:8px}
+    #cxCam .spl .lb.l{right:8px}#cxCam .spl .lb.r{left:8px}`;
     document.head.appendChild(s);
   }
   const ic = {
@@ -24569,39 +24610,48 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const GKEY = 'cxc-grade';
   const HUEG = 'linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)';
   const ADJ = [
-    { k: 'aiEnh', n: 'AI Enhance', e: '🤖', min: 0 },
-    { k: 'denoise', n: 'Denoise', e: '🧼', min: 0 },
-    { k: 'detail', n: 'Detail Boost', e: '🔍', min: 0 },
-    { k: 'lowlight', n: 'Low-light', e: '🌙', min: 0 },
-    { k: 'skinSm', n: 'Skin Smooth', e: '🧴', min: 0 },
-    { k: 'exposure', n: 'Exposure', e: '☀️' },
-    { k: 'brightness', n: 'Brightness', e: '🔆' },
-    { k: 'contrast', n: 'Contrast', e: '◐' },
-    { k: 'saturation', n: 'Saturation', e: '🎨' },
-    { k: 'vibrance', n: 'Vibrance', e: '💧' },
-    { k: 'temp', n: 'Temperature', e: '🌡️', tr: 'linear-gradient(90deg,#3b82f6,#e5e7eb,#f59e0b)' },
-    { k: 'tint', n: 'Tint', e: '🧪', tr: 'linear-gradient(90deg,#22c55e,#e5e7eb,#d946ef)' },
-    { k: 'highlights', n: 'Highlights', e: '🌤️' },
-    { k: 'shadows', n: 'Shadows', e: '🌑' },
-    { k: 'whites', n: 'Whites', e: '⚪' },
-    { k: 'blacks', n: 'Blacks', e: '⚫' },
-    { k: 'fade', n: 'Fade', e: '🌫️', min: 0 },
-    { k: 'hue', n: 'Hue', e: '🌈', tr: HUEG },
-    { k: 'sharpen', n: 'Sharpness', e: '🔺', min: 0 },
-    { k: 'vignette', n: 'Vignette', e: '⭕' },
-    { k: 'grain', n: 'Grain', e: '✨', min: 0 },
-    { k: 'shHue', n: 'Shadow Color', e: '🟣', min: 0, max: 360, tr: HUEG },
-    { k: 'shAmt', n: 'Shadow Mix', e: '🎚️', min: 0 },
-    { k: 'hiHue', n: 'Highlight Color', e: '🟠', min: 0, max: 360, tr: HUEG },
-    { k: 'hiAmt', n: 'Highlight Mix', e: '🎚️', min: 0 }
+    { k: 'aiEnh', n: 'AI Enhance', e: '🤖', min: 0, g: 'q' },
+    { k: 'denoise', n: 'Denoise', e: '🧼', min: 0, g: 'q' },
+    { k: 'detail', n: 'Detail Boost', e: '🔍', min: 0, g: 'q' },
+    { k: 'lowlight', n: 'Low-light', e: '🌙', min: 0, g: 'q' },
+    { k: 'skinSm', n: 'Skin Smooth', e: '🧴', min: 0, g: 'q' },
+    { k: 'sharpen', n: 'Sharpness', e: '🔺', min: 0, g: 'q' },
+    { k: 'exposure', n: 'Exposure', e: '☀️', g: 'l' },
+    { k: 'brightness', n: 'Brightness', e: '🔆', g: 'l' },
+    { k: 'contrast', n: 'Contrast', e: '◐', g: 'l' },
+    { k: 'gamma', n: 'Gamma', e: '🌗', g: 'l' },
+    { k: 'highlights', n: 'Highlights', e: '🌤️', g: 'l' },
+    { k: 'shadows', n: 'Shadows', e: '🌑', g: 'l' },
+    { k: 'whites', n: 'Whites', e: '⚪', g: 'l' },
+    { k: 'blacks', n: 'Blacks', e: '⚫', g: 'l' },
+    { k: 'saturation', n: 'Saturation', e: '🎨', g: 'c' },
+    { k: 'vibrance', n: 'Vibrance', e: '💧', g: 'c' },
+    { k: 'temp', n: 'Temperature', e: '🌡️', g: 'c', tr: 'linear-gradient(90deg,#3b82f6,#e5e7eb,#f59e0b)' },
+    { k: 'tint', n: 'Tint', e: '🧪', g: 'c', tr: 'linear-gradient(90deg,#22c55e,#e5e7eb,#d946ef)' },
+    { k: 'hue', n: 'Hue', e: '🌈', g: 'c', tr: HUEG },
+    { k: 'skinProt', n: 'Skin Protect', e: '🛡️', min: 0, g: 'c', inert: true },
+    { k: 'selHue', n: 'Pick Colour', e: '🎯', min: 0, max: 360, g: 'c', inert: true, tr: HUEG },
+    { k: 'selRange', n: 'Colour Range', e: '↔️', min: 5, max: 90, def: 30, g: 'c', inert: true },
+    { k: 'selShift', n: 'Colour Shift', e: '🔀', g: 'c', tr: HUEG },
+    { k: 'selSat', n: 'Colour Sat', e: '🖍️', g: 'c' },
+    { k: 'selLum', n: 'Colour Light', e: '💡', g: 'c' },
+    { k: 'fade', n: 'Fade', e: '🌫️', min: 0, g: 'k' },
+    { k: 'vignette', n: 'Vignette', e: '⭕', g: 'k' },
+    { k: 'grain', n: 'Grain', e: '✨', min: 0, g: 'k' },
+    { k: 'shHue', n: 'Shadow Color', e: '🟣', min: 0, max: 360, g: 'k', inert: true, tr: HUEG },
+    { k: 'shAmt', n: 'Shadow Mix', e: '🎚️', min: 0, g: 'k' },
+    { k: 'hiHue', n: 'Highlight Color', e: '🟠', min: 0, max: 360, g: 'k', inert: true, tr: HUEG },
+    { k: 'hiAmt', n: 'Highlight Mix', e: '🎚️', min: 0, g: 'k' }
   ];
+  const TABS = [['q', 'Quality'], ['l', 'Light'], ['c', 'Colour'], ['k', 'Look']];
+  const dflt = (a)=> a.def || 0;
   const AUTO_HD = { aiEnh: 40, denoise: 22, detail: 28, sharpen: 18, contrast: 8, vibrance: 14, skinSm: 12 };
   // PART 2: ek-tap presets (har preset poora look set karta hai; pehle sab 0 hota hai)
   const PRESETS = {
     lowlight: { n: 'Low-light fix', e: '🌙', v: { lowlight: 70, denoise: 45, aiEnh: 30, exposure: 12, shadows: 30, detail: 20, vibrance: 10 } },
-    portrait: { n: 'Portrait', e: '🧑', v: { skinSm: 40, aiEnh: 25, denoise: 20, detail: 12, vibrance: 12, temp: 8, highlights: -10, contrast: 5, vignette: 15 } },
+    portrait: { n: 'Portrait', e: '🧑', v: { skinProt: 60, skinSm: 40, aiEnh: 25, denoise: 20, detail: 12, vibrance: 12, temp: 8, highlights: -10, contrast: 5, vignette: 15 } },
     cinematic: { n: 'Cinematic', e: '🎬', v: { contrast: 22, saturation: -8, temp: -6, shadows: -12, fade: 8, shHue: 205, shAmt: 35, hiHue: 30, hiAmt: 30, vignette: 30, grain: 12, aiEnh: 30, detail: 15 } },
-    vivid: { n: 'Sunny / Vivid', e: '🌞', v: { saturation: 22, vibrance: 28, contrast: 14, highlights: -8, temp: 6, aiEnh: 35, detail: 25, sharpen: 14 } },
+    vivid: { n: 'Sunny / Vivid', e: '🌞', v: { skinProt: 50, saturation: 22, vibrance: 28, contrast: 14, highlights: -8, temp: 6, aiEnh: 35, detail: 25, sharpen: 14 } },
     night: { n: 'Night', e: '🌃', v: { lowlight: 90, denoise: 60, exposure: 22, shadows: 40, blacks: -10, contrast: 10, vibrance: 15, aiEnh: 20 } },
     food: { n: 'Food', e: '🍜', v: { temp: 14, saturation: 18, vibrance: 22, contrast: 12, highlights: -6, detail: 35, sharpen: 20, aiEnh: 30, vignette: 10 } }
   };
@@ -24611,20 +24661,24 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const QKEY = 'cxc-q', LVS = [1, .8, .65, .5];
   const clamp = (x, a, b)=> Math.max(a, Math.min(b, x));
   const loadQ = ()=>{ let o = {}; try{ o = JSON.parse(localStorage.getItem(QKEY) || '{}') || {}; }catch(_){}
-    return { res: RES[o.res] ? o.res : '1080', fps: o.fps === 60 ? 60 : 30, br: BRN[o.br] ? Number(o.br) : 6, stab: o.stab !== false }; };
+    return { res: RES[o.res] ? o.res : '1080', fps: o.fps === 60 ? 60 : 30, br: BRN[o.br] ? Number(o.br) : 6, stab: o.stab !== false, hist: !!o.hist, clip: !!o.clip, split: !!o.split, full: o.full !== false }; };
   let Q = loadQ();
   const saveQ = ()=>{ try{ localStorage.setItem(QKEY, JSON.stringify(Q)); }catch(_){} };
   const lo = (a)=> a.min == null ? -100 : a.min, hi = (a)=> a.max == null ? 100 : a.max;
   const loadG = ()=>{
-    const g = {}; ADJ.forEach(a => { g[a.k] = 0; });
+    const g = {}; ADJ.forEach(a => { g[a.k] = dflt(a); });
     if(localStorage.getItem(GKEY) === null){ Object.assign(g, AUTO_HD); }
     try{ const o = JSON.parse(localStorage.getItem(GKEY) || '{}'); ADJ.forEach(a => { const v = Number(o[a.k]); if(isFinite(v)) g[a.k] = Math.max(lo(a), Math.min(hi(a), v)); }); }catch(_){}
     return g;
   };
-  let G = loadG(), gSel = 'brightness', saveT = 0;
+  let G = loadG(), gSel = 'brightness', gTab = 'l', saveT = 0, myPre = [];
+  const MYK = 'cxc-mypre';
+  const loadMy = ()=>{ try{ const a = JSON.parse(localStorage.getItem(MYK) || '[]'); return Array.isArray(a) ? a.filter(x => x && x.id && x.v) : []; }catch(_){ return []; } };
+  const saveMy = ()=>{ try{ localStorage.setItem(MYK, JSON.stringify(myPre)); }catch(_){} };
+  const zeroAll = ()=>{ ADJ.forEach(a => { G[a.k] = dflt(a); }); };
   const flushG = ()=>{ clearTimeout(saveT); try{ localStorage.setItem(GKEY, JSON.stringify(G)); }catch(_){} };
   const saveG = ()=>{ clearTimeout(saveT); saveT = setTimeout(flushG, 120); };   // AUTO-SAVE
-  const isId = ()=> ADJ.every(a => a.k === 'shHue' || a.k === 'hiHue' || !G[a.k]);
+  const isId = ()=> ADJ.every(a => a.inert || !G[a.k]);
   const hsv = (h)=>{ const f = (n)=>{ const k = (n + h * 6) % 6; return 1 - Math.max(0, Math.min(k, 4 - k, 1)); }; return [f(5), f(3), f(1)]; };
 
   const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
@@ -24635,9 +24689,11 @@ precision highp float;
 precision mediump float;
 #endif
 varying vec2 v; uniform sampler2D t; uniform vec2 px;
-uniform float ex,br,co,sa,vi,tp,tn,hl,sh,wh,bk,fd,hu,sp,vg,gr,tm,sA,hA,ai,dn,dt,ll,ss,lt;
+uniform float ex,br,co,sa,vi,tp,tn,hl,sh,wh,bk,fd,hu,sp,vg,gr,tm,sA,hA,ai,dn,dt,ll,ss,lt,gm,kp,cH,cR,cD,cS,cL;
 uniform vec3 sC,hC;
 const vec3 W=vec3(.2126,.7152,.0722);
+vec3 toHsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);float e=1.0e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}
+vec3 fromHsv(vec3 c){vec3 p=abs(fract(c.xxx+vec3(1.,2./3.,1./3.))*6.-3.);return c.z*mix(vec3(1.),clamp(p-1.,0.,1.),c.y);}
 void acc(vec3 x,vec3 c,inout vec3 sum,inout float ws){float g=exp(-16.*dot(abs(x-c),vec3(1.)));sum+=x*g;ws+=g;}
 void main(){
   vec3 c=texture2D(t,v).rgb;
@@ -24677,7 +24733,9 @@ void main(){
       vec3 ad=mix(c,str,ai*.35*edge);
       c=clamp(mix(pushed,clar,.55),0.,1.); c=clamp(mix(c,ad,.5),0.,1.);
       c=clamp((c-.5)*(1.+ai*.2)+.5,0.,1.);
-      float lm=dot(c,W); c=mix(vec3(lm),c,1.+ai*.12);
+      float skA=0.;
+      if(kp>0.){ vec3 ha=toHsv(clamp(c,0.,1.)); float sa2=abs(ha.x-.06); sa2=min(sa2,1.-sa2); skA=(1.-smoothstep(.03,.075,sa2))*(1.-smoothstep(.32,.52,ha.y))*ha.z*kp; }
+      float lm=dot(c,W); c=mix(vec3(lm),c,1.+ai*.12*(1.-skA*.7));
     }
     if(dt>0.) c+=(c-avg)*dt*1.4;
   }
@@ -24689,6 +24747,7 @@ void main(){
   c.r*=1.+tp*.28; c.b*=1.-tp*.28;
   c.g*=1.-tn*.18; c.r*=1.+tn*.06; c.b*=1.+tn*.06;
   c+=br*.25;
+  if(gm!=0.) c=pow(max(c,vec3(0.)),vec3(exp2(-gm*.9)));
   float l=dot(c,W);
   c+=hl*.3*smoothstep(.45,1.,l);
   c+=sh*.3*(1.-smoothstep(0.,.55,l));
@@ -24696,16 +24755,26 @@ void main(){
   c+=bk*.2*(1.-smoothstep(0.,.3,l));
   c=(c-.5)*(1.+co*.7)+.5;
   c=c*(1.-fd*.25)+fd*.1;
+  float skm=0.;
+  if(kp>0.){ vec3 hs=toHsv(clamp(c,0.,1.)); float sd=abs(hs.x-.06); sd=min(sd,1.-sd); skm=(1.-smoothstep(.03,.075,sd))*(1.-smoothstep(.32,.52,hs.y))*hs.z*kp; }
   l=dot(c,W);
-  c=mix(vec3(l),c,1.+sa);
+  c=mix(vec3(l),c,1.+sa*(1.-skm*.7));
   float mx=max(c.r,max(c.g,c.b)), mn=min(c.r,min(c.g,c.b));
-  c=mix(vec3(l),c,1.+vi*(1.-clamp(mx-mn,0.,1.)));
+  c=mix(vec3(l),c,1.+vi*(1.-clamp(mx-mn,0.,1.))*(1.-skm*.85));
   if(hu!=0.){
     float a=hu*3.14159265, cs=cos(a), sn=sin(a);
     vec3 m0=vec3(.213+.787*cs-.213*sn, .213-.213*cs+.143*sn, .213-.213*cs-.787*sn);
     vec3 m1=vec3(.715-.715*cs-.715*sn, .715+.285*cs+.140*sn, .715-.715*cs+.715*sn);
     vec3 m2=vec3(.072-.072*cs+.928*sn, .072-.072*cs-.283*sn, .072+.928*cs+.072*sn);
     c=c.r*m0+c.g*m1+c.b*m2;
+  }
+  if(cS!=0.||cL!=0.||cD!=0.){
+    vec3 hv=toHsv(clamp(c,0.,1.));
+    float dh=abs(hv.x-cH); dh=min(dh,1.-dh);
+    float mk=(1.-smoothstep(0.,cR,dh))*smoothstep(.02,.1,hv.y);
+    hv.x=fract(hv.x+cD*.17*mk+1.);
+    hv.y=clamp(hv.y*(1.+cS*mk),0.,1.);
+    c=fromHsv(hv)*(1.+cL*.5*mk);
   }
   l=dot(c,W);
   c+=(sC-dot(sC,W))*sA*.45*(1.-smoothstep(0.,.65,l));
@@ -24738,7 +24807,7 @@ void main(){
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      ['px', 'ex', 'br', 'co', 'sa', 'vi', 'tp', 'tn', 'hl', 'sh', 'wh', 'bk', 'fd', 'hu', 'sp', 'vg', 'gr', 'tm', 'sA', 'hA', 'ai', 'dn', 'dt', 'll', 'ss', 'lt', 'sC', 'hC'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
+      ['px', 'ex', 'br', 'co', 'sa', 'vi', 'tp', 'tn', 'hl', 'sh', 'wh', 'bk', 'fd', 'hu', 'sp', 'vg', 'gr', 'tm', 'sA', 'hA', 'ai', 'dn', 'dt', 'll', 'ss', 'lt', 'gm', 'kp', 'cH', 'cR', 'cD', 'cS', 'cL', 'sC', 'hC'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
       glc.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); glFail = true; gl = null; });
       return true;
     }catch(e){ console.error('grade gl', e); glFail = true; gl = null; return false; }
@@ -24759,6 +24828,8 @@ void main(){
       gl.uniform1f(U.tm, (performance.now() % 1000) * 7.13);
       gl.uniform1f(U.ai, n('aiEnh')); gl.uniform1f(U.dn, n('denoise')); gl.uniform1f(U.dt, n('detail')); gl.uniform1f(U.ll, n('lowlight')); gl.uniform1f(U.ss, (st && st.lvl >= 3) ? 0 : n('skinSm')); gl.uniform1f(U.lt, (st && st.lvl >= 1) ? 1 : 0);
       gl.uniform1f(U.sA, n('shAmt')); gl.uniform1f(U.hA, n('hiAmt'));
+      gl.uniform1f(U.gm, n('gamma')); gl.uniform1f(U.kp, n('skinProt')); gl.uniform1f(U.cH, G.selHue / 360); gl.uniform1f(U.cR, G.selRange / 360);
+      gl.uniform1f(U.cD, n('selShift')); gl.uniform1f(U.cS, n('selSat')); gl.uniform1f(U.cL, n('selLum'));
       const a = hsv(G.shHue / 360), b = hsv(G.hiHue / 360);
       gl.uniform3f(U.sC, a[0], a[1], a[2]); gl.uniform3f(U.hC, b[0], b[1], b[2]);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -24769,7 +24840,7 @@ void main(){
   function cssGrade(c, src, w, h, canF){
     c.save();
     if(canF){
-      const b = Math.pow(2, G.exposure / 100 * 1.2) * (1 + G.brightness / 100 * .5), k = 1 + G.contrast / 100 * .7, sa = (1 + G.saturation / 100) * (1 + G.vibrance / 200);
+      const b = Math.pow(2, G.exposure / 100 * 1.2) * (1 + G.brightness / 100 * .5) * Math.pow(2, G.gamma / 100 * .45), k = 1 + G.contrast / 100 * .7, sa = (1 + G.saturation / 100) * (1 + G.vibrance / 200);
       c.filter = 'brightness(' + b + ') contrast(' + k + ') saturate(' + sa + ') hue-rotate(' + (G.hue * 1.8) + 'deg)';
     }
     c.drawImage(src, 0, 0, w, h);
@@ -24791,24 +24862,39 @@ void main(){
     if($('cxCam')) return;
     styles();
     const el = document.createElement('div'); el.id = 'cxCam';
-    el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas><div class="zb" id="cxZb">1.0×</div><div class="fr" id="cxFr"></div></div>
+    el.innerHTML = `<div class="cv"><canvas id="cxCamCv"></canvas><canvas id="cxClip"></canvas><canvas id="cxHist" width="132" height="64"></canvas><div class="spl" id="cxSpl"><span class="lb r">Pehle</span><span class="lb l">Baad</span><div class="ln"></div><div class="hd" id="cxSplH">◂▸</div></div><div class="zb" id="cxZb">1.0×</div><div class="fr" id="cxFr"></div></div>
       <div class="top"><button type="button" class="ib" id="cxCamX" aria-label="Band">${svg('close')}</button><b id="cxCamTo">Message</b><button type="button" class="ib" id="cxCamFlip" aria-label="Flip">${svg('flip')}</button></div>
+      <div class="qb2"><button type="button" id="cxQh"></button><button type="button" id="cxQc"></button><button type="button" id="cxQp"></button><button type="button" id="cxQi"></button></div>
       <div class="qb"><button type="button" id="cxQr"></button><button type="button" id="cxQf"></button><button type="button" id="cxQb"></button><button type="button" id="cxQs"></button></div>
       <div class="rt" id="cxCamRt">● 0:00</div>
-      <div class="bot"><div class="gr"><div class="gh"><b id="cxGrN">Brightness</b><span><em id="cxGrV">0</em><button type="button" id="cxGrRs" aria-label="Reset">↺</button></span></div><input type="range" id="cxGrR" min="-100" max="100" step="1" value="0"></div><div class="car" id="cxCamCar"></div>
+      <div class="bot"><div class="tabs" id="cxTabs"></div><div class="gr"><div class="gh"><b id="cxGrN">Brightness</b><span><em id="cxGrV">0</em><button type="button" id="cxGrRs" aria-label="Reset">↺</button></span></div><input type="range" id="cxGrR" min="-100" max="100" step="1" value="0"></div><div class="car" id="cxCamCar"></div>
         <div class="row"><button type="button" class="ib" id="cxCamGal" aria-label="Gallery">${svg('gal')}</button><button type="button" class="shut" id="cxCamShut" aria-label="Photo / Video"></button><span id="cxCamBtySlot" style="width:46px;display:flex;justify-content:flex-end"></span></div>
-        <div class="hint">Shutter tap = photo · Dabao = video · Preview tap = focus · Pinch = zoom · Preview dabaye rakho = original</div></div>`;
+        <div class="hint">Tap = photo · Dabao = video · Pinch = zoom · Preview dabao = original</div></div>`;
     document.body.appendChild(el);
     $('cxCamX').onclick = close;
     $('cxCamFlip').onclick = flip;
     $('cxCamGal').onclick = ()=>{ close(); const i = $('cxInGal'); if(i) i.click(); };
     $('cxGrR').addEventListener('input', ()=>{ const a = curAdj(); G[a.k] = Number($('cxGrR').value); saveG(); paintCar(); });
-    $('cxGrRs').onclick = ()=>{ const a = curAdj(); G[a.k] = 0; saveG(); paintCar(); };
-    $('cxCamCar').addEventListener('click', (e)=>{
+    $('cxGrRs').onclick = ()=>{ const a = curAdj(); G[a.k] = dflt(a); saveG(); paintCar(); };
+    let lpT = 0, lpFired = false;
+    const carEl = $('cxCamCar');
+    carEl.addEventListener('pointerdown', (e)=>{ const mb = e.target.closest('[data-m]'); clearTimeout(lpT); if(!mb) return; lpFired = false; lpT = setTimeout(()=>{ lpFired = true; delMy(mb.dataset.m); }, 650); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => carEl.addEventListener(ev, ()=>{ clearTimeout(lpT); }));
+    $('cxTabs').addEventListener('click', (e)=>{
+      const b = e.target.closest('[data-t]'); if(!b) return;
+      gTab = b.dataset.t; try{ localStorage.setItem('cxc-gtab', gTab); }catch(_){}
+      const a = curAdj(); if(a.g !== gTab){ const f = ADJ.find(x => x.g === gTab); if(f) gSel = f.k; }
+      paintCar(true);
+    });
+    bindSplit();
+    carEl.addEventListener('click', (e)=>{
+      if(lpFired){ lpFired = false; return; }
       const pb = e.target.closest('[data-p]'); if(pb){ applyPreset(pb.dataset.p); return; }
+      const mb = e.target.closest('[data-m]'); if(mb){ applyMy(mb.dataset.m); return; }
       const b = e.target.closest('[data-g]'); if(!b) return;
-      if(b.dataset.g === '_auto'){ ADJ.forEach(a => { G[a.k] = 0; }); Object.assign(G, AUTO_HD); flushG(); paintCar(); toast('⚡ Auto HD lag gaya'); return; }
-      if(b.dataset.g === '_reset'){ ADJ.forEach(a => { G[a.k] = 0; }); flushG(); paintCar(); toast('Sab settings reset.'); return; }
+      if(b.dataset.g === '_save'){ saveMyPreset(); return; }
+      if(b.dataset.g === '_auto'){ zeroAll(); Object.assign(G, AUTO_HD); flushG(); paintCar(); toast('⚡ Auto HD lag gaya'); return; }
+      if(b.dataset.g === '_reset'){ zeroAll(); flushG(); paintCar(); toast('Sab settings reset.'); return; }
       gSel = b.dataset.g; try{ localStorage.setItem('cxc-gsel', gSel); }catch(_){}
       paintCar(); try{ b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }catch(_){}
     });
@@ -24820,22 +24906,66 @@ void main(){
     sh.addEventListener('pointerup', up);
     sh.addEventListener('pointercancel', ()=>{ if(!st) return; clearTimeout(st.holdT); if(st.rec) recStop(); });
   }
-  function paintCar(){
+  function paintCar(force){
     const car = $('cxCamCar'); if(!car) return;
-    if(!car.children.length) car.innerHTML = '<button type="button" data-g="_auto"><i>⚡</i><span>Auto HD</span></button>' + Object.keys(PRESETS).map(k => `<button type="button" class="pre" data-p="${k}"><i>${PRESETS[k].e}</i><span>${PRESETS[k].n}</span></button>`).join('') + '<div class="sep"></div>' + ADJ.map(a => `<button type="button" data-g="${a.k}"><i></i><span>${a.n}</span></button>`).join('') + '<button type="button" data-g="_reset"><i>↺</i><span>Reset all</span></button>';
+    const key = gTab + ':' + myPre.length + ':' + myPre.map(x => x.id).join(',');
+    if(force || car.dataset.t !== key){
+      car.dataset.t = key;
+      const tool = (a)=> `<button type="button" data-g="${a.k}"><i></i><span>${a.n}</span></button>`;
+      const reset = '<button type="button" data-g="_reset"><i>↺</i><span>Reset all</span></button>';
+      let h = '';
+      if(gTab === 'q') h = '<button type="button" data-g="_auto"><i>⚡</i><span>Auto HD</span></button><div class="sep"></div>' + ADJ.filter(a => a.g === 'q').map(tool).join('');
+      else if(gTab === 'k'){
+        h = Object.keys(PRESETS).map(k => `<button type="button" class="pre" data-p="${k}"><i>${PRESETS[k].e}</i><span>${PRESETS[k].n}</span></button>`).join('')
+          + '<div class="sep"></div>'
+          + myPre.map(x => `<button type="button" class="my" data-m="${x.id}"><i>⭐</i><span>${String(x.n).replace(/</g, '&lt;')}</span></button>`).join('')
+          + '<button type="button" data-g="_save"><i>＋</i><span>Save look</span></button><div class="sep"></div>'
+          + ADJ.filter(a => a.g === 'k').map(tool).join('');
+      }else h = ADJ.filter(a => a.g === gTab).map(tool).join('');
+      car.innerHTML = h + reset;
+    }
     car.querySelectorAll('[data-g]').forEach(b => {
-      const k = b.dataset.g; if(k === '_reset' || k === '_auto') return;
-      const a = ADJ.find(x => x.k === k), v = G[k], mod = v !== 0;
+      const k = b.dataset.g; if(k[0] === '_') return;
+      const a = ADJ.find(x => x.k === k), v = G[k], mod = v !== dflt(a);
       b.classList.toggle('on', k === gSel); b.classList.toggle('mod', mod);
       b.firstChild.textContent = mod ? String(Math.round(v)) : a.e;
     });
+    const tb = $('cxTabs');
+    if(tb){
+      if(!tb.children.length) tb.innerHTML = TABS.map(t => `<button type="button" data-t="${t[0]}">${t[1]}</button>`).join('');
+      Array.prototype.forEach.call(tb.children, b => {
+        const t = b.dataset.t;
+        b.classList.toggle('on', t === gTab);
+        b.classList.toggle('mod', ADJ.some(a => a.g === t && !a.inert && G[a.k] !== dflt(a)));
+      });
+    }
     paintSlider();
   }
   function applyPreset(k){
     const p = PRESETS[k]; if(!p) return;
-    ADJ.forEach(a => { G[a.k] = 0; });
+    zeroAll();
     Object.keys(p.v).forEach(x => { if(x in G) G[x] = p.v[x]; });
     flushG(); paintCar(); toast(p.e + ' ' + p.n + ' lag gaya');
+  }
+  // ---- My presets (apna look save / load; lamba dabao = delete) ----
+  function saveMyPreset(){
+    if(myPre.length >= 14){ toast('Max 14 look. Purana lamba dabake delete karo.'); return; }
+    let name = 'My look ' + (myPre.length + 1);
+    try{ const r = window.prompt('Is look ka naam:', name); if(r === null) return; if(r.trim()) name = r.trim().slice(0, 18); }catch(_){}
+    const v = {}; ADJ.forEach(a => { if(G[a.k] !== dflt(a) || a.inert) v[a.k] = G[a.k]; });
+    myPre.push({ id: 'm' + Date.now().toString(36), n: name, v }); saveMy(); paintCar(true);
+    toast('⭐ "' + name + '" save ho gaya');
+  }
+  function applyMy(id){
+    const m = myPre.find(x => x.id === id); if(!m) return;
+    zeroAll(); ADJ.forEach(a => { const v = Number(m.v[a.k]); if(isFinite(v)) G[a.k] = clamp(v, lo(a), hi(a)); });
+    flushG(); paintCar(); toast('⭐ ' + m.n + ' lag gaya');
+  }
+  function delMy(id){
+    const m = myPre.find(x => x.id === id); if(!m) return;
+    let ok = true; try{ ok = window.confirm('"' + m.n + '" delete karein?'); }catch(_){}
+    if(!ok) return;
+    myPre = myPre.filter(x => x.id !== id); saveMy(); paintCar(true);
   }
   function paintQ(){
     const r = $('cxQr'); if(!r) return;
@@ -24843,6 +24973,13 @@ void main(){
     $('cxQf').textContent = Q.fps + ' fps';
     $('cxQb').textContent = BRN[Q.br] + ' ' + Q.br + 'M';
     const sb = $('cxQs'); sb.textContent = '🎞 Stab ' + (Q.stab ? 'ON' : 'OFF'); sb.classList.toggle('on', Q.stab);
+    const hb = $('cxQh'); if(hb){
+      hb.textContent = '📊 Histogram'; hb.classList.toggle('on', Q.hist);
+      $('cxQc').textContent = '⚠ Clip guide'; $('cxQc').classList.toggle('on', Q.clip);
+      $('cxQp').textContent = '◧ Before/After'; $('cxQp').classList.toggle('on', Q.split);
+      $('cxQi').textContent = '📸 Photo ' + (Q.full ? 'Full' : 'Preview'); $('cxQi').classList.toggle('on', Q.full);
+      paintOv();
+    }
     $('cxQf').classList.toggle('on', Q.fps === 60); $('cxQb').classList.toggle('on', Q.br === 10); r.classList.toggle('on', Q.res === 'max');
   }
   async function restartStream(){
@@ -24854,6 +24991,10 @@ void main(){
     $('cxQr').onclick = ()=>{ if(lock()) return; const ks = ['720', '1080', 'max']; Q.res = ks[(ks.indexOf(Q.res) + 1) % 3]; saveQ(); paintQ(); if(Q.res === 'max') toast('Max = phone ka sabse bada size (4K tak). Heavy hai — auto-adjust chalega.'); restartStream(); };
     $('cxQf').onclick = ()=>{ if(lock()) return; Q.fps = Q.fps === 30 ? 60 : 30; saveQ(); paintQ(); restartStream(); };
     $('cxQb').onclick = ()=>{ if(lock()) return; const ks = [3, 6, 10]; Q.br = ks[(ks.indexOf(Q.br) + 1) % 3]; saveQ(); paintQ(); if(Q.br === 10) toast('Ultra = bahut badi file; chat me bhejna bhaari padega.'); };
+    $('cxQh').onclick = ()=>{ Q.hist = !Q.hist; saveQ(); paintQ(); };
+    $('cxQc').onclick = ()=>{ Q.clip = !Q.clip; saveQ(); paintQ(); if(Q.clip) toast('Laal = highlights ud rahe · Neela = shadows dab rahe'); };
+    $('cxQp').onclick = ()=>{ if(lock()) return; Q.split = !Q.split; saveQ(); paintQ(); if(Q.split) toast('Handle ko ghumao: left = original, right = graded'); };
+    $('cxQi').onclick = ()=>{ Q.full = !Q.full; saveQ(); paintQ(); toast(Q.full ? '📸 Photo phone ke full sensor size par (grade ke saath)' : 'Photo preview size par'); };
     $('cxQs').onclick = ()=>{ Q.stab = !Q.stab; if(st){ st.cx = 0; st.cy = 0; st.prevG = null; } saveQ(); paintQ(); toast(Q.stab ? '🎞 Stabilization ON (thoda crop hota hai)' : 'Stabilization OFF'); };
   }
   // ---- pinch zoom + tap-to-focus + hold-to-compare ----
@@ -24921,6 +25062,59 @@ void main(){
     };
     box.addEventListener('pointerup', (e)=> end(e, false));
     box.addEventListener('pointercancel', (e)=> end(e, true));
+  }
+
+  // ---- histogram + clipping guide + before/after split ----
+  function paintOv(){
+    const h = $('cxHist'), c = $('cxClip'), sp = $('cxSpl'); if(!h) return;
+    h.style.display = Q.hist ? 'block' : 'none';
+    c.style.display = Q.clip ? 'block' : 'none';
+    const on = Q.split && !(st && st.rec);
+    sp.style.display = on ? 'block' : 'none';
+    if(st){ st.box = $('cxCam').querySelector('.cv').getBoundingClientRect(); if(st.spf == null) st.spf = .5; sp.style.left = (st.spf * 100) + '%'; }
+    if(!Q.hist && !Q.clip && st){ st.hc = 0; }
+  }
+  function bindSplit(){
+    const hd = $('cxSplH'), box = $('cxCam').querySelector('.cv'); let drag = false;
+    const mv = (e)=>{ if(!drag || !st) return; const r = box.getBoundingClientRect(); st.box = r; st.spf = clamp((e.clientX - r.left) / r.width, .03, .97); $('cxSpl').style.left = (st.spf * 100) + '%'; };
+    hd.addEventListener('pointerdown', (e)=>{ e.stopPropagation(); e.preventDefault(); drag = true; try{ hd.setPointerCapture(e.pointerId); }catch(_){} mv(e); });
+    hd.addEventListener('pointermove', (e)=>{ e.stopPropagation(); mv(e); });
+    const up = (e)=>{ e.stopPropagation(); drag = false; };
+    hd.addEventListener('pointerup', up); hd.addEventListener('pointercancel', up);
+    window.addEventListener('resize', ()=>{ if(st) paintOv(); });
+  }
+  const HW = 96;
+  function analyse(){
+    const s = st, W = HW, H = Math.max(8, Math.round(W * s.cvs.height / s.cvs.width));
+    if(!s.hs){ s.hs = document.createElement('canvas'); s.hx = s.hs.getContext('2d', { willReadFrequently: true }); }
+    if(s.hs.width !== W || s.hs.height !== H){ s.hs.width = W; s.hs.height = H; }
+    s.hx.drawImage(s.cvs, 0, 0, W, H);
+    const d = s.hx.getImageData(0, 0, W, H).data, n = W * H;
+    const hr = new Array(64).fill(0), hg = new Array(64).fill(0), hb = new Array(64).fill(0), hl = new Array(64).fill(0);
+    let cHi = 0, cLo = 0, cim = null, cd = null, cc = null;
+    if(Q.clip){ cc = $('cxClip'); if(cc.width !== W || cc.height !== H){ cc.width = W; cc.height = H; } cim = cc.getContext('2d').createImageData(W, H); cd = cim.data; }
+    for(let i = 0, j = 0; i < n; i++, j += 4){
+      const r = d[j], g = d[j + 1], b = d[j + 2], y = (r * 54 + g * 183 + b * 19) >> 8, mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+      hr[r >> 2]++; hg[g >> 2]++; hb[b >> 2]++; hl[y >> 2]++;
+      const hi = mx >= 250, lo = y <= 5;
+      if(hi) cHi++; else if(lo) cLo++;
+      if(cd){ if(hi){ cd[j] = 255; cd[j + 1] = 40; cd[j + 2] = 40; cd[j + 3] = 175; } else if(lo){ cd[j] = 50; cd[j + 1] = 110; cd[j + 2] = 255; cd[j + 3] = 150; } }
+    }
+    if(cim) cc.getContext('2d').putImageData(cim, 0, 0);
+    if(Q.hist){
+      const hc = $('cxHist'), x = hc.getContext('2d'), HWd = hc.width, HH = hc.height - 14;
+      x.clearRect(0, 0, HWd, hc.height);
+      let mxv = 1; for(let i = 1; i < 63; i++) mxv = Math.max(mxv, hl[i], hr[i], hg[i], hb[i]);
+      const sq = (v)=> Math.min(1, Math.sqrt(v / mxv));
+      x.fillStyle = 'rgba(255,255,255,.42)'; x.beginPath(); x.moveTo(0, HH);
+      for(let i = 0; i < 64; i++) x.lineTo(i / 63 * HWd, HH - sq(hl[i]) * HH);
+      x.lineTo(HWd, HH); x.closePath(); x.fill();
+      x.lineWidth = 1.2; x.globalCompositeOperation = 'lighter';
+      [[hr, '#f33'], [hg, '#3c3'], [hb, '#48f']].forEach(a => { x.strokeStyle = a[1]; x.beginPath(); for(let i = 0; i < 64; i++){ const px = i / 63 * HWd, py = HH - sq(a[0][i]) * HH; if(i) x.lineTo(px, py); else x.moveTo(px, py); } x.stroke(); });
+      x.globalCompositeOperation = 'source-over';
+      x.font = '700 10px sans-serif'; x.fillStyle = '#6aa0ff'; x.fillText('▼ ' + Math.round(cLo / n * 100) + '%', 4, hc.height - 3);
+      x.fillStyle = '#ff6a6a'; x.textAlign = 'right'; x.fillText('▲ ' + Math.round(cHi / n * 100) + '%', HWd - 4, hc.height - 3); x.textAlign = 'left';
+    }
   }
 
   async function startStream(){
@@ -25044,8 +25238,14 @@ void main(){
     }
     const c = st.ctx, zz = (sb ? STAB_Z : 1) * (st.dz || 1), mir = st.facing === 'user' ? -1 : 1;
     const tx = sb ? st.cx * mir : 0, ty = sb ? st.cy : 0;
-    if(zz === 1 && !tx && !ty){ c.drawImage(src, 0, 0); }
-    else{ c.save(); c.translate(w / 2 + tx, h / 2 + ty); c.scale(zz, zz); c.drawImage(src, -w / 2, -h / 2); c.restore(); }
+    const put = (im)=>{ if(zz === 1 && !tx && !ty){ c.drawImage(im, 0, 0); } else{ c.save(); c.translate(w / 2 + tx, h / 2 + ty); c.scale(zz, zz); c.drawImage(im, -w / 2, -h / 2); c.restore(); } };
+    put(src);
+    if(Q.split && !still && !st.rec && !st.cmp && st.box && src !== st.raw){
+      const bw = st.box.width, bh = st.box.height, sc2 = Math.max(bw / w, bh / h);
+      const sxp = clamp(((st.spf == null ? .5 : st.spf) * bw + (w * sc2 - bw) / 2) / sc2, 0, w);
+      c.save(); c.beginPath(); c.rect(0, 0, sxp, h); c.clip(); put(st.raw); c.restore();
+    }
+    if(!still && (Q.hist || Q.clip) && ((st.hc = (st.hc || 0) + 1) % 4 === 0)){ try{ analyse(); }catch(e){ console.error('analyse', e); } }
     if(st.rec){ const sec = (Date.now() - st.t0) / 1000; const rr = $('cxCamRt'); if(rr) rr.textContent = '● ' + Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0'); if(sec >= 30) recStop(); }
   }
   function toGal(file){
@@ -25056,7 +25256,56 @@ void main(){
       inp.dispatchEvent(new Event('change', { bubbles: true }));
     }catch(e){ console.error(e); toast('Photo aage nahi bheji ja saki.'); }
   }
+  const fmtB = (n)=> n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  // Full sensor photo: ImageCapture.takePhoto -> usi glGrade shader se grade -> JPEG (preview size se kai guna bada)
+  async function photoFull(){
+    const s = st, tr = s.tr; s.busy = true; toast('📸 Full-res photo ban rahi hai…');
+    try{
+      const ic = new ImageCapture(tr); const opt = {};
+      try{ const pc = await ic.getPhotoCapabilities(); if(pc.imageWidth && pc.imageHeight){ opt.imageWidth = pc.imageWidth.max; opt.imageHeight = pc.imageHeight.max; } }catch(e){}
+      let blob; try{ blob = await ic.takePhoto(opt); }catch(e){ blob = await ic.takePhoto(); }
+      if(st !== s) return true;
+      const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+      const vw = s.vid.videoWidth, vh = s.vid.videoHeight;
+      if(!vw || (bmp.width > bmp.height) !== (vw > vh)){ bmp.close && bmp.close(); throw new Error('orientation mismatch'); }
+      // preview jaisi framing: video ke aspect par crop + digital zoom
+      const ar = vw / vh; let sw = bmp.width, sh = bmp.height;
+      if(sw / sh > ar) sw = sh * ar; else sh = sw / ar;
+      const dz = s.dz || 1; sw /= dz; sh /= dz;
+      const sx = (bmp.width - sw) / 2, sy = (bmp.height - sh) / 2;
+      glInit(); let maxT = 4096; try{ if(gl) maxT = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096; }catch(e){}
+      let k = Math.min(1, Math.min(maxT, 8192) / Math.max(sw, sh), Math.sqrt(24e6 / (sw * sh)));
+      const ow = Math.max(2, Math.round(sw * k)), oh = Math.max(2, Math.round(sh * k));
+      const raw = document.createElement('canvas'); raw.width = ow; raw.height = oh;
+      const r = raw.getContext('2d');
+      if(s.facing === 'user'){ r.translate(ow, 0); r.scale(-1, 1); }
+      r.drawImage(bmp, sx, sy, sw, sh, 0, 0, ow, oh); bmp.close && bmp.close();
+      let out = raw;
+      if(!isId()){
+        const lv = s.lvl; s.lvl = 0;
+        let g = null; try{ g = glGrade(raw, ow, oh); }finally{ s.lvl = lv; }
+        if(g){ out = g; }
+        else{ const t2 = document.createElement('canvas'); t2.width = ow; t2.height = oh; cssGrade(t2.getContext('2d'), raw, ow, oh, ('filter' in r)); out = t2; }
+      }
+      const fb = await new Promise(res => out.toBlob(res, 'image/jpeg', 0.95));   // out ka snapshot isi sync segment me
+      if(!fb) throw new Error('toBlob');
+      const f = new File([fb], 'photo_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      try{ window.cxAutoSave && window.cxAutoSave(f); }catch(e){}
+      if(st === s){ toast('📸 ' + ow + '×' + oh + ' · ' + fmtB(f.size) + ' (chat me chhoti hoke jaayegi, gallery me original)'); close(); toGal(f); }
+      return true;
+    }catch(e){ console.warn('photoFull fallback', e); return false; }
+    finally{ s.busy = false; }
+  }
   function photo(){
+    if(!st || !st.cvs.width || st.busy) return;
+    const bty = window.cxBeautyActive && window.cxBeautyActive();
+    if(Q.full && window.ImageCapture && st.tr && !st.rec && !bty){
+      photoFull().then(ok => { if(!ok && st) photoFast(); }).catch(()=>{ if(st) photoFast(); });
+      return;
+    }
+    photoFast();
+  }
+  function photoFast(){
     if(!st || !st.cvs.width) return;
     try{ loop(null, true); }catch(e){}   // photo me stabilization crop nahi
     st.cvs.toBlob((b)=>{
@@ -25082,16 +25331,17 @@ void main(){
       if(st && st.aStream){ st.aStream.getTracks().forEach(t => t.stop()); st.aStream = null; }
       if(secs < 0.8 || !chunks.length){ toast('Video bahut chhoti thi.'); return; }
       const f = new File([new Blob(chunks, { type })], 'video_' + Date.now() + (/mp4/.test(type) ? '.mp4' : '.webm'), { type });
+      if(f.size > 1.5 * 1024 * 1024) toast('🎞 Video ' + fmtB(f.size) + ' — gallery me original save; chat ke liye ~1.5 MB tak compress hogi (trim screen).');
       try{ window.cxAutoSave && window.cxAutoSave(f); }catch(e){}
       close(); toGal(f);
     };
     st.t0 = Date.now(); rec.start(500);
-    $('cxCamShut').classList.add('rec'); $('cxCamRt').classList.add('on');
+    $('cxCamShut').classList.add('rec'); $('cxCamRt').classList.add('on'); paintOv();
   }
   function recStop(){
     if(!st || !st.rec) return;
     const r = st.rec; st.rec = null;
-    $('cxCamShut').classList.remove('rec'); $('cxCamRt').classList.remove('on');
+    $('cxCamShut').classList.remove('rec'); $('cxCamRt').classList.remove('on'); paintOv();
     try{ if(r.state !== 'inactive') r.stop(); }catch(e){}
   }
   async function flip(){
@@ -25122,11 +25372,14 @@ void main(){
     let sf = 'user';
     G = loadG();
     try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; const gs = localStorage.getItem('cxc-gsel'); if(gs && ADJ.some(a => a.k === gs)) gSel = gs; }catch(_){}
-    Q = loadQ();
-    st = { cvs, ctx, vid, stream: null, facing: sf, cmp: false, lvl: 0, z: 1, dz: 1, cx: 0, cy: 0, f: { canF: ('filter' in ctx), parts: [] } };
+    Q = loadQ(); myPre = loadMy();
+    try{ const gt = localStorage.getItem('cxc-gtab'); if(gt && TABS.some(t => t[0] === gt)) gTab = gt; }catch(_){}
+    { const a0 = ADJ.find(a => a.k === gSel); if(!a0 || a0.g !== gTab){ const f0 = ADJ.find(a => a.g === gTab); if(f0) gSel = f0.k; } }
+    st = { spf: .5, cvs, ctx, vid, stream: null, facing: sf, cmp: false, lvl: 0, z: 1, dz: 1, cx: 0, cy: 0, f: { canF: ('filter' in ctx), parts: [] } };
     $('cxCamTo').textContent = 'Message ' + chatPeer.name;
     $('cxCam').classList.add('open');
-    paintCar();
+    $('cxCamCar').dataset.t = '';
+    paintCar(true);
     paintQ();
     startStream().then(()=>{ if(st) startLoop(); }).catch(()=>{ toast('Camera ki permission do.'); close(); });
     return true;
@@ -25149,10 +25402,10 @@ void main(){
   const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
   const clamp = (x, a, b)=> Math.max(a, Math.min(b, x));
   const LSK = 'cxb-p';
-  const D = { smooth: 0, bright: 0, dark: 0, slim: 0, nose: 0, eyes: 0, teeth: 0, plump: 0, lip: 0, lipC: '#c2185b', blush: 0, liner: 0, lash: 0, contour: 0, hair: 0, hairC: '#b91c1c', night: 0, enhance: 0, center: 0, flicker: 0, dbg: 0 };
+  const D = { smooth: 0, bright: 0, dark: 0, slim: 0, nose: 0, eyes: 0, teeth: 0, plump: 0, lip: 0, lipC: '#c2185b', blush: 0, liner: 0, lash: 0, shadow: 0, shadowC: '#3f2a56', brow: 0, browC: '#4b3621', contour: 0, hair: 0, hairC: '#b91c1c', night: 0, enhance: 0, center: 0, flicker: 0, dbg: 0 };
   let P = Object.assign({}, D);
   // AUTO-SAVE: har change turant localStorage me; app dobara khulne par wahi settings wapas (sanitised)
-  const COLK = { lipC: 1, hairC: 1 };
+  const COLK = { lipC: 1, hairC: 1, shadowC: 1, browC: 1 };
   function loadP(){
     let o = {}; try{ o = JSON.parse(localStorage.getItem(LSK) || '{}') || {}; }catch(e){}
     const r = Object.assign({}, D);
@@ -25167,8 +25420,9 @@ void main(){
   let tabSaved = 'face'; try{ tabSaved = localStorage.getItem('cxb-tab') || 'face'; }catch(e){}
   const save = ()=>{ try{ localStorage.setItem(LSK, JSON.stringify(P)); }catch(e){} };
   window.addEventListener('pagehide', save); document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
-  const faceOn = ()=> !!(P.smooth || P.bright || P.dark || P.slim || P.nose || P.eyes || P.teeth || P.plump || P.lip || P.blush || P.liner || P.lash || P.contour || P.dbg);
+  const faceOn = ()=> !!(P.smooth || P.bright || P.dark || P.slim || P.nose || P.eyes || P.teeth || P.plump || P.lip || P.blush || P.liner || P.lash || P.shadow || P.brow || P.contour || P.dbg);
   const active = ()=> !!(faceOn() || P.hair || P.night || P.enhance || P.center || P.flicker);
+  window.cxBeautyActive = active;
   window.cxBeautyActive = active;
 
   // ---------------- landmark index sets (MediaPipe 478) ----------------
@@ -25365,6 +25619,20 @@ void main(){
       tc.globalCompositeOperation = 'color'; tc.fillStyle = 'rgba(' + col + ',' + (a * .6) + ')'; tc.fill('evenodd');
       tc.restore();
     }
+    // Virtual_Makeup jaisa: soft-edge mask -> aankh/kholi jagah kaat -> colour (skin ki roshni-andhera bachi rehti hai)
+    const tint = (polys, holes, hex, a, blur, mulK, colK)=>{
+      const l = LAY.x, [r, g, b] = hexRgb(hex);
+      l.save(); l.globalCompositeOperation = 'source-over'; l.clearRect(0, 0, w, h);
+      l.shadowColor = '#fff'; l.shadowBlur = blur; l.shadowOffsetX = BIG; l.fillStyle = '#fff';
+      polys.forEach(p => { l.beginPath(); p.forEach((i, k)=> k ? l.lineTo(X[i] - BIG, Y[i]) : l.moveTo(X[i] - BIG, Y[i])); l.closePath(); l.fill(); });
+      l.restore(); l.save(); l.globalCompositeOperation = 'destination-out'; l.fillStyle = '#000';
+      holes.forEach(p => { l.beginPath(); p.forEach((i, k)=> k ? l.lineTo(X[i], Y[i]) : l.moveTo(X[i], Y[i])); l.closePath(); l.fill(); });
+      l.globalCompositeOperation = 'source-in'; l.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')'; l.fillRect(0, 0, w, h); l.restore();
+      tc.save(); tc.globalCompositeOperation = 'multiply'; tc.globalAlpha = clamp(a * mulK, 0, 1); tc.drawImage(LAY.c, 0, 0);
+      tc.globalCompositeOperation = 'color'; tc.globalAlpha = clamp(a * colK, 0, 1); tc.drawImage(LAY.c, 0, 0); tc.restore();
+    };
+    if(P.shadow) tint([SHAD_L, SHAD_R], [EYE_L, EYE_R], P.shadowC, P.shadow / 100, Math.max(2, w * .007), .5, .5);
+    if(P.brow) tint([BROW_L, BROW_R], [], P.browC, P.brow / 100, Math.max(1, w * .002), .6, .75);
     if(P.blush){
       const a = P.blush / 100 * .5;
       [205, 425].forEach(i => ell(X[i] + axy * fw * .01, Y[i] - axx * fw * .01, fw * .17, fw * .11, roll, '255,105,135', a, 'multiply'));
@@ -25577,11 +25845,24 @@ void main(){
   };
   const SL = {
     face: [['smooth', 'Skin smooth'], ['bright', 'Gora / Glow'], ['dark', 'Dark circles hatao'], ['slim', 'Face slim (V-shape)'], ['nose', 'Naak patli/sharp'], ['eyes', 'Aankhein bigger + chamak'], ['teeth', 'Teeth whitening'], ['plump', 'Lip plump']],
-    makeup: [['lip', 'Lipstick'], ['blush', 'Blush'], ['liner', 'Eyeliner'], ['lash', 'Eyelashes'], ['contour', 'Contour + highlight'], ['hair', 'Hair colour']],
+    makeup: [['lip', 'Lipstick'], ['blush', 'Blush'], ['liner', 'Eyeliner'], ['shadow', 'Eyeshadow'], ['brow', 'Eyebrows colour'], ['lash', 'Eyelashes'], ['contour', 'Contour + highlight'], ['hair', 'Hair colour']],
     quality: []
   };
   const TG = [['dbg', '🟢 Face tracking check (mesh dikhao)'], ['night', '🌙 Low-light / Night mode'], ['flicker', '💡 Anti-flicker (tubelight/LED)'], ['enhance', '🔍 HD Enhance (sharp)'], ['center', '🎯 Center stage (face follow)']];
   const LIPC = ['#c2185b', '#d6336c', '#e03131', '#b5485d', '#d6708a', '#ff7f7f', '#7b2d3b', '#9c36b5'];
+  const SHC = ['#a98467', '#c79a6b', '#3f2a56', '#1e3a8a', '#6e5a4e', '#8b3a62', '#2f6f5e', '#d4a5a5'];
+  const BRC = ['#2e1f14', '#4b3621', '#5c4033', '#1a1a1a', '#7a5230', '#8a6d3b'];
+  // Virtual_Makeup repo (presets.json) ke 5 looks: [lip, lipC], [shadow, shadowC], [liner], [brow, browC]
+  const MKLOOKS = {
+    'Natural': { lip: 35, lipC: '#c4776b', shadow: 20, shadowC: '#a98467', liner: 50, brow: 25, browC: '#4b3621' },
+    'Classic red': { lip: 60, lipC: '#c8102e', shadow: 20, shadowC: '#6e5a4e', liner: 75, brow: 30, browC: '#3d2b1f' },
+    'Soft glam': { lip: 40, lipC: '#d98c8c', shadow: 30, shadowC: '#c79a6b', liner: 50, brow: 25, browC: '#5c4033' },
+    'Evening': { lip: 55, lipC: '#8b1e3f', shadow: 40, shadowC: '#3f2a56', liner: 85, brow: 35, browC: '#2e1f14' },
+    'Bold': { lip: 70, lipC: '#ff2d55', shadow: 45, shadowC: '#1e3a8a', liner: 90, brow: 40, browC: '#2b1b12' }
+  };
+  // repo ke hi landmark indices (eyeshadow = palak ke upar ka hissa)
+  const SHAD_L = [226,247,30,29,27,28,56,190,243,173,157,158,159,160,161,246,33,130];
+  const SHAD_R = [463,414,286,258,257,259,260,467,446,359,263,466,388,387,386,385,384,398,362];
   const HAIRC = ['#b91c1c', '#e8c468', '#2563eb', '#ec4899', '#7c3aed', '#7c4a1e', '#10b981', '#1f2937'];
   let tab = (tabSaved === 'makeup' || tabSaved === 'quality') ? tabSaved : 'face';
 
@@ -25631,7 +25912,8 @@ void main(){
       const x = e.target.closest('[data-x]'); if(x){ el.classList.remove('open'); return; }
       const t = e.target.closest('[data-t]'); if(t){ tab = t.dataset.t; try{ localStorage.setItem('cxb-tab', tab); }catch(_){} paint(); return; }
       const p = e.target.closest('[data-p]'); if(p){ const keep = {}; if(p.dataset.p !== 'off') ['night', 'flicker', 'enhance', 'center'].forEach(k => keep[k] = P[k]); keep.dbg = P.dbg; P = Object.assign({}, D, PRESETS[p.dataset.p], keep); changed(); paint(); return; }
-      const sw = e.target.closest('[data-c]'); if(sw){ P[sw.dataset.k] = sw.dataset.c; if(sw.dataset.k === 'hairC' && !P.hair) P.hair = 60; if(sw.dataset.k === 'lipC' && !P.lip) P.lip = 50; changed(); paint(); return; }
+      const sw = e.target.closest('[data-c]'); if(sw){ P[sw.dataset.k] = sw.dataset.c; if(sw.dataset.k === 'hairC' && !P.hair) P.hair = 60; if(sw.dataset.k === 'lipC' && !P.lip) P.lip = 50; if(sw.dataset.k === 'shadowC' && !P.shadow) P.shadow = 40; if(sw.dataset.k === 'browC' && !P.brow) P.brow = 35; changed(); paint(); return; }
+      const mk = e.target.closest('[data-mk]'); if(mk){ const L = MKLOOKS[mk.dataset.mk] || { lip: 0, shadow: 0, liner: 0, brow: 0 }; ['lip', 'shadow', 'liner', 'brow'].forEach(k => P[k] = 0); Object.assign(P, L); changed(); paint(); return; }
       const g = e.target.closest('[data-g]'); if(g){ P[g.dataset.g] = P[g.dataset.g] ? 0 : 1; changed(); paint(); }
     });
     el.addEventListener('input', (e)=>{
@@ -25643,9 +25925,12 @@ void main(){
     const el = $('cxBty'); if(!el) return;
     el.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
     const bd = $('cxBtyBd'); let h = '';
+    if(tab === 'makeup') h += '<div class="nt" style="padding:2px 0 4px">💄 Makeup looks</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + Object.keys(MKLOOKS).concat(['✕ Clear']).map(n => `<button type="button" data-mk="${n === '✕ Clear' ? 'clear' : n}" style="background:#20242e;color:#eee;border:0;border-radius:14px;padding:7px 12px;font-size:13px">${n}</button>`).join('') + '</div>';
     SL[tab].forEach(([k, n])=>{
       h += `<div class="r"><label>${n}</label><input type="range" min="0" max="100" value="${P[k] || 0}" data-k="${k}"><b>${P[k] || 0}</b></div>`;
       if(k === 'lip') h += '<div class="sw">' + LIPC.map(c => `<i data-k="lipC" data-c="${c}" class="${P.lipC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
+      if(k === 'shadow') h += '<div class="sw">' + SHC.map(c => `<i data-k="shadowC" data-c="${c}" class="${P.shadowC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
+      if(k === 'brow') h += '<div class="sw">' + BRC.map(c => `<i data-k="browC" data-c="${c}" class="${P.browC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
       if(k === 'hair') h += '<div class="sw">' + HAIRC.map(c => `<i data-k="hairC" data-c="${c}" class="${P.hairC === c ? 'on' : ''}" style="background:${c}"></i>`).join('') + '</div>';
     });
     if(tab === 'quality'){
@@ -26908,7 +27193,7 @@ const SlideType = (function(){
 // ============================================================================
 const HandWrite = (function(){
   const ENDPOINT = 'https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8';
-  const IDLE_MS = 1000;
+  const IDLE_MS = 380;   // FAST: ungli uthane ke 0.38s baad hi pehchan shuru (pehle 1.0s)
   let ov = null, cv = null, ctx = null, bar = null, target = null, posTimer = null;
   let strokes = [], cur = null, drawing = false, t0 = 0, timer = null, busy = false;
   let lang = 'en', last = null, fixSeq = 0, passThru = false;
@@ -26958,13 +27243,19 @@ const HandWrite = (function(){
   // ---- AI: recognized shabd ko meaningful/sahi banao ----
   async function polish(raw, cands, mySeq){
     if(!aiOn) return;
+    if(!/[A-Za-z\u0900-\u097F]{2,}/.test(raw)) return;   // sirf number / symbol ho to AI ki zarurat nahi
     const el = field(); if(!el) return;
     const before = el.value.slice(Math.max(0, last ? last.start - 80 : 0), last ? last.start : 0);
     const system = 'Tum handwriting-to-text corrector ho. User ne screen par ungli se likha, recognizer ne galat ya adhura pehchana. Chat ke context ke hisaab se wahi text banao jo user likhna chahta tha. Rules: (1) user ki bhasha/script wahi rakho (Roman Hinglish, English ya Devanagari); (2) spelling theek karo, ALL CAPS ko normal sentence case me badlo; (3) ant me akela bacha 1, l, I, | jaisa nishan sawaal ho to ? ya ! laga do, bich me bekar nishan hata do; (4) naya matlab ya extra shabd mat jodo, sirf "Already in box" ke aage ka naya hissa theek karo; (5) output SIRF final naya text, koi quote ya explanation nahi.';
     const content = 'Chat context:\n' + (chatContext() || '(koi nahi)') + '\n\nAlready in box: "' + before + '"\nRecognizer options: ' + cands.slice(0,6).join(' | ') + '\nLanguage: ' + (lang==='hi' ? 'Hindi' : 'English/Hinglish');
     try{
-      const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:160, system, messages:[{ role:'user', content }] }) });
+      // FAST model (haiku) pehle; proxy na maane to sonnet par wapas (yaad rakhta hai)
+      const call = (model)=> fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ model, max_tokens:80, system, messages:[{ role:'user', content }] }) });
+      let fastOk = true; try{ fastOk = sessionStorage.getItem('hwFastNo') !== '1'; }catch(e){}
+      let resp = null;
+      if(fastOk){ try{ resp = await call('claude-haiku-4-5'); }catch(e){ resp = null; } if(!resp || !resp.ok){ resp = null; try{ sessionStorage.setItem('hwFastNo', '1'); }catch(e){} } }
+      if(!resp) resp = await call('claude-sonnet-4-6');
       if(!resp.ok) throw new Error('ai '+resp.status);
       const j = await resp.json();
       let t = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join(' ').trim().replace(/^["'“”]+|["'“”]+$/g,'').trim();
@@ -27005,31 +27296,38 @@ const HandWrite = (function(){
 
   async function recognize(){
     if(busy || !strokes.length) return;
-    busy = true; hint('…pehchan raha hoon', true);
+    busy = true; hint('…', true);
+    const snapN = strokes.length, snap = strokes.slice(0, snapN);
     // sirf likhe hue hisse ka bounding box bhejo -> screen par kahin bhi likho, sahi pehchan
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-    strokes.forEach(s=>s.forEach(p=>{ x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x); y1=Math.max(y1,p.y); }));
+    snap.forEach(s=>s.forEach(p=>{ x0=Math.min(x0,p.x); y0=Math.min(y0,p.y); x1=Math.max(x1,p.x); y1=Math.max(y1,p.y); }));
     const pad = 14, W = Math.max(80, Math.round(x1-x0+pad*2)), H = Math.max(80, Math.round(y1-y0+pad*2));
-    const ink = strokes.map(s=>[ s.map(p=>Math.round(p.x-x0+pad)), s.map(p=>Math.round(p.y-y0+pad)), s.map(p=>p.t) ]);
+    const tb = snap[0][0].t;
+    // payload chhota: 2px se paas ke points hata do (tezi se upload)
+    const ink = snap.map(s=>{
+      const xs = [], ys = [], ts = []; let lx = -99, ly = -99;
+      s.forEach((p,i)=>{ if(i === 0 || i === s.length-1 || Math.abs(p.x-lx) + Math.abs(p.y-ly) >= 2){ xs.push(Math.round(p.x-x0+pad)); ys.push(Math.round(p.y-y0+pad)); ts.push(Math.max(0, p.t - tb)); lx = p.x; ly = p.y; } });
+      return [xs, ys, ts];
+    });
     const el = field(); const pre = el ? el.value.slice(-24) : '';
     const body = { app_version:0.4, api_level:'537.36', device:navigator.userAgent, input_type:0, options:'enable_pre_space',
       requests:[{ writing_guide:{ writing_area_width:W, writing_area_height:H }, pre_context:pre, max_num_items:6, language: lang==='hi'?'hi':'en', ink }] };
-    const snapshot = strokes;
+    const drop = ()=>{ strokes = strokes.slice(snapN); if(!drawing) cur = null; redraw(); };   // sirf bheje hue strokes hatao; naye likhe hue bache rahein
     try{
       const res = await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
       const j = await res.json();
       if(j[0] !== 'SUCCESS') throw new Error('fail');
       const cands = (j[1] && j[1][0] && j[1][0][1]) || [];
       if(!cands.length) throw new Error('empty');
-      if(strokes === snapshot){ strokes = []; cur = null; redraw(); }
+      drop();
       const mySeq = ++fixSeq;
       insertText(cands[0] + ' '); last.cands = cands; showCands(cands);
       hint('');
       polish(cands[0], cands, mySeq);
     }catch(err){
       hint(navigator.onLine ? 'Samajh nahi aaya — thoda saaf likho' : 'Internet chahiye (handwriting recognition online hai)');
-      strokes = []; cur = null; redraw();
-    }finally{ busy = false; if(strokes.length) schedule(); }
+      drop();
+    }finally{ busy = false; if(strokes.length && !drawing) schedule(); }
   }
   function schedule(){ clearTimeout(timer); timer = setTimeout(recognize, IDLE_MS); }
 
@@ -27110,6 +27408,7 @@ const HandWrite = (function(){
     cv.addEventListener('pointercancel', ()=>{ tap = null; end(); });
     window.addEventListener('resize', size);
     size(); place(); posTimer = setInterval(place, 300);
+    try{ fetch('https://inputtools.google.com/', { mode:'no-cors' }).catch(()=>{}); }catch(e){}   // connection pehle se garam (TLS handshake bacha)
     const b = document.getElementById('cxDrawBtn'); if(b) b.classList.add('on');
   }
   function close(){
@@ -27165,7 +27464,7 @@ const HandWrite = (function(){
 //   Source: AI_PROXY_URL (claude-sonnet-4-6). Sirf khuli conversation me, app khula ho tab.
 // ============================================================================
 const AIReply = (function(){
-  const DEBOUNCE_MS = 1200;
+  const DEBOUNCE_MS = 450;
   const MAX_AGE_MS = 3*60*1000;
   let on = false; try{ on = localStorage.getItem('aiReplyOn') === '1'; }catch(e){}
   let timer = null, seen = new Set(), seq = 0;
@@ -27180,69 +27479,210 @@ const AIReply = (function(){
     return el;
   }
   function clearBar(){ const el = document.getElementById('cxAiSug'); if(el){ el.hidden = true; el.innerHTML = ''; } }
+  // ---- tone (chips ke upar): Auto | Chhota | Funny | Formal  ('aiTone' me save) ----
+  const TONES = { auto: ['✨', 'Auto', 'natural, dost jaisa, '+'jaisa '+'conversation ka mood ho'], short: ['⚡', 'Chhota', 'bahut chhota: 1 line, 2-8 shabd'], fun: ['😄', 'Funny', 'halka mazaakiya / chulbula, emoji ke saath (par over nahi)'], formal: ['🎩', 'Formal', 'polite, respectful, saaf aur seedha (bade/boss/teacher ko jaisa)'] };
+  let tone = 'auto'; try{ const t0 = localStorage.getItem('aiTone'); if(TONES[t0]) tone = t0; }catch(e){}
+  let lastPeer = null, lastTry = 0;
+  const cache = new Map();            // msgId -> list (dobara dikhane par API call nahi)
+  let lastId = null;
+
+  // ---- QUICK WORDS: chhote-chhote replies (instant, bina AI / internet) ----
+  // 'a|b' = purush|mahila form. Tap = turant send, lamba dabao = box me (edit ke liye).
+  const CATS = [
+    ['💬', 'Aam', ['Hmm', 'Hmm hmm', 'Haa', 'Haa yaar', 'Acha!', 'Achaaa', 'Theek', 'Sahi', 'Wahi toh', 'Aur bata', 'Aur batao', 'Bolo', 'Sun', 'Suno na', 'Bata na', 'Yaar', 'Bhai', 'Bro', 'Bhaisaab']],
+    ['✅', 'Haan', ['Haa', 'Haa yaar', 'Haan haan', 'Theek', 'Done', 'Sahi', 'Mast', 'Badiya', 'Gajab', 'Kasam se', 'Dekh liya', 'Wahi toh']],
+    ['❌', 'Na', ['Na', 'Nahi', 'Na bhai', 'Kabhi nahi', 'Hat', 'Rehne de', 'Jhooth', 'Bekaar', 'Bakwaas', 'Pata nahi', 'Soch le', 'Chup']],
+    ['❓', 'Sawaal', ['Kyu?', 'Kaise?', 'Kya?', 'Kab?', 'Kahan?', 'Kon?', 'Kiska?', 'Kisliye?', 'Kabse?', 'Abhi?', 'Pakka?', 'Sach mein?', 'Sahi me?', 'Hain?', 'Matlab?', 'Phir?', 'Toh?', 'Aage?']],
+    ['⏳', 'Ruk', ['Ruk', 'Ek min', 'Dekhte hain', 'Soch le', 'Jaldi', 'Aata hoon|Aati hoon', 'Aa gaya|Aa gayi', 'Ja raha|Ja rahi', 'Dekh', 'Bhej', 'Call kar', 'Msg karna']],
+    ['😮', 'Reaction', ['Arre!', 'Oho!', 'Ohh', 'Oye!', 'Abey', 'Arey yaar', 'Arey waah', 'Uff', 'Crazy', 'Gajab', 'Pagal', 'Mast', 'Badiya', 'Kasam se']],
+    ['👋', 'Bye', ['Bye', 'Chal chal', 'Chal be', 'Sone ja raha|Sone ja rahi', 'Khair', 'Chhodo', 'Jaane de', 'Rehne de', 'Waise...', 'Aise hi']]
+  ];
+  let gen = 'm'; try{ gen = localStorage.getItem('aiGen') === 'f' ? 'f' : 'm'; }catch(e){}
+  let moreOpen = false, moreCat = 0, lastMsg = { t: '', media: false };
+  const gw = (w)=> { const a = String(w).split('|'); return gen === 'f' && a[1] ? a[1] : a[0]; };
+  function pickQuick(text, media){
+    const t = String(text || '').toLowerCase();
+    const q = /\?|(^|\s)(kya|kab|kahan|kaha|kaise|kyu|kyun|kon|kaun|kitna|kitne|kiska|kisko|kab tak)(\s|$)/.test(t);
+    const greet = /(^|\s)(hi+|hello|hey+|hlo|oye|sup|wassup|kya haal|kaise ho|kya chal|kya kar)(\s|$|\?)/.test(t);
+    const bye = /(^|\s)(bye|gn|good ?night|so ja|sone|chalta|chalti|baad me|take care|tc)(\s|$)/.test(t);
+    const exc = /!|wow|omg|gajab|sach|pata hai|suna/.test(t);
+    let l;
+    if(media) l = ['Gajab', 'Arey waah', 'Mast', 'Sahi', 'Badiya', 'Crazy', 'Kasam se', 'Bhej', 'Hain?'];
+    else if(bye) l = ['Bye', 'Chal chal', 'Sone ja raha|Sone ja rahi', 'Theek', 'Msg karna', 'Call kar', 'Khair'];
+    else if(greet) l = ['Bolo', 'Aur batao', 'Haa yaar', 'Kya?', 'Hmm', 'Oye!', 'Arey yaar', 'Sun'];
+    else if(q) l = ['Haa', 'Nahi', 'Pata nahi', 'Dekhte hain', 'Ek min', 'Hmm', 'Theek', 'Soch le', 'Pakka?', 'Kyu?'];
+    else if(exc) l = ['Arre!', 'Sach mein?', 'Pakka?', 'Sahi me?', 'Gajab', 'Hain?', 'Kasam se', 'Oho!', 'Matlab?'];
+    else l = ['Hmm', 'Haa', 'Acha!', 'Aur batao', 'Theek', 'Sahi', 'Phir?', 'Matlab?', 'Wahi toh', 'Ohh'];
+    return l.slice(0, 9);
+  }
+  async function sendQuick(w){
+    const ta = chatEl('chatInput'); if(!ta) return;
+    const draft = ta.value; ta.value = gw(w); clearBar();
+    try{ await chatSend(); }finally{ ta.value = draft; try{ chatAutosize(); }catch(e){} }
+  }
+  function qChip(w){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'aiQ'; b.textContent = gw(w);
+    let lp = 0, fired = false;
+    b.addEventListener('pointerdown', (e)=>{ e.preventDefault(); fired = false; lp = setTimeout(()=>{ fired = true; put1(gw(w)); clearBar(); }, 450); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, ()=> clearTimeout(lp)));
+    b.addEventListener('click', (e)=>{ e.preventDefault(); if(fired){ fired = false; return; } sendQuick(w); });
+    return b;
+  }
+  function quickRow(){
+    const wrap = document.createElement('div'); wrap.className = 'aiQwrap';
+    const row = document.createElement('div'); row.className = 'aiQuick';
+    const ic = document.createElement('span'); ic.className = 'aiQi'; ic.textContent = '⚡'; row.appendChild(ic);
+    pickQuick(lastMsg.t, lastMsg.media).forEach(w => row.appendChild(qChip(w)));
+    const more = document.createElement('button'); more.type = 'button'; more.className = 'aiQ aiQmore' + (moreOpen ? ' on' : ''); more.textContent = moreOpen ? '▲' : '＋ Sab';
+    more.addEventListener('pointerdown', (e)=> e.preventDefault());
+    more.addEventListener('click', ()=>{ moreOpen = !moreOpen; if(lastList) showBar(lastList); else note(lastNote || '', false); });
+    row.appendChild(more); wrap.appendChild(row);
+    if(moreOpen){
+      const tabs = document.createElement('div'); tabs.className = 'aiQtabs';
+      CATS.forEach((c, i)=>{ const t = document.createElement('button'); t.type = 'button'; t.className = 'aiTone' + (i === moreCat ? ' on' : ''); t.textContent = c[0] + ' ' + c[1];
+        t.addEventListener('pointerdown', (e)=> e.preventDefault());
+        t.addEventListener('click', ()=>{ moreCat = i; if(lastList) showBar(lastList); else note(lastNote || '', false); });
+        tabs.appendChild(t); });
+      const g = document.createElement('button'); g.type = 'button'; g.className = 'aiTone aiGen'; g.textContent = gen === 'f' ? '♀ Mahila' : '♂ Purush'; g.setAttribute('aria-label', 'Raha/Rahi form');
+      g.addEventListener('pointerdown', (e)=> e.preventDefault());
+      g.addEventListener('click', ()=>{ gen = gen === 'f' ? 'm' : 'f'; try{ localStorage.setItem('aiGen', gen); }catch(e){} cache.clear(); if(lastList) showBar(lastList); else note(lastNote || '', false); });
+      tabs.appendChild(g); wrap.appendChild(tabs);
+      const grid = document.createElement('div'); grid.className = 'aiQgrid';
+      CATS[moreCat][2].forEach(w => grid.appendChild(qChip(w)));
+      wrap.appendChild(grid);
+    }
+    return wrap;
+  }
+  let lastList = null, lastNote = '';
+
+  function put1(t){ const ta = chatEl('chatInput'); if(!ta) return; ta.value = t; ta.dispatchEvent(new Event('input',{bubbles:true})); try{ chatAutosize(); ta.focus(); }catch(e){} }
   function showBar(list){
     const el = bar(); if(!el) return; el.innerHTML = '';
-    list.forEach(t=>{
-      const row = document.createElement('div'); row.className = 'aiRow';
-      const b = document.createElement('button'); b.type='button'; b.className='aiChip'; b.textContent = t;
+    const top = document.createElement('div'); top.className = 'aiTop';
+    Object.keys(TONES).forEach(k=>{
+      const b = document.createElement('button'); b.type='button'; b.className = 'aiTone' + (k===tone ? ' on' : ''); b.textContent = TONES[k][0] + ' ' + TONES[k][1];
       b.addEventListener('pointerdown',(e)=> e.preventDefault());
-      b.addEventListener('click',()=>{ const ta = chatEl('chatInput'); if(!ta) return; ta.value = t; ta.dispatchEvent(new Event('input',{bubbles:true})); try{ chatAutosize(); }catch(e){} clearBar(); });
+      b.addEventListener('click',()=>{ if(tone === k) return; tone = k; try{ localStorage.setItem('aiTone', k); }catch(e){} cache.delete(lastId); suggest(lastPeer || chatPeer, true); });
+      top.appendChild(b);
+    });
+    const rg = document.createElement('button'); rg.type='button'; rg.className='aiRg'; rg.textContent='🔄'; rg.setAttribute('aria-label','Naye suggestions');
+    rg.addEventListener('pointerdown',(e)=> e.preventDefault()); rg.addEventListener('click',()=>{ cache.delete(lastId); suggest(lastPeer || chatPeer, true); });
+    const x = document.createElement('button'); x.type='button'; x.className='aiX'; x.textContent='✕'; x.setAttribute('aria-label','Band');
+    x.addEventListener('pointerdown',(e)=> e.preventDefault()); x.addEventListener('click', clearBar);
+    top.appendChild(rg); top.appendChild(x); el.appendChild(top);
+    lastList = list; lastNote = '';
+    el.appendChild(quickRow());
+    list.forEach(it=>{
+      const t = it.t, row = document.createElement('div'); row.className = 'aiRow';
+      const b = document.createElement('button'); b.type='button'; b.className='aiChip';
+      const e1 = document.createElement('span'); e1.className = 'aiE'; e1.textContent = it.e || '💬';
+      const tx = document.createElement('span'); tx.className = 'aiT'; tx.textContent = t;
+      b.appendChild(e1); b.appendChild(tx);
+      b.addEventListener('pointerdown',(e)=> e.preventDefault());
+      b.addEventListener('click',()=>{ put1(t); clearBar(); });
       const s = document.createElement('button'); s.type='button'; s.className='aiGo'; s.textContent='➤'; s.setAttribute('aria-label','Seedha bhejo');
       s.addEventListener('pointerdown',(e)=> e.preventDefault());
       s.addEventListener('click', async ()=>{ const ta = chatEl('chatInput'); if(!ta) return; const draft = ta.value; ta.value = t; clearBar(); await chatSend(); if(draft){ ta.value = draft; try{ chatAutosize(); }catch(e){} } });
       row.appendChild(b); row.appendChild(s); el.appendChild(row);
     });
-    const x = document.createElement('button'); x.type='button'; x.className='aiX'; x.textContent='✕'; x.addEventListener('pointerdown',(e)=>e.preventDefault()); x.addEventListener('click', clearBar); el.appendChild(x);
     el.hidden = !list.length;
     try{ chatScrollBottom(); }catch(e){}
   }
-  function note(t){ const el = bar(); if(!el) return; el.innerHTML = '<div class="aiNote">'+t+'</div>'; el.hidden = false; }
+  function note(t, retry){
+    const el = bar(); if(!el) return; el.innerHTML = '';
+    lastList = null; lastNote = t || '';
+    el.appendChild(quickRow());
+    const d = document.createElement('div'); d.className = 'aiNote'; d.textContent = t; if(t) el.appendChild(d);
+    if(retry && t){ const r = document.createElement('button'); r.type='button'; r.className='aiRetry'; r.textContent='🔄 Dobara'; r.addEventListener('pointerdown',(e)=> e.preventDefault()); r.addEventListener('click',()=> suggest(lastPeer || chatPeer, true)); d.appendChild(r); }
+    el.hidden = false;
+  }
 
   function toggle(){
     on = !on; try{ localStorage.setItem('aiReplyOn', on?'1':'0'); }catch(e){}
     setBtn(); clearTimeout(timer); seq++; clearBar();
     try{ chatToastMsg(on ? '🤖 AI suggest ON — naye message par reply suggest honge' : '🤖 AI suggest OFF'); }catch(e){}
+    if(on && chatPeer){ lastPeer = chatPeer; try{ const me = chatMyKey(); const ids = chatSortedIds(); for(let i = ids.length - 1; i >= 0; i--){ const m = chatMsgs.get(ids[i]); if(m && m.f !== me){ lastMsg = { t: m.t ? String(m.t) : '', media: !!(m.k === 'i' || m.k === 'v' || m.sk) }; lastId = ids[i]; break; } } }catch(e){} note(''); suggest(chatPeer, false, true); }   // ON karte hi last message ka suggestion
   }
   function onIncoming(peer, id, m){
     if(!on || seen.has(id)) return; seen.add(id);
     const age = Date.now() - (Number(m.ts)||Date.now());
     if(age > MAX_AGE_MS) return;                             // purane (load hue) messages ignore
+    lastPeer = peer; lastId = id;
+    lastMsg = { t: m.t ? String(m.t) : '', media: !!(m.k === 'i' || m.k === 'v' || m.sk) };
+    note('');   // quick words foran (AI ka intezaar nahi)
     clearTimeout(timer); timer = setTimeout(()=> suggest(peer), DEBOUNCE_MS);
   }
+  function onMine(){ if(!on) return; clearTimeout(timer); seq++; clearBar(); }   // maine reply bhej diya -> suggestions hata do
+  const label = (m)=>{
+    let t = m.t ? String(m.t) : '';
+    if(m.sk) return '[sticker] ' + t;
+    if(m.k === 'i') return '[photo bheji]' + (t ? ' caption: ' + t : '');
+    if(m.k === 'v') return '[video bheji]' + (t ? ' caption: ' + t : '');
+    if(m.k === 'f') return '[file/voice: ' + ((m.a && m.a.n) || 'file') + ']' + (t ? ' ' + t : '');
+    return t;
+  };
   function buildMessages(){
     const me = chatMyKey(); const out = [];
-    chatSortedIds().slice(-14).forEach(id=>{
-      const m = chatMsgs.get(id); if(!m || !m.t) return;
+    chatSortedIds().slice(-16).forEach(id=>{
+      const m = chatMsgs.get(id); if(!m) return;
+      const t = label(m); if(!t) return;
       const role = m.f === me ? 'assistant' : 'user';
-      const t = String(m.t);
       if(out.length && out[out.length-1].role === role) out[out.length-1].content += '\n' + t;
       else out.push({ role, content: t });
     });
     while(out.length && out[0].role !== 'user') out.shift();
     return out;
   }
-  async function suggest(peer){
-    if(!on || chatPeer !== peer) return;
+  function parse(raw){
+    let arr = [];
+    try{ const mt = raw.match(/\[[\s\S]*\]/); arr = JSON.parse(mt ? mt[0] : raw); }
+    catch(e){ arr = raw.split('\n').map(s=>s.replace(/^[\s\-\*\d\.\)"]+|[",\s]+$/g,'')).filter(Boolean); }
+    return arr.map(x=>{
+      if(x && typeof x === 'object') return { e: String(x.e || x.emoji || '').slice(0,4), t: String(x.t || x.text || x.reply || '').trim() };
+      return { e: '', t: String(x).trim() };
+    }).filter(x=>x.t).slice(0,3);
+  }
+  async function ask(model, system, msgs){
+    const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model, max_tokens:330, system, messages: msgs }) });
+    if(!resp.ok) throw new Error('ai '+resp.status);
+    const j = await resp.json();
+    return (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join('\n').trim();
+  }
+  async function suggest(peer, force, instant){
+    if(!on || !peer || chatPeer !== peer) return;
     const msgs = buildMessages(); if(!msgs.length || msgs[msgs.length-1].role !== 'user') return;
-    const my = ++seq; note('🤖 reply soch raha hai…');
+    lastPeer = peer;
+    const key = lastId + '|' + tone;
+    if(!force && cache.has(key)){ showBar(cache.get(key)); return; }
+    if(!force && Date.now() - lastTry < 1500 && !instant){ clearTimeout(timer); timer = setTimeout(()=> suggest(peer), 1500); return; }
+    lastTry = Date.now();
+    const my = ++seq; note('🤖 soch raha hai…');
+    const nm = myName || 'user', td = TONES[tone][2];
+    const system = 'Tum '+nm+' ke chat-assistant ho. '+nm+' ke contact "'+peer.name+'" ne naya message bheja hai; '+nm+' ki taraf se uske LAST message ka reply SUGGEST karo.\n'
+      + 'RULES:\n'
+      + '1) Exactly 3 alag-alag reply options, har ek '+nm+' ki awaaz me ('+(gen === 'f' ? 'pehle mahila: raha->rahi, gaya->gayi' : 'pehle purush: raha, gaya')+'). Roman-Hinglish ya jis bhasha/script me samne wala likhta hai usi me.\n'
+      + '2) Tone: '+td+'.\n'
+      + '3) 3 options ka matlab/intent alag ho (jaise: haan/accept, na/mana, poochh-tachh ya halka-phulka). Last message ka sawaal ho to seedha jawab do; sawaal na ho to natural follow-up.\n'
+      + '4) Conversation me assistant role '+nm+' ke apne purane messages hain — unki lambai, bhasha, emoji aur andaaz copy karo. Zyada lamba mat likho (max 2 chhoti lines).\n'
+      + '5) Photo/video/sticker/voice aaye to uspe natural reaction do (tareef, sawaal, mazaak).\n'
+      + '6) Paisa, password, OTP, address, personal/sensitive info ya pakka commitment/vaada mat likho; time/jagah poochni ho to sawaal ke roop me.\n'
+      + '7) Hindi shabd Devanagari me tabhi jab samne wale ne Devanagari me likha ho.\n'
+      + '8) Teeno me se kam se kam EK option ekdum chhota (1-3 shabd) ho, in jaise desi chhote replies se (zarurat ho tabhi, copy-paste nahi): Haa yaar, Hmm, Na bhai, Theek, Kyu?, Kaise?, Pakka?, Sach mein?, Pata nahi, Dekhte hain, Ek min, Wahi toh, Sahi, Acha!, Mast, Badiya, Gajab, Arey waah, Arre!, Oho!, Matlab?, Phir?, Bata na, Aur batao, Chal chal, Rehne de, Jaane de, Khair, Kasam se, Crazy, Call kar, Bhej, Dekh liya, Bye.\n'
+      + 'OUTPUT: SIRF JSON array: [{"e":"<ek emoji jo option ka intent dikhaye>","t":"<reply>"}, ...] — 3 items, aur kuch nahi, koi explanation nahi.';
     try{
-      const nm = myName || 'user';
-      const system = 'Tum '+nm+' ke liye uske contact '+peer.name+' ke last message ka reply SUGGEST kar rahe ho. Exactly 3 alag-alag chhote reply options do (har ek 1-2 line, Hinglish Roman script, natural dost jaisa, '+nm+' ke naam se pehle purush me). Options ka tone/matlab thoda alag ho (jaise haan / na / poochh-tachh ya casual / seedha). Pehle ke messages me assistant role '+nm+' ke apne purane messages hain — unka style copy karo. Paisa, password, address, personal/sensitive info ya pakka commitment mat likho. Output SIRF ek JSON array of 3 strings, aur kuch nahi.';
-      const resp = await fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:400, system, messages: msgs }) });
-      if(!resp.ok) throw new Error('ai '+resp.status);
-      const j = await resp.json();
-      const raw = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join('\n').trim();
-      let list = [];
-      try{ const mt = raw.match(/\[[\s\S]*\]/); list = JSON.parse(mt ? mt[0] : raw); }catch(e){ list = raw.split('\n').map(s=>s.replace(/^[\s\-\*\d\.\)"]+|["\s,]+$/g,'')).filter(Boolean); }
-      list = list.map(s=>String(s).trim()).filter(Boolean).slice(0,3);
+      // FAST model (haiku) pehle; proxy na maane to sonnet (yaad rakhta hai)
+      let raw = null, fastOk = true; try{ fastOk = sessionStorage.getItem('aiFastNo') !== '1'; }catch(e){}
+      if(fastOk){ try{ raw = await ask('claude-haiku-4-5', system, msgs); }catch(e){ raw = null; try{ sessionStorage.setItem('aiFastNo','1'); }catch(e2){} } }
+      let list = raw ? parse(raw) : [];
+      if(!list.length){ raw = await ask('claude-sonnet-4-6', system, msgs); list = parse(raw); }
       if(!list.length) throw new Error('empty');
       if(my !== seq || !on || chatPeer !== peer) return;     // naya msg aaya / OFF / chat badli
+      cache.set(key, list); if(cache.size > 30) cache.delete(cache.keys().next().value);
       showBar(list);
     }catch(e){
       console.error('AI suggest failed', e);
-      if(my === seq) note('🤖 suggestion nahi ban paya — internet check karo');
-      setTimeout(()=>{ if(my === seq){ const el = document.getElementById('cxAiSug'); if(el && el.querySelector('.aiNote')) clearBar(); } }, 2500);
+      if(my === seq) note('🤖 suggestion nahi ban paya — internet check karo', true);
     }
   }
 
@@ -27256,7 +27696,27 @@ const AIReply = (function(){
   #cxAiSug .aiChip:active{background:#2b2e36}
   #cxAiSug .aiGo{flex:none;width:40px;border-radius:14px;border:1px solid #3f6b52;background:#2d4a3a;color:#cfd0d4;font-size:16px}
   #cxAiSug .aiX{align-self:flex-end;background:transparent;border:0;color:#8a8d97;font-size:15px;padding:2px 8px}
-  #cxAiSug .aiNote{color:#8a8d97;font-size:14px;padding:6px 4px}`;
+  #cxAiSug .aiNote{color:#8a8d97;font-size:14px;padding:6px 4px;display:flex;align-items:center;gap:10px}
+  #cxAiSug .aiTop{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none}
+  #cxAiSug .aiTop::-webkit-scrollbar{display:none}
+  #cxAiSug .aiTone{flex:none;height:30px;border-radius:15px;border:1px solid #3a3d47;background:#1d1f26;color:#cfd0d4;font-size:13px;padding:0 11px;font-family:inherit}
+  #cxAiSug .aiTone.on{background:#2d4a3a;border-color:#3f6b52}
+  #cxAiSug .aiRg{flex:none;margin-left:auto;width:34px;height:30px;border-radius:15px;border:1px solid #3a3d47;background:#1d1f26;color:#cfd0d4;font-size:15px;padding:0}
+  #cxAiSug .aiTop .aiX{align-self:auto;flex:none}
+  #cxAiSug .aiChip{display:flex;gap:9px;align-items:flex-start}
+  #cxAiSug .aiE{flex:none;font-size:18px;line-height:1.25}
+  #cxAiSug .aiT{flex:1;min-width:0;word-break:break-word}
+  #cxAiSug .aiQwrap{display:flex;flex-direction:column;gap:6px}
+  #cxAiSug .aiQuick{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #cxAiSug .aiQuick::-webkit-scrollbar,#cxAiSug .aiQtabs::-webkit-scrollbar{display:none}
+  #cxAiSug .aiQi{flex:none;font-size:15px}
+  #cxAiSug .aiQ{flex:none;height:34px;border-radius:17px;border:1px solid #3a3d47;background:#23252d;color:#e6e7ea;font-size:15px;padding:0 13px;font-family:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  #cxAiSug .aiQ:active{background:#3a3550;border-color:#6a5fa0}
+  #cxAiSug .aiQmore{color:#8b8d95}#cxAiSug .aiQmore.on{background:#2d4a3a;border-color:#3f6b52;color:#cfd0d4}
+  #cxAiSug .aiQtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  #cxAiSug .aiGen{margin-left:auto}
+  #cxAiSug .aiQgrid{display:flex;flex-wrap:wrap;gap:6px;max-height:132px;overflow-y:auto}
+  #cxAiSug .aiRetry{border:1px solid #3a3d47;background:#23252d;color:#cfd0d4;border-radius:14px;padding:5px 11px;font-size:13px;font-family:inherit}`;
   document.head.appendChild(s);
   function put(){
     const inp = document.getElementById('chatInput'); if(!inp) return;
@@ -27268,7 +27728,7 @@ const AIReply = (function(){
     (d || inp).insertAdjacentElement('afterend', b); setBtn();
   }
   setInterval(()=>{ try{ put(); }catch(e){} }, 500); put();
-  return { toggle, onIncoming };
+  return { toggle, onIncoming, onMine };
 })();
 
 
@@ -27391,4 +27851,75 @@ const AIReply = (function(){
     window.cxOpenCam = function(){ try{ HandWrite.close(); }catch(e){} return orig.apply(this, arguments); };
     window.cxOpenCam.__hw = true; clearInterval(t);
   }, 400);
+})();
+
+
+// ============================================================================
+// CHAT PLUS 18: TEXT SIZE  A− / A+  (chat bubbles + type karne wala box)
+//   - Chat khulte hi right side me chhota pill: [A−] [19] [A+]. Tap = 1px kam/zyada (12–30). Beech ka number = default (19) par wapas.
+//   - Save: localStorage 'cxFs'. CSS var --cxfs (#chatOverlay par). Messages ke upar do ungli pinch bhi chalta hai.
+// ============================================================================
+(function chatTextSize(){
+  const MIN = 12, MAX = 30, DEF = 19;
+  let fs = DEF; try{ const v = Number(localStorage.getItem('cxFs')); if(v >= MIN && v <= MAX) fs = v; }catch(e){}
+  const css = document.createElement('style');
+  css.textContent = `
+  #chatOverlay{--cxfs:${fs}}
+  #chatOverlay #chatMsgs .cbub{font-size:calc(var(--cxfs,19) * 1px)!important;line-height:1.5!important}
+  #chatOverlay .chatComposer #chatInput{font-size:max(16px, calc(var(--cxfs,19) * 1px - 1px))!important}
+  #cxFsPill{position:fixed;right:8px;top:90px;z-index:2147482000;display:none;align-items:center;gap:2px;padding:3px;border-radius:20px;background:rgba(28,29,35,.92);border:1px solid #34363f;box-shadow:0 3px 12px rgba(0,0,0,.45);transition:opacity .4s;opacity:1}
+  #cxFsPill.show{display:flex}
+  #cxFsPill.dim{opacity:.38}
+  #cxFsPill button{border:0;background:transparent;color:#cfd0d4;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}
+  #cxFsPill .fsb{width:38px;height:34px;border-radius:17px;font-weight:700}
+  #cxFsPill .fsb:active{background:#2b2e36}
+  #cxFsPill #cxFsM{font-size:13px}#cxFsPill #cxFsP{font-size:19px}
+  #cxFsPill #cxFsN{min-width:26px;height:34px;font-size:12px;color:#8b8d95}`;
+  document.head.appendChild(css);
+
+  let pill = null, dimT = 0;
+  const poke = ()=>{ if(!pill) return; pill.classList.remove('dim'); clearTimeout(dimT); dimT = setTimeout(()=>{ if(pill) pill.classList.add('dim'); }, 2500); };
+  function set(v, quiet){
+    fs = Math.max(MIN, Math.min(MAX, Math.round(v)));
+    const ov = document.getElementById('chatOverlay'); if(ov) ov.style.setProperty('--cxfs', fs);
+    try{ localStorage.setItem('cxFs', String(fs)); }catch(e){}
+    const n = document.getElementById('cxFsN'); if(n) n.textContent = fs;
+    poke();
+    try{ if(!quiet && typeof chatNearBottom === 'function' && chatNearBottom()) chatScrollBottom(); }catch(e){}
+  }
+  function build(){
+    if(pill) return;
+    pill = document.createElement('div'); pill.id = 'cxFsPill';
+    pill.innerHTML = '<button type="button" class="fsb" id="cxFsM" aria-label="Text chhota">A−</button><button type="button" id="cxFsN" aria-label="Normal size">' + fs + '</button><button type="button" class="fsb" id="cxFsP" aria-label="Text bada">A+</button>';
+    document.body.appendChild(pill);
+    const tap = (id, fn)=>{ const b = pill.querySelector(id); b.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }); b.addEventListener('click', (e)=>{ e.preventDefault(); fn(); }); };
+    // dabaye rakho to lagataar badhta/ghatta hai
+    const hold = (id, d)=>{ const b = pill.querySelector(id); let t = 0, iv = 0, held = false;
+      b.addEventListener('pointerdown', ()=>{ held = false; t = setTimeout(()=>{ held = true; iv = setInterval(()=> set(fs + d, true), 90); }, 380); });
+      const stop = ()=>{ clearTimeout(t); clearInterval(iv); };
+      b.addEventListener('pointerup', stop); b.addEventListener('pointercancel', stop); b.addEventListener('pointerleave', stop);
+      b.addEventListener('click', (e)=>{ e.preventDefault(); if(held){ held = false; return; } set(fs + d); }); };
+    hold('#cxFsM', -1); hold('#cxFsP', 1);
+    tap('#cxFsN', ()=> set(DEF));
+  }
+  // pinch (do ungli) se bhi size
+  function bindPinch(){
+    const box = document.getElementById('chatMsgs'); if(!box || box.dataset.fsPinch) return; box.dataset.fsPinch = '1';
+    let d0 = 0, f0 = fs;
+    const dist = (t)=> Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    box.addEventListener('touchstart', (e)=>{ if(e.touches.length === 2){ d0 = dist(e.touches); f0 = fs; } }, { passive: true });
+    box.addEventListener('touchmove', (e)=>{ if(e.touches.length === 2 && d0){ set(f0 * dist(e.touches) / d0, true); } }, { passive: true });
+    box.addEventListener('touchend', ()=>{ d0 = 0; }, { passive: true });
+  }
+  function tick(){
+    const conv = document.getElementById('chatConv');
+    const open = !!(conv && !conv.hidden && conv.getClientRects().length);
+    if(open){
+      build(); bindPinch();
+      const h = conv.querySelector('.chatHead'); const r = h && h.getBoundingClientRect();
+      pill.style.top = ((r ? r.bottom : 70) + 8) + 'px';
+      if(!pill.classList.contains('show')){ pill.classList.add('show'); const ov = document.getElementById('chatOverlay'); if(ov) ov.style.setProperty('--cxfs', fs); poke(); }
+    }else if(pill){ pill.classList.remove('show'); }
+  }
+  setInterval(()=>{ try{ tick(); }catch(e){} }, 400);
 })();
