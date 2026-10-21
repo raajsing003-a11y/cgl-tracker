@@ -24893,9 +24893,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const RES = { '720': { w: 1280, h: 720, cap: 1280, n: '720p' }, '1080': { w: 1920, h: 1080, cap: 1920, n: '1080p' }, 'max': { w: 3840, h: 2160, cap: 2560, n: 'Max' } };
   const BRN = { 3: 'Normal', 6: 'High', 10: 'Ultra' };
   const QKEY = 'cxc-q', LVS = [1, .8, .65, .5];
+  const loadLvl = ()=>{ try{ const n = Number(localStorage.getItem('cxc-lvl')); return n >= 0 && n <= 3 ? Math.floor(n) : 0; }catch(_){ return 0; } };
+  const saveLvl = (n)=>{ try{ localStorage.setItem('cxc-lvl', String(n)); }catch(_){} };
   const clamp = (x, a, b)=> Math.max(a, Math.min(b, x));
   const loadQ = ()=>{ let o = {}; try{ o = JSON.parse(localStorage.getItem(QKEY) || '{}') || {}; }catch(_){}
-    return { res: RES[o.res] ? o.res : '1080', fps: o.fps === 60 ? 60 : 30, br: BRN[o.br] ? Number(o.br) : 6, stab: o.stab !== false, hist: !!o.hist, clip: !!o.clip, split: !!o.split, full: o.full !== false }; };
+    return { res: RES[o.res] ? o.res : '1080', fps: o.fps === 60 ? 60 : 30, br: BRN[o.br] ? Number(o.br) : 6, sv: 2, stab: o.sv === 2 && o.stab === true, hist: !!o.hist, clip: !!o.clip, split: !!o.split, full: o.full !== false }; };
   let Q = loadQ();
   const saveQ = ()=>{ try{ localStorage.setItem(QKEY, JSON.stringify(Q)); }catch(_){} };
   const lo = (a)=> a.min == null ? -100 : a.min, hi = (a)=> a.max == null ? 100 : a.max;
@@ -25609,18 +25611,36 @@ void main(){
     if(by > -R && by < R){ const a = sad[(by + R - 1) * W2 + bx + R], b = sad[(by + R) * W2 + bx + R], c = sad[(by + R + 1) * W2 + bx + R], d = a - 2 * b + c; if(d > 0) fy += .5 * (a - c) / d; }
     return [fx, fy];
   }
+  // Stabilization ab main thread ko block nahi karta: video -> createImageBitmap (chhota, background resize) -> Worker (OffscreenCanvas) me motion estimate.
+  // Pehle har frame drawImage(video)+getImageData (sync GPU readback) tha = camera lag ki sabse badi wajah. Worker na chale to stab chup-chaap band.
+  let stabW;
+  function stabWorker(){
+    if(stabW !== undefined) return stabW;
+    stabW = null;
+    try{
+      if(!window.Worker || !window.createImageBitmap || !window.OffscreenCanvas) return null;
+      const code = 'const STAB_R=' + STAB_R + ';' + stabCore.toString() + ';let prev=null,cv=null,cx=null;onmessage=function(e){const d=e.data;try{if(d.reset)prev=null;const W=d.w,H=d.h;if(!cv||cv.width!==W||cv.height!==H){cv=new OffscreenCanvas(W,H);cx=cv.getContext("2d",{willReadFrequently:true});prev=null;}cx.drawImage(d.bmp,0,0,W,H);if(d.bmp.close)d.bmp.close();const px=cx.getImageData(0,0,W,H).data,n=W*H,g=new Uint8Array(n);for(let i=0,j=0;i<n;i++,j+=4)g[i]=(px[j]*77+px[j+1]*150+px[j+2]*29)>>8;let r=[0,0];if(prev&&prev.length===n)r=stabCore(g,prev,W,H);prev=g;postMessage({dx:r[0],dy:r[1]});}catch(err){postMessage({err:String(err)});}};';
+      const wk = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+      wk.onmessage = (e)=>{
+        const m = e.data || {}; if(!st) return; st.sPend = false;
+        if(m.err){ st.stabBad = true; return; }
+        st.cx = clamp((st.cx + m.dx * st.sw / SW) * .92, -st.sw * STAB_MAX, st.sw * STAB_MAX);
+        st.cy = clamp((st.cy + m.dy * st.sh / st.ssh) * .92, -st.sh * STAB_MAX, st.sh * STAB_MAX);
+      };
+      wk.onerror = ()=>{ if(st) st.stabBad = true; };
+      stabW = wk;
+    }catch(e){ stabW = null; }
+    return stabW;
+  }
   function stabEst(v, vw, vh, w, h){
-    if(!st.sc){ st.sc = document.createElement('canvas'); st.sx = st.sc.getContext('2d', { willReadFrequently: true }); }
+    const wk = stabWorker(); if(!wk){ st.stabBad = true; return; }
+    if(st.sPend || st.stabBad) return;
     const sh = Math.max(16, Math.round(SW * vh / vw));
-    if(st.sc.width !== SW || st.sc.height !== sh){ st.sc.width = SW; st.sc.height = sh; st.prevG = null; }
-    st.sx.drawImage(v, 0, 0, SW, sh);
-    const d = st.sx.getImageData(0, 0, SW, sh).data, n = SW * sh, g = new Uint8Array(n);
-    for(let i = 0, j = 0; i < n; i++, j += 4) g[i] = (d[j] * 77 + d[j + 1] * 150 + d[j + 2] * 29) >> 8;
-    const p = st.prevG; st.prevG = g;
-    let dx = 0, dy = 0;
-    if(p && p.length === n){ const r = stabCore(g, p, SW, sh); dx = r[0]; dy = r[1]; }
-    st.cx = clamp((st.cx + dx * w / SW) * .92, -w * STAB_MAX, w * STAB_MAX);
-    st.cy = clamp((st.cy + dy * h / sh) * .92, -h * STAB_MAX, h * STAB_MAX);
+    st.sPend = true; st.sw = w; st.sh = h; st.ssh = sh;
+    const reset = !st.prevG; st.prevG = 1;
+    createImageBitmap(v, { resizeWidth: SW, resizeHeight: sh, resizeQuality: 'low' })
+      .then(bmp => { wk.postMessage({ bmp, w: SW, h: sh, reset }, [bmp]); })
+      .catch(()=>{ if(st){ st.sPend = false; st.stabBad = true; } });
   }
   // ---- auto-adaptive: frames drop hon to level badhao (resolution + shader taps kam), phone theek ho to wapas ----
   function adaptTrack(meta){
@@ -25633,14 +25653,14 @@ void main(){
       if(s.lt){ s.seen += Math.max(1, (t - s.lt) / (1000 / (s.camFps || 30))); s.done++; }
       s.lt = t;
     }
-    if(s.done < 40) return;
+    if(s.done < 15) return;
     const ratio = s.done / s.seen; s.done = 0; s.seen = 0;
-    if(ratio < .8 && s.lvl < 3){
-      s.lvl++; s.good = 0; paintQ();
+    if(ratio < .85 && s.lvl < 3){
+      s.lvl++; s.good = 0; s.need = Math.min(64, (s.need || 8) * 2); saveLvl(s.lvl); paintQ();
       if(!s.adT){ s.adT = true; toast('⚡ Phone dheema pad raha tha — quality auto adjust ho gayi.'); }
     }else if(ratio > .97){
       s.good = (s.good || 0) + 1;
-      if(s.good >= 6 && s.lvl > 0){ s.lvl--; s.good = 0; paintQ(); }
+      if(s.good >= (s.need || 8) && s.lvl > 0){ s.lvl--; s.good = 0; saveLvl(s.lvl); paintQ(); }
     }else s.good = 0;
   }
   function startLoop(){
@@ -25662,17 +25682,20 @@ void main(){
     const k = Math.min(1, RES[Q.res].cap * sc / Math.max(vw, vh));
     const w = Math.max(2, Math.round(vw * k)), h = Math.max(2, Math.round(vh * k));
     if(st.cvs.width !== w || st.cvs.height !== h){ st.cvs.width = w; st.cvs.height = h; }
-    if(!st.raw){ st.raw = document.createElement('canvas'); st.rctx = st.raw.getContext('2d'); }
-    if(st.raw.width !== w || st.raw.height !== h){ st.raw.width = w; st.raw.height = h; }
-    const none = window.cxFX.list.find(x => x.id === 'none') || window.cxFX.list[0], r = st.rctx;
+    const sb = Q.stab && !still && !st.stabBad;
+    const direct = !(st.cmp || !isId()) && !sb && (st.dz || 1) === 1 && !(Q.split && !still && !st.rec && !st.cmp && st.box);   // grade/stab/zoom/split nahi => seedha canvas par (ek poori copy kam)
+    if(!direct){
+      if(!st.raw){ st.raw = document.createElement('canvas'); st.rctx = st.raw.getContext('2d'); }
+      if(st.raw.width !== w || st.raw.height !== h){ st.raw.width = w; st.raw.height = h; }
+    }
+    const none = window.cxFX.list.find(x => x.id === 'none') || window.cxFX.list[0], r = direct ? st.ctx : st.rctx;
     r.save();
     if(st.facing === 'user'){ r.translate(w, 0); r.scale(-1, 1); }
     window.cxFX.draw(r, v, w, h, none, st.f);   // sirf Normal (Beauty ON ho to wahi lagti hai)
     r.restore();
-    const sb = Q.stab && !still;
     if(sb) stabEst(v, vw, vh, w, h);
     let src = st.raw;
-    if(!(st.cmp || isId())){
+    if(!direct && !(st.cmp || isId())){
       const g = glGrade(st.raw, w, h);
       if(g) src = g;
       else{
@@ -25684,13 +25707,13 @@ void main(){
     const c = st.ctx, zz = (sb ? STAB_Z : 1) * (st.dz || 1), mir = st.facing === 'user' ? -1 : 1;
     const tx = sb ? st.cx * mir : 0, ty = sb ? st.cy : 0;
     const put = (im)=>{ if(zz === 1 && !tx && !ty){ c.drawImage(im, 0, 0); } else{ c.save(); c.translate(w / 2 + tx, h / 2 + ty); c.scale(zz, zz); c.drawImage(im, -w / 2, -h / 2); c.restore(); } };
-    put(src);
+    if(!direct) put(src);
     if(Q.split && !still && !st.rec && !st.cmp && st.box && src !== st.raw){
       const bw = st.box.width, bh = st.box.height, sc2 = Math.max(bw / w, bh / h);
       const sxp = clamp(((st.spf == null ? .5 : st.spf) * bw + (w * sc2 - bw) / 2) / sc2, 0, w);
       c.save(); c.beginPath(); c.rect(0, 0, sxp, h); c.clip(); put(st.raw); c.restore();
     }
-    if(!still && (Q.hist || Q.clip) && ((st.hc = (st.hc || 0) + 1) % 4 === 0)){ try{ analyse(); }catch(e){ console.error('analyse', e); } }
+    if(!still && (Q.hist || Q.clip) && ((st.hc = (st.hc || 0) + 1) % 8 === 0)){ try{ analyse(); }catch(e){ console.error('analyse', e); } }
     if(st.rec){ const sec = (Date.now() - st.t0) / 1000; const rr = $('cxCamRt'); if(rr) rr.textContent = '● ' + Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0'); if(sec >= 30) recStop(); }
   }
   function toGal(file){
@@ -25815,14 +25838,14 @@ void main(){
     build();
     const cvs = $('cxCamCv'), vid = document.createElement('video');
     vid.muted = true; vid.playsInline = true; vid.autoplay = true;
-    const ctx = cvs.getContext('2d');
+    const ctx = cvs.getContext('2d', { alpha: false });
     let sf = 'user';
     G = loadG();
     try{ sf = localStorage.getItem('cxc-face') === 'environment' ? 'environment' : 'user'; const gs = localStorage.getItem('cxc-gsel'); if(gs && ADJ.some(a => a.k === gs)) gSel = gs; }catch(_){}
     Q = loadQ(); myPre = loadMy();
     try{ const gt = localStorage.getItem('cxc-gtab'); if(gt && TABS.some(t => t[0] === gt)) gTab = gt; }catch(_){}
     { const a0 = ADJ.find(a => a.k === gSel); if(!a0 || a0.g !== gTab){ const f0 = ADJ.find(a => a.g === gTab); if(f0) gSel = f0.k; } }
-    st = { spf: .5, cvs, ctx, vid, stream: null, facing: sf, cmp: false, lvl: 0, z: 1, dz: 1, cx: 0, cy: 0, f: { canF: ('filter' in ctx), parts: [] } };
+    st = { spf: .5, cvs, ctx, vid, stream: null, facing: sf, cmp: false, lvl: loadLvl(), z: 1, dz: 1, cx: 0, cy: 0, f: { canF: ('filter' in ctx), parts: [] } };
     $('cxCamTo').textContent = 'Message ' + chatPeer.name;
     $('cxCam').classList.add('open');
     $('cxCamCar').dataset.t = '';
