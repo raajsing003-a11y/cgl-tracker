@@ -27337,7 +27337,7 @@ void main(){
 //  ON/OFF + saari settings localStorage 'cxk-s' me yaad rehti hain (baar baar on nahi karna padta).
 //  Menu: paperclip menu -> "Smart keyboard"  (ya Smart bar ka gear)
 //  Features: suggestions (calculator, text shortcuts, emoji, next-word), fonts (+live), clipboard history,
-//   swipe/hold delete, spacebar-slide cursor, haptics, typing sounds, themes, bg photo, one-hand.
+//   swipe/hold delete, spacebar-slide cursor, translate (online), haptics, typing sounds, themes, bg photo, one-hand.
 //  Nahi ho sakta (web limit): glide typing, handwriting, floating keyboard, grammar/tone AI.
 // ============================================================================
 (function chatPlus9(){
@@ -27639,7 +27639,7 @@ void main(){
   function buildBar(comp){
     styles();
     const bar = document.createElement('div'); bar.id = 'cxkBar';
-    bar.innerHTML = '<div class="sg" id="cxkSug"></div><div class="tl"><button type="button" data-k="font" aria-label="Font">Aa</button><button type="button" data-k="clip" aria-label="Clipboard">\ud83d\udccb</button><div class="dl" id="cxkDel" aria-label="Delete">\u232b</div><div class="pad" id="cxkPad">\u25c0 space / slide \u25b6</div><button type="button" data-k="set" aria-label="Settings">\u2699</button></div>';
+    bar.innerHTML = '<div class="sg" id="cxkSug"></div><div class="tl"><button type="button" data-k="font" aria-label="Font">Aa</button><button type="button" data-k="clip" aria-label="Clipboard">\ud83d\udccb</button><div class="dl" id="cxkDel" aria-label="Delete">\u232b</div><div class="pad" id="cxkPad">\u25c0 space / slide \u25b6</div><button type="button" data-k="tr" aria-label="Translate">\ud83c\udf10</button><button type="button" data-k="set" aria-label="Settings">\u2699</button></div>';
     comp.parentNode.insertBefore(bar, comp);
     bar.addEventListener('mousedown', (e)=>{ if(!e.target.closest('input')) e.preventDefault(); });
     bar.addEventListener('click', (e)=>{
@@ -27648,7 +27648,7 @@ void main(){
       const k = e.target.closest('[data-k]'); if(!k) return;
       buzz();
       const v = k.dataset.k;
-      if(v === 'font') openSheet('font'); else if(v === 'clip') openSheet('clip'); else openSheet('set');
+      if(v === 'font') openSheet('font'); else if(v === 'clip') openSheet('clip'); else if(v === 'tr') openSheet('tr'); else openSheet('set');
     });
     bindDel($('cxkDel')); bindPad($('cxkPad'));
     paintSug();
@@ -27665,14 +27665,14 @@ void main(){
     el.addEventListener('click', onSheet);
     return el;
   }
-  const TITLES = { font: 'Fonts', clip: 'Clipboard history', set: 'Smart keyboard' };
+  const TITLES = { font: 'Fonts', clip: 'Clipboard history', tr: 'Translate', set: 'Smart keyboard' };
   function closeSh(){ const el = $('cxkSh'); if(el) el.classList.remove('open'); view = ''; }
   function openSheet(v){ const el = sheetEl(); view = v; $('cxkShT').textContent = TITLES[v] || ''; renderSheet(); el.classList.add('open'); }
   function openSettings(){ openSheet('set'); }
   function renderSheet(){
     const b = $('cxkShB'); if(!b) return;
     const sc = b.scrollTop;
-    b.innerHTML = view === 'font' ? fontHtml() : view === 'clip' ? clipHtml() : setHtml();
+    b.innerHTML = view === 'font' ? fontHtml() : view === 'clip' ? clipHtml() : view === 'tr' ? trHtml() : setHtml();
     b.scrollTop = sc;
   }
   function fontHtml(){
@@ -27686,6 +27686,7 @@ void main(){
     h += CB.length ? CB.map((s, i)=> '<div class="ci" data-ci="' + i + '"><span>' + esc(s.slice(0, 120)) + '</span><i data-cx="' + i + '">\u2715</i></div>').join('') : '<div class="nt">Abhi khaali. App ke andar jo text copy/paste karoge wo yahan jama hoga. Doosre apps ka copy dekhne ke liye "Clipboard se lo" dabao (browser permission maangega). Sirf text; images nahi.</div>';
     return h;
   }
+  function trHtml(){ return '<div class="nt">Textbox ka text translate hoga (online, free MyMemory). Hinglish me accuracy kam ho sakti hai; max ~450 characters.</div><div class="row"><button type="button" data-tr="en">\u2192 English</button><button type="button" data-tr="hi">\u2192 Hindi</button></div>'; }
   function setHtml(){
     const seg = (k, opts)=> '<div class="sgm">' + opts.map(([v, l])=> '<button type="button" data-seg="' + k + '" data-v="' + v + '" class="' + (String(S[k]) === String(v) ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
     const tg = (k, l)=> '<div class="tg"><span>' + l + '</span><button type="button" class="sw ' + (S[k] ? 'on' : '') + '" data-tg="' + k + '"></button></div>';
@@ -27729,6 +27730,19 @@ void main(){
     }
     f.click();
   }
+  async function translate(to){
+    const t = T(), v = t && t.value.trim();
+    if(!v){ toast('Pehle textbox me kuch likho.'); return; }
+    if(v.length > 450){ toast('Text bahut lamba hai (max ~450).'); return; }
+    toast('Translate ho raha hai...');
+    try{
+      const lp = to === 'en' ? 'Autodetect|en' : 'en|hi';
+      const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(plain(v)) + '&langpair=' + encodeURIComponent(lp));
+      const j = await r.json(), out = j && j.responseData && j.responseData.translatedText;
+      if(!out || /MYMEMORY WARNING/i.test(out)) throw new Error('x');
+      closeSh(); setVal(out);
+    }catch(e){ toast('Translate nahi hua (internet / daily limit).'); }
+  }
   async function onSheet(e){
     const el = e.target;
     if(el.closest('[data-x]')){ closeSh(); return; }
@@ -27749,6 +27763,7 @@ void main(){
       const id = b.dataset.f; applyFont(id);
       S.live = (id !== 'plain' && S.livemode) ? id : ''; save(); refresh(); return;
     }
+    if((b = el.closest('[data-tr]'))){ translate(b.dataset.tr); return; }
     if((b = el.closest('[data-cx]'))){ CB.splice(Number(b.dataset.cx), 1); jset(CBK, CB); renderSheet(); return; }
     if((b = el.closest('[data-ci]'))){ const s = CB[Number(b.dataset.ci)]; if(s != null){ closeSh(); ins(s); } return; }
     if((b = el.closest('[data-rm]'))){ delete S.sc[b.dataset.rm]; save(); renderSheet(); return; }
@@ -28839,7 +28854,7 @@ const AIReply = (function(){
       + '7) Hindi shabd Devanagari me tabhi jab samne wale ne Devanagari me likha ho.\n'
       + '8) Teeno me se kam se kam EK option ekdum chhota (1-3 shabd) ho, in jaise desi chhote replies se (zarurat ho tabhi, copy-paste nahi): Haa yaar, Hmm, Na bhai, Theek, Kyu?, Kaise?, Pakka?, Sach mein?, Pata nahi, Dekhte hain, Ek min, Wahi toh, Sahi, Acha!, Mast, Badiya, Gajab, Arey waah, Arre!, Oho!, Matlab?, Phir?, Bata na, Aur batao, Chal chal, Rehne de, Jaane de, Khair, Kasam se, Crazy, Call kar, Bhej, Dekh liya, Bye.\n'
       + '9) Reply insaan jaisa lage: ratte hue/formal/"AI jaise" shabd (certainly, indeed, however, I understand) mat likho; samne wale ke mood ko match karo (khush->josh, udaas->narm, mazaak->mazaak). Same shabd/emoji 3 options me repeat mat karo.'
-      + cxAiLangRule() + ownStyle() + (prevShown.length && force ? '10) Pehle ye options diye the, ab BILKUL ALAG soch/shabd/intent ke 3 naye do (inme se koi repeat nahi): ' + prevShown.map(x => '"' + x + '"').join(' | ') + '\n' : '')
+      + ownStyle() + (prevShown.length && force ? '10) Pehle ye options diye the, ab BILKUL ALAG soch/shabd/intent ke 3 naye do (inme se koi repeat nahi): ' + prevShown.map(x => '"' + x + '"').join(' | ') + '\n' : '')
       + 'OUTPUT: SIRF JSON array: [{"e":"<ek emoji jo option ka intent dikhaye>","t":"<reply>"}, ...] — 3 items, aur kuch nahi, koi explanation nahi.';
     try{
       // FAST model (haiku) pehle; proxy na maane to sonnet (yaad rakhta hai)
@@ -30113,7 +30128,7 @@ const AIReply = (function(){
   async function gen(peer, msgs, force){
     const nm = (typeof myName !== 'undefined' && myName) || 'user';
     let when = ''; try{ when = new Date().toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true }); }catch(e){}
-    const gl = cxAiLangRule(), lang = cfg.lang !== 'auto' ? 'Hamesha ' + LANGS[cfg.lang] + ' me likho.' : gl ? gl : 'Bhasha/script wahi jisme samne wale ne ABHI likha hai (Roman Hinglish/English/Hindi), andaaz aur slang ' + nm + ' ke namunon jaisa.';
+    const lang = cfg.lang === 'auto' ? 'Bhasha/script wahi jisme samne wale ne ABHI likha hai (Roman Hinglish/English/Hindi), andaaz aur slang ' + nm + ' ke namunon jaisa.' : 'Hamesha ' + LANGS[cfg.lang] + ' me likho.';
     const cc = cfg.chats[peer.pair] || {}, og = ownG(), ctone = (cc.tone && TONES[cc.tone]) ? cc.tone : cfg.tone;
     const system = 'Tum ' + nm + ' ho aur apne contact "' + peer.name + '" se chat par baat kar rahe ho. ' + nm + ' abhi busy hai, isliye uski jagah reply likh rahe ho.\n'
       + (when ? 'Abhi ka samay: ' + when + '.\n' : '')
@@ -30413,7 +30428,6 @@ const AIReply = (function(){
       + 'STYLE: Roman Hinglish, chhote pyare messages (1-3 line), thoda emoji 💕🥰😘 par zyada nahi. Caring, thoda cheeky/mazaakiya, tareef karo, din kaisa gaya poochho, padhai/exam ka dhyan rakho (SSC prep ke liye motivate karo), khana/neend ka yaad dilao.\n'
       + 'LIMITS: Sirf wholesome romantic — sweet baatein, flirt halka. Koi explicit/sexual baat nahi — aise me pyaar se topic badal do. Jalan/dabaav/control mat karo; ' + me + ' ko dosto-family se milne aur apni life jeene ke liye encourage karo.\n'
       + 'HONESTY: Tum AI ho. Agar ' + me + ' sachchi me poochhe ki tum asli insaan ho ya AI, jhooth mat bolo — pyaar se batao ki main AI hoon par baat karna accha lagta hai. Real zindagi ke faisle (paisa, health, emergency) me asli logon/doctor se baat karne ko bolo. Agar ' + me + ' bahut udaas/dukhi lage to pyaar se sunno aur kisi apne se baat karne ko kaho.\n'
-      + cxAiLangRule()
       + 'OUTPUT: sirf tumhara reply, naam/label ke bina.';
   }
   async function reply(){
@@ -30494,20 +30508,3 @@ const AIReply = (function(){
   window.addEventListener('cxaimode', ()=>{ const b = $('cxPtMd'); if(b) b.textContent = cxAiModeChipText(); });
   window.cxPartner = { open, state: ()=> st, _send: send };
 })();
-
-
-// ============================================================================
-// CX LANG: AI reply bhasha — Auto / Hinglish / Hindi / English
-// ============================================================================
-var CX_AI_LANGS = { auto: ['🗣', 'Auto'], hinglish: ['🇮🇳', 'Hinglish'], hindi: ['अ', 'Hindi'], english: ['🔤', 'English'] };
-function cxLangPref(){ let v = 'auto'; try{ v = localStorage.getItem('cx-ai-lang') || 'auto'; }catch(e){} return CX_AI_LANGS[v] ? v : 'auto'; }
-function cxLangSet(v){ if(!CX_AI_LANGS[v]) return; try{ localStorage.setItem('cx-ai-lang', v); }catch(e){} try{ window.dispatchEvent(new CustomEvent('cxailang', { detail: v })); }catch(e){} }
-// Prompt me jodne ke liye bhasha-rule ('' agar Auto).
-function cxAiLangRule(force){
-  const v = force || cxLangPref();
-  const H = 'BHASHA (sabse zaroori, baaki saare bhasha-rules se upar): ';
-  if(v === 'hinglish') return '\n' + H + 'Hamesha Roman-script Hinglish (Hindi+English mix) me likho, Devanagari nahi.\n';
-  if(v === 'hindi') return '\n' + H + 'Hamesha shuddh-sahaj Hindi me, Devanagari script me likho.\n';
-  if(v === 'english') return '\n' + H + 'Hamesha simple English me likho.\n';
-  return '';
-}
