@@ -27990,7 +27990,7 @@ const SlideType = (function(){
   document.head.appendChild(css);
 
   // (floating ✍️ button hata diya — ab sirf chat ke "+" menu me 'Slide typing' hai)
-  function toggleFor(el){ if(ov){ close(); return; } if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
+  function toggleFor(el){ if(ov){ close(); return; } if(Date.now() < (window.__cxNoDrawUntil||0)) return; if(el) target = el; if(!field()){ alert('Pehle koi text box tap karo, phir ✍️ dabao.'); return; } const b=document.getElementById('slideTypeBtn'); if(b) b.classList.add('on'); open(); }
   return { open, close, decode, toggleFor };
 })();
 
@@ -28389,12 +28389,8 @@ const HandWrite = (function(){
   #chatOverlay .chatComposer #cxDrawBtn:active,#chatOverlay .chatComposer #cxDrawBtn.on{background:#2b2e36}`;
   document.head.appendChild(s);
   function put(){
-    const inp = document.getElementById('chatInput'); if(!inp) return;
-    const comp = inp.closest('.chatComposer'); if(!comp || comp.querySelector('#cxDrawBtn')) return;
-    const b = document.createElement('button'); b.type='button'; b.id='cxDrawBtn'; b.setAttribute('aria-label','Draw to type'); b.textContent='✍️';
-    b.addEventListener('pointerdown',(e)=>{ e.preventDefault(); });
-    b.addEventListener('click',(e)=>{ e.preventDefault(); try{ HandWrite.toggleFor(inp); }catch(err){} });
-    inp.insertAdjacentElement('afterend', b);
+    // ✍️ ab composer me nahi — sirf chat ke "+" menu me 'Draw to type' hai (autopilot confirm tap-through bug fix)
+    const old = document.getElementById('cxDrawBtn'); if(old) old.remove();
   }
   cxPoll('chat', ()=>{ try{ put(); }catch(e){} }, 500); put();
 })();
@@ -30064,8 +30060,11 @@ const AIReply = (function(){
         e.preventDefault(); m.classList.remove('open');
         const peer = chatPeer; if(!peer) return;
         if(isOn(peer.pair)){ setOn(peer.pair, false); toast('🤖 Autopilot OFF'); return; }
+        window.__cxNoDrawUntil = Date.now() + 1500;   // dialog ka tap neeche ke button par na lage
         const t0 = Date.now(); let yes = false; try{ yes = confirm('Autopilot ON karoge?\n\nAI is chat me tumhari jagah reply karega (purane messages padh ke, tumhare andaaz me) — sirf jab app khula ho aur ye chat open ho.\nSensitive msg (paisa/OTP/emergency) skip honge. Tum khud type karo to ruk jayega.'); }catch(e){ yes = true; }
         if(!yes && Date.now() - t0 < 250) yes = true;   // popup block ho to bhi ON (installed app me confirm kabhi turant false deta hai)
+        window.__cxNoDrawUntil = Date.now() + 1200;
+        try{ if(typeof HandWrite!=='undefined') HandWrite.close(); }catch(e){}
         if(!yes) return;
         setOn(peer.pair, true); toast('🤖 Autopilot ON — ' + peer.name);
       });
