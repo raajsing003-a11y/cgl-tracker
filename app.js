@@ -26820,7 +26820,7 @@ void main(){
   }, true);
 
   // ---------- (2) GIF tab ----------
-  const MAXG = 20, KEYK = 'cxg-key';
+  const MAXG = 40, KEYK = 'cxg-key', ROOMK = 'cxg-room', KAV = 'cxg-key-av';
   const getKey = ()=>{ try{ return localStorage.getItem(KEYK) || ''; }catch(e){ return ''; } };
   const setKey = (k)=>{ try{ k ? localStorage.setItem(KEYK, k) : localStorage.removeItem(KEYK); }catch(e){} };
   function idb(){ return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-gifs', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('g', { keyPath: 'id' }); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } }); }
@@ -26828,7 +26828,7 @@ void main(){
   async function gPut(o){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').put(o); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
   async function gDel(id){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').delete(id); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
 
-  let on = false, del = false, saved = [], urls = [], online = [], busy = false, lastQ = null;
+  let roomL = [], on = false, del = false, saved = [], urls = [], online = [], busy = false, lastQ = null, off = 0, more = false, tok = 0, chips = null, dbT = 0;
 
   function styles(){
     if($('cxp8Styles')) return;
@@ -26845,6 +26845,10 @@ void main(){
     #cxsk4Gif .gg button{background:#20242e;border:0;border-radius:10px;padding:0;aspect-ratio:1;position:relative;overflow:hidden;color:#8a93a8;font-size:28px}
     #cxsk4Gif .gg button img{width:100%;height:100%;object-fit:cover;display:block}
     #cxsk4Gif .gg .x{position:absolute;top:2px;right:2px;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center}
+    #cxsk4Gif .chs{display:flex;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px}
+    #cxsk4Gif .chs button{flex:none;background:#20242e;color:#cdd3e0;border:0;border-radius:14px;padding:5px 11px;font-size:12.5px}
+    #cxsk4Gif .gg .st{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.55);border-radius:10px;width:22px;height:22px;font-size:12px;line-height:22px;text-align:center}
+    #cxsk4Gif .h b{opacity:.9}
     #cxsk4Gif .nt{font-size:12.5px;opacity:.65;padding:10px 4px;line-height:1.45}`;
     document.head.appendChild(s);
   }
@@ -26857,9 +26861,9 @@ void main(){
     if($('cxsk4Gif')) return true;
     styles();
     const btn = document.createElement('button'); btn.type = 'button'; btn.id = 'cxsk4GifBtn'; btn.dataset.t = 'gif'; btn.textContent = 'GIF';
-    tb.insertBefore(btn, tb.querySelector('.sp') || null);
+    tb.insertBefore(btn, tb.firstElementChild || null);   // GIF tab sabse pehle (Emoji se pehle)
     const box = document.createElement('div'); box.id = 'cxsk4Gif';
-    box.innerHTML = '<div class="gtop"><input type="search" id="cxgQ" placeholder="GIF search (Giphy)"><button type="button" data-g="go">&#128269;</button><button type="button" data-g="add">&#10133;</button><button type="button" data-g="del" id="cxgDel">&#128465;</button></div><div id="cxgBody"></div>';
+    box.innerHTML = '<div class="gtop"><input type="search" id="cxgQ" placeholder="GIF search (Giphy)"><button type="button" data-g="go">&#128269;</button><button type="button" data-g="rnd" title="Random">&#127922;</button><button type="button" data-g="add">&#10133;</button><button type="button" data-g="del" id="cxgDel">&#128465;</button></div><div id="cxgBody"></div>';
     gd.parentNode.insertBefore(box, gd.nextSibling);
     const inp = document.createElement('input'); inp.type = 'file'; inp.id = 'cxgF'; inp.accept = 'image/gif'; inp.multiple = true; inp.hidden = true; p.appendChild(inp);
     inp.addEventListener('change', async (e)=>{
@@ -26879,6 +26883,8 @@ void main(){
       hide();   // baaki tabs purane handler se chalte hain
     }, true);
     box.addEventListener('click', onClick);
+    $('cxgQ').addEventListener('input', ()=>{ clearTimeout(dbT); if(!getKey()) return; const v = $('cxgQ').value.trim(); if(v.length === 1) return; dbT = setTimeout(()=>{ if(on) search(v === '' ? true : false); }, 450); });   // live search (debounce)
+    box.addEventListener('scroll', ()=>{ if(on && getKey() && !busy && more && box.scrollHeight - box.scrollTop - box.clientHeight < 320) search(false, true); }, { passive: true });   // infinite scroll
     $('cxgQ').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); search(); } });
     return true;
   }
@@ -26890,7 +26896,7 @@ void main(){
     const ed = $('cxsk4Ed'); if(ed) ed.hidden = true;
     $('cxsk4Gd').style.display = 'none'; $('cxsk4Gif').classList.add('on');
     $('cxgQ').parentNode.style.display = getKey() ? 'flex' : 'flex';
-    refreshSaved().then(()=>{ paint(); if(getKey() && !online.length && lastQ === null) search(true); });
+    refreshSaved().then(()=>{ paint(); loadChips(); if(getKey() && !online.length && lastQ === null) search(true); });
   }
   function hide(){
     if(!on) return;
@@ -26906,41 +26912,150 @@ void main(){
     revoke();
     const dbtn = $('cxgDel'); if(dbtn) dbtn.classList.toggle('on', del);
     let h = '';
-    if(!getKey()) h += '<div class="nt">Online GIF search ke liye <b>Giphy API key</b> chahiye (free: developers.giphy.com).<br><button type="button" data-g="key" style="margin-top:6px;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:7px 12px;font-size:13px">&#128273; Key add karo</button></div>';
+    if(!getKey()) h += '<div class="nt">Online GIF search ke liye <b>Giphy API key</b> chahiye (free: developers.giphy.com). Admin key daal de to sab ko apne aap mil jati hai.<br><button type="button" data-g="key" style="margin-top:6px;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:7px 12px;font-size:13px">&#128273; Key add karo</button></div>';
     h += '<div class="h">Meri GIFs ' + (del ? '&mdash; hatane ke liye tap karo' : '') + '</div><div class="gg">';
     h += '<button type="button" data-g="add" aria-label="GIF add">&#10133;</button>';
     saved.forEach((g, i)=>{ const u = URL.createObjectURL(g.blob); urls.push(u); h += '<button type="button" data-s="' + i + '"><img src="' + u + '" alt="">' + (del ? '<span class="x">&#10005;</span>' : '') + '</button>'; });
     h += '</div>';
+    if(roomL.length){ h += '<div class="h">&#128101; Sab ke GIFs (jo bhi use kare, sab ke paas)</div><div class="gg">'; roomL.forEach((o, i)=>{ h += '<button type="button" data-r="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"></button>'; }); h += '</div>'; }
+    if(getKey() && chips && chips.length) h += '<div class="chs">' + chips.map(c => '<button type="button" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('') + '</div>';
     if(getKey()){
       h += '<div class="h">' + (lastQ ? 'Search: ' + esc(lastQ) : 'Trending') + (busy ? ' ...' : '') + '</div><div class="gg">';
-      online.forEach((o, i)=>{ h += '<button type="button" data-o="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"></button>'; });
+      online.forEach((o, i)=>{ h += '<button type="button" data-o="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"><span class="st" data-st="' + i + '">&#11088;</span></button>'; });
       h += '</div>';
       h += '<div class="nt"><button type="button" data-g="key" style="background:transparent;color:#8a93a8;border:0;font-size:12px;text-decoration:underline">Giphy key badlo / hatao</button></div>';
     }
-    body.innerHTML = h;
+    const bx = $('cxsk4Gif'), sy = bx ? bx.scrollTop : 0;
+    body.innerHTML = h; if(bx) bx.scrollTop = sy;
   }
 
-  async function search(trend){
+  const mapG = (d)=>{
+    const im = d.images || {}, pick = (x)=> x && x.url ? x.url : '';
+    return { p: pick(im.fixed_height_small_still) && pick(im.fixed_height_small) || pick(im.fixed_height), u: [pick(im.fixed_height), pick(im.fixed_height_small), pick(im.downsized_small)].filter(Boolean), n: (d.slug || 'giphy') + '.gif' };
+  };
+  async function search(trend, append){
     const k = getKey();
     if(!k){ toast('Pehle Giphy API key add karo.'); return; }
-    const q = trend === true ? '' : ($('cxgQ').value || '').trim();
+    const q = append ? (lastQ || '') : (trend === true ? '' : ($('cxgQ').value || '').trim());
+    const my = ++tok;
+    if(!append){ off = 0; online = []; more = false; }
     lastQ = q; busy = true; paint();
     try{
       const base = q ? 'https://api.giphy.com/v1/gifs/search?q=' + encodeURIComponent(q) + '&' : 'https://api.giphy.com/v1/gifs/trending?';
-      const r = await fetch(base + 'api_key=' + encodeURIComponent(k) + '&limit=24&rating=pg-13');
+      const r = await fetch(base + 'api_key=' + encodeURIComponent(k) + '&limit=24&rating=pg-13&offset=' + off);
       if(!r.ok) throw new Error('http ' + r.status);
       const j = await r.json();
-      online = (j.data || []).map(d => {
-        const im = d.images || {};
-        const pick = (x)=> x && x.url ? x.url : '';
-        return { p: pick(im.fixed_height_small_still) && pick(im.fixed_height_small) || pick(im.fixed_height), u: [pick(im.fixed_height), pick(im.fixed_height_small), pick(im.downsized_small)].filter(Boolean), n: (d.slug || 'giphy') + '.gif' };
-      }).filter(o => o.p && o.u.length);
+      if(my !== tok) return;                                   // naya search aa gaya -> purana result ignore
+      const raw = j.data || [], got = raw.map(mapG).filter(o => o.p && o.u.length);
+      const have = new Set(online.map(o => o.p));
+      online = online.concat(got.filter(o => !have.has(o.p)));
+      off += raw.length;
+      const tot = j.pagination && Number(j.pagination.total_count);
+      more = raw.length >= 24 && (!tot || off < tot) && off < 240;
       if(!online.length) toast('Koi GIF nahi mili.');
-    }catch(e){ online = []; toast('Giphy search nahi chali (key/internet check karo).'); }
+    }catch(e){ if(my !== tok) return; if(!append) online = []; more = false; toast('Giphy search nahi chali (key/internet check karo).'); }
     busy = false; paint();
   }
+  async function randomG(){
+    const k = getKey(); if(!k){ toast('Pehle Giphy API key add karo.'); return; }
+    const tag = ($('cxgQ').value || '').trim(), my = ++tok;
+    off = 0; more = false; lastQ = '🎲 Random' + (tag ? ' · ' + tag : ''); online = []; busy = true; paint();
+    try{
+      const rs = await Promise.all(Array.from({ length: 8 }, ()=> fetch('https://api.giphy.com/v1/gifs/random?api_key=' + encodeURIComponent(k) + '&rating=pg-13&tag=' + encodeURIComponent(tag) + '&_=' + Math.random()).then(r => r.ok ? r.json() : null).catch(()=> null)));
+      if(my !== tok) return;
+      const seen = new Set();
+      online = rs.map(j => j && j.data && j.data.images ? mapG(j.data) : null).filter(o => o && o.p && o.u.length && !seen.has(o.p) && seen.add(o.p));
+      if(!online.length) toast('Random GIF nahi mili.');
+    }catch(e){ if(my !== tok) return; online = []; toast('Giphy nahi chali.'); }
+    busy = false; paint();
+  }
+  async function loadChips(){
+    const k = getKey(); if(!k || chips) return; chips = [];
+    try{
+      const r = await fetch('https://api.giphy.com/v1/trending/searches?api_key=' + encodeURIComponent(k));
+      if(r.ok){ const j = await r.json(); chips = (j.data || []).slice(0, 10).map(String); paint(); }
+    }catch(e){}
+  }
+  async function saveOnline(i){                                 // online GIF ko "Meri GIFs" me save (collection)
+    const o = online[i]; if(!o) return;
+    if(saved.length >= MAXG){ toast('Max ' + MAXG + ' GIF. Pehle kuch hatao.'); return; }
+    toast('Save kar rahe hain...');
+    for(const u of o.u){
+      try{
+        const r = await fetch(u); if(!r.ok) continue;
+        const b = await r.blob();
+        if(b.size <= CHAT_FILE_MAX){ await gPut({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), blob: new Blob([b], { type: 'image/gif' }), name: o.n, size: b.size, ts: Date.now() }); await refreshSaved(); paint(); toast('⭐ Meri GIFs me save'); return; }
+      }catch(e){}
+    }
+    toast('Save nahi hui (badi / download fail).');
+  }
 
-  async function sendBlob(blob, name){
+  // ---------- AUTO-SAVE (jo GIF use ho wo apne aap Meri GIFs me) ----------
+  async function autoSave(blob, name, k, existingId){
+    try{
+      await refreshSaved();
+      const ex = existingId ? saved.find(x => x.id === existingId) : saved.find(x => (k && x.k === k) || (x.name === name && x.size === blob.size));
+      if(ex){ ex.ts = Date.now(); await gPut(ex); await refreshSaved(); if(on) paint(); return; }   // pehle se hai -> bas upar laao (recently used)
+      while(saved.length >= MAXG){
+        const old = saved.filter(x => x.a).sort((x, y)=> x.ts - y.ts)[0] || saved.slice().sort((x, y)=> x.ts - y.ts)[0];
+        if(!old) break; await gDel(old.id); saved = saved.filter(x => x.id !== old.id);
+      }
+      await gPut({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), blob: blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' }), name: name || 'anim.gif', size: blob.size, ts: Date.now(), k: k || '', a: 1 });
+      await refreshSaved(); if(on) paint();
+    }catch(e){}
+  }
+  window.cxGifAutoSave = autoSave;
+
+  // ---------- ROOM SYNC: sabke GIFs (refs) + Admin ka Giphy key ----------
+  const sameN = (a, b)=> !!(a && b && String(a).toLowerCase() === String(b).toLowerCase());
+  try{ roomL = JSON.parse(localStorage.getItem(ROOMK) || '[]') || []; }catch(e){ roomL = []; }
+  const okRef = (o)=> o && typeof o.p === 'string' && /^https:\/\//.test(o.p) && Array.isArray(o.u) && o.u.length && o.u.every(x => typeof x === 'string' && /^https:\/\//.test(x));
+  function roomCache(){ try{ localStorage.setItem(ROOMK, JSON.stringify(roomL)); }catch(e){} }
+  function onRoomVal(val){
+    let d = val; try{ if(typeof val === 'string') d = JSON.parse(val); }catch(e){ return; }
+    if(!Array.isArray(d)) return;
+    roomL = d.filter(okRef).slice(0, 60); roomCache(); if(on) paint();
+  }
+  function onKeyVal(val){
+    let d = val; try{ if(typeof val === 'string') d = JSON.parse(val); }catch(e){ return; }
+    if(!d || !d.k || !d.v) return;
+    if(sameN(d.by, typeof myName !== 'undefined' ? myName : '')) return;
+    let av = 0; try{ av = Number(localStorage.getItem(KAV)) || 0; }catch(e){}
+    if(d.v > av && /^[\w-]{8,80}$/.test(d.k)){ setKey(d.k); try{ localStorage.setItem(KAV, String(d.v)); }catch(e){} chips = null; if(on) paint(); }
+  }
+  let rRoom = null, rUn = null, adm = { at: 0, v: false }, keySent = '';
+  async function roomEnsure(){
+    try{
+      const room = typeof getRoomCode === 'function' ? getRoomCode() : ''; if(!room || !window.__fbListenReady) return;
+      if(rRoom === room && rUn) return;
+      if(typeof rUn === 'function'){ try{ rUn(); }catch(e){} }
+      rRoom = room; rUn = true;
+      const u1 = await window.__fbListenReady('rooms/' + room + '/_gifs', onRoomVal), u2 = await window.__fbListenReady('rooms/' + room + '/_gifkey', onKeyVal);
+      rUn = (u1 || u2) ? ()=>{ try{ u1 && u1(); u2 && u2(); }catch(e){} } : true;
+    }catch(e){ rRoom = null; rUn = null; }
+  }
+  async function roomPush(o){                                  // koi bhi GIF use kare => room list me (sab ke paas)
+    try{
+      if(!okRef(o) || typeof kvdbGet !== 'function') return;
+      let cur = []; try{ cur = JSON.parse((await kvdbGet('_gifs')) || '[]') || []; }catch(e){ cur = []; }
+      if(!Array.isArray(cur)) cur = [];
+      const ref = { p: o.p, u: o.u.slice(0, 3), n: String(o.n || 'giphy.gif').slice(0, 60), ts: Date.now() };
+      const next = [ref].concat(cur.filter(x => okRef(x) && x.p !== o.p)).slice(0, 60);
+      if(await kvdbSet('_gifs', JSON.stringify(next))){ roomL = next; roomCache(); if(on) paint(); }
+    }catch(e){}
+  }
+  async function adminKeyPush(){                               // Admin ka Giphy key => sab members me
+    try{
+      const k = getKey(); if(!k || k === keySent || typeof loadRoomMeta !== 'function') return;
+      if(Date.now() - adm.at > 60000){ const m = await loadRoomMeta(); adm = { at: Date.now(), v: sameN(m && m.admin, typeof myName !== 'undefined' ? myName : '') }; }
+      if(!adm.v){ keySent = k; return; }
+      const v = Date.now();
+      if(await kvdbSet('_gifkey', JSON.stringify({ k, v, by: myName }))){ keySent = k; try{ localStorage.setItem(KAV, String(v)); }catch(e){} }
+    }catch(e){}
+  }
+  cxPoll('chat', ()=>{ roomEnsure(); adminKeyPush(); }, 4000);
+
+  async function sendBlob(blob, name, meta){
     if(blob.size > CHAT_FILE_MAX){ toast('GIF badi hai (max 1.5 MB).'); return; }
     if(!window.cxSend){ toast('Send abhi available nahi.'); return; }
     const p = $('cxsk4'); if(p) p.classList.remove('open');
@@ -26952,7 +27067,8 @@ void main(){
       const s = Math.min(1, 240 / Math.max(im.width, im.height)), c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
       const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      await window.cxSend({ k: 'i', a: { n: name || 'anim.gif', s: blob.size, mt: 'image/gif', w: im.width, h: im.height, th: c.toDataURL('image/jpeg', 0.6), gif: 1 } }, data, ' GIF');
+      const sent = await window.cxSend({ k: 'i', a: { n: name || 'anim.gif', s: blob.size, mt: 'image/gif', w: im.width, h: im.height, th: c.toDataURL('image/jpeg', 0.6), gif: 1 } }, data, ' GIF');
+      if(sent !== false){ autoSave(blob, name, meta && meta.k, meta && meta.id); if(meta && meta.ref) roomPush(meta.ref); }
     }catch(e){ toast('GIF nahi gayi.'); }
   }
   async function sendOnline(o){
@@ -26961,7 +27077,7 @@ void main(){
       try{
         const r = await fetch(u); if(!r.ok) continue;
         const b = await r.blob();
-        if(b.size <= CHAT_FILE_MAX){ await sendBlob(b, o.n); return; }
+        if(b.size <= CHAT_FILE_MAX){ await sendBlob(b, o.n, { k: 'o:' + o.p, ref: o }); return; }
       }catch(e){}
     }
     toast('Ye GIF bhejne layak chhoti nahi mili / download fail.');
@@ -26973,25 +27089,32 @@ void main(){
     if(g === 'add'){ if(saved.length >= MAXG){ toast('Max ' + MAXG + ' GIF. Pehle kuch hatao.'); return; } $('cxgF').click(); return; }
     if(g === 'del'){ del = !del; paint(); return; }
     if(g === 'go'){ search(); return; }
+    if(g === 'rnd'){ randomG(); return; }
+    if(b.dataset.c){ $('cxgQ').value = b.dataset.c; search(); return; }
     if(g === 'key'){
       const cur = getKey();
       const v = prompt('Giphy API key paste karo (khaali chhodo = hata do):', cur);
       if(v === null) return;
-      setKey(v.trim()); online = []; lastQ = null; paint(); if(getKey()) search(true);
+      setKey(v.trim()); chips = null; online = []; lastQ = null; paint(); if(getKey()) search(true);
       return;
     }
     if(b.dataset.s != null){
       const i = Number(b.dataset.s), it = saved[i]; if(!it) return;
       if(del){ try{ await gDel(it.id); }catch(err){} await refreshSaved(); paint(); }
-      else sendBlob(it.blob, it.name);
+      else sendBlob(it.blob, it.name, { id: it.id });
       return;
     }
+    if(b.dataset.r != null){ const o = roomL[Number(b.dataset.r)]; if(o) sendOnline(o); return; }
+    if(e.target.closest('[data-st]')){ e.stopPropagation(); saveOnline(Number(e.target.closest('[data-st]').dataset.st)); return; }
     if(b.dataset.o != null){ const o = online[Number(b.dataset.o)]; if(o) sendOnline(o); }
   }
 
   // panel lazily banta hai -> tab inject karte rehna; sticker menu dabane par GIF view band
   cxPoll('chat', ()=>{ try{ build(); }catch(e){} }, 600);
   document.addEventListener('click', (e)=>{ if(e.target && e.target.closest && e.target.closest('[data-xs]')) hide(); }, true);
+  // sticker panel khulte hi GIF tab (pehla tab) khule
+  let wasOpen = false;
+  cxPoll('chat', ()=>{ try{ const p = $('cxsk4'), o = !!(p && p.classList.contains('open')); if(o && !wasOpen){ build(); hide(); setTimeout(()=>{ const pp = $('cxsk4'); if(pp && pp.classList.contains('open')) show(); }, 60); } wasOpen = o; }catch(e){} }, 150);
 })();
 
 
@@ -29668,7 +29791,7 @@ const AIReply = (function(){
   const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
   const LG = (k, d)=>{ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } };
   const LS = (k, v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-  const SPEEDS = { fast: ['⚡ Fast', 1200, 1800, 1200], normal: ['🙂 Normal', 2500, 3500, 3000], slow: ['🐢 Slow', 4500, 7000, 4500] };   // [label, debounce, minWait after last msg, typeCap]
+  const SPEEDS = { fast: ['⚡ Fast', 600, 900, 800], normal: ['🙂 Normal', 1800, 2600, 2200], slow: ['🐢 Slow', 4500, 7000, 4500] };   // [label, debounce, minWait after last msg, typeCap]
   const TONES = { auto: ['🎯 Auto (mere jaisa)', ''], friendly: ['😊 Friendly', 'Tone: warm, dostana, helpful.'], witty: ['😏 Witty', 'Tone: halka witty/mazaakiya, par kisi ko hurt ya beizzat mat karo.'], casual: ['😎 Casual', 'Tone: bilkul casual, dost jaisa, chhote vaakya.'], pro: ['💼 Professional', 'Tone: politely professional, saaf aur chhota, slang kam.'], short: ['✂️ Bahut chhota', 'Tone: sabse chhota reply (max ~8 shabd).'] };
   const LANGS = { auto: 'Auto (jaisa chat me)', hinglish: 'Hinglish', english: 'English', hindi: 'Hindi (Devanagari)' };
   let map = LG(K, {}); if(!map || typeof map !== 'object') map = {};
@@ -29679,7 +29802,9 @@ const AIReply = (function(){
   cfg.cap = Math.max(1, Math.min(60, Number(cfg.cap) || 10));
   if(!cfg.chats || typeof cfg.chats !== 'object') cfg.chats = {};
   const ownG = ()=> { try{ return localStorage.getItem('aiGen') === 'f' ? 'f' : 'm'; }catch(e){ return 'm'; } };
+  let lastErr = '';
   let timer = 0, seq = 0, manualAt = 0, selfUntil = 0, status = '', lastInAt = 0;
+  const firstAt = {};   // pair -> jab pehli baar dekha (history burst pehchanne ke liye; phone clock par nirbhar nahi)
   const seen = new Set(), hist = {}, lastIn = {}, lastOut = {}, lastTxt = {};   // lastIn[pair] = {k, at, n} (same msg guard), lastOut[pair] = pichhla auto reply
   const norm = (t)=> String(t || '').toLowerCase().replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} ]/gu, '').trim();
   const isOn = (pair)=> !!(pair && map[pair]);
@@ -29688,6 +29813,7 @@ const AIReply = (function(){
   const TRANSIENT = /\b(429|500|502|503|504|529)\b|overloaded|timeout|failed to fetch|networkerror|load failed|fetch failed/i;
   const saveCfg = ()=> LS(KC, cfg);
   if(typeof cfg.qr !== 'string') cfg.qr = '';
+  function warm(){ try{ fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }) }).catch(()=>{}); }catch(e){} }   // connection garam (pehla reply tez)
   // ---- log (last 30) ----
   const logE = (peer, kind, inn, out)=>{ try{ const a = LG('cx-ap-log', []); a.push({ at: Date.now(), p: peer && peer.name || '', k: kind, i: String(inn || '').slice(0, 80), o: String(out || '').slice(0, 120) }); LS('cx-ap-log', a.slice(-30)); }catch(e){} };
   // ---- quick-reply rules: har line "keyword => reply" (AI ke bina turant) ----
@@ -29720,7 +29846,7 @@ const AIReply = (function(){
     #cxApSet .ft{display:flex;gap:8px;margin-top:16px}#cxApSet .ft button{flex:1;border:0;border-radius:12px;padding:10px;font-size:15px;background:#20242e;color:#eee}#cxApSet .ft .ok{background:#2563eb;color:#fff}`;
     document.head.appendChild(s);
   }
-  function setOn(pair, v){ if(v) map[pair] = 1; else delete map[pair]; LS(K, map); clearTimeout(timer); seq++; status = ''; refresh(); }
+  function setOn(pair, v){ if(v){ map[pair] = 1; firstAt[pair] = firstAt[pair] || (Date.now() - 10000); warm(); } else delete map[pair]; LS(K, map); clearTimeout(timer); seq++; status = ''; refresh(); }
 
   // ---------- history -> messages + style ----------
   const labelOf = (m)=>{
@@ -29733,7 +29859,7 @@ const AIReply = (function(){
   };
   function buildMsgs(){
     const me = chatMyKey(), out = [];
-    chatSortedIds().slice(-40).forEach(id=>{
+    chatSortedIds().slice(-28).forEach(id=>{
       const m = chatMsgs.get(id); if(!m) return;
       const t = labelOf(m); if(!t) return;
       const role = m.f === me ? 'assistant' : 'user';
@@ -29753,7 +29879,7 @@ const AIReply = (function(){
       + '\nAverage lambai ~' + avg + ' shabd; ' + emo + '% messages me emoji.';
   }
   async function ask(model, system, msgs){
-    const resp = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 220, temperature: 0.7, system, messages: msgs }) });
+    const resp = await fetch(AI_PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model, max_tokens: 160, system, messages: msgs }) });
     if(!resp.ok) throw new Error('ai ' + resp.status);
     const j = await resp.json();
     return (j.content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text).join('\n').trim();
@@ -29818,7 +29944,7 @@ const AIReply = (function(){
     for(let a = 0; a < 3 && raw == null; a++){
       try{ raw = await gen(peer, msgs); }
       catch(e){
-        console.error('autopilot ai failed', e); if(my !== seq) return;
+        console.error('autopilot ai failed', e); lastErr = String(e && e.message || e); if(my !== seq) return;
         if(!TRANSIENT.test(String(e && e.message || e))) break;                       // 400/401/403 = fail fast
         await sleep(400 * Math.pow(2, a) + Math.random() * 200);                      // 429/5xx/network = backoff retry
       }
@@ -29827,7 +29953,7 @@ const AIReply = (function(){
     if(!ok(peer, my)){ status = ''; refresh(); return; }
     if(failed){
       if(cfg.fb && cfg.fbText.trim()) return deliver(peer, my, cfg.fbText.trim().slice(0, 200), true);
-      logE(peer, 'err', lastTxt[peer.pair], 'AI se jawab nahi mila'); status = 'AI se jawab nahi mila — internet check karo'; refresh(); return;
+      logE(peer, 'err', lastTxt[peer.pair], 'AI error: ' + lastErr); status = 'AI error (' + lastErr.slice(0, 40) + ') — Settings me 🧪 AI test dabao'; refresh(); toast('🤖 Autopilot: AI jawab nahi de paya (' + lastErr.slice(0, 40) + ')'); return;
     }
     const text = clean(raw, typeof myName !== 'undefined' ? myName : '');
     if(!text || /^SKIP\b/i.test(text)){ logE(peer, 'skip', lastTxt[peer.pair], 'AI ne chhoda'); status = 'Ye message AI ne chhoda — khud reply do'; refresh(); toast('🤖 Autopilot ne is message ko chhoda — khud reply do'); return; }
@@ -29836,8 +29962,9 @@ const AIReply = (function(){
     return deliver(peer, my, text, false);
   }
   function incoming(peer, id, m){
+    if(peer && !firstAt[peer.pair]) firstAt[peer.pair] = Date.now();
     if(!peer || !isOn(peer.pair) || seen.has(id)) return; seen.add(id);
-    if(Date.now() - (Number(m.ts) || Date.now()) > 120000) return;
+    if(Date.now() - firstAt[peer.pair] < 3500 && Date.now() - (Number(m.ts) || Date.now()) > 120000) return;   // sirf chat khulte waqt ka purana history burst; live msg (clock skew ho tab bhi) chalega
     const t = m.t ? String(m.t) : '';
     if(/🤖\s*$/.test(t)) return;                    // samne wala bhi autopilot = bot-bot loop nahi
     if(SENS.test(t)){ logE(peer, 'skip', t, 'Sensitive'); clearTimeout(timer); seq++; status = 'Sensitive message — khud reply do'; refresh(); toast('⚠️ Sensitive message — Autopilot chup hai, khud reply do'); return; }
@@ -29877,6 +30004,7 @@ const AIReply = (function(){
       + '<label>AI fail ho to ye bhejo (default OFF — placeholder samne wale ko ajeeb lag sakta hai)</label><div class="row"><button type="button" class="ch' + (cfg.fb ? ' on' : '') + '" id="apFbT">' + (cfg.fb ? 'ON' : 'OFF') + '</button></div><input type="text" id="apFb" maxlength="200" style="margin-top:6px">'
       + '<label>Max auto-reply / ghanta (is chat me)</label><input type="number" id="apCap" min="1" max="60">'
       + '<label>AI label 🤖 (reply ke end me — samne wale ko pata rahe)</label><div class="row"><button type="button" class="ch' + (cfg.label ? ' on' : '') + '" id="apLb">' + (cfg.label ? 'ON (salah)' : 'OFF') + '</button></div>'
+      + '<label>🧪 Autopilot check</label><div class="row"><button type="button" class="ch" id="apTest">AI test karo</button></div><div id="apTestOut" style="font-size:12.5px;line-height:1.5;margin-top:6px"></div>'
       + '<label>📜 Recent log</label><div class="row"><button type="button" class="ch" id="apLg2">Dikhao</button><button type="button" class="ch" id="apLgC">Saaf karo</button></div><div id="apLogBox" style="font-size:12px;opacity:.85;line-height:1.5;margin-top:6px"></div>'
       + '<div class="ft"><button type="button" id="apX">Band</button><button type="button" class="ok" id="apOk">Save</button></div></div>';
     document.body.appendChild(p);
@@ -29892,6 +30020,14 @@ const AIReply = (function(){
     pick('#apSp', 'sp', 'speed'); pick('#apLg', 'lg', 'lang'); pick('#apTn', 'tn', 'tone');
     p.querySelector('#apFbT').addEventListener('click', (e)=>{ tmp.fb = !tmp.fb; e.target.classList.toggle('on', tmp.fb); e.target.textContent = tmp.fb ? 'ON' : 'OFF'; });
     p.querySelector('#apLb').addEventListener('click', (e)=>{ tmp.label = !tmp.label; e.target.classList.toggle('on', tmp.label); e.target.textContent = tmp.label ? 'ON (salah)' : 'OFF'; });
+    p.querySelector('#apTest').addEventListener('click', async ()=>{
+      const o = p.querySelector('#apTestOut'); o.textContent = 'Test chal raha hai…'; const t0 = Date.now();
+      try{
+        const pr = chatPeer || { pair: 'test', name: 'Dost' };
+        const raw = await gen(pr, [{ role: 'user', content: 'kya haal hai bhai?' }]);
+        o.innerHTML = '✅ AI chal raha hai (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s): <b>' + String(clean(raw, typeof myName !== 'undefined' ? myName : '') || raw || '(khaali)').replace(/[<>&]/g, '') + '</b>';
+      }catch(e){ o.textContent = '❌ AI fail: ' + String(e && e.message || e) + ' — ' + (/\b(401|403)\b/.test(String(e.message)) ? 'proxy key/permission' : /\b400\b/.test(String(e.message)) ? 'request galat (proxy reject)' : /fetch|network|load failed/i.test(String(e.message)) ? 'internet / proxy URL' : 'proxy/server'); }
+    });
     const esc = (x)=> String(x).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
     const ICO = { ai: '🤖', rule: '⚡', fb: '↩️', err: '⚠️', skip: '⏭️' };
     p.querySelector('#apLg2').addEventListener('click', ()=>{ const a = LG('cx-ap-log', []).slice(-12).reverse(); p.querySelector('#apLogBox').innerHTML = a.length ? a.map(e => ICO[e.k] + ' ' + new Date(e.at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) + ' <b>' + esc(e.p) + '</b>: ' + esc(e.i) + ' → ' + esc(e.o)).join('<br>') : 'Abhi koi entry nahi'; });
@@ -29928,7 +30064,9 @@ const AIReply = (function(){
         e.preventDefault(); m.classList.remove('open');
         const peer = chatPeer; if(!peer) return;
         if(isOn(peer.pair)){ setOn(peer.pair, false); toast('🤖 Autopilot OFF'); return; }
-        if(!confirm('Autopilot ON karoge?\n\nAI is chat me tumhari jagah reply karega (purane messages padh ke, tumhare andaaz me) — sirf jab app khula ho aur ye chat open ho.\nSensitive msg (paisa/OTP/emergency) skip honge. Tum khud type karo to ruk jayega.')) return;
+        const t0 = Date.now(); let yes = false; try{ yes = confirm('Autopilot ON karoge?\n\nAI is chat me tumhari jagah reply karega (purane messages padh ke, tumhare andaaz me) — sirf jab app khula ho aur ye chat open ho.\nSensitive msg (paisa/OTP/emergency) skip honge. Tum khud type karo to ruk jayega.'); }catch(e){ yes = true; }
+        if(!yes && Date.now() - t0 < 250) yes = true;   // popup block ho to bhi ON (installed app me confirm kabhi turant false deta hai)
+        if(!yes) return;
         setOn(peer.pair, true); toast('🤖 Autopilot ON — ' + peer.name);
       });
       m.querySelector('[data-xs="apset"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); openSettings(); });
@@ -29944,4 +30082,51 @@ const AIReply = (function(){
   }
   setInterval(()=>{ try{ hook(); }catch(e){} }, 500);
   window.cxAutopilot = { isOn, setOn, cfg: ()=> cfg, openSettings };
+})();
+
+
+// ============================================================================
+// CHAT PLUS 26: "+" MENU ARRANGE (clip nahi, groups me) + samne wale ki bheji GIF auto-save
+// ============================================================================
+(function chatPlus26(){
+  const $ = (id)=> document.getElementById(id);
+  // ---- menu: sahi width, 2 column, text wrap, scroll; items logical order me ----
+  (function menu(){
+    if($('cxMenuFixStyle')) return;
+    const s = document.createElement('style'); s.id = 'cxMenuFixStyle';
+    s.textContent = `#chatOverlay .chatComposer .cxMenu{left:10px!important;right:10px!important;width:auto!important;max-width:440px;box-sizing:border-box;max-height:min(62vh,520px);overflow-y:auto;overscroll-behavior:contain;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px 6px!important;padding:8px!important}
+    #chatOverlay .chatComposer .cxMenu button{min-width:0;box-sizing:border-box;white-space:normal!important;word-break:break-word;line-height:1.2;font-size:14px!important;padding:11px 10px!important;gap:10px!important;border-radius:12px;background:rgba(255,255,255,.04)}
+    #chatOverlay .chatComposer .cxMenu button span{flex:none;width:24px;font-size:20px;text-align:center}
+    #chatOverlay .chatComposer .cxMenu button b{font-weight:700;min-width:0}
+    #chatOverlay .chatComposer .cxMenu button:last-child:nth-child(odd){grid-column:1/-1}`;
+    document.head.appendChild(s);
+  })();
+  const ORDER = [/camera/i, /gallery/i, /video/i, /^(?!.*audio).*\bfile\b/i, /audio/i, /voice/i, /sticker/i, /draw/i, /text style/i, /ai reply/i, /autopilot:/i, /autopilot s/i, /enter\s*=/i, /auto-send/i, /smart keyboard/i];
+  const label = (b)=> String(b.textContent || '').trim();
+  let sig = '';
+  function arrange(){
+    const m = $('cxMenu'); if(!m) return;
+    const btns = Array.from(m.children).filter(x => x.tagName === 'BUTTON'); if(btns.length < 5) return;
+    const sg = btns.length + '|' + btns.map(b => b.dataset.xs || b.dataset.pick || b.dataset.c12 || b.dataset.xx || b.dataset.xv || b.dataset.xk || '').join(',');
+    if(sg === sig) return;
+    const rank = (b)=>{ const t = label(b); const i = ORDER.findIndex(r => r.test(t)); return i < 0 ? 99 : i; };
+    const sorted = btns.map((b, i)=> [b, rank(b), i]).sort((a, b)=> a[1] - b[1] || a[2] - b[2]);
+    if(sorted.some((x, i)=> x[0] !== btns[i])) sorted.forEach(x => m.appendChild(x[0]));
+    sig = btns.length + '|' + Array.from(m.children).filter(x => x.tagName === 'BUTTON').map(b => b.dataset.xs || b.dataset.pick || b.dataset.c12 || b.dataset.xx || b.dataset.xv || b.dataset.xk || '').join(',');
+  }
+  cxPoll('chat', ()=>{ try{ arrange(); }catch(e){} }, 700);
+
+  // ---- samne wale ne GIF bheji => meri GIFs me auto-save (sirf abhi ki, current chat) ----
+  const dataToBlob = (d)=>{ const [h, b] = String(d).split(','); const bin = atob(b); const u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: 'image/gif' }); };
+  const prev = AIReply.onIncoming;
+  AIReply.onIncoming = function(peer, id, m){
+    try{ prev.apply(this, arguments); }catch(e){}
+    try{
+      const a = m && m.k === 'i' && m.a;
+      if(!a || !a.gif || a.sk || !a.fid || !/gif/i.test(String(a.mt || ''))) return;
+      if(Date.now() - (Number(m.ts) || Date.now()) > 120000) return;
+      if(!window.cxGifAutoSave || !window.cxGetFile || chatPeer !== peer) return;
+      window.cxGetFile(a.fid).then(d => { try{ const b = dataToBlob(d); if(b.size <= CHAT_FILE_MAX) window.cxGifAutoSave(b, a.n || 'anim.gif', 'fid:' + a.fid); }catch(e){} }).catch(()=>{});
+    }catch(e){}
+  };
 })();
