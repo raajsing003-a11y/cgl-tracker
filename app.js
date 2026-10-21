@@ -120,9 +120,11 @@ const CX_DRAW_ENABLED = false;
 const CX_GEM_PROXY = 'https://gemini-proxy.crickrttop10.workers.dev';   // jaise 'https://gemini-proxy.<naam>.workers.dev'  (khaali = purana Claude proxy / user ki apni key)
 try{ if(localStorage.getItem('cx-ai-prov') === null) localStorage.setItem('cx-ai-prov', 'gemini'); }catch(e){}
 const CX_AI_DEF = { gemini: 'gemini-flash-lite-latest', groq: 'llama-3.3-70b-versatile', openrouter: 'meta-llama/llama-3.3-70b-instruct:free' };
-async function cxAiCall(model, system, msgs, maxTokens){
+async function cxAiCallRaw(model, system, msgs, maxTokens, forceMdl){
   let prov = 'proxy', key = '', mdl = '';
   try{ prov = localStorage.getItem('cx-ai-prov') || 'proxy'; key = (localStorage.getItem('cx-ai-key') || '').trim(); mdl = (localStorage.getItem('cx-ai-model') || '').trim(); }catch(e){}
+  if(forceMdl) mdl = forceMdl;
+  const bad = async (resp)=>{ let bd=''; try{ bd=(await resp.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){} window.__aiLastBody = bd; throw new Error('ai ' + resp.status + (bd ? ' | ' + bd : '')); };
   if(prov === 'gemini' && !key && CX_GEM_PROXY){
     const resp = await fetch(CX_GEM_PROXY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: mdl || CX_AI_DEF.gemini, system, messages: msgs, max_tokens: Math.max(maxTokens || 200, 300) }) });
     if(!resp.ok) await bad(resp);
@@ -130,7 +132,6 @@ async function cxAiCall(model, system, msgs, maxTokens){
   }
   if(prov === 'gemini' && !key && !CX_GEM_PROXY) prov = 'proxy';   // koi key/worker nahi => purana proxy
   if(prov !== 'proxy' && !key) throw new Error('ai 401 | ' + prov + ' ki key nahi daali');
-  const bad = async (resp)=>{ let bd=''; try{ bd=(await resp.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){} window.__aiLastBody = bd; throw new Error('ai ' + resp.status + (bd ? ' | ' + bd : '')); };
   if(prov === 'gemini'){
     const m = mdl || CX_AI_DEF.gemini;
     const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
@@ -151,6 +152,158 @@ async function cxAiCall(model, system, msgs, maxTokens){
   if(!resp.ok) await bad(resp);
   const j = await resp.json();
   return (j.content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text).join('\n').trim();
+}
+// ===== AI MODES (Gemini jaisa): Auto / Fast / Smart / Thinking / Pro =====
+// Chat AI (reply suggest, Autopilot, AI Partner) sab cxAiCall se guzarte hain, isliye ek jagah mode badalne se sab badal jaate hain.
+//  fast  = sabse tez, 1 call            smart = behtar model, 1 call
+//  think = pehle <think> me soch, phir reply (soch user ko nahi dikhti)
+//  pro   = sabse accha model + soch + doosra "editor" pass jo draft ko polish karta hai
+//  auto  = incoming message dekh ke fast/smart/think khud chunta hai
+// Kisi bhi step me error aaye to ek neeche ke mode par girta hai (pro->smart->fast) — kabhi pehle se kharab nahi.
+const CX_AI_MODES = {
+  auto:  { e: '✨', n: 'Auto',     d: 'Message dekh ke khud sahi mode chunta hai' },
+  fast:  { e: '⚡', n: 'Fast',     d: 'Sabse tez jawab (1 call)' },
+  smart: { e: '🎯', n: 'Smart',    d: 'Tez + behtar model, zyada natural' },
+  think: { e: '🧠', n: 'Thinking', d: 'Pehle andar soche, phir reply — mushkil/lambe msgs ke liye' },
+  pro:   { e: '💎', n: 'Pro',      d: 'Best model + soch + polish pass (thoda slow, sabse accha)' }
+};
+const CX_AI_TIER_MODEL = {
+  gemini:     { fast: 'gemini-flash-lite-latest', smart: 'gemini-flash-latest', think: 'gemini-flash-latest', pro: 'gemini-pro-latest' },
+  groq:       { fast: 'llama-3.1-8b-instant', smart: 'llama-3.3-70b-versatile', think: 'llama-3.3-70b-versatile', pro: 'llama-3.3-70b-versatile' },
+  openrouter: { fast: 'meta-llama/llama-3.3-70b-instruct:free', smart: 'meta-llama/llama-3.3-70b-instruct:free', think: 'meta-llama/llama-3.3-70b-instruct:free', pro: 'meta-llama/llama-3.3-70b-instruct:free' },
+  proxy:      { fast: 'claude-haiku-4-5', smart: 'claude-sonnet-4-6', think: 'claude-sonnet-4-6', pro: 'claude-sonnet-4-6' }
+};
+const CX_AI_THINK_ADD_RPT = '\n\nSOCHNE KA TAREEKA (andar ka, user ko nahi dikhega): likhne se PEHLE <think>...</think> ke andar 3-6 chhoti lines me socho: (1) diye gaye data me asli numbers/pattern kya hain, (2) sabse zaroori 2-3 baatein kaun si hain, (3) kya mat likhna (jo data me nahi hai wo andaaza/jhooth na ho). Phir </think> ke BAAD sirf final output do — bilkul wahi format aur lambai jo upar maangi gayi, sochne wali baat final me mat likhna.';
+const CX_AI_THINK_ADD = '\n\nSOCHNE KA TAREEKA (andar ka, user ko nahi dikhega): jawab likhne se PEHLE <think>...</think> ke andar 3-5 chhoti lines me socho: (1) samne wale ka asli matlab/mood kya hai, (2) uske LAST message ka seedha jawab kya hona chahiye, (3) mere purane messages ka andaaz (lambai/emoji/slang/bhasha), (4) kya risky hai (rules, personal info, vaada). Phir </think> ke BAAD sirf final output do — bilkul wahi format jo upar maanga gaya hai, sochne wali baat final me mat likhna.';
+function cxAiGetMode(){ let m = 'auto'; try{ m = localStorage.getItem('cx-ai-mode') || 'auto'; }catch(e){} return CX_AI_MODES[m] ? m : 'auto'; }
+function cxAiSetMode(m){
+  if(!CX_AI_MODES[m]) return;
+  try{ localStorage.setItem('cx-ai-mode', m); sessionStorage.removeItem('aiFastNo'); }catch(e){}
+  try{ window.dispatchEvent(new CustomEvent('cxaimode', { detail: m })); }catch(e){}
+}
+function cxAiProv(){ let p = 'proxy'; try{ p = localStorage.getItem('cx-ai-prov') || 'proxy'; }catch(e){} return CX_AI_TIER_MODEL[p] ? p : 'proxy'; }
+function cxAiModelFor(prov, tier){
+  let custom = ''; try{ custom = (localStorage.getItem('cx-ai-model') || '').trim(); }catch(e){}
+  return custom || CX_AI_TIER_MODEL[prov][tier];
+}
+function cxAiAutoPick(msgs){
+  const l = (msgs && msgs.length) ? String(msgs[msgs.length - 1].content || '') : '', n = l.length;
+  if(n <= 22 && !/\?/.test(l)) return 'fast';
+  if(n > 140 || (/\?/.test(l) && n > 45)) return 'think';
+  return 'smart';
+}
+function cxAiStrip(raw){
+  return String(raw || '').replace(/<(think|thinking|reasoning)>[\s\S]*?<\/\1>/gi, '').replace(/^[\s\S]*?<\/(?:think|thinking|reasoning)>/i, '').replace(/<(?:think|thinking|reasoning)>[\s\S]*$/i, '').trim();
+}
+async function cxAiRefine(prov, system, msgs, draft, mt, kind){
+  if(kind === 'report'){
+    const dat = msgs.length ? String(msgs[msgs.length - 1].content || '').slice(0, 3500) : '';
+    const rs = 'Tum ek strict editor ho. Neeche ORIGINAL INSTRUCTION, DATA aur ek DRAFT hai. DRAFT ko behtar banao: numbers/facts DATA se match karein (jo DATA me nahi hai wo hata do), Hinglish saaf aur natural ho, repeat/faltu line hatao. FORMAT, structure aur lambai ORIGINAL INSTRUCTION jaisi hi rakho (headings/bullets/emoji jaise draft me hain). Sirf final output do, koi explanation nahi.';
+    return cxAiStrip(await cxAiCallRaw(CX_AI_TIER_MODEL.proxy.smart, rs, [{ role: 'user', content: 'ORIGINAL INSTRUCTION:\n' + system + '\n\nDATA:\n' + dat + '\n\nDRAFT:\n' + draft }], mt, cxAiModelFor(prov, 'smart')));
+  }
+  const chat = msgs.slice(-10).map(m => (m.role === 'assistant' ? 'ME: ' : 'THEY: ') + String(m.content).slice(0, 300)).join('\n');
+  const sys = 'Tum ek strict editor ho. Neeche ORIGINAL INSTRUCTION, CHAT aur ek DRAFT hai. DRAFT ko behtar banao: zyada natural aur insaan jaisa, mere (ME) purane messages ke andaaz/lambai/emoji jaisa, gender-form (raha/rahi) aur spelling sahi, repeat/ratta-hua/"AI jaisa" lagne wale shabd hatao, rules aur safety follow ho. FORMAT bilkul wahi rakho jo ORIGINAL INSTRUCTION ke OUTPUT me hai (JSON ho to wahi JSON, text ho to sirf text, SKIP ho to SKIP). Sirf final output do, koi explanation nahi.';
+  const user = 'ORIGINAL INSTRUCTION:\n' + system + '\n\nCHAT:\n' + chat + '\n\nDRAFT:\n' + draft;
+  const raw = await cxAiCallRaw(CX_AI_TIER_MODEL.proxy.smart, sys, [{ role: 'user', content: user }], mt, cxAiModelFor(prov, 'smart'));
+  return cxAiStrip(raw);
+}
+async function cxAiCall(model, system, msgs, maxTokens, opts){
+  opts = opts || {};
+  let mode = opts.mode || cxAiGetMode();
+  const base = maxTokens || 200;
+  const isRpt = opts.kind === 'report';               // lambe report/analysis (JSON-chat nahi)
+  const thinkAdd = isRpt ? CX_AI_THINK_ADD_RPT : CX_AI_THINK_ADD;
+  const stCb = opts.onStatus || window.__cxAiStatusCb;
+  const say = (s)=>{ try{ if(stCb) stCb(s); }catch(e){} };
+  if(base <= 8) mode = 'fast';                       // warm-up ping
+  if(mode === 'auto') mode = isRpt ? 'smart' : cxAiAutoPick(msgs);   // report me last msg hamesha lamba hota hai -> auto = smart
+  const prov = cxAiProv();
+  const chains = { fast: ['fast'], smart: ['smart', 'fast'], think: ['think', 'smart', 'fast'], pro: ['pro', 'smart', 'fast'] };
+  let lastErr = null, out = '', usedTier = '';
+  for(const tier of chains[mode]){
+    const m = cxAiModelFor(prov, tier), withThink = (tier === 'think' || tier === 'pro') && base > 8;
+    let mt = base + (withThink ? 520 : 0);
+    if(prov === 'gemini' && !/lite/.test(m) && tier !== 'fast') mt = Math.max(mt, 1400);   // thinking models ke tokens bhi isi limit se jaate hain
+    if(withThink) say('🧠 soch raha hai…');
+    try{
+      out = cxAiStrip(await cxAiCallRaw(CX_AI_TIER_MODEL.proxy[tier], withThink ? system + thinkAdd : system, msgs, mt, m));
+      if(!out && withThink) out = cxAiStrip(await cxAiCallRaw(CX_AI_TIER_MODEL.proxy[tier], system, msgs, Math.max(base, 300), m));   // soch ne tokens kha liye -> bina soch ke
+      if(out){ usedTier = tier; break; }
+    }catch(e){
+      lastErr = e;
+      if(/\bai (401|403)\b/.test(String(e && e.message))) throw e;    // key/permission galat — neeche girne se fayda nahi
+    }
+  }
+  if(!out) throw (lastErr || new Error('ai empty'));
+  window.__aiLast = { mode: mode, tier: usedTier, prov: prov, model: cxAiModelFor(prov, usedTier) };
+  if(mode === 'pro' && opts.refine !== false && out !== 'SKIP' && out.length > 2){
+    try{
+      say('💎 polish ho raha hai…');
+      const r = await cxAiRefine(prov, system, msgs, out, Math.max(base, 400) + (prov === 'gemini' ? 1000 : 0), opts.kind);
+      const wantJson = !isRpt && /^\s*\[/.test(out);
+      let good = !!r && r !== 'SKIP' && r.length <= out.length * 1.6 + 60;
+      if(good && wantJson){ try{ const mt2 = r.match(/\[[\s\S]*\]/); good = Array.isArray(JSON.parse(mt2 ? mt2[0] : r)); }catch(e){ good = false; } }
+      if(good){ out = r; window.__aiLast.refined = true; }
+    }catch(e){ /* polish fail -> draft hi sahi */ }
+  }
+  return out;
+}
+// ---- mode picker UI (bottom sheet) — chat suggest bar, Partner, Autopilot settings teeno yahi use karte hain ----
+function cxAiModeChipText(){ const m = CX_AI_MODES[cxAiGetMode()]; return m.e + ' ' + m.n; }
+function cxAiModeMenu(){
+  let sh = document.getElementById('cxAiModeSheet'); if(sh) sh.remove();
+  if(!document.getElementById('cxAiModeCss')){
+    const st = document.createElement('style'); st.id = 'cxAiModeCss';
+    st.textContent = '#cxAiModeSheet{position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}'
+      + '#cxAiModeSheet .pn{width:100%;max-width:520px;background:#1b1d24;color:#eee;border-radius:20px 20px 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom));box-sizing:border-box;font-family:inherit}'
+      + '#cxAiModeSheet h4{margin:2px 6px 10px;font-size:15px;font-weight:600}'
+      + '#cxAiModeSheet .it{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#23262f;border:1px solid #33363f;color:#eee;border-radius:14px;padding:11px 12px;margin-bottom:8px;font-family:inherit}'
+      + '#cxAiModeSheet .it.on{border-color:#3f6b52;background:#2d4a3a}'
+      + '#cxAiModeSheet .it .e{font-size:22px;flex:none}#cxAiModeSheet .it .t{flex:1;min-width:0}'
+      + '#cxAiModeSheet .it b{display:block;font-size:15px}#cxAiModeSheet .it span{display:block;font-size:12.5px;opacity:.7;margin-top:2px}'
+      + '#cxAiModeSheet .it i{font-style:normal;font-size:11px;opacity:.55;display:block;margin-top:2px}'
+      + '#cxAiModeSheet .ck{flex:none;font-size:16px}'
+      + '.cxAiMdChip{flex:none;height:30px;border-radius:15px;border:1px solid #3f6b52;background:#2d4a3a;color:#cfd0d4;font-size:13px;padding:0 11px;font-family:inherit;white-space:nowrap}';
+    document.head.appendChild(st);
+  }
+  const cur = cxAiGetMode(), prov = cxAiProv();
+  sh = document.createElement('div'); sh.id = 'cxAiModeSheet';
+  const mdlHint = (k)=> { if(k === 'auto') return 'fast / smart / thinking me se khud'; return cxAiModelFor(prov, k); };
+  sh.innerHTML = '<div class="pn"><h4>🎛️ AI mode (provider: ' + prov + ')</h4>' + Object.keys(CX_AI_MODES).map(k => {
+    const m = CX_AI_MODES[k]; return '<button type="button" class="it' + (k === cur ? ' on' : '') + '" data-md="' + k + '"><span class="e">' + m.e + '</span><span class="t"><b>' + m.n + '</b><span>' + m.d + '</span><i>' + mdlHint(k) + '</i></span><span class="ck">' + (k === cur ? '✓' : '') + '</span></button>';
+  }).join('') + '</div>';
+  sh.addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-md]');
+    if(b){ cxAiSetMode(b.dataset.md); try{ if(typeof chatToastMsg === 'function') chatToastMsg('🎛️ AI mode: ' + CX_AI_MODES[b.dataset.md].n); }catch(e2){} sh.remove(); return; }
+    if(e.target === sh) sh.remove();
+  });
+  document.body.appendChild(sh);
+}
+// ---- report-type features (Time Guide / Mock Analysis / Study Guide / Strict Manager) ke liye: innerHTML me chalne wala chip ----
+function cxAiEnsureChipCss(){
+  if(document.getElementById('cxAiChipCss') || !document.head) return;
+  const st = document.createElement('style'); st.id = 'cxAiChipCss';
+  st.textContent = '.cxAiMdChip{flex:none;height:30px;border-radius:15px;border:1px solid #3f6b52;background:#2d4a3a;color:#cfd0d4;font-size:13px;padding:0 11px;font-family:inherit;white-space:nowrap;cursor:pointer}';
+  document.head.appendChild(st);
+}
+function cxAiMdChipHtml(){ cxAiEnsureChipCss(); return '<button type="button" class="cxAiMdChip" data-cxmd="1" aria-label="AI mode" style="margin-left:6px">' + cxAiModeChipText() + '</button>'; }
+document.addEventListener('click', (e)=>{ const b = e.target && e.target.closest ? e.target.closest('[data-cxmd]') : null; if(b){ e.preventDefault(); e.stopPropagation(); cxAiModeMenu(); } }, true);
+window.addEventListener('cxaimode', ()=>{ document.querySelectorAll('[data-cxmd]').forEach(b => { b.textContent = cxAiModeChipText(); }); });
+// status runner: cxAiCall ke 🧠/💎 status + har second ka "(Ns)" progress setStatus(text) ko deta hai
+async function cxAiRun(setStatus, baseText, fn){
+  const prev = window.__cxAiStatusCb; let cur = baseText, n = 0;
+  const push = ()=>{ try{ setStatus(cur + (n >= 2 ? ' (' + n + 's)' : '')); }catch(e){} };
+  window.__cxAiStatusCb = (s)=>{ cur = s; push(); };
+  const iv = setInterval(()=>{ n++; push(); }, 1000);
+  try{ return await fn(); } finally{ clearInterval(iv); window.__cxAiStatusCb = prev; }
+}
+function cxAiStatusToEl(id){ return (s)=>{ const e = document.getElementById(id); if(e) e.textContent = s; }; }
+function cxAiModeChip(){
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'cxAiMdChip'; b.textContent = cxAiModeChipText(); b.setAttribute('aria-label', 'AI mode');
+  b.addEventListener('pointerdown', (e)=> e.preventDefault());
+  b.addEventListener('click', (e)=>{ e.stopPropagation(); cxAiModeMenu(); });
+  window.addEventListener('cxaimode', ()=>{ b.textContent = cxAiModeChipText(); });
+  return b;
 }
 const DAILY_TARGET = 5000;
 const DEFAULT_TASKS = [
@@ -5060,23 +5213,8 @@ async function callTimeGuideAI(data){
 
   const userMsg = "Mera abhi ka time-status (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko dekhkar ek practical \"Smart Time Coach\" jaisa chhota Hinglish tip do.";
 
-  const resp = await fetch(AI_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
-    })
-  });
-  if(!resp.ok) throw new Error('Time Guide AI request failed: ' + resp.status);
-  const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
-    .join('\n')
-    .trim();
+  // Mode (Auto/Fast/Smart/Thinking/Pro) + provider (Gemini/Groq/Claude) cxAiCall se — output format pehle jaisa (plain Hinglish text)
+  const text = await cxAiCall('claude-sonnet-4-6', system, [{ role: 'user', content: userMsg }], 500, { kind: 'report' });
   if(!text) throw new Error('Time Guide AI: empty response');
   return text;
 }
@@ -5128,11 +5266,11 @@ async function getTimeGuideAiMessage(forceRefresh){
 }
 function buildGuideAiBoxHtml(cached){
   if(!cached){
-    return `<div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="0">🤖 AI Se Smart Tip Lo</button></div>`;
+    return `<div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="0">🤖 AI Se Smart Tip Lo</button>${cxAiMdChipHtml()}</div>`;
   }
   return `
     <div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI TIP' : '📐 OFFLINE TIP'}</span>${escapeHtml(cached.text)}</div>
-    <div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="1">🔄 Phir Se AI Tip Lo</button></div>
+    <div class="btnrow"><button class="nav-btn" type="button" id="tgAiBtn" data-tg-refresh="1">🔄 Phir Se AI Tip Lo</button>${cxAiMdChipHtml()}</div>
   `;
 }
 function wireGuideAiBox(){
@@ -5141,9 +5279,9 @@ function wireGuideAiBox(){
   btn.addEventListener('click', async ()=>{
     const forceRefresh = btn.getAttribute('data-tg-refresh')==='1';
     const box = document.getElementById('guideAiBox');
-    if(box) box.innerHTML = `<div class="guideAiTip">🧠 AI tumhara abhi ka time-plan dekh raha hai…</div>`;
+    if(box) box.innerHTML = `<div class="guideAiTip" id="cxStTg">🧠 AI tumhara abhi ka time-plan dekh raha hai…</div>`;
     try{
-      const result = await getTimeGuideAiMessage(forceRefresh);
+      const result = await cxAiRun(cxAiStatusToEl('cxStTg'), '🧠 AI tumhara abhi ka time-plan dekh raha hai…', ()=> getTimeGuideAiMessage(forceRefresh));
       if(box){ box.innerHTML = buildGuideAiBoxHtml(result); wireGuideAiBox(); }
     }catch(e){
       if(box) box.innerHTML = `<div class="guideAiTip">Tip abhi nahi ban paayi — thodi der mein phir try karo.</div>`;
@@ -6623,23 +6761,8 @@ async function callMockAnalysisAI(data){
 
   const userMsg = "Mera poora mock/sectional performance data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek Hinglish performance-analysis report do, mere real weak chapters/topics aur trend ka hawala dete hue.";
 
-  const resp = await fetch(AI_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 700,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
-    })
-  });
-  if(!resp.ok) throw new Error('Mock Analysis AI request failed: ' + resp.status);
-  const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
-    .join('\n')
-    .trim();
+  // Mode (Auto/Fast/Smart/Thinking/Pro) + provider (Gemini/Groq/Claude) cxAiCall se — output format pehle jaisa (plain Hinglish text)
+  const text = await cxAiCall('claude-sonnet-4-6', system, [{ role: 'user', content: userMsg }], 700, { kind: 'report' });
   if(!text) throw new Error('Mock Analysis AI: empty response');
   return text;
 }
@@ -6696,11 +6819,11 @@ async function getMockAnalysisAiResult(forceRefresh){
 }
 function buildMockAnalysisAiBoxHtml(cached){
   if(!cached){
-    return `<div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="0">🤖 AI Se Deep Analysis Karo</button></div>`;
+    return `<div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="0">🤖 AI Se Deep Analysis Karo</button>${cxAiMdChipHtml()}</div>`;
   }
   return `
     <div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI ANALYSIS' : '📐 OFFLINE ANALYSIS'}</span>${escapeHtml(cached.text)}</div>
-    <div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="1">🔄 Phir Se Analysis Karo</button></div>
+    <div class="btnrow"><button class="nav-btn" type="button" id="mockAiBtn" data-ma-refresh="1">🔄 Phir Se Analysis Karo</button>${cxAiMdChipHtml()}</div>
   `;
 }
 function wireMockAnalysisAiBox(){
@@ -6711,9 +6834,9 @@ function wireMockAnalysisAiBox(){
   if(!btn) return;
   btn.addEventListener('click', async ()=>{
     const forceRefresh = btn.getAttribute('data-ma-refresh')==='1';
-    box.innerHTML = `<div class="guideAiTip">🧠 AI tumhara mock/sectional data analyse kar raha hai…</div>`;
+    box.innerHTML = `<div class="guideAiTip" id="cxStMa">🧠 AI tumhara mock/sectional data analyse kar raha hai…</div>`;
     try{
-      const result = await getMockAnalysisAiResult(forceRefresh);
+      const result = await cxAiRun(cxAiStatusToEl('cxStMa'), '🧠 AI tumhara mock/sectional data analyse kar raha hai…', ()=> getMockAnalysisAiResult(forceRefresh));
       box.innerHTML = buildMockAnalysisAiBoxHtml(result);
       wireMockAnalysisAiBox();
     }catch(e){
@@ -6817,23 +6940,8 @@ async function callStudyGuideAI(data){
 
   const userMsg = "Subject: " + data.subject + "\nChapter/Topic: " + data.chapterOrTopic + "\nAb tak wrong count: " + data.wrongCountSoFar + "\nExam: " + data.examContext + "\n\nIs topic ke liye ek deep, practical Hinglish study guide banao.";
 
-  const resp = await fetch(AI_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 700,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
-    })
-  });
-  if(!resp.ok) throw new Error('Study Guide AI request failed: ' + resp.status);
-  const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
-    .join('\n')
-    .trim();
+  // Mode (Auto/Fast/Smart/Thinking/Pro) + provider (Gemini/Groq/Claude) cxAiCall se — output format pehle jaisa (plain Hinglish text)
+  const text = await cxAiCall('claude-sonnet-4-6', system, [{ role: 'user', content: userMsg }], 700, { kind: 'report' });
   if(!text) throw new Error('Study Guide AI: empty response');
   return text;
 }
@@ -6887,7 +6995,7 @@ function renderStudyGuidePanel(){
     </div>
     <div class="chapterQuickRow"><select id="sgChapterSelect">${optionsHtml}</select></div>
     ${cached ? `<div class="guideAiTip"><span class="guideAiSourceTag">${cached.source==='ai' ? '🤖 AI GUIDE' : '📐 OFFLINE GUIDE'}</span>${escapeHtml(cached.text)}</div>` : ''}
-    <div class="btnrow"><button class="nav-btn" type="button" id="sgGenBtn" data-sg-refresh="${cached?'1':'0'}">${cached ? '🔄 Naya Guide Banao' : '✨ Study Guide Banao'}</button></div>
+    <div class="btnrow"><button class="nav-btn" type="button" id="sgGenBtn" data-sg-refresh="${cached?'1':'0'}">${cached ? '🔄 Naya Guide Banao' : '✨ Study Guide Banao'}</button>${cxAiMdChipHtml()}</div>
   `;
   wireStudyGuidePanel();
 }
@@ -6912,7 +7020,7 @@ function wireStudyGuidePanel(){
     genBtn.textContent = '🧠 Ban raha hai…';
     genBtn.disabled = true;
     try{
-      await getStudyGuideResult(studyGuideType, studyGuideChapter, forceRefresh);
+      await cxAiRun((s)=>{ genBtn.textContent = s; }, '🧠 Ban raha hai…', ()=> getStudyGuideResult(studyGuideType, studyGuideChapter, forceRefresh));
       renderStudyGuidePanel();
     }catch(e){
       genBtn.textContent = '⚠️ Phir se try karo';
@@ -19136,23 +19244,8 @@ async function callStrictManagerAI(data){
 
   const userMsg = "Mera aaj (Day " + data.dayNumber + "/" + data.totalDays + ") aur pichhle 14 din ka poora data (JSON):\n" + JSON.stringify(data, null, 2) + "\n\nIsko deeply analyse karke ek \"AI Strict Manager\" jaisa Hinglish message do — mere asli weak chapters/topics aur trend ka hawala dete hue, generic advice mat do.";
 
-  const resp = await fetch(AI_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      system: system,
-      messages: [{ role: "user", content: userMsg }]
-    })
-  });
-  if(!resp.ok) throw new Error('Strict Manager API request failed: ' + resp.status);
-  const json = await resp.json();
-  const text = (json.content || [])
-    .filter(b => b && b.type === 'text' && b.text)
-    .map(b => b.text)
-    .join('\n')
-    .trim();
+  // Mode (Auto/Fast/Smart/Thinking/Pro) + provider (Gemini/Groq/Claude) cxAiCall se — output format pehle jaisa (plain Hinglish text)
+  const text = await cxAiCall('claude-sonnet-4-6', system, [{ role: 'user', content: userMsg }], 1000, { kind: 'report' });
   if(!text) throw new Error('Strict Manager API: empty response');
   return text;
 }
@@ -19281,7 +19374,7 @@ function renderStrictManagerPanel(){
       : `<div class="smBadge smBadgeOk">✅ Abhi koi bad-streak nahi</div>`}
     ${focusPick ? `<div class="smBadge smBadgeWarn">🎯 Focus: ${escapeHtml(focusPick.name)} (${focusPick.wrongCount} galtiyan)</div>` : ''}
     <div class="btnrow">
-      <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>
+      <button class="nav-btn" id="smOpenBtn">${cached ? '📋 Aaj Ka AI Analysis Dekho' : '🤖 AI Se Analysis Karwao'}</button>${cxAiMdChipHtml()}
     </div>
   `;
   const openBtn = document.getElementById('smOpenBtn');
@@ -19303,7 +19396,7 @@ async function openStrictManagerModal(forceRefresh){
   if(msgEl) msgEl.textContent = '🧠 AI tumhara aaj ka data deeply analyse kar raha hai…';
   if(badgeEl) badgeEl.textContent = '';
   try{
-    const result = await getStrictManagerMessage(forceRefresh);
+    const result = await cxAiRun((s)=>{ if(msgEl) msgEl.textContent = s; }, '🧠 AI tumhara aaj ka data deeply analyse kar raha hai…', ()=> getStrictManagerMessage(forceRefresh));
     if(msgEl) msgEl.textContent = result.text;
     if(badgeEl) badgeEl.textContent = result.source==='ai' ? '🤖 AI Analysis' : '📐 Offline Analysis';
     renderStrictManagerPanel();
@@ -28313,16 +28406,8 @@ const HandWrite = (function(){
     const system = 'Tum handwriting-to-text corrector ho. User ne screen par ungli se likha, recognizer ne galat ya adhura pehchana. Chat ke context ke hisaab se wahi text banao jo user likhna chahta tha. Rules: (1) user ki bhasha/script wahi rakho (Roman Hinglish, English ya Devanagari); (2) spelling theek karo, ALL CAPS ko normal sentence case me badlo; (3) ant me akela bacha 1, l, I, | jaisa nishan sawaal ho to ? ya ! laga do, bich me bekar nishan hata do; (4) naya matlab ya extra shabd mat jodo, sirf "Already in box" ke aage ka naya hissa theek karo; (5) output SIRF final naya text, koi quote ya explanation nahi.';
     const content = 'Chat context:\n' + (chatContext() || '(koi nahi)') + '\n\nAlready in box: "' + before + '"\nRecognizer options: ' + cands.slice(0,6).join(' | ') + '\nLanguage: ' + (lang==='hi' ? 'Hindi' : 'English/Hinglish');
     try{
-      // FAST model (haiku) pehle; proxy na maane to sonnet par wapas (yaad rakhta hai)
-      const call = (model)=> fetch(AI_PROXY_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ model, max_tokens:80, system, messages:[{ role:'user', content }] }) });
-      let fastOk = true; try{ fastOk = sessionStorage.getItem('hwFastNo') !== '1'; }catch(e){}
-      let resp = null;
-      if(fastOk){ try{ resp = await call('claude-haiku-4-5'); }catch(e){ resp = null; } if(!resp || !resp.ok){ resp = null; try{ sessionStorage.setItem('hwFastNo', '1'); }catch(e){} } }
-      if(!resp) resp = await call('claude-sonnet-4-6');
-      if(!resp.ok){ let bd=''; try{ bd=(await resp.text()).replace(/\s+/g,' ').slice(0,120); }catch(e){} window.__aiLastBody=bd; throw new Error('ai '+resp.status+(bd?' | '+bd:'')); }
-      const j = await resp.json();
-      let t = (j.content||[]).filter(b=>b&&b.type==='text'&&b.text).map(b=>b.text).join(' ').trim().replace(/^["'“”]+|["'“”]+$/g,'').trim();
+      // Provider (Gemini/Groq/Claude) cxAiCall se; handwriting hamesha FAST (tez chahiye) — mode ignore
+      let t = String(await cxAiCall('claude-haiku-4-5', system, [{ role:'user', content }], 80, { mode:'fast' })).trim().replace(/^["'“”]+|["'“”]+$/g,'').trim();
       if(!t || t.length > raw.length*3 + 25) return;
       if(mySeq !== fixSeq || !last) return;            // user ne beech me kuch badla
       const cur = field().value.slice(last.start, last.end);
@@ -28616,6 +28701,41 @@ const AIReply = (function(){
   }
   let lastList = null, lastNote = '';
 
+  let moreBtn = null, allShown = [], allKey = '';
+  // ---- quick rewrite (chhota / lamba / friendly / funny) — hamesha FAST mode ----
+  const RW = [['\u2702\uFE0F chhota', 'Isko aur CHHOTA karo (shabd kam, 1 line)'], ['\u{1F4DD} lamba', 'Isko thoda LAMBA aur detail me karo (max 2 chhoti lines)'], ['\u{1F917} friendly', 'Isko zyada FRIENDLY aur garam andaaz me karo'], ['\u{1F604} funny', 'Isko zyada FUNNY aur mazaakiya karo']];
+  function rwStrip(it, list){
+    const w = document.createElement('div'); w.className = 'aiQuick aiRw'; w.hidden = true;
+    RW.forEach(r=>{
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'aiQ'; b.textContent = r[0];
+      b.addEventListener('pointerdown', (e)=> e.preventDefault());
+      b.addEventListener('click', async ()=>{
+        if(b.disabled) return; const t0 = b.textContent; w.querySelectorAll('button').forEach(x => x.disabled = true); b.textContent = '\u23F3';
+        try{
+          const nm = myName || 'user';
+          const sys = 'Tum ' + nm + ' ke chat-assistant ho. Neeche ' + nm + ' ka ek reply draft hai. ' + r[1] + '. Wahi bhasha/script aur insaani awaaz rakho (' + (gen === 'f' ? 'pehle mahila: raha->rahi' : 'pehle purush: raha') + '). Paisa, password, OTP, address ya pakka vaada mat likho. Formal/AI jaise shabd mat likho. OUTPUT: SIRF naya reply text, koi quotes ya explanation nahi.';
+          const raw = await cxAiCall('claude-haiku-4-5', sys, [{ role: 'user', content: 'Samne wale ka last message: ' + (lastMsg.t || '(photo/media)') + '\nMera draft: ' + it.t }], 120, { mode: 'fast' });
+          const nt = cxAiStrip(raw).replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 300);
+          if(nt){ it.t = nt; cache.set(lastId + '|' + tone, list); showBar(list); return; }
+        }catch(e){ console.error('rewrite', e); try{ chatToastMsg('Rewrite nahi ho paya'); }catch(e2){} }
+        w.querySelectorAll('button').forEach(x => x.disabled = false); b.textContent = t0;
+      });
+      w.appendChild(b);
+    });
+    return w;
+  }
+  // is chat me tumhare apne purane messages se andaaz (lambai/emoji) — Autopilot ke styleInfo jaisa
+  function ownStyle(){
+    try{
+      const me = chatMyKey(), own = [];
+      chatSortedIds().slice(-80).forEach(id=>{ const m = chatMsgs.get(id); if(m && m.f === me && !m.sk && !m.k && m.t){ const t = String(m.t).trim(); if(t) own.push(t); } });
+      if(own.length < 3) return '\n';
+      const last = own.slice(-25), words = last.map(t => t.split(/\s+/).length);
+      const avg = Math.max(1, Math.round(words.reduce((a, b)=> a + b, 0) / words.length));
+      let emo = 0; try{ emo = Math.round(100 * last.filter(t => /\p{Extended_Pictographic}/u.test(t)).length / last.length); }catch(e){}
+      return '\nIS CHAT ME ' + (myName || 'user') + ' KE APNE LIKHE NAMUNE (lambai/emoji/andaaz yahi rakho):\n' + own.slice(-8).map(t => '- ' + t.slice(0, 100).replace(/\n/g, ' ')).join('\n') + '\nAverage lambai ~' + avg + ' shabd; ' + emo + '% messages me emoji.\n';
+    }catch(e){ return '\n'; }
+  }
   function put1(t){ const ta = chatEl('chatInput'); if(!ta) return; ta.value = t; ta.dispatchEvent(new Event('input',{bubbles:true})); try{ chatAutosize(); ta.focus(); }catch(e){} }
   function showBar(list){
     const el = bar(); if(!el) return; el.innerHTML = '';
@@ -28630,6 +28750,7 @@ const AIReply = (function(){
     rg.addEventListener('pointerdown',(e)=> e.preventDefault()); rg.addEventListener('click',()=>{ cache.delete(lastId); suggest(lastPeer || chatPeer, true); });
     const x = document.createElement('button'); x.type='button'; x.className='aiX'; x.textContent='✕'; x.setAttribute('aria-label','Band');
     x.addEventListener('pointerdown',(e)=> e.preventDefault()); x.addEventListener('click', clearBar);
+    top.insertBefore(cxAiModeChip(), top.firstChild);
     top.appendChild(rg); top.appendChild(x); el.appendChild(top);
     lastList = list; lastNote = '';
     el.appendChild(quickRow());
@@ -28640,20 +28761,23 @@ const AIReply = (function(){
       const tx = document.createElement('span'); tx.className = 'aiT'; tx.textContent = t;
       b.appendChild(e1); b.appendChild(tx);
       b.addEventListener('pointerdown',(e)=> e.preventDefault());
-      b.addEventListener('click',()=>{ put1(t); clearBar(); });
+      let lp = 0, fired = false; b.addEventListener('pointerdown',()=>{ fired = false; lp = setTimeout(()=>{ fired = true; put1(t); }, 450); }); ['pointerup','pointercancel','pointerleave'].forEach(ev => b.addEventListener(ev, ()=> clearTimeout(lp))); b.addEventListener('click',()=>{ if(fired){ fired = false; return; } put1(t); clearBar(); });
       const s = document.createElement('button'); s.type='button'; s.className='aiGo'; s.textContent='➤'; s.setAttribute('aria-label','Seedha bhejo');
       s.addEventListener('pointerdown',(e)=> e.preventDefault());
       s.addEventListener('click', async ()=>{ const ta = chatEl('chatInput'); if(!ta) return; const draft = ta.value; ta.value = t; clearBar(); await chatSend(); if(draft){ ta.value = draft; try{ chatAutosize(); }catch(e){} } });
-      row.appendChild(b); row.appendChild(s); el.appendChild(row);
+      const ed = document.createElement('button'); ed.type='button'; ed.className='aiGo aiEd'; ed.textContent='\u270F\uFE0F'; ed.setAttribute('aria-label','Badlo'); const rw = rwStrip(it, list); ed.addEventListener('pointerdown',(e)=> e.preventDefault()); ed.addEventListener('click',()=>{ rw.hidden = !rw.hidden; }); row.appendChild(b); row.appendChild(s); row.appendChild(ed); el.appendChild(row); el.appendChild(rw);
     });
+    if(list.length){ const mb = document.createElement('button'); mb.type='button'; mb.className='aiRetry aiMoreB'; mb.textContent='\u2795 Aur options'; mb.addEventListener('pointerdown',(e)=> e.preventDefault()); mb.addEventListener('click',()=>{ if(mb.disabled) return; mb.disabled = true; moreBtn = mb; suggest(lastPeer || chatPeer, true, true, true); }); moreBtn = mb; el.appendChild(mb); }
     el.hidden = !list.length;
     try{ chatScrollBottom(); }catch(e){}
   }
+  function noteText(t){ const n = document.querySelector('#cxAiSug .aiNT'); if(n) n.textContent = t; }
   function note(t, retry){
     const el = bar(); if(!el) return; el.innerHTML = '';
     lastList = null; lastNote = t || '';
     el.appendChild(quickRow());
-    const d = document.createElement('div'); d.className = 'aiNote'; d.textContent = t; if(t) el.appendChild(d);
+    const d = document.createElement('div'); d.className = 'aiNote'; const nt = document.createElement('span'); nt.className = 'aiNT'; nt.textContent = t; d.appendChild(nt); if(t) el.appendChild(d);
+    if(t) d.appendChild(cxAiModeChip());
     if(retry && t){ const r = document.createElement('button'); r.type='button'; r.className='aiRetry'; r.textContent='🔄 Dobara'; r.addEventListener('pointerdown',(e)=> e.preventDefault()); r.addEventListener('click',()=> suggest(lastPeer || chatPeer, true)); d.appendChild(r); }
     el.hidden = false;
   }
@@ -28703,8 +28827,8 @@ const AIReply = (function(){
       return { e: '', t: String(x).trim() };
     }).filter(x=>x.t).slice(0,3);
   }
-  async function ask(model, system, msgs){ return cxAiCall(model, system, msgs, 330); }
-  async function suggest(peer, force, instant){
+  async function ask(model, system, msgs, opts){ return cxAiCall(model, system, msgs, 400, opts); }
+  async function suggest(peer, force, instant, more){
     if(!on || !peer || chatPeer !== peer) return;
     const msgs = buildMessages(); if(!msgs.length || msgs[msgs.length-1].role !== 'user') return;
     lastPeer = peer;
@@ -28712,8 +28836,13 @@ const AIReply = (function(){
     if(!force && cache.has(key)){ showBar(cache.get(key)); return; }
     if(!force && Date.now() - lastTry < 1500 && !instant){ clearTimeout(timer); timer = setTimeout(()=> suggest(peer), 1500); return; }
     lastTry = Date.now();
-    const my = ++seq; note('🤖 soch raha hai…');
+    const my = ++seq; if(more && moreBtn){ moreBtn.disabled = true; moreBtn.textContent = '\u{1F9E0} soch raha hai\u2026'; } else { note('🤖 soch raha hai…'); }
     const nm = myName || 'user', td = TONES[tone][2];
+    if(allKey !== lastId){ allKey = lastId; allShown = []; }
+    (lastList || []).forEach(x => { if(x && x.t && allShown.indexOf(x.t) < 0) allShown.push(x.t); });
+    const prevShown = allShown.slice(-9);
+    const keep = more ? (lastList || []).slice() : null;
+    const stOpts = { onStatus: (st)=>{ if(my !== seq || !on) return; if(more && moreBtn) moreBtn.textContent = st; else noteText(st); } };
     const system = 'Tum '+nm+' ke chat-assistant ho. '+nm+' ke contact "'+peer.name+'" ne naya message bheja hai; '+nm+' ki taraf se uske LAST message ka reply SUGGEST karo.\n'
       + 'RULES:\n'
       + '1) Exactly 3 alag-alag reply options, har ek '+nm+' ki awaaz me ('+(gen === 'f' ? 'pehle mahila: raha->rahi, gaya->gayi' : 'pehle purush: raha, gaya')+'). Roman-Hinglish ya jis bhasha/script me samne wala likhta hai usi me.\n'
@@ -28724,19 +28853,24 @@ const AIReply = (function(){
       + '6) Paisa, password, OTP, address, personal/sensitive info ya pakka commitment/vaada mat likho; time/jagah poochni ho to sawaal ke roop me.\n'
       + '7) Hindi shabd Devanagari me tabhi jab samne wale ne Devanagari me likha ho.\n'
       + '8) Teeno me se kam se kam EK option ekdum chhota (1-3 shabd) ho, in jaise desi chhote replies se (zarurat ho tabhi, copy-paste nahi): Haa yaar, Hmm, Na bhai, Theek, Kyu?, Kaise?, Pakka?, Sach mein?, Pata nahi, Dekhte hain, Ek min, Wahi toh, Sahi, Acha!, Mast, Badiya, Gajab, Arey waah, Arre!, Oho!, Matlab?, Phir?, Bata na, Aur batao, Chal chal, Rehne de, Jaane de, Khair, Kasam se, Crazy, Call kar, Bhej, Dekh liya, Bye.\n'
+      + '9) Reply insaan jaisa lage: ratte hue/formal/"AI jaise" shabd (certainly, indeed, however, I understand) mat likho; samne wale ke mood ko match karo (khush->josh, udaas->narm, mazaak->mazaak). Same shabd/emoji 3 options me repeat mat karo.'
+      + ownStyle() + (prevShown.length && force ? '10) Pehle ye options diye the, ab BILKUL ALAG soch/shabd/intent ke 3 naye do (inme se koi repeat nahi): ' + prevShown.map(x => '"' + x + '"').join(' | ') + '\n' : '')
       + 'OUTPUT: SIRF JSON array: [{"e":"<ek emoji jo option ka intent dikhaye>","t":"<reply>"}, ...] — 3 items, aur kuch nahi, koi explanation nahi.';
     try{
       // FAST model (haiku) pehle; proxy na maane to sonnet (yaad rakhta hai)
       let raw = null, fastOk = true; try{ fastOk = sessionStorage.getItem('aiFastNo') !== '1'; }catch(e){}
-      if(fastOk){ try{ raw = await ask('claude-haiku-4-5', system, msgs); }catch(e){ raw = null; try{ sessionStorage.setItem('aiFastNo','1'); }catch(e2){} } }
+      if(fastOk){ try{ raw = await ask('claude-haiku-4-5', system, msgs, stOpts); }catch(e){ raw = null; try{ sessionStorage.setItem('aiFastNo','1'); }catch(e2){} } }
       let list = raw ? parse(raw) : [];
-      if(!list.length){ raw = await ask('claude-sonnet-4-6', system, msgs); list = parse(raw); }
+      if(!list.length){ raw = await ask('claude-sonnet-4-6', system, msgs, stOpts); list = parse(raw); }
       if(!list.length) throw new Error('empty');
       if(my !== seq || !on || chatPeer !== peer) return;     // naya msg aaya / OFF / chat badli
+      if(more && keep) list = keep.concat(list).slice(0, 9);
+      list.forEach(x => { if(allShown.indexOf(x.t) < 0) allShown.push(x.t); });
       cache.set(key, list); if(cache.size > 30) cache.delete(cache.keys().next().value);
       showBar(list);
     }catch(e){
       console.error('AI suggest failed', e);
+      if(more && keep && my === seq){ showBar(keep); try{ chatToastMsg('Aur options nahi ban paye'); }catch(e2){} return; }
       if(my === seq){ const em = String(e && e.message || e), code = (em.match(/ai (\d{3})/) || [])[1];
         note('🤖 suggestion nahi ban paya — ' + (code === '401' || code === '403' ? 'AI key/proxy ne mana kiya (' + code + ')' : code === '400' ? 'proxy ne request reject ki (400)' : code ? 'proxy error ' + code + (window.__aiLastBody ? ' — ' + window.__aiLastBody.slice(0, 70) : '') : em === 'empty' ? 'AI ka jawab samajh nahi aaya' : 'proxy tak network nahi pahunchi (' + em.slice(0, 30) + ')'), true); }
     }
@@ -30117,8 +30251,9 @@ const AIReply = (function(){
       + '<label>AI fail ho to ye bhejo (default OFF — placeholder samne wale ko ajeeb lag sakta hai)</label><div class="row"><button type="button" class="ch' + (cfg.fb ? ' on' : '') + '" id="apFbT">' + (cfg.fb ? 'ON' : 'OFF') + '</button></div><input type="text" id="apFb" maxlength="200" style="margin-top:6px">'
       + '<label>Max auto-reply / ghanta (is chat me)</label><input type="number" id="apCap" min="1" max="60">'
       + '<label>AI label 🤖 (reply ke end me — samne wale ko pata rahe)</label><div class="row"><button type="button" class="ch' + (cfg.label ? ' on' : '') + '" id="apLb">' + (cfg.label ? 'ON (salah)' : 'OFF') + '</button></div>'
-      + '<label>🧠 AI provider (proxy 500 de to Gemini/Groq ki free key daalo)</label><div class="row" id="apPv"><button type="button" class="ch" data-pv="proxy">Proxy</button><button type="button" class="ch" data-pv="gemini">Gemini</button><button type="button" class="ch" data-pv="groq">Groq</button><button type="button" class="ch" data-pv="openrouter">OpenRouter</button></div><input type="password" id="apKey" placeholder="API key (sirf is phone me save)" autocomplete="off" style="margin-top:6px"><input type="text" id="apMdl" placeholder="Model (khaali = default)" style="margin-top:6px"><div style="font-size:11.5px;opacity:.7;margin-top:4px">Free key: Gemini → aistudio.google.com/apikey · Groq → console.groq.com/keys</div>'
-      + '<label>🧪 Autopilot check</label><div class="row"><button type="button" class="ch" id="apTest">AI test karo</button></div><div id="apTestOut" style="font-size:12.5px;line-height:1.5;margin-top:6px"></div>'
+      + '<label>🎛️ AI mode (Gemini jaisa — Fast / Thinking / Pro)</label><div class="row" id="apMd">' + Object.keys(CX_AI_MODES).map(k => '<button type="button" class="ch" data-md="' + k + '">' + CX_AI_MODES[k].e + ' ' + CX_AI_MODES[k].n + '</button>').join('') + '</div><div id="apMdD" style="font-size:11.5px;opacity:.7;margin-top:4px"></div>'
+      + '<label>🧠 AI provider (proxy 500 de to Gemini/Groq ki free key daalo)</label><div class="row" id="apPv"><button type="button" class="ch" data-pv="proxy">Proxy</button><button type="button" class="ch" data-pv="gemini">Gemini</button><button type="button" class="ch" data-pv="groq">Groq</button><button type="button" class="ch" data-pv="openrouter">OpenRouter</button></div><input type="password" id="apKey" placeholder="API key (sirf is phone me save)" autocomplete="off" style="margin-top:6px"><select id="apMdSel" style="margin-top:6px;width:100%;box-sizing:border-box;padding:9px;border-radius:10px"></select><input type="text" id="apMdl" placeholder="Custom model naam" style="margin-top:6px;display:none"><div style="font-size:11.5px;opacity:.7;margin-top:4px">Free key: Gemini → aistudio.google.com/apikey · Groq → console.groq.com/keys</div>'
+      + '<label>🧪 Autopilot check</label><div class="row"><button type="button" class="ch" id="apTest">AI test karo</button></div><div class="row" id="apTM">' + ['fast', 'smart', 'think', 'pro'].map(k => '<button type="button" class="ch" data-tm="' + k + '">' + CX_AI_MODES[k].e + ' ' + CX_AI_MODES[k].n + ' test</button>').join('') + '</div><div id="apTestOut" style="font-size:12.5px;line-height:1.5;margin-top:6px"></div>'
       + '<label>📜 Recent log</label><div class="row"><button type="button" class="ch" id="apLg2">Dikhao</button><button type="button" class="ch" id="apLgC">Saaf karo</button></div><div id="apLogBox" style="font-size:12px;opacity:.85;line-height:1.5;margin-top:6px"></div>'
       + '<div class="ft"><button type="button" id="apX">Band</button><button type="button" class="ok" id="apOk">Save</button></div></div>';
     document.body.appendChild(p);
@@ -30135,7 +30270,24 @@ const AIReply = (function(){
     let pv = 'proxy'; try{ pv = localStorage.getItem('cx-ai-prov') || 'proxy'; p.querySelector('#apKey').value = localStorage.getItem('cx-ai-key') || ''; p.querySelector('#apMdl').value = localStorage.getItem('cx-ai-model') || ''; }catch(e){}
     const saveAi = ()=>{ try{ localStorage.setItem('cx-ai-prov', pv); localStorage.setItem('cx-ai-key', p.querySelector('#apKey').value.trim()); localStorage.setItem('cx-ai-model', p.querySelector('#apMdl').value.trim()); sessionStorage.removeItem('aiFastNo'); }catch(e){} };
     const markPv = ()=> p.querySelectorAll('#apPv .ch').forEach(x => x.classList.toggle('on', x.dataset.pv === pv));
-    markPv(); p.querySelector('#apPv').addEventListener('click', (e)=>{ const x = e.target.closest('[data-pv]'); if(!x) return; pv = x.dataset.pv; markPv(); });
+    const PM = { proxy: ['claude-haiku-4-5', 'claude-sonnet-4-6'], gemini: ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-pro-latest'], groq: ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'], openrouter: ['meta-llama/llama-3.3-70b-instruct:free'] };
+    const mSel = p.querySelector('#apMdSel'), mInp = p.querySelector('#apMdl');
+    const fillSel = ()=>{ const cur = mInp.value.trim(), lst = PM[pv] || []; mSel.innerHTML = '<option value="">Auto (mode ke hisaab se)</option>' + lst.map(m => '<option value="' + m + '">' + m + '</option>').join('') + '<option value="__c">Custom model\u2026</option>'; mSel.value = !cur ? '' : (lst.indexOf(cur) >= 0 ? cur : '__c'); mInp.style.display = mSel.value === '__c' ? '' : 'none'; };
+    mSel.addEventListener('change', ()=>{ if(mSel.value === '__c'){ mInp.style.display = ''; mInp.focus(); } else { mInp.value = mSel.value; mInp.style.display = 'none'; } });
+    markPv(); fillSel(); p.querySelector('#apPv').addEventListener('click', (e)=>{ const x = e.target.closest('[data-pv]'); if(!x) return; pv = x.dataset.pv; markPv(); mInp.value = ''; fillSel(); });
+    const tmRes = {}, tmPaint = ()=>{ p.querySelector('#apTestOut').innerHTML = Object.keys(tmRes).map(k => tmRes[k].replace(/[<>&]/g, '')).join('<br>'); };
+    p.querySelector('#apTM').addEventListener('click', async (e)=>{
+      const b = e.target.closest('[data-tm]'); if(!b || b.disabled) return; const k = b.dataset.tm, nm = CX_AI_MODES[k].e + ' ' + CX_AI_MODES[k].n;
+      saveAi(); b.disabled = true; const t0 = Date.now(); tmRes[k] = nm + ': chal raha hai\u2026'; tmPaint();
+      try{
+        await cxAiCall('', 'Reply with exactly one short Hinglish sentence, no quotes.', [{ role: 'user', content: 'kya haal hai bhai?' }], 40, { mode: k });
+        const L = window.__aiLast || {};
+        tmRes[k] = '\u2705 ' + nm + ': ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s \u00B7 ' + (L.tier || '?') + ' \u00B7 ' + (L.model || '') + (L.refined ? ' \u00B7 polished' : '') + (L.tier && L.tier !== k ? ' (fallback)' : '');
+      }catch(err){ tmRes[k] = '\u274C ' + nm + ' fail: ' + String(err && err.message || err).slice(0, 80); }
+      b.disabled = false; tmPaint();
+    });
+    const markMd = ()=>{ const c = cxAiGetMode(); p.querySelectorAll('#apMd .ch').forEach(x => x.classList.toggle('on', x.dataset.md === c)); p.querySelector('#apMdD').textContent = CX_AI_MODES[c].d; };
+    markMd(); p.querySelector('#apMd').addEventListener('click', (e)=>{ const x = e.target.closest('[data-md]'); if(!x) return; cxAiSetMode(x.dataset.md); markMd(); });
     p.querySelector('#apFbT').addEventListener('click', (e)=>{ tmp.fb = !tmp.fb; e.target.classList.toggle('on', tmp.fb); e.target.textContent = tmp.fb ? 'ON' : 'OFF'; });
     p.querySelector('#apLb').addEventListener('click', (e)=>{ tmp.label = !tmp.label; e.target.classList.toggle('on', tmp.label); e.target.textContent = tmp.label ? 'ON (salah)' : 'OFF'; });
     p.querySelector('#apTest').addEventListener('click', async ()=>{
@@ -30143,7 +30295,7 @@ const AIReply = (function(){
       try{
         const pr = chatPeer || { pair: 'test', name: 'Dost' };
         const raw = await gen(pr, [{ role: 'user', content: 'kya haal hai bhai?' }]);
-        o.innerHTML = '✅ AI chal raha hai (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s): <b>' + String(clean(raw, typeof myName !== 'undefined' ? myName : '') || raw || '(khaali)').replace(/[<>&]/g, '') + '</b>';
+        const L = window.__aiLast || {}; o.innerHTML = '✅ AI chal raha hai (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s · ' + (L.tier || '?') + ' · ' + String(L.model || '').replace(/[<>&]/g, '') + (L.refined ? ' · polished' : '') + '): <b>' + String(clean(raw, typeof myName !== 'undefined' ? myName : '') || raw || '(khaali)').replace(/[<>&]/g, '') + '</b>';
       }catch(e){ o.textContent = '❌ AI fail: ' + String(e && e.message || e) + ' — ' + (/\b(401|403)\b/.test(String(e.message)) ? 'proxy key/permission' : /\b400\b/.test(String(e.message)) ? 'request galat (proxy reject)' : /fetch|network|load failed/i.test(String(e.message)) ? 'internet / proxy URL' : 'proxy/server'); }
     });
     const esc = (x)=> String(x).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
@@ -30283,7 +30435,7 @@ const AIReply = (function(){
     const msgs = []; st.msgs.slice(-24).forEach(m=>{ const role = m.r === 'me' ? 'user' : 'assistant'; if(msgs.length && msgs[msgs.length - 1].role === role) msgs[msgs.length - 1].content += '\n' + m.t; else msgs.push({ role, content: m.t }); });
     while(msgs.length && msgs[0].role !== 'user') msgs.shift();
     let out = '';
-    try{ out = await cxAiCall('claude-haiku-4-5', system(), msgs, 200); }
+    try{ out = await cxAiCall('claude-haiku-4-5', system(), msgs, 240, { onStatus: (t)=>{ const e = $('cxPtTy'); if(e) e.textContent = t; } }); }
     catch(e){ out = '⚠️ AI abhi jawab nahi de paya (' + String(e && e.message || e).slice(0, 60) + '). Thodi der baad try karo.'; busy = false; paint(false, out); return; }
     out = String(out || '').replace(/<(think|thinking)>[\s\S]*?<\/\1>/gi, '').replace(/^["'“”]+|["'“”]+$/g, '').trim().slice(0, 500) || '🥰';
     st.msgs.push({ r: 'ai', t: out, at: Date.now() }); save(); busy = false; paint();
@@ -30320,6 +30472,7 @@ const AIReply = (function(){
     p.addEventListener('click', (e)=>{
       const t = e.target.closest('button'); if(!t) return;
       if(t.dataset.role){ st.role = t.dataset.role; st.name = ($('cxPtNm') && $('cxPtNm').value.trim().slice(0, 20)) || (st.role === 'gf' ? 'Riya' : 'Aarav'); st.msgs = []; save(); paint(); st.msgs.push({ r: 'me', t: 'hii', at: Date.now() }); save(); paint(); reply(); }
+      else if(t.id === 'cxPtMd') cxAiModeMenu();
       else if(t.id === 'cxPtX') p.classList.remove('open');
       else if(t.id === 'cxPtSw'){ if(confirm('Partner badalna hai? Purani chat saaf ho jayegi.')){ st = { role: '', name: '', msgs: [] }; save(); paint(); } }
       else if(t.id === 'cxPtGo'){ const i = $('cxPtIn'); send(i.value); i.value = ''; i.focus(); }
@@ -30337,9 +30490,9 @@ const AIReply = (function(){
       return;
     }
     const lst = st.msgs.map(m => '<div class="b ' + (m.r === 'me' ? 'me' : 'ai') + '">' + esc(m.t) + '</div>').join('')
-      + (typing ? '<div class="b ai">✍️ type kar raha hai…</div>' : '') + (errText ? '<div class="note">' + esc(errText) + '</div>' : '');
+      + (typing ? '<div class="b ai" id="cxPtTy">✍️ type kar raha hai…</div>' : '') + (errText ? '<div class="note">' + esc(errText) + '</div>' : '');
     const keep = $('cxPtIn') ? $('cxPtIn').value : '';
-    p.innerHTML = '<div class="hd"><b>' + (st.role === 'gf' ? '👩' : '👨') + ' ' + esc(st.name) + ' 💕</b><button id="cxPtSw">🔄</button><button id="cxPtX">✕</button></div>'
+    p.innerHTML = '<div class="hd"><b>' + (st.role === 'gf' ? '👩' : '👨') + ' ' + esc(st.name) + ' 💕</b><button id="cxPtMd">' + cxAiModeChipText() + '</button><button id="cxPtSw">🔄</button><button id="cxPtX">✕</button></div>'
       + '<div class="lst" id="cxPtL"><div class="note">AI ke saath roleplay chat — asli insaan nahi. Private, sirf is phone me.</div>' + lst + '</div>'
       + '<div class="ft"><input id="cxPtIn" placeholder="Kuch pyara likho…" autocomplete="off"><button id="cxPtGo">➤</button></div>';
     if($('cxPtIn')) $('cxPtIn').value = keep;
@@ -30352,5 +30505,6 @@ const AIReply = (function(){
     m.querySelector('[data-xs="partner"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); open(); });
   }
   setInterval(()=>{ try{ hook(); }catch(e){} }, 600);
+  window.addEventListener('cxaimode', ()=>{ const b = $('cxPtMd'); if(b) b.textContent = cxAiModeChipText(); });
   window.cxPartner = { open, state: ()=> st, _send: send };
 })();
