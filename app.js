@@ -29827,7 +29827,7 @@ const AIReply = (function(){
   const LG = (k, d)=>{ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } };
   const LS = (k, v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
   const SPEEDS = { fast: ['⚡ Fast', 600, 900, 800], normal: ['🙂 Normal', 1800, 2600, 2200], slow: ['🐢 Slow', 4500, 7000, 4500] };   // [label, debounce, minWait after last msg, typeCap]
-  const TONES = { auto: ['🎯 Auto (mere jaisa)', ''], friendly: ['😊 Friendly', 'Tone: warm, dostana, helpful.'], witty: ['😏 Witty', 'Tone: halka witty/mazaakiya, par kisi ko hurt ya beizzat mat karo.'], casual: ['😎 Casual', 'Tone: bilkul casual, dost jaisa, chhote vaakya.'], pro: ['💼 Professional', 'Tone: politely professional, saaf aur chhota, slang kam.'], short: ['✂️ Bahut chhota', 'Tone: sabse chhota reply (max ~8 shabd).'] };
+  const TONES = { auto: ['🎯 Auto (mere jaisa)', ''], friendly: ['😊 Friendly', 'Tone: warm, dostana, helpful.'], witty: ['😏 Witty', 'Tone: halka witty/mazaakiya, par kisi ko hurt ya beizzat mat karo.'], casual: ['😎 Casual', 'Tone: bilkul casual, dost jaisa, chhote vaakya.'], pro: ['💼 Professional', 'Tone: politely professional, saaf aur chhota, slang kam.'], short: ['✂️ Bahut chhota', 'Tone: sabse chhota reply (max ~8 shabd).'], loveall: ['💞 Sabse BF/GF style', 'Tone: samne wale se bf/gf jaisi pyari, meethi, caring Hinglish me baat karo — pyaar bhare shabd (jaan, babu, shona, cutie) natural tareeke se, halka flirt, tareef, khayal rakhna, thoda emoji 💕🥰. Chhote messages. Sirf wholesome, explicit nahi, jalan/dabaav nahi. Agar samne wala saaf bataye ki wo family/teacher/senior/official hai to tab izzat ke saath halka pyara-sa andaaz rakho, "jaan/babu" mat bolo.'], love: ['💕 Pyaar (BF/GF)', 'Tone: ye mera pyaara partner (bf/gf) hai — bahut pyari, caring, thoda cheeky Hinglish me baat karo; pyaar se bulao (jaan, babu, shona — har line me nahi), halka flirt, tareef, khayal rakho (khana/neend/padhai). Chhote messages, thoda emoji 💕🥰. Sirf wholesome, explicit nahi. Jalan/dabaav nahi.'] };
   const LANGS = { auto: 'Auto (jaisa chat me)', hinglish: 'Hinglish', english: 'English', hindi: 'Hindi (Devanagari)' };
   let map = LG(K, {}); if(!map || typeof map !== 'object') map = {};
   let cfg = Object.assign({ speed: 'fast', notes: '', rules: '', chats: {}, lang: 'auto', tone: 'auto', qr: '', fb: false, fbText: 'Abhi busy hoon, thodi der me khud baat karta hoon', cap: 10, label: LG(KL, true) !== false }, LG(KC, {}) || {});
@@ -29914,11 +29914,11 @@ const AIReply = (function(){
       + '\nAverage lambai ~' + avg + ' shabd; ' + emo + '% messages me emoji.';
   }
   async function ask(model, system, msgs){ return cxAiCall(model, system, msgs, 160); }
-  async function gen(peer, msgs){
+  async function gen(peer, msgs, force){
     const nm = (typeof myName !== 'undefined' && myName) || 'user';
     let when = ''; try{ when = new Date().toLocaleString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true }); }catch(e){}
     const lang = cfg.lang === 'auto' ? 'Bhasha/script wahi jisme samne wale ne ABHI likha hai (Roman Hinglish/English/Hindi), andaaz aur slang ' + nm + ' ke namunon jaisa.' : 'Hamesha ' + LANGS[cfg.lang] + ' me likho.';
-    const cc = cfg.chats[peer.pair] || {}, og = ownG();
+    const cc = cfg.chats[peer.pair] || {}, og = ownG(), ctone = (cc.tone && TONES[cc.tone]) ? cc.tone : cfg.tone;
     const system = 'Tum ' + nm + ' ho aur apne contact "' + peer.name + '" se chat par baat kar rahe ho. ' + nm + ' abhi busy hai, isliye uski jagah reply likh rahe ho.\n'
       + (when ? 'Abhi ka samay: ' + when + '.\n' : '')
       + (cfg.notes.trim() ? nm + ' ke baare me (sirf zarurat ho tab use karo, kuch na banao):\n' + cfg.notes.trim().slice(0, 600) + '\n' : '')
@@ -29926,14 +29926,14 @@ const AIReply = (function(){
       + (cc.g === 'm' ? peer.name + ' purush hai (use "tu/tum aaya/gaya" jaisa).\n' : cc.g === 'f' ? peer.name + ' mahila hai (use "tu/tum aayi/gayi" jaisa).\n' : '')
       + 'Tum khud ' + (og === 'f' ? 'mahila ho (raha->rahi, gaya->gayi, karta->karti)' : 'purush ho (raha, gaya, karta)') + '.\n'
       + (cfg.rules.trim() ? 'KABHI MAT BOLO/KARO (rules):\n' + cfg.rules.trim().slice(0, 400) + '\n' : '')
-      + (TONES[cfg.tone][1] ? TONES[cfg.tone][1] + ' (namunon ka andaaz phir bhi follow karo.)\n' : '')
+      + (TONES[ctone][1] ? TONES[ctone][1] + ' (namunon ka andaaz phir bhi follow karo.)\n' : '')
       + styleInfo() + '\n'
       + 'RULES:\n1) Conversation me assistant role ' + nm + ' ke apne purane messages hain — unki lambai, emoji aur andaaz bilkul copy karo. ' + lang + '\n'
       + '2) SIRF EK reply, chhota (zyadatar 1 line, max 2). Sawaal ho to seedha jawab; na ho to natural follow-up. Pichhli baaton ka context yaad rakho, repeat mat karo.\n'
-      + '3) Paisa, OTP, password, address, personal/sensitive info, pakka vaada/appointment/commitment ya kisi ke baare me faisla — kuch mat do. Apni taraf se koi personal detail (rishta, paisa, pata, plans, health) KABHI mat banao — upar ke notes me na ho to maano pata nahi. Aisa kuch ho ya tumhe pakka na pata ho to sirf likho: SKIP\n'
+      + '3) Paisa, OTP, password, address, personal/sensitive info, pakka vaada/appointment/commitment ya kisi ke baare me faisla — kuch mat do. Apni taraf se koi personal detail (rishta, paisa, pata, plans, health) KABHI mat banao — upar ke notes me na ho to maano pata nahi. Sirf TAB sirf likho SKIP jab samne wala paisa/OTP/password/address/pakka vaada ya koi bada faisla maange. Gaana, shayari, joke, masti, hi-hello, general sawaal par SKIP KABHI mat likho — chhota natural reply do (gaana/shayari ban na paye to mazaak me taal do, jaise "abhi mood nahi yaar" ya "tu suna na pehle") par jhooth ya personal detail mat banao.\n'
       + '4) Agar samne wala SACHCHI me poochhe ki tum AI/bot ho ya asli ' + nm + ' — jhooth mat bolo: bolo ki ye AI reply hai aur ' + nm + ' baad me khud jawab dega.\n'
       + '5) Photo/video/sticker aaye to chhoti natural reaction do.\n'
-      + 'OUTPUT: sirf reply ka text (naam/quotes/explanation/label ke bina), ya sirf SKIP.';
+      + 'OUTPUT: sirf reply ka text (naam/quotes/explanation/label ke bina), ya sirf SKIP.' + (force ? '\nIMPORTANT: Is baar SKIP mat likho — 1 chhota natural reply (2-8 shabd) zaroor do.' : '');
     let raw = null, fastOk = true; try{ fastOk = sessionStorage.getItem('aiFastNo') !== '1'; }catch(e){}
     if(fastOk){ try{ raw = await ask('claude-haiku-4-5', system, msgs); }catch(e){ raw = null; try{ sessionStorage.setItem('aiFastNo', '1'); }catch(e2){} } }
     if(!raw) raw = await ask('claude-sonnet-4-6', system, msgs);
@@ -29987,7 +29987,11 @@ const AIReply = (function(){
       if(cfg.fb && cfg.fbText.trim()) return deliver(peer, my, cfg.fbText.trim().slice(0, 200), true);
       logE(peer, 'err', lastTxt[peer.pair], 'AI error: ' + lastErr); status = 'AI error (' + lastErr.slice(0, 40) + ') — Settings me 🧪 AI test dabao'; refresh(); toast('🤖 Autopilot: AI jawab nahi de paya (' + lastErr.slice(0, 40) + ')'); return;
     }
-    const text = clean(raw, typeof myName !== 'undefined' ? myName : '');
+    let text = clean(raw, typeof myName !== 'undefined' ? myName : '');
+    if((!text || /^SKIP\b/i.test(text)) && !SENS.test(lastTxt[peer.pair] || '')){     // AI ne chhoda/khaali => ek baar zor dekar dobara (sensitive ko chhodkar)
+      try{ const r2 = await gen(peer, msgs, true); const t2 = clean(r2, typeof myName !== 'undefined' ? myName : ''); if(t2 && !/^SKIP\b/i.test(t2)) text = t2; }catch(e){ console.error('autopilot retry', e); }
+      if(!ok(peer, my)){ status = ''; refresh(); return; }
+    }
     if(!text || /^SKIP\b/i.test(text)){ logE(peer, 'skip', lastTxt[peer.pair], 'AI ne chhoda'); status = 'Ye message AI ne chhoda — khud reply do'; refresh(); toast('🤖 Autopilot ne is message ko chhoda — khud reply do'); return; }
     const lo = lastOut[peer.pair];
     if(lo && norm(lo.t) === norm(text) && Date.now() - lo.at < 600000){ status = 'AI wahi purana reply de raha tha — chhoda, khud reply do'; refresh(); toast('🤖 Same reply repeat hota — Autopilot ne chhoda'); return; }
@@ -30031,7 +30035,7 @@ const AIReply = (function(){
       + '<label>Bhasha</label><div class="row" id="apLg">' + chips(LANGS, cfg.lang, 'lg') + '</div>'
       + '<label>Mere baare me (AI ko batao: kya karta hoon, kab free, pasand/napasand…)</label><textarea id="apNotes" maxlength="600" placeholder="jaise: main student hoon, raat ko padhta hoon, cricket pasand hai"></textarea>'
       + '<label>Kabhi mat bolo / karo (rules)</label><textarea id="apRules" maxlength="400" placeholder="jaise: kabhi paise/price mat batao, plans confirm mat karo"></textarea>'
-      + (chatPeer ? '<label>Is chat (' + String(chatPeer.name).replace(/[<>&"]/g, '') + ') ke liye — kaun hai, tone, rules</label><textarea id="apCNote" maxlength="400" placeholder="jaise: close dost, mazaak chalta hai"></textarea><label>Samne wala</label><div class="row" id="apTg"><button type="button" class="ch" data-tg="">Auto</button><button type="button" class="ch" data-tg="m">♂ Purush</button><button type="button" class="ch" data-tg="f">♀ Mahila</button></div>' : '')
+      + (chatPeer ? '<label>Is chat (' + String(chatPeer.name).replace(/[<>&"]/g, '') + ') ke liye — kaun hai, tone, rules</label><textarea id="apCNote" maxlength="400" placeholder="jaise: close dost, mazaak chalta hai"></textarea><label>💕 Is chat ka tone (sirf yahan; khaali = upar wala global)</label><div class="row" id="apCTn"><button type="button" class="ch" data-ct="">Global</button><button type="button" class="ch" data-ct="love">💕 Pyaar (BF/GF)</button><button type="button" class="ch" data-ct="friendly">😊 Friendly</button><button type="button" class="ch" data-ct="witty">😏 Witty</button><button type="button" class="ch" data-ct="pro">💼 Professional</button></div><label>Samne wala</label><div class="row" id="apTg"><button type="button" class="ch" data-tg="">Auto</button><button type="button" class="ch" data-tg="m">♂ Purush</button><button type="button" class="ch" data-tg="f">♀ Mahila</button></div>' : '')
       + '<label>Main (raha/rahi)</label><div class="row" id="apOg"><button type="button" class="ch" data-og="m">♂ Purush</button><button type="button" class="ch" data-og="f">♀ Mahila</button></div>'
       + '<label>AI fail ho to ye bhejo (default OFF — placeholder samne wale ko ajeeb lag sakta hai)</label><div class="row"><button type="button" class="ch' + (cfg.fb ? ' on' : '') + '" id="apFbT">' + (cfg.fb ? 'ON' : 'OFF') + '</button></div><input type="text" id="apFb" maxlength="200" style="margin-top:6px">'
       + '<label>Max auto-reply / ghanta (is chat me)</label><input type="number" id="apCap" min="1" max="60">'
@@ -30043,10 +30047,10 @@ const AIReply = (function(){
     document.body.appendChild(p);
     p.querySelector('#apQr').value = cfg.qr; p.querySelector('#apNotes').value = cfg.notes; p.querySelector('#apRules').value = cfg.rules; p.querySelector('#apFb').value = cfg.fbText; p.querySelector('#apCap').value = cfg.cap;
     const tmp = Object.assign({}, cfg), cpair = chatPeer ? chatPeer.pair : null, cc0 = (cpair && cfg.chats[cpair]) || {};
-    let tg = cc0.g || '', og = ownG();
+    let tg = cc0.g || '', og = ownG(); let ct = cc0.tone || '';
     if(cpair) p.querySelector('#apCNote').value = cc0.note || '';
     const mark = (rowId, attr, cur)=> p.querySelectorAll(rowId + ' .ch').forEach(x => x.classList.toggle('on', (x.dataset[attr] || '') === cur));
-    mark('#apTg', 'tg', tg); mark('#apOg', 'og', og);
+    mark('#apTg', 'tg', tg); mark('#apOg', 'og', og); if(cpair){ mark('#apCTn', 'ct', ct); p.querySelector('#apCTn').addEventListener('click', (e)=>{ const b = e.target.closest('[data-ct]'); if(!b) return; ct = b.dataset.ct; mark('#apCTn', 'ct', ct); }); }
     if(cpair) p.querySelector('#apTg').addEventListener('click', (e)=>{ const b = e.target.closest('[data-tg]'); if(!b) return; tg = b.dataset.tg; mark('#apTg', 'tg', tg); });
     p.querySelector('#apOg').addEventListener('click', (e)=>{ const b = e.target.closest('[data-og]'); if(!b) return; og = b.dataset.og; mark('#apOg', 'og', og); });
     const pick = (rowId, attr, key)=> p.querySelector(rowId).addEventListener('click', (e)=>{ const b = e.target.closest('[data-' + attr + ']'); if(!b) return; tmp[key] = b.dataset[attr]; p.querySelectorAll(rowId + ' .ch').forEach(x => x.classList.toggle('on', x === b)); });
@@ -30073,7 +30077,7 @@ const AIReply = (function(){
     p.addEventListener('click', (e)=>{ if(e.target === p) p.remove(); });
     p.querySelector('#apOk').addEventListener('click', ()=>{
       saveAi();
-      if(cpair){ const n = p.querySelector('#apCNote').value.trim().slice(0, 400); if(n || tg) cfg.chats[cpair] = { note: n, g: tg }; else delete cfg.chats[cpair]; }
+      if(cpair){ const n = p.querySelector('#apCNote').value.trim().slice(0, 400); if(n || tg || ct) cfg.chats[cpair] = { note: n, g: tg, tone: ct }; else delete cfg.chats[cpair]; }
       tmp.chats = cfg.chats; try{ localStorage.setItem('aiGen', og); }catch(e){}
       cfg = Object.assign(cfg, tmp, { qr: p.querySelector('#apQr').value.slice(0, 800), rules: p.querySelector('#apRules').value.slice(0, 400), notes: p.querySelector('#apNotes').value.slice(0, 600), fbText: p.querySelector('#apFb').value.trim().slice(0, 200), cap: Math.max(1, Math.min(60, Number(p.querySelector('#apCap').value) || 10)) });
       saveCfg(); LS(KL, cfg.label); p.remove(); refresh(); toast('Autopilot settings save ✅');
@@ -30170,4 +30174,106 @@ const AIReply = (function(){
       window.cxGetFile(a.fid).then(d => { try{ const b = dataToBlob(d); if(b.size <= CHAT_FILE_MAX) window.cxGifAutoSave(b, a.n || 'anim.gif', 'fid:' + a.fid); }catch(e){} }).catch(()=>{});
     }catch(e){}
   };
+})();
+
+
+// ============================================================================
+// AI PARTNER 💞 — "+" menu se BF / GF chuno, AI pyari Hinglish me baat kare (private, sirf is phone me).
+//   Chat history localStorage 'cx-partner' me. AI call = cxAiCall (Gemini/Groq/Proxy jo set ho).
+//   AI hamesha khud ko AI maanta hai: sachchi me poochho "tu asli hai?" to seedha batata hai.
+// ============================================================================
+(function aiPartner(){
+  const K = 'cx-partner', $ = (id)=> document.getElementById(id);
+  const LG = (d)=>{ try{ const v = localStorage.getItem(K); return v ? Object.assign(d, JSON.parse(v)) : d; }catch(e){ return d; } };
+  let st = LG({ role: '', name: '', msgs: [] });   // role: 'bf' | 'gf'
+  const save = ()=>{ try{ st.msgs = st.msgs.slice(-60); localStorage.setItem(K, JSON.stringify(st)); }catch(e){} };
+  const esc = (x)=> String(x).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  const myNm = ()=> (typeof myName !== 'undefined' && myName) || 'jaan';
+  const ownF = ()=> { try{ return localStorage.getItem('aiGen') === 'f'; }catch(e){ return false; } };
+  let busy = false;
+
+  function system(){
+    const isGf = st.role === 'gf', me = myNm();
+    return 'Tum ' + me + ' ke ' + (isGf ? 'girlfriend ho' : 'boyfriend ho') + (st.name ? ' aur tumhara naam "' + st.name + '" hai' : '') + '. Ye ek pyaar bhari, sweet roleplay chat hai.\n'
+      + 'Tum ' + (isGf ? 'ladki ho (karti, rahi, gayi, aayi)' : 'ladka ho (karta, raha, gaya, aaya)') + '. ' + me + ' ko pyaar se bulao (jaise jaan, babu, shona, cutie — natural, har line me nahi).\n'
+      + 'STYLE: Roman Hinglish, chhote pyare messages (1-3 line), thoda emoji 💕🥰😘 par zyada nahi. Caring, thoda cheeky/mazaakiya, tareef karo, din kaisa gaya poochho, padhai/exam ka dhyan rakho (SSC prep ke liye motivate karo), khana/neend ka yaad dilao.\n'
+      + 'LIMITS: Sirf wholesome romantic — sweet baatein, flirt halka. Koi explicit/sexual baat nahi — aise me pyaar se topic badal do. Jalan/dabaav/control mat karo; ' + me + ' ko dosto-family se milne aur apni life jeene ke liye encourage karo.\n'
+      + 'HONESTY: Tum AI ho. Agar ' + me + ' sachchi me poochhe ki tum asli insaan ho ya AI, jhooth mat bolo — pyaar se batao ki main AI hoon par baat karna accha lagta hai. Real zindagi ke faisle (paisa, health, emergency) me asli logon/doctor se baat karne ko bolo. Agar ' + me + ' bahut udaas/dukhi lage to pyaar se sunno aur kisi apne se baat karne ko kaho.\n'
+      + 'OUTPUT: sirf tumhara reply, naam/label ke bina.';
+  }
+  async function reply(){
+    if(busy) return; busy = true; paint(true);
+    const msgs = []; st.msgs.slice(-24).forEach(m=>{ const role = m.r === 'me' ? 'user' : 'assistant'; if(msgs.length && msgs[msgs.length - 1].role === role) msgs[msgs.length - 1].content += '\n' + m.t; else msgs.push({ role, content: m.t }); });
+    while(msgs.length && msgs[0].role !== 'user') msgs.shift();
+    let out = '';
+    try{ out = await cxAiCall('claude-haiku-4-5', system(), msgs, 200); }
+    catch(e){ out = '⚠️ AI abhi jawab nahi de paya (' + String(e && e.message || e).slice(0, 60) + '). Thodi der baad try karo.'; busy = false; paint(false, out); return; }
+    out = String(out || '').replace(/<(think|thinking)>[\s\S]*?<\/\1>/gi, '').replace(/^["'“”]+|["'“”]+$/g, '').trim().slice(0, 500) || '🥰';
+    st.msgs.push({ r: 'ai', t: out, at: Date.now() }); save(); busy = false; paint();
+  }
+  function send(txt){
+    txt = String(txt || '').trim().slice(0, 500); if(!txt || busy) return;
+    st.msgs.push({ r: 'me', t: txt, at: Date.now() }); save(); paint(); reply();
+  }
+
+  function styles(){
+    if($('cxPtStyle')) return;
+    const s = document.createElement('style'); s.id = 'cxPtStyle';
+    s.textContent = `#cxPt{position:fixed;inset:0;z-index:2147483300;background:#12141a;color:#eee;display:none;flex-direction:column}
+    #cxPt.open{display:flex}
+    #cxPt .hd{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#1b1f29;padding-top:max(10px,env(safe-area-inset-top))}
+    #cxPt .hd b{flex:1;font-size:16px}#cxPt .hd button{background:#262b38;color:#eee;border:0;border-radius:12px;padding:6px 12px;font-size:14px}
+    #cxPt .lst{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+    #cxPt .b{max-width:80%;padding:9px 12px;border-radius:16px;font-size:15px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+    #cxPt .b.me{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
+    #cxPt .b.ai{align-self:flex-start;background:#2a2433;border-bottom-left-radius:4px}
+    #cxPt .note{font-size:11.5px;opacity:.55;text-align:center;padding:4px 10px}
+    #cxPt .ft{display:flex;gap:8px;padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:#1b1f29}
+    #cxPt .ft input{flex:1;background:#20242e;color:#eee;border:1px solid #2a3040;border-radius:20px;padding:10px 14px;font-size:15px;min-width:0}
+    #cxPt .ft button{background:#e0457b;color:#fff;border:0;border-radius:20px;padding:0 16px;font-size:15px}
+    #cxPt .pick{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+    #cxPt .pick h3{margin:0;font-size:20px}#cxPt .pick p{margin:0;opacity:.7;font-size:13.5px}
+    #cxPt .pick .big{width:100%;max-width:320px;background:#2a2433;color:#fff;border:0;border-radius:16px;padding:14px;font-size:17px}
+    #cxPt .pick input{width:100%;max-width:320px;box-sizing:border-box;background:#20242e;color:#eee;border:1px solid #2a3040;border-radius:12px;padding:10px;font-size:15px;text-align:center}`;
+    document.head.appendChild(s);
+  }
+  function ensure(){
+    styles(); let p = $('cxPt'); if(p) return p;
+    p = document.createElement('div'); p.id = 'cxPt'; document.body.appendChild(p);
+    p.addEventListener('click', (e)=>{
+      const t = e.target.closest('button'); if(!t) return;
+      if(t.dataset.role){ st.role = t.dataset.role; st.name = ($('cxPtNm') && $('cxPtNm').value.trim().slice(0, 20)) || (st.role === 'gf' ? 'Riya' : 'Aarav'); st.msgs = []; save(); paint(); st.msgs.push({ r: 'me', t: 'hii', at: Date.now() }); save(); paint(); reply(); }
+      else if(t.id === 'cxPtX') p.classList.remove('open');
+      else if(t.id === 'cxPtSw'){ if(confirm('Partner badalna hai? Purani chat saaf ho jayegi.')){ st = { role: '', name: '', msgs: [] }; save(); paint(); } }
+      else if(t.id === 'cxPtGo'){ const i = $('cxPtIn'); send(i.value); i.value = ''; i.focus(); }
+    });
+    p.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' && e.target.id === 'cxPtIn'){ e.preventDefault(); $('cxPtGo').click(); } });
+    return p;
+  }
+  function paint(typing, errText){
+    const p = ensure();
+    if(!st.role){
+      const defG = ownF() ? 'bf' : 'gf';
+      p.innerHTML = '<div class="hd"><b>💞 AI Partner</b><button id="cxPtX">✕</button></div><div class="pick"><h3>Kiske saath baat karni hai?</h3><p>AI tumhare saath pyari Hinglish me baat karega. Ye sirf is phone me private rehta hai.</p>'
+        + '<input id="cxPtNm" maxlength="20" placeholder="Naam (optional) — jaise Riya / Aarav">'
+        + '<button class="big" data-role="gf">👩 Girlfriend</button><button class="big" data-role="bf">👨 Boyfriend</button><p>Yaad rahe: ye AI hai, asli insaan nahi 🙂</p></div>';
+      return;
+    }
+    const lst = st.msgs.map(m => '<div class="b ' + (m.r === 'me' ? 'me' : 'ai') + '">' + esc(m.t) + '</div>').join('')
+      + (typing ? '<div class="b ai">✍️ type kar raha hai…</div>' : '') + (errText ? '<div class="note">' + esc(errText) + '</div>' : '');
+    const keep = $('cxPtIn') ? $('cxPtIn').value : '';
+    p.innerHTML = '<div class="hd"><b>' + (st.role === 'gf' ? '👩' : '👨') + ' ' + esc(st.name) + ' 💕</b><button id="cxPtSw">🔄</button><button id="cxPtX">✕</button></div>'
+      + '<div class="lst" id="cxPtL"><div class="note">AI ke saath roleplay chat — asli insaan nahi. Private, sirf is phone me.</div>' + lst + '</div>'
+      + '<div class="ft"><input id="cxPtIn" placeholder="Kuch pyara likho…" autocomplete="off"><button id="cxPtGo">➤</button></div>';
+    if($('cxPtIn')) $('cxPtIn').value = keep;
+    const l = $('cxPtL'); if(l) l.scrollTop = l.scrollHeight;
+  }
+  function open(){ const p = ensure(); paint(); p.classList.add('open'); if(st.role && st.msgs.length === 0) { st.msgs.push({ r: 'me', t: 'hii', at: Date.now() }); save(); paint(); reply(); } }
+  function hook(){
+    const m = $('cxMenu'); if(!m || m.querySelector('[data-xs="partner"]')) return;
+    m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="partner"><span>💞</span><b>AI Partner (BF/GF)</b></button>');
+    m.querySelector('[data-xs="partner"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); open(); });
+  }
+  setInterval(()=>{ try{ hook(); }catch(e){} }, 600);
+  window.cxPartner = { open, state: ()=> st, _send: send };
 })();
