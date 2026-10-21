@@ -21388,8 +21388,7 @@ function chatOnMsg(peer, id, m){
   if(chatPeer !== peer || !m || chatMsgs.has(id)) return;
   const box = chatEl('chatMsgs');
   if(!box) return;
-  const ids = chatSortedIds();
-  const last = ids.length ? ids[ids.length - 1] : null;
+  let last = null; for(const k of chatMsgs.keys()){ if(last === null || k > last) last = k; }   // FAST: sort ki jagah max key (O(n), no sort)
   const wasBottom = chatNearBottom();
   chatMsgs.set(id, m);
   const mine = m.f === chatMyKey();
@@ -21988,6 +21987,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
 
   // ---------------- send ----------------
+  window.__cxMetaSent = window.__cxMetaSent || new Set();   // FAST: pair meta har message par nahi, session me ek baar
   async function xSend(msg, fileData, preview, noReply){
     const peer = chatPeer;
     if(!peer) return false;
@@ -22003,7 +22003,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       up[`${b}/_chats/${peer.pair}/f/${fid}`] = { d: fileData };
     }
     const [ka, kb] = [me, peer.key].sort();
-    up[`${b}/_chats/${peer.pair}/meta`] = { a: ka, b: kb, an: ka === me ? myName : peer.name, bn: kb === me ? myName : peer.name };
+    const needMeta = !window.__cxMetaSent.has(peer.pair);
+    if(needMeta){ window.__cxMetaSent.add(peer.pair); up[`${b}/_chats/${peer.pair}/meta`] = { a: ka, b: kb, an: ka === me ? myName : peer.name, bn: kb === me ? myName : peer.name }; }
     up[`${b}/_chats/${peer.pair}/m/${id}`] = m;
     up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
     const pv = String(preview || '').slice(0, 80);
@@ -22030,6 +22031,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       return true;
     }catch(e){
       console.error('chat attach send failed', e);
+      try{ window.__cxMetaSent.delete(peer.pair); }catch(_){}
       chatPending.delete(id);
       chatMsgs.delete(id);
       const el = $x('chatMsgs') && $x('chatMsgs').querySelector(`.cmsg[data-id="${id}"]`);
@@ -24244,7 +24246,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }catch(err){}
   }
   let lbRaf = 0;
-  const schedLb = ()=>{ if(lbRaf) return; lbRaf = requestAnimationFrame(()=>{ lbRaf = 0; paintLb(); }); };
+  const schedLb = ()=>{ if(lbRaf) return; if(document.body && document.body.classList.contains('cxChatOpen')) return; lbRaf = requestAnimationFrame(()=>{ lbRaf = 0; paintLb(); }); };
   try{ new MutationObserver(schedLb).observe(document.body, { childList: true, subtree: true }); }catch(e){}
   const prevRerender = rerender;
   rerender = function(){ prevRerender(); schedLb(); };
@@ -27821,7 +27823,7 @@ const SlideType = (function(){
     const send = document.getElementById('chatSendBtn');
     if(send) send.addEventListener('click', ()=>{ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} });
   }
-  new MutationObserver(sync).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  let syncRaf = 0; new MutationObserver(()=>{ if(syncRaf) return; syncRaf = requestAnimationFrame(()=>{ syncRaf = 0; sync(); }); }).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   sync();
 })();
 
@@ -28579,7 +28581,8 @@ const AIReply = (function(){
 
 // ============================================================================
 // CHAT PLUS 18: TEXT SIZE  A− / A+  (chat bubbles + type karne wala box)
-//   - Chat khulte hi right side me chhota pill: [A−] [19] [A+]. Tap = 1px kam/zyada (12–30). Beech ka number = default (19) par wapas.
+//   - ROUND 33: ab chat header me alag 'Aa' button; tap par pill chat ke ANDAR khulta hai (body overlay nahi), 4s baad / bahar tap par band.
+//   - (purana) Chat khulte hi right side me chhota pill: [A−] [19] [A+]. Tap = 1px kam/zyada (12–30). Beech ka number = default (19) par wapas.
 //   - Save: localStorage 'cxFs'. CSS var --cxfs (#chatOverlay par). Messages ke upar do ungli pinch bhi chalta hai.
 // ============================================================================
 (function chatTextSize(){
@@ -28590,9 +28593,11 @@ const AIReply = (function(){
   #chatOverlay{--cxfs:${fs}}
   #chatOverlay #chatMsgs .cbub{font-size:calc(var(--cxfs,19) * 1px)!important;line-height:1.5!important}
   #chatOverlay .chatComposer #chatInput{font-size:max(16px, calc(var(--cxfs,19) * 1px - 1px))!important}
-  #cxFsPill{position:fixed;right:8px;top:90px;z-index:2147482000;display:none;align-items:center;gap:2px;padding:3px;border-radius:20px;background:rgba(28,29,35,.92);border:1px solid #34363f;box-shadow:0 3px 12px rgba(0,0,0,.45);transition:opacity .4s;opacity:1}
+  #cxFsPill{position:absolute;right:8px;top:64px;z-index:30;display:none;align-items:center;gap:2px;padding:3px;border-radius:20px;background:rgba(28,29,35,.92);border:1px solid #34363f;box-shadow:0 3px 12px rgba(0,0,0,.45);transition:opacity .4s;opacity:1}
   #cxFsPill.show{display:flex}
-  #cxFsPill.dim{opacity:.38}
+  #cxFsPill.dim{opacity:1}
+  #cxFsBtn{font-size:14px;font-weight:800;letter-spacing:-.5px}
+  #cxFsBtn.on{background:var(--accent,#fbbf24);color:#120d00}
   #cxFsPill button{border:0;background:transparent;color:#cfd0d4;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}
   #cxFsPill .fsb{width:38px;height:34px;border-radius:17px;font-weight:700}
   #cxFsPill .fsb:active{background:#2b2e36}
@@ -28601,7 +28606,10 @@ const AIReply = (function(){
   document.head.appendChild(css);
 
   let pill = null, dimT = 0;
-  const poke = ()=>{ if(!pill) return; pill.classList.remove('dim'); clearTimeout(dimT); dimT = setTimeout(()=>{ if(pill) pill.classList.add('dim'); }, 2500); };
+  let shown = false;
+  const paintBtn = ()=>{ const x = document.getElementById('cxFsBtn'); if(x) x.classList.toggle('on', shown); };
+  const setShown = (v)=>{ shown = !!v; if(pill) pill.classList.toggle('show', shown); paintBtn(); clearTimeout(dimT); if(shown) dimT = setTimeout(()=> setShown(false), 4000); };
+  const poke = ()=>{ if(shown){ clearTimeout(dimT); dimT = setTimeout(()=> setShown(false), 4000); } };
   function set(v, quiet){
     fs = Math.max(MIN, Math.min(MAX, Math.round(v)));
     const ov = document.getElementById('chatOverlay'); if(ov) ov.style.setProperty('--cxfs', fs);
@@ -28614,7 +28622,8 @@ const AIReply = (function(){
     if(pill) return;
     pill = document.createElement('div'); pill.id = 'cxFsPill';
     pill.innerHTML = '<button type="button" class="fsb" id="cxFsM" aria-label="Text chhota">A−</button><button type="button" id="cxFsN" aria-label="Normal size">' + fs + '</button><button type="button" class="fsb" id="cxFsP" aria-label="Text bada">A+</button>';
-    document.body.appendChild(pill);
+    const cv = document.getElementById('chatConv'); if(!cv) { pill = null; return; }
+    cv.appendChild(pill);
     const tap = (id, fn)=>{ const b = pill.querySelector(id); b.addEventListener('pointerdown', (e)=>{ e.preventDefault(); }); b.addEventListener('click', (e)=>{ e.preventDefault(); fn(); }); };
     // dabaye rakho to lagataar badhta/ghatta hai
     const hold = (id, d)=>{ const b = pill.querySelector(id); let t = 0, iv = 0, held = false;
@@ -28634,16 +28643,23 @@ const AIReply = (function(){
     box.addEventListener('touchmove', (e)=>{ if(e.touches.length === 2 && d0){ set(f0 * dist(e.touches) / d0, true); } }, { passive: true });
     box.addEventListener('touchend', ()=>{ d0 = 0; }, { passive: true });
   }
+  function ensureBtn(conv){
+    if(document.getElementById('cxFsBtn')) return;
+    const h = conv.querySelector('.chatHead'); if(!h) return;
+    const x = document.createElement('button'); x.type = 'button'; x.id = 'cxFsBtn'; x.className = 'chatIconBtn'; x.textContent = 'Aa'; x.setAttribute('aria-label', 'Text size');
+    x.addEventListener('click', ()=>{ build(); if(!pill) return; setShown(!shown); });
+    h.insertBefore(x, document.getElementById('cxMoreBtn') || null);
+  }
   function tick(){
     const conv = document.getElementById('chatConv');
     const open = !!(conv && !conv.hidden && conv.getClientRects().length);
     if(open){
-      build(); bindPinch();
-      const h = conv.querySelector('.chatHead'); const r = h && h.getBoundingClientRect();
-      pill.style.top = ((r ? r.bottom : 70) + 8) + 'px';
-      if(!pill.classList.contains('show')){ pill.classList.add('show'); const ov = document.getElementById('chatOverlay'); if(ov) ov.style.setProperty('--cxfs', fs); poke(); }
-    }else if(pill){ pill.classList.remove('show'); }
+      ensureBtn(conv); bindPinch();
+      if(pill){ const h = conv.querySelector('.chatHead'); pill.style.top = ((h ? h.offsetHeight : 56) + 8) + 'px'; }
+    }else if(shown){ setShown(false); }
   }
+  // pill ke bahar tap = band (sirf chat ke andar ka control)
+  document.addEventListener('pointerdown', (e)=>{ if(shown && !(e.target.closest && e.target.closest('#cxFsPill,#cxFsBtn'))) setShown(false); }, true);
   setInterval(()=>{ try{ tick(); }catch(e){} }, 400);
 })();
 
