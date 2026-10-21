@@ -2808,6 +2808,10 @@ function showOnboardingModal(){
       if(!name){ showStatus('⚠️ Pehle apna naam likho.'); return; }
       joinBtn.disabled = true;
       try{
+        if(await nameIsLocked(name)){
+          if(!(await askAdminPassword(name))){ showStatus('🔒 Ye naam sirf Admin ke liye hai — naya naam chuno.'); return; }
+          finish(name); return;   // sahi password: admin apna naam dobara le sakta hai (registry check skip)
+        }
         const registry = await loadRegistry();
         const taken = registry.some(n=>n.toLowerCase()===name.toLowerCase());
         if(taken){
@@ -2821,9 +2825,51 @@ function showOnboardingModal(){
     });
   });
 }
+// ===== Admin names lock: 'uv' / 'uv99' (aur room ka Admin) — login se pehle password =====
+// Koi bhi in naamon se login kare to 9211 puchha jayega; galat/cancel => naya naam chuno.
+// NOTE: ye client-side lock hai (app.js sabko dikhta hai, isliye password ka SHA-256 hash rakha hai, par 4 digit ka hash tod-na aasaan hai).
+const ADMIN_LOCK_NAMES = ['uv', 'uv99'];
+const ADMIN_PW_SHA256 = 'a6e0f1a76758711ecc0404d508d188f3d05e40247fda62936f10624934d34d43';
+const ADMIN_OK_KEY = 'cgl50-admin-ok';
+async function adminPwOk(pw){
+  pw = String(pw || '').trim();
+  try{
+    if(window.crypto && crypto.subtle){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('') === ADMIN_PW_SHA256;
+    }
+  }catch(e){}
+  return pw === '9211';   // crypto.subtle nahi (http) — seedha compare
+}
+async function nameIsLocked(name, fast){
+  const n = String(name || '').trim().toLowerCase(); if(!n) return false;
+  if(ADMIN_LOCK_NAMES.indexOf(n) > -1) return true;
+  if(fast) return false;   // app start par network wait nahi — sirf fixed naam
+  try{
+    const m = await Promise.race([loadRoomMeta(), new Promise(r => setTimeout(()=> r(null), 2500))]);
+    if(m && m.admin && String(m.admin).toLowerCase() === n) return true;
+  }catch(e){}
+  return false;
+}
+async function askAdminPassword(name){
+  let pw = null;
+  try{ pw = prompt('🔒 "' + name + '" sirf Admin ka naam hai.\nPassword daalo (nahi pata to Cancel dabao aur naya naam chuno):'); }catch(e){}
+  if(pw == null) return false;
+  const ok = await adminPwOk(pw);
+  if(ok){ try{ localStorage.setItem(ADMIN_OK_KEY, String(name).trim().toLowerCase()); }catch(e){} }
+  else alert('❌ Galat password. Ye naam sirf Admin ke liye hai — naya naam chuno.');
+  return ok;
+}
+function adminOkFor(name){ try{ return localStorage.getItem(ADMIN_OK_KEY) === String(name || '').trim().toLowerCase(); }catch(e){ return false; } }
 async function getOrCreateMyNameAsync(){
   let name = null;
   try{ name = localStorage.getItem('cgl50-myname'); }catch(e){}
+  if(name && await nameIsLocked(name, true) && !adminOkFor(name)){
+    // is device par ye admin naam bina password ke tha — ab password maango, nahi to naya naam
+    if(await askAdminPassword(name)) return name;
+    try{ localStorage.removeItem('cgl50-myname'); }catch(e){}
+    return await showOnboardingModal();
+  }
   if(name) return name;
   return await showOnboardingModal();
 }
@@ -3192,6 +3238,7 @@ function renderProfileBar(){
           alert('✅ Tum already Admin (' + myName + ') ho.');
           return;
         }
+        if(!(await askAdminPassword(meta.admin))) return;
         // IMPORTANT: unlike a normal rename below, we do NOT copy this
         // device's current state onto the admin name — that would clobber
         // the real admin's progress. switchViewing() safely fetches the
@@ -3207,6 +3254,17 @@ function renderProfileBar(){
 
       const newName = raw;
       if(newName.toLowerCase()===myName.toLowerCase()) return;
+      if(await nameIsLocked(newName)){
+        if(!(await askAdminPassword(newName))) return;
+        // sahi password: admin ke apne data par switch (current state us naam par copy NAHI hota)
+        myName = newName;
+        try{ localStorage.setItem('cgl50-myname', myName); }catch(e){}
+        await registerPlayer(myName);
+        if(getRoomCode()) await addToRoomRegistry(myName);
+        await switchViewing(myName);
+        await renderCompetePanel();
+        return;
+      }
       const registry = await loadRegistry();
       if(registry.some(n=>n.toLowerCase()===newName.toLowerCase())){
         alert('⚠️ Yeh naam already kisi aur ne le rakha hai. Dusra naam try karo.');
