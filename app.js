@@ -4275,12 +4275,13 @@ async function renderAdminPanelBody(){
   `;
 
   if(!others.length){
-    bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
+    bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + adminDefaultsHtml() + backupHtml + `<div class="losshint" style="padding-top:14px;">Abhi group mein koi aur member nahi joda.</div>`;
     wireAdminBackupButtons();
     wireAdminAnnouncementAndWeeklyControls();
+    wireAdminDefaults();
     return;
   }
-  bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + backupHtml + `
+  bodyEl.innerHTML = announceHtml + subAdminHtml + weeklyHtml + adminDefaultsHtml() + backupHtml + `
     <div class="losshint" style="padding-top:14px;">"Hide" karne se member ka naam/progress sirf tumhe aur usko dikhega, baaki sabse chhup jayega. 🗑️ Hatao se member hamesha ke liye group se hat jayega.</div>
     <div id="adminMemberList" style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
       ${others.map(nm=>{
@@ -4307,6 +4308,7 @@ async function renderAdminPanelBody(){
   `;
   wireAdminBackupButtons();
   wireAdminAnnouncementAndWeeklyControls();
+  wireAdminDefaults();
   const setSubAdminBtn = document.getElementById('setSubAdminBtn');
   if(setSubAdminBtn) setSubAdminBtn.addEventListener('click', async ()=>{
     const sel = document.getElementById('subAdminSelect');
@@ -21139,6 +21141,28 @@ if('serviceWorker' in navigator){
     if(!fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
     ov.classList.add('open');
     if(fdReady) push();
+    if(fdReady && !fdRunning) fdSendGlobal();
+  }
+  // ---- Admin ki Focus Desk setting => room ke sabhi members ka default (Firebase: rooms/<room>/_focusDefault) ----
+  const fdPath = ()=>{ const c = getRoomCode(); return c ? ('rooms/'+c+'/_focusDefault') : null; };
+  function fdSendRole(){ try{ if(fdReady) fr.contentWindow.postMessage({type:'fd-role', admin: !!(getRoomCode() && isMeAdmin())}, '*'); }catch(e){} }
+  async function fdSendGlobal(){
+    fdSendRole();
+    const p = fdPath(); if(!p) return;
+    try{
+      const raw = await window.__fbGet(p); if(!raw) return;
+      const D = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+      if(D && D.ls && D.v) fr.contentWindow.postMessage({type:'fd-global', data:D}, '*');
+    }catch(e){}
+  }
+  async function fdSaveGlobal(D, silent){
+    const ack = (ok, msg)=>{ try{ fr.contentWindow.postMessage({type:'fd-global-ack', ok:ok, msg:msg, v:(D&&D.v)||0, silent:!!silent}, '*'); }catch(e){} };
+    const p = fdPath();
+    if(!p) return ack(false, 'Sync Room me join nahi ho — sabke liye default sirf room ke members ko mil sakta hai.');
+    if(!isMeAdmin()) return ack(false, 'Sirf room Admin hi sabke liye default set kar sakta hai.');
+    if(!D || !D.ls || !D.v) return ack(false, 'Data galat hai.');
+    try{ await window.__fbSet(p, JSON.stringify(D)); ack(true, '✅ Sabhi members ke liye default set ho gaya (unke Focus Desk kholte hi apne aap lag jayega).'); }
+    catch(e){ ack(false, 'Firebase save fail hua — internet check karo.'); }
   }
   function closeFD(){ ov.classList.remove('open'); push(); }
   window.openFocusDesk = openFD;
@@ -21147,7 +21171,7 @@ if('serviceWorker' in navigator){
     if(ev.source !== fr.contentWindow) return;
     const m = ev.data || {};
     if(m.type === 'fd-ready'){
-      fdReady = true; push();
+      fdReady = true; push(); fdSendGlobal();
     } else if(m.type === 'fd-flush'){
       const sec = Number(m.sec), key = String(m.key||''), mm = /^task(\d+)$/.exec(key);
       if(!(sec > 0) || sec > 7200) return;
@@ -21167,8 +21191,10 @@ if('serviceWorker' in navigator){
       push();
     } else if(m.type === 'fd-status'){
       const changed = (fdRunning !== !!m.running) || (fdLabel !== String(m.label||''));
-      fdRunning = !!m.running; fdLabel = String(m.label||'');
+      fdRunning = !!m.running; fdLabel = String(m.label||''); window.__fdRunning = fdRunning;
       if(changed) paint();
+    } else if(m.type === 'fd-global-get'){ fdSendGlobal();
+    } else if(m.type === 'fd-global-save'){ fdSaveGlobal(m.data, m.silent);
     } else if(m.type === 'fd-close'){ closeFD(); }
   });
 
@@ -24598,6 +24624,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const EMO = ['😂','🤣','😍','🥰','😘','😎','🤩','🥳','😭','😢','😡','🤯','😱','🤔','🙄','😴','🤗','😇','😜','🤪','🥺','😏','🤝','👍','👎','👏','🙏','💪','🔥','💯','❤️','💔','🎉','🎂','✨','🌹','😈','👀','🤡','💀','☕','🍕','📚','✅','❌','🚀','🏆','😅'];
   const getMy = ()=>{ const a = LSG(SKEY, []); return Array.isArray(a) ? a.filter(s => typeof s === 'string' && s.startsWith('data:image/')) : []; };
   let tab = 'emo', del = false, pack = 'love', PK = null, PKP = null;
+  let CK = {}, CD = {}, CKON = false, CBUSY = false;   // CK = admin ke zip-packs (Firebase), CD = unke stickers ka memory cache
   const PKRE = /^[a-z0-9_-]{1,20}$/, PNRE = /^\d{1,4}\.webp$/;
 
   function styles(){
@@ -24630,10 +24657,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   function panel(){
     let p = $('cxsk4'); if(p) return p;
     p = document.createElement('div'); p.id = 'cxsk4';
-    p.innerHTML = '<div class="pn"><div class="tb"><button type="button" data-t="emo">😀 Emoji</button><button type="button" data-t="my">🎭 Mere stickers</button><button type="button" data-t="pk">📦 Packs</button><span class="sp"></span><button type="button" data-t="edit" id="cxsk4Ed" hidden>✏️</button><button type="button" data-t="close">✕</button></div><div class="gd" id="cxsk4Gd"></div></div><input type="file" id="cxsk4F" accept="image/*" hidden>';
+    p.innerHTML = '<div class="pn"><div class="tb"><button type="button" data-t="emo">😀 Emoji</button><button type="button" data-t="my">🎭 Mere stickers</button><button type="button" data-t="pk">📦 Packs</button><span class="sp"></span><button type="button" data-t="edit" id="cxsk4Ed" hidden>✏️</button><button type="button" data-t="close">✕</button></div><div class="gd" id="cxsk4Gd"></div></div><input type="file" id="cxsk4F" accept="image/*" hidden><input type="file" id="cxsk4Z" accept=".zip,application/zip,application/x-zip-compressed" multiple hidden>';
     document.body.appendChild(p);
     p.addEventListener('click', (e)=>{ if(e.target === p) close(); });
     $('cxsk4F').addEventListener('change', onFile);
+    $('cxsk4Z').addEventListener('change', onZip);
     p.querySelector('.tb').addEventListener('click', (e)=>{
       const b = e.target.closest('[data-t]'); if(!b) return;
       const t = b.dataset.t;
@@ -24647,6 +24675,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       if(b.dataset.e){ sendEmoji(b.dataset.e); return; }
       if(b.dataset.p){ pack = b.dataset.p; render(); return; }
       if(b.dataset.pk){ sendPack(b.dataset.pk, b.dataset.pn); return; }
+      if(b.dataset.zip){ $('cxsk4Z').click(); return; }
+      if(b.dataset.dp){ delPack(b.dataset.dp); return; }
+      if(b.dataset.cs){ const L = CD[b.dataset.cs]; const st = L && L[Number(b.dataset.ci)]; if(st) sendImg(st); return; }
       if(b.dataset.i != null){
         const i = Number(b.dataset.i), list = getMy();
         if(del){ list.splice(i, 1); LSS(SKEY, list); render(); }
@@ -24664,13 +24695,27 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(tab === 'pk'){
       if(!PK){
         gd.innerHTML = '<div class="em">Packs load ho rahe hain…</div>';
-        loadPacks().then(()=>{ if(tab === 'pk') render(); }).catch(()=>{ if(tab === 'pk') gd.innerHTML = '<div class="em">Packs nahi mile (stickers/ folder upload hua?).</div>'; });
+        loadPacks().catch(()=>{ PK = PK || {}; }).then(()=>{ if(tab === 'pk') render(); });
         return;
       }
+      startCloud();
+      const esc = (x)=> String(x).replace(/[<>&"]/g, '');
       const ks = Object.keys(PK).filter(k => PKRE.test(k));
-      if(!PK[pack]) pack = ks[0];
-      let h = '<div class="pkr">' + ks.map(k => `<button type="button" class="ch${k === pack ? ' on' : ''}" data-p="${k}">${String(PK[k].title || k).replace(/[<>&"]/g, '')}</button>`).join('') + '</div>';
-      h += ((PK[pack] || {}).files || []).filter(f => PNRE.test(f)).map(f => `<button type="button" class="pks" data-pk="${pack}" data-pn="${f}"><img loading="lazy" decoding="async" src="./stickers/${pack}/${f}" alt=""></button>`).join('');
+      const cs = Object.keys(CK).filter(k => PKRE.test(k)).sort((x, y)=> (CK[x].ts || 0) - (CK[y].ts || 0));
+      const all = ks.concat(cs);
+      if(!all.includes(pack)) pack = all[0] || '';
+      const adm = (()=>{ try{ return isMeAdmin(); }catch(e){ return false; } })();
+      let h = '<div class="pkr">' + all.map(k => `<button type="button" class="ch${k === pack ? ' on' : ''}" data-p="${k}">${esc((CK[k] || PK[k] || {}).title || k)}</button>`).join('') + '</div>';
+      if(adm) h += `<div class="pkr"><button type="button" class="ch" data-zip="1">${CBUSY ? '⏳ Upload ho raha hai…' : '＋ Zip se naya pack (sabke liye)'}</button>${CK[pack] ? '<button type="button" class="ch" data-dp="' + pack + '">🗑 Ye pack hatao</button>' : ''}</div>`;
+      if(CK[pack]){
+        const L = CD[pack];
+        if(!L){ h += '<div class="em">Pack load ho raha hai…</div>'; gd.innerHTML = h; loadCloud(pack).then(()=>{ if(tab === 'pk' && pack) render(); }).catch(()=>{}); return; }
+        h += L.map((d, i)=> `<button type="button" class="pks" data-cs="${pack}" data-ci="${i}"><img decoding="async" src="${d}" alt=""></button>`).join('');
+      }else if(PK[pack]){
+        h += ((PK[pack] || {}).files || []).filter(f => PNRE.test(f)).map(f => `<button type="button" class="pks" data-pk="${pack}" data-pn="${f}"><img loading="lazy" decoding="async" src="./stickers/${pack}/${f}" alt=""></button>`).join('');
+      }else if(!all.length){
+        h += '<div class="em">Abhi koi pack nahi hai.' + (adm ? ' Upar se zip upload karo.' : ' Admin jab zip upload karega yahan apne aap aa jayega.') + '</div>';
+      }
       gd.innerHTML = h; return;
     }
     const list = getMy();
@@ -24680,9 +24725,119 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     else if(del) h += '<div class="em">Hatane ke liye sticker par tap karo</div>';
     gd.innerHTML = h;
   }
-  function open(){ if(!chatPeer) return; styles(); panel(); del = false; render(); $('cxsk4').classList.add('open'); loadPacks().then(()=>{ if(tab === 'pk' && $('cxsk4') && $('cxsk4').classList.contains('open')) render(); }).catch(()=>{}); }
+  function open(){ if(!chatPeer) return; styles(); panel(); del = false; startCloud(); render(); $('cxsk4').classList.add('open'); loadPacks().then(()=>{ if(tab === 'pk' && $('cxsk4') && $('cxsk4').classList.contains('open')) render(); }).catch(()=>{}); }
   function close(){ const p = $('cxsk4'); if(p) p.classList.remove('open'); }
   window.cxStickerOpen = ()=>{ try{ open(); }catch(e){} };
+
+  // ================= Admin zip packs (Firebase, sabke liye auto) =================
+  // rooms/<room>/_stkPacks/<id> = {title,n,ts,by}  (meta, live listener => sabke paas turant)
+  // rooms/<room>/_stkData/<id>/<i> = dataURL        (sticker image, pack khulne par hi download)
+  const CROOM = ()=> 'rooms/' + getRoomCode();
+  function startCloud(){
+    if(CKON) return; CKON = true;
+    (async()=>{
+      try{
+        await waitForFirebase();
+        await window.__fbListenReady(CROOM() + '/_stkPacks', (v)=>{
+          const nk = {};
+          if(v && typeof v === 'object') Object.keys(v).forEach(k => { const m = v[k]; if(PKRE.test(k) && m && typeof m === 'object') nk[k] = { title: String(m.title || k).slice(0, 30), n: Number(m.n) || 0, ts: Number(m.ts) || 0 }; });
+          Object.keys(CD).forEach(k => { if(!nk[k] || nk[k].ts !== (CK[k] || {}).ts) delete CD[k]; });   // pack badla/hata => cache hatao
+          CK = nk;
+          const p = $('cxsk4');
+          if(p && p.classList.contains('open') && tab === 'pk') render();
+        });
+      }catch(e){ CKON = false; }
+    })();
+  }
+  // IndexedDB cache: pack dobara download na ho (data bachta hai)
+  function idb(){
+    return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-stk-cache', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('p'); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } });
+  }
+  async function idbGet(k){ try{ const d = await idb(); return await new Promise(res=>{ const q = d.transaction('p').objectStore('p').get(k); q.onsuccess = ()=> res(q.result || null); q.onerror = ()=> res(null); }); }catch(e){ return null; } }
+  async function idbSet(k, v){ try{ const d = await idb(); d.transaction('p', 'readwrite').objectStore('p').put(v, k); }catch(e){} }
+  async function idbDel(k){ try{ const d = await idb(); d.transaction('p', 'readwrite').objectStore('p').delete(k); }catch(e){} }
+  async function loadCloud(id){
+    if(CD[id]) return CD[id];
+    const ts = (CK[id] || {}).ts || 0, key = id + ':' + ts;
+    const c = await idbGet(key);
+    if(c && Array.isArray(c) && c.length){ CD[id] = c; return c; }
+    await waitForFirebase();
+    const v = await window.__fbGet(CROOM() + '/_stkData/' + id);
+    let L = [];
+    if(Array.isArray(v)) L = v; else if(v && typeof v === 'object') L = Object.keys(v).sort((a, b)=> a - b).map(k => v[k]);
+    L = L.filter(d => typeof d === 'string' && d.startsWith('data:image/'));
+    CD[id] = L; if(L.length) idbSet(key, L);
+    return L;
+  }
+  let JSZP = null;
+  function loadJSZip(){
+    if(window.JSZip) return Promise.resolve(window.JSZip);
+    if(!JSZP) JSZP = new Promise((res, rej)=>{ const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; sc.onload = ()=> window.JSZip ? res(window.JSZip) : rej(new Error('jszip')); sc.onerror = ()=>{ JSZP = null; rej(new Error('jszip')); }; document.head.appendChild(sc); });
+    return JSZP;
+  }
+  const MIME = { png: 'image/png', webp: 'image/webp', gif: 'image/gif', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
+  const blobToUrl = (bl)=> new Promise((res, rej)=>{ const r = new FileReader(); r.onload = ()=> res(r.result); r.onerror = rej; r.readAsDataURL(bl); });
+  // zip ke andar ki ek image -> sticker dataURL (chhoti webp/gif jaisi hai waisi = animation bachti hai; badi ho to 256px static webp)
+  async function zipImg(blob, ext){
+    if(blob.size <= 70000 && (ext === 'webp' || ext === 'gif' || ext === 'png')){ return await blobToUrl(blob); }
+    return await toSticker(blob);
+  }
+  async function onZip(e){
+    const files = Array.from(e.target.files || []); e.target.value = '';
+    if(!files.length) return;
+    let adm = false; try{ adm = isMeAdmin(); }catch(x){}
+    if(!adm){ toast('Sirf admin pack upload kar sakta hai.'); return; }
+    if(CBUSY) return;
+    CBUSY = true; render();
+    try{
+      const JZ = await loadJSZip();
+      await waitForFirebase();
+      for(const f of files){
+        const title = f.name.replace(/\.zip$/i, '').replace(/[<>&"]/g, '').trim().slice(0, 30) || 'Pack';
+        toast('"' + title + '" padh raha hu…');
+        const z = await JZ.loadAsync(f);
+        const ents = Object.keys(z.files).filter(n => { const zf = z.files[n]; return !zf.dir && !/(^|\/)(__MACOSX|\.)/.test(n) && MIME[(n.split('.').pop() || '').toLowerCase()]; }).sort((a, b)=> a.localeCompare(b, undefined, { numeric: true })).slice(0, 80);
+        if(!ents.length){ toast('"' + title + '" me koi image nahi mili.'); continue; }
+        const out = [];
+        for(const n of ents){
+          const ext = n.split('.').pop().toLowerCase();
+          try{
+            const bl = new Blob([await z.files[n].async('arraybuffer')], { type: MIME[ext] });
+            const d = await zipImg(bl, ext);
+            if(d && d.length < 95000) out.push(d);
+          }catch(err){}
+        }
+        if(!out.length){ toast('"' + title + '" ki images sticker nahi ban paayi.'); continue; }
+        const id = 'u' + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36);
+        const base = CROOM() + '/_stkData/' + id;
+        for(let i = 0; i < out.length; i += 6){   // 6-6 ke batch me upload
+          await Promise.all(out.slice(i, i + 6).map((d, j)=> window.__fbSet(base + '/' + (i + j), d)));
+          toast('"' + title + '" upload: ' + Math.min(i + 6, out.length) + '/' + out.length);
+        }
+        // meta sabse aakhir me => pack tabhi dikhta hai jab poora upload ho chuka ho
+        await window.__fbSet(CROOM() + '/_stkPacks/' + id, { title, n: out.length, ts: Date.now(), by: String(myName || '').slice(0, 30) });
+        CD[id] = out; pack = id;
+        toast('✅ "' + title + '" pack (' + out.length + ' stickers) sabke liye add ho gaya');
+      }
+    }catch(err){
+      console.error('sticker zip', err);
+      toast(String(err && err.message) === 'jszip' ? 'Zip library load nahi hui — internet check karo.' : 'Upload fail hua — dobara try karo.');
+    }
+    CBUSY = false; tab = 'pk'; render();
+  }
+  async function delPack(id){
+    let adm = false; try{ adm = isMeAdmin(); }catch(x){}
+    if(!adm || !CK[id]) return;
+    if(!confirm('"' + CK[id].title + '" pack sabke liye hata dein?')) return;
+    try{
+      await waitForFirebase();
+      await window.__fbSet(CROOM() + '/_stkPacks/' + id, null);
+      await window.__fbSet(CROOM() + '/_stkData/' + id, null);
+      idbDel(id + ':' + (CK[id].ts || 0)); delete CD[id]; delete CK[id];
+      toast('Pack hata diya');
+    }catch(err){ toast('Hata nahi paya — dobara try karo.'); }
+    render();
+  }
 
   async function sendEmoji(e){
     close();
@@ -24692,7 +24847,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   async function loadPacks(){
     // packs.json har 2 min me taaza (Telegram bot se naye packs sabke paas auto aaye); cache nahi
     if(PK && Date.now() - PKT < 120000) return PK;
-    if(!PKP) PKP = fetch('./stickers/packs.json?t=' + Math.floor(Date.now() / 60000), { cache: 'no-cache' }).then(r => { if(!r.ok) throw new Error('packs'); return r.json(); }).then(j => { PK = j; PKT = Date.now(); PKP = null; return PK; }).catch(e => { PKP = null; if(PK) return PK; throw e; });
+    if(!PKP) PKP = fetch('./stickers/packs.json?t=' + Math.floor(Date.now() / 60000), { cache: 'no-cache' }).then(r => { if(!r.ok) throw new Error('packs'); return r.json(); }).then(j => { PK = j; PKT = Date.now(); PKP = null; return PK; }).catch(e => { PKP = null; if(PK) return PK; PK = {}; PKT = Date.now() - 100000; return PK; });
     return PKP;
   }
   async function sendPack(pk, pn){
@@ -30585,4 +30740,152 @@ const AIReply = (function(){
     });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+})();
+
+
+// =====================================================================
+// ===== ADMIN DEFAULTS: Admin ki settings => room ke sabhi members =====
+// =====================================================================
+// Admin jo bhi (neeche whitelist wali) settings badalta hai wo 8 sec me
+// Firebase (rooms/<room>/_appDefault) me chali jati hai. Members ke app me
+// ye settings apne aap lag jati hain (app kholte hi / wapas aate hi).
+// Personal cheezein (naam, progress, AI key, device id, friends) kabhi nahi jaatin.
+// Focus Desk ki settings ka alag auto-sync upar Focus Desk bridge me hai.
+const APPDEF_KEYS = [
+  'cgl50-timesettings',            // roz ka schedule: day-end + breaks
+  'cgl50-target-reminder-enabled', // target reminder ON/OFF
+  'cgl50-strictmgr-enabled',       // strict manager ON/OFF
+  'examDarkPref',                  // exam dark mode
+  'gkReaderLang', 'gkReaderFontSize', 'editorialFontSize',   // reading settings
+  'cxTheme', 'cxSnd', 'cxFs', 'cxAutoGal'                    // chat theme / sound / font size / auto-gallery
+];
+const APPDEF_LABELS = ['Time schedule (day end + breaks)', 'Target reminder & Strict manager', 'Exam dark mode', 'GK Reader / Editorial language + font size', 'Chat theme, sound, font size'];
+function appDefPath(){ const c = getRoomCode(); return c ? ('rooms/' + c + '/_appDefault') : null; }
+function appDefSnap(){
+  const ls = {};
+  APPDEF_KEYS.forEach(k=>{ try{ const v = localStorage.getItem(k); if(v !== null) ls[k] = v; }catch(e){} });
+  return { v: Date.now(), ls: ls };
+}
+function appDefAutoOn(){ try{ return localStorage.getItem('cgl50-appdef-auto') !== '0'; }catch(e){ return true; } }
+let appDefLastSig = null, appDefBusy = false, appDefLastMsg = '';
+async function appDefPublish(manual){
+  const p = appDefPath();
+  if(!p || !isMeAdmin()) return false;
+  const D = appDefSnap();
+  try{
+    await window.__fbSet(p, JSON.stringify(D));
+    try{ localStorage.setItem('cgl50-appDefV', String(D.v)); }catch(e){}
+    appDefLastSig = JSON.stringify(D.ls);
+    appDefLastMsg = '✅ Aakhri publish: ' + new Date(D.v).toLocaleTimeString('en-IN');
+    return true;
+  }catch(e){ appDefLastMsg = '⚠ Publish fail hua — internet check karo.'; return false; }
+}
+async function appDefAdminTick(){
+  if(appDefBusy) return;
+  const p = appDefPath();
+  if(!p || !isMeAdmin() || !appDefAutoOn()) return;
+  appDefBusy = true;
+  try{
+    const sig = JSON.stringify(appDefSnap().ls);
+    if(appDefLastSig === null){
+      // pehli baar: server par jo hai usse admin ki current settings alag hon to publish
+      let remote = null;
+      try{ const raw = await window.__fbGet(p); remote = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null; }catch(e){}
+      if(!remote || JSON.stringify(remote.ls || {}) !== sig) await appDefPublish(false);
+      else appDefLastSig = sig;
+    } else if(sig !== appDefLastSig){
+      await appDefPublish(false);
+    }
+  }catch(e){}
+  appDefBusy = false;
+}
+function appDefToast(t){
+  try{
+    let el = document.getElementById('appDefToast');
+    if(!el){ el = document.createElement('div'); el.id = 'appDefToast'; el.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:99999;background:#222;color:#fff;border-radius:99px;padding:10px 16px;font-size:13px;max-width:88vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.4)'; document.body.appendChild(el); }
+    el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(()=>{ el.style.display = 'none'; }, 3500);
+  }catch(e){}
+}
+let appDefMemberBusy = false;
+async function appDefMemberSync(){
+  if(appDefMemberBusy) return;
+  const p = appDefPath();
+  if(!p || isMeAdmin()) return;
+  appDefMemberBusy = true;
+  try{
+    const raw = await window.__fbGet(p); if(!raw) return;
+    const D = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+    if(!D || !D.ls || !D.v) return;
+    const cur = Number(localStorage.getItem('cgl50-appDefV')) || 0;
+    if(D.v <= cur) return;
+    let changed = false;
+    APPDEF_KEYS.forEach(k=>{ if(typeof D.ls[k] === 'string' && localStorage.getItem(k) !== D.ls[k]){ try{ localStorage.setItem(k, D.ls[k]); changed = true; }catch(e){} } });
+    try{ localStorage.setItem('cgl50-appDefV', String(D.v)); }catch(e){}
+    if(!changed) return;
+    if(window.__fdRunning || document.fullscreenElement){ appDefToast('👑 Admin ne settings update ki — agli baar app kholne par lag jayengi'); return; }
+    appDefToast('👑 Admin ki nayi settings lag rahi hain…');
+    setTimeout(()=>{ location.reload(); }, 1200);
+  }catch(e){}
+  finally{ appDefMemberBusy = false; }
+}
+function adminDefaultsHtml(){
+  const on = appDefAutoOn();
+  return '<div class="grid-label" style="margin-top:14px;">⚙️ Sabke Liye Default Settings</div>' +
+    '<div class="losshint" style="padding-top:0;">Tum jo bhi settings badloge (' + APPDEF_LABELS.join(', ') + ') wo apne aap sabhi members ke liye default ho jayengi. Focus Desk ki settings ka sync alag se auto chalta hai.</div>' +
+    '<label class="adminMemberToggle" style="margin-top:8px;"><span>Auto-publish ON (badalte hi sabko mile)</span><input type="checkbox" id="appDefAutoChk" ' + (on ? 'checked' : '') + '></label>' +
+    '<div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="appDefNowBtn">📡 Abhi sabke liye publish</button></div>' +
+    '<div class="losshint" id="appDefStatus" style="padding-top:6px;">' + (appDefLastMsg || 'Abhi tak is session me publish nahi hua.') + '</div>';
+}
+function wireAdminDefaults(){
+  const chk = document.getElementById('appDefAutoChk'), btn = document.getElementById('appDefNowBtn'), st = document.getElementById('appDefStatus');
+  if(chk) chk.addEventListener('change', ()=>{ try{ localStorage.setItem('cgl50-appdef-auto', chk.checked ? '1' : '0'); }catch(e){} if(chk.checked){ appDefLastSig = null; appDefAdminTick(); } });
+  if(btn) btn.addEventListener('click', async ()=>{
+    btn.disabled = true; btn.textContent = '⏳...';
+    const ok = await appDefPublish(true);
+    btn.disabled = false; btn.textContent = '📡 Abhi sabke liye publish';
+    if(st) st.textContent = ok ? appDefLastMsg : (appDefLastMsg || 'Publish nahi hua (room/Admin check karo).');
+  });
+}
+setInterval(()=>{ try{ appDefAdminTick(); }catch(e){} }, 8000);
+setTimeout(()=>{ try{ appDefMemberSync(); }catch(e){} }, 6000);
+setInterval(()=>{ try{ if(!document.hidden) appDefMemberSync(); }catch(e){} }, 120000);
+document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) setTimeout(appDefMemberSync, 800); }catch(e){} });
+
+
+// ============================================================================
+// CHAT GIF AUTOPLAY: GIF bubble me pehle sirf chhota static thumbnail (jpeg) dikhta tha, tap karne par hi
+// asli GIF load hoti thi. Ab asli GIF apne aap load hoke bubble me hi chalti hai (blob url cache hota hai,
+// isliye bubble dobara draw hone par bhi blink/dobara download nahi hota).
+// ============================================================================
+(function chatGifAutoplay(){
+  const cache = new Map();            // fid -> blob url
+  const busy = new Map();             // fid -> retry-after timestamp / true
+  const MAXC = 40;
+  function put(fid, url){
+    cache.set(fid, url);
+    if(cache.size > MAXC){ const k = cache.keys().next().value; try{ URL.revokeObjectURL(cache.get(k)); }catch(e){} cache.delete(k); }
+  }
+  async function load(fid){
+    busy.set(fid, true);
+    try{
+      const d = await window.cxGetFile(fid);
+      const blob = (typeof d === 'string') ? await (await fetch(d)).blob() : (d instanceof Blob ? d : null);
+      if(!blob) throw new Error('no data');
+      const typed = blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' });
+      put(fid, URL.createObjectURL(typed));
+      busy.delete(fid);
+    }catch(e){ busy.set(fid, Date.now() + 30000); }
+  }
+  function scan(){
+    if(!window.cxGetFile) return;
+    document.querySelectorAll('#chatMsgs .cgifw img.cimg[data-fid]').forEach(img=>{
+      const fid = img.dataset.fid; if(!fid) return;
+      const url = cache.get(fid);
+      if(url){ if(img.getAttribute('src') !== url) img.setAttribute('src', url); return; }
+      const b = busy.get(fid);
+      if(b === true || (b && Date.now() < b)) return;
+      load(fid);
+    });
+  }
+  cxPoll('chat', ()=>{ try{ scan(); }catch(e){} }, 500);
 })();

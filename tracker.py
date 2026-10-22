@@ -44,6 +44,7 @@ except ImportError:
     sys.exit("pehle install karo:  pip install requests beautifulsoup4")
 
 # ═════════════════════════════════════════════════════════════════ config
+ONLY_TYPE = "New Vacancy"   # dashboard me sirf nayi vacancy dikhegi (result/admit card/update etc. nahi)
 LIST_URL = "https://www.sarkariresult.com/latestjob/"
 BASE = Path(__file__).resolve().parent
 DATA_DIR = BASE / "data"
@@ -928,7 +929,6 @@ const DATA = null /*__DATA__*/;
     ["soon","⏰ Jaldi band", j => j.status === "closing_soon"],
     ["watch","⭐ Mere Exams", j => j.watch && live(j)],
     ["elig","🎯 Mere liye", j => live(j) && !INFO.includes(j.type) && (eligibility(j)||{}).state === "ok"],
-    ["updates","📢 Admit/Result", j => INFO.includes(j.type)],
     ["saved","💾 Saved", j => saved.has(j.id)],
     ["applied","✔ Applied", j => applied.has(j.id)],
     ["all","Sab", j => true],
@@ -1181,7 +1181,7 @@ const DATA = null /*__DATA__*/;
 
 
 def build_html(store: dict, out_path: Path, refresh_secs: int = 0, hint: str = "run"):
-    jobs = sorted(store["jobs"].values(), key=lambda j: j.get("order", 9999))
+    jobs = sorted((j for j in store["jobs"].values() if j.get("type") == ONLY_TYPE), key=lambda j: j.get("order", 9999))
     payload = {"updated_at": now_iso(), "jobs": jobs, "refresh_hint": hint}
     blob = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     blob = blob.replace("</", "<\\/").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
@@ -1268,7 +1268,7 @@ def run_once(args) -> dict:
         pending = [j for j in store["jobs"].values()
                    if not j["detail_fetched"] and j.get("last_seen") == ts and j.get("detail_tries", 0) < MAX_DETAIL_TRIES
                    and j["status"] in ("open", "closing_soon", "no_date")
-                   and j["type"] in ("New Vacancy", "Vacancy Update", "Correction Form", "Other", "Document Upload", "Option Form")]
+                   and j["type"] == ONLY_TYPE]
         pending.sort(key=lambda j: (not j.get("is_new"), not j.get("watch"), j.get("order", 9999)))
         log(f"Detail pages pending: {len(pending)} (is run me max {MAX_DETAIL_PER_RUN})")
         for j in pending[:MAX_DETAIL_PER_RUN]:

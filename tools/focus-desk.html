@@ -136,7 +136,7 @@ main{justify-content:flex-start!important;padding-top:66px!important;gap:9px!imp
 #bg{transition:background 1s,filter .25s,transform .25s;will-change:filter}
 #mq{position:fixed;right:14px;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:3;--ms:1;font-size:calc(12.5px*var(--ms));width:min(20em,calc(100vw - 20px));padding:.8em 1.1em .8em 1em;border-radius:1.1em;text-align:left;line-height:1.45;color:rgba(244,243,238,.94);background:rgba(12,13,18,.5);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 8px 28px rgba(0,0,0,.35);text-shadow:0 1px 3px rgba(0,0,0,.6);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;opacity:0;pointer-events:none;transition:opacity .7s ease}#mq.on{pointer-events:auto}#mq.left{right:auto;left:14px}#mq.drag{cursor:grabbing;transition:none}
 #mq .mqg{position:absolute;right:2px;bottom:2px;width:22px;height:22px;cursor:nwse-resize;opacity:.55;background:linear-gradient(135deg,transparent 52%,rgba(255,255,255,.7) 52% 60%,transparent 60% 72%,rgba(255,255,255,.7) 72% 80%,transparent 80%);border-radius:0 0 1.1em 0;touch-action:none}
-#mq.on{opacity:1}body.dnd #mq{opacity:0!important}#mq.off{display:none}
+#mq .mqr{position:absolute;right:6px;top:5px;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:inherit;font-size:14px;line-height:1;cursor:pointer;opacity:.7;display:flex;align-items:center;justify-content:center}#mq .mqr:hover{opacity:1;background:rgba(255,255,255,.22)}#mq .mqr.spin{transform:rotate(360deg);transition:transform .5s}#mq{padding-right:2.2em!important}#mq.on{opacity:1}body.dnd #mq{opacity:0!important}#mq.off{display:none}
 .bgctl{margin:0 0 12px;padding:10px 12px;border:1px solid var(--ln);border-radius:12px}.bgctl label.mu{display:block;margin:0 0 6px}.bgctl .opt{padding:2px 0;font-size:14px}
 .top .edb{background:var(--pn);border:1px solid var(--ln);border-radius:99px;padding:7px 13px;font-size:14px;opacity:.7}.top .edb:hover{opacity:1}
 #edbar{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:99px;background:rgba(14,15,20,.94);border:1px solid var(--ac);font-size:12.5px;white-space:nowrap;max-width:calc(100vw - 16px)}
@@ -203,7 +203,7 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 <div id="clk"></div><div class="mu" id="cd" style="margin-top:-8px"></div><div id="time">25:00</div><div id="pb"><i></i></div><ol id="laps" class="mu"></ol>
 <input type="text" id="task" placeholder="Aap kis par kaam kar rahe ho?" aria-label="Working on">
 <div class="row"><button class="ib" id="reset" title="Reset">↺</button><button class="ib" id="lap" title="Lap" style="display:none">⚑</button><button id="start">Start</button><button class="ib" id="dis" title="Distraction hui? Tap karo (D)">🚨<small id="disn">0</small></button><button class="ib" id="pop" data-p="mini" title="Mini / Floating stopwatch + clock">⧉</button></div>
-<div id="mq" aria-live="off"><span id="mqt"></span><i class="mqg" title="Kheench kar bada/chhota karo"></i></div><div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
+<div id="mq" aria-live="off"><span id="mqt"></span><button type="button" class="mqr" id="mqr" title="Naya motivation msg" aria-label="Naya motivation msg">↻</button><i class="mqg" title="Kheench kar bada/chhota karo"></i></div><div class="mu" id="qt" style="max-width:340px;font-style:italic;min-height:18px"></div>
 <div class="mu" id="cfg">Focus <input type="number" id="fm" value="25" min="1" max="180" style="width:56px"> min · Break <input type="number" id="bm" value="5" min="1" max="60" style="width:56px"> min · Long <input type="number" id="lm" value="15" min="1" max="90" style="width:56px"> min</div>
 <div class="row"><button class="pill" data-z="-">A−</button><button class="pill" data-z="+">A+</button></div></main>
 <div class="dock l"><button class="ib" data-p="scene" title="Scene">☁</button><button class="ib" data-p="music" title="Music">♫</button><button class="ib" data-p="bgp" title="Background">▣</button><button class="ib" id="nb" title="Sticky note">✎</button><button class="ib" id="bt" title="1 minute breathing (B)">🫁</button><button class="ib" id="ey" title="Eye exercise (E)">👁</button></div>
@@ -291,7 +291,7 @@ if(k==='cf'||k==='fw'){var o=JSON.parse(c)||{},ch=0;for(var q in d)if(o[q]===und
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const S=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},W=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-const FN=[['Modern','"Trebuchet MS",system-ui,sans-serif',.68],['Digital','Orbitron,"Trebuchet MS",sans-serif',.92],['Classic','"Playfair Display",Georgia,serif',.74],['Mono','"Space Mono",ui-monospace,monospace',.66]],ACS=['#e5484d','#f5a524','#30c48d','#3b82f6','#a855f7','#ec4899'];const CF=Object.assign({tsc:1,csc:1,ac:'#e5484d',font:0,goal:120,auto:false,lint:4,snd:true,sec:true,show:true,h12:false,sh:false,rp:'all',amb:{},eb:25},S('cf',{}));let mode='focus',left=1500,run=false,iv=null,startTs=0,elapsed=0,log=S('log',[]),tasks=S('tasks',[]);
+const FN=[['Modern','"Trebuchet MS",system-ui,sans-serif',.68],['Digital','Orbitron,"Trebuchet MS",sans-serif',.92],['Classic','"Playfair Display",Georgia,serif',.74],['Mono','"Space Mono",ui-monospace,monospace',.66]],ACS=['#e5484d','#f5a524','#30c48d','#3b82f6','#a855f7','#ec4899'];const CF=Object.assign({tsc:1,csc:1,ac:'#e5484d',font:0,goal:120,auto:false,lint:4,snd:true,sec:true,show:true,h12:false,sh:false,rp:'all',amb:{},eb:0},S('cf',{}));try{if(!localStorage.getItem('fdEbOff1')){CF.eb=0;W('cf',CF);localStorage.setItem('fdEbOff1','1')}}catch(e){}let mode='focus',left=1500,run=false,iv=null,startTs=0,elapsed=0,log=S('log',[]),tasks=S('tasks',[]);
 const dur=()=>({focus:$('#fm').value,short:$('#bm').value,long:$('#lm').value}[mode]*60);
 const f=n=>String(n).padStart(2,'0');
 function draw(){const t=mode==='stop'?elapsed:left;$('#time').textContent=f(Math.floor(t/60))+':'+f(t%60);document.title=$('#time').textContent+' - '+(mode==='focus'?'Focus':mode==='stop'?'Stopwatch':'Break')}
@@ -844,6 +844,7 @@ function next(first){if(!Q.length)return;if(pos>=order.length)shuf();const t=Q[o
  el.classList.remove('on');setTimeout(()=>{tx.textContent=t;el.classList.add('on');place()},750)}
 function start(){stop();shuf();next(true);tm=setInterval(()=>{if(!document.hidden)next(false)},120000)}
 function stop(){if(tm)clearInterval(tm);tm=null}
+$('#mqr').addEventListener('click',e=>{e.stopPropagation();const b=e.currentTarget;b.classList.add('spin');setTimeout(()=>b.classList.remove('spin'),520);next(false);if(tm){clearInterval(tm);tm=setInterval(()=>{if(!document.hidden)next(false)},120000)}});
 function apply(on,save){ck.checked=on;el.classList.toggle('off',!on);if(save)w('mq',on);if(on)start();else{stop();el.classList.remove('on')}}
 ck.addEventListener('change',()=>apply(ck.checked,true));
 const sd=$('#mqSide');function side(v,save){v=v==='left'?'left':'right';sd.value=v;el.classList.toggle('left',v==='left');if(save)w('mqSide',v)}
@@ -858,7 +859,7 @@ function place(){if(!box0||innerWidth<60||innerHeight<60)return;el.style.setProp
  const x=cl(box.fx*innerWidth,0,Math.max(0,innerWidth-el.offsetWidth)),y=cl(box.fy*innerHeight,0,Math.max(0,innerHeight-el.offsetHeight));
  el.style.left=x+'px';el.style.top=y+'px';el.style.right='auto';el.style.bottom='auto'}
 function savebox(){w('mqbox',Object.assign({},box||{},{s:box0.s||1}));}
-el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('mqg'))return;e.preventDefault();
+el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('mqg')||e.target.closest('.mqr'))return;e.preventDefault();
  const r=el.getBoundingClientRect(),ox=e.clientX-r.left,oy=e.clientY-r.top;el.setPointerCapture(e.pointerId);el.classList.add('drag');
  el.onpointermove=ev=>{const x=cl(ev.clientX-ox,0,Math.max(0,innerWidth-el.offsetWidth)),y=cl(ev.clientY-oy,0,Math.max(0,innerHeight-el.offsetHeight));box={fx:x/innerWidth,fy:y/innerHeight};box0=Object.assign(box0,box);place()};
  el.onpointerup=el.onpointercancel=()=>{el.onpointermove=el.onpointerup=el.onpointercancel=null;el.classList.remove('drag');savebox()}});
@@ -1083,6 +1084,16 @@ const go=D=>{if(take(D,false))location.reload()};
 fetch('./focus-default.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>j&&go(j)).catch(()=>{});
 addEventListener('message',e=>{if(parent===window||e.source!==parent)return;const m=e.data||{};if(m.type==='fd-global'&&m.data)go(m.data)});
 try{parent!==window&&parent.postMessage({type:'fd-global-get'},'*')}catch(e){}
+/* Admin: koi bhi setting badle => 6 sec me apne aap sabke liye publish. Member: admin ka default khud aata hai. */
+let isAdm=false,lastSig=null,tmr=null;const sig=()=>JSON.stringify(snap().ls);
+function pub(silent){const D=snap();lastSig=JSON.stringify(D.ls);try{parent.postMessage({type:'fd-global-save',data:D,silent:!!silent},'*')}catch(e){}}
+const oldSave=$('#sdSave').onclick;
+$('#sdSave').textContent='📡 Sabke liye abhi publish';
+$('#sdSave').onclick=function(ev){if(isAdm){pub(false);note('Publish ho raha hai…')}else if(parent!==window){note('Sirf room Admin ki setting sabke liye default banti hai. Admin ban kar (Room panel) ya Admin ke device se badlo.')}else oldSave&&oldSave.call(this,ev)};
+addEventListener('message',e=>{if(parent===window||e.source!==parent)return;const m=e.data||{};
+ if(m.type==='fd-role'){isAdm=!!m.admin;if(isAdm){note('👑 Admin mode: aap jo bhi setting badloge wo apne aap sabhi members ke liye default ho jayegi.');if(!tmr){lastSig=sig();tmr=setInterval(()=>{if(!isAdm)return;let s;try{s=sig()}catch(x){return}if(s!==lastSig)pub(true)},6000)}}}
+ else if(m.type==='fd-global-ack'){if(m.ok){try{localStorage.setItem('fdDefV',String(m.v))}catch(x){}note(m.msg)}else{lastSig=null;if(!m.silent||isAdm)note('⚠ '+m.msg)}}
+});
 })();
 </script>
 <style id="fdpack">
