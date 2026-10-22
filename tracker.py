@@ -54,7 +54,7 @@ DEBUG_LIST_PATH = DATA_DIR / "last_listing.html"
 IST = timezone(timedelta(hours=5, minutes=30))
 NEW_DAYS = 3             # itne din tak job "NEW" / "UPDATED" dikhegi
 CLOSING_SOON_DAYS = 7
-MAX_DETAIL_PER_RUN = 60  # ek run me max detail pages (site pe load kam)
+MAX_DETAIL_PER_RUN = 100 # ek run me max detail pages (site pe load kam)
 MAX_DETAIL_TRIES = 3     # ek job ka detail page itni baar se zyada try nahi
 DETAIL_DELAY = 1.2
 KEEP_DAYS = 150
@@ -421,6 +421,89 @@ _QUAL_RE = re.compile(r"(intermediate|10\s*\+\s*2|12th|10th|graduat|degree|diplo
                       r"recognized|matric|b\.?ed|mbbs|b\.?sc|b\.?com|\bca\b|\blaw\b)", re.I)
 
 
+_JUNK_RE = re.compile(r"(join\s+(our\s+)?(telegram|whatsapp|channel)|follow us|subscribe|download\s+(our\s+)?app|sarkariresult\.com\s*(home)?$|"
+                      r"advertis(e|ing)\s+with|disclaimer|how to (fill|apply|download)|watch video|youtube)", re.I)
+SITE_ROOT = "https://www.sarkariresult.com"
+
+
+def _cell_text(cell) -> str:
+    for br in cell.find_all("br"):
+        br.replace_with("\n")
+    for li in cell.find_all("li"):
+        li.insert_before("• ")
+        li.append("\n")
+    lines = [norm(x) for x in cell.get_text(" ").split("\n")]
+    return "\n".join(x for x in lines if x)[:700]
+
+
+def _cell_links(cell) -> list:
+    out = []
+    for a in cell.find_all("a", href=True):
+        h = a["href"].strip()
+        if h.startswith("/"):
+            h = SITE_ROOT + h
+        if not re.match(r"https?://", h, re.I):
+            continue
+        out.append([norm(a.get_text(" "))[:60] or "Link", h])
+    return out
+
+
+def parse_sections(soup) -> list:
+    """Detail page ke saare tables -> [{t: heading, r: [rows]}]. Row = {c:[cells], l:[[text,url]]} ya {p: text}."""
+    secs, cur = [], None
+
+    def start(title):
+        nonlocal cur
+        cur = {"t": title[:90], "r": []}
+        secs.append(cur)
+
+    seen_rows = set()
+    for table in [t for t in soup.find_all("table") if not t.find("table")]:
+        for tr in table.find_all("tr"):
+            cells = tr.find_all(["td", "th"])
+            if not cells:
+                continue
+            texts = [_cell_text(c) for c in cells]
+            links = [l for c in cells for l in _cell_links(c)]
+            nonempty = [t for t in texts if t]
+            if not nonempty and not links:
+                continue
+            joined = " | ".join(nonempty)
+            if _JUNK_RE.search(joined) and len(joined) < 140:
+                continue
+            key = joined + str(links)
+            if key in seen_rows:
+                continue
+            seen_rows.add(key)
+            uniq = list(dict.fromkeys(nonempty))
+            if len(uniq) == 1 and not links:                      # heading ya paragraph
+                t = uniq[0]
+                if len(t) <= 80 and "\n" not in t:
+                    start(t)
+                else:
+                    if cur is None:
+                        start("Jankari")
+                    cur["r"].append({"p": t})
+                continue
+            if cur is None:
+                start("Jankari")
+            row = {"c": [t for t in texts if t] if len(nonempty) != len(texts) else texts}
+            if links:
+                row["l"] = links[:6]
+            if len(cur["r"]) < 45:
+                cur["r"].append(row)
+    secs = [x for x in secs if x["r"]][:16]
+    # size cap
+    out, total = [], 0
+    for x in secs:
+        sz = len(json.dumps(x, ensure_ascii=False))
+        if total + sz > 14000:
+            break
+        out.append(x)
+        total += sz
+    return out
+
+
 def parse_detail(html: str) -> dict:
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text("\n")
@@ -485,6 +568,10 @@ def parse_detail(html: str) -> dict:
                     continue
                 links[field] = href
     d.update(links)
+    try:
+        d["sections"] = parse_sections(soup)
+    except Exception:
+        d["sections"] = []
     return d
 
 
@@ -540,137 +627,214 @@ TEMPLATE = r"""<!doctype html>
 <meta name="color-scheme" content="dark light">
 <style>html.emb body{padding-top:46px}</style>
 <script>try{if(self!==top)document.documentElement.classList.add('emb')}catch(e){}</script>
-<title>Sarkari Job Tracker</title>
+<title>Latest Sarkari Jobs</title>
 <style>
 :root{
-  --bg:#0e1015; --panel:#161922; --card:#171a23; --card2:#1f2330; --line:#2a2f3d; --text:#e9ebf1; --mute:#98a1b3;
-  --accent:#6ea8fe; --on-accent:#0a1224; --new:#34d399; --warn:#fbbf24; --bad:#f87171; --star:#fcd34d; --vio:#c4b5fd;
-  --shadow:0 1px 0 rgba(255,255,255,.03) inset;
+  --bg:#070914; --bg2:#0d1124; --panel:rgba(255,255,255,.045); --card:rgba(255,255,255,.055); --card2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.10); --text:#f2f3f8; --mute:#a2a9bd; --on-accent:#fff;
+  --new:#34d399; --warn:#fbbf24; --bad:#f87171; --info:#8b93a7; --star:#fcd34d; --blue:#60a5fa; --vio:#c4b5fd;
+  --grad:linear-gradient(135deg,#f97316,#ec4899 55%,#8b5cf6);
+  --glow:0 8px 30px -10px rgba(236,72,153,.45);
+  --shadow:0 10px 30px -14px rgba(0,0,0,.7);
 }
 :root[data-theme="light"]{
-  --bg:#f4f6fa; --panel:#ffffff; --card:#ffffff; --card2:#eef1f7; --line:#dde2ec; --text:#171b26; --mute:#5b6577;
-  --accent:#1f6feb; --on-accent:#ffffff; --new:#0f9d6c; --warn:#b7791f; --bad:#d6336c; --star:#b7791f; --vio:#6d4fd8;
-  --shadow:0 1px 2px rgba(20,30,50,.06);
+  --bg:#f5f6fb; --bg2:#ffffff; --panel:#ffffff; --card:#ffffff; --card2:#f0f2f8;
+  --line:#e1e5ef; --text:#171b2a; --mute:#5d667b; --on-accent:#fff;
+  --new:#0f9d6c; --warn:#b7791f; --bad:#d6336c; --info:#6b7385; --star:#b7791f; --blue:#1f6feb; --vio:#6d4fd8;
+  --glow:0 8px 24px -12px rgba(236,72,153,.35); --shadow:0 6px 20px -12px rgba(20,30,60,.25);
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Devanagari",sans-serif}
-.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
-header{padding:18px 0 6px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
-h1{margin:0;font-size:21px;letter-spacing:.2px}
-.sub{color:var(--mute);font-size:12.5px;margin-top:2px}
-.tools{display:flex;gap:8px;flex-wrap:wrap}
+body{margin:0;color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Devanagari",sans-serif;
+  background:radial-gradient(900px 420px at 85% -80px,rgba(236,72,153,.18),transparent 60%),radial-gradient(800px 380px at -10% -40px,rgba(139,92,246,.16),transparent 60%),var(--bg);
+  background-attachment:fixed;min-height:100vh}
+:root[data-theme="light"] body{background:radial-gradient(900px 380px at 90% -80px,rgba(236,72,153,.10),transparent 60%),var(--bg)}
 button,select,input{font:inherit;color:var(--text)}
-.btn{background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;font-size:13px}
-.btn:hover{border-color:var(--accent)}
-.banner{background:rgba(52,211,153,.12);border:1px solid var(--new);color:var(--text);padding:10px 14px;border-radius:10px;margin:10px 0;display:none}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);cursor:pointer}
-.stat b{display:block;font-size:22px;line-height:1.1}
-.stat span{font-size:12px;color:var(--mute)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
-.prefs{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px}
-.prefs label{color:var(--mute)}
-.prefs select,.prefs input{background:var(--card2);border:1px solid var(--line);padding:7px 10px;border-radius:8px}
-.prefs input{width:84px}
-.cats{display:flex;flex-direction:column;gap:5px}
-.cat{display:grid;grid-template-columns:120px 1fr 28px;gap:8px;align-items:center;font-size:12.5px;cursor:pointer}
-.cat .bar{height:8px;border-radius:6px;background:var(--card2);overflow:hidden}
-.cat .bar i{display:block;height:100%;background:var(--accent)}
-.cat.on{color:var(--accent);font-weight:600}
-.chips{display:flex;gap:8px;margin:10px 0;overflow-x:auto;padding-bottom:4px}
-.chip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:13px;user-select:none;white-space:nowrap}
-.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
-.chip small{opacity:.75;margin-left:5px}
-.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.controls input[type=search]{flex:1;min-width:200px}
-.controls input,.controls select{background:var(--panel);border:1px solid var(--line);padding:9px 11px;border-radius:9px;font-size:14px}
-.count{color:var(--mute);font-size:13px;margin:0 0 8px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px;box-shadow:var(--shadow);position:relative}
-.card.isnew{border-color:var(--new);box-shadow:0 0 0 1px var(--new) inset}
-.card.watch::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--star)}
-.card.done{opacity:.62}
-.title{font-weight:650;font-size:15.5px;line-height:1.35}
-.badges{display:flex;flex-wrap:wrap;gap:6px}
-.b{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--line);color:var(--mute);white-space:nowrap}
-.b.new{background:var(--new);color:#052116;border-color:var(--new);font-weight:700}
-.b.star{color:var(--star)} .b.type{color:var(--accent)} .b.ext{color:var(--warn)}
-.b.ok{color:var(--new);border-color:var(--new)} .b.no{color:var(--bad);border-color:var(--bad)} .b.maybe{color:var(--warn)}
-.summary{font-size:13px;color:var(--mute)}
-.meta{font-size:13px;color:var(--mute);display:grid;grid-template-columns:96px 1fr;gap:3px 10px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 14px 40px}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 0 6px}
+h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.2px}
+h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mute);font-size:12px;margin-top:1px}
+.hbtns{display:flex;gap:8px}
+.ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:16px;display:grid;place-items:center}
+.ib:active{transform:scale(.94)}
+
+/* banner */
+.banner{display:none;margin:10px 0 0;padding:11px 14px;border-radius:14px;font-size:13.5px;font-weight:600;
+  background:linear-gradient(135deg,rgba(52,211,153,.18),rgba(52,211,153,.06));border:1px solid rgba(52,211,153,.5)}
+
+/* hero tiles */
+.hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.tile{position:relative;overflow:hidden;border-radius:18px;padding:13px 12px 11px;cursor:pointer;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow)}
+.tile b{display:block;font-size:28px;line-height:1.05;font-weight:900}
+.tile span{font-size:12px;color:var(--mute);font-weight:600}
+.tile::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;opacity:.35;filter:blur(2px)}
+.tile.t-live::after{background:#34d399} .tile.t-new::after{background:#ec4899} .tile.t-soon::after{background:#fbbf24}
+.tile.t-live b{color:var(--new)} .tile.t-new b{color:#f472b6} .tile.t-soon b{color:var(--warn)}
+.tile.on{border-color:transparent;box-shadow:0 0 0 2px #ec4899 inset,var(--glow)}
+.tile:active{transform:scale(.97)}
+
+/* search */
+.search{display:flex;gap:8px;margin-bottom:10px}
+.sbox{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 14px;box-shadow:var(--shadow)}
+.sbox:focus-within{border-color:#ec4899}
+.sbox input{flex:1;min-width:0;border:0;background:transparent;outline:0;height:46px;font-size:15px}
+.sbox input::placeholder{color:var(--mute)}
+.sort{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 10px;font-size:13px;max-width:132px}
+
+/* chips rows */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;user-select:none}
+.chip small{opacity:.7;margin-left:5px;font-weight:700}
+.chip.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.chips.cats .chip{font-size:12px;padding:6px 12px;font-weight:600;background:transparent}
+.chips.cats .chip.on{background:var(--card2);color:var(--text);border-color:#ec4899;box-shadow:none}
+
+/* profile */
+details.prof{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 14px;margin:2px 0 12px}
+details.prof summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13.5px;list-style:none;display:flex;justify-content:space-between}
+details.prof summary::-webkit-details-marker{display:none}
+details.prof .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:0 0 14px;font-size:13px;color:var(--mute)}
+details.prof select,details.prof input{background:var(--card2);border:1px solid var(--line);padding:9px 11px;border-radius:11px;color:var(--text)}
+details.prof input{width:90px}
+
+.count{color:var(--mute);font-size:12.5px;margin:4px 2px 10px;font-weight:600}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px 15px 13px;display:flex;flex-direction:column;gap:11px;box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--info)}
+.card.st-open::before{background:linear-gradient(90deg,#10b981,#34d399)}
+.card.st-closing_soon::before{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.card.st-closed::before{background:var(--bad)}
+.card.isnew{box-shadow:0 0 0 1.5px #ec4899 inset,var(--glow)}
+.card.done{opacity:.6}
+.top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.tt{min-width:0}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
+.b{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--card2);color:var(--mute);white-space:nowrap}
+.b.new{background:var(--grad);color:#fff}
+.b.upd{background:rgba(251,191,36,.18);color:var(--warn)}
+.b.star{background:rgba(252,211,77,.16);color:var(--star)}
+.b.type{background:rgba(96,165,250,.16);color:var(--blue)}
+.b.t-Admit,.b.t-Result,.b.t-Answer{background:rgba(196,181,253,.16);color:var(--vio)}
+.title{margin:0;font-size:16px;font-weight:800;line-height:1.35}
+.dl{flex:0 0 auto;min-width:66px;text-align:center;border-radius:16px;padding:8px 8px 7px;border:1px solid var(--line);background:var(--card2)}
+.dl b{display:block;font-size:24px;line-height:1;font-weight:900}
+.dl small{display:block;font-size:10.5px;font-weight:700;margin-top:3px;color:var(--mute)}
+.dl.open{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.4)} .dl.open b{color:var(--new)}
+.dl.closing_soon{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.5)} .dl.closing_soon b{color:var(--warn)}
+.dl.closed{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.4)} .dl.closed b{color:var(--bad);font-size:17px}
+.dl.info b,.dl.no_date b{font-size:20px;color:var(--info)}
+.facts{display:flex;flex-wrap:wrap;gap:7px}
+.f{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:11px;background:var(--card2);border:1px solid var(--line)}
+.elig{font-size:12.5px;font-weight:700;padding:7px 11px;border-radius:11px}
+.elig.ok{background:rgba(52,211,153,.14);color:var(--new)} .elig.no{background:rgba(248,113,113,.14);color:var(--bad)} .elig.maybe{background:rgba(251,191,36,.12);color:var(--warn)}
+details.more{border-top:1px dashed var(--line);padding-top:9px}
+details.more>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mute);list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more[open]>summary{color:var(--text)}
+.meta{font-size:13px;color:var(--mute);display:grid;grid-template-columns:92px 1fr;gap:4px 10px;margin:9px 0 6px}
 .meta b{color:var(--text);font-weight:600}
-.left{font-weight:700}
-.left.open{color:var(--new)} .left.closing_soon{color:var(--warn)} .left.closed{color:var(--bad)} .left.no_date,.left.info{color:var(--mute)}
-.meter{height:5px;background:var(--card2);border-radius:5px;overflow:hidden}
-.meter i{display:block;height:100%}
-details.syl{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
-details.syl summary{cursor:pointer;color:var(--vio);font-weight:600}
-details.syl ul{margin:6px 0 2px 18px;padding:0}
-details.syl li{margin:2px 0}
-details.syl .tip{margin-top:6px;color:var(--mute);font-size:12px}
-.links,.acts{display:flex;flex-wrap:wrap;gap:6px}
-.links{margin-top:auto}
-.links a{font-size:12.5px;text-decoration:none;color:var(--text);background:var(--card2);border:1px solid var(--line);padding:5px 10px;border-radius:8px}
-.links a.p{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:650}
-.links a.s{color:var(--vio);border-color:var(--vio)}
-.acts button{font-size:12px;background:transparent;border:1px dashed var(--line);color:var(--mute);padding:4px 9px;border-radius:8px;cursor:pointer}
-.acts button.on{border-style:solid;color:var(--text);border-color:var(--accent);background:var(--card2)}
-.empty{text-align:center;color:var(--mute);padding:40px 0;display:none}
-footer{color:var(--mute);font-size:12px;text-align:center;padding:22px 0 40px}
-@media (max-width:520px){ .grid{grid-template-columns:1fr} h1{font-size:19px} .cat{grid-template-columns:100px 1fr 24px}
-  .stats{grid-template-columns:repeat(3,1fr);gap:8px} .stat{padding:8px 10px} .stat b{font-size:18px} .stat span{font-size:11px} .prefs .sub{width:100%} }
+.summary{font-size:13px;color:var(--mute);margin-top:6px}
+.syl{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:13px;margin-top:8px}
+.syl b{color:var(--vio)} .syl ul{margin:5px 0 3px 18px;padding:0} .syl .tip{color:var(--mute);font-size:12px;margin-top:5px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.links a{flex:1 1 auto;text-align:center;text-decoration:none;font-size:13px;font-weight:700;padding:10px 12px;border-radius:13px;color:var(--text);background:var(--card2);border:1px solid var(--line)}
+.links a.p{flex:2 1 120px;background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.links a:active{transform:scale(.97)}
+.acts{display:flex;gap:8px}
+.acts button{flex:1;height:38px;border-radius:12px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mute)}
+.acts button.on{background:var(--card2);color:var(--text);border-color:#ec4899}
+.empty{text-align:center;color:var(--mute);padding:50px 0;display:none;font-weight:600}
+footer{color:var(--mute);font-size:11.5px;text-align:center;padding:24px 0 10px}
+
+.links a.full,.links button.full{flex:1 1 100%}
+.links button.full{font:inherit;font-size:13.5px;font-weight:800;padding:11px 12px;border-radius:13px;color:var(--text);background:var(--card2);border:1px solid #ec4899;cursor:pointer}
+/* poori jankari sheet */
+.sheet{position:fixed;inset:0;z-index:50;display:none;background:rgba(3,5,12,.66);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
+.sheet.open{display:flex}
+.sheetBox{width:100%;max-width:760px;max-height:92vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:24px 24px 0 0;box-shadow:0 -20px 60px -20px rgba(0,0,0,.7);animation:shUp .25s ease}
+@keyframes shUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheetHead{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+.sheetHead b{font-size:15.5px;line-height:1.35}
+.sheetHead button{flex:0 0 auto;width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--card2);cursor:pointer;font-size:15px}
+.sheetBody{overflow-y:auto;padding:12px 16px 26px;-webkit-overflow-scrolling:touch}
+.qk{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.qk div{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+.qk small{display:block;color:var(--mute);font-size:11px;font-weight:700}
+.qk b{font-size:13.5px}
+.sec{margin:14px 0}
+.sec h4{margin:0 0 8px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px}
+.sec h4::before{content:"";width:4px;height:16px;border-radius:3px;background:var(--grad)}
+.kv{display:grid;grid-template-columns:minmax(90px,38%) 1fr;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.kv>div{padding:9px 11px;font-size:13px;border-bottom:1px solid var(--line);white-space:pre-line;word-break:break-word}
+.kv>div:nth-last-child(-n+2){border-bottom:0}
+.kv .k{background:var(--card2);color:var(--mute);font-weight:700}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+.tw table{border-collapse:collapse;width:100%;font-size:12.5px}
+.tw th,.tw td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:pre-line}
+.tw th{background:var(--card2);font-weight:800;position:sticky;top:0}
+.tw tr:last-child td{border-bottom:0}
+.para{font-size:13px;color:var(--mute);white-space:pre-line;margin:6px 0}
+.lk{display:inline-block;margin:4px 6px 0 0;padding:6px 12px;border-radius:11px;font-size:12.5px;font-weight:700;text-decoration:none;background:var(--grad);color:#fff}
+.nosec{color:var(--mute);font-size:13px;padding:6px 0}
+@media (max-width:560px){.grid{grid-template-columns:1fr}.hero{gap:8px}.tile b{font-size:24px}h1{font-size:20px}.sort{max-width:104px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>📋 Sarkari Job Tracker</h1>
+      <h1>💼 <span>Latest Jobs</span></h1>
       <div class="sub" id="sub">Loading…</div>
     </div>
-    <div class="tools">
-      <button class="btn" id="csv">⬇ CSV</button>
-      <button class="btn" id="theme">🌓 Theme</button>
+    <div class="hbtns">
+      <button class="ib" id="csv" title="CSV download">⬇</button>
+      <button class="ib" id="theme" title="Theme">🌓</button>
     </div>
   </header>
 
   <div class="banner" id="banner"></div>
-  <div class="stats" id="stats"></div>
 
-  <div class="panel prefs">
-    <b>🎯 Meri profile</b>
-    <label>Qualification
+  <div class="hero" id="hero"></div>
+
+  <div class="search">
+    <label class="sbox">🔍<input id="q" type="search" placeholder="Search: SSC, railway, steno, UP…"></label>
+    <select id="sort" class="sort" aria-label="Sort">
+      <option value="site">Latest</option>
+      <option value="last">Last date</option>
+      <option value="seen">Naye pehle</option>
+      <option value="posts">Posts</option>
+    </select>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div class="chips cats" id="cats"></div>
+
+  <details class="prof">
+    <summary><span>🎯 Meri profile — Eligible check (optional)</span><span>▾</span></summary>
+    <div class="row">
       <select id="pEdu">
-        <option value="0">— set karo —</option>
+        <option value="0">Qualification</option>
         <option value="1">10th pass</option>
         <option value="2">12th pass</option>
         <option value="3">Graduate</option>
-        <option value="4">Post Graduate / Professional</option>
+        <option value="4">Post Graduate</option>
       </select>
-    </label>
-    <label>Age <input id="pAge" type="number" min="14" max="60" placeholder="saal"></label>
-    <span class="sub" id="pHint">Set karoge to har job par "Eligible / Nahi" badge dikhega (age relaxation alag se check karo).</span>
-  </div>
+      <input id="pAge" type="number" min="14" max="60" placeholder="Age">
+      <span>Set karne par har job par ✅ Eligible / ❌ dikhega.</span>
+    </div>
+  </details>
 
-  <div class="panel"><div class="cats" id="cats"></div></div>
-
-  <div class="chips" id="chips"></div>
-  <div class="controls">
-    <input id="q" type="search" placeholder="Search: SSC, steno, railway, teacher, UP…">
-    <select id="type"></select>
-    <select id="cat"></select>
-    <select id="sort">
-      <option value="site">Sort: Site order (latest)</option>
-      <option value="last">Sort: Last date nazdeek</option>
-      <option value="seen">Sort: Naye pehle</option>
-      <option value="posts">Sort: Zyada posts</option>
-    </select>
-  </div>
   <p class="count" id="count"></p>
   <div class="grid" id="grid"></div>
-  <div class="empty" id="empty">Is filter me koi job nahi mili.</div>
-  <footer>Data sarkariresult.com se auto-collect hota hai. Syllabus/pattern general guide hai — apply se pehle official notification zaroor verify karein.</footer>
+  <div class="empty" id="empty">😕 Is filter me koi job nahi mili.</div>
+  <div class="sheet" id="sheet"><div class="sheetBox"><div class="sheetHead"><b id="shTitle"></b><button id="shClose" aria-label="Band">✕</button></div><div class="sheetBody" id="shBody"></div></div></div>
+  <footer>Data sarkariresult.com se. Apply se pehle official notification zaroor verify karein.</footer>
 </div>
 
 <script>
@@ -686,13 +850,18 @@ const DATA = null /*__DATA__*/;
     set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
   };
   const EDU_NAME = {1:"10th", 2:"12th", 3:"Graduate", 4:"PG/Prof."};
+  const INFO = ["Admit Card","Result","Answer Key"];
 
-  if(!DATA || !DATA.jobs){ $("sub").textContent = "Data nahi mila — `python tracker.py` chalao."; return; }
+  if(!DATA || !DATA.jobs || !DATA.jobs.length){
+    $("sub").textContent = "Abhi data nahi hai";
+    $("grid").innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;padding:30px 18px"><div style="font-size:38px">📭</div><div class="title" style="margin-top:8px">Abhi koi job nahi aayi</div><div class="summary">PC par <b>update_jobs.bat</b> chalao, phir GitHub Desktop se Commit + Push karo.</div></div>`;
+    return;
+  }
   const jobs = DATA.jobs;
   const lastVisit = LS.get("sjt_last_visit", 0);
   let saved = new Set(LS.get("sjt_saved", [])), applied = new Set(LS.get("sjt_applied", []));
   const prefs = LS.get("sjt_prefs", {edu:0, age:""});
-  const state = { chip:"live", q:"", type:"", cat:"", sort:"site" };
+  const state = { chip:"live", q:"", cat:"", sort:"site" };
 
   jobs.forEach(j => {
     j._seen = Date.parse(j.first_seen) || 0;
@@ -700,57 +869,41 @@ const DATA = null /*__DATA__*/;
     j._upd = !!j.is_updated && !j._fresh;
   });
 
-  // ---------- theme
   const root = document.documentElement;
   root.dataset.theme = LS.get("sjt_theme", matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
   $("theme").onclick = () => { root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark"; LS.set("sjt_theme", root.dataset.theme); };
 
-  // ---------- eligibility
   function eligibility(j){
     if(!prefs.edu && !prefs.age) return null;
     let ok = true, known = false, why = [];
-    if(prefs.edu && j.edu_level){ known = true; if(+prefs.edu < j.edu_level){ ok = false; why.push("Qualification: " + EDU_NAME[j.edu_level] + " chahiye"); } }
+    if(prefs.edu && j.edu_level){ known = true; if(+prefs.edu < j.edu_level){ ok = false; why.push(EDU_NAME[j.edu_level] + " chahiye"); } }
     const age = parseInt(prefs.age, 10);
     if(age && (j.age_min || j.age_max)){
       known = true;
-      if(j.age_max && age > j.age_max){ ok = false; why.push("Age > " + j.age_max); }
-      if(j.age_min && age < j.age_min){ ok = false; why.push("Age < " + j.age_min); }
+      if(j.age_max && age > j.age_max){ ok = false; why.push("Age " + j.age_max + " se zyada"); }
+      if(j.age_min && age < j.age_min){ ok = false; why.push("Age " + j.age_min + " se kam"); }
     }
     if(!known) return {state:"maybe", why:["Detail nahi mili"]};
     return {state: ok ? "ok" : "no", why};
   }
 
-  // ---------- filters
   const live = j => j.status !== "closed";
   const CHIPS = [
-    ["live","✅ Open / Jaari", live],
+    ["live","✅ Open", live],
     ["new","🆕 Naye", j => j._fresh],
     ["soon","⏰ Jaldi band", j => j.status === "closing_soon"],
     ["watch","⭐ Mere Exams", j => j.watch && live(j)],
-    ["elig","🎯 Mere liye", j => live(j) && j.type !== "Admit Card" && j.type !== "Result" && j.type !== "Answer Key" && (eligibility(j)||{}).state === "ok"],
-    ["syl","📘 Syllabus", j => live(j) && (j.syllabus_url || j.kb)],
+    ["elig","🎯 Mere liye", j => live(j) && !INFO.includes(j.type) && (eligibility(j)||{}).state === "ok"],
+    ["updates","📢 Admit/Result", j => INFO.includes(j.type)],
     ["saved","💾 Saved", j => saved.has(j.id)],
-    ["applied","✅ Applied", j => applied.has(j.id)],
-    ["updates","📢 Admit/Result/Key", j => ["Admit Card","Result","Answer Key"].includes(j.type)],
+    ["applied","✔ Applied", j => applied.has(j.id)],
     ["all","Sab", j => true],
   ];
 
-  function uniq(k){ return [...new Set(jobs.map(j => j[k]).filter(Boolean))].sort(); }
-  $("type").innerHTML = `<option value="">Sab Types</option>` + uniq("type").map(t => `<option>${esc(t)}</option>`).join("");
-  $("cat").innerHTML  = `<option value="">Sab Categories</option>` + uniq("category").map(t => `<option>${esc(t)}</option>`).join("");
-
-  // ---------- prefs UI
   $("pEdu").value = String(prefs.edu || 0); $("pAge").value = prefs.age || "";
   const savePrefs = () => { prefs.edu = +$("pEdu").value; prefs.age = $("pAge").value; LS.set("sjt_prefs", prefs); render(); };
   $("pEdu").onchange = savePrefs; $("pAge").oninput = savePrefs;
 
-  // ---------- helpers
-  function meterHtml(j){
-    if(j.status !== "open" && j.status !== "closing_soon") return "";
-    const pct = Math.max(4, Math.min(100, 100 - (j.days_left / 30) * 100));
-    const col = j.status === "closing_soon" ? "var(--warn)" : "var(--new)";
-    return `<div class="meter" title="${esc(j.days_left)} din bache"><i style="width:${pct}%;background:${col}"></i></div>`;
-  }
   function icsFor(j){
     if(!j.last_date) return;
     const d = j.last_date.replace(/-/g,"");
@@ -773,68 +926,124 @@ const DATA = null /*__DATA__*/;
   function kbHtml(j){
     if(!j.kb) return "";
     const li = a => (a||[]).map(x => `<li>${esc(x)}</li>`).join("");
-    return `<details class="syl"><summary>📘 Syllabus &amp; Pattern — ${esc(j.kb.name)}</summary>
-      ${j.kb.pattern && j.kb.pattern.length ? `<b>Pattern</b><ul>${li(j.kb.pattern)}</ul>` : ""}
-      ${j.kb.subjects && j.kb.subjects.length ? `<b>Topics</b><ul>${li(j.kb.subjects)}</ul>` : ""}
+    return `<div class="syl"><b>📘 Syllabus &amp; Pattern — ${esc(j.kb.name)}</b>
+      ${j.kb.pattern && j.kb.pattern.length ? `<ul>${li(j.kb.pattern)}</ul>` : ""}
+      ${j.kb.subjects && j.kb.subjects.length ? `<ul>${li(j.kb.subjects)}</ul>` : ""}
       ${j.kb.tip ? `<div class="tip">💡 ${esc(j.kb.tip)}</div>` : ""}
-      <div class="tip">General guide — latest notification se verify karein.</div></details>`;
+      <div class="tip">General guide — latest notification se verify karein.</div></div>`;
+  }
+
+  function dlBox(j){
+    if(INFO.includes(j.type)) return `<div class="dl info"><b>📢</b><small>${esc(j.type)}</small></div>`;
+    if(j.status === "open" || j.status === "closing_soon"){
+      if(j.days_left === 0) return `<div class="dl ${j.status}"><b>Aaj</b><small>last date</small></div>`;
+      return `<div class="dl ${j.status}"><b>${j.days_left}</b><small>din bache</small></div>`;
+    }
+    if(j.status === "closed") return `<div class="dl closed"><b>Band</b><small>${-j.days_left} din pehle</small></div>`;
+    return `<div class="dl no_date"><b>—</b><small>date nahi</small></div>`;
   }
 
   function card(j){
     const fresh = j._fresh, elig = eligibility(j);
-    const isInfo = ["Admit Card","Result","Answer Key"].includes(j.type);
+    const title = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i, "");
+    const tcls = "t-" + String(j.type||"").split(" ")[0];
     const badges = [
-      fresh ? `<span class="b new">NEW</span>` : (j._upd ? `<span class="b ext">🔄 UPDATED</span>` : ""),
+      fresh ? `<span class="b new">🆕 NEW</span>` : (j._upd ? `<span class="b upd">🔄 UPDATED</span>` : ""),
       j.watch ? `<span class="b star">⭐ Mera exam</span>` : "",
-      `<span class="b type">${esc(j.type)}</span>`,
+      `<span class="b type ${esc(tcls)}">${esc(j.type)}</span>`,
       `<span class="b">${esc(j.category)}</span>`,
-      j.edu_level ? `<span class="b">🎓 ${esc(EDU_NAME[j.edu_level])}</span>` : "",
-      j.posts ? `<span class="b">${esc(j.posts)} posts</span>` : "",
-      j.extended ? `<span class="b ext">Date extended / re-open</span>` : "",
-      (elig && !isInfo) ? `<span class="b ${elig.state}" title="${esc(elig.why.join(", "))}">${elig.state==="ok" ? "✅ Eligible" : elig.state==="no" ? "❌ " + esc(elig.why[0]) : "❔ Check karo"}</span>` : "",
+      j.extended ? `<span class="b upd">Date badhi</span>` : "",
     ].join("");
 
-    let left = "—";
-    if(j.status === "open" || j.status === "closing_soon") left = j.days_left === 0 ? "Aaj last date!" : `${j.days_left} din bache`;
-    else if(j.status === "closed") left = `Band (${-j.days_left} din pehle)`;
-    else if(j.status === "no_date") left = j.last_date_text || "Date nahi di";
+    const facts = [];
+    if(j.last_date_text) facts.push(`📅 ${esc(j.last_date_text)}`);
+    if(j.posts) facts.push(`👥 ${esc(j.posts)} posts`);
+    if(j.edu_level) facts.push(`🎓 ${esc(EDU_NAME[j.edu_level])}`);
+    if(j.age_min || j.age_max) facts.push(`🎂 ${esc(j.age_min||"?")}–${esc(j.age_max||"?")} saal`);
+    if(j.fee) facts.push(`💰 ₹${esc(j.fee)}`);
 
     const rows = [];
-    if(j.last_date_text) rows.push(`<span>Last date</span><span><b>${esc(j.last_date_text)}</b> · <span class="left ${esc(j.status)}">${esc(left)}</span></span>`);
-    else if(!isInfo) rows.push(`<span>Status</span><span class="left ${esc(j.status)}">${esc(left)}</span>`);
     if(j.start_date) rows.push(`<span>Shuru</span><span>${esc(j.start_date)}</span>`);
     if(j.exam_date) rows.push(`<span>Exam</span><span>${esc(j.exam_date)}</span>`);
-    if(j.age_min || j.age_max) rows.push(`<span>Age</span><span>${esc(j.age_min||"?")}–${esc(j.age_max||"?")} saal</span>`);
-    if(j.fee) rows.push(`<span>Fee (Gen)</span><span>₹${esc(j.fee)}</span>`);
     if(j.qualification) rows.push(`<span>Qualification</span><span>${esc(j.qualification)}</span>`);
+    const moreInner = (rows.length ? `<div class="meta">${rows.join("")}</div>` : "") + (j.summary ? `<div class="summary">${esc(j.summary)}</div>` : "") + kbHtml(j);
 
     const L = [];
     const add = (cls, u, label) => { u = safeUrl(u); if(u) L.push(`<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener">${label}</a>`); };
-    add("p", j.apply_url, "Apply ↗"); add("s", j.syllabus_url, "📘 Official Syllabus"); add("", j.notification_url, "Notification");
-    add("", j.url, "Details"); add("", j.official_url, "Official site");
+    add("p", j.apply_url || (INFO.includes(j.type) ? j.url : ""), INFO.includes(j.type) ? "Dekho ↗" : "Apply ↗");
+    add("", j.notification_url, "📄 Notification"); add("", j.syllabus_url, "📘 Syllabus");
+    if(!(j.apply_url) && !INFO.includes(j.type)) add("p", j.url, "Details ↗"); else add("", j.url, "Details");
 
-    const title = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i, "");
-    return `<article class="card ${fresh?"isnew":""} ${j.watch?"watch":""} ${applied.has(j.id)?"done":""}">
-      <div class="title">${esc(title)}</div>
-      <div class="badges">${badges}</div>
-      ${j.summary ? `<div class="summary">${esc(j.summary)}</div>` : ""}
-      <div class="meta">${rows.join("")}</div>${meterHtml(j)}
-      ${kbHtml(j)}
-      <div class="links">${L.join("")}</div>
+    const eligHtml = (elig && !INFO.includes(j.type)) ? `<div class="elig ${elig.state}">${elig.state==="ok" ? "✅ Tum Eligible ho" : elig.state==="no" ? "❌ " + esc(elig.why[0]) : "❔ Eligibility check karo"}</div>` : "";
+
+    return `<article class="card st-${esc(j.status)} ${fresh?"isnew":""} ${applied.has(j.id)?"done":""}">
+      <div class="top"><div class="tt"><div class="badges">${badges}</div><h3 class="title">${esc(title)}</h3></div>${dlBox(j)}</div>
+      ${facts.length ? `<div class="facts">${facts.map(f => `<span class="f">${f}</span>`).join("")}</div>` : ""}
+      ${eligHtml}
+      <div class="links"><button class="full" data-sheet="${esc(j.id)}">📋 Poori Jankari dekho</button>${L.join("")}</div>
       <div class="acts">
-        <button data-a="save" data-id="${esc(j.id)}" class="${saved.has(j.id)?"on":""}">💾 ${saved.has(j.id)?"Saved":"Save"}</button>
-        <button data-a="applied" data-id="${esc(j.id)}" class="${applied.has(j.id)?"on":""}">✅ ${applied.has(j.id)?"Applied":"Applied?"}</button>
-        ${j.last_date && j.status !== "closed" ? `<button data-a="ics" data-id="${esc(j.id)}">📅 Reminder</button>` : ""}
-        <button data-a="share" data-id="${esc(j.id)}">🔗 Share</button>
+        <button data-a="save" data-id="${esc(j.id)}" class="${saved.has(j.id)?"on":""}">${saved.has(j.id)?"💾 Saved":"💾 Save"}</button>
+        <button data-a="applied" data-id="${esc(j.id)}" class="${applied.has(j.id)?"on":""}">${applied.has(j.id)?"✔ Applied":"✔ Applied"}</button>
+        ${j.last_date && j.status !== "closed" ? `<button data-a="ics" data-id="${esc(j.id)}">📅 Yaad</button>` : ""}
+        <button data-a="share" data-id="${esc(j.id)}">🔗</button>
       </div></article>`;
   }
 
-  // ---------- render
+  function secHtml(sec){
+    const rows = sec.r || [];
+    const allKV = rows.length && rows.every(r => r.c && r.c.length === 2 && !r.p);
+    let body = "";
+    const links = [];
+    if(allKV){
+      body = `<div class="kv">` + rows.map(r => {
+        const u = r.l && r.l[0] && safeUrl(r.l[0][1]);
+        if(u) return `<div class="k">${esc(r.c[0])}</div><div><a class="lk" style="margin:0" href="${esc(u)}" target="_blank" rel="noopener">${esc(r.c[1])} ↗</a></div>`;
+        return `<div class="k">${esc(r.c[0])}</div><div>${esc(r.c[1])}</div>`;
+      }).join("") + `</div>`;
+    } else {
+      const tbl = rows.filter(r => r.c && r.c.length > 1);
+      const paras = rows.filter(r => r.p || (r.c && r.c.length === 1));
+      if(tbl.length){
+        const head = tbl.length > 1 ? tbl[0] : null, rest = head ? tbl.slice(1) : tbl;
+        body += `<div class="tw"><table>` + (head ? `<thead><tr>${head.c.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead>` : "") +
+          `<tbody>${rest.map(r => `<tr>${r.c.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        tbl.forEach(r => (r.l||[]).forEach(l => links.push(l)));
+      }
+      paras.forEach(r => { body += `<div class="para">${esc(r.p || r.c[0])}</div>`; (r.l||[]).forEach(l => links.push(l)); });
+    }
+    rows.forEach(r => { if(!r.c && r.l) r.l.forEach(l => links.push(l)); });
+    const seen = new Set();
+    const lk = links.filter(l => { const u = safeUrl(l[1]); if(!u || seen.has(u)) return false; seen.add(u); return true; })
+      .map(l => `<a class="lk" href="${esc(safeUrl(l[1]))}" target="_blank" rel="noopener">${esc(l[0])} ↗</a>`).join("");
+    return `<div class="sec"><h4>${esc(sec.t)}</h4>${body}${lk ? `<div>${lk}</div>` : ""}</div>`;
+  }
+  function openSheet(j){
+    const title = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i, "");
+    $("shTitle").textContent = title;
+    const q = [];
+    const qk = (k, v) => { if(v) q.push(`<div><small>${k}</small><b>${esc(v)}</b></div>`); };
+    qk("📅 Last date", j.last_date_text); qk("▶ Shuru", j.start_date); qk("📝 Exam", j.exam_date);
+    qk("👥 Posts", j.posts); qk("💰 Fee (Gen)", j.fee ? "₹" + j.fee : ""); qk("🎂 Age", (j.age_min||j.age_max) ? `${j.age_min||"?"}–${j.age_max||"?"} saal` : "");
+    let html = q.length ? `<div class="qk">${q.join("")}</div>` : "";
+    if(j.summary) html += `<div class="para">${esc(j.summary)}</div>`;
+    const secs = j.sections || [];
+    html += secs.length ? secs.map(secHtml).join("") : `<div class="nosec">Is job ki poori jankari abhi load nahi hui. Agli update (update_jobs.bat) ke baad aa jaayegi, ya neeche "Details" se site par dekho.</div>`;
+    html += kbHtml(j);
+    const lk = [["Apply Online", j.apply_url], ["Notification", j.notification_url], ["Official Syllabus", j.syllabus_url], ["Official site", j.official_url], ["Site par dekho", j.url]]
+      .filter(x => safeUrl(x[1])).map(x => `<a class="lk" href="${esc(safeUrl(x[1]))}" target="_blank" rel="noopener">${x[0]} ↗</a>`).join("");
+    if(lk) html += `<div class="sec"><h4>Important Links</h4><div>${lk}</div></div>`;
+    $("shBody").innerHTML = html; $("shBody").scrollTop = 0;
+    $("sheet").classList.add("open"); document.body.style.overflow = "hidden";
+  }
+  function closeSheet(){ $("sheet").classList.remove("open"); document.body.style.overflow = ""; }
+  $("shClose").onclick = closeSheet;
+  $("sheet").addEventListener("click", e => { if(e.target.id === "sheet") closeSheet(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheet(); });
+
   function filtered(){
     const chipFn = CHIPS.find(c => c[0] === state.chip)[2];
     const q = state.q.trim().toLowerCase();
     const list = jobs.filter(chipFn)
-      .filter(j => !state.type || j.type === state.type)
       .filter(j => !state.cat || j.category === state.cat)
       .filter(j => !q || (j.title + " " + j.category + " " + j.type + " " + (j.qualification||"") + " " + (j.summary||"")).toLowerCase().includes(q));
     const far = 9e15;
@@ -847,39 +1056,36 @@ const DATA = null /*__DATA__*/;
     return list.sort(by);
   }
 
-  function renderStats(){
-    const liveJobs = jobs.filter(live).filter(j => !["Admit Card","Result","Answer Key"].includes(j.type));
-    const S = [
-      ["live", liveJobs.length, "Open vacancies"], ["new", jobs.filter(j=>j._fresh).length, "Naye"],
-      ["soon", jobs.filter(j=>j.status==="closing_soon").length, "Jaldi band"],
-      ["watch", jobs.filter(j=>j.watch && live(j)).length, "Mere exams"],
-      ["saved", saved.size, "Saved"], ["applied", applied.size, "Applied"],
-    ];
-    $("stats").innerHTML = S.map(([id,n,l]) => `<div class="stat" data-chip="${id}"><b>${n}</b><span>${l}</span></div>`).join("");
+  function renderTop(){
+    const liveJobs = jobs.filter(live).filter(j => !INFO.includes(j.type));
+    const T = [["live","t-live",liveJobs.length,"Open jobs"],["new","t-new",jobs.filter(j=>j._fresh).length,"Naye"],["soon","t-soon",jobs.filter(j=>j.status==="closing_soon").length,"Jaldi band"]];
+    $("hero").innerHTML = T.map(([id,c,n,l]) => `<div class="tile ${c} ${state.chip===id?"on":""}" data-chip="${id}"><b>${n}</b><span>${l}</span></div>`).join("");
+    $("chips").innerHTML = CHIPS.map(([id,label,fn]) =>
+      `<span class="chip ${state.chip===id?"on":""}" data-chip="${id}">${label}<small>${jobs.filter(fn).length}</small></span>`).join("");
     const counts = {};
-    liveJobs.forEach(j => counts[j.category] = (counts[j.category]||0) + 1);
-    const max = Math.max(1, ...Object.values(counts));
-    $("cats").innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([c,n]) =>
-      `<div class="cat ${state.cat===c?"on":""}" data-cat="${esc(c)}"><span>${esc(c)}</span><div class="bar"><i style="width:${n/max*100}%"></i></div><span>${n}</span></div>`).join("");
+    jobs.filter(CHIPS.find(c => c[0] === state.chip)[2]).forEach(j => counts[j.category] = (counts[j.category]||0) + 1);
+    const ents = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    $("cats").innerHTML = ents.length > 1 ? `<span class="chip ${!state.cat?"on":""}" data-cat="">Sab category</span>` +
+      ents.map(([c,n]) => `<span class="chip ${state.cat===c?"on":""}" data-cat="${esc(c)}">${esc(c)}<small>${n}</small></span>`).join("") : "";
   }
 
   function render(){
-    $("chips").innerHTML = CHIPS.map(([id,label,fn]) =>
-      `<span class="chip ${state.chip===id?"on":""}" data-chip="${id}">${label}<small>${jobs.filter(fn).length}</small></span>`).join("");
-    renderStats();
+    renderTop();
     const list = filtered();
-    $("count").textContent = `${list.length} results`;
+    $("count").textContent = `${list.length} jobs`;
     $("grid").innerHTML = list.map(card).join("");
     $("empty").style.display = list.length ? "none" : "block";
     const n = jobs.filter(j => j._fresh).length;
-    document.title = (n ? `(${n}) ` : "") + "Sarkari Job Tracker";
+    document.title = (n ? `(${n}) ` : "") + "Latest Sarkari Jobs";
   }
 
   document.addEventListener("click", e => {
     const chip = e.target.closest("[data-chip]");
-    if(chip){ state.chip = chip.dataset.chip; render(); return; }
+    if(chip){ state.chip = chip.dataset.chip; state.cat = ""; render(); return; }
     const cat = e.target.closest("[data-cat]");
-    if(cat){ state.cat = state.cat === cat.dataset.cat ? "" : cat.dataset.cat; $("cat").value = state.cat; render(); return; }
+    if(cat){ state.cat = cat.dataset.cat; render(); return; }
+    const sb = e.target.closest("[data-sheet]");
+    if(sb){ const jj = jobs.find(x => x.id === sb.dataset.sheet); if(jj) openSheet(jj); return; }
     const btn = e.target.closest("button[data-a]");
     if(!btn) return;
     const j = jobs.find(x => x.id === btn.dataset.id); if(!j) return;
@@ -889,12 +1095,10 @@ const DATA = null /*__DATA__*/;
     else if(btn.dataset.a === "share"){
       const t = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i,"");
       if(navigator.share) navigator.share({title:t, text:t, url:j.url}).catch(()=>{});
-      else if(navigator.clipboard){ navigator.clipboard.writeText(t + "\n" + j.url); btn.textContent = "✓ Copied"; }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(t + "\n" + j.url); btn.textContent = "✓"; }
     }
   });
   $("q").oninput = e => { state.q = e.target.value; render(); };
-  $("type").onchange = e => { state.type = e.target.value; render(); };
-  $("cat").onchange = e => { state.cat = e.target.value; render(); };
   $("sort").onchange = e => { state.sort = e.target.value; render(); };
   $("csv").onclick = () => {
     const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
@@ -903,9 +1107,9 @@ const DATA = null /*__DATA__*/;
     download("jobs.csv", "﻿" + head.join(",") + "\n" + rows.join("\n"), "text/csv");
   };
 
-  $("sub").textContent = `Last update: ${fmtDT(DATA.updated_at)} · ${jobs.length} entries · site se har ${DATA.refresh_hint || "run"} par refresh`;
+  $("sub").textContent = `Update: ${fmtDT(DATA.updated_at)} · ${jobs.length} entries`;
   const fresh = jobs.filter(j => j._fresh).length;
-  if(fresh){ const b = $("banner"); b.style.display = "block"; b.textContent = `🆕 ${fresh} naye job/update aaye hain — "Naye" chip dekho.`; }
+  if(fresh){ const b = $("banner"); b.style.display = "block"; b.textContent = `🆕 ${fresh} naye job/update aaye hain — "Naye" dekho.`; }
   render();
   LS.set("sjt_last_visit", Date.now());
 })();
@@ -994,6 +1198,10 @@ def run_once(args) -> dict:
             updated.append(j)
         j["last_seen"], j["order"] = ts, order
         refresh_derived(j, watch)
+
+    for _j in store["jobs"].values():          # purane jobs: poori jankari (sections) dobara laao
+        if _j.get("detail_fetched") and "sections" not in _j and not _j.get("sec_mig") and "doc.sarkariresults" not in _j["url"] and not _j["url"].lower().endswith(".pdf"):
+            _j["detail_fetched"], _j["detail_tries"], _j["sec_mig"] = False, 0, True
 
     if not args.no_detail:
         pending = [j for j in store["jobs"].values()
