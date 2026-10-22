@@ -8555,6 +8555,7 @@ function showCalcPage(name, _fromPopState){
   document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
+  if(name === 'gkquiz' && typeof gkQuizRender === 'function' && gkQuizManifest) safeRun(gkQuizRender, 'gkQuizRender');
   if(name === 'vocabmenu') safeRun(updateVocabSavedMenuBtn, 'updateVocabSavedMenuBtn');
   if(name === 'idiommenu') safeRun(updateIdiomSavedMenuBtn, 'updateIdiomSavedMenuBtn');
   // Calc tab ke andar ke sub-pages (topic/quiz/set/result screens) pehle
@@ -12676,12 +12677,14 @@ function makeMathPyqQuiz(){
     average: { hi: "औसत", en: "Average", icon: "📊" },
     mixture: { hi: "मिश्रण तथा पृथ्थीकरण", en: "Mixture & Alligation", icon: "🧪" },
     timework: { hi: "समय तथा कार्य", en: "Time & Work", icon: "⏱️" },
+    pipes: { hi: "पाइप एवं टंकी", en: "Pipes & Cisterns", icon: "🚰" },
     timespeeddistance: { hi: "समय, चाल और दूरी", en: "Time, Speed & Distance", icon: "🚗" },
     lcmhcf: { hi: "ल.स. एवं म.स.", en: "LCM & HCF", icon: "🔢" },
     polynomials: { hi: "बहुपद", en: "Polynomials", icon: "📉" },
     mensuration2d: { hi: "2D क्षेत्रमिति", en: "2D Mensuration", icon: "📐" },
     geometry: { hi: "ज्यामिति", en: "Geometry", icon: "🔺" },
     numbersystem: { hi: "संख्या पद्धति", en: "Number System", icon: "🔟" },
+    remainder: { hi: "शेषफल एवं अंक योग", en: "Remainders & Digital Sum", icon: "♻️" },
     sequenceseries: { hi: "श्रृंखला", en: "Sequence & Series", icon: "🔗" },
     race: { hi: "दौड़", en: "Race", icon: "🏁" },
     mensuration3d: { hi: "3D क्षेत्रमिति", en: "3D Mensuration", icon: "🧊" },
@@ -13588,16 +13591,16 @@ const mathPyqQuiz = makeMathPyqQuiz();
   function gkLoadP75Manifest(){
     if(window.GK_P75_MANIFEST) return Promise.resolve(window.GK_P75_MANIFEST);
     if(window.gkP75ManifestPromise) return window.gkP75ManifestPromise;
-    window.gkP75ManifestPromise = fetch('practice75/manifest.json').then(r => r.json())
-      .then(d => { window.GK_P75_MANIFEST = d.gk || []; return window.GK_P75_MANIFEST; })
+    window.gkP75ManifestPromise = fetch('gkquiz/manifest.json').then(r => r.json())
+      .then(d => { window.GK_P75_MANIFEST = d.p75 || []; return window.GK_P75_MANIFEST; })
       .catch(() => { window.GK_P75_MANIFEST = []; return window.GK_P75_MANIFEST; });
     return window.gkP75ManifestPromise;
   }
   function gkLoadSPManifest(){
     if(window.GK_SP_MANIFEST) return Promise.resolve(window.GK_SP_MANIFEST);
     if(window.gkSPManifestPromise) return window.gkSPManifestPromise;
-    window.gkSPManifestPromise = fetch('superpractice/manifest.json').then(r => r.json())
-      .then(d => { window.GK_SP_MANIFEST = d.gk || []; return window.GK_SP_MANIFEST; })
+    window.gkSPManifestPromise = fetch('gkquiz/manifest.json').then(r => r.json())
+      .then(d => { window.GK_SP_MANIFEST = d.sp || []; return window.GK_SP_MANIFEST; })
       .catch(() => { window.GK_SP_MANIFEST = []; return window.GK_SP_MANIFEST; });
     return window.gkSPManifestPromise;
   }
@@ -13789,6 +13792,7 @@ const mathPyqQuiz = makeMathPyqQuiz();
     itemsEl.querySelectorAll('.gkQuizItem').forEach(el => {
       el.addEventListener('click', () => {
         const m = all[+el.dataset.idx];
+        gkQuizReturnPage = 'gkreader';
         if(m.source === 'p75' && typeof openP75Mock === 'function') openP75Mock(m.key, m.file, m.label, m.entry);
         else if(typeof openSPMock === 'function') openSPMock(m.key, m.file, m.label, m.entry);
       });
@@ -16629,6 +16633,7 @@ function initCalcNav(){
   initEnglishTopicwiseQuiz();
   initSuperPracticeQuiz();
   initP75Quiz();
+  initGkQuiz();
   initMainsMockQuiz();
   initEmMocksMenu();
 }
@@ -16646,8 +16651,6 @@ const SUPERPRACTICE_SUBJECTS = [
   { key:'math',      label:'Quant (Math)',            icon:'🧮', count:196 },
   { key:'reasoning', label:'Reasoning',                icon:'🧠', count:146 },
   { key:'english',   label:'English',                  icon:'📘', count:135 },
-  { key:'gk',        label:'GK / General Awareness',   icon:'🌍', count:169 },
-  { key:'computer',  label:'Computer Knowledge',        icon:'💻', count:14 },
 ];
 let spManifest = null;
 let spCurrentSubjectKey = null;
@@ -16863,8 +16866,6 @@ async function openSPSubject(key, label, direct){
   const searchBox = document.getElementById('superpracticeSearchInput');
   if(searchBox) searchBox.value = '';
   spOpenChapter = null;
-  spOpenGKSubject = null;
-  spOpenGKSubtopic = null;
   renderSPMockGrid(entries);
 }
 
@@ -16913,48 +16914,6 @@ const OLIVEBOARD_QUANT_CHAPTER_ORDER = [
   "Sectional Mock","Mixed Practice"
 ];
 
-// GK 'topic' strings are "Subject: Subtopic" (e.g. "Ancient History: Mauryan
-// Empire"). This canonical order controls which Subject button appears
-// first — subtopics within a subject are just sorted alphabetically.
-const GK_SUBJECT_ORDER = [
-  "Ancient History","Medieval History","Modern History","Polity","Economy",
-  "Geography","Physics","Chemistry","Biology","Art and Culture","Static GK",
-  "Census, Reports and Schemes"
-];
-function parseGKTopic(topic){
-  const t = (topic || '').trim();
-  const idx = t.indexOf(':');
-  if(idx === -1) return { subject: 'Other', subtopic: t || 'Mixed Practice' };
-  return { subject: t.slice(0, idx).trim(), subtopic: t.slice(idx + 1).trim() };
-}
-// Two-level version of groupSPEntries, used only for the 'gk' subject:
-// Subject -> [ { subtopic, items } ], subjects and subtopics each sorted.
-function groupGKEntries(entries){
-  const bySubject = new Map();
-  entries.forEach(e => {
-    const { subject, subtopic } = parseGKTopic(e.topic);
-    if(!bySubject.has(subject)) bySubject.set(subject, new Map());
-    const bySub = bySubject.get(subject);
-    if(!bySub.has(subtopic)) bySub.set(subtopic, []);
-    bySub.get(subtopic).push(e);
-  });
-  const subjects = Array.from(bySubject.entries()).map(([subject, subMap]) => {
-    const subtopics = Array.from(subMap.entries()).map(([subtopic, items]) => ({ subtopic, items }));
-    subtopics.sort((a, b) => a.subtopic.localeCompare(b.subtopic));
-    const count = subtopics.reduce((s, x) => s + x.items.length, 0);
-    return { subject, subtopics, count };
-  });
-  subjects.sort((a, b) => {
-    const ai = GK_SUBJECT_ORDER.indexOf(a.subject);
-    const bi = GK_SUBJECT_ORDER.indexOf(b.subject);
-    if(ai === -1 && bi === -1) return a.subject.localeCompare(b.subject);
-    if(ai === -1) return 1;
-    if(bi === -1) return -1;
-    return ai - bi;
-  });
-  return subjects;
-}
-
 function groupSPEntries(entries){
   const map = new Map();
   entries.forEach(e => {
@@ -17001,8 +16960,6 @@ function groupSPEntries(entries){
 }
 
 let spOpenChapter = null; // currently expanded chapter name, or null
-let spOpenGKSubject = null;  // currently expanded GK subject, or null
-let spOpenGKSubtopic = null; // currently expanded GK subtopic, or null
 
 function renderSPMockRows(items, body){
   items.forEach((e, idx) => {
@@ -17020,77 +16977,7 @@ function renderSPMockRows(items, body){
   if(lastRow) lastRow.style.borderBottom = 'none';
 }
 
-function renderSPMockGridGK(entries){
-  const grid = document.getElementById('superpracticeListGrid');
-  if(!grid) return;
-  grid.classList.remove('calcGrid', 'calcGrid-2col');
-  grid.innerHTML = '';
-  const subjects = groupGKEntries(entries);
-  if(!subjects.length){
-    grid.innerHTML = '<div class="losshint">Koi mock nahi mila.</div>';
-    return;
-  }
-  subjects.forEach(subj => {
-    const isSubjOpen = spOpenGKSubject === subj.subject;
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);';
-
-    const header = document.createElement('button');
-    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:transparent;border:none;text-align:left;font-size:15px;font-weight:600;cursor:pointer;color:inherit;';
-    header.innerHTML =
-      '<span>' + escapeHtml(subj.subject) + '</span>' +
-      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted);">' +
-        subj.count + ' mocks' +
-        '<span style="display:inline-block;transform:rotate(' + (isSubjOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
-      '</span>';
-    header.addEventListener('click', () => {
-      spOpenGKSubject = isSubjOpen ? null : subj.subject;
-      spOpenGKSubtopic = null;
-      renderSPMockGridGK(entries);
-    });
-    wrap.appendChild(header);
-
-    if(isSubjOpen){
-      const body = document.createElement('div');
-      body.style.cssText = 'border-top:1px solid var(--border);';
-      subj.subtopics.forEach(st => {
-        const isSubOpen = spOpenGKSubtopic === st.subtopic;
-        const subWrap = document.createElement('div');
-        subWrap.style.cssText = 'border-bottom:1px solid var(--border);';
-
-        const subHeader = document.createElement('button');
-        subHeader.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px 12px 24px;background:transparent;border:none;text-align:left;font-size:14px;font-weight:500;cursor:pointer;color:inherit;';
-        subHeader.innerHTML =
-          '<span>' + escapeHtml(st.subtopic) + '</span>' +
-          '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:12px;color:var(--muted);">' +
-            st.items.length + ' mocks' +
-            '<span style="display:inline-block;transform:rotate(' + (isSubOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
-          '</span>';
-        subHeader.addEventListener('click', () => {
-          spOpenGKSubtopic = isSubOpen ? null : st.subtopic;
-          renderSPMockGridGK(entries);
-        });
-        subWrap.appendChild(subHeader);
-
-        if(isSubOpen){
-          const innerBody = document.createElement('div');
-          innerBody.style.cssText = 'background:var(--bg,transparent);';
-          renderSPMockRows(st.items, innerBody);
-          subWrap.appendChild(innerBody);
-        }
-        body.appendChild(subWrap);
-      });
-      const lastSub = body.lastElementChild;
-      if(lastSub) lastSub.style.borderBottom = 'none';
-      wrap.appendChild(body);
-    }
-
-    grid.appendChild(wrap);
-  });
-}
-
 function renderSPMockGrid(entries){
-  if(spCurrentSubjectKey === 'gk'){ renderSPMockGridGK(entries); return; }
   const grid = document.getElementById('superpracticeListGrid');
   if(!grid) return;
   grid.classList.remove('calcGrid', 'calcGrid-2col');
@@ -17133,20 +17020,11 @@ function renderSPMockGrid(entries){
 function filterSPMockGrid(query){
   const q = (query || '').trim().toLowerCase();
   if(!q){
-    spOpenChapter = null; spOpenGKSubject = null; spOpenGKSubtopic = null;
+    spOpenChapter = null;
     renderSPMockGrid(spCurrentEntries);
     return;
   }
   const filtered = spCurrentEntries.filter(e => (e.label || '').toLowerCase().includes(q) || (e.topic || '').toLowerCase().includes(q));
-  if(spCurrentSubjectKey === 'gk'){
-    const subjects = groupGKEntries(filtered);
-    if(subjects.length === 1){
-      spOpenGKSubject = subjects[0].subject;
-      spOpenGKSubtopic = subjects[0].subtopics.length === 1 ? subjects[0].subtopics[0].subtopic : null;
-    }
-    renderSPMockGridGK(filtered);
-    return;
-  }
   const chapters = groupSPEntries(filtered);
   if(chapters.length === 1) spOpenChapter = chapters[0].topic;
   renderSPMockGrid(filtered);
@@ -17240,16 +17118,16 @@ async function openSPMock(key, file, label, entry){
   let data;
   try{
     if(SPV[key]){ data = await spvLoad(key, entry); }
-    else{ const res = await fetch('superpractice/data/' + key + '/' + jsonFile); data = await res.json(); }
+    else{ const res = await fetch(key === 'gk' ? ('gkquiz/sp/' + jsonFile) : key === 'computer' ? ('gkquiz/computer/' + jsonFile) : ('superpractice/data/' + key + '/' + jsonFile)); data = await res.json(); }
     data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
-    showCalcPage('superpracticelist');
+    showCalcPage(spBackPage());
     return;
   }
   if(!data || !data.questions || !data.questions.length){
     alert('Ye mock abhi available nahi hai.');
-    showCalcPage('superpracticelist');
+    showCalcPage(spBackPage());
     return;
   }
   spnativeLoaded = data;
@@ -17575,7 +17453,7 @@ function initSuperPracticeQuiz(){
 
   // Native instructions page
   const infoBackBtn = document.getElementById('spnativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage(spBackPage()));
   const startBtn = document.getElementById('spnativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', spnativeStartExam);
   const infoLangBtn = document.getElementById('spnativeInfoLangBtn');
@@ -17584,7 +17462,7 @@ function initSuperPracticeQuiz(){
   // Native exam page
   const examBackBtn = document.getElementById('spnativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); showCalcPage('superpracticelist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ spnativeStopTimer(); showCalcPage(spBackPage()); }
   });
   const pauseBtn = document.getElementById('spnativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', spnativeTogglePause);
@@ -17605,7 +17483,7 @@ function initSuperPracticeQuiz(){
 
   // Native result page
   const resultBackBtn = document.getElementById('spnativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('superpracticelist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage(spBackPage()));
   const reattemptBtn = document.getElementById('spnativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', spnativeStartExam);
   const resultQWrap = document.getElementById('spnativeResultQuestionWrap');
@@ -17628,7 +17506,6 @@ const PRACTICE75_SUBJECTS = [
   { key:'quant',     label:'Quant (Math)',            icon:'🧮', count:139 },
   { key:'reasoning', label:'Reasoning',                icon:'🧠', count:65 },
   { key:'english',   label:'English',                  icon:'📘', count:50 },
-  { key:'gk',        label:'GK / General Awareness',   icon:'🌍', count:130 },
 ];
 let p75Manifest = null;
 let p75CurrentSubjectKey = null;
@@ -17826,17 +17703,17 @@ async function openP75MockNative(key, file, label, entry){
   if(startBtnGate){ startBtnGate.disabled = true; startBtnGate.textContent = '⏳ Mock download ho raha hai...'; }
   let data;
   try{
-    const res = await fetch('practice75/data/' + key + '/' + jsonFile);
+    const res = await fetch(key === 'gk' ? ('gkquiz/p75/' + jsonFile) : ('practice75/data/' + key + '/' + jsonFile));
     data = await res.json();
     data = fixMockImagesInData(data);
   }catch(e){
     alert('Ye mock load nahi ho paaya. Dobara try karein.');
-    showCalcPage('75daylist');
+    showCalcPage(p75BackPage());
     return;
   }
   if(!data || !data.questions || !data.questions.length){
     alert('Ye mock abhi available nahi hai.');
-    showCalcPage('75daylist');
+    showCalcPage(p75BackPage());
     return;
   }
   p75nativeLoaded = data;
@@ -18135,7 +18012,7 @@ function p75nativeResultRenderQuestion(){
 function initP75Native(){
   // Native instructions page
   const infoBackBtn = document.getElementById('p75nativeInfoBackBtn');
-  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  if(infoBackBtn) infoBackBtn.addEventListener('click', () => showCalcPage(p75BackPage()));
   const startBtn = document.getElementById('p75nativeStartBtn');
   if(startBtn) startBtn.addEventListener('click', p75nativeStartExam);
   const infoLangBtn = document.getElementById('p75nativeInfoLangBtn');
@@ -18144,7 +18021,7 @@ function initP75Native(){
   // Native exam page
   const examBackBtn = document.getElementById('p75nativeExamBackBtn');
   if(examBackBtn) examBackBtn.addEventListener('click', () => {
-    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); showCalcPage('75daylist'); }
+    if(confirm('Test chhodna hai? Progress save nahi hoga.')){ p75nativeStopTimer(); showCalcPage(p75BackPage()); }
   });
   const pauseBtn = document.getElementById('p75nativeExamPauseBtn');
   if(pauseBtn) pauseBtn.addEventListener('click', p75nativeTogglePause);
@@ -18165,7 +18042,7 @@ function initP75Native(){
 
   // Native result page
   const resultBackBtn = document.getElementById('p75nativeResultBackBtn');
-  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage('75daylist'));
+  if(resultBackBtn) resultBackBtn.addEventListener('click', () => showCalcPage(p75BackPage()));
   const reattemptBtn = document.getElementById('p75nativeResultReattemptBtn');
   if(reattemptBtn) reattemptBtn.addEventListener('click', p75nativeStartExam);
   const resultQWrap = document.getElementById('p75nativeResultQuestionWrap');
@@ -18183,6 +18060,170 @@ function initP75Native(){
 function openP75Mock(key, file, label, entry){
   openP75MockNative(key, file, label, entry);
 }
+
+// ===== GK Quiz (Topic-wise) — Super Practice GK + 75 Day Practice GK, merged =====
+// Data: gkquiz/manifest.json  ->  { subjects:[{subject,icon,mocks,q,topics:[{topic,quizzes:[
+//   {src:'sp'|'p75', file, q, label, otopic, n}]}]}], sp:[...flat], p75:[...flat] }
+// JSON: gkquiz/sp/*.json (ex-Super Practice) and gkquiz/p75/*.json (ex-75 Day Practice).
+// Har quiz apne ORIGINAL native engine par hi chalta hai (sp -> openSPMock, p75 -> openP75Mock),
+// isliye Hindi/English toggle, formatting, solutions aur purane ✅ attempted marks bilkul same rehte hain.
+let gkQuizReturnPage = 'gkquiz'; // result/back par kahan jaana hai: 'gkquiz' ya 'gkreader'
+function spBackPage(){ return (spnativeCurrentKey === 'gk' || spnativeCurrentKey === 'computer') ? gkQuizReturnPage : 'superpracticelist'; }
+function p75BackPage(){ return p75nativeCurrentKey === 'gk' ? gkQuizReturnPage : '75daylist'; }
+
+let gkQuizManifest = null;
+let gkQuizOpenSubject = null;
+let gkQuizOpenTopic = null;
+let gkQuizQuery = '';
+
+async function ensureGkQuizManifest(){
+  if(gkQuizManifest) return gkQuizManifest;
+  try{
+    const res = await fetch('gkquiz/manifest.json');
+    gkQuizManifest = await res.json();
+  }catch(e){ gkQuizManifest = null; }
+  return gkQuizManifest;
+}
+
+// Row label: SP "Test" quizzes get numbered (Test 1, Test 2...), PYQ and 75-Day labels stay as they are.
+function gkQuizLabels(topicObj){
+  let t = 0;
+  return topicObj.quizzes.map(it => {
+    if(it.src === 'sp' && it.label === 'Test'){ t++; return 'Test ' + t; }
+    return it.label || ('Quiz ' + it.n);
+  });
+}
+
+function gkQuizOpen(it, topicName, label){
+  gkQuizReturnPage = 'gkquiz';
+  const entry = { n: it.n, q: it.q, file: it.file, topic: it.otopic, label: label };
+  if(it.src === 'p75') openP75Mock('gk', it.file, topicName, entry);
+  else openSPMock(it.key || 'gk', it.file, topicName, entry);
+}
+
+function gkQuizRender(){
+  const grid = document.getElementById('gkQuizListGrid');
+  const sum = document.getElementById('gkQuizSummary');
+  if(!grid) return;
+  grid.innerHTML = '';
+  const man = gkQuizManifest;
+  if(!man || !man.subjects){
+    grid.innerHTML = '<div class="losshint">GK Quiz data load nahi ho paaya. Internet check karke dobara try karein.</div>';
+    if(sum) sum.textContent = '';
+    return;
+  }
+  const q = (gkQuizQuery || '').trim().toLowerCase();
+  let shownMocks = 0, shownQs = 0, shownSubjects = 0;
+  man.subjects.forEach(subj => {
+    // search: subject / topic / quiz label / original topic
+    const subjHit = q && subj.subject.toLowerCase().includes(q);
+    const topics = [];
+    subj.topics.forEach(tp => {
+      const labels = gkQuizLabels(tp);
+      const topicHit = q && tp.topic.toLowerCase().includes(q);
+      const rows = [];
+      tp.quizzes.forEach((it, i) => {
+        const hit = !q || subjHit || topicHit || labels[i].toLowerCase().includes(q) || (it.otopic || '').toLowerCase().includes(q);
+        if(hit) rows.push({ it: it, label: labels[i] });
+      });
+      if(rows.length) topics.push({ topic: tp.topic, rows: rows });
+    });
+    if(!topics.length) return;
+    shownSubjects++;
+    const subjMocks = topics.reduce((a, t) => a + t.rows.length, 0);
+    const subjQs = topics.reduce((a, t) => a + t.rows.reduce((b, r) => b + (r.it.q || 0), 0), 0);
+    shownMocks += subjMocks; shownQs += subjQs;
+    const isSubjOpen = !!q || gkQuizOpenSubject === subj.subject;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--panel);';
+    const header = document.createElement('button');
+    header.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:transparent;border:none;text-align:left;font-size:15px;font-weight:600;cursor:pointer;color:inherit;';
+    header.innerHTML =
+      '<span>' + (subj.icon || '') + ' ' + escapeHtml(subj.subject) + '</span>' +
+      '<span style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--muted);">' +
+        subjMocks + ' quizzes' +
+        '<span style="display:inline-block;transform:rotate(' + (isSubjOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
+      '</span>';
+    header.addEventListener('click', () => {
+      gkQuizOpenSubject = (gkQuizOpenSubject === subj.subject) ? null : subj.subject;
+      gkQuizOpenTopic = null;
+      gkQuizRender();
+    });
+    wrap.appendChild(header);
+
+    if(isSubjOpen){
+      const body = document.createElement('div');
+      body.style.cssText = 'border-top:1px solid var(--border);';
+      topics.forEach(tp => {
+        const key = subj.subject + '||' + tp.topic;
+        const isTopicOpen = !!q || gkQuizOpenTopic === key;
+        const tWrap = document.createElement('div');
+        tWrap.style.cssText = 'border-bottom:1px solid var(--border);';
+        const tHead = document.createElement('button');
+        tHead.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 12px 24px;background:transparent;border:none;text-align:left;font-size:14px;font-weight:500;cursor:pointer;color:inherit;';
+        const doneCount = tp.rows.filter(r => gkQuizIsDone(r.it)).length;
+        tHead.innerHTML =
+          '<span>' + escapeHtml(tp.topic) + '</span>' +
+          '<span style="flex:0 0 auto;display:flex;align-items:center;gap:8px;font-weight:400;font-size:12px;color:var(--muted);">' +
+            (doneCount ? doneCount + '/' : '') + tp.rows.length + ' quizzes' +
+            '<span style="display:inline-block;transform:rotate(' + (isTopicOpen ? 90 : 0) + 'deg);transition:transform .15s;">&#8250;</span>' +
+          '</span>';
+        tHead.addEventListener('click', () => {
+          gkQuizOpenTopic = (gkQuizOpenTopic === key) ? null : key;
+          gkQuizRender();
+        });
+        tWrap.appendChild(tHead);
+        if(isTopicOpen){
+          const inner = document.createElement('div');
+          inner.style.cssText = 'background:var(--bg,transparent);';
+          tp.rows.forEach(r => {
+            const done = gkQuizIsDone(r.it);
+            const row = document.createElement('button');
+            row.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 12px 32px;background:transparent;border:none;border-top:1px solid var(--border);text-align:left;cursor:pointer;color:inherit;';
+            row.innerHTML =
+              '<span style="min-width:0;">' + escapeHtml(r.label) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') +
+                ' <span style="font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(94,234,212,0.16);color:var(--muted);vertical-align:middle;">' +
+                (r.it.src === 'p75' ? '75 Day' : 'Super') + '</span></span>' +
+              '<span style="flex:0 0 auto;color:var(--muted);font-size:13px;">' + r.it.q + ' Qs &#8250;</span>';
+            row.addEventListener('click', () => gkQuizOpen(r.it, tp.topic, r.label));
+            inner.appendChild(row);
+          });
+          tWrap.appendChild(inner);
+        }
+        body.appendChild(tWrap);
+      });
+      const last = body.lastElementChild;
+      if(last) last.style.borderBottom = 'none';
+      wrap.appendChild(body);
+    }
+    grid.appendChild(wrap);
+  });
+  if(!shownSubjects) grid.innerHTML = '<div class="losshint">Koi quiz nahi mila.</div>';
+  if(sum) sum.textContent = shownMocks + ' quizzes · ' + shownQs.toLocaleString('en-IN') + ' sawaal · ' + shownSubjects + ' subjects' + (q ? ' (search)' : '');
+}
+
+function gkQuizIsDone(it){
+  try{ return isQuizSetAttempted(it.src === 'p75' ? 'p75native' : 'spnative', (it.key || 'gk') + '/' + it.file); }catch(e){ return false; }
+}
+
+async function openGkQuizPage(){
+  showCalcPage('gkquiz');
+  const grid = document.getElementById('gkQuizListGrid');
+  if(grid && !gkQuizManifest) grid.innerHTML = '<div class="losshint">Loading quizzes…</div>';
+  await ensureGkQuizManifest();
+  gkQuizRender();
+}
+
+function initGkQuiz(){
+  const btn = document.getElementById('calcGkQuizBtn');
+  if(btn) btn.addEventListener('click', openGkQuizPage);
+  const back = document.getElementById('gkQuizBackBtn');
+  if(back) back.addEventListener('click', () => showCalcPage('gkmenu'));
+  const box = document.getElementById('gkQuizSearchInput');
+  if(box) box.addEventListener('input', () => { gkQuizQuery = box.value; gkQuizRender(); });
+}
+
 
 function initP75Quiz(){
   renderP75SubjectGrid();
