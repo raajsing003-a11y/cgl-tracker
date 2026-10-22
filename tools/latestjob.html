@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<style>html.emb body{padding-top:46px}</style>
+<script>try{if(self!==top)document.documentElement.classList.add('emb')}catch(e){}</script>
+<title>Sarkari Job Tracker</title>
+<style>
+:root{
+  --bg:#0e1015; --panel:#161922; --card:#171a23; --card2:#1f2330; --line:#2a2f3d; --text:#e9ebf1; --mute:#98a1b3;
+  --accent:#6ea8fe; --on-accent:#0a1224; --new:#34d399; --warn:#fbbf24; --bad:#f87171; --star:#fcd34d; --vio:#c4b5fd;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fa; --panel:#ffffff; --card:#ffffff; --card2:#eef1f7; --line:#dde2ec; --text:#171b26; --mute:#5b6577;
+  --accent:#1f6feb; --on-accent:#ffffff; --new:#0f9d6c; --warn:#b7791f; --bad:#d6336c; --star:#b7791f; --vio:#6d4fd8;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Devanagari",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header{padding:18px 0 6px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:21px;letter-spacing:.2px}
+.sub{color:var(--mute);font-size:12.5px;margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+button,select,input{font:inherit;color:var(--text)}
+.btn{background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:9px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.banner{background:rgba(52,211,153,.12);border:1px solid var(--new);color:var(--text);padding:10px 14px;border-radius:10px;margin:10px 0;display:none}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);cursor:pointer}
+.stat b{display:block;font-size:22px;line-height:1.1}
+.stat span{font-size:12px;color:var(--mute)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.prefs{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px}
+.prefs label{color:var(--mute)}
+.prefs select,.prefs input{background:var(--card2);border:1px solid var(--line);padding:7px 10px;border-radius:8px}
+.prefs input{width:84px}
+.cats{display:flex;flex-direction:column;gap:5px}
+.cat{display:grid;grid-template-columns:120px 1fr 28px;gap:8px;align-items:center;font-size:12.5px;cursor:pointer}
+.cat .bar{height:8px;border-radius:6px;background:var(--card2);overflow:hidden}
+.cat .bar i{display:block;height:100%;background:var(--accent)}
+.cat.on{color:var(--accent);font-weight:600}
+.chips{display:flex;gap:8px;margin:10px 0;overflow-x:auto;padding-bottom:4px}
+.chip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:999px;cursor:pointer;font-size:13px;user-select:none;white-space:nowrap}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.chip small{opacity:.75;margin-left:5px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.controls input[type=search]{flex:1;min-width:200px}
+.controls input,.controls select{background:var(--panel);border:1px solid var(--line);padding:9px 11px;border-radius:9px;font-size:14px}
+.count{color:var(--mute);font-size:13px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px;box-shadow:var(--shadow);position:relative}
+.card.isnew{border-color:var(--new);box-shadow:0 0 0 1px var(--new) inset}
+.card.watch::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--star)}
+.card.done{opacity:.62}
+.title{font-weight:650;font-size:15.5px;line-height:1.35}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.b{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.b.new{background:var(--new);color:#052116;border-color:var(--new);font-weight:700}
+.b.star{color:var(--star)} .b.type{color:var(--accent)} .b.ext{color:var(--warn)}
+.b.ok{color:var(--new);border-color:var(--new)} .b.no{color:var(--bad);border-color:var(--bad)} .b.maybe{color:var(--warn)}
+.summary{font-size:13px;color:var(--mute)}
+.meta{font-size:13px;color:var(--mute);display:grid;grid-template-columns:96px 1fr;gap:3px 10px}
+.meta b{color:var(--text);font-weight:600}
+.left{font-weight:700}
+.left.open{color:var(--new)} .left.closing_soon{color:var(--warn)} .left.closed{color:var(--bad)} .left.no_date,.left.info{color:var(--mute)}
+.meter{height:5px;background:var(--card2);border-radius:5px;overflow:hidden}
+.meter i{display:block;height:100%}
+details.syl{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+details.syl summary{cursor:pointer;color:var(--vio);font-weight:600}
+details.syl ul{margin:6px 0 2px 18px;padding:0}
+details.syl li{margin:2px 0}
+details.syl .tip{margin-top:6px;color:var(--mute);font-size:12px}
+.links,.acts{display:flex;flex-wrap:wrap;gap:6px}
+.links{margin-top:auto}
+.links a{font-size:12.5px;text-decoration:none;color:var(--text);background:var(--card2);border:1px solid var(--line);padding:5px 10px;border-radius:8px}
+.links a.p{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:650}
+.links a.s{color:var(--vio);border-color:var(--vio)}
+.acts button{font-size:12px;background:transparent;border:1px dashed var(--line);color:var(--mute);padding:4px 9px;border-radius:8px;cursor:pointer}
+.acts button.on{border-style:solid;color:var(--text);border-color:var(--accent);background:var(--card2)}
+.empty{text-align:center;color:var(--mute);padding:40px 0;display:none}
+footer{color:var(--mute);font-size:12px;text-align:center;padding:22px 0 40px}
+@media (max-width:520px){ .grid{grid-template-columns:1fr} h1{font-size:19px} .cat{grid-template-columns:100px 1fr 24px}
+  .stats{grid-template-columns:repeat(3,1fr);gap:8px} .stat{padding:8px 10px} .stat b{font-size:18px} .stat span{font-size:11px} .prefs .sub{width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📋 Sarkari Job Tracker</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="csv">⬇ CSV</button>
+      <button class="btn" id="theme">🌓 Theme</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="panel prefs">
+    <b>🎯 Meri profile</b>
+    <label>Qualification
+      <select id="pEdu">
+        <option value="0">— set karo —</option>
+        <option value="1">10th pass</option>
+        <option value="2">12th pass</option>
+        <option value="3">Graduate</option>
+        <option value="4">Post Graduate / Professional</option>
+      </select>
+    </label>
+    <label>Age <input id="pAge" type="number" min="14" max="60" placeholder="saal"></label>
+    <span class="sub" id="pHint">Set karoge to har job par "Eligible / Nahi" badge dikhega (age relaxation alag se check karo).</span>
+  </div>
+
+  <div class="panel"><div class="cats" id="cats"></div></div>
+
+  <div class="chips" id="chips"></div>
+  <div class="controls">
+    <input id="q" type="search" placeholder="Search: SSC, steno, railway, teacher, UP…">
+    <select id="type"></select>
+    <select id="cat"></select>
+    <select id="sort">
+      <option value="site">Sort: Site order (latest)</option>
+      <option value="last">Sort: Last date nazdeek</option>
+      <option value="seen">Sort: Naye pehle</option>
+      <option value="posts">Sort: Zyada posts</option>
+    </select>
+  </div>
+  <p class="count" id="count"></p>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty">Is filter me koi job nahi mili.</div>
+  <footer>Data sarkariresult.com se auto-collect hota hai. Syllabus/pattern general guide hai — apply se pehle official notification zaroor verify karein.</footer>
+</div>
+
+<script>
+const DATA = {"updated_at":"2026-10-22T14:17:48+05:30","jobs":[{"id":"4710946471d3","url":"https://www.sarkariresult.com/ssc/ssc-cgl-2027/","title":"SSC Combined Graduate Level CGL Online Form 2027 | Last Date : 11/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":0,"last_date":"2026-11-11","last_date_text":"11/11/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"open","days_left":20,"edu_level":2,"kb":{"name":"SSC CGL","pattern":["Tier I (CBT): 100 sawal, 200 marks, 60 min, negative marking 0.50","Tier II (CBT): Maths, Reasoning, English, General Awareness, Computer (post ke hisaab se Statistics / Finance & Economics)","Post ke hisaab se Skill/Typing test ya Document Verification"],"subjects":["Quantitative Aptitude (25 Q)","General Intelligence & Reasoning (25 Q)","English Comprehension (25 Q)","General Awareness (25 Q)"],"tip":"Tier I me Quant + Reasoning se cutoff banta hai; pichle saal ke shift papers timed solve karo."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"08e69c895a4c","url":"https://www.sarkariresult.com/2026/ssc-chsl-2026-sep/","title":"SSC 10+2 CHSL Online Form 2026 for 2536 Post | Last Date : 25/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":1,"last_date":"2026-10-25","last_date_text":"25/10/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"closing_soon","days_left":3,"edu_level":2,"kb":{"name":"SSC CHSL","pattern":["Tier I (CBT): 100 sawal, 200 marks, 60 min, negative marking 0.50","Tier II: Maths, Reasoning, English, General Awareness, Computer + Skill/Typing test (post ke hisaab se)"],"subjects":["General Intelligence (25 Q)","English Language (25 Q)","Quantitative Aptitude (25 Q)","General Awareness (25 Q)"],"tip":"English + Quant me speed banao; typing/skill test ke liye alag practice rakho."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"1be0b56d82e5","url":"https://www.sarkariresult.com/2026/ssc-cpo-si-capf-2026/","title":"SSC CPO SI CAPF Online Form 2026 | Last Date : 03/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":2,"last_date":"2026-11-03","last_date_text":"03/11/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"open","days_left":12,"edu_level":2,"kb":{"name":"SSC CPO (SI in Delhi Police / CAPF)","pattern":["Paper I (CBT): 200 sawal, 200 marks, 2 ghante, negative marking 0.25","PET/PST (physical) -> Paper II (English Language & Comprehension, 200 marks) -> Medical"],"subjects":["General Intelligence & Reasoning (50 Q)","General Knowledge & Awareness (50 Q)","Quantitative Aptitude (50 Q)","English Comprehension (50 Q)"],"tip":"Physical standards pehle se check karo aur Paper I ke saath running/PET ki taiyari saath rakho."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"32b592cd189c","url":"https://www.sarkariresult.com/ssc/ssc-stenographer-2027/","title":"SSC Stenographer Online Form 2027 | Last Date : 31/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":3,"last_date":"2026-10-31","last_date_text":"31/10/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"open","days_left":9,"edu_level":2,"kb":{"name":"SSC Stenographer (Gr C & D)","pattern":["Written (CBT): 200 sawal, 200 marks, 2 ghante, negative marking 0.25","Phir Skill Test (Steno dictation + transcription)"],"subjects":["General Intelligence & Reasoning (50 Q)","General Awareness (50 Q)","English Language & Comprehension (100 Q)"],"tip":"English 100 Q hai - vocabulary/grammar pe sabse zyada time do; shorthand speed alag se."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"fbcad8de844e","url":"https://www.sarkariresult.com/ssc/ssc-mts-2027/","title":"SSC MTS Havaldar Online Form 2027 | Last Date : 06/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":4,"last_date":"2026-11-06","last_date_text":"06/11/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"open","days_left":15,"edu_level":2,"kb":{"name":"SSC MTS","pattern":["CBT: Numerical & Mathematical Ability, Reasoning, General English, General Awareness","Kuch posts ke liye PET/PST / Document Verification (notification dekho)"],"subjects":["Numerical & Mathematical Ability","Reasoning Ability & Problem Solving","General English","General Awareness"],"tip":"Basic maths aur reasoning strong karo - 10th level hai, accuracy se cutoff paar hota hai."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"eb742b21471b","url":"https://www.sarkariresult.com/ssc/ssc-gd-2027/","title":"SSC GD Constable Online Form 2027 | Last Date : 16/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":5,"last_date":"2026-11-16","last_date_text":"16/11/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":false,"status":"open","days_left":25,"edu_level":2,"kb":{"name":"SSC GD Constable","pattern":["CBT: 80 sawal, 160 marks, 60 min, negative marking 0.25","Phir PET/PST aur Medical"],"subjects":["General Intelligence & Reasoning (20 Q)","General Knowledge & Awareness (20 Q)","Elementary Mathematics (20 Q)","English / Hindi (20 Q)"],"tip":"Physical test (race/height/chest) ki taiyari written ke saath hi shuru karo."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"5c026e8af0e1","url":"https://www.sarkariresult.com/ssc/ssc-stenographer-2026/","title":"SSC Stenographer 2026 Answer Key","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":false,"detail_tries":0,"last_seen":"2026-10-22T14:17:48+05:30","order":6,"last_date":null,"last_date_text":"","type":"Answer Key","category":"SSC","watch":true,"extended":false,"status":"info","days_left":null,"edu_level":2,"kb":{"name":"SSC Stenographer (Gr C & D)","pattern":["Written (CBT): 200 sawal, 200 marks, 2 ghante, negative marking 0.25","Phir Skill Test (Steno dictation + transcription)"],"subjects":["General Intelligence & Reasoning (50 Q)","General Awareness (50 Q)","English Language & Comprehension (100 Q)"],"tip":"English 100 Q hai - vocabulary/grammar pe sabse zyada time do; shorthand speed alag se."},"is_new":false,"is_updated":false},{"id":"3c18e328abbf","url":"https://www.sarkariresult.com/2026/rrb-station-master-08-26/","title":"Railway RRB Station Master Online Form 2026 | Last Date : 25/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":7,"last_date":"2026-11-25","last_date_text":"25/11/2026","type":"New Vacancy","category":"Railway","watch":false,"extended":false,"status":"open","days_left":34,"edu_level":2,"kb":null,"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"2f2a8a4f1d61","url":"https://www.sarkariresult.com/railway/rrb-ntpc-ug-07-2026/","title":"Railway RRB NTPC 10+2 Under Graduate Online Form 2026 | Last Date : 13/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":8,"last_date":"2026-11-13","last_date_text":"13/11/2026","type":"New Vacancy","category":"Railway","watch":false,"extended":false,"status":"open","days_left":22,"edu_level":2,"kb":{"name":"RRB NTPC","pattern":["CBT 1: 100 sawal, 90 min, negative marking 1/3","CBT 2 (post ke hisaab se) + Typing / Aptitude test + Document Verification"],"subjects":["Mathematics (30 Q)","General Intelligence & Reasoning (30 Q)","General Awareness (40 Q)"],"tip":"General Awareness (40 Q) me current affairs + static GK se easy marks nikalte hain."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"7cc25c9635f5","url":"https://www.sarkariresult.com/railway/rrb-group-d-2027/","title":"Railway RRB Group D Online Form 2027 | Last Date : 21/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":9,"last_date":"2026-11-21","last_date_text":"21/11/2026","type":"New Vacancy","category":"Railway","watch":false,"extended":false,"status":"open","days_left":30,"edu_level":2,"kb":{"name":"RRB Group D (Level 1)","pattern":["CBT: 100 sawal, 90 min, negative marking 1/3","Phir PET (physical) aur Document Verification"],"subjects":["Mathematics (25 Q)","General Intelligence & Reasoning (30 Q)","General Science (25 Q)","General Awareness & Current Affairs (20 Q)"],"tip":"General Science (class 10 NCERT level) pe grip rakho; PET alag se practice karo."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"68d228a0c46c","url":"https://www.sarkariresult.com/2026/ibps-po-xvii/","title":"IBPS Probationary Officer PO / MT 17th Online Form 2026 | Last Date : 05/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":10,"last_date":"2026-11-05","last_date_text":"05/11/2026","type":"New Vacancy","category":"Banking","watch":false,"extended":false,"status":"open","days_left":14,"edu_level":2,"kb":{"name":"Bank PO (IBPS / SBI)","pattern":["Prelims: 100 sawal, 60 min - English 30, Quant 35, Reasoning 35 (sectional time)","Mains: Reasoning & Computer, Data Analysis & Interpretation, General/Economy/Banking Awareness, English (+ descriptive) -> Interview"],"subjects":["English Language","Quantitative Aptitude","Reasoning Ability","General/Financial Awareness","Computer Aptitude"],"tip":"Prelims me sectional cutoff hota hai - kisi ek section ko mat chhodo."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"3ec1896706f1","url":"https://www.sarkariresult.com/2026/sbi-clerk-2027/","title":"SBI Junior Associates Clerk Online Form 2026 | Last Date : 28/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":11,"last_date":"2026-10-28","last_date_text":"28/10/2026","type":"New Vacancy","category":"Banking","watch":false,"extended":false,"status":"closing_soon","days_left":6,"edu_level":2,"kb":{"name":"Bank Clerk (IBPS / SBI)","pattern":["Prelims: 100 sawal, 60 min - English 30, Numerical Ability 35, Reasoning 35","Mains: Reasoning & Computer, Quant, General/Financial Awareness, English"],"subjects":["English Language","Numerical Ability","Reasoning Ability","General/Financial Awareness"],"tip":"Speed + accuracy ka game hai; daily sectional mocks lagao."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"4ca14ba778ca","url":"https://www.sarkariresult.com/2026/ibps-rrb-15th-august26/","title":"IBPS RRB Gramin Bank 15th Online Form 2026 | Last Date : 12/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":false,"detail_tries":0,"last_seen":"2026-10-22T14:17:48+05:30","order":12,"last_date":"2026-10-12","last_date_text":"12/10/2026","type":"New Vacancy","category":"Banking","watch":false,"extended":false,"status":"closed","days_left":-10,"edu_level":3,"kb":{"name":"IBPS RRB (Office Assistant / Officer Scale I)","pattern":["Prelims: Reasoning 40 + Quantitative Aptitude 40 (80 Q, 45 min)","Mains + (Officers ke liye) Interview"],"subjects":["Reasoning","Quantitative Aptitude","English/Hindi","General Awareness","Computer Knowledge"],"tip":"Prelims chhota hai - Quant/Reasoning ki speed hi sab kuch hai."},"is_new":false,"is_updated":false},{"id":"3ec21fd7cb78","url":"https://www.sarkariresult.com/upsc/upsc-nda-i-2027/","title":"UPSC NDA I 2027 Online Form | Last Date : 02/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":13,"last_date":"2026-11-02","last_date_text":"02/11/2026","type":"New Vacancy","category":"UPSC","watch":false,"extended":false,"status":"open","days_left":11,"edu_level":2,"kb":{"name":"NDA / NA","pattern":["Maths: 120 Q (300 marks)","General Ability Test: 150 Q (600 marks)","Phir SSB interview"],"subjects":["Mathematics (class 11-12)","English","General Knowledge (Physics, Chemistry, GS, Current Affairs)"],"tip":"Maths ka cutoff alag chalta hai; GAT me English + GK scoring hai."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"338cff4f94bd","url":"https://www.sarkariresult.com/2026/ctet-december-2026/","title":"CTET December 2026 Online Form | Last Date : 09/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":14,"last_date":"2026-11-09","last_date_text":"09/11/2026","type":"New Vacancy","category":"Teaching/TET","watch":false,"extended":false,"status":"open","days_left":18,"edu_level":2,"kb":{"name":"CTET / TET (Teacher Eligibility)","pattern":["CTET: 150 sawal, 150 marks, 2.5 ghante (no negative marking)","Paper I (class 1-5): CDP 30, Language I 30, Language II 30, Maths 30, EVS 30","Paper II (class 6-8): CDP 30, Language I 30, Language II 30, Maths-Science ya Social Studies 60"],"subjects":["Child Development & Pedagogy","Language I & II","Maths / EVS / Science / Social Studies"],"tip":"CDP + Language se easy marks aate hain; state TET me pattern thoda alag ho sakta hai."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"ed90f49985f5","url":"https://www.sarkariresult.com/force/afcat-01-2027/","title":"AFCAT 01/2027 Online Form | Last Date : 22/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":15,"last_date":"2026-10-22","last_date_text":"22/10/2026","type":"New Vacancy","category":"Defence/Police","watch":false,"extended":false,"status":"closing_soon","days_left":0,"edu_level":2,"kb":{"name":"AFCAT","pattern":["Online exam: 100 sawal, 300 marks, 2 ghante (+3 / -1)","Phir AFSB interview + Medical"],"subjects":["General Awareness","Verbal Ability in English","Numerical Ability","Reasoning & Military Aptitude"],"tip":"Negative marking 1 hai - sirf pakke sawal attempt karo."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"5364209e00db","url":"https://www.sarkariresult.com/2026/army-agniveer-2027/","title":"Indian Army Agniveer Rally Recruitment Online Form 2027 | Last Date : 01/12/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":16,"last_date":"2026-12-01","last_date_text":"01/12/2026","type":"New Vacancy","category":"Defence/Police","watch":false,"extended":false,"status":"open","days_left":40,"edu_level":2,"kb":{"name":"Agniveer (Army)","pattern":["Online CEE (Common Entrance Exam)","Physical Fitness + Physical Measurement + Medical + Rally"],"subjects":["General Knowledge","General Science","Mathematics","Logical Reasoning (category ke hisaab se)"],"tip":"Trade ke hisaab se qualification alag hoti hai - notification me dekho."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"ddf705531e5d","url":"https://www.sarkariresult.com/2026/up-police-constable-2027/","title":"UP Police Constable Online Form 2027 | Last Date : 18/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":17,"last_date":"2026-11-18","last_date_text":"18/11/2026","type":"New Vacancy","category":"Defence/Police","watch":false,"extended":false,"status":"open","days_left":27,"edu_level":2,"kb":{"name":"Police Constable","pattern":["Written exam (state ke hisaab se pattern)","Physical Standard / Efficiency Test + Document Verification + Medical"],"subjects":["General Knowledge / Current Affairs","Hindi","Numerical & Mental Ability","Reasoning / Mental Aptitude"],"tip":"State police ka pattern notification me alag hota hai - ye general guide hai."},"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"7eab38753a31","url":"https://www.sarkariresult.com/2026/upessc-up-pgt-teacher-sept26/","title":"UPESSC UP PGT Teacher Online Form 2026 for 2607 Post | Last Date : 30/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":18,"last_date":"2026-10-30","last_date_text":"30/10/2026","type":"New Vacancy","category":"Teaching/TET","watch":false,"extended":false,"status":"open","days_left":8,"edu_level":2,"kb":null,"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"b591caf0d4e8","url":"https://www.sarkariresult.com/2026/uiic-ao-sep26/","title":"United India Insurance UIIC AO Admit Card 2026 for 225 Post","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":false,"detail_tries":0,"last_seen":"2026-10-22T14:17:48+05:30","order":19,"last_date":null,"last_date_text":"","type":"Admit Card","category":"Banking","watch":false,"extended":false,"status":"info","days_left":null,"edu_level":0,"kb":null,"is_new":false,"is_updated":false},{"id":"2352e002ab51","url":"https://www.sarkariresult.com/2026/upsssc-lower-pcs-26-exam-oct26/","title":"UPSSSC 10+2 Inter Level Various Post Online Form 2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":20,"last_date":"2026-10-07","last_date_text":"07/10/2026","type":"New Vacancy","category":"State PSC/SSB","watch":false,"extended":false,"status":"closed","days_left":-15,"edu_level":2,"kb":null,"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"3368400ee706","url":"https://www.sarkariresult.com/2026/up-anganwadi-helper-june26/","title":"UP Anganwadi Helper Online Form 2026 | Last Date : District Wise","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":21,"last_date":null,"last_date_text":"District Wise","type":"New Vacancy","category":"State PSC/SSB","watch":false,"extended":false,"status":"no_date","days_left":null,"edu_level":2,"kb":null,"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"8b412677ff53","url":"https://www.sarkariresult.com/2026/mpesb-mspstet-2026/","title":"MPESB Primary School Teachers Online Form 2026 Date Extended | Last Date : 27/10/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":1,"last_seen":"2026-10-22T14:17:48+05:30","order":22,"last_date":"2026-10-27","last_date_text":"27/10/2026","type":"New Vacancy","category":"Teaching/TET","watch":false,"extended":true,"status":"closing_soon","days_left":5,"edu_level":2,"kb":null,"is_new":false,"is_updated":false,"posts":2536,"age_min":18,"age_max":27,"start_date":"07/09/2026","last_date_detail":"07/10/2026","exam_date":"30/11/2026 to 31/12/2026","fee":100,"summary":"Staff Selection Commission has released the notification. Candidates can apply online before reading the complete advertisement.","qualification":"10+2 Intermediate Exam from Any Recognized Board in India.","apply_url":"https://ssc.gov.in/login","notification_url":"https://ssc.gov.in/notice.pdf","syllabus_url":"https://tinyurl.com/4a4k43c9","official_url":"https://ssc.gov.in/"},{"id":"046a08e8ada9","url":"https://www.sarkariresult.com/ssc/ssc-cgl-2026/","title":"SSC CGL 2026 Online Form Re Open | Last Date : 14/07/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":false,"detail_tries":0,"last_seen":"2026-10-22T14:17:48+05:30","order":23,"last_date":"2026-07-14","last_date_text":"14/07/2026","type":"New Vacancy","category":"SSC","watch":true,"extended":true,"status":"closed","days_left":-100,"edu_level":3,"kb":{"name":"SSC CGL","pattern":["Tier I (CBT): 100 sawal, 200 marks, 60 min, negative marking 0.50","Tier II (CBT): Maths, Reasoning, English, General Awareness, Computer (post ke hisaab se Statistics / Finance & Economics)","Post ke hisaab se Skill/Typing test ya Document Verification"],"subjects":["Quantitative Aptitude (25 Q)","General Intelligence & Reasoning (25 Q)","English Comprehension (25 Q)","General Awareness (25 Q)"],"tip":"Tier I me Quant + Reasoning se cutoff banta hai; pichle saal ke shift papers timed solve karo."},"is_new":false,"is_updated":false},{"id":"ad7ad8c6520d","url":"https://doc.sarkariresults.org.in/MPESB_Steno_ASI_2026.pdf","title":"MPESB Subedar Steno, ASI Ministerial Online Form 2026 | Last Date : 04/11/2026","first_seen":"2026-10-22T14:17:48+05:30","baseline":true,"detail_fetched":true,"detail_tries":0,"last_seen":"2026-10-22T14:17:48+05:30","order":24,"last_date":"2026-11-04","last_date_text":"04/11/2026","type":"New Vacancy","category":"State PSC/SSB","watch":true,"extended":false,"status":"open","days_left":13,"edu_level":0,"kb":null,"is_new":false,"is_updated":false,"notification_url":"https://doc.sarkariresults.org.in/MPESB_Steno_ASI_2026.pdf"}],"refresh_hint":"run"};
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : "";
+  const fmtDT = iso => { try { return new Date(iso).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}); } catch(e){ return iso; } };
+  const LS = {
+    get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+    set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+  };
+  const EDU_NAME = {1:"10th", 2:"12th", 3:"Graduate", 4:"PG/Prof."};
+
+  if(!DATA || !DATA.jobs){ $("sub").textContent = "Data nahi mila — `python tracker.py` chalao."; return; }
+  const jobs = DATA.jobs;
+  const lastVisit = LS.get("sjt_last_visit", 0);
+  let saved = new Set(LS.get("sjt_saved", [])), applied = new Set(LS.get("sjt_applied", []));
+  const prefs = LS.get("sjt_prefs", {edu:0, age:""});
+  const state = { chip:"live", q:"", type:"", cat:"", sort:"site" };
+
+  jobs.forEach(j => {
+    j._seen = Date.parse(j.first_seen) || 0;
+    j._fresh = !j.baseline && (j.is_new || (lastVisit && j._seen > lastVisit));
+    j._upd = !!j.is_updated && !j._fresh;
+  });
+
+  // ---------- theme
+  const root = document.documentElement;
+  root.dataset.theme = LS.get("sjt_theme", matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  $("theme").onclick = () => { root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark"; LS.set("sjt_theme", root.dataset.theme); };
+
+  // ---------- eligibility
+  function eligibility(j){
+    if(!prefs.edu && !prefs.age) return null;
+    let ok = true, known = false, why = [];
+    if(prefs.edu && j.edu_level){ known = true; if(+prefs.edu < j.edu_level){ ok = false; why.push("Qualification: " + EDU_NAME[j.edu_level] + " chahiye"); } }
+    const age = parseInt(prefs.age, 10);
+    if(age && (j.age_min || j.age_max)){
+      known = true;
+      if(j.age_max && age > j.age_max){ ok = false; why.push("Age > " + j.age_max); }
+      if(j.age_min && age < j.age_min){ ok = false; why.push("Age < " + j.age_min); }
+    }
+    if(!known) return {state:"maybe", why:["Detail nahi mili"]};
+    return {state: ok ? "ok" : "no", why};
+  }
+
+  // ---------- filters
+  const live = j => j.status !== "closed";
+  const CHIPS = [
+    ["live","✅ Open / Jaari", live],
+    ["new","🆕 Naye", j => j._fresh],
+    ["soon","⏰ Jaldi band", j => j.status === "closing_soon"],
+    ["watch","⭐ Mere Exams", j => j.watch && live(j)],
+    ["elig","🎯 Mere liye", j => live(j) && j.type !== "Admit Card" && j.type !== "Result" && j.type !== "Answer Key" && (eligibility(j)||{}).state === "ok"],
+    ["syl","📘 Syllabus", j => live(j) && (j.syllabus_url || j.kb)],
+    ["saved","💾 Saved", j => saved.has(j.id)],
+    ["applied","✅ Applied", j => applied.has(j.id)],
+    ["updates","📢 Admit/Result/Key", j => ["Admit Card","Result","Answer Key"].includes(j.type)],
+    ["all","Sab", j => true],
+  ];
+
+  function uniq(k){ return [...new Set(jobs.map(j => j[k]).filter(Boolean))].sort(); }
+  $("type").innerHTML = `<option value="">Sab Types</option>` + uniq("type").map(t => `<option>${esc(t)}</option>`).join("");
+  $("cat").innerHTML  = `<option value="">Sab Categories</option>` + uniq("category").map(t => `<option>${esc(t)}</option>`).join("");
+
+  // ---------- prefs UI
+  $("pEdu").value = String(prefs.edu || 0); $("pAge").value = prefs.age || "";
+  const savePrefs = () => { prefs.edu = +$("pEdu").value; prefs.age = $("pAge").value; LS.set("sjt_prefs", prefs); render(); };
+  $("pEdu").onchange = savePrefs; $("pAge").oninput = savePrefs;
+
+  // ---------- helpers
+  function meterHtml(j){
+    if(j.status !== "open" && j.status !== "closing_soon") return "";
+    const pct = Math.max(4, Math.min(100, 100 - (j.days_left / 30) * 100));
+    const col = j.status === "closing_soon" ? "var(--warn)" : "var(--new)";
+    return `<div class="meter" title="${esc(j.days_left)} din bache"><i style="width:${pct}%;background:${col}"></i></div>`;
+  }
+  function icsFor(j){
+    if(!j.last_date) return;
+    const d = j.last_date.replace(/-/g,"");
+    const nxt = new Date(Date.parse(j.last_date) + 86400000).toISOString().slice(0,10).replace(/-/g,"");
+    const t = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i,"").replace(/[\n,;]/g," ");
+    const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SarkariJobTracker//EN","BEGIN:VEVENT",
+      "UID:"+j.id+"@sjt","DTSTAMP:"+new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z",
+      "DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+nxt,"SUMMARY:Last date - "+t,
+      "DESCRIPTION:"+(j.url||""),"BEGIN:VALARM","TRIGGER:-P2D","ACTION:DISPLAY","DESCRIPTION:2 din bache","END:VALARM",
+      "BEGIN:VALARM","TRIGGER:-P0DT0H","ACTION:DISPLAY","DESCRIPTION:Aaj last date","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+    download("lastdate_"+j.id+".ics", ics, "text/calendar");
+  }
+  function download(name, text, mime){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type: mime+";charset=utf-8"}));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function toggle(set, key, id){ set.has(id) ? set.delete(id) : set.add(id); LS.set(key, [...set]); render(); }
+
+  function kbHtml(j){
+    if(!j.kb) return "";
+    const li = a => (a||[]).map(x => `<li>${esc(x)}</li>`).join("");
+    return `<details class="syl"><summary>📘 Syllabus &amp; Pattern — ${esc(j.kb.name)}</summary>
+      ${j.kb.pattern && j.kb.pattern.length ? `<b>Pattern</b><ul>${li(j.kb.pattern)}</ul>` : ""}
+      ${j.kb.subjects && j.kb.subjects.length ? `<b>Topics</b><ul>${li(j.kb.subjects)}</ul>` : ""}
+      ${j.kb.tip ? `<div class="tip">💡 ${esc(j.kb.tip)}</div>` : ""}
+      <div class="tip">General guide — latest notification se verify karein.</div></details>`;
+  }
+
+  function card(j){
+    const fresh = j._fresh, elig = eligibility(j);
+    const isInfo = ["Admit Card","Result","Answer Key"].includes(j.type);
+    const badges = [
+      fresh ? `<span class="b new">NEW</span>` : (j._upd ? `<span class="b ext">🔄 UPDATED</span>` : ""),
+      j.watch ? `<span class="b star">⭐ Mera exam</span>` : "",
+      `<span class="b type">${esc(j.type)}</span>`,
+      `<span class="b">${esc(j.category)}</span>`,
+      j.edu_level ? `<span class="b">🎓 ${esc(EDU_NAME[j.edu_level])}</span>` : "",
+      j.posts ? `<span class="b">${esc(j.posts)} posts</span>` : "",
+      j.extended ? `<span class="b ext">Date extended / re-open</span>` : "",
+      (elig && !isInfo) ? `<span class="b ${elig.state}" title="${esc(elig.why.join(", "))}">${elig.state==="ok" ? "✅ Eligible" : elig.state==="no" ? "❌ " + esc(elig.why[0]) : "❔ Check karo"}</span>` : "",
+    ].join("");
+
+    let left = "—";
+    if(j.status === "open" || j.status === "closing_soon") left = j.days_left === 0 ? "Aaj last date!" : `${j.days_left} din bache`;
+    else if(j.status === "closed") left = `Band (${-j.days_left} din pehle)`;
+    else if(j.status === "no_date") left = j.last_date_text || "Date nahi di";
+
+    const rows = [];
+    if(j.last_date_text) rows.push(`<span>Last date</span><span><b>${esc(j.last_date_text)}</b> · <span class="left ${esc(j.status)}">${esc(left)}</span></span>`);
+    else if(!isInfo) rows.push(`<span>Status</span><span class="left ${esc(j.status)}">${esc(left)}</span>`);
+    if(j.start_date) rows.push(`<span>Shuru</span><span>${esc(j.start_date)}</span>`);
+    if(j.exam_date) rows.push(`<span>Exam</span><span>${esc(j.exam_date)}</span>`);
+    if(j.age_min || j.age_max) rows.push(`<span>Age</span><span>${esc(j.age_min||"?")}–${esc(j.age_max||"?")} saal</span>`);
+    if(j.fee) rows.push(`<span>Fee (Gen)</span><span>₹${esc(j.fee)}</span>`);
+    if(j.qualification) rows.push(`<span>Qualification</span><span>${esc(j.qualification)}</span>`);
+
+    const L = [];
+    const add = (cls, u, label) => { u = safeUrl(u); if(u) L.push(`<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener">${label}</a>`); };
+    add("p", j.apply_url, "Apply ↗"); add("s", j.syllabus_url, "📘 Official Syllabus"); add("", j.notification_url, "Notification");
+    add("", j.url, "Details"); add("", j.official_url, "Official site");
+
+    const title = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i, "");
+    return `<article class="card ${fresh?"isnew":""} ${j.watch?"watch":""} ${applied.has(j.id)?"done":""}">
+      <div class="title">${esc(title)}</div>
+      <div class="badges">${badges}</div>
+      ${j.summary ? `<div class="summary">${esc(j.summary)}</div>` : ""}
+      <div class="meta">${rows.join("")}</div>${meterHtml(j)}
+      ${kbHtml(j)}
+      <div class="links">${L.join("")}</div>
+      <div class="acts">
+        <button data-a="save" data-id="${esc(j.id)}" class="${saved.has(j.id)?"on":""}">💾 ${saved.has(j.id)?"Saved":"Save"}</button>
+        <button data-a="applied" data-id="${esc(j.id)}" class="${applied.has(j.id)?"on":""}">✅ ${applied.has(j.id)?"Applied":"Applied?"}</button>
+        ${j.last_date && j.status !== "closed" ? `<button data-a="ics" data-id="${esc(j.id)}">📅 Reminder</button>` : ""}
+        <button data-a="share" data-id="${esc(j.id)}">🔗 Share</button>
+      </div></article>`;
+  }
+
+  // ---------- render
+  function filtered(){
+    const chipFn = CHIPS.find(c => c[0] === state.chip)[2];
+    const q = state.q.trim().toLowerCase();
+    const list = jobs.filter(chipFn)
+      .filter(j => !state.type || j.type === state.type)
+      .filter(j => !state.cat || j.category === state.cat)
+      .filter(j => !q || (j.title + " " + j.category + " " + j.type + " " + (j.qualification||"") + " " + (j.summary||"")).toLowerCase().includes(q));
+    const far = 9e15;
+    const by = {
+      site: (a,b) => (a.order ?? 9999) - (b.order ?? 9999),
+      last: (a,b) => { const f = j => j.status === "closed" ? far + 1 : (j.last_date ? Date.parse(j.last_date) : far); return f(a) - f(b); },
+      seen: (a,b) => b._seen - a._seen || (a.order ?? 9999) - (b.order ?? 9999),
+      posts:(a,b) => (b.posts||0) - (a.posts||0),
+    }[state.sort];
+    return list.sort(by);
+  }
+
+  function renderStats(){
+    const liveJobs = jobs.filter(live).filter(j => !["Admit Card","Result","Answer Key"].includes(j.type));
+    const S = [
+      ["live", liveJobs.length, "Open vacancies"], ["new", jobs.filter(j=>j._fresh).length, "Naye"],
+      ["soon", jobs.filter(j=>j.status==="closing_soon").length, "Jaldi band"],
+      ["watch", jobs.filter(j=>j.watch && live(j)).length, "Mere exams"],
+      ["saved", saved.size, "Saved"], ["applied", applied.size, "Applied"],
+    ];
+    $("stats").innerHTML = S.map(([id,n,l]) => `<div class="stat" data-chip="${id}"><b>${n}</b><span>${l}</span></div>`).join("");
+    const counts = {};
+    liveJobs.forEach(j => counts[j.category] = (counts[j.category]||0) + 1);
+    const max = Math.max(1, ...Object.values(counts));
+    $("cats").innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([c,n]) =>
+      `<div class="cat ${state.cat===c?"on":""}" data-cat="${esc(c)}"><span>${esc(c)}</span><div class="bar"><i style="width:${n/max*100}%"></i></div><span>${n}</span></div>`).join("");
+  }
+
+  function render(){
+    $("chips").innerHTML = CHIPS.map(([id,label,fn]) =>
+      `<span class="chip ${state.chip===id?"on":""}" data-chip="${id}">${label}<small>${jobs.filter(fn).length}</small></span>`).join("");
+    renderStats();
+    const list = filtered();
+    $("count").textContent = `${list.length} results`;
+    $("grid").innerHTML = list.map(card).join("");
+    $("empty").style.display = list.length ? "none" : "block";
+    const n = jobs.filter(j => j._fresh).length;
+    document.title = (n ? `(${n}) ` : "") + "Sarkari Job Tracker";
+  }
+
+  document.addEventListener("click", e => {
+    const chip = e.target.closest("[data-chip]");
+    if(chip){ state.chip = chip.dataset.chip; render(); return; }
+    const cat = e.target.closest("[data-cat]");
+    if(cat){ state.cat = state.cat === cat.dataset.cat ? "" : cat.dataset.cat; $("cat").value = state.cat; render(); return; }
+    const btn = e.target.closest("button[data-a]");
+    if(!btn) return;
+    const j = jobs.find(x => x.id === btn.dataset.id); if(!j) return;
+    if(btn.dataset.a === "save") toggle(saved, "sjt_saved", j.id);
+    else if(btn.dataset.a === "applied") toggle(applied, "sjt_applied", j.id);
+    else if(btn.dataset.a === "ics") icsFor(j);
+    else if(btn.dataset.a === "share"){
+      const t = (j.title||"").replace(/\s*\|?\s*Last Date.*$/i,"");
+      if(navigator.share) navigator.share({title:t, text:t, url:j.url}).catch(()=>{});
+      else if(navigator.clipboard){ navigator.clipboard.writeText(t + "\n" + j.url); btn.textContent = "✓ Copied"; }
+    }
+  });
+  $("q").oninput = e => { state.q = e.target.value; render(); };
+  $("type").onchange = e => { state.type = e.target.value; render(); };
+  $("cat").onchange = e => { state.cat = e.target.value; render(); };
+  $("sort").onchange = e => { state.sort = e.target.value; render(); };
+  $("csv").onclick = () => {
+    const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+    const head = ["title","type","category","last_date","days_left","posts","qualification","age_min","age_max","url","syllabus","notification","apply"];
+    const rows = filtered().map(j => [j.title,j.type,j.category,j.last_date_text,j.days_left,j.posts,j.qualification,j.age_min,j.age_max,j.url,j.syllabus_url,j.notification_url,j.apply_url].map(q).join(","));
+    download("jobs.csv", "﻿" + head.join(",") + "\n" + rows.join("\n"), "text/csv");
+  };
+
+  $("sub").textContent = `Last update: ${fmtDT(DATA.updated_at)} · ${jobs.length} entries · site se har ${DATA.refresh_hint || "run"} par refresh`;
+  const fresh = jobs.filter(j => j._fresh).length;
+  if(fresh){ const b = $("banner"); b.style.display = "block"; b.textContent = `🆕 ${fresh} naye job/update aaye hain — "Naye" chip dekho.`; }
+  render();
+  LS.set("sjt_last_visit", Date.now());
+})();
+</script>
+</body>
+</html>
