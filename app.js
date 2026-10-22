@@ -8519,9 +8519,19 @@ function exitAppFullscreen(){
   }catch(e){}
 }
 
+// Subject hubs (English / Maths / Reasoning) — Learn tab ke 4 subject buttons.
+// Hub ke andar ke kisi bhi tool ka back button 'menu' bulata hai; us case me
+// seedha main menu ke bajay wapas usi hub par bhejte hain.
+const CALC_HUB_PAGES = ['hubenglish', 'hubmaths', 'hubreasoning'];
+let calcHubReturn = null;
 function showCalcPage(name, _fromPopState){
   const prevActive = document.querySelector('.calcPage.active');
   const prevName = prevActive ? prevActive.id.replace('calcPage-', '') : null;
+  if(name === 'menu' && !_fromPopState && calcHubReturn && prevName && prevName !== 'menu' && CALC_HUB_PAGES.indexOf(prevName) === -1){
+    name = calcHubReturn;
+  }
+  if(CALC_HUB_PAGES.indexOf(name) !== -1) calcHubReturn = name;
+  else if(name === 'menu' || prevName === 'menu') calcHubReturn = null;
   document.querySelectorAll('.calcPage').forEach(el=>{
     el.classList.toggle('active', el.id === 'calcPage-' + name);
   });
@@ -16735,6 +16745,7 @@ function spvReadingQs(by, ids){
     const u = by[id]; if(!u) return;
     const isPJ = /^x?p/.test(u.i);
     u.q.forEach(q => {
+      if(q.skip) return;
       let ans = q.a, opts = q.o, extra = '';
       if(q.raw){
         const m = /\(\s*([a-d])\s*\)/i.exec(q.al || '');
@@ -30507,4 +30518,19 @@ const AIReply = (function(){
   setInterval(()=>{ try{ hook(); }catch(e){} }, 600);
   window.addEventListener('cxaimode', ()=>{ const b = $('cxPtMd'); if(b) b.textContent = cxAiModeChipText(); });
   window.cxPartner = { open, state: ()=> st, _send: send };
+})();
+
+// ===== Learn tab: Subject hub buttons (English / Maths / Reasoning) =====
+(function(){
+  function wire(){
+    [['subjEnglishBtn','hubenglish'],['subjMathsBtn','hubmaths'],['subjReasoningBtn','hubreasoning']].forEach(function(p){
+      var b = document.getElementById(p[0]);
+      if(b) b.addEventListener('click', function(){ showCalcPage(p[1]); });
+    });
+    ['englishHubBackBtn','mathsHubBackBtn','reasoningHubBackBtn'].forEach(function(id){
+      var b = document.getElementById(id);
+      if(b) b.addEventListener('click', function(){ showCalcPage('menu'); });
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();
