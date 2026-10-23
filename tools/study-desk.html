@@ -137,13 +137,13 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
   <img id="aiImg" alt="question">
   <div class="row"><button id="aiPaste">📋 Paste</button><button id="aiFile">🖼 Gallery</button></div>
   <input type="file" id="aiFi" accept="image/*" hidden>
-  <div class="chips" id="aiChips"><button data-t="Step-by-step samjhao.">🧮 Steps</button><button data-t="Shortcut trick batao.">⚡ Trick</button><button data-t="Hindi mein samjhao.">🇮🇳 Hindi</button><button data-t="Is jaise 3 aur question do (answer ke saath).">🔁 Similar 3</button><button data-t="Baaki options galat kyun hain?">❌ Galat options</button></div>
-  <textarea id="aiQ" placeholder="Gemini ko kya kehna hai? (khaali = poora question step-by-step samjhao)"></textarea>
+  <div class="chips" id="aiChips" style="display:none"><button data-t="Step-by-step samjhao.">🧮 Steps</button><button data-t="Shortcut trick batao.">⚡ Trick</button><button data-t="Hindi mein samjhao.">🇮🇳 Hindi</button><button data-t="Is jaise 3 aur question do (answer ke saath).">🔁 Similar 3</button><button data-t="Baaki options galat kyun hain?">❌ Galat options</button></div>
+  <textarea id="aiQ" style="min-height:90px" placeholder="Apna prompt yahan likho. Jaisa likhoge bilkul waisa hi Gemini ko jayega, kuch add nahi hoga. Ye hamesha save rahega."></textarea>
   <div class="row"><button id="aiShare" style="background:var(--ac);color:#fff">📤 Gemini app ko bhejo</button><button id="aiGem">↗ Gemini Pro kholo (same tab)</button></div>
   <div class="row"><button id="aiEdit">🎨 Photo Studio mein edit karo</button></div>
   <div id="aiOut">PDF mein 🤖 dabao aur question pe drag karo, phir "Gemini app ko bhejo". Video ka screenshot Gallery/Paste se daalo.</div>
-  <details><summary>⚙ Mera context / Gemini link</summary>
-    <textarea id="aiCtx" placeholder="Ek baar likho, har baar Gemini ko saath jayega (jaise: Main SSC CGL ki taiyari kar raha hoon, Hinglish mein chhote steps ke saath samjhao)"></textarea>
+  <details><summary>⚙ Gemini link</summary>
+    <textarea id="aiCtx" style="display:none" placeholder="Ek baar likho, har baar Gemini ko saath jayega (jaise: Main SSC CGL ki taiyari kar raha hoon, Hinglish mein chhote steps ke saath samjhao)"></textarea>
     <input id="aiGemUrl" placeholder="Gemini link (khaali = gemini.google.com/app)">
   </details>
 </div>
@@ -313,14 +313,16 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
   var cx=$('#aiCtx'); try{ cx.value=localStorage.getItem('sd:gemctx')||'Main SSC CGL ki taiyari kar raha hoon. Hinglish mein, chhote steps aur shortcut trick ke saath samjhao.'; }catch(e){}
   cx.onchange=function(){ try{ localStorage.setItem('sd:gemctx',cx.value.trim()); }catch(e){} toast('Context save ho gaya'); };
   $('#aiChips').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var t=b.dataset.t; q.value=q.value.indexOf(t)>=0?q.value:(q.value?q.value+' ':'')+t; });
-  function fullTxt(){ var u=q.value.trim(), c=cx.value.trim(); return [c,u||'Is question ko step-by-step samjhao.'].filter(Boolean).join('\n'); }
+  try{ q.value=localStorage.getItem('sd:gemprompt')||''; }catch(e){}
+  q.oninput=function(){ try{ localStorage.setItem('sd:gemprompt',q.value); }catch(e){} };
+  function fullTxt(){ return q.value.trim(); }
   function open(f){ P.classList.toggle('open',f); if(f) toggleNotes(false); }
   window.toggleAI=function(){ open(!P.classList.contains('open')); };
   function setImg(du){ data=du; img.src=du; img.style.display='block'; open(true); out.textContent='Image ready. Neeche "Gemini app ko bhejo" dabao.'; }
   function fromBlob(b){ var r=new FileReader(); r.onload=function(){ setImg(r.result); }; r.readAsDataURL(b); }
   $('#abtn').onclick=window.toggleAI; $('#aiX').onclick=function(){ open(false); };
   $('#aiEdit').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } open(false); window.editInStudio(data); };
-  $('#aiNew').onclick=function(){ data=null; img.style.display='none'; q.value=''; out.textContent='Naya doubt shuru karo.'; };
+  $('#aiNew').onclick=function(){ data=null; img.style.display='none'; out.textContent='Naya doubt shuru karo.'; };
   $('#aiFile').onclick=function(){ $('#aiFi').click(); };
   $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
   $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
@@ -343,7 +345,18 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
 
 /* ---- PDF + Gemini popup (right half) ---- */
 var gemWin=null;
+function gemGeo(){ var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.availWidth||screen.width, sh=screen.availHeight||screen.height, w=Math.round(sw/2); return {l:sl+w,t:st,w:w,h:sh}; }
+function gemUrl(){ var u='https://gemini.google.com/app'; try{ u=localStorage.getItem('sd:gemurl')||u; }catch(e){} return u; }
+/* Pehle extension se: pehle se khuli Gemini tab/window milti hai to wahi aage aati hai, nayi nahi khulti */
 function openGemSide(){
+  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} return; }
+  var got=false;
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='open'){ got=true; window.removeEventListener('message',onAck); setView('pdf'); toast(d.found?'Pehle se khula Gemini aage aa gaya':'Gemini right side khul gaya'); } }
+  window.addEventListener('message',onAck);
+  window.postMessage({type:'sd-gemini-open',geo:gemGeo(),url:gemUrl()},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got) openGemSideNative(); },1200);
+}
+function openGemSideNative(){
   if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} return; }
   var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.availWidth||screen.width, sh=screen.availHeight||screen.height, w=Math.round(sw/2), url='https://gemini.google.com/app';
   try{ url=localStorage.getItem('sd:gemurl')||url; }catch(e){}
@@ -364,13 +377,15 @@ function openGemSide(){
 
 /* ---- image ko seedha Gemini mein bhejo (extension ke saath) ---- */
 window.sendToGemini=function(du){
-  var wasOpen=gemWin&&!gemWin.closed, got=false;
-  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
+  var got=false;
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
-  if(!wasOpen) openGemSide();
-  var txt=''; try{ txt=(localStorage.getItem('sd:gemctx')||'')+'\nIs question ko step-by-step samjhao.'; }catch(e){}
-  setTimeout(function(){ window.postMessage({type:'sd-gemini-send',image:du,text:txt.trim()},'*'); },wasOpen?0:400);
-  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ try{ if(gemWin&&!gemWin.closed) gemWin.focus(); }catch(e){} toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } },2500);
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){}
+  window.postMessage({type:'sd-gemini-send',image:du,text:txt,geo:gemGeo(),url:gemUrl()},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
+    try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}
+    openGemSideNative();
+    toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } },2500);
 };
 /* ---- zen mode ---- */
 function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }

@@ -538,6 +538,21 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     }
     return out;
   }
+  /* FAST: sirf chuna hua hissa seedha render (poora page dobara render nahi hota). fx/fy = page ke fraction 0..1.
+     Annotation/invert ho to purana pageCanvas wala raasta use hota hai (sahi output ke liye). */
+  async function regionCanvas(e, fx0, fy0, fx1, fy1, maxEdge) {
+    if ((e.annots && e.annots.length) || pagesEl.classList.contains('invert')) {
+      var full = await pageCanvas(e, (maxEdge || 0) > 1600 ? 2200 : 1600), W = full.width, H = full.height;
+      var sx = Math.round(fx0 * W), sy = Math.round(fy0 * H), sw = Math.max(1, Math.round((fx1 - fx0) * W)), sh = Math.max(1, Math.round((fy1 - fy0) * H));
+      var oc = document.createElement('canvas'); oc.width = sw; oc.height = sh; oc.getContext('2d').drawImage(full, sx, sy, sw, sh, 0, 0, sw, sh); return oc;
+    }
+    var v1 = vpOf(e, 1), cw1 = (fx1 - fx0) * v1.width, ch1 = (fy1 - fy0) * v1.height;
+    var s = Math.max(0.6, Math.min(3, (maxEdge || 1400) / Math.max(cw1, ch1, 1))), vp = vpOf(e, s);
+    var c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil((fx1 - fx0) * vp.width)); c.height = Math.max(1, Math.ceil((fy1 - fy0) * vp.height));
+    var x = c.getContext('2d', { alpha: false }); x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+    await e.page.render({ canvasContext: x, viewport: vp, transform: [1, 0, 0, 1, -fx0 * vp.width, -fy0 * vp.height], intent: 'display' }).promise;
+    return c;
+  }
   function shotName(n) {
     var first = pages.length ? sources[pages[0].src] : null, base = (first ? first.name : 'document').replace(/\.[^.]+$/, '').replace(/[^\w\u0900-\u097F-]+/g, '_').slice(0, 40);
     var d = new Date(), p2 = function (v) { return (v < 10 ? '0' : '') + v; };
@@ -565,31 +580,36 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var im = document.createElement('img'); im.src = PH_IMG; im.draggable = true; im.alt = 'page';
     var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
     h.appendChild(im); h.appendChild(lb); el.appendChild(h);
-    var key = '', busy = false;
-    async function prep() {
+    var key = '', inflight = null;
+    function prep() {
       var k = [e.annots ? e.annots.length : 0, e.rot || 0, pagesEl.classList.contains('invert') ? 1 : 0].join('|');
-      if (busy || k === key) return; busy = true; h.classList.add('busy2');
-      try {
-        var cv = await pageCanvas(e, 1600);
-        var blob = await new Promise(function (r) { cv.toBlob(r, 'image/jpeg', 0.9); });
-        if (blob) { e._dragBlob = blob; e._dragFile = new File([blob], shotName(+el.dataset.n).replace(/\.png$/, '.jpg'), { type: 'image/jpeg' }); im.src = cv.toDataURL('image/jpeg', 0.85); key = k; }
-      } catch (x) {}
-      busy = false; h.classList.remove('busy2');
+      if (inflight) return inflight;
+      if (k === key) return Promise.resolve();
+      h.classList.add('busy2');
+      inflight = (async function () {
+        try {
+          var cv = await regionCanvas(e, 0, 0, 1, 1, 1500);
+          var blob = await new Promise(function (r) { cv.toBlob(r, 'image/jpeg', 0.88); });
+          if (blob) { e._dragBlob = blob; e._dragCv = cv; e._dragFile = new File([blob], shotName(+el.dataset.n).replace(/\.png$/, '.jpg'), { type: 'image/jpeg' }); im.src = cv.toDataURL('image/jpeg', 0.85); key = k; }
+        } catch (x) {}
+        inflight = null; h.classList.remove('busy2');
+      })();
+      return inflight;
     }
     el.addEventListener('mouseenter', prep); h.addEventListener('mouseenter', prep);
     h.addEventListener('click', async function () {
       await prep();
-      for (var t = 0; t < 12 && im.src === PH_IMG; t++) await new Promise(function (r) { setTimeout(r, 250); });
-      if (im.src !== PH_IMG) { try { window.parent.postMessage({ type: 'sd-ask-ai', image: im.src, from: 'pdf' }, '*'); } catch (x) {} }
+      if (im.src === PH_IMG) { toast('Page ready nahi hua, dobara dabao'); return; }
+      /* pehle Gemini ko bhejo (turant), clipboard copy baad mein background me */
+      try { window.parent.postMessage({ type: 'sd-ask-ai', image: im.src, from: 'pdf' }, '*'); } catch (x) {}
+      setTimeout(function () {
+        try { var cv = e._dragCv; if (!cv || !navigator.clipboard || !window.ClipboardItem) return;
+          cv.toBlob(function (png) { if (png) navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]).then(function () { toast('Page copy ho gaya'); }).catch(function () {}); }, 'image/png'); } catch (x) {}
+      }, 30);
     });
     im.addEventListener('dragstart', function (ev) {
       ev.stopPropagation();
       try { ev.dataTransfer.effectAllowed = 'copy'; if (e._dragFile) ev.dataTransfer.items.add(e._dragFile); } catch (x) {}
-    });
-    h.addEventListener('click', async function () {
-      await prep();
-      try { var b = e._dragBlob; var png = await (async function () { var cv = await pageCanvas(e, 1600); return new Promise(function (r) { cv.toBlob(r, 'image/png'); }); })(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); toast('Page copy ho gaya'); }
-      catch (x) { toast('Copy nahi hua. Drag karke chhodo'); }
     });
   }
   var cropMode = 'save';
@@ -605,14 +625,14 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var best = -1, bi = -1;
     pages.forEach(function (p, i) { var r = p.el.getBoundingClientRect(), w = Math.max(0, Math.min(R, r.right) - Math.max(L, r.left)), h = Math.max(0, Math.min(B, r.bottom) - Math.max(T, r.top)); if (w * h > best) { best = w * h; bi = i; } });
     if (bi < 0 || best <= 0) { toast('Page ke upar area chuno'); return; }
-    var e = pages[bi], pr = e.el.getBoundingClientRect(); toast('Area ka screenshot ban raha hai…');
+    var e = pages[bi], pr = e.el.getBoundingClientRect(); toast(cropMode === 'ai' ? '🤖 Bhej raha hoon…' : 'Area ka screenshot ban raha hai…');
     try {
-      var full = await pageCanvas(e), kx = full.width / pr.width, ky = full.height / pr.height;
-      var sx = Math.max(0, (L - pr.left) * kx), sy = Math.max(0, (T - pr.top) * ky), sw = Math.min(full.width - sx, (R - L) * kx), sh = Math.min(full.height - sy, (B - T) * ky);
-      var c = document.createElement('canvas'); c.width = Math.round(sw); c.height = Math.round(sh); c.getContext('2d').drawImage(full, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      var fx0 = Math.max(0, (L - pr.left) / pr.width), fy0 = Math.max(0, (T - pr.top) / pr.height), fx1 = Math.min(1, (R - pr.left) / pr.width), fy1 = Math.min(1, (B - pr.top) / pr.height);
+      var c = await regionCanvas(e, fx0, fy0, fx1, fy1, cropMode === 'ai' ? 1400 : 2400);
       if (cropMode === 'ai') {
-        var du = c.toDataURL('image/jpeg', 0.92); try { c.toBlob(function (b) { try { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(function () {}); } catch (x) {} }, 'image/png'); } catch (x) {}
+        var du = c.toDataURL('image/jpeg', 0.88);
         try { window.parent.postMessage({ type: 'sd-ask-ai', image: du, from: 'pdf' }, '*'); toast('🤖 AI panel mein bhej diya'); } catch (e2) { toast('AI panel nahi mila (Study Desk ke andar kholo)'); }
+        setTimeout(function () { try { c.toBlob(function (b) { try { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(function () {}); } catch (x) {} }, 'image/png'); } catch (x) {} }, 30);
       } else await saveShot(c, bi + 1);
     } catch (err) { toast('Screenshot fail: ' + (err && err.message || err)); }
   });
