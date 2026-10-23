@@ -1195,11 +1195,12 @@ const layers=[...wpw.querySelectorAll('.wpl')],vids=layers.map(l=>l.querySelecto
 let dbp;const db=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('fdwp',1);r.onupgradeneeded=()=>r.result.createObjectStore('w',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}}));
 const tx=(m,fn)=>db().then(d=>new Promise((res,rej)=>{const q=fn(d.transaction('w',m).objectStore('w'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
 const dbAll=()=>tx('readonly',s=>s.getAll()),dbAdd=r=>tx('readwrite',s=>s.add(r)),dbDel=id=>tx('readwrite',s=>s.delete(id)),dbClr=()=>tx('readwrite',s=>s.clear()),dbGet=id=>tx('readonly',s=>s.get(id));
-const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,kb:false,drift:true,onlyRun:false,night:false};
+const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,con:100,hue:0,blur:0,sep:0,gray:0,kb:false,drift:true,onlyRun:false,night:false};
 let ST=Object.assign({},DEF,g('fdwp',{}));const save=()=>w('fdwp',ST);
 let L=[];const U=new Map();
 function vis(){const hr=new Date().getHours(),n=ST.night&&(hr>=21||hr<6),dm=Math.min(92,ST.dim+(n?25:0));
- vids.forEach(v=>v.style.objectFit=ST.fit);layers.forEach(l=>{l.style.backgroundSize=ST.fit;l.style.filter='brightness('+ST.bri/100+') saturate('+ST.sat/100+')'});
+ vids.forEach(v=>v.style.objectFit=ST.fit);const flt='brightness('+ST.bri/100+') contrast('+ST.con/100+') saturate('+ST.sat/100+')'+(ST.hue?' hue-rotate('+ST.hue+'deg)':'')+(ST.sep?' sepia('+ST.sep+'%)':'')+(ST.gray?' grayscale('+ST.gray+'%)':'')+(ST.blur?' blur('+ST.blur+'px)':'');
+ layers.forEach(l=>{l.style.backgroundSize=ST.fit;l.style.filter=flt});
  const a=(dm/100).toFixed(3),v=(ST.vig/100*.9).toFixed(3);
  dimEl.style.background='radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,'+v+')),linear-gradient(rgba(0,0,0,'+a+'),rgba(0,0,0,'+a+'))'}
 async function urlOf(id){if(U.has(id))return U.get(id);const r=await dbGet(id);if(!r)return null;const u=URL.createObjectURL(r.blob);U.set(id,u);
@@ -1260,15 +1261,23 @@ mine.innerHTML='<div class="wph"><label class="pill" style="background:var(--ac)
 +'<label class="mu">🌗 Fade speed: <b id="wpFadeV"></b> sec<input type="range" id="wpFade" min="0" max="6" step=".5"></label>'
 +'<label class="opt"><input type="checkbox" id="wpDr"> 🌊 Wallpaper halka hilta rahe (drift)</label><label class="opt"><input type="checkbox" id="wpKb"> 🎬 Dheere zoom (Ken Burns)</label><label class="opt"><input type="checkbox" id="wpRun"> ⏯ Sirf timer chalte time badlo</label>'
 +'<button class="pill" id="wpNext">⏭ Abhi agli photo (W)</button></div>'
-+'<h4>🎛 Adjust</h4><label class="mu">🖼 Fit <select id="wpFit"><option value="cover">Poori screen (crop)</option><option value="contain">Poori photo (kinare kaale)</option></select></label>'
-+'<label class="mu">🌑 Dim: <b id="wpDimV"></b>%<input type="range" id="wpDim" min="0" max="85" step="1"></label>'
-+'<label class="mu">⭕ Vignette: <b id="wpVigV"></b>%<input type="range" id="wpVig" min="0" max="100" step="1"></label>'
-+'<label class="mu">☀ Brightness: <b id="wpBriV"></b>%<input type="range" id="wpBri" min="40" max="140" step="1"></label>'
-+'<label class="mu">🎨 Colour: <b id="wpSatV"></b>%<input type="range" id="wpSat" min="0" max="160" step="1"></label>'
-+'<label class="opt"><input type="checkbox" id="wpNight"> 🌙 Raat (9pm–6am) me extra dark</label><button class="pill" id="wpRst">↺ Adjust reset</button>';
-const BIND=[['wpInt','int','n'],['wpOrd','order','s'],['wpFade','fade','n'],['wpKb','kb','b'],['wpDr','drift','b'],['wpRun','onlyRun','b'],['wpFit','fit','s'],['wpDim','dim','n'],['wpVig','vig','n'],['wpBri','bri','n'],['wpSat','sat','n'],['wpNight','night','b']];
++'<h4>🎨 Effects <span id="fxSt" style="font-size:12px;font-weight:600;color:#9be7b0"></span></h4>'
++'<label class="mu">🖼 Fit <select id="wpFit"><option value="cover">Poori screen (crop)</option><option value="contain">Poori photo (kinare kaale)</option></select></label>'
++'<div class="fxr"><span>☀ Brightness</span><input type="range" id="wpBri" min="40" max="160" step="1"><b><i id="wpBriV"></i>%</b><button type="button" class="fxrs" data-rs="bri" title="Reset">↻</button></div>'
++'<div class="fxr"><span>◐ Contrast</span><input type="range" id="wpCon" min="40" max="160" step="1"><b><i id="wpConV"></i>%</b><button type="button" class="fxrs" data-rs="con" title="Reset">↻</button></div>'
++'<div class="fxr"><span>🎨 Colour / Saturation</span><input type="range" id="wpSat" min="0" max="200" step="1"><b><i id="wpSatV"></i>%</b><button type="button" class="fxrs" data-rs="sat" title="Reset">↻</button></div>'
++'<div class="fxr"><span>🌈 Hue shift</span><input type="range" id="wpHue" min="0" max="360" step="1"><b><i id="wpHueV"></i>°</b><button type="button" class="fxrs" data-rs="hue" title="Reset">↻</button></div>'
++'<div class="fxr"><span>💧 Blur</span><input type="range" id="wpBlur" min="0" max="20" step="1"><b><i id="wpBlurV"></i>px</b><button type="button" class="fxrs" data-rs="blur" title="Reset">↻</button></div>'
++'<div class="fxr"><span>🟤 Sepia</span><input type="range" id="wpSep" min="0" max="100" step="1"><b><i id="wpSepV"></i>%</b><button type="button" class="fxrs" data-rs="sep" title="Reset">↻</button></div>'
++'<div class="fxr"><span>⚪ Grayscale</span><input type="range" id="wpGray" min="0" max="100" step="1"><b><i id="wpGrayV"></i>%</b><button type="button" class="fxrs" data-rs="gray" title="Reset">↻</button></div>'
++'<div class="fxr"><span>🌑 Dim</span><input type="range" id="wpDim" min="0" max="85" step="1"><b><i id="wpDimV"></i>%</b><button type="button" class="fxrs" data-rs="dim" title="Reset">↻</button></div>'
++'<div class="fxr"><span>⭕ Vignette</span><input type="range" id="wpVig" min="0" max="100" step="1"><b><i id="wpVigV"></i>%</b><button type="button" class="fxrs" data-rs="vig" title="Reset">↻</button></div>'
++'<label class="opt"><input type="checkbox" id="wpNight"> 🌙 Raat (9pm–6am) me extra dark</label><button class="pill" id="wpRst" style="background:var(--ac);border-color:transparent;color:#fff">↺ Original (sab effects reset)</button>';
+const BIND=[['wpInt','int','n'],['wpOrd','order','s'],['wpFade','fade','n'],['wpKb','kb','b'],['wpDr','drift','b'],['wpRun','onlyRun','b'],['wpFit','fit','s'],['wpDim','dim','n'],['wpVig','vig','n'],['wpBri','bri','n'],['wpSat','sat','n'],['wpCon','con','n'],['wpHue','hue','n'],['wpBlur','blur','n'],['wpSep','sep','n'],['wpGray','gray','n'],['wpNight','night','b']];
 function ui(){BIND.forEach(([id,k,t])=>{const e=$('#'+id);if(!e)return;if(t==='b')e.checked=!!ST[k];else if(document.activeElement!==e)e.value=ST[k];const v=$('#'+id+'V');if(v)v.textContent=ST[k]});
- $$('#wpMode button').forEach(b=>b.classList.toggle('on',b.dataset.wm===ST.mode));$('#wpSS').style.display=ST.mode==='show'?'block':'none';vis()}
+ $$('#wpMode button').forEach(b=>b.classList.toggle('on',b.dataset.wm===ST.mode));$('#wpSS').style.display=ST.mode==='show'?'block':'none';
+ const nch=FXK.filter(k=>ST[k]!==DEF[k]).length,fs=$('#fxSt');if(fs){fs.textContent=nch?('✎ '+nch+' badlav'):'✓ Original';fs.style.color=nch?'#ffd27a':'#9be7b0'}
+ $$('.fxrs').forEach(b=>{b.disabled=ST[b.dataset.rs]===DEF[b.dataset.rs]});vis()}
 function mark(){$$('#wpGrid .wpt').forEach(b=>b.classList.toggle('on',+b.dataset.id===ST.cur&&ST.mode!=='none'))}
 function grid(){const gd=$('#wpGrid');gd.innerHTML='';if(!L.length){gd.innerHTML='<div class="wpe">Abhi koi photo nahi. “＋ Photos jodo” dabao — ek saath kai photos chun sakte ho.</div>';return}
  L.forEach(x=>{const b=document.createElement('button');b.className='wpt'+(x.type==='video'?' v':'');b.dataset.id=x.id;b.title=x.name;b.style.backgroundImage='url("'+x.tu+'")';
@@ -1280,7 +1289,9 @@ $('#wpClr').onclick=async()=>{if(!L.length||!confirm('Sabhi saved photos hata de
 $$('#wpMode button').forEach(b=>b.onclick=()=>{const m=b.dataset.wm;if(m!=='none'&&!L.length){toast('Pehle photos jodo');return}ST.mode=m;if(m==='none'){try{localStorage.removeItem('bg')}catch(x){}bgEl.style.background='';lastSig=sig()}save();apply()});
 BIND.forEach(([id,k,t])=>{const e=$('#'+id);e.oninput=e.onchange=()=>{ST[k]=t==='b'?e.checked:t==='n'?+e.value:e.value;save();ui();if(k==='int'||k==='order')sched();if(k==='kb'||k==='drift')showId(ST.cur,true)}});
 $('#wpNext').onclick=nextNow;
-$('#wpRst').onclick=()=>{['dim','vig','bri','sat','fit','night'].forEach(k=>ST[k]=DEF[k]);save();ui()};
+const FXK=['bri','con','sat','hue','blur','sep','gray','dim','vig','night','fit'];
+$('#wpRst').onclick=()=>{FXK.forEach(k=>ST[k]=DEF[k]);save();ui();toast('Sab effects original')};
+mine.addEventListener('click',e=>{const r=e.target.closest('.fxrs');if(!r)return;ST[r.dataset.rs]=DEF[r.dataset.rs];save();ui()});
 addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(e.key.toLowerCase()==='w'&&ST.mode!=='none'&&L.length>1)nextNow()});
 setInterval(vis,600000);
 document.addEventListener('visibilitychange',()=>{const v=vids[act];if(!v||!layers[act].classList.contains('isv'))return;if(document.hidden)v.pause();else v.play().catch(()=>{})});
@@ -1289,6 +1300,15 @@ document.addEventListener('visibilitychange',()=>{const v=vids[act];if(!v||!laye
 })();
 </script>
 
+<style id="fx-unified-css">
+.fxr{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px;color:inherit}
+.fxr span{flex:0 0 118px;line-height:1.2}
+.fxr input[type=range]{flex:1 1 auto;min-width:0;margin:0}
+.fxr b{flex:0 0 58px;text-align:right;font-weight:700}
+.fxr b i{font-style:normal}
+.fxrs{flex:0 0 30px;height:28px;padding:0;border-radius:8px;border:1px solid var(--ln,#444);background:transparent;color:inherit;font-size:15px;cursor:pointer}
+.fxrs[disabled]{opacity:.3}
+</style>
 <style id="fdprem-css">
 /* ===== Premium polish ===== */
 .panel{border:1px solid transparent!important;background:linear-gradient(var(--pn),var(--pn)) padding-box,linear-gradient(140deg,rgba(255,255,255,.3),rgba(255,255,255,.04) 42%,color-mix(in srgb,var(--ac) 50%,transparent)) border-box!important;box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.02) inset!important}
