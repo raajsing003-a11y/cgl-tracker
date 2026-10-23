@@ -31097,3 +31097,184 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   const origRender = renderAdminPanelBody;
   renderAdminPanelBody = async function(){ const r = await origRender.apply(this, arguments); try{ mountUsage(); }catch(e){} return r; };
 })();
+
+
+// =====================================================================
+// ===== ADMIN PANEL v2: tabs (Overview / Announce / Members / Controls / Backup) =====
+// =====================================================================
+// Purana renderAdminPanelBody() ka kaam waisa hi rehta hai (saare buttons/logic same);
+// ye layer uske baad content ko tabs me baant deta hai aur naye controls jodta hai:
+//  - Pen button sabke liye show/hide (APPDEF key: cgl50-pen-fab, default hidden)
+//  - Study Tube / Focus Desk / App-defaults ka publish status + reset
+//  - "Sabko app reload karwao" (rooms/<room>/_reloadAt)
+(function adminPanelV2(){
+  const TABS = [['ov','📊','Overview'],['an','📢','Announce'],['mb','👥','Members'],['ct','🎛️','Controls'],['bk','💾','Backup']];
+  let curTab = 'ov';
+
+  // ---- Pen button: key ko sabke liye sync hone wali list me jodo ----
+  try{
+    if(typeof APPDEF_KEYS !== 'undefined' && APPDEF_KEYS.indexOf('cgl50-pen-fab') < 0) APPDEF_KEYS.push('cgl50-pen-fab');
+    if(typeof APPDEF_LABELS !== 'undefined' && APPDEF_LABELS.indexOf('Pen button show/hide') < 0) APPDEF_LABELS.push('Pen button show/hide');
+  }catch(e){}
+  const penOn = ()=>{ try{ return localStorage.getItem('cgl50-pen-fab') === '1'; }catch(e){ return false; } };
+  function setPen(on){
+    try{ localStorage.setItem('cgl50-pen-fab', on ? '1' : '0'); }catch(e){}
+    document.documentElement.classList.toggle('penOn', !!on);
+    try{ appDefLastSig = null; }catch(e){}
+  }
+
+  // ---- Member side: Admin "reload" maange to app refresh ----
+  async function reloadSync(){
+    try{
+      const c = getRoomCode(); if(!c || isMeAdmin()) return;
+      const v = Number(await window.__fbGet('rooms/' + c + '/_reloadAt')) || 0; if(!v) return;
+      const seen = Number(localStorage.getItem('cgl50-reloadSeen')) || 0; if(v <= seen) return;
+      localStorage.setItem('cgl50-reloadSeen', String(v));
+      if(seen === 0 && Date.now() - v > 3600e3) return;      // purani request, naye device par ignore
+      if(window.__fdRunning || document.fullscreenElement){ if(window.appDefToast) appDefToast('👑 Admin ne app refresh maanga — thodi der baad app dobara kholo'); return; }
+      if(window.appDefToast) appDefToast('👑 Admin ne app refresh kiya…');
+      setTimeout(()=>{ if(window.cleanCacheAndReload) window.cleanCacheAndReload(); else location.reload(); }, 1200);
+    }catch(e){}
+  }
+  setTimeout(reloadSync, 7000);
+  setInterval(()=>{ if(!document.hidden) reloadSync(); }, 120000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(reloadSync, 900); });
+
+  function addCss(){
+    if(document.getElementById('adminV2Css')) return;
+    const st = document.createElement('style'); st.id = 'adminV2Css';
+    st.textContent =
+      '.apTabs{display:flex;gap:6px;overflow-x:auto;width:0;min-width:100%;box-sizing:border-box;scrollbar-width:none;position:sticky;top:0;z-index:3;padding:8px 0 10px;margin:0 0 6px;background:var(--panel,#16161c);}' +
+      '.apTabs::-webkit-scrollbar{display:none}' +
+      '.apTab{flex:0 0 auto;border:1px solid var(--border-strong,#3a3a48);background:var(--panel2,#202027);color:var(--text,#f1f1f4);border-radius:999px;padding:7px 12px;font:600 12.5px var(--font-main,inherit);cursor:pointer;white-space:nowrap}' +
+      '.apTab.on{background:linear-gradient(135deg,#f472b6,#7c3aed);border-color:transparent;color:#fff}' +
+      '#adminPanelBody{min-width:0;max-width:100%}.apPane{display:none;min-width:0}.apPane.on{display:block}' +
+      '.apGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}' +
+      '.apStat{background:var(--panel2,#202027);border:1px solid var(--border-strong,#3a3a48);border-radius:12px;padding:10px 12px}' +
+      '.apStat b{display:block;font-size:20px;line-height:1.2}.apStat span{font-size:11.5px;opacity:.7}' +
+      '.apRow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--panel2,#202027);border:1px solid var(--border-strong,#3a3a48);border-radius:12px;padding:10px 12px;margin-top:8px}' +
+      '.apRow .t{font-weight:600;font-size:13px}.apRow .s{font-size:11.5px;opacity:.7;margin-top:2px}';
+    document.head.appendChild(st);
+  }
+
+  const fmt = v => v ? new Date(v).toLocaleString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : null;
+  async function readJson(path){
+    try{ const raw = await window.__fbGet(path); if(!raw) return null; return (typeof raw === 'string') ? JSON.parse(raw) : raw; }catch(e){ return null; }
+  }
+  async function loadStatus(){
+    const c = getRoomCode();
+    const [app, fd, st, rl] = await Promise.all([
+      readJson('rooms/' + c + '/_appDefault'), readJson('rooms/' + c + '/_focusDefault'),
+      readJson('rooms/' + c + '/_studyTubeDefault'), window.__fbGet('rooms/' + c + '/_reloadAt').catch(()=>null)
+    ]);
+    return { app, fd, st, rl: Number(rl) || 0 };
+  }
+
+  function syncRow(label, sub, path, hasData){
+    return '<div class="apRow"><div><div class="t">' + label + '</div><div class="s">' + sub + '</div></div>' +
+      (hasData ? '<button class="nav-btn adminDelBtn" type="button" data-apreset="' + path + '">♻️ Reset</button>' : '') + '</div>';
+  }
+
+  async function fillOverview(pane){
+    const c = getRoomCode();
+    let names = []; try{ names = await loadRoomRegistry(); }catch(e){}
+    const others = names.filter(n => n.toLowerCase() !== (myName || '').toLowerCase());
+    let hid = 0, res = 0; others.forEach(n => { try{ if(isHiddenFromOthers(n)) hid++; if(isRestrictedToSelf(n)) res++; }catch(e){} });
+    const ann = (typeof currentRoomAnnouncement !== 'undefined') ? currentRoomAnnouncement : null;
+    const box = document.createElement('div'); box.id = 'apOvBox';
+    box.innerHTML =
+      '<div class="apGrid">' +
+        '<div class="apStat"><b>' + names.length + '</b><span>Total members</span></div>' +
+        '<div class="apStat"><b>' + (hid + res) + '</b><span>Hidden / Restricted</span></div>' +
+        '<div class="apStat"><b>' + (ann ? '📌 ON' : '—') + '</b><span>Pinned announcement</span></div>' +
+        '<div class="apStat"><b>' + (penOn() ? 'ON' : 'OFF') + '</b><span>✏️ Pen button (sabke liye)</span></div>' +
+      '</div>' +
+      '<div class="grid-label" style="margin-top:12px;">📡 Sabke liye Publish Status</div><div id="apStatusBox" class="losshint" style="padding-top:4px;">⏳ Check ho raha hai…</div>';
+    pane.insertBefore(box, pane.firstChild);
+    try{
+      const S = await loadStatus();
+      const stN = S.st && S.st.d && Array.isArray(S.st.d.chans) ? S.st.d.chans.length : 0;
+      const el = document.getElementById('apStatusBox'); if(!el) return;
+      el.className = ''; el.style.paddingTop = '0';
+      el.innerHTML =
+        syncRow('⚙️ App Defaults', S.app ? ('Aakhri publish: ' + fmt(S.app.v) + ' · ' + Object.keys(S.app.ls || {}).length + ' settings') : 'Abhi koi publish nahi', 'rooms/' + c + '/_appDefault', !!S.app) +
+        syncRow('▶ Study Tube', S.st ? ('Aakhri publish: ' + fmt(S.st.v) + ' · ' + stN + ' channels') : 'Abhi koi publish nahi (Study Tube me channel add/setting badlo)', 'rooms/' + c + '/_studyTubeDefault', !!S.st) +
+        syncRow('🎯 Focus Desk', S.fd ? ('Aakhri publish: ' + fmt(S.fd.v)) : 'Abhi koi publish nahi (Focus Desk settings me 📡 dabao)', 'rooms/' + c + '/_focusDefault', !!S.fd) +
+        '<div class="losshint" style="padding-top:8px;">Reset karne se published default hat jata hai — members ke paas jo abhi lagi hai wo rehti hai, naye members ko default nahi milta.</div>';
+      el.querySelectorAll('[data-apreset]').forEach(b => b.addEventListener('click', async () => {
+        if(!confirm('Ye published default hata dein?')) return;
+        b.disabled = true; b.textContent = '⏳...';
+        try{ await window.__fbSet(b.getAttribute('data-apreset'), null); }catch(e){}
+        try{ renderAdminPanelBody(); }catch(e){}
+      }));
+      const rl = document.getElementById('apReloadInfo'); if(rl) rl.textContent = S.rl ? ('Aakhri reload request: ' + fmt(S.rl)) : 'Abhi tak koi reload request nahi bheji.';
+    }catch(e){}
+  }
+
+  function controlsBlock(){
+    const d = document.createElement('div'); d.id = 'apCtrlBox';
+    d.innerHTML =
+      '<div class="grid-label" style="margin-top:14px;">🧰 App Controls (sabhi members ke liye)</div>' +
+      '<label class="adminMemberToggle" style="margin-top:8px;"><span>✏️ Pen (scribble) button dikhao — default band</span><input type="checkbox" id="apPenChk" ' + (penOn() ? 'checked' : '') + '></label>' +
+      '<div class="losshint" style="padding-top:2px;">Badalne ke ~8 sec me sabke app me lag jata hai (Auto-publish ON ho to).</div>' +
+      '<div class="grid-label" style="margin-top:14px;">🔄 Sabka App Refresh</div>' +
+      '<div class="losshint" style="padding-top:0;">Naya update push karne ke baad dabao — sabke app me cache clean + reload ho jayega (jab wo app khole).</div>' +
+      '<div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="apReloadBtn">🔄 Sabko Reload Karwao</button></div>' +
+      '<div class="losshint" id="apReloadInfo" style="padding-top:6px;"></div>';
+    const chk = d.querySelector('#apPenChk');
+    chk.addEventListener('change', () => { setPen(chk.checked); if(window.appDefToast) appDefToast(chk.checked ? '✏️ Pen button ON' : '✏️ Pen button OFF'); });
+    d.querySelector('#apReloadBtn').addEventListener('click', async (ev) => {
+      const b = ev.currentTarget;
+      if(!confirm('Sabhi members ka app refresh karwa dein?')) return;
+      b.disabled = true; b.textContent = '⏳...';
+      try{ await window.__fbSet('rooms/' + getRoomCode() + '/_reloadAt', Date.now()); const i = document.getElementById('apReloadInfo'); if(i) i.textContent = '✅ Request bhej di: ' + fmt(Date.now()); }
+      catch(e){ const i = document.getElementById('apReloadInfo'); if(i) i.textContent = '⚠ Fail hua — internet check karo.'; }
+      b.disabled = false; b.textContent = '🔄 Sabko Reload Karwao';
+    });
+    return d;
+  }
+
+  function buildTabs(bodyEl){
+    const g = { ov:[], an:[], mb:[], ct:[], bk:[] };
+    let cur = 'mb';
+    Array.prototype.slice.call(bodyEl.children).forEach(el => {
+      const txt = el.textContent || '';
+      if(el.id === 'adminUsageCard'){ g.ov.push(el); return; }
+      if(el.classList.contains('grid-label')){
+        cur = txt.indexOf('📌') >= 0 ? 'an' : txt.indexOf('🛡') >= 0 ? 'mb' : (txt.indexOf('🏆') >= 0 || txt.indexOf('⚙') >= 0) ? 'ct' : txt.indexOf('📦') >= 0 ? 'bk' : 'mb';
+      } else if(el.id === 'adminMemberList' || (el.classList.contains('losshint') && (txt.indexOf('karne se member') >= 0 || txt.indexOf('koi aur member nahi joda') >= 0))){ cur = 'mb'; }
+      g[cur].push(el);
+    });
+    bodyEl.innerHTML = '';
+    const bar = document.createElement('div'); bar.className = 'apTabs';
+    const panes = {};
+    TABS.forEach(t => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'apTab'; b.setAttribute('data-aptab', t[0]); b.textContent = t[1] + ' ' + t[2]; bar.appendChild(b);
+      const p = document.createElement('div'); p.className = 'apPane'; p.setAttribute('data-appane', t[0]); panes[t[0]] = p;
+      g[t[0]].forEach(el => p.appendChild(el));
+    });
+    bodyEl.appendChild(bar);
+    TABS.forEach(t => bodyEl.appendChild(panes[t[0]]));
+    panes.ct.appendChild(controlsBlock());
+    const show = id => {
+      curTab = id;
+      bar.querySelectorAll('.apTab').forEach(b => b.classList.toggle('on', b.getAttribute('data-aptab') === id));
+      TABS.forEach(t => panes[t[0]].classList.toggle('on', t[0] === id));
+      const mod = document.getElementById('adminPanelModal'); if(mod){ const sc = mod.querySelector('.onbCard') || mod.firstElementChild; try{ if(sc) sc.scrollTop = 0; }catch(e){} }
+    };
+    bar.addEventListener('click', e => { const b = e.target.closest('.apTab'); if(b) show(b.getAttribute('data-aptab')); });
+    show(curTab);
+    fillOverview(panes.ov);
+  }
+
+  const orig = renderAdminPanelBody;
+  renderAdminPanelBody = async function(){
+    const r = await orig.apply(this, arguments);
+    try{
+      addCss();
+      const bodyEl = document.getElementById('adminPanelBody');
+      if(bodyEl && isMeAdmin() && !bodyEl.querySelector('.apTabs')) buildTabs(bodyEl);
+    }catch(e){ console.error('adminPanelV2', e); }
+    return r;
+  };
+})();
