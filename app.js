@@ -8573,6 +8573,7 @@ function showCalcPage(name, _fromPopState){
   document.querySelectorAll('.calcPage').forEach(el=>{
     el.classList.toggle('active', el.id === 'calcPage-' + name);
   });
+  try{ const _lf = document.querySelector('#calcPage-' + name + ' iframe[data-src]'); if(_lf && !_lf.getAttribute('src')) _lf.setAttribute('src', _lf.getAttribute('data-src')); }catch(e){}
   document.body.classList.toggle('lightExamTheme', isLightThemePage(name));
   document.body.classList.toggle('examFullscreenLight', isFullscreenLightPage(name));
   // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
@@ -31292,6 +31293,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     if(!t){ t = document.createElement('div'); t.id = 'cxGemToast'; t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,22,27,.94);color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:100000;max-width:86vw;text-align:center;display:none'; document.body.appendChild(t); }
     t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
   function gemGeo(){ var sl = screen.availLeft || 0, st = screen.availTop || 0, sw = screen.availWidth || screen.width, sh = screen.availHeight || screen.height, w = Math.round(sw / 2); return { l: sl + w, t: st, w: w, h: sh }; }
+  var GEM_DEF = "Tum ek expert SSC (CGL/CHSL/CPO/MTS) teacher ho. Image/text mein jo question hai wo Maths, Reasoning ya English kisi bhi subject ka ho sakta hai — subject khud pehchano aur usi ke hisaab se solve karo.\n\nLANGUAGE RULES (bahut zaroori):\n- Question, saare options aur explanation Hindi + English mix (Hinglish, Devanagari mein Hindi) mein likho. Jo bhi mushkil word, term ya full form ho, usse Hindi mein likho aur uske baad bracket mein English likho. Example: अनुपात (Ratio), समानार्थी (Synonym).\n- English subject mein original English sentence/options jaise hain waise hi rakho, bas explanation bilingual do.\n- Koi step skip mat karo. Har calculation / logic line by line dikhao, simple aur easy tareeke se.\n\nFORMAT (is order mein hi):\n\n1) मुख्य प्रश्न (Main Question)\n- Question ko bilkul exact likho, options (A/B/C/D) ke saath.\n- सही उत्तर (Correct Answer) clearly batao.\n- बेसिक कॉन्सेप्ट (Basic Concept): jad ka concept / rule / theory simple bhasha mein samjhao taaki fundamentals 100% clear ho jaye.\n- स्मार्ट ट्रिक (Smart Trick): exam mein 10-15 second mein solve karne ka sabse fast tareeka (Maths: Ratio, Deviation, Approximation, direct formula; Reasoning: pattern/elimination/diagram shortcut; English: rule + option elimination). Trick ke saath poora step-by-step solution bhi do.\n- Galat options kyun galat hain, ye ek-ek line mein batao.\n\n2) Same Pattern Practice (2 Questions)\n- Isi concept aur isi trick par 2 naye questions, bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: seekhi hui trick turant dimaag mein baith jaye aur speed badhe.\n\n3) Advanced / Variety Practice (3 Questions)\n- Isi topic ko thoda twist karke ya SSC Tier-2 level tak badha ke 3 alag questions do (Maths mein 'Reverse Calculation' type bhi), bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: exam mein kisi bhi variation ke liye 100% ready karna.\n\nEnd mein 2 line ka \"Yaad rakhne wali baat (Key Takeaway)\" likho.";
+  function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); return v || GEM_DEF; }
   function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
   function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
   function hash(s){ var h = 0; for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
@@ -31339,8 +31342,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       await st.busy; return !!st.du;
     }
     function sendExt(du, cb){
-      var got = false, txt = LS('sd:gemprompt') || '';
-      function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
+      var got = false, txt = gemPrompt();
+      function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; LS('sd:extok', '1'); window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
       window.addEventListener('message', onAck);
       window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, reuse: true, newTab: false, popup: true, geo: gemGeo() }, '*');
       setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) cb(); }, 1800);
@@ -31358,18 +31361,18 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         try{ copied = navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }catch(e){ copied = Promise.resolve(false); }
       }
       var w = null;
-      if(!inFrame && !mobile){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
+      if(!inFrame && !mobile && LS('sd:extok') !== '1'){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
         var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); }catch(e){} }
       toast('Screenshot ban raha hai…');
       var ok; try{ await pngP; ok = true; }catch(e){ ok = false; }
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
       if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); }catch(e){} return; }
       if(mobile){
-        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: LS('sd:gemprompt') || '' }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: gemPrompt() }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
         toast('Share nahi chala — screenshot save/copy karke Gemini me daalo'); return;
       }
       sendExt(st.du, async function(){
-        var c = copied ? await copied : false; try{ if(w) w.focus(); }catch(e){}
+        var c = copied ? await copied : false; if(!w){ try{ var g2 = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g2.l + ',top=' + g2.t + ',width=' + g2.w + ',height=' + g2.h); var bl = false; try{ bl = (w.location.href === 'about:blank'); }catch(e){} if(bl) w.location.href = gemUrl(); }catch(e){} } try{ if(w) w.focus(); }catch(e){}
         toast(c ? '✅ Screenshot copy ho gaya — Gemini popup me click karke Ctrl+V dabao' : '⚠ Auto-copy nahi hua. Handle ko drag karke Gemini me chhodo');
       });
     };
