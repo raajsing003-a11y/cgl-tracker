@@ -778,7 +778,8 @@ if(FW.pipOn){const go=()=>{['pointerup','keydown'].forEach(t=>removeEventListene
 /* ===== Music: auto-start, hamesha repeat, on-screen button, extras ===== */
 (()=>{
 const tv=()=>CF.vol!=null?CF.vol:.6;let off=false,fv=null,slp=null,armed=false;
-if(CF.mauto===undefined)CF.mauto=true;
+if(CF.mauto===undefined)CF.mauto=false;
+if(!CF.mautoV3){CF.mauto=false;CF.mautoV3=1}   /* ek baar reset: Focus Desk kholte hi music auto-start NAHI hoga (user chahe to checkbox on kare) */
 if(!CF.rpv2){CF.rp='one';CF.rpv2=1}
 if(CF.mrs===undefined)CF.mrs=false;
 W('cf',CF);
@@ -787,7 +788,7 @@ function sync(){const on=!A.paused;$('#mtg').textContent=on?'🔊':'🔇';$('#mt
  try{if(navigator.mediaSession){navigator.mediaSession.metadata=new MediaMetadata({title:trk[ci].n,artist:'Focus Desk'});navigator.mediaSession.playbackState=on?'playing':'paused'}}catch(e){}}
 function start(){stopYT();A.volume=0;return A.play().then(()=>{fade(tv(),1200);sync();return true}).catch(()=>{A.volume=tv();sync();return false})}
 function halt(){fade(0,500,()=>{A.pause();A.volume=tv();sync()})}
-function arm(){if(armed)return;armed=true;const go=()=>{['pointerdown','keydown','touchstart'].forEach(t=>removeEventListener(t,go,true));armed=false;if(!off&&CF.mauto!==false&&A.paused)start()};['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,go,true))}
+function arm(){if(armed)return;armed=true;const go=()=>{['pointerdown','keydown','touchstart'].forEach(t=>removeEventListener(t,go,true));armed=false;if(!off&&!!CF.mauto&&A.paused)start()};['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,go,true))}
 function toggle(){if(A.paused){off=false;start()}else{off=true;halt()}}
 $('#mtg').onclick=toggle;
 $('#mfab').addEventListener('wheel',e=>{e.preventDefault();vol((tv()*100)+(e.deltaY<0?5:-5))},{passive:false});
@@ -812,11 +813,11 @@ addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)
 // media session (headphones / lockscreen)
 try{const ms=navigator.mediaSession;if(ms){ms.setActionHandler('play',()=>{off=false;start()});ms.setActionHandler('pause',()=>{off=true;halt()});ms.setActionHandler('nexttrack',()=>nxt(1));ms.setActionHandler('previoustrack',()=>nxt(-1))}}catch(e){}
 // settings checkboxes
-[['mAuto','mauto'],['mBp','mbp'],['mTp','mtp'],['mRs','mrs'],['oAs','oas'],['oFs','ofs']].forEach(([id,k])=>{const el=$('#'+id);el.checked=k==='mauto'?CF.mauto!==false:!!CF[k];el.onchange=()=>{CF[k]=el.checked;W('cf',CF)}});
+[['mAuto','mauto'],['mBp','mbp'],['mTp','mtp'],['mRs','mrs'],['oAs','oas'],['oFs','ofs']].forEach(([id,k])=>{const el=$('#'+id);el.checked=!!CF[k];el.onchange=()=>{CF[k]=el.checked;W('cf',CF)}});
 // OPEN par auto-start
 function boot(){
  if(CF.mrs&&ci===0){const t=S('mpos',0);if(t>1)A.addEventListener('loadedmetadata',()=>{try{A.currentTime=Math.min(t,(A.duration||t)-2)}catch(e){}},{once:true})}
- if(CF.mauto!==false){start().then(ok=>{if(!ok){arm();toast('Music ke liye screen par kahin tap karo')}})}else sync();
+ if(CF.mauto){start().then(ok=>{if(!ok){arm();toast('Music ke liye screen par kahin tap karo')}})}else sync();
  if(CF.oas)setTimeout(()=>{if(!run)$('#start').click()},700)}
 sync();boot();
 })();

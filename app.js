@@ -31278,3 +31278,126 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     return r;
   };
 })();
+
+/* ===== GEMINI SOLUTION HANDLE (Study Desk wala feature, poori app ke saare mocks/quiz solutions me) =====
+   Jahan bhi solution dikhe (calcPage ke *SolutionCard/*SolutionText/dsSolBlock, ya Review overlay ka har question)
+   wahan "⠿ Gemini" handle aata hai:  TAP = us page ka screenshot Gemini ko (extension se auto, warna clipboard + Gemini tab)
+   DRAG = thumbnail ko Gemini window me chhodo.  "A" toggle ON ho to solution khulte hi screenshot khud chala jata hai (default OFF).
+   Study Desk ke andar ho to parent ko wahi 'sd-ask-ai' message jata hai jo PDF viewer bhejta hai. */
+(function(){
+  if(window.__cxGemH) return; window.__cxGemH = true;
+  var SOL = '[id$="SolutionCard"],[id$="SolutionText"],[id$="SolutionTag"],.dsSolBlock';
+  var LS = function(k, v){ try{ if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){} return null; };
+  function toast(m){ try{ if(typeof window.toast === 'function') return window.toast(m); }catch(e){} var t = document.getElementById('cxGemToast');
+    if(!t){ t = document.createElement('div'); t.id = 'cxGemToast'; t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,22,27,.94);color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:100000;max-width:86vw;text-align:center;display:none'; document.body.appendChild(t); }
+    t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
+  function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
+  function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
+  function hash(s){ var h = 0; for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+
+  var css = document.createElement('style');
+  css.textContent = '#cxGemMain{position:fixed;right:8px;top:104px;z-index:10050;display:none;flex-direction:column;align-items:center;gap:3px;padding:5px;border-radius:12px;background:rgba(20,22,27,.88);color:#fff;font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.4)}'
+    + '#cxGemMain img,.cxGemH img{width:44px;height:58px;object-fit:contain;background:#fff;border-radius:5px;display:block;-webkit-user-drag:element}'
+    + '#cxGemMain.busy img,.cxGemH.busy img{opacity:.4}'
+    + '#cxGemMain label{font-size:10px;font-weight:600;opacity:.85;display:flex;gap:3px;align-items:center;cursor:pointer}'
+    + '.cxGemH{position:absolute;top:8px;right:8px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;border-radius:10px;background:rgba(20,22,27,.85);color:#fff;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none}';
+  document.head.appendChild(css);
+
+  var PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="44" height="58"><rect width="44" height="58" fill="#fff"/><text x="22" y="34" font-size="20" text-anchor="middle">📄</text></svg>');
+
+  function loadH2C(){ return new Promise(function(res, rej){ if(window.html2canvas) return res(window.html2canvas);
+    var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = function(){ res(window.html2canvas); }; s.onerror = function(){ rej(new Error('html2canvas load nahi hua')); }; document.head.appendChild(s); }); }
+
+  async function snap(target){
+    var h2c = await loadH2C();
+    try{ if(window.MathJax && MathJax.startup && MathJax.startup.promise) await MathJax.startup.promise; }catch(e){}
+    var w = Math.max(target.scrollWidth, target.clientWidth, 1);
+    var bg = getComputedStyle(document.body).backgroundColor; if(!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = '#ffffff';
+    var cv = await h2c(target, { backgroundColor: bg, scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false,
+      ignoreElements: function(el){ return !!(el.classList && el.classList.contains('cxGemH')) || el.id === 'cxGemMain'; },
+      onclone: function(doc, el){ el.style.overflow = 'visible'; el.style.height = 'auto'; el.style.maxHeight = 'none';
+        Array.prototype.forEach.call(doc.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH'), function(x){ x.style.display = 'none'; }); } });
+    return cv;
+  }
+
+  /* ---- ek handle (main ya per-item) ke liye state + prep + send + drag ---- */
+  function wire(h, img, getTarget){
+    var st = { key: '', file: null, du: '', busy: null };
+    function keyOf(t){ return (t.id || '') + '|' + hash(t.innerText || ''); }
+    async function prep(){
+      var t = getTarget(); if(!t) return false; var k = keyOf(t);
+      if(st.busy) { await st.busy; if(st.key === k) return true; }
+      if(st.key === k && st.du) return true;
+      h.classList.add('busy');
+      st.busy = (async function(){ try{
+        var cv = await snap(t); st.du = cv.toDataURL('image/jpeg', 0.88);
+        var blob = await new Promise(function(r){ cv.toBlob(r, 'image/jpeg', 0.88); });
+        st.file = blob ? new File([blob], 'question_solution.jpg', { type: 'image/jpeg' }) : null; st.cv = cv; st.key = k; img.src = st.du;
+      }catch(e){ st.du = ''; st.err = e; } st.busy = null; h.classList.remove('busy'); })();
+      await st.busy; return !!st.du;
+    }
+    function sendExt(du, cb){
+      var got = false, txt = LS('sd:gemprompt') || '';
+      function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
+      window.addEventListener('message', onAck);
+      window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, full: true, reuse: true, newTab: false }, '*');
+      setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) cb(); }, 1800);
+    }
+    async function copyPng(){ try{ if(!st.cv || !navigator.clipboard || !window.ClipboardItem) return false;
+      var png = await new Promise(function(r){ st.cv.toBlob(r, 'image/png'); }); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); return true; }catch(e){ return false; } }
+    h.sendNow = async function(){
+      toast('Screenshot ban raha hai…');
+      var ok = await prep(); if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
+      if(window.parent && window.parent !== window){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); } catch(e){} copyPng(); return; }
+      sendExt(st.du, async function(){
+        var c = await copyPng(); var w = null; try{ w = window.open('', 'sd_gemini'); }catch(e){}
+        if(w){ var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); try{ w.focus(); }catch(e){} }
+        toast(c ? 'Screenshot copy ho gaya — Gemini mein Ctrl+V / paste karo' : 'Gemini khul gaya (copy allow nahi hua)');
+      });
+    };
+    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); h.sendNow(); });
+    ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); });
+    img.addEventListener('dragstart', function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.effectAllowed = 'copy'; if(st.file) ev.dataTransfer.items.add(st.file); }catch(e){} });
+    h.prep = prep;
+  }
+
+  /* ---- main (floating) handle: active calcPage me solution dikhe tab ---- */
+  var main = document.createElement('div'); main.id = 'cxGemMain'; main.title = 'Is page ko pakad ke Gemini window mein chhodo (tap = Gemini ko bhejo)';
+  var mi = document.createElement('img'); mi.src = PH; mi.draggable = true; mi.alt = 'page';
+  var ml = document.createElement('span'); ml.textContent = '⠿ Gemini';
+  var al = document.createElement('label'); al.title = 'ON = solution khulte hi screenshot khud Gemini ko chala jaye';
+  var ac = document.createElement('input'); ac.type = 'checkbox'; ac.checked = LS('cx:gemAuto') === '1'; ac.onchange = function(){ LS('cx:gemAuto', ac.checked ? '1' : '0'); toast(ac.checked ? 'Auto-send ON' : 'Auto-send OFF'); };
+  al.appendChild(ac); al.appendChild(document.createTextNode('Auto'));
+  main.appendChild(mi); main.appendChild(ml); main.appendChild(al);
+  var curPage = null, lastShown = false;
+  wire(main, mi, function(){ return curPage; });
+  function mount(){ if(document.body && !main.parentNode) document.body.appendChild(main); }
+
+  function overlayOpen(){ var o = document.getElementById('quizReviewOverlay'); return !!(o && o.style.display !== 'none' && o.getClientRects().length); }
+
+  function scan(){
+    mount();
+    /* review overlay: har question ke upar apna handle */
+    var list = document.getElementById('quizReviewList');
+    if(list && overlayOpen()) Array.prototype.forEach.call(list.children, function(it){
+      if(it.__cxg) return; it.__cxg = 1; var cs = getComputedStyle(it); if(cs.position === 'static') it.style.position = 'relative';
+      var h = document.createElement('div'); h.className = 'cxGemH'; h.title = 'Ye question + solution Gemini ko bhejo (tap) ya drag karo';
+      var im = document.createElement('img'); im.src = PH; im.draggable = true; var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
+      h.appendChild(im); h.appendChild(lb); it.appendChild(h); wire(h, im, function(){ return it; });
+    });
+    var page = overlayOpen() ? null : document.querySelector('.calcPage.active');
+    var has = false;
+    if(page){ var q = page.querySelectorAll(SOL); for(var i = 0; i < q.length; i++){ if(vis(q[i])){ has = true; break; } } }
+    curPage = has ? page : null;
+    main.style.display = has ? 'flex' : 'none';
+    if(has && !lastShown && ac.checked){ setTimeout(function(){ if(curPage === page && main.style.display !== 'none') main.sendNow(); }, 900); }
+    else if(has && !lastShown){ setTimeout(function(){ if(curPage === page) main.prep(); }, 600); }   /* thumbnail pehle se ready, drag turant chale */
+    lastShown = has;
+  }
+  var tm = null; function sched(){ clearTimeout(tm); tm = setTimeout(scan, 250); }
+  function start(){ mount(); new MutationObserver(function(ms){
+      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast')))) continue; sched(); return; } })
+    .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();

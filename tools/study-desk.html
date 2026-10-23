@@ -339,7 +339,7 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
   };
   $('#aiGem').onclick=async function(){
     if(data){ try{ var b=await (await fetch(data)).blob(); await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); toast('Image copy ho gayi. Gemini mein paste karo'); }catch(e){ toast('Copy nahi hua, "Gemini app ko bhejo" use karo'); } }
-    var w=window.open(gu.value.trim()||'https://gemini.google.com/app','sd_gemini'); try{ if(w) w.focus(); }catch(e){}
+    openGemSideNative(gu.value.trim()||gemUrl());
   };
 })();
 
@@ -349,25 +349,23 @@ function gemGeo(){ var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.
 function gemUrl(){ var u='https://gemini.google.com/app'; try{ u=localStorage.getItem('sd:gemurl')||u; }catch(e){} return u; }
 /* Pehle extension se: pehle se khuli Gemini tab/window milti hai to wahi aage aati hai, nayi nahi khulti */
 function openGemSide(){
-  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} return; }
+  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} setView('pdf'); return; }
   var got=false;
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='open'){ got=true; window.removeEventListener('message',onAck); setView('pdf'); toast(d.found?'Pehle se khula Gemini aage aa gaya':'Gemini right side khul gaya'); } }
   window.addEventListener('message',onAck);
-  window.postMessage({type:'sd-gemini-open',geo:gemGeo(),url:gemUrl()},'*');
+  window.postMessage({type:'sd-gemini-open',url:gemUrl(),single:true,full:true,reuse:true,newTab:false},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got) openGemSideNative(); },1200);
 }
-function openGemSideNative(){
-  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} return; }
-  var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.availWidth||screen.width, sh=screen.availHeight||screen.height, w=Math.round(sw/2), url='https://gemini.google.com/app';
-  try{ url=localStorage.getItem('sd:gemurl')||url; }catch(e){}
-  gemWin=window.open(url,'sd_gemini_side','popup=yes,width='+w+',height='+sh+',left='+(sl+w)+',top='+st);
-  if(!gemWin){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return; }
-  function place(){ try{ gemWin.resizeTo(w,sh); gemWin.moveTo(sl+w,st); }catch(e){} }
-  place(); setTimeout(place,250); setTimeout(place,900);
-  try{ window.moveTo(sl,st); window.resizeTo(w,sh); }catch(e){}
-  setView('pdf');
-  if(window.outerWidth>sw*0.6) toast('Ab is app wali window par Win + ← dabao, tab dono aadhe aadhe rahenge aur Gemini PDF click karne par peeche nahi jayega',6000);
-  else toast('Gemini right side khul gaya');
+function openGemSideNative(url){
+  /* Hamesha EK hi named tab ('sd_gemini'), full page. Pehle se khuli ho to bas aage laao (reload/naya tab nahi). */
+  var w=null; url=url||gemUrl();
+  try{ w=window.open('','sd_gemini'); }catch(e){}
+  if(!w){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return null; }
+  var blank=false; try{ blank=(w.location.href==='about:blank'); }catch(e){ blank=false; }   /* cross-origin error = Gemini pehle se khula hai */
+  if(blank){ try{ w.location.href=url; }catch(e){ try{ w.location=url; }catch(x){} } }
+  try{ w.focus(); }catch(e){}
+  gemWin=w; setView('pdf'); toast('Gemini tab aage aa gaya');
+  return w;
 }
 
 /* ---- header hide/show ---- */
@@ -381,7 +379,7 @@ window.sendToGemini=function(du){
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
   var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){}
-  window.postMessage({type:'sd-gemini-send',image:du,text:txt,geo:gemGeo(),url:gemUrl()},'*');
+  window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,full:true,reuse:true,newTab:false},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
     try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}
     openGemSideNative();
