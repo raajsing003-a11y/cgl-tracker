@@ -9193,6 +9193,41 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   function restoreChans() { if (chans.length) { saveChans(); return; } idbGet().then(function (l) { if (!adoptChans(l)) { try { if (window.parent !== window) window.parent.postMessage({ type: 'stv-chans-get' }, '*'); } catch (e) {} } }); }
   window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'stv-chans-set' && e.source === window.parent) adoptChans(d.chans); });
   setTimeout(restoreChans, 700);
+  /* ---- Admin ki Study Tube setting / channels => room ke sabhi members ke liye (app.js bridge: st-global-*) ---- */
+  (function () {
+    if (window.parent === window) return;
+    var isAdm = false, lastSig = null, tmr = null;
+    var gv = function () { return +(localStorage.getItem('uv99:st:gv') || 0); };
+    var setGv = function (v) { try { localStorage.setItem('uv99:st:gv', String(v)); } catch (e) {} };
+    function snapG() {
+      var cb = ''; try { cb = (localStorage.getItem('uv99:cobaltBase') || ''); } catch (e) {}
+      return { chans: JSON.parse(JSON.stringify(chans)), lim: lim, auto: auto, open: opn, an: an, cobalt: cb };
+    }
+    function pubG(silent) {
+      var d = snapG(); lastSig = JSON.stringify(d);
+      try { window.parent.postMessage({ type: 'st-global-save', data: { v: Date.now(), d: d }, silent: !!silent }, '*'); } catch (e) {}
+    }
+    function applyG(D) {
+      var g = D && D.d; if (!g || !Array.isArray(g.chans) || !(D.v > gv())) return;
+      chans = g.chans.filter(function (c) { return c && c.id && c.n; }); saveChans();
+      lim = +g.lim || 0; auto = !!g.auto; opn = !!g.open; if (g.an != null) an = !!g.an;
+      wr('uv99:st:lim', lim); wr('uv99:st:auto', auto); wr('uv99:st:open', opn); wr('uv99:st:an', an);
+      if (g.cobalt != null) { try { localStorage.setItem('uv99:cobaltBase', String(g.cobalt)); } catch (e) {} }
+      setGv(D.v); cache.t = 0;
+      try { render(); } catch (e) {} try { refresh(true); } catch (e) {} try { tmShow(); } catch (e) {}
+      if (isAdm) lastSig = JSON.stringify(snapG());
+      toast('Admin ki Study Tube setting lag gayi');
+    }
+    window.addEventListener('message', function (e) {
+      if (e.source !== window.parent) return; var m = e.data || {};
+      if (m.type === 'st-role') {
+        isAdm = !!m.admin;
+        if (isAdm) { toast('👑 Admin mode: channels/settings sabke liye auto publish hongi'); if (!tmr) { lastSig = JSON.stringify(snapG()); tmr = setInterval(function () { if (!isAdm) return; var s; try { s = JSON.stringify(snapG()); } catch (x) { return; } if (s !== lastSig) pubG(true); }, 6000); } }
+      } else if (m.type === 'st-global' && m.data) { applyG(m.data); }
+      else if (m.type === 'st-global-ack') { if (m.ok) { setGv(m.v); if (!m.silent) toast(m.msg); } else { lastSig = null; if (!m.silent || isAdm) toast('⚠ ' + m.msg); } }
+    });
+    setTimeout(function () { try { window.parent.postMessage({ type: 'st-global-get' }, '*'); } catch (e) {} }, 900);
+  })();
   async function importIds(ids) { toast(ids.length + ' channels import ho rahe hain...'); var n = 0; try { for (var k = 0; k < ids.length; k += 50) { var j = await api('channels', { part: 'snippet,contentDetails', id: ids.slice(k, k + 50).join(','), maxResults: 50 }); (j.items || []).forEach(function (x) { if (!chans.some(function (c) { return c.id === x.id; })) { chans.push({ id: x.id, n: x.snippet.title, img: (x.snippet.thumbnails.default || {}).url || '', up: x.contentDetails.relatedPlaylists.uploads, tag: '' }); n++; } }); } } catch (e) { toast(fr(e.message)); } saveChans(); cache.t = 0; sheet(); toast(n + ' channel add ho gaye'); }
   function sheetX() { var b = $('stBkp'), r = $('stRs'), i = $('stIm'), f = $('stFi'), f2 = $('stFr'); if (!b) return;
     b.onclick = function () { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'study-tube', chans: chans })], { type: 'application/json' })); a.download = 'study-tube-channels.json'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('Channels backup download hua'); };

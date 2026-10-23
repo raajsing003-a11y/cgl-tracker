@@ -216,11 +216,11 @@ var emb=window.parent!==window;
 window.addEventListener('message',function(e){
   var d=e.data, fw=fr.focus.contentWindow;
   if(fw && e.source===fw){ if(d&&d.type==='fd-ui'){ onUi(d); return; } if(emb){ if(d&&d.type==='fd-close'){ closeDesk(); } try{ window.parent.postMessage(d,'*'); }catch(x){} } return; }
-  if(e.source===fr.tube.contentWindow){ if(d==='uv-study-exit') setView('pdf');
+  if(e.source===fr.tube.contentWindow){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-global')===0){ if(emb){ try{ window.parent.postMessage(d,'*'); }catch(x){} } return; } if(d==='uv-study-exit') setView('pdf');
     else if(d&&d.type==='stv-chans'&&d.chans&&d.chans.length){ try{ localStorage.setItem('sd:chans',JSON.stringify(d.chans)); }catch(x){} }
     else if(d&&d.type==='stv-chans-get'){ try{ var sc=JSON.parse(localStorage.getItem('sd:chans')||'null'); if(sc&&sc.length) fr.tube.contentWindow.postMessage({type:'stv-chans-set',chans:sc},'*'); }catch(x){} }
     return; }
-  if(emb && e.source===window.parent && fw){ try{ fw.postMessage(d,'*'); }catch(x){} }
+  if(emb && e.source===window.parent){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-')===0){ var tw=fr.tube.contentWindow; if(tw&&fr.tube.getAttribute('src')){ try{ tw.postMessage(d,'*'); }catch(x){} } } else if(fw){ try{ fw.postMessage(d,'*'); }catch(x){} } }
 });
 function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
 $('#cls').onclick=function(){ if(emb) closeDesk(); else history.length>1?history.back():window.close(); };
