@@ -206,6 +206,15 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   #barMark { display: none; }
   body.mk #barMark { display: flex; }
 }
+
+/* row hide buttons + page drag handle */
+.bar .colbtn{flex:none;padding:2px 8px;font-size:12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer;opacity:.8}
+.bar.col{padding:2px 8px;min-height:0}
+.bar.col>*:not(.colbtn){display:none!important}
+.dragH{position:absolute;top:8px;right:8px;z-index:25;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;border-radius:10px;background:rgba(20,22,27,.82);color:#fff;font-size:11px;opacity:0;transition:opacity .15s;cursor:grab;user-select:none}
+.page:hover .dragH,.dragH:hover{opacity:1}
+.dragH img{width:54px;height:70px;object-fit:contain;background:#fff;border-radius:4px;display:block;-webkit-user-drag:element}
+.dragH.busy2 img{opacity:.4}
 </style>
 <style id="lib-css">
 #libPop{position:fixed;right:10px;top:96px;width:min(360px,calc(100vw - 20px));max-height:70vh;overflow:auto;background:var(--chrome);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px;z-index:80;display:none}
@@ -507,9 +516,9 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   cropOv.innerHTML = '<div id="cropBox"></div><div id="cropHint">Jo hissa chahiye usse drag karke chuno (Esc = cancel)</div>';
   document.body.appendChild(cropOv);
   var cropBox = cropOv.querySelector('#cropBox');
-  async function pageCanvas(e) {
+  async function pageCanvas(e, maxW) {
     await renderPage(e);
-    var v1 = vpOf(e, 1), s = Math.max(1, Math.min(4, 2200 / v1.width)), vp = vpOf(e, s);
+    var v1 = vpOf(e, 1), s = Math.max(1, Math.min(4, (maxW || 2200) / v1.width)), vp = vpOf(e, s);
     var tmp = document.createElement('canvas'); tmp.width = Math.floor(vp.width); tmp.height = Math.floor(vp.height);
     await e.page.render({ canvasContext: tmp.getContext('2d'), viewport: vp }).promise;
     var out = document.createElement('canvas'); out.width = tmp.width; out.height = tmp.height;
@@ -549,6 +558,40 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var n = curPage, e = pages[n - 1]; toast('Screenshot ban raha hai…');
     try { await saveShot(await pageCanvas(e), n); } catch (err) { toast('Screenshot fail: ' + (err && err.message || err)); }
   }
+  /* ---------- Page ko image ki tarah Gemini mein drag karo ---------- */
+  var PH_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="54" height="70"><rect width="54" height="70" fill="#fff"/><text x="27" y="40" font-size="22" text-anchor="middle">📄</text></svg>');
+  function addDragHandle(e, el) {
+    var h = document.createElement('div'); h.className = 'dragH'; h.title = 'Is page ko pakad ke Gemini window mein chhodo (click = copy)';
+    var im = document.createElement('img'); im.src = PH_IMG; im.draggable = true; im.alt = 'page';
+    var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
+    h.appendChild(im); h.appendChild(lb); el.appendChild(h);
+    var key = '', busy = false;
+    async function prep() {
+      var k = [e.annots ? e.annots.length : 0, e.rot || 0, pagesEl.classList.contains('invert') ? 1 : 0].join('|');
+      if (busy || k === key) return; busy = true; h.classList.add('busy2');
+      try {
+        var cv = await pageCanvas(e, 1600);
+        var blob = await new Promise(function (r) { cv.toBlob(r, 'image/jpeg', 0.9); });
+        if (blob) { e._dragBlob = blob; e._dragFile = new File([blob], shotName(+el.dataset.n).replace(/\.png$/, '.jpg'), { type: 'image/jpeg' }); im.src = cv.toDataURL('image/jpeg', 0.85); key = k; }
+      } catch (x) {}
+      busy = false; h.classList.remove('busy2');
+    }
+    el.addEventListener('mouseenter', prep); h.addEventListener('mouseenter', prep);
+    h.addEventListener('click', async function () {
+      await prep();
+      for (var t = 0; t < 12 && im.src === PH_IMG; t++) await new Promise(function (r) { setTimeout(r, 250); });
+      if (im.src !== PH_IMG) { try { window.parent.postMessage({ type: 'sd-ask-ai', image: im.src, from: 'pdf' }, '*'); } catch (x) {} }
+    });
+    im.addEventListener('dragstart', function (ev) {
+      ev.stopPropagation();
+      try { ev.dataTransfer.effectAllowed = 'copy'; if (e._dragFile) ev.dataTransfer.items.add(e._dragFile); } catch (x) {}
+    });
+    h.addEventListener('click', async function () {
+      await prep();
+      try { var b = e._dragBlob; var png = await (async function () { var cv = await pageCanvas(e, 1600); return new Promise(function (r) { cv.toBlob(r, 'image/png'); }); })(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); toast('Page copy ho gaya'); }
+      catch (x) { toast('Copy nahi hua. Drag karke chhodo'); }
+    });
+  }
   var cropMode = 'save';
   function cropStart(m) { cropMode = (m === 'ai') ? 'ai' : 'save'; if (!pages.length) { toast('Pehle PDF kholo'); return; } cropOv.classList.add('on'); cropBox.style.display = 'none'; }
   function cropEnd() { cropOv.classList.remove('on'); cropBox.style.display = 'none'; }
@@ -568,7 +611,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       var sx = Math.max(0, (L - pr.left) * kx), sy = Math.max(0, (T - pr.top) * ky), sw = Math.min(full.width - sx, (R - L) * kx), sh = Math.min(full.height - sy, (B - T) * ky);
       var c = document.createElement('canvas'); c.width = Math.round(sw); c.height = Math.round(sh); c.getContext('2d').drawImage(full, sx, sy, sw, sh, 0, 0, c.width, c.height);
       if (cropMode === 'ai') {
-        var du = c.toDataURL('image/jpeg', 0.92);
+        var du = c.toDataURL('image/jpeg', 0.92); try { c.toBlob(function (b) { try { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(function () {}); } catch (x) {} }, 'image/png'); } catch (x) {}
         try { window.parent.postMessage({ type: 'sd-ask-ai', image: du, from: 'pdf' }, '*'); toast('🤖 AI panel mein bhej diya'); } catch (e2) { toast('AI panel nahi mila (Study Desk ke andar kholo)'); }
       } else await saveShot(c, bi + 1);
     } catch (err) { toast('Screenshot fail: ' + (err && err.message || err)); }
@@ -640,7 +683,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       e.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); e.svg.setAttribute('class', 'ov'); e.svg.dataset.n = i + 1;
       e.tl = document.createElement('div'); e.tl.className = 'textLayer';
       e.el = el; e.promise = null; e.task = null; e.textDivs = [];
-      el.appendChild(e.canvas); el.appendChild(e.wmEl); el.appendChild(e.svg); el.appendChild(e.tl);
+      el.appendChild(e.canvas); el.appendChild(e.wmEl); el.appendChild(e.svg); el.appendChild(e.tl); addDragHandle(e, el);
       pagesEl.appendChild(el);
     });
     $('pageTotal').textContent = pages.length; $('pageNum').max = pages.length;
@@ -1308,6 +1351,19 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
         if (TOOLS[i][2] === k) { if (k === 'S') toggleStampPop(); else setTool(TOOLS[i][0]); break; }
       }
     }
+  });
+})();
+
+/* ---- har toolbar row ke liye hide/show button ---- */
+(function(){
+  var names={barMain:'Toolbar 1',barMark:'Markup tools'};
+  Object.keys(names).forEach(function(id){
+    var bar=document.getElementById(id); if(!bar) return;
+    var b=document.createElement('button'); b.type='button'; b.className='colbtn'; bar.insertBefore(b,bar.firstChild);
+    function paint(){ var c=bar.classList.contains('col'); b.textContent=c?('▼ '+names[id]):'▲'; b.title=c?'Row dikhao':'Is row ko hide karo'; }
+    try{ if(localStorage.getItem('pv:col:'+id)==='1') bar.classList.add('col'); }catch(e){}
+    b.onclick=function(){ bar.classList.toggle('col'); try{ localStorage.setItem('pv:col:'+id,bar.classList.contains('col')?'1':'0'); }catch(e){} paint(); try{ window.dispatchEvent(new Event('resize')); }catch(e){} };
+    paint();
   });
 })();
 </script>

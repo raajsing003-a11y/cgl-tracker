@@ -94,6 +94,8 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
 .tbar button.on{background:var(--ac);color:#fff}
 .chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{padding:5px 9px;font-size:12px;border-radius:999px}
 #aiCtx{height:64px}
+#hshow{display:none;position:fixed;top:0;right:10px;z-index:60;padding:1px 12px;font-size:12px;border-radius:0 0 10px 10px}
+body.hh #bar{display:none}body.hh #hshow{display:block}
 </style>
 </head>
 <body>
@@ -113,9 +115,11 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
   <button id="nbtn" title="Notes (Alt+N)">📝</button>
   <button id="zbtn" title="Zen mode (Alt+Z)">⛶</button>
   <button id="chip">⏱ 00:00</button>
+  <button id="hbtn" title="Header hide karo">▲</button>
   <button id="cls" title="Band karo">✕</button>
 </div>
 
+<button id="hshow" title="Header dikhao">▼ Header</button>
 <div id="main" class="v-pdf">
   <section class="pane" id="p-pdf"><iframe data-src="./pdf-viewer.html" title="PDF Reader" allow="fullscreen; clipboard-read; clipboard-write"></iframe></section>
   <div id="dv" title="Drag karke size badlo"></div>
@@ -321,7 +325,7 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
   $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
   $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
   document.addEventListener('paste',function(e){ if(!P.classList.contains('open')) return; var its=(e.clipboardData||{}).items||[]; for(var i=0;i<its.length;i++) if(its[i].type.indexOf('image/')===0){ fromBlob(its[i].getAsFile()); e.preventDefault(); return; } });
-  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ setImg(d.image); } });
+  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(auto) window.sendToGemini(d.image); else setImg(d.image); } });
   $('#aiShare').onclick=async function(){
     var txt=fullTxt();
     try{
@@ -345,10 +349,29 @@ function openGemSide(){
   try{ url=localStorage.getItem('sd:gemurl')||url; }catch(e){}
   gemWin=window.open(url,'sd_gemini_side','popup=yes,width='+w+',height='+sh+',left='+(sl+w)+',top='+st);
   if(!gemWin){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return; }
+  function place(){ try{ gemWin.resizeTo(w,sh); gemWin.moveTo(sl+w,st); }catch(e){} }
+  place(); setTimeout(place,250); setTimeout(place,900);
   try{ window.moveTo(sl,st); window.resizeTo(w,sh); }catch(e){}
   setView('pdf');
-  toast('Gemini right side khul gaya. Pehli baar login kar lo, Chrome yaad rakhega');
+  if(window.outerWidth>sw*0.6) toast('Ab is app wali window par Win + ← dabao, tab dono aadhe aadhe rahenge aur Gemini PDF click karne par peeche nahi jayega',6000);
+  else toast('Gemini right side khul gaya');
 }
+
+/* ---- header hide/show ---- */
+(function(){ function hh(f){ document.body.classList.toggle('hh',f); try{ localStorage.setItem('sd:hh',f?'1':'0'); }catch(e){} try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
+  $('#hbtn').onclick=function(){ hh(true); }; $('#hshow').onclick=function(){ hh(false); };
+  try{ if(localStorage.getItem('sd:hh')==='1') hh(true); }catch(e){} })();
+
+/* ---- image ko seedha Gemini mein bhejo (extension ke saath) ---- */
+window.sendToGemini=function(du){
+  var wasOpen=gemWin&&!gemWin.closed, got=false;
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
+  window.addEventListener('message',onAck);
+  if(!wasOpen) openGemSide();
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemctx')||'')+'\nIs question ko step-by-step samjhao.'; }catch(e){}
+  setTimeout(function(){ window.postMessage({type:'sd-gemini-send',image:du,text:txt.trim()},'*'); },wasOpen?0:400);
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ try{ if(gemWin&&!gemWin.closed) gemWin.focus(); }catch(e){} toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } },2500);
+};
 /* ---- zen mode ---- */
 function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
 $('#zbtn').onclick=function(){ zen(true); toast('Zen mode: bahar aane ke liye ⤢ ya Alt+Z'); }; $('#zx').onclick=function(){ zen(false); };
