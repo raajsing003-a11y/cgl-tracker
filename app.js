@@ -1841,15 +1841,26 @@ window.addEventListener('message', function(e){
 (function initStudyTubePage(){
   const openBtn = document.getElementById('calcStudyTubeBtn');
   const frame = document.getElementById('studytubeFrame');
+  function tell(msg){ try{ frame.contentWindow.postMessage(msg,'*'); }catch(e){} }
   if(openBtn) openBtn.addEventListener('click', () => {
-    if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+    if(frame && !frame.getAttribute('src')){
+      frame.addEventListener('load', () => tell('uv-study-enter'), {once:true});
+      frame.setAttribute('src', frame.dataset.src);
+    }
     showCalcPage('studytube');
+    tell('uv-study-enter');
+  });
+  // Study Tube apni back handling khud karta hai (player band -> list -> exit).
+  // Exit par frame 'uv-study-exit' bhejta hai: pehle ek history step peeche, phir menu.
+  window.addEventListener('message', (e) => {
+    if(e.data !== 'uv-study-exit') return;
+    tell('uv-study-stop');
+    const onPage = () => { const a = document.querySelector('.calcPage.active'); return a && a.id === 'calcPage-studytube'; };
+    try{ history.back(); }catch(x){}
+    setTimeout(() => { if(onPage()) showCalcPage('menu', true); }, 180);
   });
   const backBtn = document.getElementById('studytubeBackBtn');
-  if(backBtn) backBtn.addEventListener('click', () => {
-    try{ frame.contentWindow.postMessage('uv-study-stop','*'); }catch(e){}
-    showCalcPage('menu');
-  });
+  if(backBtn) backBtn.addEventListener('click', () => tell('uv-study-back'));
 })();
 // Super Sets cards (Super English/Maths/Reasoning, Optional Elimination, Reading) — Super Practice jaisa native flow.
 (function initSuperSetCards(){
@@ -30902,4 +30913,152 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     });
   }
   cxPoll('chat', ()=>{ try{ scan(); }catch(e){} }, 500);
+})();
+
+
+// ============================================================================
+// 📊 USAGE TRACKER + ADMIN LIVE VIEW
+// Har user ka app-use (kitni baar khola, kitne minute, aaj/7 din) Firebase mein
+// rooms/<room>/usage/<key> par JSON string ke roop mein jata hai (har ~60s).
+// Sirf tab ginta hai jab app screen par visible ho. Admin Panel (👑) ke top par
+// "Users Usage & Live" card dikhta hai: kaun online hai + sabka usage.
+// Note: tracking isi update ke baad se shuru hoti hai (purana data available nahi).
+// ============================================================================
+(function usageTrackerAndAdminView(){
+  const FLUSH_MS = 60000, TICK_MS = 5000, ONLINE_MS = 100000, NEWSESSION_GAP_MS = 5*60*1000, KEEP_DAYS = 35;
+  let U = null, uKey = '', uRoom = '', lastTick = Date.now(), lastFlush = 0, dirty = false, hiddenAt = 0, seeding = false;
+
+  const dayKey = (t)=>{ const d = new Date(t||Date.now()); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const lsKey = ()=> 'cgl-usage-'+uRoom+'-'+uKey;
+  const parse = (v)=>{ try{ const o = typeof v==='string' ? JSON.parse(v) : v; return (o && typeof o==='object') ? o : null; }catch(e){ return null; } };
+
+  async function seed(){
+    if(seeding) return; seeding = true;
+    const room = (typeof getRoomCode==='function') ? getRoomCode() : null;
+    if(!room || !myName){ seeding = false; return; }
+    uRoom = room; uKey = presenceKey(myName);
+    let loc = parse(localStorage.getItem(lsKey()));
+    let rem = null;
+    try{ await waitForFirebase(); rem = parse(await window.__fbGet(`rooms/${room}/usage/${uKey}`)); }catch(e){}
+    const pick = (!rem) ? loc : (!loc ? rem : ((rem.t||0) >= (loc.t||0) ? rem : loc));
+    U = Object.assign({ n: myName, s: 0, t: 0, l: 0, d: {} }, pick || {});
+    U.n = myName; U.d = U.d || {};
+    U.s = (U.s||0) + 1; dirty = true; lastTick = Date.now(); lastFlush = 0; hiddenAt = 0;
+    seeding = false;
+  }
+
+  function addTime(sec){
+    if(!U || sec <= 0) return;
+    U.t = (U.t||0) + sec;
+    const k = dayKey(); U.d[k] = (U.d[k]||0) + sec;
+    U.l = Date.now(); dirty = true;
+  }
+
+  async function flush(force){
+    if(!U || !uRoom) return;
+    U.l = Date.now();
+    const keys = Object.keys(U.d).sort();
+    while(keys.length > KEEP_DAYS) delete U.d[keys.shift()];
+    const json = JSON.stringify(U);
+    try{ localStorage.setItem(lsKey(), json); }catch(e){}
+    if(!dirty && !force) return;
+    try{ await waitForFirebase(); await window.__fbSet(`rooms/${uRoom}/usage/${uKey}`, json); dirty = false; lastFlush = Date.now(); }catch(e){}
+  }
+
+  async function tick(){
+    try{
+      const room = (typeof getRoomCode==='function') ? getRoomCode() : null;
+      if(!room || !myName) return;
+      if(!U || uRoom !== room || uKey !== presenceKey(myName)){ U = null; await seed(); if(!U) return; }
+      const now = Date.now(), vis = document.visibilityState === 'visible';
+      const delta = Math.min(10, Math.round((now - lastTick)/1000));
+      lastTick = now;
+      if(vis){
+        if(hiddenAt && (now - hiddenAt) > NEWSESSION_GAP_MS){ U.s = (U.s||0) + 1; dirty = true; }
+        hiddenAt = 0;
+        addTime(delta);
+      } else if(!hiddenAt){ hiddenAt = now; }
+      if(now - lastFlush >= FLUSH_MS) flush(false);
+    }catch(e){}
+  }
+
+  setInterval(tick, TICK_MS);
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden'){ hiddenAt = Date.now(); flush(true); } else { lastTick = Date.now(); } });
+  window.addEventListener('pagehide', ()=>{ try{ flush(true); }catch(e){} });
+
+  // ---------------- Admin view ----------------
+  const fmtMin = (sec)=>{ const m = Math.round((sec||0)/60); if(m < 60) return m+'m'; return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'; };
+  const esc = (s)=> (typeof escapeHtml==='function') ? escapeHtml(String(s)) : String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let sortMode = 'online';
+
+  async function loadUsageAll(){
+    const room = getRoomCode(); if(!room) return {};
+    let raw = null;
+    try{ await waitForFirebase(); raw = await window.__fbGet(`rooms/${room}/usage`); }catch(e){}
+    const out = {}; if(raw && typeof raw === 'object'){ Object.keys(raw).forEach(k=>{ const o = parse(raw[k]); if(o) out[k] = o; }); }
+    return out;
+  }
+
+  async function renderUsageCard(card){
+    if(!card.isConnected) return;
+    let names = []; try{ names = await loadRoomRegistry(); }catch(e){}
+    const usage = await loadUsageAll();
+    if(U && uKey && myName) usage[uKey] = U;   // apna data turant (local, fresh)
+    const keyed = {}; names.forEach(n=>{ keyed[presenceKey(n)] = n; });
+    Object.keys(usage).forEach(k=>{ if(!keyed[k]) keyed[k] = usage[k].n || k; });
+    const now = Date.now(), today = dayKey();
+    const days7 = []; for(let i=0;i<7;i++) days7.push(dayKey(now - i*86400000));
+    const rows = Object.keys(keyed).map(k=>{
+      const u = usage[k] || {}; const name = keyed[k];
+      const pts = (typeof presenceMap==='object' && presenceMap[k]) || 0;
+      const seen = Math.max(u.l||0, pts||0);
+      const me = myName && presenceKey(myName) === k;
+      const online = me ? (document.visibilityState==='visible') : (seen && (now - seen) < ONLINE_MS);
+      const d = u.d || {};
+      return { name, online, seen, s: u.s||0, t: u.t||0, td: d[today]||0, w: days7.reduce((a,x)=>a+(d[x]||0),0), has: !!usage[k] };
+    });
+    rows.sort((a,b)=>{
+      if(sortMode==='total') return b.t - a.t;
+      if(sortMode==='today') return b.td - a.td;
+      if(sortMode==='sessions') return b.s - a.s;
+      return (b.online - a.online) || (b.seen - a.seen) || (b.t - a.t);
+    });
+    const onN = rows.filter(r=>r.online).length;
+    const ago = (ts)=>{ if(!ts) return 'kabhi nahi'; const m = Math.max(1, Math.round((now-ts)/60000)); return m<60 ? m+'m pehle' : (m<1440 ? Math.floor(m/60)+'h pehle' : Math.floor(m/1440)+'d pehle'); };
+    const btn = (m, t)=> `<button type="button" data-usort="${m}" class="nav-btn" style="padding:5px 9px;font-size:12px;${sortMode===m?'outline:2px solid var(--accent);':''}">${t}</button>`;
+    card.innerHTML = `
+      <div class="grid-label" style="margin-top:6px;">📊 Users Usage & Live</div>
+      <div class="pbrow" style="margin:6px 0;"><span>🟢 Abhi online: <b style="color:var(--accent);">${onN}</b> / ${rows.length} members</span><span style="opacity:.7;font-size:12px;">auto-refresh 20s</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${btn('online','🟢 Online')}${btn('total','⏱ Total')}${btn('today','📅 Aaj')}${btn('sessions','🔁 Baar')}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+      ${rows.map(r=>`
+        <div class="adminMemberCard" style="padding:8px 10px;">
+          <div class="adminMemberTop"><span>${r.online?'🟢':'⚪'} <b>${esc(r.name)}</b></span><span style="font-size:12px;opacity:.8;">${r.online?'Online abhi':ago(r.seen)}</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;margin-top:4px;opacity:.95;">
+            <span>🔁 ${r.s} baar</span><span>⏱ Total ${fmtMin(r.t)}</span><span>📅 Aaj ${fmtMin(r.td)}</span><span>🗓 7 din ${fmtMin(r.w)}</span>
+          </div>
+          ${r.has?'':'<div style="font-size:11.5px;opacity:.65;margin-top:3px;">Abhi tak data nahi — user ne update ke baad app nahi khola.</div>'}
+        </div>`).join('')}
+      </div>
+      <div class="losshint" style="padding-top:8px;">Minute sirf tab gine jate hain jab app screen par khula ho. Tracking is update ke baad se shuru hui hai. "Online" = pichhle ~100 sec mein active.</div>`;
+    card.querySelectorAll('[data-usort]').forEach(b=> b.addEventListener('click', ()=>{ sortMode = b.getAttribute('data-usort'); renderUsageCard(card); }));
+  }
+
+  let usageTimer = null;
+  function mountUsage(){
+    const bodyEl = document.getElementById('adminPanelBody'); if(!bodyEl) return;
+    if(!(typeof isMeAdmin==='function' && isMeAdmin())) return;
+    let card = document.getElementById('adminUsageCard');
+    if(!card){ card = document.createElement('div'); card.id = 'adminUsageCard'; card.style.cssText = 'margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.12);'; bodyEl.insertBefore(card, bodyEl.firstChild); }
+    renderUsageCard(card);
+    clearInterval(usageTimer);
+    usageTimer = setInterval(()=>{
+      const modal = document.getElementById('adminPanelModal');
+      const c = document.getElementById('adminUsageCard');
+      if(!modal || modal.style.display==='none' || !c){ clearInterval(usageTimer); return; }
+      renderUsageCard(c);
+    }, 20000);
+  }
+  const origRender = renderAdminPanelBody;
+  renderAdminPanelBody = async function(){ const r = await origRender.apply(this, arguments); try{ mountUsage(); }catch(e){} return r; };
 })();

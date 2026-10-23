@@ -3,7 +3,7 @@
 // Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
 // Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
 
-const CACHE_VERSION = 'v20261021-2330-' + Date.now();
+const CACHE_VERSION = 'v20261023-1700-' + Date.now();
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
 // Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,

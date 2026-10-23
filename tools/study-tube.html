@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="preconnect" href="https://www.googleapis.com" crossorigin><link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Studytube</title>
@@ -3351,7 +3352,8 @@ function exitPlayerModeFn(fromPopstate) {
     if (document.fullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
   } catch (e) {}
 }
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (ev) => {
+  if (window.__stvPop && window.__stvPop(ev)) return;
   if (suppressNextPopstate) { suppressNextPopstate = false; return; }
   if (playerMode) { exitPlayerModeFn(true); return; }
   // The device/browser "back" gesture used to exit the site entirely,
@@ -3375,7 +3377,7 @@ window.addEventListener('popstate', () => {
   }
   // else: nothing left to go back to at any level — let the back gesture actually exit.
 });
-try { history.pushState({ novaAppNav: true }, ''); } catch (e) {} // arm the very first back press
+if (window.top === window) { try { history.pushState({ novaAppNav: true }, ''); } catch (e) {} } // arm the very first back press (standalone only; embedded uses Study Tube's own history)
 // Browsers auto-suspend a tab's AudioContext when the app/tab goes to the
 // background (screen lock, app switch), and don't always resume it when
 // you come back — which silently kills audio on a boosted video tab.
@@ -6306,14 +6308,14 @@ function isCobaltSupportedUrl(u) {
   try { return COBALT_HOST_RE.test(new URL(u).hostname.replace(/^www\./, '')); }
   catch (e) { return false; }
 }
-async function resolveViaCobalt(pageUrl) {
+async function resolveViaCobalt(pageUrl, opts) {
   let lastErr = null;
   for (const base of COBALT_INSTANCES) {
     try {
       const resp = await fetchWithTimeout(base, {
         method: 'POST',
         headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: pageUrl, downloadMode: 'auto' })
+        body: JSON.stringify(Object.assign({ url: pageUrl, downloadMode: 'auto' }, opts || {}))
       }, 15000);
       if (!resp.ok) { lastErr = new Error('cobalt instance returned HTTP ' + resp.status); continue; }
       const data = await resp.json();
@@ -9110,6 +9112,36 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   const fr = m => /quota/i.test(m) ? 'Aaj ki YouTube limit khatam, kal try karo' : /key|forbidden|referer|403|api/i.test(m) ? 'Feed load nahi hua, thodi der baad try karo' : String(m).slice(0, 90);
   const left = () => lim ? lim * 60 - day.s : 1e9;
   let auto = rd('uv99:st:auto', true), opn = rd('uv99:st:open', true);
+  let an = rd('uv99:st:an', true), depth = 0, ign = 0, playPushed = false, lastList = [], wl = null;
+  let sTok = 0, tAuto = null, cap = 80;
+  let hist = rd('uv99:st:hist', []), mini = false, lpF = false, lpT = null, seen = rd('uv99:st:seen', {}), mp = rd('uv99:st:mp', { x: 0, y: 0 });
+  function mpApply() { if (!ov) return; ov.style.setProperty('--mx', mp.x + 'px'); ov.style.setProperty('--my', mp.y + 'px'); }
+  const newCnt = id => { const t = seen[id] != null ? seen[id] : (seen[id] = Date.now() - 2 * 864e5); return cache.v.filter(v => v.c === id && v.p > t && !(prog[v.id] && prog[v.id].d)).length; };
+  const EMB = window.top !== window;
+  function hAdd(v) { if (!v || !v.id) return; const c = chans.find(x => x.id === v.c); hist = hist.filter(x => x.id !== v.id); hist.unshift({ id: v.id, t: v.t, c: v.c, cn: (c && c.n) || v.cn || '', p: v.p || 0, d: v.d || 0, w: Date.now() }); hist = hist.slice(0, 300); wr('uv99:st:hist', hist); }
+  function subUI() { const b = $('stSb'), n = $('stSN'); if (!b || !cur) return; const c = chans.find(x => x.id === cur.c); if (n) n.textContent = c ? c.n : (cur.cn || ''); b.disabled = !cur.c; b.className = 'stv-sbtn' + (c ? ' on' : ''); b.textContent = c ? '\u2713 Subscribed' : '\uFF0B Subscribe'; b.dataset.arm = ''; }
+  function minimize() { if (!cur || !ov) return; if (playPushed) { playPushed = false; popS(); } mini = true; ov.classList.remove('stv-playing'); ov.classList.add('stv-mini'); ov.scrollTop = 0; render(); }
+  function expand() { if (!cur || !ov) return; mini = false; ov.classList.remove('stv-mini'); ov.classList.add('stv-playing'); if (!playPushed) { playPushed = true; pushS(); } ov.scrollTop = 0; }
+  function resetView() { if (!ov) return; st.q = ''; st.ch = ''; res = null; const q = $('stQ'); if (q) q.value = ''; const sh = $('stSh'); if (sh) sh.style.display = 'none'; ov.scrollTop = 0; const sc = $('stSc'); if (sc) sc.scrollTop = 0; render(); }
+  function toStart() { if (!ov) return; if (cur) { playPushed = false; stop(); } resetView(); }
+  const isPart = v => { const q = prog[v.id]; return !!(q && q.d && q.p > 20 && q.p < q.d - 20); };
+  function pushS() { try { history.pushState({ stv: 1 }, ''); depth++; } catch (e) {} }
+  function popS() { if (depth > 0) { ign++; depth--; try { history.back(); } catch (e) { ign--; } } }
+  function exitHost() { if (EMB) { try { parent.postMessage('uv-study-exit', '*'); } catch (e) {} } else { close(); mark('navHome'); } }
+  function goBack() { if (depth > 0) { try { history.back(); } catch (e) { exitHost(); } } else exitHost(); }
+  async function wake(on) { try { if (on) { if (!wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } else if (wl) { await wl.release(); wl = null; } } catch (e) { wl = null; } }
+  function tmShow() { const e = $('stTm'); if (!e) return; const m = Math.floor(day.s / 60); e.textContent = 'Aaj ' + (m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min') + (lim ? ' / ' + (lim >= 60 ? lim / 60 + 'h' : lim + 'm') : ''); }
+  window.__stvPop = function (e) {
+    if (!ov && depth === 0) return false;
+    if (ign > 0) { ign--; return true; }
+    if (depth <= 0) return false;
+    depth--;
+    const sh = $('stSh');
+    if (sh && sh.style.display === 'flex') { sh.style.display = 'none'; pushS(); return true; }
+    if (cur && !mini) { playPushed = false; minimize(); return true; }
+    if (cur) { playPushed = false; stop(); }
+    exitHost(); return true;
+  };
   const mark = id => document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.id === id));
   function fit() { const n = $('bottomNav'); if (!ov) return; ov.style.bottom = n && n.offsetHeight ? Math.max(0, window.innerHeight - n.getBoundingClientRect().top) + 'px' : '0px'; }
 
@@ -9160,7 +9192,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     wr('uv99:st:chans', chans); cache.t = 0;
   }
   async function deep() {
-    if (!st.ch || !st.q.trim() || loading) return; loading = true; render();
+    if (!st.ch || st.ch === '__r' || st.ch === '__h' || !st.q.trim() || loading) return; loading = true; render();
     try {
       const j = await api('search', { part: 'snippet', channelId: st.ch, q: st.q, type: 'video', maxResults: 15 });
       let n = (j.items || []).map(x => ({ id: x.id.videoId, t: dec(x.snippet.title), c: st.ch, p: Date.parse(x.snippet.publishedAt) || 0, x: 1 })).filter(x => !cache.v.some(o => o.id === x.id));
@@ -9179,7 +9211,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       const j = await api('videos', { part: 'snippet,contentDetails', id }), x = (j.items || [])[0];
       if (!x) throw new Error('Video not found');
       Object.assign(stub, { t: dec(x.snippet.title), c: x.snippet.channelId, cn: x.snippet.channelTitle, p: Date.parse(x.snippet.publishedAt) || 0, d: iso(x.contentDetails.duration) });
-      const pt = $('stPT'); if (pt && cur && cur.id === id) { pt.textContent = stub.t; const pm = $('stPM'); if (pm) pm.textContent = stub.cn; } render();
+      hAdd(stub); subUI(); const pt = $('stPT'); if (pt && cur && cur.id === id) { pt.textContent = stub.t; const pm = $('stPM'); if (pm) pm.textContent = stub.cn; } render();
     } catch (e) { toast(fr(e.message)); }
     return true;
   }
@@ -9195,18 +9227,22 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }
   const sCache = rd('uv99:st:sc', {}); setTimeout(() => { if (key) ytReady(); }, 3000);
   async function searchAll() {
-    const q = st.q.trim(); if (!q || loading) return;
-    const hit = sCache[q.toLowerCase()]; if (hit && Date.now() - hit.t < 6e5) { res = hit.r; render(); return; }
-    loading = true; res = []; render();
+    const q = st.q.trim(); if (!q) return;
+    const hit = sCache[q.toLowerCase()]; if (hit && Date.now() - hit.t < 216e5) { res = hit.r; cap = 80; render(); return; }
+    const tok = ++sTok; loading = true; res = []; cap = 80; render();
     try {
-      const j = await api('search', { part: 'snippet', q, type: 'video', maxResults: 20, safeSearch: 'strict' });
-      const raw = (j.items || []).map(x => ({ id: x.id.videoId, t: dec(x.snippet.title), c: x.snippet.channelId, cn: x.snippet.channelTitle, p: Date.parse(x.snippet.publishedAt) || 0, d: 0 }));
-      res = raw; render(); res = await withDur(raw);
-      sCache[q.toLowerCase()] = { t: Date.now(), r: res }; try { const ks = Object.keys(sCache).sort((a, b) => sCache[b].t - sCache[a].t); ks.slice(20).forEach(k => delete sCache[k]); wr('uv99:st:sc', sCache); } catch (e) {}
+      const j = await api('search', { part: 'snippet', q, type: 'video', maxResults: 15, safeSearch: 'strict', fields: 'items(id/videoId,snippet(title,publishedAt,channelId,channelTitle))' });
+      if (tok !== sTok) return;
+      const raw = (j.items || []).filter(x => x.id && x.id.videoId).map(x => ({ id: x.id.videoId, t: dec(x.snippet.title), c: x.snippet.channelId, cn: x.snippet.channelTitle, p: Date.parse(x.snippet.publishedAt) || 0, d: 0 }));
+      res = raw; loading = false; render();   /* show titles right away; durations (and Shorts filtering) fill in behind */
       const sq = rd('uv99:st:sq', { d: '', n: 0 }); if (sq.d !== today()) { sq.d = today(); sq.n = 0; } sq.n++; wr('uv99:st:sq', sq);
       if (sq.n >= 90) toast('Aaj ki search quota lagbhag khatam (' + sq.n + '/100)');
-    } catch (e) { res = null; toast(fr(e.message)); }
-    loading = false; render();
+      const full = await withDur(raw);
+      if (tok !== sTok) return;
+      res = full; render();
+      sCache[q.toLowerCase()] = { t: Date.now(), r: res }; try { const ks = Object.keys(sCache).sort((a, b) => sCache[b].t - sCache[a].t); ks.slice(20).forEach(k => delete sCache[k]); wr('uv99:st:sc', sCache); } catch (e) {}
+    } catch (e) { if (tok === sTok) { res = null; toast(fr(e.message)); } }
+    if (tok === sTok) { loading = false; render(); }
   }
 
   /* ---------- player ---------- */
@@ -9224,19 +9260,19 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     try { prog[cur.id] = { p: yt.getCurrentTime(), d: yt.getDuration(), t: Date.now() }; wr('uv99:st:prog', prog); } catch (e) {}
   }
   function onState(e) {
-    clearInterval(tick);
+    clearInterval(tick); wake(e.data === 1);
     if (e.data === 1) {
       try { if (yt.getPlaybackRate() !== rate) yt.setPlaybackRate(rate); } catch (x) {}
       tick = setInterval(() => {
-        save(); day.s += 5; wr('uv99:st:day', day);
+        save(); day.s += 5; wr('uv99:st:day', day); tmShow();
         if (left() <= 0) { try { yt.pauseVideo(); } catch (x) {} toast('Daily study limit reached. Break time!'); }
       }, 5000);
-    } else { save(); if (e.data === 0 && cur) { const d = yt.getDuration(); prog[cur.id] = { p: d, d, t: Date.now() }; wr('uv99:st:prog', prog); render(); } }
+    } else { save(); if (e.data === 0 && cur) { const d = yt.getDuration(); prog[cur.id] = { p: d, d, t: Date.now() }; wr('uv99:st:prog', prog); const i = lastList.findIndex(x => x.id === cur.id), nx = i >= 0 ? lastList[i + 1] : null; render(); if (an && nx && left() > 0) { toast('Next: ' + nx.t.slice(0, 40)); setTimeout(() => { if (ov) play(nx.id); }, 1200); } } }
   }
   function onErr() { const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
   async function play(id) {
     if (left() <= 0) return toast('Daily study limit reached');
-    const v = cache.v.concat(res || []).find(x => x.id === id); if (!v) return; cur = v;
+    const v = cache.v.concat(res || [], hist).find(x => x.id === id); if (!v) return; cur = v; hAdd(v);
     const c = chans.find(x => x.id === v.c) || {};
     $('stP').style.display = 'block'; $('stPT').textContent = v.t; $('stPM').textContent = (c.n || v.cn || '') + ' \u00b7 ' + ago(v.p);
     const er = ov.querySelector('.stv-er'); if (er) er.remove();
@@ -9246,14 +9282,49 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     else yt = new YT.Player('stYT', { host: 'https://www.youtube-nocookie.com', width: '100%', height: '100%', videoId: id,
       playerVars: { rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, autoplay: 1, start, fs: 1 },
       events: { onReady: e => { try { e.target.setPlaybackRate(rate); } catch (x) {} }, onStateChange: onState, onError: onErr } });
-    $('stSc').scrollTop = 0; render();
+    if (!playPushed) { playPushed = true; pushS(); }
+    mini = false; ov.classList.remove('stv-mini'); ov.classList.add('stv-playing'); ov.scrollTop = 0; $('stSc').scrollTop = 0; render(); tmShow(); subUI();
   }
   function stop() {
-    clearInterval(tick); save(); try { yt && yt.destroy(); } catch (e) {} yt = null; cur = null;
+    clearInterval(tick); save(); wake(false); try { yt && yt.destroy(); } catch (e) {} yt = null; cur = null;
+    if (playPushed) { playPushed = false; popS(); } mini = false; if (ov) { ov.classList.remove('stv-playing'); ov.classList.remove('stv-mini'); }
     const p = $('stP'); if (p) { p.style.display = 'none'; p.querySelector('.stv-vw').innerHTML = '<div id="stYT"></div>'; }
   }
+  function dlMenu(btn) {
+    const old = document.getElementById('stDlMenu'); if (old) { old.remove(); return; }
+    const m = document.createElement('div'); m.id = 'stDlMenu';
+    m.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:99999;background:#1f1f2b;border:1px solid #3b3b55;border-radius:16px;padding:10px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:inherit';
+    const opts = [['\u2B06\uFE0F Best quality', {}, 'mp4'], ['1080p', { videoQuality: '1080' }, 'mp4'], ['720p (HD)', { videoQuality: '720' }, 'mp4'], ['480p', { videoQuality: '480' }, 'mp4'], ['360p (kam data)', { videoQuality: '360' }, 'mp4'], ['\uD83C\uDFB5 Sirf Audio (MP3)', { downloadMode: 'audio', audioFormat: 'mp3' }, 'mp3']];
+    m.innerHTML = '<div style="grid-column:1/3;color:#bbb;font-size:12px;padding:2px 4px">Download quality chuno</div>' + opts.map((o, k) => '<button data-k="' + k + '" style="border:none;border-radius:10px;background:#2c2c44;color:#fff;padding:12px 8px;font-size:14px;font-weight:600">' + o[0] + '</button>').join('') + '<button data-k="x" style="grid-column:1/3;border:none;border-radius:10px;background:#3a1d1d;color:#ff8a8a;padding:10px;font-size:13px">Cancel</button>';
+    m.addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; e.stopPropagation(); m.remove(); if (t.dataset.k !== 'x') { const o = opts[+t.dataset.k]; dlCur(btn, o[1], o[2]); } });
+    document.body.appendChild(m);
+  }
+  async function dlCur(btn, copts, ext) {
+    const v = cur; if (!v) return toast('Pehle koi video chalao');
+    if (btn.dataset.busy === '1') { try { btn._ac && btn._ac.abort(); } catch (e) {} return; }
+    if (!copts) return dlMenu(btn);
+    const ac = new AbortController(); btn._ac = ac;
+    btn.dataset.busy = '1'; const orig = btn.innerHTML; const set = t => { btn.textContent = '\u2715 ' + t; };
+    const name = ((v.t || 'video').replace(/[\\/:*?"<>|\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'video') + '.' + (ext || 'mp4');
+    const save = (href) => { const a = document.createElement('a'); a.href = href; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); };
+    try {
+      set('Link nikal raha hai…');
+      let r; try { r = await resolveViaCobalt('https://www.youtube.com/watch?v=' + v.id, copts); }
+      catch (e) { if (Object.keys(copts).length) { set('Best quality try…'); r = await resolveViaCobalt('https://www.youtube.com/watch?v=' + v.id); } else throw e; }
+      if (!r || !r.url) throw new Error('Link nahi mila');
+      try {
+        set('0%');
+        const blob = await downloadVideoBlob(r.url, ac.signal, p => set(Math.round(p) + '%'), s => set(String(s).slice(0, 18)));
+        if (ac.signal.aborted) throw new Error('__cancel__');
+        if (!blob || blob.size < 20000) throw new Error('bad blob');
+        const u = URL.createObjectURL(blob); save(u); setTimeout(() => URL.revokeObjectURL(u), 30000);
+      } catch (e) { if (ac.signal.aborted) throw new Error('Cancel kiya'); save(r.url); }
+      toast('\u2705 Download shuru: Downloads folder mein dekho');
+    } catch (e) { toast((e && e.message === 'Cancel kiya') ? 'Download cancel' : 'Download fail: ' + ((e && e.message) || 'link resolve nahi hua') + '. Thodi der baad try karo.'); }
+    btn.dataset.busy = '0'; btn.innerHTML = orig; btn._ac = null;
+  }
   function spd() {
-    $('stSp').innerHTML = [1, 1.25, 1.5, 1.75, 2].map(r => '<button class="stv-sp' + (r === rate ? ' on' : '') + '" data-r="' + r + '">' + r + 'x</button>').join('');
+    $('stSp').innerHTML = '<button class="stv-sp" data-sp="-">\u2212</button><button class="stv-sp on" data-sp="0" title="Speed (0.25x steps, max 4x)">' + rate + 'x</button><button class="stv-sp" data-sp="+">+</button>' + [1, 1.5, 2].map(r => '<button class="stv-sp' + (r === rate ? ' on' : '') + '" data-r="' + r + '">' + r + 'x</button>').join('') + '<button class="stv-sp' + (an ? ' on' : '') + '" data-an="1" title="Video khatam hone par agla video">&#9197; Auto</button>';
   }
 
   /* ---------- UI ---------- */
@@ -9306,15 +9377,15 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   function render() {
     const L = $('stL'), C = $('stCh'); if (!L) return;
     const cm = {}; chans.forEach(c => { cm[c.id] = c; });
-    C.innerHTML = chans.length ? '<button class="stv-ch' + (st.ch ? '' : ' on') + '" data-c="">All</button>' + chans.map(c => '<button class="stv-ch' + (st.ch === c.id ? ' on' : '') + '" data-c="' + c.id + '">' + esc(c.n) + '</button>').join('') : '';
+    C.innerHTML = chans.length ? '<button class="stv-ch' + (st.ch ? '' : ' on') + '" data-c="">All</button><button class="stv-ch' + (st.ch === '__r' ? ' on' : '') + '" data-c="__r">&#9654; Resume</button><button class="stv-ch' + (st.ch === '__h' ? ' on' : '') + '" data-c="__h">&#128344; History</button>' + chans.map(c => '<button class="stv-ch' + (st.ch === c.id ? ' on' : '') + '" data-c="' + c.id + '">' + esc(c.n) + (st.ch !== c.id && newCnt(c.id) ? ' <i class="stv-nb">' + newCnt(c.id) + '</i>' : '') + '</button>').join('') : '';
     if (!key || !chans.length) { L.innerHTML = '<div class="stv-em">Apne study channels add karo (upar &#9881; dabao). Sirf wahi channels dikhenge: no Shorts, no home feed, no comments.</div>'; return; }
     if (left() <= 0) { L.innerHTML = '<div class="stv-em">Daily study limit reached. Take a break; it resets tomorrow (change it in settings).</div>'; return; }
     const q = st.q.trim().toLowerCase();
-    const vs = res !== null ? res : cache.v.filter(v => (!st.ch || v.c === st.ch) && cm[v.c] && (!q || (v.t + ' ' + cm[v.c].n + ' ' + (cm[v.c].tag || '')).toLowerCase().includes(q)));
+    const vs = st.ch === '__h' ? hist.filter(v => !q || (v.t + ' ' + (v.cn || '')).toLowerCase().includes(q)) : st.ch === '__r' ? hist.filter(isPart).filter(v => !q || v.t.toLowerCase().includes(q)) : res !== null ? res : cache.v.filter(v => (!st.ch || (st.ch === '__r' ? isPart(v) : v.c === st.ch)) && cm[v.c] && (!q || (v.t + ' ' + cm[v.c].n + ' ' + (cm[v.c].tag || '')).toLowerCase().includes(q)));
     let h = (res !== null ? '<div class="stv-em" style="padding:10px 14px;text-align:left">Poore YouTube ke results <button class="stv-sp" data-back="1" style="margin-left:8px">Study feed par wapas</button></div>' : '') + (res === null && opn && q && !loading ? '<button class="stv-dp" data-all="1">\uD83D\uDD0E "' + esc(st.q) + '" poore YouTube par search karo</button>' : '') + (loading ? '<div class="stv-sk"></div><div class="stv-sk"></div>' : '');
-    h += vs.map(v => card(v, cm)).join('');
+    lastList = vs; if (st.ch === '__h' && vs.length) h += '<button class="stv-dp" data-clh="1">Clear history</button>'; h += vs.slice(0, cap).map(v => card(v, cm)).join(''); if (vs.length > cap) h += '<button class="stv-dp" data-more="1">Aur dikhao (' + (vs.length - cap) + ')</button>';
     if (!vs.length && !loading) h += '<div class="stv-em">No videos' + (q ? ' match "' + esc(st.q) + '"' : ' yet. Tap refresh') + '.</div>';
-    if (res === null && q && !loading) h += st.ch ? '<button class="stv-dp" data-deep="1">Search "' + esc(st.q) + '" on YouTube in this channel only</button>' : '<div class="stv-em" style="padding:8px">Pick a channel chip to search deeper in that channel.</div>';
+    if (res === null && q && !loading) h += (st.ch && st.ch !== '__r' && st.ch !== '__h') ? '<button class="stv-dp" data-deep="1">Search "' + esc(st.q) + '" on YouTube in this channel only</button>' : '<div class="stv-em" style="padding:8px">Pick a channel chip to search deeper in that channel.</div>';
     L.innerHTML = h;
   }
   function sheet() {
@@ -9325,24 +9396,54 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       [[0, 'Off'], [30, '30 min'], [60, '1 hour'], [90, '90 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours']].map(o => '<option value="' + o[0] + '"' + (o[0] === lim ? ' selected' : '') + '>' + o[1] + '</option>').join('') +
       '</select><label style="display:flex;gap:8px;align-items:center"><input id="stAu" type="checkbox" style="width:auto;margin:0"' + (auto ? ' checked' : '') + '> Open Study Tube when the app starts</label><label style="display:flex;gap:8px;align-items:center"><input id="stOp" type="checkbox" style="width:auto;margin:0"' + (opn ? ' checked' : '') + '> Open search: koi bhi YouTube video search kar sako</label><div class="stv-act"><button id="stSv">Save &amp; refresh</button><button id="stCx">Close</button></div></div>';
   }
-  function close() { stop(); if (ov) { ov.remove(); ov = null; } }
+  function close() { stop(); if (ov) { ov.remove(); ov = null; } while (depth > 0) popS(); }
   function open() {
     if (ov) return;
     ov = document.createElement('div'); ov.id = 'stOv';
-    ov.innerHTML = '<div class="stv-hd"><button class="stv-ib" id="stX" aria-label="Close">&#10005;</button><span class="stv-lg">&#9654;</span><h2>Study Tube</h2><button class="stv-ib" id="stS" aria-label="Settings">&#9881;</button></div>' +
-      '<div class="stv-pl" id="stP"><div class="stv-vw"><div id="stYT"></div></div><div class="stv-pm"><div class="stv-pt" id="stPT"></div><div class="stv-pmeta" id="stPM"></div><div class="stv-pr"><span id="stSp" style="display:contents"></span><button class="stv-cl" id="stCl">Close player</button></div></div></div>' +
-      '<div class="stv-sc" id="stSc"><div class="stv-bar"><div class="stv-q"><span>&#128269;</span><input id="stQ" type="search" placeholder="Search ya koi bhi link paste karo" autocomplete="off" autocapitalize="off" spellcheck="false"></div><button class="stv-ib" id="stR" aria-label="Refresh">&#8635;</button></div><div class="stv-chips" id="stCh"></div><div id="stL"></div></div><div class="stv-sh" id="stSh"></div>';
-    document.body.appendChild(ov); fit(); $('stX').style.display = 'none'; mark('navStudy'); ytReady();
+    ov.innerHTML = '<div class="stv-hd"><button class="stv-ib" id="stBk" aria-label="Back">&#8592;</button><button class="stv-ib" id="stX" aria-label="Close">&#10005;</button><span class="stv-lg">&#9654;</span><h2>Study Tube<small id="stTm"></small></h2><button class="stv-add2" id="stAdd">&#65291; Channel</button><button class="stv-ib" id="stS" aria-label="Settings">&#9881;</button></div>' +
+      '<div class="stv-pl" id="stP"><div class="stv-vw"><div id="stYT"></div></div><div class="stv-pm"><div class="stv-pt" id="stPT"></div><div class="stv-pmeta" id="stPM"></div><div class="stv-sr"><span id="stSN"></span><button class="stv-sbtn" id="stSb">&#65291; Subscribe</button></div><div class="stv-pr"><span id="stSp" style="display:contents"></span><button class="stv-sp" id="stDl" title="Video download karo (device mein save)">&#11015;&#65039; Download</button><button class="stv-cl" id="stCl">Close player</button></div></div></div>' +
+      '<div class="stv-sc" id="stSc"><div class="stv-bar"><div class="stv-q"><span>&#128269;</span><input id="stQ" type="search" placeholder="Search ya koi bhi link paste karo" autocomplete="off" autocapitalize="off" spellcheck="false"></div><button class="stv-ib" id="stR" aria-label="Refresh">&#8635;</button></div><div class="stv-chips" id="stCh"></div><div id="stL"></div></div><div class="stv-mc" id="stMc"><div class="stv-md" id="stMd" title="Drag">&#10303;</div><button id="stMx" aria-label="Expand">&#10530;</button><button id="stMp" aria-label="Play/Pause">&#9199;</button><button id="stMk" aria-label="Close">&#10005;</button></div><div class="stv-sh" id="stSh"></div>';
+    document.body.appendChild(ov); fit(); $('stX').style.display = 'none'; mark('navStudy'); ytReady(); if (depth === 0) pushS(); tmShow(); mpApply();
+    /* long-press a History card -> remove it */
+    const lpCancel = () => { clearTimeout(lpT); lpT = null; };
+    ov.addEventListener('pointerdown', e => { const c = e.target.closest && e.target.closest('.stv-c'); if (!c || st.ch !== '__h') return; lpCancel(); lpT = setTimeout(() => { lpT = null; lpF = true; const id = c.dataset.i; hist = hist.filter(x => x.id !== id); wr('uv99:st:hist', hist); try { navigator.vibrate && navigator.vibrate(30); } catch (x) {} render(); toast('History se hata diya'); setTimeout(() => { lpF = false; }, 700); }, 650); });
+    ['pointerup', 'pointercancel', 'pointermove'].forEach(n => ov.addEventListener(n, e => { if (n === 'pointermove' && Math.abs(e.movementX) + Math.abs(e.movementY) < 3) return; lpCancel(); }));
+    ov.addEventListener('contextmenu', e => { if (st.ch === '__h' && e.target.closest('.stv-c')) e.preventDefault(); });
+    /* mini player: drag by the handle, pull down to dismiss */
+    (function () {
+      const h = $('stMd'); let sx = 0, sy = 0, ox = 0, oy = 0, on = false;
+      h.addEventListener('pointerdown', e => { on = true; sx = e.clientX; sy = e.clientY; ox = mp.x; oy = mp.y; try { h.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); });
+      h.addEventListener('pointermove', e => { if (!on) return; const minX = -(ov.clientWidth - 260), minY = -(ov.clientHeight - 260); mp.x = Math.min(0, Math.max(minX, ox + e.clientX - sx)); mp.y = Math.min(110, Math.max(minY, oy + e.clientY - sy)); mpApply(); });
+      const end = () => { if (!on) return; on = false; if (mp.y > 60) { mp.y = 0; mpApply(); stop(); render(); return; } mp.y = Math.min(0, mp.y); mpApply(); wr('uv99:st:mp', mp); };
+      h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+    })();
     ov.addEventListener('keydown', e => e.stopPropagation()); ov.addEventListener('keyup', e => e.stopPropagation());
     ov.addEventListener('click', async e => {
+      if (lpF) { lpF = false; return; }
       const t = e.target, b = t.closest('button'), c = t.closest('.stv-c');
-      if (t.id === 'stSh') { t.style.display = 'none'; return; }
+      if (t.id === 'stSh') { t.style.display = 'none'; popS(); return; }
       if (!b && c) return play(c.dataset.i);
       if (!b) return;
-      if (b.id === 'stX') close(); else if (b.id === 'stS') sheet(); else if (b.id === 'stR') refresh(true);
+      if (b.id === 'stX') close(); else if (b.id === 'stBk') goBack(); else if (b.id === 'stAdd') { sheet(); pushS(); setTimeout(() => { const a = $('stA'); if (a) a.focus(); }, 80); }
+      else if (b.id === 'stMx') expand(); else if (b.id === 'stMk') { stop(); render(); } else if (b.id === 'stMp') { try { yt.getPlayerState() === 1 ? yt.pauseVideo() : yt.playVideo(); } catch (x) {} }
+      else if (b.id === 'stSb') {
+        const v = cur; if (!v || !v.c) { toast('Channel abhi load ho raha hai'); return; }
+        const i = chans.findIndex(x => x.id === v.c);
+        if (i >= 0) { if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Unsubscribe?'; setTimeout(() => { if (b.dataset.arm === '1') subUI(); }, 3000); return; } chans.splice(i, 1); wr('uv99:st:chans', chans); cache.t = 0; subUI(); render(); toast('Unsubscribed'); }
+        else { b.textContent = '...'; try { await addChan(v.c, ''); toast('Subscribed: channel add ho gaya'); } catch (x) { toast(fr(x.message)); } subUI(); render(); refresh(true); }
+      } else if (b.id === 'stS') { sheet(); pushS(); } else if (b.id === 'stR') refresh(true);
+      else if (b.id === 'stDl') dlCur(b);
       else if (b.id === 'stCl') stop(), render();
-      else if (b.id === 'stCx') $('stSh').style.display = 'none';
-      else if (b.dataset.c !== undefined && b.classList.contains('stv-ch')) { st.ch = b.dataset.c; res = null; render(); }
+      else if (b.id === 'stCx') { $('stSh').style.display = 'none'; popS(); }
+      else if (b.dataset.c !== undefined && b.classList.contains('stv-ch')) { st.ch = b.dataset.c; res = null; cap = 80; if (seen[st.ch] != null || chans.some(x => x.id === st.ch)) { seen[st.ch] = Date.now(); wr('uv99:st:seen', seen); } render(); }
+      else if (b.dataset.more) { cap += 80; render(); }
+      else if (b.dataset.clh) { hist = []; wr('uv99:st:hist', hist); render(); toast('History clear'); }
+      else if (b.dataset.an) { an = !an; wr('uv99:st:an', an); spd(); toast(an ? 'Auto-next ON' : 'Auto-next OFF'); }
+      else if (b.dataset.sp) {
+        const n = b.dataset.sp === '+' ? rate + 0.25 : b.dataset.sp === '-' ? rate - 0.25 : 1; const want = Math.min(4, Math.max(0.25, Math.round(n * 4) / 4));
+        rate = want; wr('uv99:st:rate', rate); try { yt && yt.setPlaybackRate(rate); } catch (x) {} spd();
+        setTimeout(() => { try { const a = yt && yt.getPlaybackRate && yt.getPlaybackRate(); if (a && Math.abs(a - want) > 0.01) { rate = a; wr('uv99:st:rate', rate); spd(); toast('YouTube embed ' + a + 'x se upar speed nahi deta'); } } catch (x) {} }, 450);
+      }
       else if (b.dataset.r) { rate = +b.dataset.r; wr('uv99:st:rate', rate); try { yt && yt.setPlaybackRate(rate); } catch (x) {} spd(); }
       else if (b.dataset.deep) deep(); else if (b.dataset.all) searchAll(); else if (b.dataset.back) { res = null; render(); }
       else if (b.dataset.rm) { chans.splice(+b.dataset.rm, 1); wr('uv99:st:chans', chans); cache.t = 0; sheet(); }
@@ -9351,20 +9452,21 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
         try { await addChan($('stA').value, $('stT').value); sheet(); toast('Channel added'); } catch (x) { b.textContent = 'Add'; toast(fr(x.message)); }
       } else if (b.id === 'stSv') {
         lim = +$('stLm').value; auto = $('stAu').checked; opn = $('stOp').checked; wr('uv99:st:open', opn); wr('uv99:st:lim', lim); wr('uv99:st:auto', auto);
-        $('stSh').style.display = 'none'; cache.t = 0; refresh(true);
+        $('stSh').style.display = 'none'; popS(); cache.t = 0; refresh(true); tmShow();
       }
     });
-    let tm; $('stQ').addEventListener('input', e => { clearTimeout(tm); tm = setTimeout(() => { if (isUrl(e.target.value.trim()) && !loading) { smart(e.target.value.trim()); return; } st.q = e.target.value; if (!st.q.trim()) res = null; render(); }, 120); });
+    let tm; $('stQ').addEventListener('input', e => { clearTimeout(tm); tm = setTimeout(() => { if (isUrl(e.target.value.trim()) && !loading) { smart(e.target.value.trim()); return; } st.q = e.target.value; cap = 80; if (!st.q.trim()) { res = null; ++sTok; loading = false; } render(); clearTimeout(tAuto); const q0 = st.q.trim(); if (opn && q0.length >= 3 && res === null && !lastList.length && !isUrl(q0)) tAuto = setTimeout(() => { if (st.q.trim() === q0 && res === null) searchAll(); }, 500); }, 120); });
     $('stQ').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (isUrl(v)) smart(v); else if (opn) searchAll(); } });
     render(); if (key && chans.length) refresh(false);
   }
   window.addEventListener('keydown', e => {
     if (!ov) return;
-    if (e.key === 'Escape') { const sh = $('stSh'); if (sh && sh.style.display === 'flex') sh.style.display = 'none'; else if (cur) { stop(); render(); } else { close(); mark('navHome'); } e.stopImmediatePropagation(); return; }
+    if (e.key === 'Escape') { const sh = $('stSh'); if (sh && sh.style.display === 'flex') sh.style.display = 'none'; else if (cur) { stop(); render(); } else { goBack(); } e.stopImmediatePropagation(); return; }
     if (!/INPUT|SELECT|TEXTAREA/.test((e.target.tagName || ''))) e.stopImmediatePropagation();
   }, true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   window.uvOpenStudy = open;
+  window.addEventListener('message', e => { if (e.data === 'uv-study-enter') { if (!ov) open(); else { toStart(); if (depth === 0) pushS(); } } else if (e.data === 'uv-study-back') goBack(); });
 
   /* entry button on the YouTube-style home feed (re-ensured whenever the feed refreshes) */
   function ensureBtn() {
@@ -9379,7 +9481,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   const nav = $('bottomNav');
   if (nav && !$('navStudy')) {
     const b = document.createElement('button'); b.className = 'nav-item'; b.id = 'navStudy'; b.innerHTML = '<span class="nav-icon">&#128218;</span>Study';
-    b.addEventListener('click', () => { if (ov) { mark('navStudy'); return; } open(); });
+    b.addEventListener('click', () => { if (ov) { mark('navStudy'); if (cur && !mini) minimize(); resetView(); return; } open(); });
     nav.insertBefore(b, nav.firstChild);
     nav.querySelectorAll('.nav-item').forEach(x => { if (x.id !== 'navStudy') x.addEventListener('click', () => { if (ov) close(); }); });
   }
@@ -9667,6 +9769,79 @@ if(e.data!=='uv-study-stop')return;
 try{document.querySelectorAll('video,audio').forEach(function(v){try{v.pause()}catch(x){}})}catch(x){}
 try{document.querySelectorAll('iframe').forEach(function(f){if(f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'*')})}catch(x){}
 });
+})();
+</script>
+<style id="stv-v2">
+/* Study Tube v2 — scroll fix, sticky video, tabs, polish */
+#stOv{overscroll-behavior:contain}
+#stOv .stv-hd{padding-top:calc(8px + env(safe-area-inset-top,0px))}
+#stOv{padding-top:0!important}
+.stv-hd h2{display:flex;flex-direction:column;line-height:1.15}
+.stv-hd h2 small{font-size:11px;font-weight:500;color:#8f8f8f;margin-top:1px}
+#stBk{flex:0 0 auto;font-size:20px;background:#272727}
+#stBk:active,.stv-ib:active{background:#3a3a3a}
+.stv-lg{display:none}
+#stOv.stv-playing{display:block;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#stOv.stv-playing #stP{display:contents!important}
+#stOv.stv-playing .stv-vw{position:sticky;top:0;z-index:6;max-height:44vh;box-shadow:0 6px 14px rgba(0,0,0,.55)}
+#stOv.stv-playing.stv-cine-on .stv-vw,#stOv.stv-playing:has(#stP.stv-cine) .stv-vw{max-height:62vh}
+#stOv.stv-playing #stSc{overflow:visible;flex:none;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+#stOv:not(.stv-playing) #stSc{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+.stv-sh{position:fixed!important;z-index:20}
+@media (orientation:landscape){#stOv.stv-playing .stv-vw{max-height:78vh}}
+.stv-pm{border-bottom:1px solid #222}
+.stv-pr{gap:7px}
+.stv-sp[data-an]{margin-left:2px}
+.stt{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.stt::-webkit-scrollbar{display:none}
+.stt button{flex:1 0 auto;background:#1c1f33;color:#cfd3ee;border:1px solid #2b3050;border-radius:14px;padding:10px 12px;font-size:13.5px;font-weight:600}
+.stt button.on{background:linear-gradient(135deg,#7c6cff,#ff5c8a);color:#fff;border-color:transparent}
+.stfx,.stnt,.sttl{display:none}
+.stv-pm[data-tab=stfx] .stfx,.stv-pm[data-tab=stnt] .stnt,.stv-pm[data-tab=sttl] .sttl{display:block}
+.stv-c:active{opacity:.85}
+.stv-th img{transition:opacity .25s}
+.stv-ch{white-space:nowrap}
+#stOv .stv-sc{scroll-behavior:smooth}
+.stv-add2{flex:0 0 auto;border:none;border-radius:18px;background:#272727;color:#fff;font-size:13px;font-weight:700;padding:10px 13px;white-space:nowrap}
+.stv-add2:active{background:#3a3a3a}
+.stv-sr{display:flex;align-items:center;gap:10px;margin-top:9px}
+.stv-sr span{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stv-sbtn{flex:0 0 auto;border:none;border-radius:18px;background:#f1f1f1;color:#0f0f0f;font-size:13.5px;font-weight:700;padding:9px 15px}
+.stv-sbtn.on{background:#272727;color:#f1f1f1}
+.stv-sbtn:disabled{opacity:.5}
+.stv-mc{display:none}
+#stOv.stv-mini #stP{display:contents!important}
+#stOv.stv-mini .stv-pm{display:none}
+#stOv.stv-mini .stv-vw{position:absolute;right:10px;bottom:12px;width:240px;max-width:62vw;max-height:none;z-index:30;border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(0,0,0,.7);border:1px solid #333}
+#stOv.stv-mini .stv-mc{display:flex;position:absolute;right:10px;bottom:calc(12px + min(62vw,240px)*9/16 + 6px);z-index:31;gap:6px}
+.stv-nb{display:inline-block;min-width:16px;padding:1px 5px;margin-left:4px;border-radius:9px;background:#ff0033;color:#fff;font-size:11px;font-style:normal;font-weight:700;text-align:center}
+.stv-md{width:38px;height:38px;border-radius:50%;background:rgba(40,40,40,.95);color:#bbb;font-size:18px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+#stOv.stv-mini .stv-vw,#stOv.stv-mini .stv-mc{transform:translate(var(--mx,0px),var(--my,0px))}
+.stv-c{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.stv-mc button{width:38px;height:38px;border-radius:50%;border:none;background:rgba(40,40,40,.95);color:#fff;font-size:16px}
+#stOv.stv-mini #stSc{padding-bottom:calc(200px + env(safe-area-inset-bottom,0px))}
+</style>
+<script>
+(function(){
+/* group Effects / Notes / Repeat+Sleep panels into tabs (default collapsed so the video list stays visible) */
+function org(){
+  var P=document.getElementById('stP');if(!P)return;
+  var pm=P.querySelector('.stv-pm');if(!pm||pm.querySelector('.stt'))return;
+  if(!(pm.querySelector('.stfx')&&pm.querySelector('.stnt')&&pm.querySelector('.sttl')))return;
+  var bar=document.createElement('div');bar.className='stt';
+  bar.innerHTML='<button data-w="stfx">&#127912; Effects</button><button data-w="stnt">&#128221; Notes</button><button data-w="sttl">&#128257; Repeat &middot; Sleep</button>';
+  var pr=pm.querySelector('.stv-pr');pr.parentNode.insertBefore(bar,pr.nextSibling);
+  pm.setAttribute('data-tab','');
+  bar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+    var w=b.dataset.w,on=pm.getAttribute('data-tab')===w;
+    pm.setAttribute('data-tab',on?'':w);
+    bar.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',!on&&x===b)});
+    if(!on){setTimeout(function(){try{pm.querySelector('.'+w).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},60)}
+  });
+}
+new MutationObserver(org).observe(document.body,{childList:true,subtree:true});
+setInterval(org,1500);
+/* host (CGLY app) asks us to re-arm back handling each time the page is opened */
 })();
 </script>
 </body>
