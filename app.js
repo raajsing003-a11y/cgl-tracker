@@ -21229,6 +21229,41 @@ if('serviceWorker' in navigator){
 })();
 
 
+// ===== Study Tube: Admin ki setting/channels => room ke sabhi members ke liye =====
+// tools/study-tube.html (Study Desk ke andar ya alag frame me) st-global-get / st-global-save
+// bhejta hai. Data Firebase me: rooms/<room>/_studyTubeDefault. Sirf room Admin save kar sakta hai.
+(function initStudyTubeGlobalBridge(){
+  const stPath = ()=>{ const c = getRoomCode(); return c ? ('rooms/'+c+'/_studyTubeDefault') : null; };
+  const stAdmin = ()=> !!(getRoomCode() && isMeAdmin());
+  const fromMyFrame = (w)=>{ try{ return Array.prototype.some.call(document.querySelectorAll('iframe'), f=>f.contentWindow===w); }catch(e){ return false; } };
+  async function stSendGlobal(w){
+    try{ w.postMessage({type:'st-role', admin: stAdmin()}, '*'); }catch(e){}
+    const p = stPath(); if(!p) return;
+    try{
+      const raw = await window.__fbGet(p); if(!raw) return;
+      const D = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+      if(D && D.d && D.v) w.postMessage({type:'st-global', data:D}, '*');
+    }catch(e){}
+  }
+  async function stSaveGlobal(w, D, silent){
+    const ack = (ok, msg)=>{ try{ w.postMessage({type:'st-global-ack', ok:ok, msg:msg, v:(D&&D.v)||0, silent:!!silent}, '*'); }catch(e){} };
+    const p = stPath();
+    if(!p) return ack(false, 'Sync Room me join nahi ho — sabke liye setting sirf room ke members ko mil sakti hai.');
+    if(!stAdmin()) return ack(false, 'Sirf room Admin hi sabke liye Study Tube setting set kar sakta hai.');
+    if(!D || !D.d || !D.v || !Array.isArray(D.d.chans)) return ack(false, 'Data galat hai.');
+    try{ await window.__fbSet(p, JSON.stringify(D)); ack(true, '✅ Study Tube setting sabhi members ke liye set ho gayi.'); }
+    catch(e){ ack(false, 'Firebase save fail hua — internet check karo.'); }
+  }
+  window.addEventListener('message', function(ev){
+    const m = ev.data || {};
+    if(m.type !== 'st-global-get' && m.type !== 'st-global-save') return;
+    if(!ev.source || !fromMyFrame(ev.source)) return;
+    if(m.type === 'st-global-get') stSendGlobal(ev.source);
+    else stSaveGlobal(ev.source, m.data, m.silent);
+  });
+})();
+
+
 // ===== Cache Clean + Refresh shortcut =====
 // Service worker unregister + saare Cache Storage delete + hard reload.
 // localStorage / progress / login ko TOUCH NAHI karta.
