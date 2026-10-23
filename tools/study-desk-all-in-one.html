@@ -103,6 +103,7 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
     <button data-v="pdf">📄 PDF</button>
     <button data-v="tube">▶ Videos</button>
     <button data-v="split">◫ PDF + Video</button>
+    <button data-v="gem" title="PDF ke saath Gemini popup (right half)">🤖 PDF + Gemini</button>
     <button data-v="tools">🧰 Tools</button>
   </div>
   <div class="sp"></div>
@@ -208,7 +209,7 @@ var studioPending=null, studioReady=false;
 window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-studio-ready'){ studioReady=true; if(studioPending){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:studioPending},'*'); }catch(x){} studioPending=null; } } });
 
 $('#tSplit').onclick=function(){ setView(view==='ptool'?'tool':'ptool'); };
-$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setView(b.dataset.v); });
+$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b){ if(b.dataset.v==='gem'){ openGemSide(); return; } setView(b.dataset.v); } });
 
 /* ---- divider ---- */
 (function(){
@@ -345,6 +346,19 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
     var w=window.open(gu.value.trim()||'https://gemini.google.com/app','sd_gemini'); try{ if(w) w.focus(); }catch(e){}
   };
 })();
+
+/* ---- PDF + Gemini popup (right half) ---- */
+var gemWin=null;
+function openGemSide(){
+  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} return; }
+  var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.availWidth||screen.width, sh=screen.availHeight||screen.height, w=Math.round(sw/2), url='https://gemini.google.com/app';
+  try{ url=localStorage.getItem('sd:gemurl')||url; }catch(e){}
+  gemWin=window.open(url,'sd_gemini_side','popup=yes,width='+w+',height='+sh+',left='+(sl+w)+',top='+st);
+  if(!gemWin){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return; }
+  try{ window.moveTo(sl,st); window.resizeTo(w,sh); }catch(e){}
+  setView('pdf');
+  toast('Gemini right side khul gaya. Pehli baar login kar lo, Chrome yaad rakhega');
+}
 /* ---- zen mode ---- */
 function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
 $('#zbtn').onclick=function(){ zen(true); toast('Zen mode: bahar aane ke liye ⤢ ya Alt+Z'); }; $('#zx').onclick=function(){ zen(false); };

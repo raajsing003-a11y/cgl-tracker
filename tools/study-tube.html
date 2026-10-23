@@ -8522,7 +8522,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }
   label(document);
   let pend = 0;
-  new MutationObserver(() => { if (pend) return; pend = requestAnimationFrame(() => { pend = 0; label(document); }); }).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(() => { if (pend) return; pend = setTimeout(() => { pend = 0; label(document); }, 700); }).observe(document.body, { childList: true, subtree: true });
 
   // Enter / Space on a focused folder row = tap its title area (same as touch), but not when the heart/delete button has focus
   document.addEventListener('keydown', e => {
@@ -9318,6 +9318,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     try { prog[cur.id] = { p: yt.getCurrentTime(), d: yt.getDuration(), t: Date.now() }; wr('uv99:st:prog', prog); } catch (e) {}
   }
   function onState(e) {
+    try { window.__stvState && window.__stvState(e.data); } catch (x) {}
     if (e.data === 0 && window.__stLoop && yt) { try { yt.seekTo(0, true); yt.playVideo(); } catch (x) {} return; }
     clearInterval(tick); wake(e.data === 1);
     if (e.data === 1) {
@@ -9655,6 +9656,22 @@ loadPersistedData().then(async () => {
 })();
 
 </script>
+<script id="stv-core">
+/* Study Tube core: ek hi halka observer (sirf #stOv par) + throttle. Pehle 7 observers + 10 intervals the = lag. */
+(function(){
+  var fns=[],pend=0,obs=null,watch=null;
+  function run(){pend=0;for(var i=0;i<fns.length;i++){try{fns[i]()}catch(e){}}}
+  function sched(){if(!pend)pend=setTimeout(run,140)}
+  window.__stvHook=function(fn){fns.push(fn);sched()};
+  window.__stvKick=sched;
+  function attach(){var o=document.getElementById('stOv');if(!o||watch===o)return;
+    if(obs)obs.disconnect();watch=o;obs=new MutationObserver(sched);
+    obs.observe(o,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});sched()}
+  new MutationObserver(attach).observe(document.body,{childList:true});
+  attach();
+  window.__stvY=function(){try{return window.__stYT&&window.__stYT()}catch(e){return null}};
+})();
+</script>
 <script>
 (function(){var b=document.getElementById('moreBtn');if(!b)return;
 b.addEventListener('click',function(e){e.stopPropagation();b.closest('.toolbar').classList.toggle('more-open');});
@@ -9714,7 +9731,7 @@ var r=e.target.closest('.lr');if(r){sh.classList.remove('open');document.getElem
 </script>
 <style id="stv-fx-css">
 #stP .stv-vw{overflow:hidden}
-#stP .stv-vw iframe{filter:var(--stf,none);transform:var(--stt,none);transition:filter .2s,transform .2s}
+#stP .stv-vw iframe{filter:var(--stf,none);transform:var(--stt,none)}
 #stP.stv-cine .stv-vw{max-height:78vh}
 .stfx{margin-top:10px;background:#141829;border:1px solid #262c47;border-radius:16px;padding:10px 12px;color:#eef0ff}
 .stfx-r{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:6px 0}
@@ -9734,11 +9751,11 @@ var cur=0,pl;
 function fr(){return document.querySelector('#stP .stv-vw iframe')}
 function cmd(f,a){var i=fr();if(i&&i.contentWindow)i.contentWindow.postMessage(JSON.stringify({event:'command',func:f,args:a||[]}),'*')}
 function listen(){var i=fr();if(i&&i.contentWindow)i.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*')}
-window.addEventListener('message',function(e){try{var d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d&&d.info&&typeof d.info.currentTime==='number')cur=d.info.currentTime}catch(x){}});
+
 function apply(){var P=document.getElementById('stP');if(!P)return;
 var sep=S.p==='eye'?' sepia(.25)':S.p==='warm'?' sepia(.3)':'';
-P.style.setProperty('--stf','brightness('+S.b/100+') contrast('+S.c/100+') saturate('+S.s/100+')'+sep);
-P.style.setProperty('--stt','scale('+S.z/100+') scaleX('+(S.f?-1:1)+')');
+if(S.b==100&&S.c==100&&S.s==100&&!sep)P.style.removeProperty('--stf');else P.style.setProperty('--stf','brightness('+S.b/100+') contrast('+S.c/100+') saturate('+S.s/100+')'+sep);
+if(S.z==100&&!S.f)P.style.removeProperty('--stt');else P.style.setProperty('--stt','scale('+S.z/100+') scaleX('+(S.f?-1:1)+')');
 P.classList.toggle('stv-cine',!!S.cine);
 try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
 var q=P.querySelector('.stfx');if(q)sync(q)}
@@ -9753,13 +9770,13 @@ var pr=P.querySelector('.stv-pr');var d=document.createElement('div');d.innerHTM
 var q=P.querySelector('.stfx');
 q.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
 if(b.dataset.p){S.p=b.dataset.p;var v=PR[S.p];S.b=v[0];S.c=v[1];S.s=v[2]}
-else if(b.dataset.a){listen();cmd('seekTo',[Math.max(0,cur+ +b.dataset.a),true]);cur=Math.max(0,cur+ +b.dataset.a)}
+else if(b.dataset.a){var y=__stvY();if(y&&y.seekTo){try{y.seekTo(Math.max(0,y.getCurrentTime()+ +b.dataset.a),true)}catch(x){}}}
 else if(b.dataset.t==='f')S.f=S.f?0:1;else if(b.dataset.t==='cine')S.cine=S.cine?0:1;
 else if(b.dataset.t==='reset'){S={p:'normal',b:100,c:100,s:100,z:100,f:0,cine:0}}
 apply()});
 q.addEventListener('input',function(e){var k=e.target.dataset.k;if(k){S[k]=+e.target.value;S.p='custom';apply()}});
-apply();setInterval(listen,4000)}
-new MutationObserver(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)}).observe(document.body,{childList:true,subtree:true});
+apply()}
+__stvHook(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)});
 })();
 </script>
 <style id="studytube-speed">
@@ -9784,9 +9801,7 @@ try{N=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
 function sv(){try{localStorage.setItem(K,JSON.stringify(N))}catch(e){}}
 function fi(){return document.querySelector('#stP .stv-vw iframe')}
 function post(o){var i=fi();if(i&&i.contentWindow)i.contentWindow.postMessage(JSON.stringify(o),'*')}
-window.addEventListener('message',function(e){try{var d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(!d||!d.info)return;
-if(typeof d.info.currentTime==='number')t=d.info.currentTime;
-if(d.info.videoData&&d.info.videoData.video_id&&d.info.videoData.video_id!==vid){vid=d.info.videoData.video_id;draw()}}catch(x){}});
+__stvHook(function(){try{var y=__stvY();var id=y&&y.getVideoData&&y.getVideoData().video_id;if(id&&id!==vid){vid=id;draw()}}catch(x){}});
 function f(x){x=Math.floor(x);var h=Math.floor(x/3600),m=Math.floor(x%3600/60),s=x%60;return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')}
 function draw(){var b=document.querySelector('.stnt .lst');if(!b)return;var a=N[vid]||[];
 b.innerHTML=a.length?a.map(function(n,i){return'<div class="it"><span class="tm" data-s="'+n.t+'">&#9654; '+f(n.t)+'</span><span class="tx"></span><button class="x" data-d="'+i+'">&#10005;</button></div>'}).join(''):'<div style="color:#8e95b8;font-size:13px">Abhi koi note nahi. Video chalate waqt note likho, wo isi second par save hoga.</div>';
@@ -9796,13 +9811,13 @@ d.innerHTML='<h4>&#128221; Timestamp notes</h4><textarea placeholder="Is point k
 var a=P.querySelector('.stfx')||P.querySelector('.stv-pr');a.parentNode.insertBefore(d,a.nextSibling);
 d.addEventListener('keydown',function(e){e.stopPropagation()});d.addEventListener('keyup',function(e){e.stopPropagation()});
 d.addEventListener('click',function(e){var tg=e.target;
-if(tg.classList.contains('bt')){var ta=d.querySelector('textarea'),v=ta.value.trim();if(!v)return;post({event:'listening',id:1,channel:'widget'});
+if(tg.classList.contains('bt')){var ta=d.querySelector('textarea'),v=ta.value.trim();if(!v)return;try{var y=__stvY();t=y.getCurrentTime();var id=y.getVideoData().video_id;if(id)vid=id}catch(x){}
 if(!vid){var pt=document.getElementById('stPT');vid=pt?pt.textContent:'x'}
 (N[vid]=N[vid]||[]).push({t:t,x:v});N[vid].sort(function(a,b){return a.t-b.t});sv();ta.value='';draw()}
 else if(tg.dataset.d!==undefined){N[vid].splice(+tg.dataset.d,1);sv();draw()}
-else if(tg.dataset.s!==undefined){post({event:'command',func:'seekTo',args:[+tg.dataset.s,true]});post({event:'command',func:'playVideo',args:[]})}});
-draw();setInterval(function(){post({event:'listening',id:1,channel:'widget'})},3000)}
-new MutationObserver(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)}).observe(document.body,{childList:true,subtree:true});
+else if(tg.dataset.s!==undefined){try{var y2=__stvY();y2.seekTo(+tg.dataset.s,true);y2.playVideo()}catch(x){}}});
+draw()}
+__stvHook(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)});
 })();
 </script>
 <style>
@@ -9818,8 +9833,8 @@ new MutationObserver(function(){var P=document.getElementById('stP');if(P&&P.que
 var t=0,A=null,B=null,sl=null,slT=0;
 function fi(){return document.querySelector('#stP .stv-vw iframe')}
 function post(o){var i=fi();if(i&&i.contentWindow)i.contentWindow.postMessage(JSON.stringify(o),'*')}
-window.addEventListener('message',function(e){try{var d=typeof e.data==='string'?JSON.parse(e.data):e.data;
-if(d&&d.info&&typeof d.info.currentTime==='number'){t=d.info.currentTime;if(A!==null&&B!==null&&t>=B)post({event:'command',func:'seekTo',args:[A,true]})}}catch(x){}});
+var lt=null;function chk(){var y=__stvY();if(!y||A===null||B===null)return;try{if(y.getCurrentTime()>=B)y.seekTo(A,true)}catch(x){}}
+function arm(){if(A!==null&&B!==null){if(!lt)lt=setInterval(chk,400)}else if(lt){clearInterval(lt);lt=null}}
 function f(x){x=Math.floor(x);return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')}
 function msg(q){var m=q.querySelector('.m');var a=[];if(A!==null)a.push('A '+f(A));if(B!==null)a.push('B '+f(B));
 var s=a.length?'Loop: '+a.join(' \u2192 ')+(B!==null?' (chal raha hai)':''):'';if(sl){s+=(s?' \u00b7 ':'')+'Sleep timer chalu'}m.textContent=s;
@@ -9827,13 +9842,13 @@ q.querySelector('[data-k=A]').classList.toggle('on',A!==null);q.querySelector('[
 function build(P){if(P.querySelector('.sttl'))return;var d=document.createElement('div');d.className='sttl';
 d.innerHTML='<h4>&#128257; Section repeat (A\u2013B)</h4><div class="r"><button data-k="A">A set karo</button><button data-k="B">B set karo</button><button data-k="C">Loop band</button></div><h4>&#128564; Sleep timer</h4><div class="r"><button data-s="15">15 min</button><button data-s="30">30 min</button><button data-s="60">60 min</button><button data-s="0">Off</button></div><div class="m"></div>';
 var a=P.querySelector('.stnt')||P.querySelector('.stfx')||P.querySelector('.stv-pr');a.parentNode.insertBefore(d,a.nextSibling);
-d.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;post({event:'listening',id:1,channel:'widget'});
+d.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;try{t=__stvY().getCurrentTime()}catch(x){}
 if(b.dataset.k==='A'){A=t;if(B!==null&&B<=A)B=null}
 else if(b.dataset.k==='B'){if(A===null)A=Math.max(0,t-30);B=t>A?t:A+5}
 else if(b.dataset.k==='C'){A=B=null}
-else if(b.dataset.s!==undefined){clearTimeout(sl);sl=null;var mn=+b.dataset.s;if(mn){sl=setTimeout(function(){post({event:'command',func:'pauseVideo',args:[]});sl=null;msg(d)},mn*60000)}}
-msg(d)});msg(d)}
-new MutationObserver(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)}).observe(document.body,{childList:true,subtree:true});
+else if(b.dataset.s!==undefined){clearTimeout(sl);sl=null;var mn=+b.dataset.s;if(mn){sl=setTimeout(function(){try{__stvY().pauseVideo()}catch(e){}sl=null;msg(d)},mn*60000)}}
+arm();msg(d)});msg(d)}
+__stvHook(function(){var P=document.getElementById('stP');if(P&&P.querySelector('.stv-pr'))build(P)});
 })();
 </script>
 <script>
@@ -9864,8 +9879,7 @@ function ttl(){var a=document.getElementById('stPT'),b=document.querySelector('.
 document.addEventListener('play',function(e){if(e.target&&e.target.tagName==='VIDEO')tell(true,ttl())},true);
 document.addEventListener('pause',function(e){if(e.target&&e.target.tagName==='VIDEO')tell(false)},true);
 document.addEventListener('ended',function(e){if(e.target&&e.target.tagName==='VIDEO')tell(false)},true);
-window.addEventListener('message',function(e){try{var d=typeof e.data==='string'?JSON.parse(e.data):e.data;
-if(d&&d.info&&typeof d.info.playerState==='number'){var st=d.info.playerState;if(st===1)tell(true,ttl());else if(st===2||st===0)tell(false)}}catch(x){}});
+window.__stvState=function(st){try{if(st===1)tell(true,ttl());else if(st===2||st===0)tell(false)}catch(x){}};
 })();
 </script>
 <style id="cgly-embed">
@@ -9951,8 +9965,7 @@ function org(){
     if(!on){setTimeout(function(){try{pm.querySelector('.'+w).scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},60)}
   });
 }
-new MutationObserver(org).observe(document.body,{childList:true,subtree:true});
-setInterval(org,1500);
+__stvHook(org);
 /* host (CGLY app) asks us to re-arm back handling each time the page is opened */
 })();
 </script>
@@ -9991,13 +10004,12 @@ setInterval(org,1500);
     if(mq.matches){ if(pm.parentNode!==SC) SC.insertBefore(pm, SC.firstChild); }
     else if(pm.parentNode!==P){ P.appendChild(pm); }
   }
-  setInterval(sync, 500); window.addEventListener('resize', sync);
+  __stvHook(sync); window.addEventListener('resize', sync); try{ mq.addEventListener('change', sync); }catch(e){}
 })();
 /* Study Tube v3: Nova player ka orientation-lock hata do taaki Study Tube mein auto-rotate chale */
 (function(){
   function unlock(){ try{ screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); }catch(e){} }
-  new MutationObserver(function(){ var o=document.getElementById('stOv'); if(o && o.classList.contains('stv-playing')) unlock(); })
-    .observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class']});
+  var wasP=false; __stvHook(function(){ var o=document.getElementById('stOv'); var pl=!!(o&&o.classList.contains('stv-playing')); if(pl&&!wasP) unlock(); wasP=pl; });
   unlock();
 })();
 </script>
@@ -10034,8 +10046,7 @@ setInterval(org,1500);
   }
   function ensureOverlays(){
     var v=vw(); if(!v) return;
-    var P=document.getElementById('stP'); if(!P||!P.offsetParent && getComputedStyle(P).display==='none'){}
-    v.classList.toggle('stflipv', S.flip);
+        v.classList.toggle('stflipv', S.flip);
     var has=function(c){ return v.querySelector('.'+c); };
     if(S.dt){
       ['l','r'].forEach(function(side){
@@ -10073,11 +10084,7 @@ setInterval(org,1500);
     pm.appendChild(d); sync(d);
     d.addEventListener('click',function(e){
       var b=e.target.closest('button'); if(!b) return; var k=b.dataset.k, y=Y();
-      if(k==='fs'){ var v=vw(); if(!v) return;
-        if(document.fullscreenElement){ document.exitFullscreen(); return; }
-        (v.requestFullscreen||v.webkitRequestFullscreen||function(){}).call(v);
-        if(coarse){ try{ screen.orientation.lock('landscape').catch(function(){}); }catch(x){} }
-        return; }
+      if(k==='fs'){ try{ window.__stvRotate(); }catch(x){} return; }
       if(k==='loop'){ S.loop=!S.loop; window.__stLoop=S.loop; b.textContent='\uD83D\uDD01 Loop: '+(S.loop?'On':'Off'); toast(S.loop?'Loop ON: video baar-baar chalega':'Loop OFF'); }
       else if(k==='mute'){ S.mute=!S.mute; try{ S.mute?y.mute():y.unMute(); }catch(x){} b.textContent=S.mute?'\uD83D\uDD0A Unmute':'\uD83D\uDD07 Mute'; }
       else if(k==='flip'){ S.flip=!S.flip; }
@@ -10089,7 +10096,7 @@ setInterval(org,1500);
     d.addEventListener('input',function(e){ if(e.target.dataset.k==='vol'){ var y=Y(); try{ y.setVolume(+e.target.value); }catch(x){} } });
   }
   document.addEventListener('fullscreenchange',function(){ if(!document.fullscreenElement){ try{ screen.orientation.unlock(); }catch(x){} } });
-  setInterval(function(){ try{ build(); ensureOverlays(); }catch(e){} },700);
+  __stvHook(function(){ try{ build(); ensureOverlays(); }catch(e){} });
 })();
 </script>
 <style id="st-v5">
@@ -10174,13 +10181,14 @@ setInterval(org,1500);
     });
   }
   function refresh(d){ d.querySelectorAll('input[data-e]').forEach(function(i){ i.value=E[i.dataset.e]; }); d.querySelectorAll('[data-v]').forEach(function(b){ b.textContent=E[b.dataset.v]; }); }
-  setInterval(function(){ try{ build(); var p=P(); if(p && !p.style.getPropertyValue('--stf2') && JSON.stringify(E)!==JSON.stringify(DEF)) apply(); force(); }catch(e){} },800);
+  __stvHook(function(){ try{ build(); var p=P(); if(p && !p.style.getPropertyValue('--stf2') && JSON.stringify(E)!==JSON.stringify(DEF)) apply(); }catch(e){} });
 })();
 </script>
 <style id="st-rot-css">
-.strot{position:absolute;top:8px;right:8px;z-index:9;width:42px;height:42px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:21px;line-height:42px;text-align:center;cursor:pointer;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.strot{position:absolute;top:8px;right:8px;z-index:9;width:36px;height:36px;border:none;border-radius:50%;background:rgba(0,0,0,.45);opacity:.7;color:#fff;font-size:18px;line-height:36px;text-align:center;cursor:pointer;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .strot:active{background:rgba(255,255,255,.3)}
 #stOv.stv-mini .strot{display:none}
+@media (orientation:landscape) and (min-aspect-ratio:1/1){.stv-vw.stfake{left:0!important;width:100vw!important;height:100vh!important;transform:none!important}}
 .stv-vw.stfake{position:fixed!important;z-index:2147483000;top:0!important;left:100vw!important;right:auto!important;bottom:auto!important;width:100vh!important;height:100vw!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;border-radius:0!important;transform-origin:top left;transform:rotate(90deg)!important;background:#000}
 @supports (height:100dvh){.stv-vw.stfake{width:100dvh!important;height:100vw!important}}
 </style>
@@ -10218,7 +10226,10 @@ setInterval(org,1500);
   document.addEventListener('fullscreenchange',onFs); document.addEventListener('webkitfullscreenchange',onFs);
   window.addEventListener('keydown',function(e){ if(e.key==='Escape'&&fake) setFake(false); });
   window.addEventListener('popstate',function(){ if(fake) setFake(false); });
-  setInterval(function(){ try{ ensure(); }catch(e){} },700);
+  __stvHook(ensure);
+  window.__stvRotate=function(){ (isFs()||fake)?toPortrait():toLandscape(); };
+  function realRot(){ if(fake && window.innerWidth>window.innerHeight) setFake(false); }
+  window.addEventListener('resize',realRot); window.addEventListener('orientationchange',realRot);
 })();
 </script>
 </body>
