@@ -6302,7 +6302,10 @@ async function downloadHlsBlob(mediaPlaylistUrl, onProgress, onStatus, signal) {
    it's unreachable (rate-limited, temporarily down, etc.) a couple of
    known community-run instances are tried next — see cobalt.directory for
    a fuller/updated list if these ever stop working. */
-const COBALT_INSTANCES = ['https://api.cobalt.tools/', 'https://co.wuk.sh/'];
+const COBALT_INSTANCES = ['https://api.cobalt.tools/'];
+// Apna cobalt server (agar set kiya ho) sabse pehle try hota hai. Public servers ab YouTube block karte hain.
+function cobaltCfg() { try { return { base: (localStorage.getItem('uv99:cobaltBase') || '').trim() }; } catch (e) { return { base: '' }; } }
+function cobaltList() { const c = cobaltCfg(); const own = c.base ? [c.base.replace(/\/*$/, '/')] : []; return own.concat(COBALT_INSTANCES.filter(x => own.indexOf(x) < 0)); }
 const COBALT_HOST_RE = /(^|\.)(?:youtube\.com|youtu\.be|instagram\.com|tiktok\.com|twitter\.com|x\.com|facebook\.com|fb\.watch|reddit\.com|redd\.it|pinterest\.[a-z.]+|soundcloud\.com|vimeo\.com|dailymotion\.com|twitch\.tv|clips\.twitch\.tv|bilibili\.com|bsky\.app|tumblr\.com|loom\.com|rutube\.ru|ok\.ru|streamable\.com|snapchat\.com)$/i;
 function isCobaltSupportedUrl(u) {
   try { return COBALT_HOST_RE.test(new URL(u).hostname.replace(/^www\./, '')); }
@@ -6310,14 +6313,15 @@ function isCobaltSupportedUrl(u) {
 }
 async function resolveViaCobalt(pageUrl, opts) {
   let lastErr = null;
-  for (const base of COBALT_INSTANCES) {
+  for (const base of cobaltList()) {
     try {
+      const hdr = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
       const resp = await fetchWithTimeout(base, {
         method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        headers: hdr,
         body: JSON.stringify(Object.assign({ url: pageUrl, downloadMode: 'auto' }, opts || {}))
       }, 15000);
-      if (!resp.ok) { lastErr = new Error('cobalt instance returned HTTP ' + resp.status); continue; }
+      if (!resp.ok) { let code = ''; try { const j = await resp.json(); code = (j && j.error && j.error.code) || ''; } catch (e2) {} lastErr = new Error(code ? code : ('server HTTP ' + resp.status)); continue; }
       const data = await resp.json();
       NovaDebug.log('play', 'cobalt response status: ' + data.status, base);
       if (data.status === 'redirect' || data.status === 'tunnel' || data.status === 'stream') {
@@ -9247,6 +9251,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
 
   /* ---------- player ---------- */
   let ytP = null;
+  window.__stYT = () => yt;
   function ytReady() {
     if (window.YT && YT.Player) return Promise.resolve();
     if (ytP) return ytP;
@@ -9260,6 +9265,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     try { prog[cur.id] = { p: yt.getCurrentTime(), d: yt.getDuration(), t: Date.now() }; wr('uv99:st:prog', prog); } catch (e) {}
   }
   function onState(e) {
+    if (e.data === 0 && window.__stLoop && yt) { try { yt.seekTo(0, true); yt.playVideo(); } catch (x) {} return; }
     clearInterval(tick); wake(e.data === 1);
     if (e.data === 1) {
       try { if (yt.getPlaybackRate() !== rate) yt.setPlaybackRate(rate); } catch (x) {}
@@ -9282,7 +9288,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     else yt = new YT.Player('stYT', { host: 'https://www.youtube-nocookie.com', width: '100%', height: '100%', videoId: id,
       playerVars: { rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, autoplay: 1, start, fs: 1 },
       events: { onReady: e => { try { e.target.setPlaybackRate(rate); } catch (x) {} }, onStateChange: onState, onError: onErr } });
-    if (rate > 2) setTimeout(() => { if (cur && cur.id === id) fastPlay(); }, 1200);
+    if (rate > 2 || hdMode) setTimeout(() => { if (cur && cur.id === id) fastPlay(); }, 1200);
     if (!playPushed) { playPushed = true; pushS(); }
     mini = false; ov.classList.remove('stv-mini'); ov.classList.add('stv-playing'); ov.scrollTop = 0; $('stSc').scrollTop = 0; render(); tmShow(); subUI();
   }
@@ -9296,8 +9302,12 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     const m = document.createElement('div'); m.id = 'stDlMenu';
     m.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:99999;background:#1f1f2b;border:1px solid #3b3b55;border-radius:16px;padding:10px;box-shadow:0 10px 40px rgba(0,0,0,.6);display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:inherit';
     const opts = [['\u2B06\uFE0F Best quality', {}, 'mp4'], ['1080p', { videoQuality: '1080' }, 'mp4'], ['720p (HD)', { videoQuality: '720' }, 'mp4'], ['480p', { videoQuality: '480' }, 'mp4'], ['360p (kam data)', { videoQuality: '360' }, 'mp4'], ['\uD83C\uDFB5 Sirf Audio (MP3)', { downloadMode: 'audio', audioFormat: 'mp3' }, 'mp3']];
-    m.innerHTML = '<div style="grid-column:1/3;color:#bbb;font-size:12px;padding:2px 4px">Download quality chuno</div>' + opts.map((o, k) => '<button data-k="' + k + '" style="border:none;border-radius:10px;background:#2c2c44;color:#fff;padding:12px 8px;font-size:14px;font-weight:600">' + o[0] + '</button>').join('') + '<button data-k="x" style="grid-column:1/3;border:none;border-radius:10px;background:#3a1d1d;color:#ff8a8a;padding:10px;font-size:13px">Cancel</button>';
-    m.addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; e.stopPropagation(); m.remove(); if (t.dataset.k !== 'x') { const o = opts[+t.dataset.k]; dlCur(btn, o[1], o[2]); } });
+    m.innerHTML = '<div style="grid-column:1/3;color:#bbb;font-size:12px;padding:2px 4px">Download quality chuno</div>' + opts.map((o, k) => '<button data-k="' + k + '" style="border:none;border-radius:10px;background:#2c2c44;color:#fff;padding:12px 8px;font-size:14px;font-weight:600">' + o[0] + '</button>').join('') + '<button data-k="srv" style="grid-column:1/3;border:none;border-radius:10px;background:#1d2a3a;color:#8ac4ff;padding:10px;font-size:13px">\u2699\uFE0F Download server set karo' + (cobaltCfg().base ? ' (set hai)' : ' (zaroori)') + '</button><button data-k="x" style="grid-column:1/3;border:none;border-radius:10px;background:#3a1d1d;color:#ff8a8a;padding:10px;font-size:13px">Cancel</button>';
+    m.addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; e.stopPropagation(); m.remove();
+      if (t.dataset.k === 'srv') { const c = cobaltCfg(); const u = prompt('Apne cobalt download server ka URL daalo (jaise https://cobalt.mydomain.com/ ). Khali chhodoge to hat jayega.', c.base); if (u === null) return;
+        try { localStorage.setItem('uv99:cobaltBase', (u || '').trim()); } catch (x) {}
+        toast((u || '').trim() ? 'Download server save ho gaya' : 'Download server hata diya'); return; }
+      if (t.dataset.k !== 'x') { const o = opts[+t.dataset.k]; dlCur(btn, o[1], o[2]); } });
     document.body.appendChild(m);
   }
   async function dlCur(btn, copts, ext) {
@@ -9321,26 +9331,26 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
         const u = URL.createObjectURL(blob); save(u); setTimeout(() => URL.revokeObjectURL(u), 30000);
       } catch (e) { if (ac.signal.aborted) throw new Error('Cancel kiya'); save(r.url); }
       toast('\u2705 Download shuru: Downloads folder mein dekho');
-    } catch (e) { toast((e && e.message === 'Cancel kiya') ? 'Download cancel' : 'Download fail: ' + ((e && e.message) || 'link resolve nahi hua') + '. Thodi der baad try karo.'); }
+    } catch (e) { toast((e && e.message === 'Cancel kiya') ? 'Download cancel' : 'Download fail (' + ((e && e.message) || 'link resolve nahi hua') + '). Public servers YouTube block karte hain: Download menu mein \u2699\uFE0F se apna server set karo.'); }
     btn.dataset.busy = '0'; btn.innerHTML = orig; btn._ac = null;
   }
   /* ---- 2x se upar: YouTube embed 2x par ruk jata hai, isliye 3x/4x par asli <video> (cobalt stream) chalta hai ---- */
-  let fastEl = null, fastBusy = false;
+  let fastEl = null, fastBusy = false, fastQ = '720', hdMode = false;
   function fastTime() { try { return fastEl ? fastEl.currentTime : 0; } catch (e) { return 0; } }
   function exitFast(resume) {
     if (!fastEl) return; const t = fastTime();
     try { fastEl.pause(); fastEl.removeAttribute('src'); fastEl.load(); fastEl.remove(); } catch (e) {} fastEl = null;
     if (resume && yt) { try { yt.seekTo(t, true); yt.setPlaybackRate(Math.min(rate, 2)); yt.playVideo(); } catch (e) {} }
   }
-  async function fastPlay() {
+  async function fastPlay(startT) {
     if (!cur || fastBusy) return; fastBusy = true;
     const id = cur.id, vw = document.querySelector('#stP .stv-vw');
     try {
-      let t = 0; if (fastEl) t = fastTime(); else { try { t = yt.getCurrentTime() || 0; } catch (e) {} }
+      let t = 0; if (typeof startT === 'number') t = startT; else if (fastEl) t = fastTime(); else { try { t = yt.getCurrentTime() || 0; } catch (e) {} }
       if (fastEl) { fastEl.playbackRate = rate; fastBusy = false; return; }
-      toast('\u26A1 ' + rate + 'x fast mode: stream load ho raha hai…');
+      toast('\u26A1 ' + (fastQ === 'max' ? 'Best' : fastQ + 'p') + ' HD stream load ho raha hai…');
       try { yt.pauseVideo(); } catch (e) {}
-      const r = await resolveViaCobalt('https://www.youtube.com/watch?v=' + id, { videoQuality: '720' });
+      const r = await resolveViaCobalt('https://www.youtube.com/watch?v=' + id, { videoQuality: fastQ });
       if (!cur || cur.id !== id || !vw) { fastBusy = false; return; }
       const v = document.createElement('video');
       v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = 'auto'; v.src = r.url;
@@ -9356,9 +9366,16 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     fastBusy = false;
   }
   function rateApply() {
-    if (rate > 2) { fastPlay(); return; }
+    if (rate > 2 || hdMode) { if (fastEl) { try { fastEl.playbackRate = rate; } catch (x) {} } else fastPlay(); return; }
     if (fastEl) exitFast(true); else { try { yt && yt.setPlaybackRate(rate); } catch (x) {} }
   }
+  window.__stFastQ = function (q) {
+    if (!cur) return;
+    if (!q) { hdMode = false; if (fastEl) exitFast(true); return; }
+    hdMode = true; let t = 0;
+    if (fastEl) { t = fastTime(); exitFast(false); } else { try { t = yt.getCurrentTime() || 0; } catch (e) {} }
+    fastQ = q; fastPlay(t);
+  };
   function spd() {
     $('stSp').innerHTML = '<button class="stv-sp" data-sp="-">\u2212</button><button class="stv-sp on" data-sp="0" title="Speed (0.25x steps, max 4x)">' + rate + 'x</button><button class="stv-sp" data-sp="+">+</button>' + [1, 1.5, 2, 3, 4].map(r => '<button class="stv-sp' + (r === rate ? ' on' : '') + '" data-r="' + r + '">' + r + 'x</button>').join('') + '<button class="stv-sp' + (an ? ' on' : '') + '" data-an="1" title="Video khatam hone par agla video">&#9197; Auto</button>';
   }
@@ -9437,7 +9454,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     if (ov) return;
     ov = document.createElement('div'); ov.id = 'stOv';
     ov.innerHTML = '<div class="stv-hd"><button class="stv-ib" id="stBk" aria-label="Back">&#8592;</button><button class="stv-ib" id="stX" aria-label="Close">&#10005;</button><span class="stv-lg">&#9654;</span><h2>Study Tube<small id="stTm"></small></h2><button class="stv-add2" id="stAdd">&#65291; Channel</button><button class="stv-ib" id="stS" aria-label="Settings">&#9881;</button></div>' +
-      '<div class="stv-pl" id="stP"><div class="stv-vw"><div id="stYT"></div></div><div class="stv-pm"><div class="stv-pt" id="stPT"></div><div class="stv-pmeta" id="stPM"></div><div class="stv-sr"><span id="stSN"></span><button class="stv-sbtn" id="stSb">&#65291; Subscribe</button></div><div class="stv-pr"><span id="stSp" style="display:contents"></span><button class="stv-sp" id="stDl" title="Video download karo (device mein save)">&#11015;&#65039; Download</button><button class="stv-cl" id="stCl">Close player</button></div></div></div>' +
+      '<div class="stv-pl" id="stP"><div class="stv-vw"><div id="stYT"></div></div><div class="stv-ti"><div class="stv-pt" id="stPT"></div><div class="stv-pmeta" id="stPM"></div></div><div class="stv-pm"><div class="stv-sr"><span id="stSN"></span><button class="stv-sbtn" id="stSb">&#65291; Subscribe</button></div><div class="stv-pr"><span id="stSp" style="display:contents"></span><button class="stv-sp" id="stDl" title="Video download karo (device mein save)">&#11015;&#65039; Download</button><button class="stv-cl" id="stCl">Close player</button></div></div></div>' +
       '<div class="stv-sc" id="stSc"><div class="stv-bar"><div class="stv-q"><span>&#128269;</span><input id="stQ" type="search" placeholder="Search ya koi bhi link paste karo" autocomplete="off" autocapitalize="off" spellcheck="false"></div><button class="stv-ib" id="stR" aria-label="Refresh">&#8635;</button></div><div class="stv-chips" id="stCh"></div><div id="stL"></div></div><div class="stv-mc" id="stMc"><div class="stv-md" id="stMd" title="Drag">&#10303;</div><button id="stMx" aria-label="Expand">&#10530;</button><button id="stMp" aria-label="Play/Pause">&#9199;</button><button id="stMk" aria-label="Close">&#10005;</button></div><div class="stv-sh" id="stSh"></div>';
     document.body.appendChild(ov); fit(); $('stX').style.display = 'none'; mark('navStudy'); ytReady(); if (depth === 0) pushS(); tmShow(); mpApply();
     /* long-press a History card -> remove it */
@@ -9887,26 +9904,210 @@ setInterval(org,1500);
   #stOv.stv-playing:not(.stv-mini) .stv-vw{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-height:none!important;aspect-ratio:auto!important;z-index:300!important;border-radius:0;box-shadow:none}
   #stOv.stv-playing:not(.stv-mini) .stv-hd{display:none}
 }
-/* Desktop: video left (bada), related/search list right sidebar mein */
+/* Desktop: left = video + title (page ke saath scroll hota hai, sticky nahi); right sidebar = saare tools + search/list */
+.stv-ti{padding:10px 14px 8px;background:#0f0f0f}
+#stOv:not(.stv-playing) .stv-pm{display:none}
 @media (min-width:900px){
-  #stOv.stv-playing:not(.stv-mini){display:grid!important;grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:auto auto minmax(0,1fr);overflow:hidden!important}
+  #stOv.stv-playing:not(.stv-mini){display:grid!important;grid-template-columns:minmax(0,1fr) 430px;grid-template-rows:auto minmax(0,1fr);overflow:hidden!important}
   #stOv.stv-playing:not(.stv-mini) .stv-hd{grid-column:1/3;grid-row:1}
-  #stOv.stv-playing:not(.stv-mini) .stv-vw{grid-column:1;grid-row:2;width:100%;max-height:70vh!important;background:#000}
-  #stOv.stv-playing:not(.stv-mini) .stv-pm{grid-column:1;grid-row:3;overflow-y:auto;padding:14px 22px 24px}
-  #stOv.stv-playing:not(.stv-mini) .stv-pt{font-size:18px}
-  #stOv.stv-playing:not(.stv-mini) #stSc{grid-column:2;grid-row:2/4;overflow-y:auto!important;padding-bottom:24px!important;border-left:1px solid #272727}
+  #stOv.stv-playing:not(.stv-mini) #stP{display:block!important;grid-column:1;grid-row:2;overflow-y:auto;overflow-x:hidden;background:#0f0f0f}
+  #stOv.stv-playing:not(.stv-mini) .stv-vw{position:relative!important;width:100%;max-height:none!important;aspect-ratio:16/9;background:#000;box-shadow:none}
+  #stOv.stv-playing:not(.stv-mini) .stv-ti{padding:14px 22px 30px}
+  #stOv.stv-playing:not(.stv-mini) .stv-pt{font-size:19px}
+  #stOv.stv-playing:not(.stv-mini) #stSc{display:block;grid-column:2;grid-row:2;overflow-y:auto!important;padding:10px 12px 24px!important;border-left:1px solid #272727}
+  #stSc > .stv-pm{background:#181818;border:1px solid #2a2a2a;border-radius:14px;padding:12px;margin-bottom:12px}
   #stOv:not(.stv-playing) #stSc{max-width:1500px;width:100%;margin:0 auto}
   .bottom-nav{justify-content:center!important;gap:18px}
   .bottom-nav .nav-item{flex:0 1 150px!important}
 }
 </style>
 <script>
+/* Study Tube v3: desktop par tools (.stv-pm) sidebar mein, mobile par video ke neeche */
+(function(){
+  var mq = window.matchMedia('(min-width:900px)');
+  function sync(){
+    var pm=document.querySelector('.stv-pm'), P=document.getElementById('stP'), SC=document.getElementById('stSc');
+    if(!pm||!P||!SC) return;
+    if(mq.matches){ if(pm.parentNode!==SC) SC.insertBefore(pm, SC.firstChild); }
+    else if(pm.parentNode!==P){ P.appendChild(pm); }
+  }
+  setInterval(sync, 500); window.addEventListener('resize', sync);
+})();
 /* Study Tube v3: Nova player ka orientation-lock hata do taaki Study Tube mein auto-rotate chale */
 (function(){
   function unlock(){ try{ screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); }catch(e){} }
   new MutationObserver(function(){ var o=document.getElementById('stOv'); if(o && o.classList.contains('stv-playing')) unlock(); })
     .observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class']});
   unlock();
+})();
+</script>
+<style id="st-v4">
+/* Study Tube v4 — Video-player (Nova) ke features YouTube player mein */
+.stpp{margin-top:10px;padding-top:8px;border-top:1px solid #2a2a2a}
+.stpp summary{font-size:13px;font-weight:700;color:#cfd3ff;cursor:pointer;padding:4px 0}
+.stpp .r{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.stpp button{border:none;border-radius:8px;background:#272727;color:#f1f1f1;padding:8px 11px;font-size:13px;font-weight:600;cursor:pointer}
+.stpp button.on{background:#f1f1f1;color:#0f0f0f}
+.stpp label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#bbb}
+.stpp input[type=range]{flex:1}
+.stv-vw.stflipv{transform:scaleY(-1)}
+.stlock{position:absolute;inset:0;z-index:6;background:rgba(0,0,0,.001);display:flex;align-items:flex-end;justify-content:flex-start;touch-action:none}
+.stlock b{margin:10px;border-radius:50%;width:46px;height:46px;background:rgba(0,0,0,.65);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;user-select:none}
+.staud{position:absolute;left:0;right:0;top:0;height:84%;z-index:4;background:#05060d;color:#cfd3ff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none;font-size:15px;text-align:center;padding:0 14px}
+.stdt{position:absolute;top:12%;height:60%;width:30%;z-index:5;touch-action:manipulation}
+.stdt.l{left:0}.stdt.r{right:0}
+.stdt i{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-style:normal;font-size:15px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:20px;padding:6px 12px;opacity:0;transition:opacity .2s;pointer-events:none}
+.stdt i.on{opacity:1}
+.stv-vw:fullscreen{width:100vw;height:100vh;max-height:none!important;background:#000}
+</style>
+<script>
+(function(){
+  var coarse = window.matchMedia('(pointer:coarse)').matches;
+  var S = { loop:false, lock:false, aud:false, dt:coarse, flip:false, mute:false };
+  function Y(){ try{ return window.__stYT && window.__stYT(); }catch(e){ return null; } }
+  function vw(){ return document.querySelector('#stP .stv-vw'); }
+  function title(){ var t=document.getElementById('stPT'); return t?t.textContent:''; }
+  function toast(m){ try{ showMiniToast(m); }catch(e){} }
+  function sync(box){
+    var m={loop:'[data-k=loop]',lock:'[data-k=lock]',aud:'[data-k=aud]',dt:'[data-k=dt]',flip:'[data-k=flip]',mute:'[data-k=mute]'};
+    for(var k in m){ var b=box.querySelector(m[k]); if(b) b.classList.toggle('on',!!S[k]); }
+  }
+  function ensureOverlays(){
+    var v=vw(); if(!v) return;
+    var P=document.getElementById('stP'); if(!P||!P.offsetParent && getComputedStyle(P).display==='none'){}
+    v.classList.toggle('stflipv', S.flip);
+    var has=function(c){ return v.querySelector('.'+c); };
+    if(S.dt){
+      ['l','r'].forEach(function(side){
+        if(has('stdt-'+side)) return;
+        var d=document.createElement('div'); d.className='stdt stdt-'+side+' '+side; d.innerHTML='<i></i>';
+        var last=0, t=null;
+        d.addEventListener('pointerup',function(e){
+          if(e.pointerType==='mouse') return;
+          var now=Date.now(), y=Y(); if(!y) return;
+          if(now-last<300){ clearTimeout(t); last=0;
+            try{ var c=y.getCurrentTime(); y.seekTo(Math.max(0,c+(side==='l'?-10:10)),true); }catch(x){}
+            var i=d.querySelector('i'); i.textContent=(side==='l'?'\u23EA 10s':'10s \u23E9'); i.classList.add('on'); setTimeout(function(){ i.classList.remove('on'); },500);
+          } else { last=now; t=setTimeout(function(){ try{ y.getPlayerState()===1?y.pauseVideo():y.playVideo(); }catch(x){} last=0; },300); }
+        });
+        v.appendChild(d);
+      });
+    } else { v.querySelectorAll('.stdt').forEach(function(n){ n.remove(); }); }
+    if(S.aud){ if(!has('staud')){ var a=document.createElement('div'); a.className='staud'; a.innerHTML='<div style="font-size:34px">\uD83C\uDFA7</div><div>Audio mode</div><div style="opacity:.7;font-size:12.5px"></div>'; v.appendChild(a); }
+      var tt=v.querySelector('.staud div:last-child'); if(tt) tt.textContent=title(); }
+    else { v.querySelectorAll('.staud').forEach(function(n){ n.remove(); }); }
+    if(S.lock){ if(!has('stlock')){ var l=document.createElement('div'); l.className='stlock'; l.innerHTML='<b title="Unlock: dabake rakho">\uD83D\uDD12</b>';
+        var h=null, b=l.querySelector('b');
+        b.addEventListener('pointerdown',function(){ h=setTimeout(function(){ S.lock=false; ensureOverlays(); var bx=document.querySelector('.stpp'); if(bx) sync(bx); toast('Screen unlock'); },700); });
+        ['pointerup','pointerleave','pointercancel'].forEach(function(n){ b.addEventListener(n,function(){ clearTimeout(h); }); });
+        l.addEventListener('click',function(e){ e.stopPropagation(); }); v.appendChild(l); } }
+    else { v.querySelectorAll('.stlock').forEach(function(n){ n.remove(); }); }
+  }
+  function build(){
+    var pm=document.querySelector('.stv-pm'); if(!pm||!pm.querySelector('.stv-pr')||pm.querySelector('.stpp')) return;
+    var d=document.createElement('details'); d.className='stpp'; d.open=true;
+    d.innerHTML='<summary>\uD83C\uDFAC Video player features</summary>'+
+      '<div class="r"><button data-k="fs">\u26F6 Fullscreen (landscape)</button><button data-k="lock">\uD83D\uDD12 Lock screen</button><button data-k="aud">\uD83C\uDFA7 Audio mode</button></div>'+
+      '<div class="r"><button data-k="loop">\uD83D\uDD01 Loop: Off</button><button data-k="mute">\uD83D\uDD07 Mute</button><button data-k="flip">\u2195 Flip (ulta)</button><button data-k="dt">\uD83D\uDC46 Double-tap seek</button></div>'+
+      '<label><span>\uD83D\uDD0A Volume</span><input type="range" min="0" max="100" value="100" data-k="vol"></label>';
+    pm.appendChild(d); sync(d);
+    d.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return; var k=b.dataset.k, y=Y();
+      if(k==='fs'){ var v=vw(); if(!v) return;
+        if(document.fullscreenElement){ document.exitFullscreen(); return; }
+        (v.requestFullscreen||v.webkitRequestFullscreen||function(){}).call(v);
+        if(coarse){ try{ screen.orientation.lock('landscape').catch(function(){}); }catch(x){} }
+        return; }
+      if(k==='loop'){ S.loop=!S.loop; window.__stLoop=S.loop; b.textContent='\uD83D\uDD01 Loop: '+(S.loop?'On':'Off'); toast(S.loop?'Loop ON: video baar-baar chalega':'Loop OFF'); }
+      else if(k==='mute'){ S.mute=!S.mute; try{ S.mute?y.mute():y.unMute(); }catch(x){} b.textContent=S.mute?'\uD83D\uDD0A Unmute':'\uD83D\uDD07 Mute'; }
+      else if(k==='flip'){ S.flip=!S.flip; }
+      else if(k==='dt'){ S.dt=!S.dt; toast(S.dt?'Double-tap: left/right = 10s peeche/aage, ek tap = play/pause':'Double-tap seek OFF'); }
+      else if(k==='aud'){ S.aud=!S.aud; try{ y.setPlaybackQuality(S.aud?'tiny':'auto'); }catch(x){} toast(S.aud?'Audio mode ON (data kam)':'Audio mode OFF'); }
+      else if(k==='lock'){ S.lock=true; toast('Screen locked: unlock ke liye \uD83D\uDD12 dabake rakho'); }
+      sync(d); ensureOverlays();
+    });
+    d.addEventListener('input',function(e){ if(e.target.dataset.k==='vol'){ var y=Y(); try{ y.setVolume(+e.target.value); }catch(x){} } });
+  }
+  document.addEventListener('fullscreenchange',function(){ if(!document.fullscreenElement){ try{ screen.orientation.unlock(); }catch(x){} } });
+  setInterval(function(){ try{ build(); ensureOverlays(); }catch(e){} },700);
+})();
+</script>
+<style id="st-v5">
+#stP .stv-vw iframe,#stP .stv-vw video{filter:var(--stf,) var(--stf2,);transform:var(--stt,none)}
+.stpe{margin-top:10px;padding-top:8px;border-top:1px solid #2a2a2a}
+.stpe summary{font-size:13px;font-weight:700;color:#cfd3ff;cursor:pointer;padding:4px 0}
+.stpe .r{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.stpe .r button{border:none;border-radius:8px;background:#272727;color:#f1f1f1;padding:7px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.stpe .r button.on{background:#f1f1f1;color:#0f0f0f}
+.stpe h5{margin:10px 0 2px;font-size:12px;color:#8f95c4;font-weight:700;letter-spacing:.3px}
+.stpe label{display:grid;grid-template-columns:104px 1fr 38px;align-items:center;gap:6px;font-size:12px;color:#bbb;margin:3px 0}
+.stpe label b{font-weight:600;text-align:right;color:#eee}
+.stpe input[type=range]{width:100%}
+.stpe .note{font-size:11.5px;color:#8a8fb0;margin-top:6px;line-height:1.4}
+</style>
+<script>
+(function(){
+  var K='uv99:st:enh', KP='uv99:st:enhMy';
+  var DEF={sharp:0,bright:100,contrast:100,sat:100,temp:0,vib:100,hue:0,skin:0,ai:0,den:0,detail:0,expo:0,gamma:100,shad:0,high:0};
+  var L=[['Basic',null],['Sharpness / Clarity','sharp',0,100],['Brightness','bright',40,200],['Contrast','contrast',40,200],['Saturation','sat',0,200],['Vibrance','vib',0,200],['Temperature (garam/thanda)','temp',-100,100],['Hue shift','hue',0,360],['Skin smoothing','skin',0,100],
+    ['Quality',null],['AI Enhance','ai',0,100],['Noise reduction','den',0,100],['Detail boost','detail',0,100],['Exposure','expo',-50,50],['Gamma','gamma',50,200],['Shadows lift','shad',0,100],['Highlights recovery','high',0,100]];
+  var PRE={reset:{},clear:{sharp:30,contrast:108,sat:108,detail:15},warm:{temp:35,sat:108,bright:104},vivid:{sat:140,vib:150,contrast:112,sharp:20},lowlight:{bright:118,gamma:130,shad:45,den:25,contrast:105},auto:{sharp:35,contrast:108,sat:112,detail:20,gamma:96,ai:25}};
+  var E; try{ E=Object.assign({},DEF,JSON.parse(localStorage.getItem(K)||'{}')); }catch(x){ E=Object.assign({},DEF); }
+  function P(){ return document.getElementById('stP'); }
+  function svg(){
+    if(document.getElementById('stEnhSvg')) return;
+    var d=document.createElement('div'); d.style.cssText='position:absolute;width:0;height:0;overflow:hidden'; d.id='stEnhSvg';
+    d.innerHTML='<svg width="0" height="0"><filter id="stEnhF" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">'+
+      '<feColorMatrix id="stEnhTemp" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>'+
+      '<feComponentTransfer id="stEnhGam"><feFuncR type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncG type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncB type="gamma" amplitude="1" exponent="1" offset="0"/></feComponentTransfer>'+
+      '<feConvolveMatrix id="stEnhSh" order="3" kernelMatrix="0 0 0 0 1 0 0 0 0" preserveAlpha="true"/></filter></svg>';
+    document.body.appendChild(d);
+  }
+  function apply(){
+    svg(); var p=P(); if(!p) return;
+    var ai=E.ai/100, sharp=Math.min(100,E.sharp+E.detail*0.6+E.ai*0.5);
+    var bright=E.bright/100*(1+E.expo/200), con=(E.contrast+E.ai*0.08)/100+E.detail/800;
+    var sat=(E.sat+E.ai*0.1)/100*(1+(E.vib-100)/250);
+    var blur=E.den*0.008+E.skin*0.012;
+    var f='brightness('+bright.toFixed(3)+') contrast('+con.toFixed(3)+') saturate('+sat.toFixed(3)+')';
+    if(E.hue) f+=' hue-rotate('+E.hue+'deg)';
+    if(blur>0.01) f+=' blur('+blur.toFixed(2)+'px)';
+    var need = sharp>0 || E.temp!==0 || E.gamma!==100 || E.shad>0 || E.high>0;
+    if(need){
+      var t=E.temp/100*0.14; var tm=document.getElementById('stEnhTemp');
+      tm.setAttribute('values',(1+t).toFixed(3)+' 0 0 0 0  0 1 0 0 0  0 0 '+(1-t).toFixed(3)+' 0 0  0 0 0 1 0');
+      var amp=(1-E.high/100*0.18).toFixed(3), exp=(1/(E.gamma/100)).toFixed(3), off=(E.shad/100*0.09).toFixed(3);
+      document.querySelectorAll('#stEnhGam feFuncR,#stEnhGam feFuncG,#stEnhGam feFuncB').forEach(function(n){ n.setAttribute('amplitude',amp); n.setAttribute('exponent',exp); n.setAttribute('offset',off); });
+      var a=sharp/100*0.9, c=1+4*a;
+      document.getElementById('stEnhSh').setAttribute('kernelMatrix','0 '+(-a).toFixed(3)+' 0 '+(-a).toFixed(3)+' '+c.toFixed(3)+' '+(-a).toFixed(3)+' 0 '+(-a).toFixed(3)+' 0');
+      f+=' url(#stEnhF)';
+    }
+    var same=!need && Math.abs(bright-1)<.001 && Math.abs(con-1)<.001 && Math.abs(sat-1)<.001 && !E.hue && blur<=0.01;
+    p.style.setProperty('--stf2', same?'':f);
+    try{ localStorage.setItem(K,JSON.stringify(E)); }catch(x){}
+  }
+  function build(){
+    var pm=document.querySelector('.stv-pm'); if(!pm||!pm.querySelector('.stv-pr')||pm.querySelector('.stpe')) return;
+    var d=document.createElement('details'); d.className='stpe'; d.open=false;
+    var h='<summary>\u2728 Video enhancer (sharpness, saturation, quality)</summary>'+
+      '<div class="r"><button data-pre="auto">\uD83E\uDE84 Auto enhance</button><button data-pre="clear">Clear boost</button><button data-pre="warm">Warm</button><button data-pre="vivid">Vivid</button><button data-pre="lowlight">Low-light fix</button><button data-pre="reset">Reset</button></div>'+
+      '<div class="r"><button data-my="save">\uD83D\uDCBE My Preset save</button><button data-my="load">My Preset lagao</button></div>'+
+      '<h5>VIDEO QUALITY (HD stream)</h5><div class="r" id="stpeQ"><button data-q="">Auto (YouTube)</button><button data-q="480">480p</button><button data-q="720">720p HD</button><button data-q="1080">1080p FHD</button><button data-q="max">Best</button></div>';
+    L.forEach(function(r){ if(!r[1]){ h+='<h5>'+r[0].toUpperCase()+'</h5>'; return; }
+      h+='<label><span>'+r[0]+'</span><input type="range" min="'+r[2]+'" max="'+r[3]+'" data-e="'+r[1]+'"><b data-v="'+r[1]+'"></b></label>'; });
+    h+='<div class="note">Sliders YouTube video par filter ki tarah lagte hain (Chrome/Edge par best). Sharpness aur Detail heavy hain: phone slow ho to kam rakho. HD stream = asli video file (cobalt) jisme 1080p tak mil jata hai; YouTube embed khud quality force nahi karne deta.</div>';
+    d.innerHTML=h; pm.appendChild(d); refresh(d);
+    d.addEventListener('input',function(e){ var k=e.target.dataset&&e.target.dataset.e; if(!k) return; E[k]=+e.target.value; var b=d.querySelector('[data-v='+k+']'); if(b) b.textContent=E[k]; apply(); });
+    d.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+      if(b.dataset.pre){ E=Object.assign({},DEF,PRE[b.dataset.pre]); refresh(d); apply(); }
+      else if(b.dataset.my==='save'){ try{ localStorage.setItem(KP,JSON.stringify(E)); showMiniToast('My Preset save ho gaya'); }catch(x){} }
+      else if(b.dataset.my==='load'){ try{ var m=JSON.parse(localStorage.getItem(KP)||'null'); if(m){ E=Object.assign({},DEF,m); refresh(d); apply(); } else showMiniToast('Pehle My Preset save karo'); }catch(x){} }
+      else if(b.dataset.q!==undefined){ var q=b.dataset.q; d.querySelectorAll('#stpeQ button').forEach(function(n){ n.classList.toggle('on',n===b); });
+        try{ if(window.__stFastQ) window.__stFastQ(q||null); }catch(x){} }
+    });
+  }
+  function refresh(d){ d.querySelectorAll('input[data-e]').forEach(function(i){ i.value=E[i.dataset.e]; }); d.querySelectorAll('[data-v]').forEach(function(b){ b.textContent=E[b.dataset.v]; }); }
+  setInterval(function(){ try{ build(); var p=P(); if(p && !p.style.getPropertyValue('--stf2') && JSON.stringify(E)!==JSON.stringify(DEF)) apply(); }catch(e){} },800);
 })();
 </script>
 </body>
