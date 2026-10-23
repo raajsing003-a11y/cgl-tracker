@@ -31348,13 +31348,29 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     async function copyPng(){ try{ if(!st.cv || !navigator.clipboard || !window.ClipboardItem) return false;
       var png = await new Promise(function(r){ st.cv.toBlob(r, 'image/png'); }); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); return true; }catch(e){ return false; } }
     h.sendNow = async function(){
+      var inFrame = window.parent && window.parent !== window, mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), t = getTarget();
+      if(!t) return;
+      /* Gesture ke time hi clipboard write shuru (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
+      var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
+      pngP.catch(function(){});
+      var copied = null;
+      if(!inFrame && !mobile && navigator.clipboard && window.ClipboardItem){
+        try{ copied = navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }catch(e){ copied = Promise.resolve(false); }
+      }
+      var w = null;
+      if(!inFrame && !mobile){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
+        var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); }catch(e){} }
       toast('Screenshot ban raha hai…');
-      var ok = await prep(); if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
-      if(window.parent && window.parent !== window){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); } catch(e){} copyPng(); return; }
+      var ok; try{ await pngP; ok = true; }catch(e){ ok = false; }
+      if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
+      if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); }catch(e){} return; }
+      if(mobile){
+        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: LS('sd:gemprompt') || '' }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+        toast('Share nahi chala — screenshot save/copy karke Gemini me daalo'); return;
+      }
       sendExt(st.du, async function(){
-        var c = await copyPng(); var w = null; try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h); }catch(e){}
-        if(w){ var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); try{ w.focus(); }catch(e){} }
-        toast(c ? 'Screenshot copy ho gaya — Gemini mein Ctrl+V / paste karo' : 'Gemini khul gaya (copy allow nahi hua)');
+        var c = copied ? await copied : false; try{ if(w) w.focus(); }catch(e){}
+        toast(c ? '✅ Screenshot copy ho gaya — Gemini popup me click karke Ctrl+V dabao' : '⚠ Auto-copy nahi hua. Handle ko drag karke Gemini me chhodo');
       });
     };
     h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); h.sendNow(); });
