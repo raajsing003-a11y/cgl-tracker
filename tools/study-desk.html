@@ -353,18 +353,18 @@ function openGemSide(){
   var got=false;
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='open'){ got=true; window.removeEventListener('message',onAck); setView('pdf'); toast(d.found?'Pehle se khula Gemini aage aa gaya':'Gemini right side khul gaya'); } }
   window.addEventListener('message',onAck);
-  window.postMessage({type:'sd-gemini-open',url:gemUrl(),single:true,full:true,reuse:true,newTab:false},'*');
+  window.postMessage({type:'sd-gemini-open',url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got) openGemSideNative(); },1200);
 }
 function openGemSideNative(url){
-  /* Hamesha EK hi named tab ('sd_gemini'), full page. Pehle se khuli ho to bas aage laao (reload/naya tab nahi). */
+  /* Hamesha EK hi popup window ('sd_gemini', right half). Pehle se khuli ho to wahi aage aati hai (naya popup nahi). */
   var w=null; url=url||gemUrl();
-  try{ w=window.open('','sd_gemini'); }catch(e){}
+  try{ w=window.open('','sd_gemini','popup=yes,left='+gemGeo().l+',top='+gemGeo().t+',width='+gemGeo().w+',height='+gemGeo().h); }catch(e){}
   if(!w){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return null; }
   var blank=false; try{ blank=(w.location.href==='about:blank'); }catch(e){ blank=false; }   /* cross-origin error = Gemini pehle se khula hai */
   if(blank){ try{ w.location.href=url; }catch(e){ try{ w.location=url; }catch(x){} } }
   try{ w.focus(); }catch(e){}
-  gemWin=w; setView('pdf'); toast('Gemini tab aage aa gaya');
+  gemWin=w; setView('pdf'); toast('Gemini popup aage aa gaya');
   return w;
 }
 
@@ -379,7 +379,7 @@ window.sendToGemini=function(du){
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
   var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){}
-  window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,full:true,reuse:true,newTab:false},'*');
+  window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
     try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}
     openGemSideNative();

@@ -31291,6 +31291,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   function toast(m){ try{ if(typeof window.toast === 'function') return window.toast(m); }catch(e){} var t = document.getElementById('cxGemToast');
     if(!t){ t = document.createElement('div'); t.id = 'cxGemToast'; t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,22,27,.94);color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:100000;max-width:86vw;text-align:center;display:none'; document.body.appendChild(t); }
     t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
+  function gemGeo(){ var sl = screen.availLeft || 0, st = screen.availTop || 0, sw = screen.availWidth || screen.width, sh = screen.availHeight || screen.height, w = Math.round(sw / 2); return { l: sl + w, t: st, w: w, h: sh }; }
   function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
   function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
   function hash(s){ var h = 0; for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
@@ -31341,7 +31342,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var got = false, txt = LS('sd:gemprompt') || '';
       function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
       window.addEventListener('message', onAck);
-      window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, full: true, reuse: true, newTab: false }, '*');
+      window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, reuse: true, newTab: false, popup: true, geo: gemGeo() }, '*');
       setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) cb(); }, 1800);
     }
     async function copyPng(){ try{ if(!st.cv || !navigator.clipboard || !window.ClipboardItem) return false;
@@ -31351,7 +31352,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var ok = await prep(); if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
       if(window.parent && window.parent !== window){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); } catch(e){} copyPng(); return; }
       sendExt(st.du, async function(){
-        var c = await copyPng(); var w = null; try{ w = window.open('', 'sd_gemini'); }catch(e){}
+        var c = await copyPng(); var w = null; try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h); }catch(e){}
         if(w){ var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); try{ w.focus(); }catch(e){} }
         toast(c ? 'Screenshot copy ho gaya — Gemini mein Ctrl+V / paste karo' : 'Gemini khul gaya (copy allow nahi hua)');
       });
