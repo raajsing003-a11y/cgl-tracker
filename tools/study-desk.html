@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Study Desk</title>
+<style>
+:root{--bg:#0f0f12;--s1:#17171c;--s2:#202027;--s3:#2c2c35;--tx:#f1f1f4;--mu:#9a9aaa;--ac:#6c8cff;--ok:#3ecf8e;--bad:#ff6b6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+#bar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--s1);border-bottom:1px solid var(--s3);flex:0 0 auto}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+button{font:inherit;color:var(--tx);background:var(--s2);border:1px solid var(--s3);border-radius:10px;padding:7px 11px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+button:active{background:var(--s3)}
+button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.sp{flex:1}
+#clk{font-size:12px;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
+#chip{font-variant-numeric:tabular-nums;min-width:86px}
+#chip.run{border-color:var(--ok);color:var(--ok)}
+#chip.done{border-color:var(--bad);color:var(--bad);animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.4}}
+#main{flex:1 1 auto;min-height:0;display:flex;position:relative}
+.pane{display:none;min-width:0;min-height:0;background:#000}
+.pane iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+#main.v-pdf #p-pdf,#main.v-tube #p-tube,#main.v-focus #p-focus{display:block;flex:1 1 auto}
+#dv{display:none;flex:0 0 8px;background:var(--s3);cursor:col-resize;touch-action:none;position:relative}
+#dv::after{content:"";position:absolute;inset:0;margin:auto;width:3px;height:36px;border-radius:3px;background:var(--mu)}
+#main.v-split #p-pdf,#main.v-split #p-tube{display:block}
+#main.v-split #p-pdf{flex:0 0 calc(var(--sp,50)*1%)}
+#main.v-split #p-tube{flex:1 1 auto}
+#main.v-split #dv{display:block}
+@media (max-width:480px){button{padding:7px 9px;font-size:12.5px}#chip{min-width:74px}}
+@media (max-width:899px){#main.v-split{flex-direction:column}#main.v-split #dv{cursor:row-resize}#main.v-split #dv::after{width:36px;height:3px}.hide-s{display:none}}
+body.drag iframe{pointer-events:none}
+#pop{position:fixed;right:8px;top:calc(52px + env(safe-area-inset-top,0));width:min(340px,calc(100vw - 16px));background:var(--s1);border:1px solid var(--s3);border-radius:16px;padding:12px;z-index:50;display:none;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#pop.open{display:block}
+.pt{display:flex;gap:4px;margin-bottom:10px}.pt button{flex:1}
+.big{font-size:52px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:6px 0}
+.sub{text-align:center;font-size:12.5px;color:var(--mu);margin-bottom:8px}
+.row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.row button{flex:1 1 auto}
+.go{background:var(--ok);border-color:var(--ok);color:#06210f}
+.go.pause{background:#ffb84d;border-color:#ffb84d;color:#2a1a00}
+input[type=number]{width:70px;background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:8px;padding:7px;font-size:14px;text-align:center}
+label.o{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mu);justify-content:center;margin-top:6px}
+.laps{max-height:90px;overflow:auto;font-size:12.5px;color:var(--mu);text-align:center;font-variant-numeric:tabular-nums}
+#today{margin-top:10px;padding-top:8px;border-top:1px solid var(--s3);font-size:12.5px;color:var(--mu);text-align:center}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);font-size:14px;pointer-events:none}
+#zen{position:fixed;top:calc(8px + env(safe-area-inset-top,0));right:8px;z-index:60;display:none;gap:6px}
+body.zen #zen{display:flex}body.zen #bar{display:none}
+#zen button{background:rgba(23,23,28,.82);backdrop-filter:blur(6px)}
+#notes{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:var(--s1);border-left:1px solid var(--s3);z-index:70;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px;box-shadow:-10px 0 40px rgba(0,0,0,.5)}
+#notes.open{display:flex}
+.nh{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.nh button{padding:5px 9px;font-size:12px}
+#nTa{flex:1;resize:none;background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:12px;padding:12px;font:15px/1.5 inherit;font-family:inherit;outline:none}
+.ns{font-size:11.5px;color:var(--mu);margin-top:6px;text-align:right}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:#000c;color:#fff;border:1px solid var(--s3);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:99;display:none;max-width:90vw;text-align:center}
+.goal{margin-top:10px}.gb{height:8px;border-radius:8px;background:var(--s3);overflow:hidden}.gb i{display:block;height:100%;width:0;background:var(--ok);transition:width .4s}
+.gt{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mu);margin-top:5px}.gt input{width:62px;padding:3px;font-size:12px}
+.week{display:flex;gap:5px;align-items:flex-end;height:54px;margin-top:10px}
+.week div{flex:1;text-align:center;font-size:10px;color:var(--mu);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.week div i{display:block;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px;margin-bottom:2px}
+.keys{font-size:10.5px;color:var(--mu);text-align:center;margin-top:8px;opacity:.8}
+
+#ai{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--s1);border-left:1px solid var(--s3);z-index:71;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px;box-shadow:-10px 0 40px rgba(0,0,0,.5);gap:8px}
+#ai.open{display:flex}
+#ai .ah{display:flex;align-items:center;gap:6px}#ai .ah .sp{flex:1}
+#ai img{max-width:100%;max-height:150px;object-fit:contain;border-radius:8px;background:#fff;display:none;align-self:flex-start}
+#ai input,#ai textarea{background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:8px;padding:8px;font:inherit;font-size:13px;width:100%}
+#ai textarea{resize:none;height:56px}
+#ai .row{display:flex;gap:6px;flex-wrap:wrap}
+#aiOut{flex:1;overflow:auto;background:var(--s2);border-radius:8px;padding:10px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;min-height:80px}
+#ai details{font-size:12px;color:var(--mu)}
+
+#main.v-tools #p-tools,#main.v-tool #p-tool,#main.v-ptool #p-tool,#main.v-ptool #p-pdf{display:block}
+#main.v-tools #p-tools,#main.v-tool #p-tool{flex:1 1 auto}
+#main.v-tool #p-tool,#main.v-ptool #p-tool{display:flex}
+#p-tool{flex-direction:column}#p-tool iframe{flex:1 1 auto;min-height:0;height:auto}
+#main.v-ptool #p-pdf{flex:0 0 calc(var(--sp,50)*1%)}
+#main.v-ptool #p-tool{flex:1 1 auto}
+#main.v-ptool #dv{display:block}
+@media (max-width:899px){#main.v-ptool{flex-direction:column}#main.v-ptool #dv{cursor:row-resize}#main.v-ptool #dv::after{width:36px;height:3px}}
+#p-tools{overflow:auto;padding:12px}
+#p-tools h3{margin:4px 2px 10px;font-size:14px;color:var(--mu);font-weight:600}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tcard{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;background:var(--s2);border:1px solid var(--s3);border-radius:14px;padding:14px;color:var(--tx)}
+.tcard .ti{font-size:26px}.tcard b{font-size:14px}.tcard small{color:var(--mu);font-size:12px;line-height:1.3}
+.tcard:active{background:var(--s3)}
+.tbar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--s1);border-bottom:1px solid var(--s3);flex:none}
+.tbar b{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbar button.on{background:var(--ac);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{padding:5px 9px;font-size:12px;border-radius:999px}
+#aiCtx{height:64px}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="tabs">
+    <button data-v="pdf">📄 PDF</button>
+    <button data-v="tube">▶ Videos</button>
+    <button data-v="split">◫ PDF + Video</button>
+    <button data-v="focus">🎯 Focus Desk</button>
+    <button data-v="tools">🧰 Tools</button>
+  </div>
+  <div class="sp"></div>
+  <span id="clk" class="hide-s"></span>
+  <button id="abtn" title="Gemini mein bhejo (Alt+G)">🤖</button>
+  <button id="nbtn" title="Notes (Alt+N)">📝</button>
+  <button id="zbtn" title="Zen mode (Alt+Z)">⛶</button>
+  <button id="chip">⏱ 00:00</button>
+  <button id="cls" title="Band karo">✕</button>
+</div>
+
+<div id="main" class="v-pdf">
+  <section class="pane" id="p-pdf"><iframe data-src="./pdf-viewer.html" title="PDF Reader" allow="fullscreen; clipboard-read; clipboard-write"></iframe></section>
+  <div id="dv" title="Drag karke size badlo"></div>
+  <section class="pane" id="p-tube"><iframe data-src="./study-tube.html" title="Study Tube" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></section>
+  <section class="pane" id="p-focus"><iframe data-src="./focus-desk.html" title="Focus Desk" allow="autoplay; fullscreen; wake-lock; picture-in-picture"></iframe></section>
+  <section class="pane" id="p-tools"><h3>🧰 Saare study tools ek jagah (timer, notes, 🤖 AI sab saath chalte hain)</h3><div class="tgrid" id="tgrid"></div></section>
+  <section class="pane" id="p-tool"><div class="tbar"><button id="tBack">← Tools</button><b id="tName"></b><button id="tSplit" title="PDF ke saath side-by-side">◫ PDF ke saath</button></div><iframe title="Tool" allow="fullscreen; clipboard-read; clipboard-write; autoplay"></iframe></section>
+</div>
+
+<div id="zen"><button id="zchip">⏱ 00:00</button><button id="zx" title="Zen se bahar">⤢</button></div>
+<div id="notes"><div class="nh"><b>📝 Quick Notes</b><span class="sp"></span><button id="nCp">Copy</button><button id="nDl">⬇ .txt</button><button id="nClr">Clear</button><button id="nX">✕</button></div>
+<textarea id="nTa" placeholder="Yahan jo bhi likhoge apne aap save hoga (formula, doubt, revision points...)"></textarea><div class="ns" id="nSt"></div></div>
+<div id="ai">
+  <div class="ah"><b>🤖 Gemini mein bhejo</b><span class="sp"></span><button id="aiNew">Naya</button><button id="aiX">✕</button></div>
+  <img id="aiImg" alt="question">
+  <div class="row"><button id="aiPaste">📋 Paste</button><button id="aiFile">🖼 Gallery</button></div>
+  <input type="file" id="aiFi" accept="image/*" hidden>
+  <div class="chips" id="aiChips"><button data-t="Step-by-step samjhao.">🧮 Steps</button><button data-t="Shortcut trick batao.">⚡ Trick</button><button data-t="Hindi mein samjhao.">🇮🇳 Hindi</button><button data-t="Is jaise 3 aur question do (answer ke saath).">🔁 Similar 3</button><button data-t="Baaki options galat kyun hain?">❌ Galat options</button></div>
+  <textarea id="aiQ" placeholder="Gemini ko kya kehna hai? (khaali = poora question step-by-step samjhao)"></textarea>
+  <div class="row"><button id="aiShare" style="background:var(--ac);color:#fff">📤 Gemini app ko bhejo</button><button id="aiGem">↗ Gemini Pro kholo (same tab)</button></div>
+  <div class="row"><button id="aiEdit">🎨 Photo Studio mein edit karo</button></div>
+  <div id="aiOut">PDF mein 🤖 dabao aur question pe drag karo, phir "Gemini app ko bhejo". Video ka screenshot Gallery/Paste se daalo.</div>
+  <details><summary>⚙ Mera context / Gemini link</summary>
+    <textarea id="aiCtx" placeholder="Ek baar likho, har baar Gemini ko saath jayega (jaise: Main SSC CGL ki taiyari kar raha hoon, Hinglish mein chhote steps ke saath samjhao)"></textarea>
+    <input id="aiGemUrl" placeholder="Gemini link (khaali = gemini.google.com/app)">
+  </details>
+</div>
+<div id="toast"></div>
+<div id="pop">
+  <div class="pt"><button data-m="sw" class="on">⏱ Stopwatch</button><button data-m="cd">⏳ Timer</button><button data-m="ck">🕐 Clock</button></div>
+  <div id="v-sw">
+    <div class="big" id="swT">00:00</div>
+    <div class="sub" id="swS">Stopwatch</div>
+    <div class="row"><button id="swGo" class="go">▶ Start</button><button id="swLap">⚑ Lap</button><button id="swRs">↺ Reset</button></div>
+    <div class="laps" id="laps"></div>
+  </div>
+  <div id="v-cd" style="display:none">
+    <div class="big" id="cdT">25:00</div>
+    <div class="sub" id="cdS">Timer</div>
+    <div class="row"><button data-p="15">15m</button><button data-p="25">25m</button><button data-p="45">45m</button><button data-p="60">60m</button><button data-p="90">90m</button></div>
+    <div class="row"><input type="number" id="cdMin" min="1" max="600" value="25"><span style="align-self:center;color:var(--mu);font-size:13px">minute</span></div>
+    <div class="row"><button id="cdGo" class="go">▶ Start</button><button id="cdRs">↺ Reset</button></div>
+    <label class="o"><input type="checkbox" id="pomo"> Pomodoro: focus ke baad 5 min break, auto</label>
+  </div>
+  <div id="v-ck" style="display:none">
+    <div class="big" id="ckT">--:--</div>
+    <div class="sub" id="ckD"></div>
+  </div>
+  <div id="today">Aaj padha: 0m</div>
+  <div class="goal"><div class="gb"><i id="gFill"></i></div><div class="gt"><span id="gTxt">Goal</span><label>Goal <input type="number" id="gIn" min="30" max="1200" step="10"> min</label></div></div>
+  <div class="week" id="week"></div>
+  <label class="o"><input type="checkbox" id="eye"> 👁 Eye break: har 20 min padhai par yaad dilao</label>
+  <div class="keys">Alt+1/2/3/4 tabs · Alt+Space timer · Alt+N notes · Alt+Z zen</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var main=$('#main'), fr={pdf:$('#p-pdf iframe'),tube:$('#p-tube iframe'),focus:$('#p-focus iframe'),tool:$('#p-tool iframe')};
+var view='pdf';
+var TOOLS=[['photo-studio.html','🎨','Photo Studio','Photoshop jaisa editor: layers, brush, text, crop, filters'],['supermaths.html','➗','Super Maths','Maths practice'],['superenglish.html','📖','Super English','English practice'],['superreasoning.html','🧩','Super Reasoning','Reasoning practice'],['reading.html','📚','Comprehension','Reading passages'],['vocab-srs.html','🧠','Vocab SRS','Spaced repetition words'],['mock-question-bank.html','📝','Question Bank','Mock questions'],['calc-speed-test.html','⚡','Calc Speed Test','Calculation speed'],['optional-elimination.html.html','🎯','SSC Trick Quiz','25Q sets'],['latestjob.html','💼','Latest Jobs','Sarkari jobs']];
+var curTool=null; try{ curTool=localStorage.getItem('sd:tool'); }catch(e){}
+
+function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ tubeEnter(); },{once:true}); } }
+function tubeEnter(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); }catch(e){} }
+function setView(v){
+  view=v; main.className='v-'+v;
+  $$('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.v===v); });
+  if(v==='pdf'||v==='split') load('pdf');
+  if(v==='tube'||v==='split'){ var first=!fr.tube.getAttribute('src'); load('tube'); if(!first) tubeEnter(); }
+  if(v==='focus') load('focus');
+  if(v==='tool'||v==='ptool'){ if(!curTool){ return setView('tools'); } openTool(curTool,true); if(v==='ptool') load('pdf'); }
+  $('#tSplit').classList.toggle('on',v==='ptool');
+  $$('.tabs button').forEach(function(b){ if(b.dataset.v==='tools') b.classList.toggle('on',v==='tools'||v==='tool'||v==='ptool'); });
+  try{ localStorage.setItem('sd:view',v); }catch(e){}
+}
+
+/* ---- tools launcher ---- */
+function openTool(f,keep){ var t=TOOLS.filter(function(x){return x[0]===f})[0]; if(!t) return; curTool=f; try{ localStorage.setItem('sd:tool',f); }catch(e){}
+  $('#tName').textContent=t[1]+' '+t[2]; if(fr.tool.getAttribute('data-f')!==f){ fr.tool.setAttribute('data-f',f); fr.tool.src='./'+f; }
+  if(!keep) setView(view==='ptool'?'ptool':'tool'); }
+$('#tgrid').innerHTML=TOOLS.map(function(t){ return '<button class="tcard" data-f="'+t[0]+'"><span class="ti">'+t[1]+'</span><b>'+t[2]+'</b><small>'+t[3]+'</small></button>'; }).join('');
+$('#tgrid').addEventListener('click',function(e){ var b=e.target.closest('.tcard'); if(b){ view='tool'; openTool(b.dataset.f); } });
+$('#tBack').onclick=function(){ setView('tools'); };
+window.editInStudio=function(du){ view='tool'; var f='photo-studio.html', same=fr.tool.getAttribute('data-f')===f; studioPending=du; openTool(f); if(same&&studioReady){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:du},'*'); studioPending=null; }catch(e){} } };
+var studioPending=null, studioReady=false;
+window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-studio-ready'){ studioReady=true; if(studioPending){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:studioPending},'*'); }catch(x){} studioPending=null; } } });
+
+$('#tSplit').onclick=function(){ setView(view==='ptool'?'tool':'ptool'); };
+$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b) setView(b.dataset.v); });
+
+/* ---- divider ---- */
+(function(){
+  var dv=$('#dv'), sp=+localStorage.getItem('sd:sp')||50; main.style.setProperty('--sp',sp);
+  var on=false;
+  dv.addEventListener('pointerdown',function(e){ on=true; dv.setPointerCapture(e.pointerId); document.body.classList.add('drag'); });
+  dv.addEventListener('pointermove',function(e){ if(!on) return; var r=main.getBoundingClientRect(), col=getComputedStyle(main).flexDirection==='column';
+    var p=col?(e.clientY-r.top)/r.height*100:(e.clientX-r.left)/r.width*100; sp=Math.max(20,Math.min(80,p)); main.style.setProperty('--sp',sp); });
+  function end(){ if(!on) return; on=false; document.body.classList.remove('drag'); try{ localStorage.setItem('sd:sp',sp); }catch(e){} }
+  dv.addEventListener('pointerup',end); dv.addEventListener('pointercancel',end);
+})();
+
+/* ---- parent <-> Focus Desk relay (tracker bridge chalta rahe) + Study Tube exit ---- */
+var emb=window.parent!==window;
+window.addEventListener('message',function(e){
+  var d=e.data, fw=fr.focus.contentWindow;
+  if(fw && e.source===fw){ if(emb){ if(d&&d.type==='fd-close'){ closeDesk(); } try{ window.parent.postMessage(d,'*'); }catch(x){} } return; }
+  if(e.source===fr.tube.contentWindow){ if(d==='uv-study-exit') setView('pdf'); return; }
+  if(emb && e.source===window.parent && fw){ try{ fw.postMessage(d,'*'); }catch(x){} }
+});
+function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
+$('#cls').onclick=function(){ if(emb) closeDesk(); else history.length>1?history.back():window.close(); };
+
+/* ---- clock ---- */
+function p2(n){return (n<10?'0':'')+n}
+function hms(s){ s=Math.max(0,Math.floor(s)); var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60; return (h?h+':'+p2(m):p2(m))+':'+p2(x); }
+function tickClock(){ var d=new Date(); var t=p2(d.getHours()%12||12)+':'+p2(d.getMinutes())+' '+(d.getHours()<12?'AM':'PM');
+  $('#clk').textContent='🕐 '+t; $('#ckT').textContent=t+':'+p2(d.getSeconds()); $('#ckD').textContent=d.toLocaleDateString('hi-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
+
+/* ---- stopwatch + timer (Date.now based, tab switch par bhi chalta rehta hai) ---- */
+var K='sd:t', S={sw:{run:false,t0:0,base:0,laps:[]},cd:{run:false,end:0,left:25*60,tot:25*60,phase:'focus',pomo:false}};
+try{ var sv=JSON.parse(localStorage.getItem(K)||'null'); if(sv){ S.sw=Object.assign(S.sw,sv.sw||{}); S.cd=Object.assign(S.cd,sv.cd||{}); } }catch(e){}
+function save(){ try{ localStorage.setItem(K,JSON.stringify(S)); }catch(e){} }
+function dayKey(){ var d=new Date(); return 'sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+function addStudy(sec){ try{ var k=dayKey(); localStorage.setItem(k,(+localStorage.getItem(k)||0)+sec); }catch(e){} }
+function swElapsed(){ return S.sw.base+(S.sw.run?(Date.now()-S.sw.t0)/1000:0); }
+function cdLeft(){ return S.cd.run?Math.max(0,(S.cd.end-Date.now())/1000):S.cd.left; }
+var beepCtx; function beep(n){ try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); for(var i=0;i<(n||3);i++){ (function(i){ var o=beepCtx.createOscillator(),g=beepCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(beepCtx.destination); var t=beepCtx.currentTime+i*.4; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); })(i); } }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }
+var lastTick=Date.now(), doneFlash=0;
+function tick(){
+  var now=Date.now(), dt=(now-lastTick)/1000; lastTick=now; if(dt>5) dt=0;
+  if(S.sw.run) addStudy(dt);
+  eyeTick(dt);
+  if(S.cd.run){ if(S.cd.phase==='focus') addStudy(dt); if(cdLeft()<=0) cdFinish(); }
+  render();
+}
+function cdFinish(){
+  beep(4); doneFlash=Date.now()+8000;
+  if(S.cd.pomo){ if(S.cd.phase==='focus'){ S.cd.phase='break'; S.cd.tot=5*60; } else { S.cd.phase='focus'; S.cd.tot=(+$('#cdMin').value||25)*60; }
+    S.cd.left=S.cd.tot; S.cd.end=Date.now()+S.cd.tot*1000; S.cd.run=true; }
+  else { S.cd.run=false; S.cd.left=S.cd.tot; }
+  save();
+}
+function render(){
+  var e=swElapsed(), l=cdLeft();
+  $('#swT').textContent=hms(e); $('#cdT').textContent=hms(l);
+  var g=$('#swGo'); g.textContent=S.sw.run?'⏸ Pause':'▶ Start'; g.classList.toggle('pause',S.sw.run);
+  var c=$('#cdGo'); c.textContent=S.cd.run?'⏸ Pause':'▶ Start'; c.classList.toggle('pause',S.cd.run);
+  $('#cdS').textContent=S.cd.pomo?(S.cd.phase==='focus'?'🎯 Focus':'☕ Break'):'Timer';
+  var chip=$('#chip'), txt;
+  if(S.cd.run){ txt='⏳ '+hms(l); } else if(S.sw.run||e>0){ txt='⏱ '+hms(e); } else { txt='⏱ 00:00'; }
+  chip.textContent=txt; chip.classList.toggle('run',S.sw.run||S.cd.run); chip.classList.toggle('done',Date.now()<doneFlash);
+  var m=Math.floor((+localStorage.getItem(dayKey())||0)/60); $('#today').textContent='Aaj padha: '+(m>=60?Math.floor(m/60)+'h ':'')+(m%60)+'m';
+  try{ $('#zchip').textContent=txt; goalRender(); }catch(x){}
+  document.title=(S.cd.run?'⏳ '+hms(l):S.sw.run?'⏱ '+hms(e):'Study Desk');
+  tickClock();
+}
+$('#swGo').onclick=function(){ if(S.sw.run){ S.sw.base=swElapsed(); S.sw.run=false; } else { S.sw.t0=Date.now(); S.sw.run=true; } save(); render(); };
+$('#swRs').onclick=function(){ S.sw={run:false,t0:0,base:0,laps:[]}; $('#laps').innerHTML=''; save(); render(); };
+$('#swLap').onclick=function(){ var e=swElapsed(); if(e<=0) return; S.sw.laps.push(e); drawLaps(); save(); };
+function drawLaps(){ $('#laps').innerHTML=S.sw.laps.map(function(v,i){ return 'Lap '+(i+1)+' · '+hms(v); }).reverse().join('<br>'); }
+$('#cdGo').onclick=function(){
+  if(S.cd.run){ S.cd.left=cdLeft(); S.cd.run=false; }
+  else { if(S.cd.left<=0||S.cd.left===S.cd.tot){ var m=Math.max(1,+$('#cdMin').value||25); if(S.cd.phase==='focus'){ S.cd.tot=m*60; S.cd.left=S.cd.tot; } } S.cd.end=Date.now()+S.cd.left*1000; S.cd.run=true; try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); beepCtx.resume&&beepCtx.resume(); }catch(e){} }
+  save(); render(); };
+$('#cdRs').onclick=function(){ S.cd.run=false; S.cd.phase='focus'; var m=Math.max(1,+$('#cdMin').value||25); S.cd.tot=m*60; S.cd.left=S.cd.tot; save(); render(); };
+$('#v-cd').addEventListener('click',function(e){ var b=e.target.closest('[data-p]'); if(!b) return; $('#cdMin').value=b.dataset.p; if(!S.cd.run){ S.cd.phase='focus'; S.cd.tot=b.dataset.p*60; S.cd.left=S.cd.tot; save(); render(); } });
+$('#cdMin').addEventListener('change',function(){ if(!S.cd.run){ S.cd.phase='focus'; S.cd.tot=Math.max(1,+this.value||25)*60; S.cd.left=S.cd.tot; save(); render(); } });
+$('#pomo').checked=!!S.cd.pomo; $('#pomo').onchange=function(){ S.cd.pomo=this.checked; save(); render(); };
+if(S.cd.tot) $('#cdMin').value=Math.round(S.cd.tot/60)||25;
+drawLaps();
+
+/* ---- popover ---- */
+var pop=$('#pop');
+$('#chip').onclick=function(e){ e.stopPropagation(); pop.classList.toggle('open'); };
+document.addEventListener('pointerdown',function(e){ if(pop.classList.contains('open') && !pop.contains(e.target) && e.target!==$('#chip')) pop.classList.remove('open'); });
+$('.pt').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var m=b.dataset.m;
+  $$('.pt button').forEach(function(x){ x.classList.toggle('on',x===b); });
+  ['sw','cd','ck'].forEach(function(k){ $('#v-'+k).style.display=k===m?'':'none'; }); });
+
+/* ---- screen awake while timer runs ---- */
+var wl=null; function wake(){ try{ if((S.sw.run||S.cd.run)&&!wl&&navigator.wakeLock){ navigator.wakeLock.request('screen').then(function(l){ wl=l; l.addEventListener('release',function(){ wl=null; }); }).catch(function(){}); } }catch(e){} }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') wake(); });
+setInterval(function(){ tick(); wake(); },500);
+
+
+/* ---- toast ---- */
+var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(tt); tt=setTimeout(function(){ t.style.display='none'; },3200); }
+/* ---- notes ---- */
+(function(){ var ta=$('#nTa'), nb=$('#notes'), st=$('#nSt'), sv;
+  try{ ta.value=localStorage.getItem('sd:notes')||''; }catch(e){}
+  ta.addEventListener('input',function(){ clearTimeout(sv); sv=setTimeout(function(){ try{ localStorage.setItem('sd:notes',ta.value); st.textContent='Saved ✓ '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(e){} },400); });
+  window.toggleNotes=function(f){ var o=(f===undefined)?!nb.classList.contains('open'):f; nb.classList.toggle('open',o); if(o) setTimeout(function(){ ta.focus(); },50); };
+  $('#nbtn').onclick=function(){ toggleNotes(); }; $('#nX').onclick=function(){ toggleNotes(false); };
+  $('#nCp').onclick=function(){ try{ navigator.clipboard.writeText(ta.value); toast('Copy ho gaya'); }catch(e){ ta.select(); document.execCommand('copy'); } };
+  $('#nDl').onclick=function(){ var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ta.value],{type:'text/plain'})); a.download='study-notes-'+new Date().toISOString().slice(0,10)+'.txt'; a.click(); };
+  $('#nClr').onclick=function(){ if(ta.value&&confirm('Saare notes mita dein?')){ ta.value=''; localStorage.setItem('sd:notes',''); } };
+})();
+
+/* ---- Gemini bhejo ---- */
+(function(){ var P=$('#ai'), img=$('#aiImg'), out=$('#aiOut'), q=$('#aiQ'), data=null, gu=$('#aiGemUrl');
+  try{ gu.value=localStorage.getItem('sd:gemurl')||''; }catch(e){}
+  gu.onchange=function(){ var v=gu.value.trim(); if(v&&!/^https?:\/\//i.test(v)) v='https://'+v; gu.value=v; try{ localStorage.setItem('sd:gemurl',v); }catch(e){} toast(v?'Gemini link save ho gaya':'Default link use hoga'); };
+  var cx=$('#aiCtx'); try{ cx.value=localStorage.getItem('sd:gemctx')||'Main SSC CGL ki taiyari kar raha hoon. Hinglish mein, chhote steps aur shortcut trick ke saath samjhao.'; }catch(e){}
+  cx.onchange=function(){ try{ localStorage.setItem('sd:gemctx',cx.value.trim()); }catch(e){} toast('Context save ho gaya'); };
+  $('#aiChips').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var t=b.dataset.t; q.value=q.value.indexOf(t)>=0?q.value:(q.value?q.value+' ':'')+t; });
+  function fullTxt(){ var u=q.value.trim(), c=cx.value.trim(); return [c,u||'Is question ko step-by-step samjhao.'].filter(Boolean).join('\n'); }
+  function open(f){ P.classList.toggle('open',f); if(f) toggleNotes(false); }
+  window.toggleAI=function(){ open(!P.classList.contains('open')); };
+  function setImg(du){ data=du; img.src=du; img.style.display='block'; open(true); out.textContent='Image ready. Neeche "Gemini app ko bhejo" dabao.'; }
+  function fromBlob(b){ var r=new FileReader(); r.onload=function(){ setImg(r.result); }; r.readAsDataURL(b); }
+  $('#abtn').onclick=window.toggleAI; $('#aiX').onclick=function(){ open(false); };
+  $('#aiEdit').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } open(false); window.editInStudio(data); };
+  $('#aiNew').onclick=function(){ data=null; img.style.display='none'; q.value=''; out.textContent='Naya doubt shuru karo.'; };
+  $('#aiFile').onclick=function(){ $('#aiFi').click(); };
+  $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
+  $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
+  document.addEventListener('paste',function(e){ if(!P.classList.contains('open')) return; var its=(e.clipboardData||{}).items||[]; for(var i=0;i<its.length;i++) if(its[i].type.indexOf('image/')===0){ fromBlob(its[i].getAsFile()); e.preventDefault(); return; } });
+  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ setImg(d.image); } });
+  $('#aiShare').onclick=async function(){
+    var txt=fullTxt();
+    try{
+      if(data){ var b=await (await fetch(data)).blob(), f=new File([b],'question.jpg',{type:b.type||'image/jpeg'});
+        if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],text:txt}); toast('Share list mein Gemini chuno'); return; } }
+      if(navigator.share){ await navigator.share({text:txt}); return; }
+      toast('Is browser mein share nahi chalta. "Gemini Pro kholo" use karo');
+    }catch(e){ if(e&&e.name!=='AbortError') toast('Share nahi hua: '+(e.message||e)); }
+  };
+  $('#aiGem').onclick=async function(){
+    if(data){ try{ var b=await (await fetch(data)).blob(); await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); toast('Image copy ho gayi. Gemini mein paste karo'); }catch(e){ toast('Copy nahi hua, "Gemini app ko bhejo" use karo'); } }
+    var w=window.open(gu.value.trim()||'https://gemini.google.com/app','sd_gemini'); try{ if(w) w.focus(); }catch(e){}
+  };
+})();
+/* ---- zen mode ---- */
+function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
+$('#zbtn').onclick=function(){ zen(true); toast('Zen mode: bahar aane ke liye ⤢ ya Alt+Z'); }; $('#zx').onclick=function(){ zen(false); };
+$('#zchip').onclick=function(e){ e.stopPropagation(); pop.classList.toggle('open'); };
+/* ---- goal + week ---- */
+function goalMin(){ return +localStorage.getItem('sd:goal')||240; }
+$('#gIn').value=goalMin(); $('#gIn').onchange=function(){ var v=Math.max(30,Math.min(1200,+this.value||240)); try{ localStorage.setItem('sd:goal',v); }catch(e){} render(); };
+function drawWeek(){ var out=[], mx=goalMin()*60, now=new Date(), days=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  for(var i=6;i>=0;i--){ var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i), k='sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()), v=+localStorage.getItem(k)||0; out.push({l:days[d.getDay()],v:v}); mx=Math.max(mx,v); }
+  $('#week').innerHTML=out.map(function(o){ return '<div title="'+Math.round(o.v/60)+' min"><i style="height:'+Math.max(2,Math.round(o.v/mx*38))+'px"></i>'+o.l+'</div>'; }).join(''); }
+var lastW=0, goalHit=false;
+function goalRender(){ var sec=+localStorage.getItem(dayKey())||0, g=goalMin()*60, pct=Math.min(100,sec/g*100);
+  $('#gFill').style.width=pct+'%'; $('#gTxt').textContent='Aaj ka goal: '+Math.round(pct)+'%';
+  if(sec>=g&&!goalHit&&!localStorage.getItem('sd:goalDone:'+dayKey())){ goalHit=true; try{ localStorage.setItem('sd:goalDone:'+dayKey(),'1'); }catch(e){} beep(2); toast('🎉 Aaj ka goal poora! Shabash'); }
+  if(Date.now()-lastW>5000){ lastW=Date.now(); drawWeek(); } }
+/* ---- eye break (20-20-20) ---- */
+var eyeAcc=0; $('#eye').checked=localStorage.getItem('sd:eye')==='1'; $('#eye').onchange=function(){ try{ localStorage.setItem('sd:eye',this.checked?'1':'0'); }catch(e){} eyeAcc=0; };
+function eyeTick(dt){ if(!$('#eye').checked) return; if(S.sw.run||(S.cd.run&&S.cd.phase==='focus')) eyeAcc+=dt; if(eyeAcc>=1200){ eyeAcc=0; beep(2); toast('👁 20 second ke liye 20 feet door dekho, aankhein aaram do'); } }
+/* ---- keyboard shortcuts (shell + children) ---- */
+function keyH(e){ if(!e.altKey||e.ctrlKey||e.metaKey) return; var k=e.key, m={'1':'pdf','2':'tube','3':'split','4':'focus'};
+  if(m[k]){ e.preventDefault(); setView(m[k]); }
+  else if(k===' '||e.code==='Space'){ e.preventDefault(); $('#swGo').click(); }
+  else if(k==='n'||k==='N'){ e.preventDefault(); toggleNotes(); }
+  else if(k==='g'||k==='G'){ e.preventDefault(); toggleAI(); }
+  else if(k==='z'||k==='Z'){ e.preventDefault(); zen(!document.body.classList.contains('zen')); } }
+window.addEventListener('keydown',keyH);
+['pdf','tube','focus','tool'].forEach(function(k){ fr[k].addEventListener('load',function(){ try{ fr[k].contentWindow.addEventListener('keydown',keyH); }catch(e){} }); });
+
+var sv0='pdf'; try{ sv0=localStorage.getItem('sd:view')||'pdf'; }catch(e){}
+if(['pdf','tube','split','focus','tools','tool','ptool'].indexOf(sv0)<0) sv0='pdf';
+setView(sv0); render();
+if(emb) load('focus'); /* tracker bridge ke liye Focus Desk background mein ready rahe */
+})();
+</script>
+</body>
+</html>

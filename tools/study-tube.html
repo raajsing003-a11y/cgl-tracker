@@ -9360,8 +9360,14 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       v.addEventListener('error', () => { toast('Fast mode chal nahi paya, 2x par wapas'); rate = Math.min(rate, 2); wr('uv99:st:rate', rate); const tt = fastTime(); exitFast(false); try { yt.seekTo(tt, true); yt.setPlaybackRate(rate); yt.playVideo(); } catch (e) {} spd(); });
       vw.appendChild(v); fastEl = v;
     } catch (e) {
-      toast('Fast mode fail, 2x par wapas'); rate = 2; wr('uv99:st:rate', rate); spd();
-      try { yt.setPlaybackRate(2); yt.playVideo(); } catch (x) {}
+      if (hdMode) {
+        hdMode = false;
+        toast('HD stream ke liye download server chahiye (Download menu \u2699\uFE0F). Abhi YouTube se quality maangi gayi.');
+        try { yt.setPlaybackQuality({ '480': 'large', '720': 'hd720', '1080': 'hd1080', 'max': 'highres' }[fastQ] || 'hd1080'); yt.setPlaybackRate(Math.min(rate, 2)); yt.playVideo(); } catch (x) {}
+      } else {
+        toast('Fast mode fail, 2x par wapas'); rate = 2; wr('uv99:st:rate', rate); spd();
+        try { yt.setPlaybackRate(2); yt.playVideo(); } catch (x) {}
+      }
     }
     fastBusy = false;
   }
@@ -10040,9 +10046,10 @@ setInterval(org,1500);
 .stpe .r button{border:none;border-radius:8px;background:#272727;color:#f1f1f1;padding:7px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
 .stpe .r button.on{background:#f1f1f1;color:#0f0f0f}
 .stpe h5{margin:10px 0 2px;font-size:12px;color:#8f95c4;font-weight:700;letter-spacing:.3px}
-.stpe label{display:grid;grid-template-columns:104px 1fr 38px;align-items:center;gap:6px;font-size:12px;color:#bbb;margin:3px 0}
-.stpe label b{font-weight:600;text-align:right;color:#eee}
-.stpe input[type=range]{width:100%}
+.stpe .er{display:flex;flex-direction:row;align-items:center;gap:8px;font-size:12px;color:#bbb;margin:2px 0;min-height:30px}
+.stpe .er span{flex:0 0 118px;line-height:1.2}
+.stpe .er input[type=range]{flex:1 1 auto;min-width:0;width:auto;margin:0;height:22px}
+.stpe .er b{flex:0 0 36px;font-weight:600;text-align:right;color:#eee}
 .stpe .note{font-size:11.5px;color:#8a8fb0;margin-top:6px;line-height:1.4}
 </style>
 <script>
@@ -10063,6 +10070,11 @@ setInterval(org,1500);
       '<feConvolveMatrix id="stEnhSh" order="3" kernelMatrix="0 0 0 0 1 0 0 0 0" preserveAlpha="true"/></filter></svg>';
     document.body.appendChild(d);
   }
+  function force(){ var p=P(); if(!p) return;
+    var f=((p.style.getPropertyValue('--stf')||'')+' '+(p.style.getPropertyValue('--stf2')||'')).trim();
+    p.querySelectorAll('.stv-vw iframe,.stv-vw video').forEach(function(n){
+      try{ if(f) n.style.setProperty('filter',f,'important'); else n.style.removeProperty('filter'); }catch(x){} });
+  }
   function apply(){
     svg(); var p=P(); if(!p) return;
     var ai=E.ai/100, sharp=Math.min(100,E.sharp+E.detail*0.6+E.ai*0.5);
@@ -10078,12 +10090,13 @@ setInterval(org,1500);
       tm.setAttribute('values',(1+t).toFixed(3)+' 0 0 0 0  0 1 0 0 0  0 0 '+(1-t).toFixed(3)+' 0 0  0 0 0 1 0');
       var amp=(1-E.high/100*0.18).toFixed(3), exp=(1/(E.gamma/100)).toFixed(3), off=(E.shad/100*0.09).toFixed(3);
       document.querySelectorAll('#stEnhGam feFuncR,#stEnhGam feFuncG,#stEnhGam feFuncB').forEach(function(n){ n.setAttribute('amplitude',amp); n.setAttribute('exponent',exp); n.setAttribute('offset',off); });
-      var a=sharp/100*0.9, c=1+4*a;
+      var a=sharp/100*0.45, c=1+4*a;
       document.getElementById('stEnhSh').setAttribute('kernelMatrix','0 '+(-a).toFixed(3)+' 0 '+(-a).toFixed(3)+' '+c.toFixed(3)+' '+(-a).toFixed(3)+' 0 '+(-a).toFixed(3)+' 0');
       f+=' url(#stEnhF)';
     }
     var same=!need && Math.abs(bright-1)<.001 && Math.abs(con-1)<.001 && Math.abs(sat-1)<.001 && !E.hue && blur<=0.01;
     p.style.setProperty('--stf2', same?'':f);
+    force();
     try{ localStorage.setItem(K,JSON.stringify(E)); }catch(x){}
   }
   function build(){
@@ -10094,7 +10107,7 @@ setInterval(org,1500);
       '<div class="r"><button data-my="save">\uD83D\uDCBE My Preset save</button><button data-my="load">My Preset lagao</button></div>'+
       '<h5>VIDEO QUALITY (HD stream)</h5><div class="r" id="stpeQ"><button data-q="">Auto (YouTube)</button><button data-q="480">480p</button><button data-q="720">720p HD</button><button data-q="1080">1080p FHD</button><button data-q="max">Best</button></div>';
     L.forEach(function(r){ if(!r[1]){ h+='<h5>'+r[0].toUpperCase()+'</h5>'; return; }
-      h+='<label><span>'+r[0]+'</span><input type="range" min="'+r[2]+'" max="'+r[3]+'" data-e="'+r[1]+'"><b data-v="'+r[1]+'"></b></label>'; });
+      h+='<div class="er"><span>'+r[0]+'</span><input type="range" min="'+r[2]+'" max="'+r[3]+'" data-e="'+r[1]+'"><b data-v="'+r[1]+'"></b></div>'; });
     h+='<div class="note">Sliders YouTube video par filter ki tarah lagte hain (Chrome/Edge par best). Sharpness aur Detail heavy hain: phone slow ho to kam rakho. HD stream = asli video file (cobalt) jisme 1080p tak mil jata hai; YouTube embed khud quality force nahi karne deta.</div>';
     d.innerHTML=h; pm.appendChild(d); refresh(d);
     d.addEventListener('input',function(e){ var k=e.target.dataset&&e.target.dataset.e; if(!k) return; E[k]=+e.target.value; var b=d.querySelector('[data-v='+k+']'); if(b) b.textContent=E[k]; apply(); });
@@ -10107,7 +10120,51 @@ setInterval(org,1500);
     });
   }
   function refresh(d){ d.querySelectorAll('input[data-e]').forEach(function(i){ i.value=E[i.dataset.e]; }); d.querySelectorAll('[data-v]').forEach(function(b){ b.textContent=E[b.dataset.v]; }); }
-  setInterval(function(){ try{ build(); var p=P(); if(p && !p.style.getPropertyValue('--stf2') && JSON.stringify(E)!==JSON.stringify(DEF)) apply(); }catch(e){} },800);
+  setInterval(function(){ try{ build(); var p=P(); if(p && !p.style.getPropertyValue('--stf2') && JSON.stringify(E)!==JSON.stringify(DEF)) apply(); force(); }catch(e){} },800);
+})();
+</script>
+<style id="st-rot-css">
+.strot{position:absolute;top:8px;right:8px;z-index:9;width:42px;height:42px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:21px;line-height:42px;text-align:center;cursor:pointer;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.strot:active{background:rgba(255,255,255,.3)}
+#stOv.stv-mini .strot{display:none}
+.stv-vw.stfake{position:fixed!important;z-index:2147483000;top:0!important;left:100vw!important;right:auto!important;bottom:auto!important;width:100vh!important;height:100vw!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;border-radius:0!important;transform-origin:top left;transform:rotate(90deg)!important;background:#000}
+@supports (height:100dvh){.stv-vw.stfake{width:100dvh!important;height:100vw!important}}
+</style>
+<script>
+(function(){
+  var fake=false;
+  function vw(){ return document.querySelector('#stP .stv-vw'); }
+  function toast(m){ try{ showMiniToast(m); }catch(e){} }
+  function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  function lockLand(){ try{ var r=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape'); if(r&&r.catch) r.catch(function(){}); }catch(e){} }
+  function unlockOr(){ try{ screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock(); }catch(e){} }
+  function setFake(on){ var v=vw(); if(!v) return; fake=on; v.classList.toggle('stfake',on); document.documentElement.style.overflow=on?'hidden':''; }
+  function toLandscape(){
+    var v=vw(); if(!v) return;
+    var req=v.requestFullscreen||v.webkitRequestFullscreen;
+    if(!req){ setFake(true); toast('Landscape mode (rotate button se wapas)'); return; }
+    var pr; try{ pr=req.call(v); }catch(e){ setFake(true); return; }
+    var done=function(){ lockLand(); setTimeout(function(){ if(!isFs()&&!fake) setFake(true); },700); };
+    if(pr&&pr.then) pr.then(done,function(){ setFake(true); }); else done();
+  }
+  function toPortrait(){
+    if(fake) setFake(false);
+    if(isFs()){ try{ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }catch(e){} }
+    try{ var r=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('portrait'); if(r&&r.catch) r.catch(function(){}); }catch(e){}
+    setTimeout(unlockOr,600);
+  }
+  function ensure(){
+    var v=vw(); if(!v) return;
+    var b=v.querySelector('.strot');
+    if(!b){ b=document.createElement('button'); b.className='strot'; b.type='button'; b.title='Rotate: landscape / portrait'; b.textContent='\u27F3';
+      b.addEventListener('click',function(e){ e.stopPropagation(); e.preventDefault(); (isFs()||fake)?toPortrait():toLandscape(); });
+      v.appendChild(b); }
+  }
+  function onFs(){ if(!isFs()){ unlockOr(); } }
+  document.addEventListener('fullscreenchange',onFs); document.addEventListener('webkitfullscreenchange',onFs);
+  window.addEventListener('keydown',function(e){ if(e.key==='Escape'&&fake) setFake(false); });
+  window.addEventListener('popstate',function(){ if(fake) setFake(false); });
+  setInterval(function(){ try{ ensure(); }catch(e){} },700);
 })();
 </script>
 </body>
