@@ -1837,6 +1837,20 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('latestjobBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
+(function initStudyTubePage(){
+  const openBtn = document.getElementById('calcStudyTubeBtn');
+  const frame = document.getElementById('studytubeFrame');
+  if(openBtn) openBtn.addEventListener('click', () => {
+    if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+    showCalcPage('studytube');
+  });
+  const backBtn = document.getElementById('studytubeBackBtn');
+  if(backBtn) backBtn.addEventListener('click', () => {
+    try{ frame.contentWindow.postMessage('uv-study-stop','*'); }catch(e){}
+    showCalcPage('menu');
+  });
+})();
 // Super Sets cards (Super English/Maths/Reasoning, Optional Elimination, Reading) — Super Practice jaisa native flow.
 (function initSuperSetCards(){
   document.querySelectorAll('[data-spv]').forEach(function(b){
@@ -8511,7 +8525,7 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // browser Fullscreen API — avoids the "drag from top to exit fullscreen"
 // hint banner some mobile browsers/PWA hosts (e.g. GitHub Pages) show on
 // native fullscreen entry.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'optelim', 'latestjob', 'readingsets', 'readingtype', 'readingnew', 'grammarch'];
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'optelim', 'latestjob', 'studytube', 'readingsets', 'readingtype', 'readingnew', 'grammarch'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8553,8 +8567,8 @@ function showCalcPage(name, _fromPopState){
   // Speed Test ke liye bottom tabbar (aur topbar) hamesha dikhna chahiye —
   // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
   // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
-  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards' && name !== 'mockbank' && name !== 'superenglish' && name !== 'supermaths' && name !== 'superreasoning' && name !== 'optelim' && name !== 'latestjob' && name !== 'readingsets' && name !== 'readingtype' && name !== 'readingnew';
-  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning' && prevName !== 'optelim' && prevName !== 'latestjob' && prevName !== 'readingsets' && prevName !== 'readingtype' && prevName !== 'readingnew';
+  const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards' && name !== 'mockbank' && name !== 'superenglish' && name !== 'supermaths' && name !== 'superreasoning' && name !== 'optelim' && name !== 'latestjob' && name !== 'studytube' && name !== 'readingsets' && name !== 'readingtype' && name !== 'readingnew';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning' && prevName !== 'optelim' && prevName !== 'latestjob' && prevName !== 'studytube' && prevName !== 'readingsets' && prevName !== 'readingtype' && prevName !== 'readingnew';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
   const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
   const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
@@ -8565,7 +8579,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'latestjob' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'latestjob' || name === 'studytube' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'gkquiz' && typeof gkQuizRender === 'function' && gkQuizManifest) safeRun(gkQuizRender, 'gkQuizRender');
