@@ -9109,7 +9109,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   const ago = t => { const d = (Date.now() - t) / 864e5; return d < 1 ? 'today' : d < 2 ? 'yesterday' : d < 30 ? Math.floor(d) + ' days ago' : d < 365 ? Math.floor(d / 30) + ' mo ago' : Math.floor(d / 365) + ' y ago'; };
   const today = () => new Date().toISOString().slice(0, 10);
   const DEF_KEY = 'AIzaSyDRM-yw8kFqRYkZFwOXVgBghp460W2SewY';
-  let key = rd('uv99:st:key', '') || DEF_KEY, chans = rd('uv99:st:chans', []), cache = rd('uv99:st:cache', { t: 0, v: [] }), prog = rd('uv99:st:prog', {});
+  let key = rd('uv99:st:key', '') || DEF_KEY, chans = rd('uv99:st:chans', null) || rd('uv99:st:chans:bak', null) || [], cache = rd('uv99:st:cache', { t: 0, v: [] }), prog = rd('uv99:st:prog', {});
   let lim = rd('uv99:st:lim', 0), rate = rd('uv99:st:rate', 1), day = rd('uv99:st:day', { d: '', s: 0 });
   if (day.d !== today()) day = { d: today(), s: 0 };
   let st = { q: '', ch: '' }, res = null, ov = null, yt = null, tick = null, cur = null, loading = false;
@@ -9183,6 +9183,24 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     } catch (e) { emsg = e.message; }
     loading = false; render(); if (emsg) toast(fr(emsg));
   }
+
+  /* ---- channels hamesha save: localStorage + backup key + IndexedDB + parent copy + file backup / Takeout import ---- */
+  function saveChans() { wr('uv99:st:chans', chans); wr('uv99:st:chans:bak', chans); idbPut(chans); try { if (window.parent !== window) window.parent.postMessage({ type: 'stv-chans', chans: chans }, '*'); } catch (e) {} }
+  function idbOpen() { return new Promise(function (res, rej) { try { var r = indexedDB.open('uv99stv', 1); r.onupgradeneeded = function () { r.result.createObjectStore('k'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(); }; } catch (e) { rej(); } }); }
+  function idbPut(v) { idbOpen().then(function (d) { d.transaction('k', 'readwrite').objectStore('k').put(JSON.stringify(v), 'chans'); }).catch(function () {}); }
+  function idbGet() { return idbOpen().then(function (d) { return new Promise(function (res) { var q = d.transaction('k').objectStore('k').get('chans'); q.onsuccess = function () { try { res(JSON.parse(q.result)); } catch (e) { res(null); } }; q.onerror = function () { res(null); }; }); }).catch(function () { return null; }); }
+  function adoptChans(l) { if (chans.length || !Array.isArray(l) || !l.length) return false; chans = l.filter(function (c) { return c && c.id && c.n; }); if (!chans.length) return false; saveChans(); cache.t = 0; try { render(); } catch (e) {} toast(chans.length + ' channel wapas mil gaye'); return true; }
+  function restoreChans() { if (chans.length) { saveChans(); return; } idbGet().then(function (l) { if (!adoptChans(l)) { try { if (window.parent !== window) window.parent.postMessage({ type: 'stv-chans-get' }, '*'); } catch (e) {} } }); }
+  window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'stv-chans-set' && e.source === window.parent) adoptChans(d.chans); });
+  setTimeout(restoreChans, 700);
+  async function importIds(ids) { toast(ids.length + ' channels import ho rahe hain...'); var n = 0; try { for (var k = 0; k < ids.length; k += 50) { var j = await api('channels', { part: 'snippet,contentDetails', id: ids.slice(k, k + 50).join(','), maxResults: 50 }); (j.items || []).forEach(function (x) { if (!chans.some(function (c) { return c.id === x.id; })) { chans.push({ id: x.id, n: x.snippet.title, img: (x.snippet.thumbnails.default || {}).url || '', up: x.contentDetails.relatedPlaylists.uploads, tag: '' }); n++; } }); } } catch (e) { toast(fr(e.message)); } saveChans(); cache.t = 0; sheet(); toast(n + ' channel add ho gaye'); }
+  function sheetX() { var b = $('stBkp'), r = $('stRs'), i = $('stIm'), f = $('stFi'), f2 = $('stFr'); if (!b) return;
+    b.onclick = function () { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'study-tube', chans: chans })], { type: 'application/json' })); a.download = 'study-tube-channels.json'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('Channels backup download hua'); };
+    r.onclick = function () { f2.click(); };
+    f2.onchange = function () { var fl = f2.files[0]; if (!fl) return; fl.text().then(function (t) { var o = JSON.parse(t), l = Array.isArray(o) ? o : o.chans; if (!Array.isArray(l) || !l.length) throw 0; var n = 0; l.forEach(function (c) { if (c && c.id && c.n && !chans.some(function (x) { return x.id === c.id; })) { chans.push(c); n++; } }); saveChans(); cache.t = 0; sheet(); toast(n + ' channel restore hue'); }).catch(function () { toast('Ye backup file sahi nahi hai'); }); f2.value = ''; };
+    i.onclick = function () { f.click(); };
+    f.onchange = function () { var fl = f.files[0]; if (!fl) return; fl.text().then(function (t) { var all = t.match(/UC[\w-]{22}/g) || [], ids = all.filter(function (x, k) { return all.indexOf(x) === k && !chans.some(function (c) { return c.id === x; }); }); if (!ids.length) { toast('Is file me naye channel nahi mile'); return; } importIds(ids); }); f.value = ''; };
+  }
   async function addChan(v, tag) {
     v = (v || '').trim(); if (!v) throw new Error('Enter @handle / channel URL');
     const vid = ytId(v);
@@ -9193,7 +9211,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     if (!x) throw new Error('Channel not found: paste its @handle or URL');
     if (chans.some(c => c.id === x.id)) throw new Error('Already added');
     chans.push({ id: x.id, n: x.snippet.title, img: (x.snippet.thumbnails.default || {}).url || '', up: x.contentDetails.relatedPlaylists.uploads, tag: (tag || '').trim() });
-    wr('uv99:st:chans', chans); cache.t = 0;
+    saveChans(); cache.t = 0;
   }
   async function deep() {
     if (!st.ch || st.ch === '__r' || st.ch === '__h' || !st.q.trim() || loading) return; loading = true; render();
@@ -9453,7 +9471,8 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       (chans.map((c, i) => '<div class="stv-cr"><img src="' + esc(c.img) + '" alt=""><span>' + esc(c.n) + (c.tag ? ' \u00b7 ' + esc(c.tag) : '') + '</span><button data-rm="' + i + '">&#10005;</button></div>').join('') || '<small>No channels yet</small>') +
       '</div><div class="stv-add" style="display:flex;gap:8px;margin-top:8px"><input id="stA" placeholder="@handle, channel ya video ka link"><input id="stT" placeholder="Subject" style="max-width:110px"><button id="stAd" style="max-width:70px">Add</button></div><label>Daily watch limit</label><select id="stLm">' +
       [[0, 'Off'], [30, '30 min'], [60, '1 hour'], [90, '90 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours']].map(o => '<option value="' + o[0] + '"' + (o[0] === lim ? ' selected' : '') + '>' + o[1] + '</option>').join('') +
-      '</select><label style="display:flex;gap:8px;align-items:center"><input id="stAu" type="checkbox" style="width:auto;margin:0"' + (auto ? ' checked' : '') + '> Open Study Tube when the app starts</label><label style="display:flex;gap:8px;align-items:center"><input id="stOp" type="checkbox" style="width:auto;margin:0"' + (opn ? ' checked' : '') + '> Open search: koi bhi YouTube video search kar sako</label><div class="stv-act"><button id="stSv">Save &amp; refresh</button><button id="stCx">Close</button></div></div>';
+      '</select><label style="display:flex;gap:8px;align-items:center"><input id="stAu" type="checkbox" style="width:auto;margin:0"' + (auto ? ' checked' : '') + '> Open Study Tube when the app starts</label><label style="display:flex;gap:8px;align-items:center"><input id="stOp" type="checkbox" style="width:auto;margin:0"' + (opn ? ' checked' : '') + '> Open search: koi bhi YouTube video search kar sako</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px"><button id="stBkp">&#11015; Channels backup</button><button id="stRs">&#11014; Restore</button><button id="stIm">&#128229; Subscriptions.csv</button></div><small style="opacity:.7;display:block;margin-bottom:6px">Channels is device me hamesha save rehte hain. Apne asli YouTube subscribe wale channels ek baar daalne ke liye: Google Takeout &rarr; YouTube &rarr; subscriptions.csv &rarr; yahan import.</small><input type="file" id="stFi" accept=".csv,text/csv,text/plain" hidden><input type="file" id="stFr" accept="application/json,.json" hidden><div class="stv-act"><button id="stSv">Save &amp; refresh</button><button id="stCx">Close</button></div></div>';
+    sheetX();
   }
   function close() { stop(); if (ov) { ov.remove(); ov = null; } while (depth > 0) popS(); }
   function open() {
@@ -9488,7 +9507,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       else if (b.id === 'stSb') {
         const v = cur; if (!v || !v.c) { toast('Channel abhi load ho raha hai'); return; }
         const i = chans.findIndex(x => x.id === v.c);
-        if (i >= 0) { if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Unsubscribe?'; setTimeout(() => { if (b.dataset.arm === '1') subUI(); }, 3000); return; } chans.splice(i, 1); wr('uv99:st:chans', chans); cache.t = 0; subUI(); render(); toast('Unsubscribed'); }
+        if (i >= 0) { if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Unsubscribe?'; setTimeout(() => { if (b.dataset.arm === '1') subUI(); }, 3000); return; } chans.splice(i, 1); saveChans(); cache.t = 0; subUI(); render(); toast('Unsubscribed'); }
         else { b.textContent = '...'; try { await addChan(v.c, ''); toast('Subscribed: channel add ho gaya'); } catch (x) { toast(fr(x.message)); } subUI(); render(); refresh(true); }
       } else if (b.id === 'stS') { sheet(); pushS(); } else if (b.id === 'stR') refresh(true);
       else if (b.id === 'stDl') dlCur(b);
@@ -9504,7 +9523,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       }
       else if (b.dataset.r) { rate = +b.dataset.r; wr('uv99:st:rate', rate); spd(); rateApply(); }
       else if (b.dataset.deep) deep(); else if (b.dataset.all) searchAll(); else if (b.dataset.back) { res = null; render(); }
-      else if (b.dataset.rm) { chans.splice(+b.dataset.rm, 1); wr('uv99:st:chans', chans); cache.t = 0; sheet(); }
+      else if (b.dataset.rm) { chans.splice(+b.dataset.rm, 1); saveChans(); cache.t = 0; sheet(); }
       else if (b.id === 'stAd') {
         b.textContent = '...';
         try { await addChan($('stA').value, $('stT').value); sheet(); toast('Channel added'); } catch (x) { b.textContent = 'Add'; toast(fr(x.message)); }

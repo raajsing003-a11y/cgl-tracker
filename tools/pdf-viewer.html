@@ -215,7 +215,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
 #libPop .li:hover{background:var(--hover)}
 #libPop .li b{flex:1;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #libPop .li span{font-size:12px;color:var(--muted);white-space:nowrap}
-#libPop .li i{font-style:normal;color:var(--danger);padding:2px 6px;border-radius:6px}
+#libPop .li i{font-style:normal;color:var(--danger);padding:6px 10px;border-radius:8px;font-size:16px}
 #libPop .add{width:100%;padding:9px;border-radius:10px;border:1px dashed var(--accent);background:transparent;color:var(--accent);font-weight:600;margin-bottom:8px}
 #libPop .none{padding:14px;text-align:center;color:var(--muted);font-size:13px}
 #cropOv{position:fixed;inset:0;z-index:95;display:none;cursor:crosshair;background:rgba(0,0,0,.28);touch-action:none}
@@ -258,7 +258,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   <span class="sp"></span>
   <div class="grp">
     <button class="btn" id="btnBm" title="Bookmarks (page yaad rakho)" aria-label="Bookmarks"><span>⭐</span><span class="lbl">Bookmarks</span></button>
-    <button class="btn" id="btnRecent" title="Recent PDFs (dobara kholo)" aria-label="Recent PDFs"><span>🕘</span><span class="lbl">Recent</span></button>
+    <button class="btn" id="btnRecent" title="Saved PDFs (dobara kholo / delete)" aria-label="Saved PDFs"><span>🕘</span><span class="lbl">Saved</span></button>
     <button class="btn" id="btnDark" title="Dark pages" aria-label="Dark pages" aria-pressed="false"><span data-ic="pagedark"></span><span class="lbl">Dark pages</span></button>
     <button class="btn" id="btnTheme" title="Theme: System" aria-label="Theme"><span data-ic="theme"></span><span class="lbl" id="themeLbl">System</span></button>
   </div>
@@ -452,7 +452,8 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     await idbTx('readwrite', function (st) { return st.put({ id: id, name: file.name, size: file.size, t: Date.now(), buf: buf }); });
     var all = await idbTx('readonly', function (st) { return st.getAll(); }) || [];
     all.sort(function (a, b) { return b.t - a.t; });
-    var drop = all.slice(8); if (drop.length) await idbTx('readwrite', function (st) { drop.forEach(function (d) { st.delete(d.id); }); });
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    var drop = all.slice(40); if (drop.length) await idbTx('readwrite', function (st) { drop.forEach(function (d) { st.delete(d.id); }); });
   }
   async function openFiles(files, mode) {
     var f = files && files[0], single = files && files.length === 1 && f && !isImg(f), wasOpen = (mode === 'open');
@@ -480,9 +481,10 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     } else {
       var all = []; try { all = await idbTx('readonly', function (st) { return st.getAll(); }) || []; } catch (e) {}
       all.sort(function (a, b) { return b.t - a.t; });
-      libPop.innerHTML = '<h4>🕘 Recent PDFs (dobara bina dhundhe)</h4>' + (all.length ? all.map(function (r) {
+      var tot = all.reduce(function (a, r) { return a + (r.size || 0); }, 0);
+      libPop.innerHTML = '<h4>🕘 Saved PDFs (' + all.length + ' · ' + fmtSize(tot) + ') — tap karke kholo</h4>' + (all.length ? all.map(function (r) {
         var pp = +localStorage.getItem('pdfpos:' + r.id) || 1;
-        return '<div class="li" data-open="' + esc(r.id) + '"><b>' + esc(r.name) + '</b><span>p.' + pp + ' · ' + fmtSize(r.size) + '</span><i data-rm="' + esc(r.id) + '">✕</i></div>'; }).join('') : '<div class="none">Abhi koi recent PDF nahi. PDF kholo, yahan save ho jayegi.</div>');
+        return '<div class="li" data-open="' + esc(r.id) + '"><b>' + esc(r.name) + '</b><span>p.' + pp + ' · ' + fmtSize(r.size) + '</span><i data-rm="' + esc(r.id) + '" title="Delete">🗑</i></div>'; }).join('') + '<div class="li" id="rmAll" style="justify-content:center;color:var(--danger)"><b style="flex:none">🗑 Sab saved PDFs delete karo</b></div>' : '<div class="none">Abhi koi saved PDF nahi. PDF kholo, yahan apne aap save ho jayegi.</div>');
     }
   }
   function toggleLib(tab) { if (libPop.classList.contains('open') && libTab === tab) { libPop.classList.remove('open'); return; } libTab = tab; libPop.classList.add('open'); renderLib(); }
@@ -493,7 +495,8 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var t = e.target;
     if (t.id === 'bmAdd') { var bm = getBm(); if (!bm.some(function (b) { return b.p === curPage; })) { var n = prompt('Is bookmark ka naam (optional)', ''); bm.push({ p: curPage, n: n || '' }); setBm(bm); } renderLib(); return; }
     if (t.dataset.del) { setBm(getBm().filter(function (b) { return b.p !== +t.dataset.del; })); renderLib(); return; }
-    if (t.dataset.rm) { await idbTx('readwrite', function (st) { return st.delete(t.dataset.rm); }); renderLib(); return; }
+    if (t.dataset.rm) { if (!confirm('Ye PDF saved list se delete karein?')) return; await idbTx('readwrite', function (st) { return st.delete(t.dataset.rm); }); try { localStorage.removeItem('pdfpos:' + t.dataset.rm); } catch (e) {} renderLib(); return; }
+    if (t.closest('#rmAll')) { if (!confirm('Saari saved PDFs delete karein?')) return; await idbTx('readwrite', function (st) { return st.clear(); }); renderLib(); return; }
     var li = t.closest('.li'); if (!li) return;
     if (li.dataset.go) { goPage(+li.dataset.go, true); libPop.classList.remove('open'); }
     else if (li.dataset.open) { var rec = await idbTx('readonly', function (st) { return st.get(li.dataset.open); }); if (rec) { libPop.classList.remove('open'); openFiles([new File([rec.buf], rec.name, { type: 'application/pdf' })], 'open'); } }

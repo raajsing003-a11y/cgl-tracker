@@ -19,7 +19,7 @@ button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 #clk{font-size:12px;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
 #chip{font-variant-numeric:tabular-nums;min-width:86px}
 #chip.run{border-color:var(--ok);color:var(--ok)}
-#chip.done{border-color:var(--bad);color:var(--bad);animation:bl 1s infinite}
+#mbtn.on{border-color:var(--ok);color:var(--ok)}
 @keyframes bl{50%{opacity:.4}}
 #main{flex:1 1 auto;min-height:0;display:flex;position:relative}
 .pane{display:none;min-width:0;min-height:0;background:#000}
@@ -106,6 +106,7 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
   </div>
   <div class="sp"></div>
   <span id="clk" class="hide-s"></span>
+  <button id="mbtn" title="Music chalao (Alt+M)">🔇</button>
   <button id="abtn" title="Gemini mein bhejo (Alt+G)">🤖</button>
   <button id="nbtn" title="Notes (Alt+N)">📝</button>
   <button id="zbtn" title="Zen mode (Alt+Z)">⛶</button>
@@ -142,20 +143,13 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
 </div>
 <div id="toast"></div>
 <div id="pop">
-  <div class="pt"><button data-m="sw" class="on">⏱ Stopwatch</button><button data-m="cd">⏳ Timer</button><button data-m="ck">🕐 Clock</button></div>
+  <div class="pt"><button data-m="sw" class="on">⏱ Timer</button><button data-m="ck">🕐 Clock</button></div>
   <div id="v-sw">
     <div class="big" id="swT">00:00</div>
-    <div class="sub" id="swS">Stopwatch</div>
+    <div class="sub" id="swS">Study Desk timer</div>
+    <div class="row" id="fdModes"><button data-fm="stop">Stopwatch</button><button data-fm="focus">Focus</button><button data-fm="short">Short break</button><button data-fm="long">Long break</button></div>
     <div class="row"><button id="swGo" class="go">▶ Start</button><button id="swLap">⚑ Lap</button><button id="swRs">↺ Reset</button></div>
     <div class="laps" id="laps"></div>
-  </div>
-  <div id="v-cd" style="display:none">
-    <div class="big" id="cdT">25:00</div>
-    <div class="sub" id="cdS">Timer</div>
-    <div class="row"><button data-p="15">15m</button><button data-p="25">25m</button><button data-p="45">45m</button><button data-p="60">60m</button><button data-p="90">90m</button></div>
-    <div class="row"><input type="number" id="cdMin" min="1" max="600" value="25"><span style="align-self:center;color:var(--mu);font-size:13px">minute</span></div>
-    <div class="row"><button id="cdGo" class="go">▶ Start</button><button id="cdRs">↺ Reset</button></div>
-    <label class="o"><input type="checkbox" id="pomo"> Pomodoro: focus ke baad 5 min break, auto</label>
   </div>
   <div id="v-ck" style="display:none">
     <div class="big" id="ckT">--:--</div>
@@ -165,7 +159,7 @@ body.zen #zen{display:flex}body.zen #bar{display:none}
   <div class="goal"><div class="gb"><i id="gFill"></i></div><div class="gt"><span id="gTxt">Goal</span><label>Goal <input type="number" id="gIn" min="30" max="1200" step="10"> min</label></div></div>
   <div class="week" id="week"></div>
   <label class="o"><input type="checkbox" id="eye"> 👁 Eye break: har 20 min padhai par yaad dilao</label>
-  <div class="keys">Alt+1/2/3/4 tabs · Alt+Space timer · Alt+N notes · Alt+Z zen</div>
+  <div class="keys">Alt+1/2/3/4 tabs · Alt+Space timer · Alt+N notes · Alt+M music · Alt+Z zen</div>
 </div>
 
 <script>
@@ -220,8 +214,11 @@ $('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'
 var emb=window.parent!==window;
 window.addEventListener('message',function(e){
   var d=e.data, fw=fr.focus.contentWindow;
-  if(fw && e.source===fw){ if(emb){ if(d&&d.type==='fd-close'){ closeDesk(); } try{ window.parent.postMessage(d,'*'); }catch(x){} } return; }
-  if(e.source===fr.tube.contentWindow){ if(d==='uv-study-exit') setView('pdf'); return; }
+  if(fw && e.source===fw){ if(d&&d.type==='fd-ui'){ onUi(d); return; } if(emb){ if(d&&d.type==='fd-close'){ closeDesk(); } try{ window.parent.postMessage(d,'*'); }catch(x){} } return; }
+  if(e.source===fr.tube.contentWindow){ if(d==='uv-study-exit') setView('pdf');
+    else if(d&&d.type==='stv-chans'&&d.chans&&d.chans.length){ try{ localStorage.setItem('sd:chans',JSON.stringify(d.chans)); }catch(x){} }
+    else if(d&&d.type==='stv-chans-get'){ try{ var sc=JSON.parse(localStorage.getItem('sd:chans')||'null'); if(sc&&sc.length) fr.tube.contentWindow.postMessage({type:'stv-chans-set',chans:sc},'*'); }catch(x){} }
+    return; }
   if(emb && e.source===window.parent && fw){ try{ fw.postMessage(d,'*'); }catch(x){} }
 });
 function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
@@ -234,57 +231,47 @@ function tickClock(){ var d=new Date(); var t=p2(d.getHours()%12||12)+':'+p2(d.g
   $('#clk').textContent='🕐 '+t; $('#ckT').textContent=t+':'+p2(d.getSeconds()); $('#ckD').textContent=d.toLocaleDateString('hi-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 
 /* ---- stopwatch + timer (Date.now based, tab switch par bhi chalta rehta hai) ---- */
-var K='sd:t', S={sw:{run:false,t0:0,base:0,laps:[]},cd:{run:false,end:0,left:25*60,tot:25*60,phase:'focus',pomo:false}};
-try{ var sv=JSON.parse(localStorage.getItem(K)||'null'); if(sv){ S.sw=Object.assign(S.sw,sv.sw||{}); S.cd=Object.assign(S.cd,sv.cd||{}); } }catch(e){}
-function save(){ try{ localStorage.setItem(K,JSON.stringify(S)); }catch(e){} }
+var FD={run:false,label:'00:00',mode:'stop',up:false,music:false,laps:[],seen:0};
+/* Ek hi timer: Study Desk (Focus Desk) ka. Chip + panel postMessage se usi ko dikhate/chalate hain (content:// par bhi chalta hai). */
+function fsend(cmd,v){ try{ var w=fr.focus.getAttribute('src')&&fr.focus.contentWindow; if(w){ w.postMessage({type:'sd-cmd',cmd:cmd,v:v},'*'); return true; } }catch(e){} return false; }
+function onUi(d){ FD.up=true; FD.seen=Date.now(); FD.label=d.label||'00:00'; FD.run=!!d.running; FD.mode=d.mode||'stop'; FD.music=!!d.music; FD.laps=d.laps||[]; render(); }
+function needFocus(){ if(FD.up&&Date.now()-FD.seen<4000) return false; load('focus'); toast('Study Desk timer khul raha hai… 1 second baad phir dabao'); return true; }
 function dayKey(){ var d=new Date(); return 'sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
 function addStudy(sec){ try{ var k=dayKey(); localStorage.setItem(k,(+localStorage.getItem(k)||0)+sec); }catch(e){} }
-function swElapsed(){ return S.sw.base+(S.sw.run?(Date.now()-S.sw.t0)/1000:0); }
-function cdLeft(){ return S.cd.run?Math.max(0,(S.cd.end-Date.now())/1000):S.cd.left; }
 var beepCtx; function beep(n){ try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); for(var i=0;i<(n||3);i++){ (function(i){ var o=beepCtx.createOscillator(),g=beepCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(beepCtx.destination); var t=beepCtx.currentTime+i*.4; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); })(i); } }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }
-var lastTick=Date.now(), doneFlash=0;
+var lastTick=Date.now();
 function tick(){
   var now=Date.now(), dt=(now-lastTick)/1000; lastTick=now; if(dt>5) dt=0;
-  if(S.sw.run) addStudy(dt);
+  if(FD.up&&now-FD.seen>4000){ FD.up=false; FD.run=false; FD.label='00:00'; FD.mode='stop'; FD.music=false; FD.laps=[]; }
+  if(FD.run&&(FD.mode==='stop'||FD.mode==='focus')) addStudy(dt);
   eyeTick(dt);
-  if(S.cd.run){ if(S.cd.phase==='focus') addStudy(dt); if(cdLeft()<=0) cdFinish(); }
   render();
 }
-function cdFinish(){
-  beep(4); doneFlash=Date.now()+8000;
-  if(S.cd.pomo){ if(S.cd.phase==='focus'){ S.cd.phase='break'; S.cd.tot=5*60; } else { S.cd.phase='focus'; S.cd.tot=(+$('#cdMin').value||25)*60; }
-    S.cd.left=S.cd.tot; S.cd.end=Date.now()+S.cd.tot*1000; S.cd.run=true; }
-  else { S.cd.run=false; S.cd.left=S.cd.tot; }
-  save();
-}
+var MI={stop:'⏱',focus:'🎯',short:'☕',long:'☕'}, ML={stop:'Stopwatch',focus:'Focus',short:'Short break',long:'Long break'};
+function musicSync(){ var on=FD.music, b=$('#mbtn'); b.textContent=on?'🔊':'🔇'; b.classList.toggle('on',on); b.title=on?'Music band karo (Alt+M)':'Music chalao (Alt+M)'; }
 function render(){
-  var e=swElapsed(), l=cdLeft();
-  $('#swT').textContent=hms(e); $('#cdT').textContent=hms(l);
-  var g=$('#swGo'); g.textContent=S.sw.run?'⏸ Pause':'▶ Start'; g.classList.toggle('pause',S.sw.run);
-  var c=$('#cdGo'); c.textContent=S.cd.run?'⏸ Pause':'▶ Start'; c.classList.toggle('pause',S.cd.run);
-  $('#cdS').textContent=S.cd.pomo?(S.cd.phase==='focus'?'🎯 Focus':'☕ Break'):'Timer';
-  var chip=$('#chip'), txt;
-  if(S.cd.run){ txt='⏳ '+hms(l); } else if(S.sw.run||e>0){ txt='⏱ '+hms(e); } else { txt='⏱ 00:00'; }
-  chip.textContent=txt; chip.classList.toggle('run',S.sw.run||S.cd.run); chip.classList.toggle('done',Date.now()<doneFlash);
+  var txt=(MI[FD.mode]||'⏱')+' '+FD.label, chip=$('#chip');
+  $('#swT').textContent=FD.label; $('#swS').textContent=FD.up?(ML[FD.mode]||'Timer'):'Study Desk abhi khula nahi (Start dabao)';
+  var g=$('#swGo'); g.textContent=FD.run?'⏸ Pause':'▶ Start'; g.classList.toggle('pause',FD.run);
+  $$('#fdModes button').forEach(function(b){ b.classList.toggle('on',b.dataset.fm===FD.mode); });
+  $('#swLap').style.display=FD.mode==='stop'?'':'none';
+  $('#laps').textContent=FD.laps.join(' | ').replace(/ \| /g,'\n'); $('#laps').style.whiteSpace='pre-line';
+  chip.textContent=txt; chip.classList.toggle('run',FD.run);
   var m=Math.floor((+localStorage.getItem(dayKey())||0)/60); $('#today').textContent='Aaj padha: '+(m>=60?Math.floor(m/60)+'h ':'')+(m%60)+'m';
   try{ $('#zchip').textContent=txt; goalRender(); }catch(x){}
-  document.title=(S.cd.run?'⏳ '+hms(l):S.sw.run?'⏱ '+hms(e):'Study Desk');
-  tickClock();
+  document.title=FD.run?txt:'Study Desk';
+  musicSync(); tickClock();
 }
-$('#swGo').onclick=function(){ if(S.sw.run){ S.sw.base=swElapsed(); S.sw.run=false; } else { S.sw.t0=Date.now(); S.sw.run=true; } save(); render(); };
-$('#swRs').onclick=function(){ S.sw={run:false,t0:0,base:0,laps:[]}; $('#laps').innerHTML=''; save(); render(); };
-$('#swLap').onclick=function(){ var e=swElapsed(); if(e<=0) return; S.sw.laps.push(e); drawLaps(); save(); };
-function drawLaps(){ $('#laps').innerHTML=S.sw.laps.map(function(v,i){ return 'Lap '+(i+1)+' · '+hms(v); }).reverse().join('<br>'); }
-$('#cdGo').onclick=function(){
-  if(S.cd.run){ S.cd.left=cdLeft(); S.cd.run=false; }
-  else { if(S.cd.left<=0||S.cd.left===S.cd.tot){ var m=Math.max(1,+$('#cdMin').value||25); if(S.cd.phase==='focus'){ S.cd.tot=m*60; S.cd.left=S.cd.tot; } } S.cd.end=Date.now()+S.cd.left*1000; S.cd.run=true; try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); beepCtx.resume&&beepCtx.resume(); }catch(e){} }
-  save(); render(); };
-$('#cdRs').onclick=function(){ S.cd.run=false; S.cd.phase='focus'; var m=Math.max(1,+$('#cdMin').value||25); S.cd.tot=m*60; S.cd.left=S.cd.tot; save(); render(); };
-$('#v-cd').addEventListener('click',function(e){ var b=e.target.closest('[data-p]'); if(!b) return; $('#cdMin').value=b.dataset.p; if(!S.cd.run){ S.cd.phase='focus'; S.cd.tot=b.dataset.p*60; S.cd.left=S.cd.tot; save(); render(); } });
-$('#cdMin').addEventListener('change',function(){ if(!S.cd.run){ S.cd.phase='focus'; S.cd.tot=Math.max(1,+this.value||25)*60; S.cd.left=S.cd.tot; save(); render(); } });
-$('#pomo').checked=!!S.cd.pomo; $('#pomo').onchange=function(){ S.cd.pomo=this.checked; save(); render(); };
-if(S.cd.tot) $('#cdMin').value=Math.round(S.cd.tot/60)||25;
-drawLaps();
+$('#swGo').onclick=function(){ if(needFocus()) return; var was=FD.run; fsend('start');
+  setTimeout(function(){ if(!was&&!FD.run&&(FD.mode==='stop'||FD.mode==='focus')) toast('Agar start nahi hua: Study Desk tab mein pehle target chuno'); },900); };
+$('#swRs').onclick=function(){ if(needFocus()) return; fsend('reset'); };
+$('#swLap').onclick=function(){ if(needFocus()) return; fsend('lap'); };
+$('#fdModes').addEventListener('click',function(e){ var b=e.target.closest('[data-fm]'); if(!b||needFocus()) return; fsend('mode',b.dataset.fm); });
+/* ---- music on/off (top bar) = Study Desk ka hi music ---- */
+$('#mbtn').onclick=function(){
+  if(needFocus.call(null)===true){ fr.focus.addEventListener('load',function(){ setTimeout(function(){ if(!FD.music) fsend('music'); },1500); },{once:true}); return; }
+  fsend('music'); };
+
 
 /* ---- popover ---- */
 var pop=$('#pop');
@@ -292,10 +279,10 @@ $('#chip').onclick=function(e){ e.stopPropagation(); pop.classList.toggle('open'
 document.addEventListener('pointerdown',function(e){ if(pop.classList.contains('open') && !pop.contains(e.target) && e.target!==$('#chip')) pop.classList.remove('open'); });
 $('.pt').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var m=b.dataset.m;
   $$('.pt button').forEach(function(x){ x.classList.toggle('on',x===b); });
-  ['sw','cd','ck'].forEach(function(k){ $('#v-'+k).style.display=k===m?'':'none'; }); });
+  ['sw','ck'].forEach(function(k){ $('#v-'+k).style.display=k===m?'':'none'; }); });
 
 /* ---- screen awake while timer runs ---- */
-var wl=null; function wake(){ try{ if((S.sw.run||S.cd.run)&&!wl&&navigator.wakeLock){ navigator.wakeLock.request('screen').then(function(l){ wl=l; l.addEventListener('release',function(){ wl=null; }); }).catch(function(){}); } }catch(e){} }
+var wl=null; function wake(){ try{ if(FD.run&&!wl&&navigator.wakeLock){ navigator.wakeLock.request('screen').then(function(l){ wl=l; l.addEventListener('release',function(){ wl=null; }); }).catch(function(){}); } }catch(e){} }
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') wake(); });
 setInterval(function(){ tick(); wake(); },500);
 
@@ -364,11 +351,12 @@ function goalRender(){ var sec=+localStorage.getItem(dayKey())||0, g=goalMin()*6
   if(Date.now()-lastW>5000){ lastW=Date.now(); drawWeek(); } }
 /* ---- eye break (20-20-20) ---- */
 var eyeAcc=0; $('#eye').checked=localStorage.getItem('sd:eye')==='1'; $('#eye').onchange=function(){ try{ localStorage.setItem('sd:eye',this.checked?'1':'0'); }catch(e){} eyeAcc=0; };
-function eyeTick(dt){ if(!$('#eye').checked) return; if(S.sw.run||(S.cd.run&&S.cd.phase==='focus')) eyeAcc+=dt; if(eyeAcc>=1200){ eyeAcc=0; beep(2); toast('👁 20 second ke liye 20 feet door dekho, aankhein aaram do'); } }
+function eyeTick(dt){ if(!$('#eye').checked) return; if(FD.run&&(FD.mode==='stop'||FD.mode==='focus')) eyeAcc+=dt; if(eyeAcc>=1200){ eyeAcc=0; beep(2); toast('👁 20 second ke liye 20 feet door dekho, aankhein aaram do'); } }
 /* ---- keyboard shortcuts (shell + children) ---- */
 function keyH(e){ if(!e.altKey||e.ctrlKey||e.metaKey) return; var k=e.key, m={'1':'pdf','2':'tube','3':'split','4':'focus'};
   if(m[k]){ e.preventDefault(); setView(m[k]); }
   else if(k===' '||e.code==='Space'){ e.preventDefault(); $('#swGo').click(); }
+  else if(k==='m'||k==='M'){ e.preventDefault(); $('#mbtn').click(); }
   else if(k==='n'||k==='N'){ e.preventDefault(); toggleNotes(); }
   else if(k==='g'||k==='G'){ e.preventDefault(); toggleAI(); }
   else if(k==='z'||k==='Z'){ e.preventDefault(); zen(!document.body.classList.contains('zen')); } }

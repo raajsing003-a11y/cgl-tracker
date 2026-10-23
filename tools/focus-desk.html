@@ -1444,4 +1444,13 @@ setTimeout(()=>{try{window.dispatchEvent(new Event('resize'))}catch(e){}},400);
 })();
 </script>
 
+<script>/* Study Desk bridge: top-bar timer/music sync + control (postMessage, works even on content://) */
+(function(){var P=window.parent;if(P===window)return;var q=function(s){return document.querySelector(s)};
+function snap(){try{var t=q('#time'),s=q('#start'),m=q('.modes button.on'),a=q('#aud'),L=q('#laps');
+P.postMessage({type:'fd-ui',label:(t.textContent||'').trim(),running:/pause/i.test(s.textContent||''),mode:m?m.dataset.m:'stop',music:!!(a&&!a.paused),laps:L?[].map.call(L.children,function(l){return l.textContent}):[]},'*')}catch(e){}}
+setInterval(snap,500);
+addEventListener('message',function(ev){if(ev.source!==P)return;var d=ev.data||{};if(d.type!=='sd-cmd')return;
+var map={start:'#start',reset:'#reset',lap:'#lap',music:'#mtg'},el=null;
+if(map[d.cmd])el=q(map[d.cmd]);else if(d.cmd==='mode')el=q('.modes button[data-m="'+String(d.v).replace(/[^a-z]/g,'')+'"]');
+if(el){el.click();setTimeout(snap,150)}});setTimeout(snap,300)})();</script>
 </body></html>
