@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Study Desk</title>
+<style>html.cxNoAdm #aiShare,html.cxNoAdm #aiGem,html.cxNoAdm #btnAsk,html.cxNoAdm #btnPG,html.cxNoAdm .gemOnly{display:none!important}</style>
+<script>(function(){function a(){try{document.documentElement.classList.toggle('cxNoAdm',localStorage.getItem('cx:isAdmin')!=='1');}catch(e){}}a();addEventListener('storage',a);window.cxAdm=function(){try{return localStorage.getItem('cx:isAdmin')==='1';}catch(e){return false;}};})();</script>
+<style>
+:root{--bg:#0f0f12;--s1:#17171c;--s2:#202027;--s3:#2c2c35;--tx:#f1f1f4;--mu:#9a9aaa;--ac:#6c8cff;--ok:#3ecf8e;--bad:#ff6b6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+#bar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--s1);border-bottom:1px solid var(--s3);flex:0 0 auto}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+button{font:inherit;color:var(--tx);background:var(--s2);border:1px solid var(--s3);border-radius:10px;padding:7px 11px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+button:active{background:var(--s3)}
+button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.sp{flex:1}
+#clk{font-size:12px;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
+#chip{font-variant-numeric:tabular-nums;min-width:86px}
+#chip.run{border-color:var(--ok);color:var(--ok)}
+#mbtn.on{border-color:var(--ok);color:var(--ok)}
+@keyframes bl{50%{opacity:.4}}
+#main{flex:1 1 auto;min-height:0;display:flex;position:relative}
+.pane{display:none;min-width:0;min-height:0;background:#000}
+.pane iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+#main.v-pdf #p-pdf,#main.v-tube #p-tube,#main.v-google #p-tube,#main.v-focus #p-focus{display:block;flex:1 1 auto}
+#dv{display:none;flex:0 0 8px;background:var(--s3);cursor:col-resize;touch-action:none;position:relative}
+#dv::after{content:"";position:absolute;inset:0;margin:auto;width:3px;height:36px;border-radius:3px;background:var(--mu)}
+#main.v-split #p-pdf,#main.v-split #p-tube{display:block}
+#main.v-split #p-pdf{flex:0 0 calc(var(--sp,50)*1%)}
+#main.v-split #p-tube{flex:1 1 auto}
+#main.v-split #dv{display:block}
+@media (max-width:480px){button{padding:7px 9px;font-size:12.5px}#chip{min-width:74px}}
+@media (max-width:600px){#bar{flex-wrap:wrap}.tabs{order:10;flex:1 0 100%}.tabs button{flex:1 0 auto}.sp{flex:1 1 0}}
+@media (max-width:899px){#main.v-split{flex-direction:column}#main.v-split #dv{cursor:row-resize}#main.v-split #dv::after{width:36px;height:3px}.hide-s{display:none}}
+body.drag iframe{pointer-events:none}
+#pop{position:fixed;right:8px;top:calc(52px + env(safe-area-inset-top,0));width:min(340px,calc(100vw - 16px));background:var(--s1);border:1px solid var(--s3);border-radius:16px;padding:12px;z-index:50;display:none;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#pop.open{display:block}
+.pt{display:flex;gap:4px;margin-bottom:10px}.pt button{flex:1}
+.big{font-size:52px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:6px 0}
+.sub{text-align:center;font-size:12.5px;color:var(--mu);margin-bottom:8px}
+.row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.row button{flex:1 1 auto}
+.go{background:var(--ok);border-color:var(--ok);color:#06210f}
+.go.pause{background:#ffb84d;border-color:#ffb84d;color:#2a1a00}
+input[type=number]{width:70px;background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:8px;padding:7px;font-size:14px;text-align:center}
+label.o{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mu);justify-content:center;margin-top:6px}
+.laps{max-height:90px;overflow:auto;font-size:12.5px;color:var(--mu);text-align:center;font-variant-numeric:tabular-nums}
+#today{margin-top:10px;padding-top:8px;border-top:1px solid var(--s3);font-size:12.5px;color:var(--mu);text-align:center}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);font-size:14px;pointer-events:none}
+#zen{position:fixed;top:calc(8px + env(safe-area-inset-top,0));right:8px;z-index:60;display:none;gap:6px}
+body.zen #zen{display:flex}body.zen #bar{display:none}
+#zen button{background:rgba(23,23,28,.82);backdrop-filter:blur(6px)}
+#notes{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:var(--s1);border-left:1px solid var(--s3);z-index:70;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px;box-shadow:-10px 0 40px rgba(0,0,0,.5)}
+#notes.open{display:flex}
+.nh{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.nh button{padding:5px 9px;font-size:12px}
+#nTa{flex:1;resize:none;background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:12px;padding:12px;font:15px/1.5 inherit;font-family:inherit;outline:none}
+.ns{font-size:11.5px;color:var(--mu);margin-top:6px;text-align:right}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:#000c;color:#fff;border:1px solid var(--s3);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:99;display:none;max-width:90vw;text-align:center}
+.goal{margin-top:10px}.gb{height:8px;border-radius:8px;background:var(--s3);overflow:hidden}.gb i{display:block;height:100%;width:0;background:var(--ok);transition:width .4s}
+.gt{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mu);margin-top:5px}.gt input{width:62px;padding:3px;font-size:12px}
+.week{display:flex;gap:5px;align-items:flex-end;height:54px;margin-top:10px}
+.week div{flex:1;text-align:center;font-size:10px;color:var(--mu);display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.week div i{display:block;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px;margin-bottom:2px}
+.keys{font-size:10.5px;color:var(--mu);text-align:center;margin-top:8px;opacity:.8}
+
+#ai{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--s1);border-left:1px solid var(--s3);z-index:71;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px;box-shadow:-10px 0 40px rgba(0,0,0,.5);gap:8px}
+#ai.open{display:flex}
+#ai .ah{display:flex;align-items:center;gap:6px}#ai .ah .sp{flex:1}
+#ai img{max-width:100%;max-height:150px;object-fit:contain;border-radius:8px;background:#fff;display:none;align-self:flex-start}
+#ai input,#ai textarea{background:var(--s2);color:var(--tx);border:1px solid var(--s3);border-radius:8px;padding:8px;font:inherit;font-size:13px;width:100%}
+#ai textarea{resize:none;height:56px}
+#ai .row{display:flex;gap:6px;flex-wrap:wrap}
+#aiOut{flex:1;overflow:auto;background:var(--s2);border-radius:8px;padding:10px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;min-height:80px}
+#ai details{font-size:12px;color:var(--mu)}
+
+#main.v-tools #p-tools,#main.v-tool #p-tool,#main.v-ptool #p-tool,#main.v-ptool #p-pdf{display:block}
+#main.v-tools #p-tools,#main.v-tool #p-tool{flex:1 1 auto}
+#main.v-tool #p-tool,#main.v-ptool #p-tool{display:flex}
+#p-tool{flex-direction:column}#p-tool iframe{flex:1 1 auto;min-height:0;height:auto}
+#main.v-ptool #p-pdf{flex:0 0 calc(var(--sp,50)*1%)}
+#main.v-ptool #p-tool{flex:1 1 auto}
+#main.v-ptool #dv{display:block}
+@media (max-width:899px){#main.v-ptool{flex-direction:column}#main.v-ptool #dv{cursor:row-resize}#main.v-ptool #dv::after{width:36px;height:3px}}
+#p-tools{overflow:auto;padding:12px}
+#p-tools h3{margin:4px 2px 10px;font-size:14px;color:var(--mu);font-weight:600}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tcard{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;background:var(--s2);border:1px solid var(--s3);border-radius:14px;padding:14px;color:var(--tx)}
+.tcard .ti{font-size:26px}.tcard b{font-size:14px}.tcard small{color:var(--mu);font-size:12px;line-height:1.3}
+.tcard:active{background:var(--s3)}
+.tbar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--s1);border-bottom:1px solid var(--s3);flex:none}
+.tbar b{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbar button.on{background:var(--ac);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{padding:5px 9px;font-size:12px;border-radius:999px}
+#aiCtx{height:64px}
+#hshow{display:none;position:fixed;top:0;right:10px;z-index:60;padding:1px 12px;font-size:12px;border-radius:0 0 10px 10px}
+body.hh #bar{display:none}body.hh #hshow{display:block}
+</style>
+<script>try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}window.__gemIsAdm=function(){ try{ var P=window.parent; return !!(P&&P!==window&&typeof P.isMeAdmin==='function'&&P.getRoomCode&&P.getRoomCode()&&P.isMeAdmin()); }catch(e){ return false; } };window.__gemDef="मास्टर प्रॉम्प्ट: SSC यूनिवर्सल '6-प्रश्न सेट' (गणित, रीजनिंग और अंग्रेजी)\n\n1. मुख्य प्रश्न (Main Question):\n * प्रश्न का प्रारूप: छात्र द्वारा दिए गए पूरे प्रश्न को हमेशा द्विभाषी (Bilingual - अंग्रेजी और हिंदी दोनों) में लिखें। प्रश्न का कोई भी हिस्सा अधूरा न छोड़ें।\n * मूल अवधारणा (Basic Concept): प्रश्न की जड़ और पूरी थ्योरी को आसान हिंदी में समझाएं, ताकि बेसिक्स 100% क्लियर हो जाएं। (अंग्रेजी के प्रश्नों के लिए ग्रामर रूल या वोकैबुलरी का लॉजिक विस्तार से बताएं)।\n * स्मार्ट ट्रिक (Smart Trick): परीक्षा में 10-15 सेकंड में उत्तर निकालने का सबसे तेज़ तरीका बताएं (गणित/रीजनिंग के लिए शॉर्ट ट्रिक या सीधा सूत्र; अंग्रेजी के लिए ऑप्शन एलिमिनेशन या कीवर्ड एप्रोच)।\n\n2. समान पैटर्न अभ्यास (Same Pattern Practice - 2 प्रश्न):\n * मुख्य प्रश्न के बिल्कुल समान कॉन्सेप्ट और ट्रिक पर आधारित 2 नए प्रश्न बनाएं।\n * प्रश्न की भाषा: पूरा प्रश्न हमेशा द्विभाषी (अंग्रेजी + हिंदी) होना चाहिए।\n * विकल्प (Options): हमेशा पूरे विकल्प लिखें।\n   * नया नियम: यदि विकल्पों में केवल संख्याएँ (Numbers) हैं, तो उन्हें दो बार (जैसे 36373/36373) नहीं लिखना है, उन्हें केवल एक ही बार लिखें।\n   * यदि विकल्प पूरे वाक्य (Sentence) या वाक्यांश के रूप में हैं, तो उन्हें हिंदी और अंग्रेजी दोनों में दें।\n * समाधान (Solution): पूरा समाधान आसान हिंदी में लिखें। किसी भी कठिन शब्द के आगे ब्रैकेट में उसका अंग्रेजी अनुवाद जरूर लिखें (जैसे: समानांतर (Parallel))। समाधान में केवल शॉर्टकट ट्रिक का ही उपयोग करें।\n\n3. विविध/उन्नत पैटर्न अभ्यास (Diverse/Advanced Practice - 3 प्रश्न):\n * उसी टॉपिक को थोड़ा घुमाकर या उच्च स्तर (Tier-2 लेवल) पर पूछने वाले 3 अलग-अलग प्रश्न बनाएं।\n * प्रारूप: पूरा प्रश्न (द्विभाषी), पूरे विकल्प (संख्या केवल एक बार, वाक्य दोनों भाषाओं में), और समाधान (हिंदी में, कठिन शब्द ब्रैकेट में अंग्रेजी के साथ) का नियम बिल्कुल ऊपर दिए गए सेक्शन 2 जैसा ही रहेगा।\n\n4. शर्तें (Strict Constraints):\n * पूरी बातचीत और समाधान केवल और केवल शुद्ध देवनागरी हिंदी में होंगे।\n * कोई भी स्टेप, कैलकुलेशन या ग्रामर का लॉजिक हवा में नहीं किया जाएगा, हर एक चीज़ स्पष्ट और स्टेप-बाय-स्टेप होनी चाहिए।\n * हमेशा पूरा प्रश्न और पूरे विकल्प लिखें, कोई भी शॉर्टकट या अधूरा वाक्य न लिखें।\n * विकल्पों का नियम सख्ती से लागू करें: संख्या = केवल 1 बार लिखें, वाक्य = 2 भाषाएं (अंग्रेजी + हिंदी)।";</script>
+</head>
+<body>
+<div id="bar">
+  <div class="tabs">
+    <button data-v="focus">🎯 Study Desk</button>
+    <button data-v="pdf">📄 PDF</button>
+    <button data-v="tube">▶ Videos</button>
+    <button data-v="split">◫ PDF + Video</button>
+    <button data-v="tools">🧰 Tools</button>
+  </div>
+  <div class="sp"></div>
+  <span id="clk" class="hide-s"></span>
+  <button id="mbtn" title="Music chalao (Alt+M)">🔇</button>
+  <button id="abtn" title="Gemini mein bhejo (Alt+G)">🤖</button>
+  <button id="gbtn" title="Google par bhejo (image + question text + prompt)">🔍</button>
+  <button id="nbtn" title="Notes (Alt+N)">📝</button>
+  <button id="zbtn" title="Zen mode (Alt+Z)">⛶</button>
+  <button id="chip">⏱ 00:00</button>
+  <button id="hbtn" title="Header hide karo">▲</button>
+  <button id="cls" title="Band karo">✕</button>
+</div>
+
+<button id="hshow" title="Header dikhao">▼ Header</button>
+<div id="main" class="v-pdf">
+  <section class="pane" id="p-pdf"><iframe data-src="./pdf-viewer.html" title="PDF Reader" allow="fullscreen; clipboard-read; clipboard-write"></iframe></section>
+  <div id="dv" title="Drag karke size badlo"></div>
+  <section class="pane" id="p-tube"><iframe data-src="./study-tube.html" title="Study Tube" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></section>
+  <section class="pane" id="p-focus"><iframe data-src="./focus-desk.html" title="Focus Desk" allow="autoplay; fullscreen; wake-lock; picture-in-picture"></iframe></section>
+  <section class="pane" id="p-tools"><h3>🧰 Saare study tools ek jagah (timer, notes, 🤖 AI sab saath chalte hain)</h3><div class="tgrid" id="tgrid"></div></section>
+  <section class="pane" id="p-tool"><div class="tbar"><button id="tBack">← Tools</button><b id="tName"></b><button id="tSplit" title="PDF ke saath side-by-side">◫ PDF ke saath</button></div><iframe title="Tool" allow="fullscreen; clipboard-read; clipboard-write; autoplay"></iframe></section>
+</div>
+
+<div id="zen"><button id="zchip">⏱ 00:00</button><button id="zx" title="Zen se bahar">⤢</button></div>
+<div id="notes"><div class="nh"><b>📝 Quick Notes</b><span class="sp"></span><button id="nCp">Copy</button><button id="nDl">⬇ .txt</button><button id="nClr">Clear</button><button id="nX">✕</button></div>
+<textarea id="nTa" placeholder="Yahan jo bhi likhoge apne aap save hoga (formula, doubt, revision points...)"></textarea><div class="ns" id="nSt"></div></div>
+<div id="ai">
+  <div class="ah"><b>🤖 Gemini mein bhejo</b><span class="sp"></span><button id="aiNew">Naya</button><button id="aiX">✕</button></div>
+  <img id="aiImg" alt="question">
+  <div class="row"><button id="aiPaste">📋 Paste</button><button id="aiFile">🖼 Gallery</button></div>
+  <input type="file" id="aiFi" accept="image/*" hidden>
+  <div class="chips" id="aiChips" style="display:none"><button data-t="Step-by-step samjhao.">🧮 Steps</button><button data-t="Shortcut trick batao.">⚡ Trick</button><button data-t="Hindi mein samjhao.">🇮🇳 Hindi</button><button data-t="Is jaise 3 aur question do (answer ke saath).">🔁 Similar 3</button><button data-t="Baaki options galat kyun hain?">❌ Galat options</button></div>
+  <textarea id="aiQ" style="min-height:90px" placeholder="Apna prompt yahan likho. Jaisa likhoge bilkul waisa hi Gemini ko jayega, kuch add nahi hoga. Ye hamesha save rahega."></textarea>
+  <div class="row"><button id="aiShare" style="background:var(--ac);color:#fff">📤 Gemini app ko bhejo</button><button id="aiGoo">🔍 Google par bhejo</button><button id="aiGem">↗ Gemini Pro kholo (same tab)</button></div>
+  <div class="row"><button id="aiEdit">🎨 Photo Studio mein edit karo</button></div>
+  <div id="aiOut">PDF mein 🤖 dabao aur question pe drag karo, phir "Gemini app ko bhejo". Video ka screenshot Gallery/Paste se daalo.</div>
+  <details><summary>⚙ Gemini link</summary>
+    <textarea id="aiCtx" style="display:none" placeholder="Ek baar likho, har baar Gemini ko saath jayega (jaise: Main SSC CGL ki taiyari kar raha hoon, Hinglish mein chhote steps ke saath samjhao)"></textarea>
+    <input id="aiGemUrl" placeholder="Gemini link (khaali = gemini.google.com/app)">
+  </details>
+</div>
+<div id="toast"></div>
+<div id="pop">
+  <div class="pt"><button data-m="sw" class="on">⏱ Timer</button><button data-m="ck">🕐 Clock</button></div>
+  <div id="v-sw">
+    <div class="big" id="swT">00:00</div>
+    <div class="sub" id="swS">Study Desk timer</div>
+    <div class="row" id="fdModes"><button data-fm="stop">Stopwatch</button><button data-fm="focus">Focus</button><button data-fm="short">Short break</button><button data-fm="long">Long break</button></div>
+    <div class="row"><button id="swGo" class="go">▶ Start</button><button id="swLap">⚑ Lap</button><button id="swRs">↺ Reset</button></div>
+    <div class="laps" id="laps"></div>
+  </div>
+  <div id="v-ck" style="display:none">
+    <div class="big" id="ckT">--:--</div>
+    <div class="sub" id="ckD"></div>
+  </div>
+  <div id="today">Aaj padha: 0m</div>
+  <div class="goal"><div class="gb"><i id="gFill"></i></div><div class="gt"><span id="gTxt">Goal</span><label>Goal <input type="number" id="gIn" min="30" max="1200" step="10"> min</label></div></div>
+  <div class="week" id="week"></div>
+  <label class="o"><input type="checkbox" id="eye"> 👁 Eye break: har 20 min padhai par yaad dilao</label>
+  <div class="keys">Alt+1/2/3/4 tabs · Alt+Space timer · Alt+N notes · Alt+M music · Alt+Z zen</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var main=$('#main'), fr={pdf:$('#p-pdf iframe'),tube:$('#p-tube iframe'),focus:$('#p-focus iframe'),tool:$('#p-tool iframe')};
+var view='pdf';
+var TOOLS=[['photo-studio.html','🎨','Photo Studio','Photoshop jaisa editor: layers, brush, text, crop, filters'],['supermaths.html','➗','Super Maths','Maths practice'],['superenglish.html','📖','Super English','English practice'],['superreasoning.html','🧩','Super Reasoning','Reasoning practice'],['reading.html','📚','Comprehension','Reading passages'],['vocab-srs.html','🧠','Vocab SRS','Spaced repetition words'],['mock-question-bank.html','📝','Question Bank','Mock questions'],['calc-speed-test.html','⚡','Calc Speed Test','Calculation speed'],['optional-elimination.html.html','🎯','SSC Trick Quiz','25Q sets'],['latestjob.html','💼','Latest Jobs','Sarkari jobs']];
+var curTool=null; try{ curTool=localStorage.getItem('sd:tool'); }catch(e){}
+
+function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ tubeEnter(); },{once:true}); } }
+function tubeEnter(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); }catch(e){} }
+function setView(v){
+  view=v; main.className='v-'+v;
+  $$('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.v===v); });
+  if(v==='pdf'||v==='split') load('pdf');
+  if(v==='google'){ var f1=!fr.tube.getAttribute('src'); load('tube'); setTimeout(function(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); setTimeout(function(){ fr.tube.contentWindow.postMessage('uv-google-focus','*'); },300); }catch(e){} }, f1?1500:50); }
+  if(v==='tube'||v==='split'){ var first=!fr.tube.getAttribute('src'); load('tube'); if(!first) tubeEnter(); }
+  if(v==='focus') load('focus');
+  if(v==='tool'||v==='ptool'){ if(!curTool){ return setView('tools'); } openTool(curTool,true); if(v==='ptool') load('pdf'); }
+  $('#tSplit').classList.toggle('on',v==='ptool');
+  $$('.tabs button').forEach(function(b){ if(b.dataset.v==='tools') b.classList.toggle('on',v==='tools'||v==='tool'||v==='ptool'); });
+  try{ localStorage.setItem('sd:view',v); }catch(e){}
+}
+
+/* ---- tools launcher ---- */
+function openTool(f,keep){ var t=TOOLS.filter(function(x){return x[0]===f})[0]; if(!t) return; curTool=f; try{ localStorage.setItem('sd:tool',f); }catch(e){}
+  $('#tName').textContent=t[1]+' '+t[2]; if(fr.tool.getAttribute('data-f')!==f){ fr.tool.setAttribute('data-f',f); fr.tool.src='./'+f; }
+  if(!keep) setView(view==='ptool'?'ptool':'tool'); }
+$('#tgrid').innerHTML=TOOLS.map(function(t){ return '<button class="tcard" data-f="'+t[0]+'"><span class="ti">'+t[1]+'</span><b>'+t[2]+'</b><small>'+t[3]+'</small></button>'; }).join('');
+$('#tgrid').addEventListener('click',function(e){ var b=e.target.closest('.tcard'); if(b){ view='tool'; openTool(b.dataset.f); } });
+$('#tBack').onclick=function(){ setView('tools'); };
+window.editInStudio=function(du){ view='tool'; var f='photo-studio.html', same=fr.tool.getAttribute('data-f')===f; studioPending=du; openTool(f); if(same&&studioReady){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:du},'*'); studioPending=null; }catch(e){} } };
+var studioPending=null, studioReady=false;
+window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-studio-ready'){ studioReady=true; if(studioPending){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:studioPending},'*'); }catch(x){} studioPending=null; } } });
+
+$('#tSplit').onclick=function(){ setView(view==='ptool'?'tool':'ptool'); };
+$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b){ setView(b.dataset.v); } });
+
+/* ---- divider ---- */
+(function(){
+  var dv=$('#dv'), sp=+localStorage.getItem('sd:sp')||50; main.style.setProperty('--sp',sp);
+  var on=false;
+  dv.addEventListener('pointerdown',function(e){ on=true; dv.setPointerCapture(e.pointerId); document.body.classList.add('drag'); });
+  dv.addEventListener('pointermove',function(e){ if(!on) return; var r=main.getBoundingClientRect(), col=getComputedStyle(main).flexDirection==='column';
+    var p=col?(e.clientY-r.top)/r.height*100:(e.clientX-r.left)/r.width*100; sp=Math.max(20,Math.min(80,p)); main.style.setProperty('--sp',sp); });
+  function end(){ if(!on) return; on=false; document.body.classList.remove('drag'); try{ localStorage.setItem('sd:sp',sp); }catch(e){} }
+  dv.addEventListener('pointerup',end); dv.addEventListener('pointercancel',end);
+})();
+
+/* ---- parent <-> Focus Desk relay (tracker bridge chalta rahe) + Study Tube exit ---- */
+var emb=window.parent!==window;
+window.addEventListener('message',function(e){
+  var d=e.data, fw=fr.focus.contentWindow;
+  if(fw && e.source===fw){ if(d&&d.type==='fd-ui'){ onUi(d); return; } if(emb){ if(d&&d.type==='fd-close'){ closeDesk(); } try{ window.parent.postMessage(d,'*'); }catch(x){} } return; }
+  if(e.source===fr.tube.contentWindow){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-global')===0){ if(emb){ try{ window.parent.postMessage(d,'*'); }catch(x){} } return; } if(d==='uv-study-exit') setView('pdf');
+    else if(d&&d.type==='stv-chans'&&d.chans&&d.chans.length){ try{ localStorage.setItem('sd:chans',JSON.stringify(d.chans)); }catch(x){} }
+    else if(d&&d.type==='stv-chans-get'){ try{ var sc=JSON.parse(localStorage.getItem('sd:chans')||'null'); if(sc&&sc.length) fr.tube.contentWindow.postMessage({type:'stv-chans-set',chans:sc},'*'); }catch(x){} }
+    return; }
+  if(emb && e.source===window.parent){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-')===0){ var tw=fr.tube.contentWindow; if(tw&&fr.tube.getAttribute('src')){ try{ tw.postMessage(d,'*'); }catch(x){} } } else if(fw){ try{ fw.postMessage(d,'*'); }catch(x){} } }
+});
+function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
+$('#cls').onclick=function(){ if(emb) closeDesk(); else history.length>1?history.back():window.close(); };
+
+/* ---- clock ---- */
+function p2(n){return (n<10?'0':'')+n}
+function hms(s){ s=Math.max(0,Math.floor(s)); var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60; return (h?h+':'+p2(m):p2(m))+':'+p2(x); }
+function tickClock(){ var d=new Date(); var t=p2(d.getHours()%12||12)+':'+p2(d.getMinutes())+' '+(d.getHours()<12?'AM':'PM');
+  $('#clk').textContent='🕐 '+t; $('#ckT').textContent=t+':'+p2(d.getSeconds()); $('#ckD').textContent=d.toLocaleDateString('hi-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
+
+/* ---- stopwatch + timer (Date.now based, tab switch par bhi chalta rehta hai) ---- */
+var FD={run:false,label:'00:00',mode:'stop',up:false,music:false,laps:[],seen:0};
+/* Ek hi timer: Study Desk (Focus Desk) ka. Chip + panel postMessage se usi ko dikhate/chalate hain (content:// par bhi chalta hai). */
+function fsend(cmd,v){ try{ var w=fr.focus.getAttribute('src')&&fr.focus.contentWindow; if(w){ w.postMessage({type:'sd-cmd',cmd:cmd,v:v},'*'); return true; } }catch(e){} return false; }
+function onUi(d){ FD.up=true; FD.seen=Date.now(); FD.label=d.label||'00:00'; FD.run=!!d.running; FD.mode=d.mode||'stop'; FD.music=!!d.music; FD.laps=d.laps||[]; render(); }
+function needFocus(){ if(FD.up&&Date.now()-FD.seen<4000) return false; load('focus'); toast('Study Desk timer khul raha hai… 1 second baad phir dabao'); return true; }
+function dayKey(){ var d=new Date(); return 'sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+function addStudy(sec){ try{ var k=dayKey(); localStorage.setItem(k,(+localStorage.getItem(k)||0)+sec); }catch(e){} }
+var beepCtx; function beep(n){ try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); for(var i=0;i<(n||3);i++){ (function(i){ var o=beepCtx.createOscillator(),g=beepCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(beepCtx.destination); var t=beepCtx.currentTime+i*.4; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); })(i); } }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }
+var lastTick=Date.now();
+function tick(){
+  var now=Date.now(), dt=(now-lastTick)/1000; lastTick=now; if(dt>5) dt=0;
+  if(FD.up&&now-FD.seen>4000){ FD.up=false; FD.run=false; FD.label='00:00'; FD.mode='stop'; FD.music=false; FD.laps=[]; }
+  if(FD.run&&(FD.mode==='stop'||FD.mode==='focus')) addStudy(dt);
+  eyeTick(dt);
+  render();
+}
+var MI={stop:'⏱',focus:'🎯',short:'☕',long:'☕'}, ML={stop:'Stopwatch',focus:'Focus',short:'Short break',long:'Long break'};
+function musicSync(){ var on=FD.music, b=$('#mbtn'); b.textContent=on?'🔊':'🔇'; b.classList.toggle('on',on); b.title=on?'Music band karo (Alt+M)':'Music chalao (Alt+M)'; }
+function render(){
+  var txt=(MI[FD.mode]||'⏱')+' '+FD.label, chip=$('#chip');
+  $('#swT').textContent=FD.label; $('#swS').textContent=FD.up?(ML[FD.mode]||'Timer'):'Study Desk abhi khula nahi (Start dabao)';
+  var g=$('#swGo'); g.textContent=FD.run?'⏸ Pause':'▶ Start'; g.classList.toggle('pause',FD.run);
+  $$('#fdModes button').forEach(function(b){ b.classList.toggle('on',b.dataset.fm===FD.mode); });
+  $('#swLap').style.display=FD.mode==='stop'?'':'none';
+  $('#laps').textContent=FD.laps.join(' | ').replace(/ \| /g,'\n'); $('#laps').style.whiteSpace='pre-line';
+  chip.textContent=txt; chip.classList.toggle('run',FD.run);
+  var m=Math.floor((+localStorage.getItem(dayKey())||0)/60); $('#today').textContent='Aaj padha: '+(m>=60?Math.floor(m/60)+'h ':'')+(m%60)+'m';
+  try{ $('#zchip').textContent=txt; goalRender(); }catch(x){}
+  document.title=FD.run?txt:'Study Desk';
+  musicSync(); tickClock();
+}
+$('#swGo').onclick=function(){ if(needFocus()) return; var was=FD.run; fsend('start');
+  setTimeout(function(){ if(!was&&!FD.run&&(FD.mode==='stop'||FD.mode==='focus')) toast('Agar start nahi hua: Study Desk tab mein pehle target chuno'); },900); };
+$('#swRs').onclick=function(){ if(needFocus()) return; fsend('reset'); };
+$('#swLap').onclick=function(){ if(needFocus()) return; fsend('lap'); };
+$('#fdModes').addEventListener('click',function(e){ var b=e.target.closest('[data-fm]'); if(!b||needFocus()) return; fsend('mode',b.dataset.fm); });
+/* ---- music on/off (top bar) = Study Desk ka hi music ---- */
+$('#mbtn').onclick=function(){
+  if(needFocus.call(null)===true){ fr.focus.addEventListener('load',function(){ setTimeout(function(){ if(!FD.music) fsend('music'); },1500); },{once:true}); return; }
+  fsend('music'); };
+
+
+/* ---- popover ---- */
+var pop=$('#pop');
+$('#chip').onclick=function(e){ e.stopPropagation(); pop.classList.toggle('open'); };
+document.addEventListener('pointerdown',function(e){ if(pop.classList.contains('open') && !pop.contains(e.target) && e.target!==$('#chip')) pop.classList.remove('open'); });
+$('.pt').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var m=b.dataset.m;
+  $$('.pt button').forEach(function(x){ x.classList.toggle('on',x===b); });
+  ['sw','ck'].forEach(function(k){ $('#v-'+k).style.display=k===m?'':'none'; }); });
+
+/* ---- screen awake while timer runs ---- */
+var wl=null; function wake(){ try{ if(FD.run&&!wl&&navigator.wakeLock){ navigator.wakeLock.request('screen').then(function(l){ wl=l; l.addEventListener('release',function(){ wl=null; }); }).catch(function(){}); } }catch(e){} }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') wake(); });
+setInterval(function(){ tick(); wake(); },500);
+
+
+/* ---- toast ---- */
+var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(tt); tt=setTimeout(function(){ t.style.display='none'; },3200); }
+/* ---- notes ---- */
+(function(){ var ta=$('#nTa'), nb=$('#notes'), st=$('#nSt'), sv;
+  try{ ta.value=localStorage.getItem('sd:notes')||''; }catch(e){}
+  ta.addEventListener('input',function(){ clearTimeout(sv); sv=setTimeout(function(){ try{ localStorage.setItem('sd:notes',ta.value); st.textContent='Saved ✓ '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(e){} },400); });
+  window.toggleNotes=function(f){ var o=(f===undefined)?!nb.classList.contains('open'):f; nb.classList.toggle('open',o); if(o) setTimeout(function(){ ta.focus(); },50); };
+  $('#nbtn').onclick=function(){ toggleNotes(); }; $('#nX').onclick=function(){ toggleNotes(false); };
+  $('#nCp').onclick=function(){ try{ navigator.clipboard.writeText(ta.value); toast('Copy ho gaya'); }catch(e){ ta.select(); document.execCommand('copy'); } };
+  $('#nDl').onclick=function(){ var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ta.value],{type:'text/plain'})); a.download='study-notes-'+new Date().toISOString().slice(0,10)+'.txt'; a.click(); };
+  $('#nClr').onclick=function(){ if(ta.value&&confirm('Saare notes mita dein?')){ ta.value=''; localStorage.setItem('sd:notes',''); } };
+})();
+
+/* ---- Gemini bhejo ---- */
+(function(){ var P=$('#ai'), img=$('#aiImg'), out=$('#aiOut'), q=$('#aiQ'), data=null, gu=$('#aiGemUrl');
+  try{ gu.value=localStorage.getItem('sd:gemurl')||''; }catch(e){}
+  gu.onchange=function(){ var v=gu.value.trim(); if(v&&!/^https?:\/\//i.test(v)) v='https://'+v; gu.value=v; try{ localStorage.setItem('sd:gemurl',v); }catch(e){} toast(v?'Gemini link save ho gaya':'Default link use hoga'); };
+  var cx=$('#aiCtx'); try{ cx.value=localStorage.getItem('sd:gemctx')||'Main SSC CGL ki taiyari kar raha hoon. Hinglish mein, chhote steps aur shortcut trick ke saath samjhao.'; }catch(e){}
+  cx.onchange=function(){ try{ localStorage.setItem('sd:gemctx',cx.value.trim()); }catch(e){} toast('Context save ho gaya'); };
+  $('#aiChips').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var t=b.dataset.t; q.value=q.value.indexOf(t)>=0?q.value:(q.value?q.value+' ':'')+t; });
+  try{ q.value=localStorage.getItem('sd:gemprompt')||''; }catch(e){} if(!q.value.trim()) q.value=(window.__gemIsAdm()?'':window.__gemDef)||'';
+  q.oninput=function(){ try{ localStorage.setItem('sd:gemprompt',q.value); }catch(e){} };
+  function fullTxt(){ return q.value.trim(); }
+  function open(f){ P.classList.toggle('open',f); if(f) toggleNotes(false); }
+  window.toggleAI=function(){ open(!P.classList.contains('open')); };
+  function setImg(du){ data=du; img.src=du; img.style.display='block'; open(true); out.textContent='Image ready. Neeche "Gemini app ko bhejo" dabao.'; }
+  function fromBlob(b){ var r=new FileReader(); r.onload=function(){ setImg(r.result); }; r.readAsDataURL(b); }
+  $('#abtn').onclick=window.toggleAI; $('#aiX').onclick=function(){ open(false); };
+  $('#aiGoo').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } window.sendToGoogle(data,''); };
+  $('#gbtn').onclick=function(){ if(data){ window.sendToGoogle(data,''); } else { open(true); toast('Pehle image daalo, phir 🔍 Google par bhejo'); } };
+  $('#aiEdit').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } open(false); window.editInStudio(data); };
+  $('#aiNew').onclick=function(){ data=null; img.style.display='none'; out.textContent='Naya doubt shuru karo.'; };
+  $('#aiFile').onclick=function(){ $('#aiFi').click(); };
+  $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
+  $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
+  document.addEventListener('paste',function(e){ if(!P.classList.contains('open')) return; var its=(e.clipboardData||{}).items||[]; for(var i=0;i<its.length;i++) if(its[i].type.indexOf('image/')===0){ fromBlob(its[i].getAsFile()); e.preventDefault(); return; } });
+  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(d.target==='google'||!window.cxAdm()) window.sendToGoogle(d.image,d.text); else if(auto) window.sendToGemini(d.image,d.text); else setImg(d.image); } });
+  $('#aiShare').onclick=async function(){
+    var txt=fullTxt();
+    try{
+      if(data){ var b=await (await fetch(data)).blob(), f=new File([b],'question.jpg',{type:b.type||'image/jpeg'});
+        if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],text:txt}); toast('Share list mein Gemini chuno'); return; } }
+      if(navigator.share){ await navigator.share({text:txt}); return; }
+      toast('Is browser mein share nahi chalta. "Gemini Pro kholo" use karo');
+    }catch(e){ if(e&&e.name!=='AbortError') toast('Share nahi hua: '+(e.message||e)); }
+  };
+  $('#aiGem').onclick=async function(){
+    if(data){ try{ var b=await (await fetch(data)).blob(); await navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); toast('Image copy ho gayi. Gemini mein paste karo'); }catch(e){ toast('Copy nahi hua, "Gemini app ko bhejo" use karo'); } }
+    openGemSideNative(gu.value.trim()||gemUrl());
+  };
+})();
+
+/* ---- PDF + Gemini popup (right half) ---- */
+var gemWin=null;
+function gemGeo(){ var sl=screen.availLeft||0, st=screen.availTop||0, sw=screen.availWidth||screen.width, sh=screen.availHeight||screen.height, w=Math.round(sw/2); return {l:sl+w,t:st,w:w,h:sh}; }
+function gemUrl(){ var u='https://gemini.google.com/app'; try{ u=localStorage.getItem('sd:gemurl')||u; }catch(e){} return u; }
+/* Pehle extension se: pehle se khuli Gemini tab/window milti hai to wahi aage aati hai, nayi nahi khulti */
+function openGemSide(){
+  if(gemWin&&!gemWin.closed){ try{ gemWin.focus(); }catch(e){} setView('pdf'); return; }
+  var got=false;
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='open'){ got=true; window.removeEventListener('message',onAck); setView('pdf'); toast(d.found?'Pehle se khula Gemini aage aa gaya':'Gemini right side khul gaya'); } }
+  window.addEventListener('message',onAck);
+  window.postMessage({type:'sd-gemini-open',url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ if(gemExtKnown()){ toast('Extension ne jawab nahi diya — extension reload karke page refresh karo (naya window nahi khola)',4500); setView('pdf'); } else openGemSideNative(); } },4000);
+}
+function openGemSideNative(url){
+  /* Hamesha EK hi popup window ('sd_gemini', right half). Pehle se khuli ho to wahi aage aati hai (naya popup nahi). */
+  var w=null; url=url||gemUrl();
+  try{ w=window.open('','sd_gemini','popup=yes,left='+gemGeo().l+',top='+gemGeo().t+',width='+gemGeo().w+',height='+gemGeo().h); }catch(e){}
+  if(!w){ toast('Popup block hai. Address bar mein popup allow karo, phir dobara dabao'); return null; }
+  var blank=false; try{ blank=(w.location.href==='about:blank'); }catch(e){ blank=false; }   /* cross-origin error = Gemini pehle se khula hai */
+  if(blank){ try{ w.location.href=url; }catch(e){ try{ w.location=url; }catch(x){} } }
+  try{ w.focus(); }catch(e){}
+  gemWin=w; setView('pdf'); toast('Gemini popup aage aa gaya');
+  return w;
+}
+
+/* ---- header hide/show ---- */
+(function(){ function hh(f){ document.body.classList.toggle('hh',f); try{ localStorage.setItem('sd:hh',f?'1':'0'); }catch(e){} try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
+  $('#hbtn').onclick=function(){ hh(true); }; $('#hshow').onclick=function(){ hh(false); };
+  try{ if(localStorage.getItem('sd:hh')==='1') hh(true); }catch(e){} })();
+
+/* ---- image ko seedha Gemini mein bhejo (extension ke saath) ---- */
+window.addEventListener('message',function(e){ var d=e.data; if(e.source===window&&d&&d.type==='sd-gemini-ext-ready'){ window.__gemExt=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} } });
+try{ window.postMessage({type:'sd-gemini-ping'},'*'); }catch(e){}
+function gemExtKnown(){ var k=false; try{ k=localStorage.getItem('sd:extok')==='1'; }catch(e){} return !!window.__gemExt||k; }
+/* ---- EXTENSION NAHI HAI to: image + poora prompt + question/options clipboard me + helper bar ---- */
+function toPng(du){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){ var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); c.toBlob(function(b){ b?res(b):rej(new Error('png')); },'image/png'); }; im.onerror=rej; im.src=du; }); }
+function copyTxt2(s){ var p=(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(s):Promise.reject(new Error('x')); return p.catch(function(){ var ta=document.createElement('textarea'); ta.value=s; ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); if(!ok) throw new Error('fail'); }); }
+var hbar=null;
+function helperBar(label,pngP,text){
+  if(!hbar){ hbar=document.createElement('div'); hbar.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center'; document.body.appendChild(hbar); }
+  hbar.innerHTML=''; hbar.style.display='block';
+  var msg=document.createElement('div'); msg.style.marginBottom='8px'; msg.textContent=label+' ke box me paste karo (Ctrl+V / long-press → Paste). Sirf image ya sirf text aaye to neeche se wahi copy karke dobara paste karo:'; hbar.appendChild(msg);
+  var row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;justify-content:center'; hbar.appendChild(row);
+  function btn(t,bg,fn){ var b=document.createElement('button'); b.type='button'; b.textContent=t; b.style.cssText='border:0;border-radius:9px;padding:7px 11px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:'+bg; b.onclick=function(ev){ ev.stopPropagation(); fn(b); }; row.appendChild(b); }
+  function flash(b,ok,o){ b.textContent=ok?'✅ Copy ho gaya':'⚠ Copy nahi hua'; setTimeout(function(){ b.textContent=o; },1800); }
+  function wr(b,items){ var o=b.textContent; (navigator.clipboard&&window.ClipboardItem?navigator.clipboard.write([new ClipboardItem(items)]):Promise.reject(new Error('x'))).then(function(){ flash(b,true,o); },function(){ flash(b,false,o); }); }
+  if(pngP) btn('📋 Image + Text dono','#2e7d32',function(b){ wr(b,{'image/png':pngP,'text/plain':new Blob([text],{type:'text/plain'})}); });
+  if(pngP) btn('🖼 Sirf Image','#1a73e8',function(b){ wr(b,{'image/png':pngP}); });
+  btn('📝 Sirf Prompt + Question','#6a1b9a',function(b){ var o=b.textContent; copyTxt2(text).then(function(){ flash(b,true,o); },function(){ flash(b,false,o); }); });
+  btn('✕','#555',function(){ hbar.style.display='none'; });
+  clearTimeout(hbar._t); hbar._t=setTimeout(function(){ if(hbar) hbar.style.display='none'; },180000);
+}
+function manualSend(kind,du,txt){
+  var goo=kind==='google', name=goo?'sd_google':'sd_gemini', home=goo?'https://www.google.com/search?udm=50':gemUrl(), label=goo?'Google':'Gemini';
+  if(!du&&!txt) return;
+  var pngP=du?toPng(du):null; if(pngP) pngP.catch(function(){});
+  var done;
+  if(navigator.clipboard&&window.ClipboardItem){
+    var it={}; if(txt) it['text/plain']=new Blob([txt],{type:'text/plain'}); if(pngP) it['image/png']=pngP;
+    try{ done=navigator.clipboard.write([new ClipboardItem(it)]).then(function(){ return true; },function(){ return pngP?navigator.clipboard.write([new ClipboardItem({'image/png':pngP})]).then(function(){ return true; },function(){ return false; }):false; }); }catch(e){ done=Promise.resolve(false); }
+  } else done=Promise.resolve(false);
+  var w=null; try{ var g=gemGeo(); w=window.open('',name,'popup=yes,left='+g.l+',top='+g.t+',width='+g.w+',height='+g.h); var bl=false; try{ bl=(w.location.href==='about:blank'); }catch(e){} if(bl) w.location.href=home; }catch(e){}
+  helperBar(label,pngP,txt);
+  done.then(function(c){ try{ if(w) w.focus(); }catch(e){} toast(c?'✅ Screenshot + prompt + question copy ho gaya — '+label+' ke box me Ctrl+V':'⚠ Auto-copy nahi hua — neeche ke buttons se copy karo'); });
+}
+window.sendToGoogle=function(du,extra){
+  var got=false, geo=gemGeo();
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-google-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'🔍 Google ko bhej diya':'Google khul raha hai, image+question wahan aa jayega',4000); } }
+  window.addEventListener('message',onAck);
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=window.__gemDef||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  if(!window.__gemExt){ window.removeEventListener('message',onAck); manualSend('google',du,txt); return; }
+  window.postMessage({type:'sd-google-send',image:du||'',text:txt,url:'https://www.google.com/search?udm=50',geo:geo},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ toast('Extension ne jawab nahi diya — extension v3.4 load/reload karo, phir page refresh (Google ka naya window nahi khola)',5000); } },4500);
+};
+window.sendToGemini=function(du,extra){
+  if(!window.cxAdm()){ if(window.sendToGoogle) return window.sendToGoogle(du,extra); return; }   /* Gemini sirf admin */
+  var got=false;
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
+  window.addEventListener('message',onAck);
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  if(!window.__gemExt){ window.removeEventListener('message',onAck); manualSend('gemini',du,txt); return; }
+  window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
+    try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}
+    if(gemExtKnown()){ toast('Extension ne jawab nahi diya. Image clipboard mein hai: khule Gemini mein Ctrl+V karo (naya window nahi khola)',5000); } else { openGemSideNative(); toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } } },4500);
+};
+/* ---- zen mode ---- */
+function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
+$('#zbtn').onclick=function(){ zen(true); toast('Zen mode: bahar aane ke liye ⤢ ya Alt+Z'); }; $('#zx').onclick=function(){ zen(false); };
+$('#zchip').onclick=function(e){ e.stopPropagation(); pop.classList.toggle('open'); };
+/* ---- goal + week ---- */
+function goalMin(){ return +localStorage.getItem('sd:goal')||240; }
+$('#gIn').value=goalMin(); $('#gIn').onchange=function(){ var v=Math.max(30,Math.min(1200,+this.value||240)); try{ localStorage.setItem('sd:goal',v); }catch(e){} render(); };
+function drawWeek(){ var out=[], mx=goalMin()*60, now=new Date(), days=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  for(var i=6;i>=0;i--){ var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i), k='sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()), v=+localStorage.getItem(k)||0; out.push({l:days[d.getDay()],v:v}); mx=Math.max(mx,v); }
+  $('#week').innerHTML=out.map(function(o){ return '<div title="'+Math.round(o.v/60)+' min"><i style="height:'+Math.max(2,Math.round(o.v/mx*38))+'px"></i>'+o.l+'</div>'; }).join(''); }
+var lastW=0, goalHit=false;
+function goalRender(){ var sec=+localStorage.getItem(dayKey())||0, g=goalMin()*60, pct=Math.min(100,sec/g*100);
+  $('#gFill').style.width=pct+'%'; $('#gTxt').textContent='Aaj ka goal: '+Math.round(pct)+'%';
+  if(sec>=g&&!goalHit&&!localStorage.getItem('sd:goalDone:'+dayKey())){ goalHit=true; try{ localStorage.setItem('sd:goalDone:'+dayKey(),'1'); }catch(e){} beep(2); toast('🎉 Aaj ka goal poora! Shabash'); }
+  if(Date.now()-lastW>5000){ lastW=Date.now(); drawWeek(); } }
+/* ---- eye break (20-20-20) ---- */
+var eyeAcc=0; $('#eye').checked=localStorage.getItem('sd:eye')==='1'; $('#eye').onchange=function(){ try{ localStorage.setItem('sd:eye',this.checked?'1':'0'); }catch(e){} eyeAcc=0; };
+function eyeTick(dt){ if(!$('#eye').checked) return; if(FD.run&&(FD.mode==='stop'||FD.mode==='focus')) eyeAcc+=dt; if(eyeAcc>=1200){ eyeAcc=0; beep(2); toast('👁 20 second ke liye 20 feet door dekho, aankhein aaram do'); } }
+/* ---- keyboard shortcuts (shell + children) ---- */
+function keyH(e){ if(!e.altKey||e.ctrlKey||e.metaKey) return; var k=e.key, m={'1':'pdf','2':'tube','3':'split','4':'focus'};
+  if(m[k]){ e.preventDefault(); setView(m[k]); }
+  else if(k===' '||e.code==='Space'){ e.preventDefault(); $('#swGo').click(); }
+  else if(k==='m'||k==='M'){ e.preventDefault(); $('#mbtn').click(); }
+  else if(k==='n'||k==='N'){ e.preventDefault(); toggleNotes(); }
+  else if(k==='g'||k==='G'){ e.preventDefault(); toggleAI(); }
+  else if(k==='z'||k==='Z'){ e.preventDefault(); zen(!document.body.classList.contains('zen')); } }
+window.addEventListener('keydown',keyH);
+['pdf','tube','focus','tool'].forEach(function(k){ fr[k].addEventListener('load',function(){ try{ fr[k].contentWindow.addEventListener('keydown',keyH); }catch(e){} }); });
+
+var sv0='focus'; /* hamesha Study Desk (Focus Desk) tab se shuru */
+if(['pdf','tube','split','focus','tools','tool','ptool'].indexOf(sv0)<0) sv0='pdf';
+setView(sv0); render();
+if(emb) load('focus'); /* tracker bridge ke liye Focus Desk background mein ready rahe */
+})();
+</script>
+</body>
+</html>
