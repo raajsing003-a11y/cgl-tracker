@@ -107,6 +107,7 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
     <button data-v="focus">🎯 Study Desk</button>
     <button data-v="pdf">📄 PDF</button>
     <button data-v="tube">▶ Videos</button>
+    <button data-v="google" title="Real browser (search bar ke saath, Bing) — Videos feed nahi">🌐 Browser</button>
     <button data-v="split">◫ PDF + Video</button>
     <button data-v="tools">🧰 Tools</button>
   </div>
@@ -127,7 +128,7 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
   <section class="pane" id="p-pdf"><iframe data-src="./pdf-viewer.html" title="PDF Reader" allow="fullscreen; clipboard-read; clipboard-write"></iframe></section>
   <div id="dv" title="Drag karke size badlo"></div>
   <section class="pane" id="p-tube"><iframe data-src="./study-tube.html" title="Study Tube" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></section>
-  <section class="pane" id="p-focus"><iframe data-src="./focus-desk.html" title="Focus Desk" allow="autoplay; fullscreen; wake-lock; picture-in-picture"></iframe></section>
+  <section class="pane" id="p-focus"><iframe data-src="./focus-desk.html" title="Study Desk" allow="autoplay; fullscreen; wake-lock; picture-in-picture"></iframe></section>
   <section class="pane" id="p-tools"><h3>🧰 Saare study tools ek jagah (timer, notes, 🤖 AI sab saath chalte hain)</h3><div class="tgrid" id="tgrid"></div></section>
   <section class="pane" id="p-tool"><div class="tbar"><button id="tBack">← Tools</button><b id="tName"></b><button id="tSplit" title="PDF ke saath side-by-side">◫ PDF ke saath</button></div><iframe title="Tool" allow="fullscreen; clipboard-read; clipboard-write; autoplay"></iframe></section>
 </div>
@@ -180,13 +181,14 @@ var view='pdf';
 var TOOLS=[['photo-studio.html','🎨','Photo Studio','Photoshop jaisa editor: layers, brush, text, crop, filters'],['supermaths.html','➗','Super Maths','Maths practice'],['superenglish.html','📖','Super English','English practice'],['superreasoning.html','🧩','Super Reasoning','Reasoning practice'],['reading.html','📚','Comprehension','Reading passages'],['vocab-srs.html','🧠','Vocab SRS','Spaced repetition words'],['mock-question-bank.html','📝','Question Bank','Mock questions'],['calc-speed-test.html','⚡','Calc Speed Test','Calculation speed'],['optional-elimination.html.html','🎯','SSC Trick Quiz','25Q sets'],['latestjob.html','💼','Latest Jobs','Sarkari jobs']];
 var curTool=null; try{ curTool=localStorage.getItem('sd:tool'); }catch(e){}
 
-function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ tubeEnter(); },{once:true}); } }
+function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ if(window.__skipEnter){ window.__skipEnter=false; [0,500,1400].forEach(function(t){ setTimeout(browserEnter,t); }); } else tubeEnter(); },{once:true}); } }
+function browserEnter(){ try{ fr.tube.contentWindow.postMessage('uv-browser-enter','*'); }catch(e){} }
 function tubeEnter(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); }catch(e){} }
 function setView(v){
   view=v; main.className='v-'+v;
   $$('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.v===v); });
   if(v==='pdf'||v==='split') load('pdf');
-  if(v==='google'){ var f1=!fr.tube.getAttribute('src'); load('tube'); setTimeout(function(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); setTimeout(function(){ fr.tube.contentWindow.postMessage('uv-google-focus','*'); },300); }catch(e){} }, f1?1500:50); }
+  if(v==='google'){ var f1=!fr.tube.getAttribute('src'); window.__skipEnter=f1; load('tube'); if(!f1) browserEnter(); }
   if(v==='tube'||v==='split'){ var first=!fr.tube.getAttribute('src'); load('tube'); if(!first) tubeEnter(); }
   if(v==='focus') load('focus');
   if(v==='tool'||v==='ptool'){ if(!curTool){ return setView('tools'); } openTool(curTool,true); if(v==='ptool') load('pdf'); }
@@ -220,7 +222,7 @@ $('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'
   dv.addEventListener('pointerup',end); dv.addEventListener('pointercancel',end);
 })();
 
-/* ---- parent <-> Focus Desk relay (tracker bridge chalta rahe) + Study Tube exit ---- */
+/* ---- parent <-> Study Desk relay (tracker bridge chalta rahe) + Study Tube exit ---- */
 var emb=window.parent!==window;
 window.addEventListener('message',function(e){
   var d=e.data, fw=fr.focus.contentWindow;
@@ -229,7 +231,7 @@ window.addEventListener('message',function(e){
     else if(d&&d.type==='stv-chans'&&d.chans&&d.chans.length){ try{ localStorage.setItem('sd:chans',JSON.stringify(d.chans)); }catch(x){} }
     else if(d&&d.type==='stv-chans-get'){ try{ var sc=JSON.parse(localStorage.getItem('sd:chans')||'null'); if(sc&&sc.length) fr.tube.contentWindow.postMessage({type:'stv-chans-set',chans:sc},'*'); }catch(x){} }
     return; }
-  if(emb && e.source===window.parent){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-')===0){ var tw=fr.tube.contentWindow; if(tw&&fr.tube.getAttribute('src')){ try{ tw.postMessage(d,'*'); }catch(x){} } } else if(fw){ try{ fw.postMessage(d,'*'); }catch(x){} } }
+  if(emb && e.source===window.parent){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-')===0){ var tw=fr.tube.contentWindow; if(tw&&fr.tube.getAttribute('src')){ try{ tw.postMessage(d,'*'); }catch(x){} } if(fw&&fr.focus.getAttribute('src')){ try{ fw.postMessage(d,'*'); }catch(x){} } } else if(fw){ try{ fw.postMessage(d,'*'); }catch(x){} } }
 });
 function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
 $('#cls').onclick=function(){ if(emb) closeDesk(); else history.length>1?history.back():window.close(); };
@@ -242,7 +244,7 @@ function tickClock(){ var d=new Date(); var t=p2(d.getHours()%12||12)+':'+p2(d.g
 
 /* ---- stopwatch + timer (Date.now based, tab switch par bhi chalta rehta hai) ---- */
 var FD={run:false,label:'00:00',mode:'stop',up:false,music:false,laps:[],seen:0};
-/* Ek hi timer: Study Desk (Focus Desk) ka. Chip + panel postMessage se usi ko dikhate/chalate hain (content:// par bhi chalta hai). */
+/* Ek hi timer: Study Desk (Study Desk) ka. Chip + panel postMessage se usi ko dikhate/chalate hain (content:// par bhi chalta hai). */
 function fsend(cmd,v){ try{ var w=fr.focus.getAttribute('src')&&fr.focus.contentWindow; if(w){ w.postMessage({type:'sd-cmd',cmd:cmd,v:v},'*'); return true; } }catch(e){} return false; }
 function onUi(d){ FD.up=true; FD.seen=Date.now(); FD.label=d.label||'00:00'; FD.run=!!d.running; FD.mode=d.mode||'stop'; FD.music=!!d.music; FD.laps=d.laps||[]; render(); }
 function needFocus(){ if(FD.up&&Date.now()-FD.seen<4000) return false; load('focus'); toast('Study Desk timer khul raha hai… 1 second baad phir dabao'); return true; }
@@ -464,10 +466,10 @@ function keyH(e){ if(!e.altKey||e.ctrlKey||e.metaKey) return; var k=e.key, m={'1
 window.addEventListener('keydown',keyH);
 ['pdf','tube','focus','tool'].forEach(function(k){ fr[k].addEventListener('load',function(){ try{ fr[k].contentWindow.addEventListener('keydown',keyH); }catch(e){} }); });
 
-var sv0='focus'; /* hamesha Study Desk (Focus Desk) tab se shuru */
+var sv0='focus'; /* hamesha Study Desk (Study Desk) tab se shuru */
 if(['pdf','tube','split','focus','tools','tool','ptool'].indexOf(sv0)<0) sv0='pdf';
 setView(sv0); render();
-if(emb) load('focus'); /* tracker bridge ke liye Focus Desk background mein ready rahe */
+if(emb) load('focus'); /* tracker bridge ke liye Study Desk background mein ready rahe */
 })();
 </script>
 </body>

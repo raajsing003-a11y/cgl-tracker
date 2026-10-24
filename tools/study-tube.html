@@ -9199,6 +9199,24 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   function restoreChans() { if (chans.length) { saveChans(); return; } idbGet().then(function (l) { if (!adoptChans(l)) { try { if (window.parent !== window) window.parent.postMessage({ type: 'stv-chans-get' }, '*'); } catch (e) {} } }); }
   window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'stv-chans-set' && e.source === window.parent) adoptChans(d.chans); });
   setTimeout(restoreChans, 700);
+  /* ---- live sync: Study Desk wale Tube aur Focus Desk wale YouTube (dono yehi file) ek hi localStorage share karte hain.
+     Ek me channel/history/progress/setting badle to dusre me 0.4s me wahi dikhe (video chal raha ho to beech me disturb nahi). ---- */
+  (function () {
+    var KEYS = ['uv99:st:chans', 'uv99:st:hist', 'uv99:st:prog', 'uv99:st:seen', 'uv99:st:lim', 'uv99:st:auto', 'uv99:st:open', 'uv99:st:an', 'uv99:st:rate', 'uv99:st:day', 'uv99:st:cache'], t = null;
+    window.addEventListener('storage', function (e) {
+      if (e.key && KEYS.indexOf(e.key) < 0) return;
+      clearTimeout(t);
+      t = setTimeout(function () {
+        try {
+          var c = rd('uv99:st:chans', null); if (Array.isArray(c) && c.length) chans = c;
+          hist = rd('uv99:st:hist', hist); seen = rd('uv99:st:seen', seen); prog = rd('uv99:st:prog', prog);
+          lim = rd('uv99:st:lim', lim); auto = rd('uv99:st:auto', auto); opn = rd('uv99:st:open', opn); an = rd('uv99:st:an', an);
+          day = rd('uv99:st:day', day); cache = rd('uv99:st:cache', cache);
+          if (!cur) { render(); try { tmShow(); } catch (x) {} }
+        } catch (x) {}
+      }, 400);
+    });
+  })();
   /* ---- Admin ki Study Tube setting / channels => room ke sabhi members ke liye (app.js bridge: st-global-*) ---- */
   (function () {
     if (window.parent === window) return;
@@ -9619,7 +9637,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }, true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   window.uvOpenStudy = open;
-  window.addEventListener('message', e => { if (e.data === 'uv-study-enter') { if (!ov) open(); else { toStart(); if (depth === 0) pushS(); } } else if (e.data === 'uv-study-back') goBack(); else if (e.data === 'uv-google-focus') { setTimeout(function(){ var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 350); } });
+  window.addEventListener('message', e => { if (e.data === 'uv-study-enter') { if (!ov) open(); else { toStart(); if (depth === 0) pushS(); } } else if (e.data === 'uv-study-back') goBack(); else if (e.data === 'uv-browser-enter') { try { if (ov) close(); } catch (x) {} try { mark('navHome'); } catch (x) {} setTimeout(function () { var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 250); } else if (e.data === 'uv-google-focus') { setTimeout(function(){ var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 350); } });
 
   /* entry button on the YouTube-style home feed (re-ensured whenever the feed refreshes) */
   function ensureBtn() {
