@@ -970,24 +970,36 @@ function fb(q,why){clearTimeout(failT);try{P&&P.destroy()}catch(e){}P=null;
  w.innerHTML='<div class="stat" style="text-align:center"><div class="mu" style="margin-bottom:10px">⚠ '+why+'<br>Yahan nahi chal raha, par YouTube par 100% chalega.</div><a class="pill" target="_blank" rel="noopener" href="'+url(q)+'" style="display:inline-block;background:var(--ac);border-color:transparent;text-decoration:none;color:#fff">▶ YouTube par kholo</a></div>'}
 function nm(q,pl){try{const t=(pl.getVideoData()||{}).title,e=YL.find(x=>x.k===kOf(q));if(t&&e&&/^YouTube /.test(e.n)){e.n=(q.list&&!q.id?'📃 ':'')+t.slice(0,70);W('fdyt',YL);ytRender()}}catch(e){}}
 /* ---- YouTube gestures: left swipe up/down = brightness, right swipe = volume, double-tap left/right = -10s/+10s, 🔒 lock me bhi yehi chalta hai ---- */
-{const st=document.createElement('style');st.textContent='#ytbox{position:relative;background:#000;touch-action:manipulation}#ytbox>.ygd,#ytbox>.ygs,#ytbox>.ygl,#ytbox>.ygh,#ytbox>.ygt{position:absolute}#ytbox .ygd{inset:0;background:#000;opacity:0;pointer-events:none;z-index:2}#ytbox .ygs{left:0;right:0;top:0;bottom:48px;z-index:3;touch-action:none}#ytbox .ygl{inset:0;z-index:6;display:none;touch-action:none}#ytbox .ygu{position:absolute;left:8px;bottom:8px;width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;touch-action:none;-webkit-user-select:none;user-select:none;transition:box-shadow .7s linear}#ytbox .ygu.hold{box-shadow:0 0 0 4px #fff}#ytbox .ygh{left:50%;top:10%;transform:translateX(-50%);z-index:7;background:rgba(0,0,0,.7);color:#fff;border-radius:14px;padding:4px 12px;font:700 14px system-ui;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}#ytbox .ygh.on{opacity:1}#ytbox .ygt{right:6px;top:6px;z-index:4;display:flex;gap:6px}#ytbox .ygt button{border:0;border-radius:9px;background:rgba(0,0,0,.55);color:#fff;font-size:15px;padding:4px 9px;opacity:.85}#ytbox:fullscreen{width:100vw;height:100vh}#ytbox:fullscreen iframe{width:100%!important;height:100%!important}#ytbox:-webkit-full-screen{width:100vw;height:100vh}#ytbox:-webkit-full-screen iframe{width:100%!important;height:100%!important}';document.head.append(st)}
+{const st=document.createElement('style');st.textContent='#ytbox{position:relative;background:#000;touch-action:manipulation;overflow:hidden}#ytbox iframe{transform:translate(var(--gx,0px),var(--gy,0px)) scale(var(--gz,1));transform-origin:center center}#ytbox .ygz{right:6px;top:44px;z-index:4;display:none;border:0;border-radius:9px;background:rgba(0,0,0,.6);color:#fff;font:700 13px system-ui;padding:4px 9px}#ytbox>.ygd,#ytbox>.ygs,#ytbox>.ygl,#ytbox>.ygh,#ytbox>.ygt,#ytbox>.ygz{position:absolute}#ytbox .ygd{inset:0;background:#000;opacity:0;pointer-events:none;z-index:2}#ytbox .ygs{left:0;right:0;top:0;bottom:48px;z-index:3;touch-action:none}#ytbox .ygl{inset:0;z-index:6;display:none;touch-action:none}#ytbox .ygu{position:absolute;left:8px;bottom:8px;width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;touch-action:none;-webkit-user-select:none;user-select:none;transition:box-shadow .7s linear}#ytbox .ygu.hold{box-shadow:0 0 0 4px #fff}#ytbox .ygh{left:50%;top:10%;transform:translateX(-50%);z-index:7;background:rgba(0,0,0,.7);color:#fff;border-radius:14px;padding:4px 12px;font:700 14px system-ui;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}#ytbox .ygh.on{opacity:1}#ytbox .ygt{right:6px;top:6px;z-index:4;display:flex;gap:6px}#ytbox .ygt button{border:0;border-radius:9px;background:rgba(0,0,0,.55);color:#fff;font-size:15px;padding:4px 9px;opacity:.85}#ytbox:fullscreen{width:100vw;height:100vh}#ytbox:fullscreen iframe{width:100%!important;height:100%!important}#ytbox:-webkit-full-screen{width:100vw;height:100vh}#ytbox:-webkit-full-screen iframe{width:100%!important;height:100%!important}';document.head.append(st)}
 let bri=1;try{const x=parseFloat(localStorage.getItem('fdytbri'));if(x>=.1&&x<=1)bri=x}catch(e){}
 function ytGest(box){
  const q=s=>box.querySelector(s),dim=q('.ygd'),sh=q('.ygs'),lk=q('.ygl'),hd=q('.ygh'),ub=q('.ygu');let ht=0,streak=0,streakT=0,locked=false;
  const hud=t=>{hd.textContent=t;hd.classList.add('on');clearTimeout(ht);ht=setTimeout(()=>hd.classList.remove('on'),900)};
  const setB=b=>{bri=b;dim.style.opacity=Math.min(.9,1-b);try{localStorage.setItem('fdytbri',String(b))}catch(e){}};setB(bri);
+ const GZ={z:1,x:0,y:0},zr=q('.ygz');
+ const gzApply=()=>{if(GZ.z<=1.001){box.style.removeProperty('--gx');box.style.removeProperty('--gy');box.style.removeProperty('--gz');zr.style.display='none';return}
+  const r=box.getBoundingClientRect(),mx=(GZ.z-1)*r.width/2,my=(GZ.z-1)*r.height/2;GZ.x=Math.max(-mx,Math.min(mx,GZ.x));GZ.y=Math.max(-my,Math.min(my,GZ.y));
+  box.style.setProperty('--gx',GZ.x.toFixed(1)+'px');box.style.setProperty('--gy',GZ.y.toFixed(1)+'px');box.style.setProperty('--gz',GZ.z.toFixed(3));zr.style.display='block';zr.textContent='🔍 '+GZ.z.toFixed(1)+'x ↺'},gzReset=()=>{GZ.z=1;GZ.x=0;GZ.y=0;gzApply()};
  const skip=d=>{streak++;clearTimeout(streakT);streakT=setTimeout(()=>streak=0,700);try{P.seekTo(Math.max(0,P.getCurrentTime()+d*10),true)}catch(e){}hud((d<0?'⏪ ':'')+streak*10+'s'+(d>0?' ⏩':''))};
  const setLock=v=>{locked=v;lk.style.display=v?'block':'none';if(v)hud('🔒 Locked')};
- function bind(el,isLock){let sx=0,sy=0,dn=false,mv=false,mode=null,sv=0,sb=1,lastT=0,lastSide='',tapT=0;
-  el.addEventListener('pointerdown',e=>{if(e.target.closest('.ygu'))return;dn=true;mv=false;mode=null;sx=e.clientX;sy=e.clientY;try{sv=P.getVolume()}catch(x){sv=100}sb=bri;try{el.setPointerCapture(e.pointerId)}catch(x){}});
-  el.addEventListener('pointermove',e=>{if(!dn)return;const dx=e.clientX-sx,dy=sy-e.clientY;
-   if(!mode){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.2){const r=el.getBoundingClientRect();mode=(sx-r.left)/(r.width||1)<.5?'b':'v';mv=true}else if(Math.abs(dx)+Math.abs(dy)>10)mv=true;if(!mode)return}
+ function bind(el,isLock){let sx=0,sy=0,dn=false,mv=false,mode=null,sv=0,sb=1,lastT=0,lastSide='',tapT=0,lx=0,ly=0,pz=null;const ptr={},two=()=>{const k=Object.keys(ptr);return k.length>=2?[ptr[k[0]],ptr[k[1]]]:null},dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)||1;
+  el.addEventListener('pointerdown',e=>{if(e.target.closest('.ygu'))return;ptr[e.pointerId]={x:e.clientX,y:e.clientY};const n=Object.keys(ptr).length;try{el.setPointerCapture(e.pointerId)}catch(x){}
+   if(n===2){const t=two();pz={d:dist(t[0],t[1]),z:GZ.z,cx:(t[0].x+t[1].x)/2,cy:(t[0].y+t[1].y)/2,x:GZ.x,y:GZ.y};mv=true;mode='pinch';return}if(n>2)return;
+   dn=true;mv=false;mode=null;sx=e.clientX;sy=e.clientY;lx=sx;ly=sy;try{sv=P.getVolume()}catch(x){sv=100}sb=bri});
+  el.addEventListener('pointermove',e=>{if(ptr[e.pointerId]){ptr[e.pointerId].x=e.clientX;ptr[e.pointerId].y=e.clientY}
+   if(mode==='pinch'){const t=two();if(!t||!pz)return;GZ.z=Math.max(1,Math.min(4,pz.z*dist(t[0],t[1])/pz.d));GZ.x=pz.x+((t[0].x+t[1].x)/2-pz.cx);GZ.y=pz.y+((t[0].y+t[1].y)/2-pz.cy);gzApply();hud('🔍 '+GZ.z.toFixed(1)+'x');e.preventDefault();return}
+   if(!dn)return;const dx=e.clientX-sx,dy=sy-e.clientY;
+   if(!mode){if(Math.abs(dx)+Math.abs(dy)<=10)return;mv=true;if(GZ.z>1.001)mode='pan';else if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.2){const r=el.getBoundingClientRect();mode=(sx-r.left)/(r.width||1)<.5?'b':'v'}else return}
+   if(mode==='pan'){GZ.x+=e.clientX-lx;GZ.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;gzApply();e.preventDefault();return}
    const f=dy/((el.getBoundingClientRect().height||200)*.7);
    if(mode==='v'){const v=Math.max(0,Math.min(100,Math.round(sv+f*100)));try{P.setVolume(v);if(v>0)P.unMute()}catch(x){}hud((v?'🔊 ':'🔇 ')+v+'%')}
    else{const b=Math.max(.1,Math.min(1,sb+f));setB(b);hud('☀ '+Math.round(b*100)+'%')}
    e.preventDefault()});
-  el.addEventListener('pointercancel',()=>{dn=false;mode=null});
-  el.addEventListener('pointerup',e=>{if(!dn)return;dn=false;if(mv){mode=null;return}
+  el.addEventListener('pointercancel',e=>{delete ptr[e.pointerId];if(!Object.keys(ptr).length){dn=false;mode=null;pz=null}});
+  el.addEventListener('pointerup',e=>{delete ptr[e.pointerId];const n=Object.keys(ptr).length;
+   if(mode==='pinch'){if(n<2){if(GZ.z<1.05)gzReset();pz=null;if(n===0){mode=null;dn=false}else mode='dead'}return}
+   if(mode==='dead'){if(n===0){mode=null;dn=false}return}
+   if(!dn)return;dn=false;if(mv){mode=null;return}
    const r=el.getBoundingClientRect(),fx=(e.clientX-r.left)/(r.width||1),side=fx<.33?'l':fx>.67?'r':'c',now=Date.now();
    if(isLock){if(side==='c'){lastT=0;return}if(streak>0||(now-lastT<350&&side===lastSide)){skip(side==='l'?-1:1)}lastT=now;lastSide=side;return}
    if(streak>0&&side!=='c'){clearTimeout(tapT);skip(side==='l'?-1:1);lastT=now;lastSide=side;return}
@@ -998,6 +1010,7 @@ function ytGest(box){
  ub.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();stop();lx=e.clientX;ly=e.clientY;ub.classList.add('hold');h=setTimeout(()=>{stop();setLock(false);hud('🔓 Unlocked')},700)});
  ub.addEventListener('pointermove',e=>{if(h&&Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly)>40)stop()});
  ub.addEventListener('pointerup',stop);lk.addEventListener('contextmenu',e=>e.preventDefault());
+ zr.addEventListener('click',()=>gzReset());
  box.querySelector('.ygt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.g==='lock')setLock(true);
   else{const fe=document.fullscreenElement||document.webkitFullscreenElement;
@@ -1006,7 +1019,7 @@ function ytGest(box){
 }
 window.stopYT=function(){clearTimeout(failT);const was=!!P;try{P&&P.destroy()}catch(e){}P=null;cur=null;w.innerHTML='';if(was){const m=$('#mtg');m.textContent=A.paused?'🔇':'🔊';m.classList.toggle('on',!A.paused)}};
 window.ytEmbed=function(q){A.pause();$('#pp').textContent='▶';stopYT();cur=q;skips=0;
- w.innerHTML='<div id="ytbox"><div id="ytp0" style="min-height:200px"></div><div class="ygd"></div><div class="ygs"></div><div class="ygl"><b class="ygu" title="700ms dabake rakho = unlock">🔒</b></div><div class="ygh"></div><div class="ygt"><button data-g="lock" title="Screen lock (double-tap +/-10 chalta rahega)">🔒</button><button data-g="fs" title="Fullscreen">⛶</button></div></div><p class="mu" id="yts" style="margin:6px 0 0">YouTube load ho raha hai…</p>';ytGest(w.querySelector('#ytbox'));
+ w.innerHTML='<div id="ytbox"><div id="ytp0" style="min-height:200px"></div><div class="ygd"></div><div class="ygs"></div><div class="ygl"><b class="ygu" title="700ms dabake rakho = unlock">🔒</b></div><div class="ygh"></div><button class="ygz" data-g="zr">🔍 1x ↺</button><div class="ygt"><button data-g="lock" title="Screen lock (double-tap +/-10 chalta rahega)">🔒</button><button data-g="fs" title="Fullscreen">⛶</button></div></div><p class="mu" id="yts" style="margin:6px 0 0">YouTube load ho raha hai…</p>';ytGest(w.querySelector('#ytbox'));
  const web=/^https?:$/.test(location.protocol);
  api().then(()=>{if(cur!==q)return;
   P=new YT.Player('ytp0',{width:'100%',height:200,host:'https://www.youtube-nocookie.com',videoId:q.id||undefined,

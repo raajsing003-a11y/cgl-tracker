@@ -10182,7 +10182,7 @@ __stvHook(org);
 })();
 </script>
 <style id="st-v5">
-#stP .stv-vw{filter:none!important}#stP .stv-vw iframe,#stP .stv-vw video{filter:var(--stf,none)!important;transform:var(--stt,none)}
+#stP .stv-vw{filter:none!important}#stP .stv-vw iframe,#stP .stv-vw video{filter:var(--stf,none)!important;transform:translate(var(--gx,0px),var(--gy,0px)) scale(var(--gz,1)) var(--stt,scale(1));transform-origin:center center}
 </style>
 
 <style id="st-rot-css">
@@ -10306,6 +10306,15 @@ __stvHook(org);
     muted:function(){var f=FV();if(f)return f.muted;var y=Y();try{return y.isMuted();}catch(e){return false;}},
     setMuted:function(m){var f=FV();if(f){f.muted=m;return;}var y=Y();try{m?y.mute():y.unMute();}catch(e){}}
   };
+  /* ---- hath se zoom (pinch) + pan (2 ungli, ya zoom hone par 1 ungli): video par; controls par nahi ---- */
+  var GZ={z:1,x:0,y:0};
+  function gzBox(){var v=VW();var r=v?v.getBoundingClientRect():{width:300,height:170};return {w:r.width||300,h:r.height||170};}
+  function gzClamp(){var b=gzBox(),mx=(GZ.z-1)*b.w/2,my=(GZ.z-1)*b.h/2;GZ.x=Math.max(-mx,Math.min(mx,GZ.x));GZ.y=Math.max(-my,Math.min(my,GZ.y));}
+  function gzApply(){var p=document.getElementById('stP');if(!p)return;
+    if(GZ.z<=1.001){p.style.removeProperty('--gx');p.style.removeProperty('--gy');p.style.removeProperty('--gz');}
+    else{gzClamp();p.style.setProperty('--gx',GZ.x.toFixed(1)+'px');p.style.setProperty('--gy',GZ.y.toFixed(1)+'px');p.style.setProperty('--gz',GZ.z.toFixed(3));}
+    var zb=L&&$q('[data-a=zr]',L);if(zb){zb.style.display=GZ.z>1.001?'':'none';zb.textContent='\uD83D\uDD0D '+GZ.z.toFixed(1)+'x \u21BA';}}
+  function gzReset(){GZ.z=1;GZ.x=0;GZ.y=0;gzApply();}
   /* brightness: video ke upar kaala parda (sc-dim). 100% = normal. Yaad rehta hai. */
   var BRI=1; try{var _b=parseFloat(localStorage.getItem('uv99:st:bri'));if(_b>=.1&&_b<=1)BRI=_b;}catch(e){}
   function getBri(){return BRI;}
@@ -10320,7 +10329,7 @@ __stvHook(org);
     var d=document.createElement('div'); d.id='stc';
     d.innerHTML='<div class="sc-aud"><div style="font-size:34px">\uD83C\uDFA7</div><div>Audio mode</div><div class="sc-at" style="opacity:.7;font-size:12.5px"></div></div>'+
       '<div class="sc-dim"></div><div class="sc-sh"></div><div class="sc-rip l"></div><div class="sc-rip r"></div><div class="sc-spin"></div><div class="sc-hud"></div>'+
-      '<div class="sc-top"><div class="sc-ti"></div><button data-a="lock">\uD83D\uDD12 Lock</button><button data-a="aud">\uD83C\uDFA7 Audio</button></div>'+
+      '<div class="sc-top"><div class="sc-ti"></div><button data-a="zr" style="display:none">\uD83D\uDD0D 1x</button><button data-a="lock">\uD83D\uDD12 Lock</button><button data-a="aud">\uD83C\uDFA7 Audio</button></div>'+
       '<div class="sc-mid"><button class="sc-big" data-a="pp">\u25B6</button></div>'+
       '<div class="sc-menu"></div>'+
       '<div class="sc-bot"><div class="sc-seek"><div class="sc-trk"><div class="sc-buf2"></div><div class="sc-pg"></div></div><div class="sc-th"></div><div class="sc-tip">0:00</div></div>'+
@@ -10343,7 +10352,7 @@ __stvHook(org);
     var ic=pl?'\u23F8':'\u25B6'; $q('[data-a=pp]',L).textContent=ic; $q('[data-a=pp2]',L).textContent=ic;
     L.classList.toggle('sc-buf',P.buffering());
     var r=0; try{r=window.__stGetRate();}catch(e){} $q('[data-a=spd]',L).textContent=(r||1)+'x';
-    var ti=$q('.sc-ti',L),pt=$q('#stPT'); if(pt&&ti.textContent!==pt.textContent) ti.textContent=pt.textContent;
+    var ti=$q('.sc-ti',L),pt=$q('#stPT'); if(pt&&ti.textContent!==pt.textContent){ ti.textContent=pt.textContent; if(GZ.z>1) gzReset(); }
     var at=$q('.sc-at',L); if(at&&pt) at.textContent=pt.textContent;
     if(!pl&&L.classList.contains('sc-hide')&&!S.lock) L.classList.remove('sc-hide');
   }
@@ -10390,22 +10399,41 @@ __stvHook(org);
     function skip(dir){streak++;clearTimeout(streakT);streakT=setTimeout(function(){streak=0;},700);P.seek(P.cur()+dir*10);ripple(dir<0?'l':'r',(dir<0?'⏪ ':'')+(streak*10)+'s'+(dir>0?' ⏩':''));}
     /* ek hi logic dono jagah: normal shield (.sc-sh) + lock layer (.sc-lk). Lock me: sirf double-tap +-10 aur swipe (brightness/volume); play/pause aur controls band. */
     function bind(el,locked){
-      var sx=0,sy=0,mv=false,dn=false,mode=null,sv=0,sb=0;
-      el.addEventListener('pointerdown',function(e){sx=e.clientX;sy=e.clientY;mv=false;dn=true;mode=null;sv=P.vol();sb=getBri();});
+      var sx=0,sy=0,mv=false,dn=false,mode=null,sv=0,sb=0,ptr={},np=0,pz=null,lx=0,ly=0;
+      function two(){var k=Object.keys(ptr);return k.length>=2?[ptr[k[0]],ptr[k[1]]]:null;}
+      function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)||1;}
+      el.addEventListener('pointerdown',function(e){
+        ptr[e.pointerId]={x:e.clientX,y:e.clientY};np=Object.keys(ptr).length;
+        if(np===2){var t=two();pz={d:dist(t[0],t[1]),z:GZ.z,cx:(t[0].x+t[1].x)/2,cy:(t[0].y+t[1].y)/2,x:GZ.x,y:GZ.y};mv=true;mode='pinch';return;}
+        if(np>2) return;
+        sx=e.clientX;sy=e.clientY;lx=sx;ly=sy;mv=false;dn=true;mode=null;sv=P.vol();sb=getBri();});
       el.addEventListener('pointermove',function(e){
+        if(ptr[e.pointerId]){ptr[e.pointerId].x=e.clientX;ptr[e.pointerId].y=e.clientY;}
+        if(mode==='pinch'){var t=two();if(!t||!pz)return;
+          GZ.z=Math.max(1,Math.min(4,pz.z*dist(t[0],t[1])/pz.d));
+          GZ.x=pz.x+((t[0].x+t[1].x)/2-pz.cx);GZ.y=pz.y+((t[0].y+t[1].y)/2-pz.cy);
+          gzApply();hud('🔍 '+GZ.z.toFixed(1)+'x');e.preventDefault();return;}
         if(!dn) return; var dx=e.clientX-sx, dy=sy-e.clientY;
         if(!mode){
-          if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.2){var r0=el.getBoundingClientRect();mode=((sx-r0.left)/(r0.width||1))<.5?'b':'v';mv=true;}
-          else if(Math.abs(dx)+Math.abs(dy)>10) mv=true;
-          if(!mode) return;
+          if(Math.abs(dx)+Math.abs(dy)<=10) return;
+          mv=true;
+          if(GZ.z>1.001){mode='pan';}   /* zoom hone par 1 ungli = video khiskao */
+          else if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.2){var r0=el.getBoundingClientRect();mode=((sx-r0.left)/(r0.width||1))<.5?'b':'v';}
+          else return;
         }
+        if(mode==='pan'){GZ.x+=e.clientX-lx;GZ.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;gzApply();e.preventDefault();return;}
         var h=el.getBoundingClientRect().height||200, f=dy/(h*.7);
         if(mode==='v'){var v=Math.max(0,Math.min(100,Math.round(sv+f*100)));P.setVol(v);hud((v===0?'🔇 ':'🔊 ')+v+'%');}
-        else{var b=Math.max(.1,Math.min(1,sb+f));setBri(b);hud('☀ '+Math.round(b*100)+'%');}
+        else if(mode==='b'){var b=Math.max(.1,Math.min(1,sb+f));setBri(b);hud('☀ '+Math.round(b*100)+'%');}
         e.preventDefault();
       });
-      el.addEventListener('pointercancel',function(){dn=false;mode=null;});
+      function lift(e){delete ptr[e.pointerId];np=Object.keys(ptr).length;
+        if(mode==='pinch'){ if(np<2){ if(GZ.z<1.05)gzReset(); pz=null; if(np===0){mode=null;dn=false;} else {mode='dead';} } return true; }
+        if(mode==='dead'){ if(np===0){mode=null;dn=false;} return true; }
+        return false; }
+      el.addEventListener('pointercancel',function(e){delete ptr[e.pointerId];np=Object.keys(ptr).length;if(np===0){dn=false;mode=null;pz=null;}});
       el.addEventListener('pointerup',function(e){
+        if(lift(e)) return;
         if(!dn) return; /* press shield par shuru nahi hua (jaise unlock-hold ke baad ungli uthana) = tap nahi */
         dn=false;
         if(mv){mode=null;return;}
@@ -10438,6 +10466,7 @@ __stvHook(org);
     L.addEventListener('click',function(e){
       var b=e.target.closest('button'); if(!b||b.closest('.sc-menu'))return; var a=b.dataset.a; if(!a)return;
       if(a==='pp'||a==='pp2'){P.toggle();setTimeout(paint,80);showCtl();}
+      else if(a==='zr'){gzReset();hud('Zoom reset');}
       else if(a==='lock'){S.lock=true;applyLock();toast('Screen locked: \uD83D\uDD12 700ms dabake rakho unlock ke liye');}
       else if(a==='aud'){S.aud=!S.aud;applyAud();toast(S.aud?'Audio mode ON (data kam)':'Audio mode OFF');}
       else if(a==='spd'||a==='q'){openMenu(a,b);}
