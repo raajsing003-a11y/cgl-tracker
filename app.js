@@ -31317,6 +31317,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return v; var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return adm ? '' : GEM_DEF; }
   function gemPromptG(){ var v = (LS('sd:gemprompt') || '').trim(); return v || GEM_DEF; }   /* Google ke liye: default prompt hamesha (admin ho ya na ho) */
   function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
+  window.__cxAI = { prompt:function(goo){ return withQ(goo ? gemPromptG() : gemPrompt(), ''); }, url:gemUrl, geo:gemGeo };
   function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
   function hash(s){ var h = 0; for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 
@@ -31655,4 +31656,71 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     refreshBars();
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBars); else initBars();
+})();
+
+
+/* ===== Mock start se pehle SSC / Normal Pattern chunna =====
+   SSC player ki language screen me (language ke niche) toggle: Normal chunne par player band hota hai aur wahi mock Normal pattern me khulta hai.
+   Normal pattern ke Start Test page par bhi toggle: SSC chunne par wahi mock SSC pattern me khulta hai. */
+(function(){
+  if(window.__cxPatSw) return; window.__cxPatSw = true;
+  var MAP = { emnative:'openEmMock', spnative:'openSPMock', p75native:'openP75MockNative', mmnative:'openMainsMockNative' };
+  var last = null;
+  Object.keys(MAP).forEach(function(ns){ var n = MAP[ns], f = window[n]; if(typeof f !== 'function') return;
+    window[n] = function(){ last = { n:n, a:arguments }; return f.apply(this, arguments); }; });
+  function reopen(){ if(last && typeof window[last.n] === 'function'){ try{ window[last.n].apply(null, last.a); }catch(e){} } }
+  function setMode(v){ try{ localStorage.setItem('mockUI', v); }catch(e){}
+    document.querySelectorAll('.mockUIBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.v === v); }); }
+  window.addEventListener('message', function(ev){
+    var m = ev.data; if(!m || m.type !== 'mpSwitch' || !last) return;
+    setMode(m.mode === 'normal' ? 'normal' : 'ssc');
+    window.dispatchEvent(new MessageEvent('message', { data:{ type:'mpClose' } }));   /* player band + history wapas */
+    setTimeout(reopen, 450);
+  });
+  function addBars(){
+    if(!document.getElementById('mockUIStyle')){
+      var st = document.createElement('style'); st.id = 'mockUIStyle';
+      st.textContent = '.mockUIBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border-radius:14px;background:rgba(127,127,127,.14)}.mockUIBar span{font-size:12px;font-weight:700;opacity:.8}.mockUIBar button{border:0;border-radius:10px;padding:8px 14px;font:700 13px system-ui,sans-serif;background:rgba(127,127,127,.2);color:inherit;cursor:pointer}.mockUIBar button.on{background:#2a62d3;color:#fff}';
+      document.head.appendChild(st);
+    }
+    ['emnative','spnative','p75native','mmnative'].forEach(function(p){
+      var sb = document.getElementById(p + 'StartBtn'); if(!sb || sb.__patBar) return; sb.__patBar = 1;
+      var bar = document.createElement('div'); bar.className = 'mockUIBar'; bar.style.marginTop = '14px'; bar.style.marginBottom = '0';
+      bar.innerHTML = '<span>Mock Pattern:</span><button type="button" data-v="ssc">🖥 SSC Pattern</button><button type="button" data-v="normal">📱 Normal Pattern</button>';
+      bar.addEventListener('click', function(ev){ var b = ev.target.closest('button'); if(!b) return; setMode(b.dataset.v); if(b.dataset.v === 'ssc') reopen(); });
+      sb.parentNode.insertBefore(bar, sb);
+    });
+    setMode(window.mockUIMode ? window.mockUIMode() : 'normal');
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBars); else addBars();
+})();
+
+
+/* ===== SSC player (iframe) ke solution se Gemini / Google ===== */
+(function(){
+  if(window.__cxMpAsk) return; window.__cxMpAsk = true;
+  function back(msg, ms){ try{ var f = document.getElementById('sscMockFrame'); f && f.contentWindow.postMessage({ type:'mpToast', msg:msg, ms:ms }, '*'); }catch(e){} }
+  function dataBlob(du, type){ var m = /^data:([^;]+);base64,(.*)$/.exec(du), bin = atob(m[2]), u = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: type || m[1] }); }
+  function toPng(du){ return new Promise(function(res, rej){ var im = new Image(); im.onload = function(){ var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); c.toBlob(function(b){ b ? res(b) : rej(new Error('png')); }, 'image/png'); }; im.onerror = rej; im.src = du; }); }
+  window.addEventListener('message', function(ev){
+    var m = ev.data; if(!m || m.type !== 'mpAsk') return;
+    var goo = m.target === 'google', label = goo ? 'Google' : 'Gemini', ai = window.__cxAI || {};
+    var pr = ai.prompt ? ai.prompt(goo) : '', text = (pr ? pr + '\n\n' : '') + '--- Question (text) ---\n' + (m.text || '');
+    if(window.__gemExt){
+      var got = false;
+      function onAck(e){ var d = e.data; if(d && (d.type === 'sd-gemini-ack' || d.type === 'sd-google-ack') && d.kind === 'send'){ got = true; window.removeEventListener('message', onAck); back(d.found ? ('📎 ' + label + ' ko bhej diya') : (label + ' khul raha hai — wahan paste ho jayega'), 3500); } }
+      window.addEventListener('message', onAck);
+      var g = ai.geo ? ai.geo() : null;
+      window.postMessage(goo ? { type:'sd-google-send', image:m.image, text:text, url:'https://www.google.com/search?udm=50', geo:g } : { type:'sd-gemini-send', image:m.image, text:text, url:ai.url ? ai.url() : 'https://gemini.google.com/app', single:true, reuse:true, popup:true, geo:g }, '*');
+      setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) back('⚠ Extension ne jawab nahi diya — extension reload karo', 5000); }, 4500);
+      return;
+    }
+    /* extension nahi: window kholo + clipboard (image + text) */
+    (async function(){
+      var ok = false;
+      try{ var png = await toPng(m.image); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png, 'text/plain': new Blob([text], { type:'text/plain' }) })]); ok = true; }catch(e){ try{ await navigator.clipboard.writeText(text); }catch(x){} }
+      try{ window.open(goo ? 'https://www.google.com/search?udm=50' : (ai.url ? ai.url() : 'https://gemini.google.com/app'), goo ? 'sd_google' : 'sd_gemini'); }catch(e){}
+      back(ok ? ('✅ Image + text copy hai — ' + label + ' me Ctrl+V karo') : ('⚠ Sirf text copy hua — ' + label + ' me paste karo (extension install karo to auto)'), 6000);
+    })();
+  });
 })();
