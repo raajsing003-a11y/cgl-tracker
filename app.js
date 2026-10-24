@@ -20356,6 +20356,7 @@ document.addEventListener('visibilitychange', ()=>{
   const adminPanelBtn = document.getElementById('adminPanelBtn');
   const adminPanelCloseBtn = document.getElementById('adminPanelCloseBtn');
   if(adminPanelBtn) adminPanelBtn.addEventListener('click', openAdminPanelModal);
+  { const apb = document.getElementById('adminPanelBackBtn'); if(apb) apb.addEventListener('click', hideAdminPanelModal); }
   if(adminPanelCloseBtn) adminPanelCloseBtn.addEventListener('click', hideAdminPanelModal);
 }
 {
@@ -31197,7 +31198,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         '<div class="apStat"><b>' + names.length + '</b><span>Total members</span></div>' +
         '<div class="apStat"><b>' + (hid + res) + '</b><span>Hidden / Restricted</span></div>' +
         '<div class="apStat"><b>' + (ann ? '📌 ON' : '—') + '</b><span>Pinned announcement</span></div>' +
-        '<div class="apStat"><b>' + (penOn() ? 'ON' : 'OFF') + '</b><span>✏️ Pen button (sabke liye)</span></div>' +
+        '<div class="apStat"><b>✏️</b><span>Pen tool — Controls tab me</span></div>' +
       '</div>' +
       '<div class="grid-label" style="margin-top:12px;">📡 Sabke liye Publish Status</div><div id="apStatusBox" class="losshint" style="padding-top:4px;">⏳ Check ho raha hai…</div>';
     pane.insertBefore(box, pane.firstChild);
@@ -31225,14 +31226,17 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     const d = document.createElement('div'); d.id = 'apCtrlBox';
     d.innerHTML =
       '<div class="grid-label" style="margin-top:14px;">🧰 App Controls (sabhi members ke liye)</div>' +
-      '<label class="adminMemberToggle" style="margin-top:8px;"><span>✏️ Pen (scribble) button dikhao — default band</span><input type="checkbox" id="apPenChk" ' + (penOn() ? 'checked' : '') + '></label>' +
-      '<div class="losshint" style="padding-top:2px;">Badalne ke ~8 sec me sabke app me lag jata hai (Auto-publish ON ho to).</div>' +
+      '<div class="apPenCard"><div class="ic">✏️</div><div class="tx"><b>Pen (scribble) tool</b><span>Sirf Admin Panel se chalta hai. Screen par likho/underline karo; pen button dobara dabane par band.</span></div>' +
+        '<button class="nav-btn" id="apPenStart" type="button">✏️ Pen Start</button></div>' +
       '<div class="grid-label" style="margin-top:14px;">🔄 Sabka App Refresh</div>' +
       '<div class="losshint" style="padding-top:0;">Naya update push karne ke baad dabao — sabke app me cache clean + reload ho jayega (jab wo app khole).</div>' +
       '<div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="apReloadBtn">🔄 Sabko Reload Karwao</button></div>' +
       '<div class="losshint" id="apReloadInfo" style="padding-top:6px;"></div>';
-    const chk = d.querySelector('#apPenChk');
-    chk.addEventListener('change', () => { setPen(chk.checked); if(window.appDefToast) appDefToast(chk.checked ? '✏️ Pen button ON' : '✏️ Pen button OFF'); });
+    d.querySelector('#apPenStart').addEventListener('click', () => {
+      try{ hideAdminPanelModal(); }catch(e){}
+      document.documentElement.classList.add('penSess');
+      setTimeout(() => { const f = document.getElementById('scratchFab'); if(f) f.click(); if(window.appDefToast) appDefToast('✏️ Pen ON — likho. Band karne ke liye pen button dabao'); }, 250);
+    });
     d.querySelector('#apReloadBtn').addEventListener('click', async (ev) => {
       const b = ev.currentTarget;
       if(!confirm('Sabhi members ka app refresh karwa dein?')) return;
@@ -31789,8 +31793,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
       + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
       + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
-      + '#cxAiBar.min .x{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;line-height:46px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 3px rgba(255,255,255,.9),0 4px 16px rgba(255,61,119,.55),0 0 22px rgba(61,184,255,.5);animation:cxAiPulse 2.4s ease-in-out infinite}'
-      + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}'
+      + '#cxAiBar.min .x{width:30px;height:30px;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:30px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(255,61,119,.5),0 0 10px rgba(61,184,255,.45);animation:cxAiPulse 2.4s ease-in-out infinite}'
+      + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}'
       + 'body.cxNoAdm #cxAiBar .m,body.cxNoAdm #cxAiPick .m,body.cxMob #cxAiBar .m,body.cxMob #cxAiPick .m{display:none!important}'
       + '#cxAiCrop{position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.25);cursor:crosshair;touch-action:none}'
       + '#cxAiBox{position:fixed;border:2px dashed #ffeb3b;background:rgba(255,235,59,.14);display:none;pointer-events:none}'
