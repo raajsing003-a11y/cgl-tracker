@@ -32,6 +32,8 @@ textarea{min-height:140px;resize:vertical}
 img.th{height:72px;border-radius:10px;border:1px solid var(--bd)}
 img.q{max-width:100%;border-radius:12px;margin:8px 0;display:block}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;margin-bottom:4px}
+.oc{display:inline-block;background:var(--gl);border:1px solid var(--ac);color:var(--ac);border-radius:22px;padding:2px 11px;font-weight:800;font-size:13px}
+.ob{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .chip{flex:none;border:1px solid var(--bd);background:var(--cd);border-radius:22px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--mu)}
 .chip.on{border-color:var(--ac);color:var(--ac);background:var(--gl)}
 .tp{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 10px;font-weight:700;color:var(--ac)}
@@ -116,9 +118,11 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
   </div>
 </div>
 
+<button class="btn" id="othb" style="width:100%;margin-bottom:12px">👥 Dusron ke ⭐ Questions (jyada save wale pehle)</button>
 <input type="text" id="sr" placeholder="🔍 Search questions..." style="margin-bottom:12px">
 <div class="chips" id="chips"></div>
 <div id="list"></div>
+<div id="oth" hidden></div>
 
 <div class="card" style="margin-top:22px">
   <b>🧰 Backup & tools</b>
@@ -562,6 +566,76 @@ setInterval(mkTick,1000);mkTick();
   })();
 })();
 
+
+/* ===== 👥 Dusron ke ⭐ questions (room members) =====
+   Har member ke ⭐ (starred) questions room me share hote hain. Yahan sab ek jagah: jis question ko jitne jyada
+   users ne ⭐ kiya wo pehle; jisko kisi ne ⭐ nahi kiya (0) wo dikhta hi nahi. */
+(function(){
+const SB=()=>{try{return window.parent&&window.parent!==window?window.parent.__mqbShare:null}catch(e){return null}};
+const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g," ").trim();
+function hs(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
+function keyOf(x){const t=norm(x.t);if(t.length>=12)return"t"+hs(t);const im=x.img||"";return im?"i"+hs(im.length+im.slice(100,1100)+im.slice(-600)):"o"+hs(t+norm((x.o||[]).join(" ")))}
+let OTH={open:false,rows:null,busy:false,F:"",min:1,AN:{},at:0},pubT=0;
+/* ---- publish: apne ⭐ questions room me ---- */
+function mine(){return D.filter(x=>x&&x.f).map(x=>({k:keyOf(x),s:x.s,tp:x.tp,t:x.t||"",o:x.o||[],a:x.a||"",e:x.e||"",img:x.img&&x.img.length<150000?x.img:""}))}
+async function publish(){const sb=SB();if(!sb||!sb.ready())return;
+  let L=mine(),js=JSON.stringify(L);if(js.length>7e6){L.forEach(r=>r.img="");js=JSON.stringify(L)}
+  let last="";try{last=localStorage.getItem("mqb_pub")||""}catch(e){}
+  const sig=sb.me()+"|"+hs(js)+"|"+js.length;if(sig===last)return;
+  try{if(await sb.set(js)){try{localStorage.setItem("mqb_pub",sig)}catch(e){}}}catch(e){}}
+function pubSoon(){clearTimeout(pubT);pubT=setTimeout(publish,2500)}
+const _persist=persist;persist=function(){const r=_persist.apply(this,arguments);pubSoon();return r};
+setTimeout(publish,4000);
+/* ---- fetch: sab dusre members ke ⭐ ---- */
+async function load(force){const sb=SB();
+  if(!sb||!sb.ready()){OTH.rows=null;OTH.err="Ye view App ke andar (Sync Room join + naam set) hone par hi chalta hai.";return}
+  if(OTH.busy)return;OTH.busy=true;OTH.err="";renderOth();
+  try{await publish();
+    const me=sb.me().trim().toLowerCase(),names=(await sb.names()).map(n=>typeof n=="string"?n:(n&&n.name)||"").filter(n=>n&&n.trim().toLowerCase()!=me);
+    const res=await Promise.all(names.map(async n=>{try{const raw=await sb.get(n);return{n,L:raw?JSON.parse(raw):[]}}catch(e){return{n,L:[]}}}));
+    const g={};res.forEach(r=>{(Array.isArray(r.L)?r.L:[]).forEach(q=>{if(!q||!q.k||!(q.t||q.img))return;const o=g[q.k]||(g[q.k]={k:q.k,users:[],q});
+      if(o.users.indexOf(r.n)<0)o.users.push(r.n);
+      if(((q.e||"").length+(q.a?50:0)+(q.img?20:0))>((o.q.e||"").length+(o.q.a?50:0)+(o.q.img?20:0)))o.q=q})});
+    OTH.rows=Object.values(g).filter(r=>r.users.length>0);OTH.at=Date.now();OTH.nm=names.length;
+    try{localStorage.setItem("mqb_oth",JSON.stringify({rows:OTH.rows.map(r=>({k:r.k,users:r.users,q:Object.assign({},r.q,{img:""})})),at:OTH.at}))}catch(e){}
+  }catch(e){OTH.err="Load nahi hua — internet check karo."}
+  OTH.busy=false;renderOth()}
+function haveK(){const s=new Set();D.forEach(x=>s.add(keyOf(x)));return s}
+function renderOth(){const box=$("oth");if(!OTH.open){box.hidden=true;return}
+  let h=`<div class="card"><b>👥 Dusron ke ⭐ Questions</b><div class="m" style="margin-top:6px">Jis question ko sabse jyada members ne ⭐ kiya wo sabse upar. Jisko kisi ne ⭐ nahi kiya (0) wo yahan nahi aata.</div><div class="ob"><button class="btn y" id="oth_rf">🔄 Refresh</button><button class="btn" id="oth_cl">✖ Band karo</button>${OTH.at?`<span class="m">${new Date(OTH.at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})} · ${OTH.nm||0} dusre member</span>`:""}</div></div>`;
+  if(OTH.busy)h+='<div class="card m" style="text-align:center">⏳ Load ho raha hai...</div>';
+  else if(OTH.err)h+=`<div class="card m" style="text-align:center">${esc(OTH.err)}</div>`;
+  else if(!OTH.rows)h+='<div class="card m" style="text-align:center">Refresh dabao.</div>';
+  else{
+    const A=OTH.rows.filter(r=>r.q.s==S),have=haveK(),mx=A.reduce((m,r)=>Math.max(m,r.users.length),0);
+    const cnt={};A.forEach(r=>cnt[r.q.tp||"Other"]=(cnt[r.q.tp||"Other"]||0)+1);
+    const q=($("sr").value||"").toLowerCase();
+    let L=A.filter(r=>r.users.length>=OTH.min&&(!OTH.F||(r.q.tp||"Other")==OTH.F)&&(!q||((r.q.t||"")+(r.q.o||[]).join(" ")+(r.q.e||"")).toLowerCase().includes(q)));
+    L.sort((a,b)=>b.users.length-a.users.length||(b.q.e||"").length-(a.q.e||"").length);
+    h+=`<div class="chips"><button class="chip ${OTH.min<2?"on":""}" data-m="1">Sab ${A.length}</button>${mx>=2?`<button class="chip ${OTH.min==2?"on":""}" data-m="2">2+ users</button>`:""}${mx>=3?`<button class="chip ${OTH.min==3?"on":""}" data-m="3">3+ users</button>`:""}`+
+      `<button class="chip ${OTH.F?"":"on"}" data-t="">${S} · sab chapter</button>${Object.keys(cnt).sort().map(t=>`<button class="chip ${t==OTH.F?"on":""}" data-t="${ha(t)}">${esc(t)} ${cnt[t]}</button>`).join("")}</div>`;
+    if(!L.length)h+=`<div class="card m" style="text-align:center">${S} me abhi kisi dusre ne koi question ⭐ nahi kiya.</div>`;
+    h+=L.slice(0,OTH.lim||40).map(r=>{const x=r.q,k=x.a?"ABCD".indexOf(x.a):-1,an=OTH.AN[r.k],dn=an!==undefined,rv=k<0||dn,in_=have.has(r.k);
+      const ops=(x.o||[]).map((o,j)=>{if(!o)return"";let c="";if(rv&&j==k)c=" c";else if(dn&&j==an)c=" w";const tap=!dn&&k>=0;
+        return`<div class="op${c}${tap?" t":""}" ${tap?`onclick="othPick('${r.k}',${j})"`:""}><span class="l">${"ABCD"[j]}</span><span>${fmt(o)}</span></div>`}).join("");
+      return`<div class="qi"><div class="qh"><span class="oc">⭐ ${r.users.length}</span><span class="m">${esc(x.tp||"")}</span>${rv&&x.a?`<span class="ans">✓ Ans ${x.a}</span>`:""}</div>`+
+        (x.t?`<div class="qt">${fmt(x.t)}</div>`:"")+(x.img?`<img class="q" src="${x.img}" onclick="zoom(this.src)">`:"")+ops+
+        (x.e&&rv?`<details><summary>💡 Trick / Explanation</summary><div style="margin-top:8px">${fmt(x.e)}</div></details>`:"")+
+        `<div class="ob"><span class="m">👤 ${r.users.map(esc).join(", ")}</span><span style="margin-left:auto">${in_?'<span class="m">✅ tumhare bank me hai</span>':`<button class="btn y" onclick="othAdd('${r.k}')">➕ Apne bank me</button>`}</span></div></div>`}).join("");
+    if(L.length>(OTH.lim||40))h+=`<button class="btn more" onclick="OTH_more()">⬇ Aur dikhao</button>`}
+  box.innerHTML=h;box.hidden=false;typeset(box);
+  $("oth_rf").onclick=()=>load(true);$("oth_cl").onclick=()=>toggle(false);
+  box.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{if(b.dataset.m)OTH.min=+b.dataset.m;else OTH.F=b.dataset.t;OTH.lim=40;renderOth()})}
+function toggle(on){OTH.open=on;$("chips").hidden=$("list").hidden=on;$("othb").style.display=on?"none":"";
+  if(on){if(!OTH.rows){try{const c=JSON.parse(localStorage.getItem("mqb_oth")||"null");if(c&&c.rows){OTH.rows=c.rows;OTH.at=c.at}}catch(e){}}renderOth();load()}else renderOth()}
+window.OTH_more=()=>{OTH.lim=(OTH.lim||40)+40;renderOth()};
+window.othPick=(k,j)=>{OTH.AN[k]=j;renderOth()};
+window.othAdd=k=>{const r=(OTH.rows||[]).find(y=>y.k==k);if(!r)return;const x=r.q;
+  D.unshift({id:Date.now()+Math.floor(Math.random()*1000),s:x.s||S,tp:x.tp||"Other",t:x.t||"",img:x.img||"",o:(x.o||["","","",""]).slice(),a:x.a||"",e:x.e||""});
+  persist();renderTabs();renderOth();toast("✅ Tumhare bank me add ho gaya")};
+$("othb").onclick=()=>toggle(true);
+const _render=render;render=function(){if(OTH.open){renderOth();return}return _render.apply(this,arguments)};
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async onload="render();if(!$('mk').hidden)typeset($('mk'))">
 /* ---- Repeat questions dhundo (milte-julte question + options) -> Trash me, wapas laa sakte ho ---- */

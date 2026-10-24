@@ -1783,6 +1783,15 @@ window.addEventListener('message', function(e){
   const backBtn = document.getElementById('mockbankBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Mock Question Add <-> Sync Room bridge: har member ke ⭐ questions room me share (rooms/<room>/mqbstar_<naam>),
+// taaki Mock Question Add me "👥 Dusron ke ⭐" view sabke saved questions count ke saath dikha sake.
+window.__mqbShare = {
+  me: function(){ return myName || ''; },
+  ready: function(){ return !!(getRoomCode() && myName); },
+  names: async function(){ try{ return await loadRoomRegistry(); }catch(e){ return []; } },
+  get: async function(n){ return await kvdbGet('mqbstar_' + String(n||'').trim().toLowerCase()); },
+  set: async function(v){ if(!myName) return false; return await kvdbSet('mqbstar_' + myName.trim().toLowerCase(), v); }
+};
 // Super English (tools/superenglish.html) — Mock Question Add ke neeche wala button.
 // Chapter-wise data data/superenglish/<chapter>.json se lazy load hota hai; progress
 // iframe (same origin) ke localStorage + IndexedDB mein save rehti hai.
