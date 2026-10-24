@@ -12819,9 +12819,7 @@ function makeMathPyqQuiz(){
       srcWrap.className = 'calcGrid calcGrid-1col';
       srcWrap.style.cssText = 'margin-bottom:14px;';
       const sources = [
-        { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' },
-        { key:'sp',      icon:'🔥', label:'Super Practice',   sub:'147 Mocks · 25 Qs each (mixed, all chapters) · 15 min' },
-        { key:'p75',     icon:'📗', label:'75-Day Practice',  sub:'75 Mocks · 25 Qs each (mixed, all chapters) · 15 min' }
+        { key:'concept', icon:'🧮', label:'Concept Mock',     sub:'44 Mocks · 25 Qs each (mixed, all chapters) · SSC/RRB PYQs' }
       ];
       sources.forEach(s => {
         const b = document.createElement('button');
@@ -12837,7 +12835,7 @@ function makeMathPyqQuiz(){
         b.addEventListener('click', () => { mathpyqMockSource = s.key; renderSetMenu(); });
         srcWrap.appendChild(b);
       });
-      grid.appendChild(srcWrap);
+      // Super Practice / 75-Day Practice math sectionals removed — only Concept Mock remains, so no source picker is shown.
 
       const isP75 = mathpyqMockSource === 'p75';
       const isSP = mathpyqMockSource === 'sp';
@@ -13516,7 +13514,7 @@ function makeMathPyqQuiz(){
   // duplicating any of the toggle/render logic above.
   function openMocksView(source){
     mathpyqView = 'mocks';
-    mathpyqMockSource = (source === 'p75' || source === 'sp') ? source : 'concept';
+    mathpyqMockSource = 'concept';
     mathpyqChapterSel = null;
     renderSetMenu();
     showCalcPage('mathpyqmenu');
@@ -16884,7 +16882,7 @@ function renderSPSubjectGrid(){
     '<span class="calcIcon calcIcon-statement">🔢</span>' +
     '<span class="calcLabelCol">' +
       '<span class="calcLabel">Math Sectional</span>' +
-      '<span class="calcSub">15-min · 25 Qs mixed · Concept + 75-Day Practice</span>' +
+      '<span class="calcSub">25 Qs mixed · Concept Mock</span>' +
     '</span>' +
     '<span class="calcArrow">&#8250;</span>';
   mathSecBtn.addEventListener('click', () => mathPyqQuiz.openMocksView('concept'));
@@ -32229,4 +32227,530 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       try{ const l = document.createElement('link'); l.rel = 'prefetch'; l.href = './tools/' + f; l.as = 'document'; document.head.appendChild(l); }catch(e){}
     }), i * 1200));
   }, 4000));
+})();
+
+// ===== 🔍 Question Error Scanner (Admin Panel) =====
+// Admin panel se khulta hai. App ke saare Math / English / Reasoning (aur chaho to GK/Mains)
+// questions ko ek-ek karke scan karta hai aur ye errors dhundta hai: image load na hona /
+// galat image link, <img> tag text ban jana, HTML tag ya &#...; code text ban ke dikhna,
+// LaTeX (\frac, $..$) bacha hona, extra </span>, kharaab characters, khali question/option,
+// answer range se bahar, duplicate options, figure ka zikr par image nahi, missing
+// explanation / Hindi, aur manifest me hai par file nahi mili.
+(function(){
+  const CORE = (function(){
+    const SEV = { error:3, warn:2, info:1 };
+    const CODES = {
+      IMG_BROKEN:   ['error','Image load nahi hui (link dead/blocked)'],
+      IMG_BAD_URL:  ['error','Image ka link galat/khali/relative hai'],
+      IMG_TAG_TEXT: ['error','<img> tag text ban ke dikhega (image render nahi hogi)'],
+      RAW_TAG:      ['error','HTML tag (</span>, <p>, <font>...) text ban ke dikhega'],
+      ENTITY_RAW:   ['error','&#...; / &amp; jaisa code text ban ke dikhega'],
+      LATEX_RAW:    ['error','LaTeX / $...$ code bacha hai (math sahi nahi dikhega)'],
+      GARBAGE:      ['error','Kharaab characters (�, mojibake, undefined, NaN)'],
+      NO_QTEXT:     ['error','Question text khali hai'],
+      OPT_FEW:      ['error','Options 2 se kam / missing'],
+      OPT_EMPTY:    ['error','Koi option khali hai'],
+      ANS_MISSING:  ['error','Answer set hi nahi hai'],
+      ANS_RANGE:    ['error','Answer index options ke bahar hai'],
+      FILE_MISSING: ['error','Manifest me hai par file nahi mili / load nahi hui'],
+      OPT_DUP:      ['warn','Do options bilkul same hain'],
+      OPT_MISMATCH: ['warn','English aur Hindi options ki ginti alag hai'],
+      FIG_NO_IMG:   ['warn','Question figure/diagram ka zikr karta hai par image nahi hai'],
+      TAG_UNCLOSED: ['info','HTML tag band nahi hua (formatting aage tak phail sakti hai)'],
+      NO_EXPL:      ['warn','Explanation / solution khali ya missing'],
+      HI_MISSING:   ['info','Hindi version missing']
+    };
+    const QROOT = /^(en|hi|t|h|q_en|q_hi|word|question|q|prompt|text|stem|statement)$/;
+    const OROOT = /^(options|o|oh|options_en|options_hi|opts)$/;
+    const EROOT = /^(sol|sol1|sol2|e|eh|explanation|solution|solution_en|solution_hi|exp)$/;
+    const ANSKEYS = ['answer','a','ans','correct','correctIndex'];
+    const REC_OPEN = /<\s*(p|img|sup|sub|span|div|table|br|b|i|ul|ol|li)[ >\/]/i;
+    const KNOWN_TAG = /<\/?(p|br|span|div|font|table|thead|tbody|tr|td|th|ul|ol|li|strong|em|center|h[1-6]|a|small|big|pre|code|hr|blockquote|u)(\s[^>]*)?\/?>/ig;
+    const ENTITY = /&(#\d+|#x[0-9a-f]+|[a-zA-Z]{2,8});/g;
+    const LATEX_OK = /\\(left|right|times|div|cdot|pi|propto|approx|Rightarrow|rightarrow|downarrow|circ)(?![a-zA-Z])/g;
+
+    function isObj(o){ return o && typeof o === 'object' && !Array.isArray(o); }
+    function stripTags(s){ return String(s == null ? '' : s).replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/\s+/g,' ').trim(); }
+    function looksQ(o){ return isObj(o) && ('options' in o || 'o' in o || 'q_en' in o || 'en' in o || 't' in o || 'word' in o || 'options_en' in o || 'question' in o); }
+
+    function findArrays(node, path, out, depth){
+      if(depth > 6 || node == null) return;
+      if(Array.isArray(node)){
+        const objs = node.filter(isObj);
+        if(objs.length && objs.length >= node.length * 0.8 && objs.some(looksQ)){ out.push({ arr: node, path: path }); return; }
+        return;
+      }
+      if(isObj(node)){
+        Object.keys(node).forEach(function(k){ findArrays(node[k], path ? path + '/' + k : k, out, depth + 1); });
+      }
+    }
+    function collect(o, root, path, out, depth){
+      if(depth > 6 || o == null) return;
+      if(typeof o === 'string'){ out.push({ root: root, p: path, v: o }); return; }
+      if(Array.isArray(o)){ o.forEach(function(x, i){ collect(x, root, path + '[' + i + ']', out, depth + 1); }); return; }
+      if(isObj(o)) Object.keys(o).forEach(function(k){ collect(o[k], root, path ? path + '.' + k : k, out, depth + 1); });
+    }
+    function lineSplit(t){ return String(t).indexOf('\n') !== -1 ? String(t).split('\n') : [String(t)]; }
+
+    function latexLeft(text, raw){
+      let s = String(text);
+      if(!raw){
+        s = s.replace(LATEX_OK, '').replace(/\\sqrt\[\d+\]\{[^{}]*\}/g,'').replace(/\\sqrt\{[^{}]*\}/g,'').replace(/\\frac\{[^{}]*\}\{[^{}]*\}/g,'');
+      }
+      const found = [];
+      let m; const rx = /\\[a-zA-Z]{2,}/g;
+      while((m = rx.exec(s)) && found.length < 3){ if(found.indexOf(m[0]) === -1) found.push(m[0]); }
+      if(/\\\(|\\\[|\\\)|\\\]/.test(s)) found.push('\\( \\[');
+      const dm = s.match(/\$[^$\n]{1,80}\$/);
+      if(dm && /[\\^_{}]|\d\s*[+\-*\/=]|[a-z]\s*=/.test(dm[0])) found.push(dm[0].slice(0, 30));
+      return found;
+    }
+    function tagBalance(s){
+      const names = ['span','font','b','i','u','sup','sub','strong','em','a','div','table'];
+      const unclosed = [];
+      names.forEach(function(n){
+        const o = (s.match(new RegExp('<' + n + '(\\s[^>]*)?>', 'gi')) || []).length;
+        const c = (s.match(new RegExp('</' + n + '\\s*>', 'gi')) || []).length;
+        if(o > c) unclosed.push(n);
+      });
+      return unclosed;
+    }
+
+    function checkRecord(q, ctx, urlSink){
+      const issues = [];
+      const add = function(code, detail){ issues.push({ c: code, sv: CODES[code][0], m: detail || '' }); };
+      const strs = [];
+      Object.keys(q).forEach(function(k){ collect(q[k], k, k, strs, 0); });
+
+      // ---- question text / images ----
+      const qStrs = strs.filter(function(x){ return QROOT.test(x.root); });
+      let qText = '', hasImg = false, anyImg = false;
+      const imgSeen = {};
+      strs.forEach(function(x){
+        const isImgKey = /^(img|image|figure|fig|imgs)$/i.test(x.root) && /^https?:|^\/\/|^data:image|\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(x.v);
+        const tags = x.v.match(/<img\b[^>]*>/gi) || [];
+        if(tags.length || isImgKey) anyImg = true;
+        if(tags.length && QROOT.test(x.root)) hasImg = true;
+        if(isImgKey) hasImg = true;
+        tags.forEach(function(tag){
+          if((ctx.render === 'spv' && !/^<img src="https:\/\/[^"\s<>]+">$/.test(tag)) || ctx.render === 'esc'){
+            if(!imgSeen['t' + tag]){ imgSeen['t' + tag] = 1; add('IMG_TAG_TEXT', tag.slice(0, 90)); }
+          }
+          const sm = tag.match(/src\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+          const src = sm ? (sm[1] != null ? sm[1] : (sm[2] != null ? sm[2] : sm[3])) : '';
+          if(!src || !(/^https?:\/\//i.test(src) || /^data:image/i.test(src))){
+            if(!imgSeen['b' + src]){ imgSeen['b' + src] = 1; add('IMG_BAD_URL', src ? src.slice(0, 80) : '(src khali)'); }
+          } else if(/^https?:/i.test(src) && urlSink){ urlSink(src); }
+        });
+        if(isImgKey && /^https?:/i.test(x.v) && urlSink) urlSink(x.v);
+      });
+      qStrs.forEach(function(x){ if(x.root === 'en' || x.root === 't' || x.root === 'q_en' || !qText) qText += ' ' + stripTags(x.v); });
+      qText = qText.trim();
+      const anyQ = qStrs.some(function(x){ return stripTags(x.v).length > 0; }) || hasImg;
+      if(!anyQ && ctx.hasQ) add('NO_QTEXT');
+
+      // ---- text-level checks (har string) ----
+      const seenCode = {};
+      const once = function(code, key, detail){ const k = code + '|' + key; if(seenCode[k]) return; seenCode[k] = 1; add(code, detail); };
+      strs.forEach(function(x){
+        const v = x.v; if(!v) return;
+        const isExp = EROOT.test(x.root);
+        // RAW tags
+        if(ctx.render === 'spv' || ctx.render === 'esc'){
+          const m = v.match(KNOWN_TAG);
+          if(m) once('RAW_TAG', 'spv' + m[0], m.slice(0, 3).join(' '));
+        } else if(ctx.render === 'html' && !/katex/.test(v)){
+          const lines = lineSplit(v);
+          for(let li = 0; li < lines.length; li++){
+            const ln = lines[li];
+            if(REC_OPEN.test(ln)) continue;
+            const m = ln.match(KNOWN_TAG);
+            if(m){ once('RAW_TAG', 'html' + m[0], m.slice(0, 3).join(' ')); break; }
+          }
+        }
+        if((ctx.render === 'html' || ctx.render === 'raw') && !/katex/.test(v)){
+          const un = tagBalance(v);
+          if(un.length) once('TAG_UNCLOSED', un.join(','), '<' + un.join('>, <') + '> band nahi');
+        }
+        // entities
+        if(ctx.render === 'spv' || ctx.render === 'esc'){
+          const m = v.match(ENTITY);
+          if(m) once('ENTITY_RAW', 'e' + m[0], m.slice(0, 3).join(' '));
+        } else {
+          const m = v.match(/&amp;(#\d+|#x[0-9a-f]+|[a-zA-Z]{2,8});/g);
+          if(m) once('ENTITY_RAW', 'd' + m[0], m.slice(0, 3).join(' '));
+        }
+        // latex
+        const rawMode = ctx.render !== 'html' || REC_OPEN.test(v);
+        const lx = latexLeft(v, rawMode);
+        if(lx.length) once('LATEX_RAW', lx.join('|'), lx.slice(0, 3).join(' '));
+        // garbage
+        let gm = null;
+        if(/\uFFFD/.test(v)) gm = '�';
+        else if(/Ã[\u0080-\u00BF]|â€|à¤|à¥|Â[\u00A0-\u00BF]/.test(v)) gm = 'mojibake';
+        else if(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(v)) gm = 'control char';
+        else if(/^\s*(undefined|NaN|\[object Object\]|null)\s*$/.test(stripTags(v))) gm = stripTags(v);
+        else if(/\b(undefined|NaN)\b/.test(stripTags(v)) && !isExp) gm = 'undefined/NaN';
+        if(gm) once('GARBAGE', gm, gm);
+      });
+
+      // ---- options / answer ----
+      const optArrs = [];
+      strs.forEach(function(x){ /* placeholder to keep order */ });
+      (function findOpts(o, root, depth){
+        if(depth > 4 || o == null) return;
+        if(Array.isArray(o)){ return; }
+        if(isObj(o)) Object.keys(o).forEach(function(k){
+          const v = o[k];
+          if(OROOT.test(k) && Array.isArray(v)) optArrs.push({ k: k, a: v });
+          else if(isObj(v)) findOpts(v, k, depth + 1);
+        });
+      })(q, '', 0);
+      const mainOpt = optArrs.find(function(x){ return /^(options|o|options_en|opts)$/.test(x.k) && x.a.length; }) || optArrs.find(function(x){ return x.a.length; });
+      if(ctx.hasOptions && !mainOpt) add('OPT_FEW', 'options field hi nahi mila');
+      if(mainOpt){
+        const opts = mainOpt.a.map(function(o){ return typeof o === 'string' ? o : (o == null ? '' : (typeof o === 'object' ? JSON.stringify(o) : String(o))); });
+        if(opts.length < 2) add('OPT_FEW', opts.length + ' option');
+        const empties = [];
+        opts.forEach(function(o, i){ if(!stripTags(o) && !/<img\b/i.test(o)) empties.push(i + 1); });
+        if(empties.length) add('OPT_EMPTY', 'option ' + empties.join(','));
+        const norm = opts.map(function(o){ return stripTags(o).toLowerCase() + (/<img\b/i.test(o) ? o.replace(/\s+/g,'') : ''); });
+        const dups = [];
+        norm.forEach(function(n, i){ if(n && norm.indexOf(n) !== i && dups.indexOf(n) === -1) dups.push(n); });
+        if(dups.length) add('OPT_DUP', dups.map(function(d){ return d.slice(0, 25); }).join(' | '));
+        const hiArr = optArrs.find(function(x){ return /^(oh|options_hi)$/.test(x.k); });
+        if(hiArr && hiArr.a.some(function(s){ return stripTags(s).length; }) && hiArr.a.length !== opts.length) add('OPT_MISMATCH', 'EN ' + opts.length + ' / HI ' + hiArr.a.length);
+        let av; let hasKey = false;
+        for(let i = 0; i < ANSKEYS.length; i++){ if(ANSKEYS[i] in q){ av = q[ANSKEYS[i]]; hasKey = true; break; } }
+        if(!hasKey || av === null || av === undefined || av === '') add('ANS_MISSING');
+        else {
+          let n = av;
+          if(typeof n === 'string' && /^\d+$/.test(n)) n = parseInt(n, 10);
+          if(typeof n === 'string' && /^[A-Da-d]$/.test(n)) n = n.toUpperCase().charCodeAt(0) - 65;
+          if(typeof n !== 'number' || !isFinite(n) || n < 0 || n >= opts.length || Math.floor(n) !== n) add('ANS_RANGE', 'answer=' + JSON.stringify(av) + ', options=' + opts.length);
+        }
+      }
+
+      // ---- explanation (sirf jab is array me kuch questions ke paas hai) ----
+      if(ctx.expKeys && ctx.expKeys.length){
+        const has = ctx.expKeys.some(function(k){ const v = q[k]; return typeof v === 'string' ? stripTags(v).length > 0 : (v && typeof v === 'object'); });
+        if(!has) add('NO_EXPL');
+      }
+      // ---- Hindi missing ----
+      [['en','hi'],['t','h'],['q_en','q_hi']].forEach(function(pr){
+        if(pr[0] in q && pr[1] in q){
+          const en = typeof q[pr[0]] === 'string' ? stripTags(q[pr[0]]) : 'x';
+          const hi = typeof q[pr[1]] === 'string' ? stripTags(q[pr[1]]) : 'x';
+          if(en && !hi && !hasImg) add('HI_MISSING');
+        } else if(pr[0] in q && !(pr[1] in q) && ctx.hiKeyPresent === pr[1]){
+          add('HI_MISSING');
+        }
+      });
+      // ---- figure mention without image ----
+      if(ctx.subject !== 'English' && !anyImg){
+        const t = qText;
+        const fm = t.match(/(given|following|above|below|shown|adjacent|attached)\s+(in\s+the\s+)?(figure|diagram|graph|chart|pie)\b|\bin the (given )?figure\b|\bfigure\s+(shows|given|below|above)\b/i);
+        if(fm) add('FIG_NO_IMG', fm[0]);
+      }
+      return { issues: issues, qText: qText, hasImg: anyImg, qn: q.qn };
+    }
+
+    function subjectOfTopic(file, setKey){
+      const b = file.replace(/^.*\//,'').replace(/\.json$/,'').toLowerCase();
+      if(b === 'reasoningmock' && setKey){
+        if(/^spenglish|^p75english/.test(setKey)) return 'English';
+        if(/^spquant|^p75quant/.test(setKey)) return 'Math';
+        if(/^spgk|^p75gk|^spcomputer|^cglpre|^cpopre|^mains/.test(setKey)) return 'Other';
+        return 'Reasoning';
+      }
+      if(b === 'englishfullmock') return 'Other';
+      if(/^(grammar|grammar_chapterwise|homophone|idiom|narration|phrasal|preposition|spelling|vocab|voice|eduquity|english.*)$/.test(b)) return 'English';
+      if(/^(math.*|calcquiz|digitalsum|unitdigit)$/.test(b)) return 'Math';
+      return 'Reasoning';
+    }
+    const MOCK_SUB = { quant:'Math', math:'Math', reasoning:'Reasoning', english:'English', gk:'Other', computer:'Other', full:'Other', sectional:'Other' };
+
+    async function buildJobs(fetchJson){
+      const jobs = [];
+      const seen = {};
+      try{
+        const idx = await fetchJson('data/index.json');
+        Object.keys(idx.topics || {}).forEach(function(k){
+          const f = idx.topics[k].file; if(!f || seen[f]) return; seen[f] = 1;
+          if(!Object.keys(idx.topics[k].sets || {}).length) return;
+          jobs.push({ path: f, render: /^(vocab|spelling|idiom|phrasal|preposition|grammar|grammar_chapterwise|homophone|narration|voice|eduquity|english_topicwise)$/.test(f.replace(/^.*\//,'').replace(/\.json$/,'')) ? 'esc' : 'html', subjectOf: function(setKey){ return subjectOfTopic(f, setKey); }, subjects: f.indexOf('reasoningmock') !== -1 ? ['Reasoning','English','Math','Other'] : [subjectOfTopic(f)], group: 'topics' });
+        });
+      }catch(e){ jobs.push({ path: 'data/index.json', missing: true, subjects: ['Math','English','Reasoning','Other'] }); }
+      const dirs = [['data/maths/','Math'],['data/reasoning/','Reasoning'],['data/superenglish/','English']];
+      for(let d = 0; d < dirs.length; d++){
+        try{
+          const ix = await fetchJson(dirs[d][0] + 'index.json');
+          (ix.chapters || []).forEach(function(c){ jobs.push({ path: dirs[d][0] + c.key + '.json', render: 'spv', subjectOf: function(){ return dirs[d][1]; }, subjects: [dirs[d][1]], group: 'super-' + dirs[d][1] }); });
+        }catch(e){ jobs.push({ path: dirs[d][0] + 'index.json', missing: true, subjects: [dirs[d][1]] }); }
+      }
+      const mocks = [['superpractice/','superpractice/manifest.json'],['practice75/','practice75/manifest.json'],['mainsmock/','mainsmock/manifest.json']];
+      for(let m = 0; m < mocks.length; m++){
+        try{
+          const mf = await fetchJson(mocks[m][1]);
+          Object.keys(mf).forEach(function(cat){
+            const sub = MOCK_SUB[cat] || 'Other';
+            (mf[cat] || []).forEach(function(e){
+              if(!e || !e.file) return;
+              jobs.push({ path: mocks[m][0] + 'data/' + cat + '/' + e.file.replace(/\.html$/,'.json'), render: 'raw', subjectOf: function(){ return sub; }, subjects: [sub], group: mocks[m][0].replace('/','') });
+            });
+          });
+        }catch(e){ jobs.push({ path: mocks[m][1], missing: true, subjects: ['Other'] }); }
+      }
+      return jobs;
+    }
+
+    // Ek file ka poora scan. emit(rec) har question ke liye jisme issues ya image ho.
+    function scanDoc(job, doc, wantSubs, onRec, urlSink, counter){
+      const arrs = [];
+      findArrays(doc, '', arrs, 0);
+      arrs.forEach(function(A){
+        const setKey = A.path;
+        const sub = job.subjectOf(setKey.split('/')[0]);
+        if(wantSubs && !wantSubs[sub]) return;
+        const arr = A.arr;
+        // array-level schema knowledge
+        const keyCount = {}; arr.forEach(function(q){ if(isObj(q)) Object.keys(q).forEach(function(k){ keyCount[k] = (keyCount[k] || 0) + 1; }); });
+        const half = arr.length * 0.5;
+        const ctx = { subject: sub };
+        ctx.render = job.render;
+        ctx.hasQ = Object.keys(keyCount).some(function(k){ return QROOT.test(k) && keyCount[k] >= half; });
+        ctx.hasOptions = ['options','o','options_en','opts'].some(function(k){ return (keyCount[k] || 0) >= half; });
+        ctx.expKeys = Object.keys(keyCount).filter(function(k){ return EROOT.test(k) && keyCount[k] >= arr.length * 0.3; });
+        arr.forEach(function(q, i){
+          if(!isObj(q)) return;
+          counter.n++;
+          const urls = [];
+          const r = checkRecord(q, ctx, function(u){ urls.push(u); });
+          if(r.issues.length || urls.length){
+            onRec({ sub: sub, f: job.path, s: setKey, i: i, n: (q.qn != null ? q.qn : i + 1), snip: (r.qText || '').slice(0, 150), issues: r.issues, urls: urls }, urls);
+          }
+        });
+      });
+    }
+    return { CODES: CODES, SEV: SEV, buildJobs: buildJobs, scanDoc: scanDoc, checkRecord: checkRecord, stripTags: stripTags };
+  })();
+
+  if(typeof module !== 'undefined' && module.exports){ module.exports = CORE; return; }
+  if(typeof document === 'undefined') return;
+
+  // ================= UI =================
+  const $ = function(id){ return document.getElementById(id); };
+  const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  const state = { running:false, stop:false, recs:[], total:0, filesDone:0, filesAll:0, imgDone:0, imgAll:0, f:{ sev:{error:true,warn:true,info:false}, code:'', sub:'', q:'' }, page:0 };
+  const PAGE = 40;
+
+  function fetchJson(p){
+    return fetch(p, { cache: 'no-store' }).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function testUrl(u){
+    return new Promise(function(res){
+      const i = new Image(); i.referrerPolicy = 'no-referrer'; let d = 0;
+      const f = function(ok){ if(d) return; d = 1; res(ok); };
+      i.onload = function(){ f(i.naturalWidth > 0); };
+      i.onerror = function(){ f(false); };
+      setTimeout(function(){ f(false); }, 14000);
+      i.src = u;
+    });
+  }
+
+  function injectStyle(){
+    if($('qscStyle')) return;
+    const st = document.createElement('style'); st.id = 'qscStyle';
+    st.textContent = '#qscOverlay{position:fixed;inset:0;z-index:100000;background:var(--bg,#0d0d14);color:var(--text,#ddd);overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px;font-family:var(--font-main,system-ui,sans-serif)}' +
+      '#qscOverlay h2{margin:0 0 6px;font-size:18px;color:var(--white,#fff)}#qscOverlay .qrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}' +
+      '#qscOverlay label{font-size:13.5px;display:flex;align-items:center;gap:5px}#qscOverlay button,#qscOverlay select,#qscOverlay input[type=text]{font-size:14px;border-radius:10px;border:1px solid var(--border-strong,#555);background:var(--panel2,#1a181d);color:var(--quiz-text,#ddd);padding:8px 11px;font-family:inherit}' +
+      '#qscOverlay button.qpri{background:#6c5ce7;border-color:#6c5ce7;color:#fff;font-weight:700}#qscOverlay button.qon{background:var(--accent,#fbbf24);color:#111;border-color:var(--accent,#fbbf24)}' +
+      '#qscBar{height:9px;background:var(--panel2,#222);border-radius:6px;overflow:hidden;margin:6px 0}#qscBar i{display:block;height:100%;width:0;background:#00b894}' +
+      '.qchip{display:inline-block;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px 4px 2px 0;border:1px solid var(--border-strong,#555);cursor:pointer;background:var(--panel2,#1a181d)}' +
+      '.qchip.error{color:var(--loss,#f87171)}.qchip.warn{color:var(--accent,#fbbf24)}.qchip.info{color:var(--blue,#60a5fa)}.qchip.sel{outline:2px solid #6c5ce7}' +
+      '.qitem{background:var(--card,#161b22);border:1px solid var(--border,#333);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.5}' +
+      '.qitem .loc{font-size:11.5px;color:var(--muted,#aaa);word-break:break-all}.qitem .snip{margin:4px 0;color:var(--quiz-text,#ddd);word-break:break-word}' +
+      '.qis{display:inline-block;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700;margin-right:5px}.qis.error{background:rgba(248,113,113,.2);color:var(--loss,#f87171)}.qis.warn{background:rgba(251,191,36,.2);color:var(--accent,#fbbf24)}.qis.info{background:rgba(96,165,250,.2);color:var(--blue,#60a5fa)}' +
+      '.qdet{font-size:12px;color:var(--muted,#aaa);word-break:break-all}';
+    document.head.appendChild(st);
+  }
+
+  function statusText(extra){
+    const e = state.recs.reduce(function(a, r){ return a + (r.issues.some(function(i){ return i.sv === 'error'; }) ? 1 : 0); }, 0);
+    return 'Files ' + state.filesDone + '/' + state.filesAll + ' · Questions scan: ' + state.total.toLocaleString() + ' · Error wale Qs: ' + e + (state.imgAll ? ' · Images ' + state.imgDone + '/' + state.imgAll : '') + (extra ? '<br><span style="opacity:.7">' + esc(extra) + '</span>' : '');
+  }
+  function setProgress(pct, extra){
+    const bar = $('qscBar'); if(bar) bar.firstChild.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    const st = $('qscStatus'); if(st) st.innerHTML = statusText(extra);
+  }
+
+  function matches(r){
+    const f = state.f;
+    if(f.sub && r.sub !== f.sub) return false;
+    if(f.q){ const t = (r.f + ' ' + r.s + ' ' + r.snip).toLowerCase(); if(t.indexOf(f.q.toLowerCase()) === -1) return false; }
+    return r.issues.some(function(i){ return state.f.sev[i.sv] && (!f.code || i.c === f.code); });
+  }
+  function renderSummary(){
+    const counts = {};
+    state.recs.forEach(function(r){ if(state.f.sub && r.sub !== state.f.sub) return; const seen = {}; r.issues.forEach(function(i){ if(!seen[i.c]){ seen[i.c] = 1; counts[i.c] = (counts[i.c] || 0) + 1; } }); });
+    const codes = Object.keys(counts).sort(function(a, b){ return CORE.SEV[CORE.CODES[b][0]] - CORE.SEV[CORE.CODES[a][0]] || counts[b] - counts[a]; });
+    const el = $('qscChips'); if(!el) return;
+    el.innerHTML = (codes.length ? '' : '<div style="opacity:.7;font-size:13px">Abhi koi issue nahi mila.</div>') +
+      codes.map(function(c){ return '<span class="qchip ' + CORE.CODES[c][0] + (state.f.code === c ? ' sel' : '') + '" data-code="' + c + '" title="' + esc(CORE.CODES[c][1]) + '">' + c + ' · ' + counts[c] + '</span>'; }).join('');
+    el.querySelectorAll('.qchip').forEach(function(b){ b.onclick = function(){ state.f.code = state.f.code === b.dataset.code ? '' : b.dataset.code; state.page = 0; renderAll(); }; });
+  }
+  function renderList(){
+    const list = state.recs.filter(matches);
+    list.sort(function(a, b){
+      const sa = Math.max.apply(null, a.issues.map(function(i){ return CORE.SEV[i.sv]; })), sb = Math.max.apply(null, b.issues.map(function(i){ return CORE.SEV[i.sv]; }));
+      return sb - sa || (a.f < b.f ? -1 : a.f > b.f ? 1 : a.i - b.i);
+    });
+    const pages = Math.max(1, Math.ceil(list.length / PAGE));
+    if(state.page >= pages) state.page = pages - 1;
+    const slice = list.slice(state.page * PAGE, (state.page + 1) * PAGE);
+    const el = $('qscList'); if(!el) return;
+    el.innerHTML = slice.map(function(r){
+      return '<div class="qitem"><div class="loc">📁 ' + esc(r.f) + (r.s ? ' › ' + esc(r.s) : '') + ' · Q' + esc(r.n) + ' (index ' + (r.i + 1) + ') · ' + esc(r.sub) + '</div>' +
+        '<div class="snip">' + (esc(r.snip) || '<i>(text khali)</i>') + '</div>' +
+        r.issues.filter(function(i){ return state.f.sev[i.sv] && (!state.f.code || i.c === state.f.code); }).map(function(i){
+          return '<div><span class="qis ' + i.sv + '">' + i.c + '</span>' + esc(CORE.CODES[i.c][1]) + (i.m ? '<div class="qdet">' + (/^https?:/.test(i.m) ? '<a href="' + esc(i.m) + '" target="_blank" rel="noreferrer noopener" style="color:var(--blue,#60a5fa)">' + esc(i.m) + '</a>' : esc(i.m)) + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+    }).join('') || '<div style="opacity:.7;padding:20px;text-align:center">Is filter me kuch nahi.</div>';
+    const pg = $('qscPager');
+    if(pg){
+      pg.innerHTML = pages > 1 ? '<button id="qscPrev">‹</button><span style="font-size:13px">Page ' + (state.page + 1) + '/' + pages + ' · ' + list.length + ' Qs</span><button id="qscNext">›</button>' : '<span style="font-size:13px;opacity:.7">' + list.length + ' Qs</span>';
+      const p = $('qscPrev'), n = $('qscNext');
+      if(p) p.onclick = function(){ if(state.page > 0){ state.page--; renderList(); $('qscOverlay').scrollTop = 0; } };
+      if(n) n.onclick = function(){ if(state.page < pages - 1){ state.page++; renderList(); $('qscOverlay').scrollTop = 0; } };
+    }
+  }
+  function renderAll(){ renderSummary(); renderList(); document.querySelectorAll('#qscOverlay [data-sev]').forEach(function(b){ b.classList.toggle('qon', !!state.f.sev[b.dataset.sev]); }); }
+
+  function download(name, text, type){
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type })); a.download = name; a.click();
+  }
+  function exportJson(){
+    download('question_errors.json', JSON.stringify(state.recs.map(function(r){ return { sub: r.sub, file: r.f, set: r.s, index: r.i, qn: r.n, snippet: r.snip, issues: r.issues.map(function(i){ return { code: i.c, severity: i.sv, detail: i.m }; }) }; }), null, 1), 'application/json');
+  }
+  function exportCsv(){
+    const q = function(s){ return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
+    const rows = [['severity','code','subject','file','set','index','qn','detail','snippet'].join(',')];
+    state.recs.forEach(function(r){ r.issues.forEach(function(i){ rows.push([i.sv, i.c, r.sub, r.f, r.s, r.i, r.n, i.m, r.snip].map(q).join(',')); }); });
+    download('question_errors.csv', '\ufeff' + rows.join('\n'), 'text/csv');
+  }
+
+  async function runScan(){
+    if(state.running) return;
+    state.running = true; state.stop = false; state.recs = []; state.total = 0; state.filesDone = 0; state.imgDone = 0; state.imgAll = 0; state.page = 0;
+    const want = {}; ['Math','English','Reasoning','Other'].forEach(function(s){ const c = $('qscSub' + s); if(c && c.checked) want[s] = true; });
+    const doImg = $('qscImg').checked;
+    $('qscGo').textContent = '⏹ Rok do'; $('qscGo').classList.remove('qpri');
+    setProgress(0, 'File list ban rahi hai…');
+    let jobs;
+    try{ jobs = await CORE.buildJobs(fetchJson); }catch(e){ setProgress(0, 'File list nahi bani: ' + e); state.running = false; return; }
+    jobs = jobs.filter(function(j){ return j.subjects.some(function(s){ return want[s]; }); });
+    state.filesAll = jobs.length;
+    const urlMap = {}; const recByKey = {}; const counter = { n: 0 };
+    const addRec = function(rec, urls){
+      const key = rec.f + '|' + rec.s + '|' + rec.i;
+      recByKey[key] = rec;
+      if(rec.issues.length) state.recs.push(rec); else rec.hidden = true;
+      urls.forEach(function(u){ (urlMap[u] = urlMap[u] || []).push(key); });
+      delete rec.urls;
+    };
+    let p = 0;
+    async function worker(){
+      while(!state.stop && p < jobs.length){
+        const job = jobs[p++];
+        try{
+          if(job.missing){
+            state.recs.push({ sub: 'Other', f: job.path, s: '', i: 0, n: '-', snip: '', issues: [{ c: 'FILE_MISSING', sv: 'error', m: job.path }] });
+          } else {
+            const doc = await fetchJson(job.path);
+            counter.n = 0;
+            CORE.scanDoc(job, doc, want, addRec, null, counter);
+            state.total += counter.n;
+          }
+        }catch(e){
+          state.recs.push({ sub: job.subjects[0], f: job.path, s: '', i: 0, n: '-', snip: '', issues: [{ c: 'FILE_MISSING', sv: 'error', m: job.path + ' (' + e + ')' }] });
+        }
+        state.filesDone++;
+        setProgress(100 * state.filesDone / Math.max(1, jobs.length) * (doImg ? 0.6 : 1), job.path);
+        if(state.filesDone % 5 === 0) renderAll();
+      }
+    }
+    await Promise.all([worker(), worker()]);
+    renderAll();
+    if(doImg && !state.stop){
+      const urls = Object.keys(urlMap);
+      state.imgAll = urls.length; let q = 0;
+      setProgress(60, 'Images check shuru…');
+      async function iw(){
+        while(!state.stop && q < urls.length){
+          const u = urls[q++];
+          let ok = await testUrl(u);
+          if(!ok) ok = await testUrl(u); // ek baar retry
+          if(!ok){
+            urlMap[u].forEach(function(key){
+              const rec = recByKey[key]; if(!rec) return;
+              if(!rec.issues.some(function(i){ return i.c === 'IMG_BROKEN' && i.m === u; })) rec.issues.push({ c: 'IMG_BROKEN', sv: 'error', m: u });
+              if(rec.hidden){ rec.hidden = false; state.recs.push(rec); }
+            });
+          }
+          state.imgDone++;
+          if(state.imgDone % 20 === 0){ setProgress(60 + 40 * state.imgDone / urls.length); renderAll(); }
+        }
+      }
+      await Promise.all(Array.from({ length: 10 }, iw));
+    }
+    setProgress(100, state.stop ? 'Rok diya gaya (partial result)' : 'Scan complete ✔');
+    renderAll();
+    state.running = false;
+    $('qscGo').textContent = '▶ Dobara scan'; $('qscGo').classList.add('qpri');
+  }
+
+  function openScanner(){
+    injectStyle();
+    let ov = $('qscOverlay'); if(ov) ov.remove();
+    ov = document.createElement('div'); ov.id = 'qscOverlay';
+    ov.innerHTML =
+      '<div class="qrow" style="justify-content:space-between"><h2>🔍 Question Error Scanner</h2><button id="qscClose">✕ Band</button></div>' +
+      '<div style="font-size:12.5px;opacity:.8;line-height:1.5">App ke saare questions ek-ek karke check hote hain. Heavy data download hota hai — WiFi par chalao, page khula rakho.</div>' +
+      '<div class="qrow"><label><input type="checkbox" id="qscSubMath" checked>🔢 Math</label><label><input type="checkbox" id="qscSubEnglish" checked>📘 English</label><label><input type="checkbox" id="qscSubReasoning" checked>🧠 Reasoning</label><label><input type="checkbox" id="qscSubOther">📚 GK / Mains / Other</label></div>' +
+      '<div class="qrow"><label><input type="checkbox" id="qscImg" checked>🖼 Images bhi online check karo (slow par zaroori)</label></div>' +
+      '<div class="qrow"><button id="qscGo" class="qpri">▶ Scan shuru karo</button><button id="qscJson">⬇ JSON</button><button id="qscCsv">⬇ CSV</button></div>' +
+      '<div id="qscBar"><i></i></div><div id="qscStatus" style="font-size:12.5px;line-height:1.5">Ready</div>' +
+      '<div class="qrow" style="margin-top:12px"><button data-sev="error" class="qon">❌ Error</button><button data-sev="warn" class="qon">⚠ Warning</button><button data-sev="info">ℹ Info</button>' +
+      '<select id="qscSubF"><option value="">Sab subjects</option><option>Math</option><option>English</option><option>Reasoning</option><option>Other</option></select></div>' +
+      '<div class="qrow"><input type="text" id="qscSearch" placeholder="🔎 file / text se dhundo" style="flex:1 1 200px"></div>' +
+      '<div id="qscChips"></div><div id="qscList"></div><div id="qscPager" class="qrow" style="justify-content:center"></div>';
+    document.body.appendChild(ov);
+    $('qscClose').onclick = function(){ state.stop = true; ov.remove(); };
+    $('qscGo').onclick = function(){ if(state.running){ state.stop = true; } else runScan(); };
+    $('qscJson').onclick = exportJson; $('qscCsv').onclick = exportCsv;
+    ov.querySelectorAll('[data-sev]').forEach(function(b){ b.onclick = function(){ state.f.sev[b.dataset.sev] = !state.f.sev[b.dataset.sev]; state.page = 0; renderAll(); }; });
+    $('qscSubF').onchange = function(e){ state.f.sub = e.target.value; state.page = 0; renderAll(); };
+    $('qscSearch').oninput = function(e){ state.f.q = e.target.value.trim(); state.page = 0; renderList(); };
+    if(state.recs.length) { renderAll(); setProgress(100, 'Pichla scan result (dobara scan kar sakte ho)'); }
+  }
+  window.openQuestionScanner = openScanner;
+
+  // ===== Admin panel me card mount =====
+  function mountCard(){
+    const bodyEl = document.getElementById('adminPanelBody'); if(!bodyEl) return;
+    if(!(typeof isMeAdmin === 'function' && isMeAdmin())) return;
+    if(document.getElementById('adminQscCard')) return;
+    const card = document.createElement('div');
+    card.id = 'adminQscCard';
+    card.style.cssText = 'margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.12);';
+    card.innerHTML = '<div style="font-weight:700;margin-bottom:4px">🔍 Question Error Scanner</div>' +
+      '<div class="losshint" style="padding-top:0;margin-bottom:8px">Math / English / Reasoning ke saare questions me image, LaTeX, format, missing field jaise errors automatic dhundta hai.</div>' +
+      '<button class="nav-btn" id="adminQscOpenBtn">🔍 Scanner kholo</button>';
+    bodyEl.insertBefore(card, bodyEl.firstChild);
+    document.getElementById('adminQscOpenBtn').addEventListener('click', openScanner);
+  }
+  if(typeof renderAdminPanelBody === 'function'){
+    const origRender = renderAdminPanelBody;
+    renderAdminPanelBody = async function(){ const r = await origRender.apply(this, arguments); try{ mountCard(); }catch(e){} return r; };
+  }
 })();
