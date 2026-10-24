@@ -31354,9 +31354,25 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 
   var PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="44" height="58"><rect width="44" height="58" fill="#fff"/><text x="22" y="34" font-size="20" text-anchor="middle">📄</text></svg>');
 
-  function loadH2C(){ return new Promise(function(res, rej){ if(window.html2canvas) return res(window.html2canvas);
+  /* 0-size canvas (PDF pages etc.) html2canvas ko tod deta hai ("createPattern ... width or height of 0") — screenshot se pehle unhe ignore-mark karo, baad me wapas */
+  function markZeroCanvases(){
+    var marked = [];
+    (function walk(doc, d){
+      if(!doc || d > 4) return;
+      try{ Array.prototype.forEach.call(doc.querySelectorAll('canvas'), function(c){
+        if(!c.width || !c.height){ if(!c.hasAttribute('data-html2canvas-ignore')){ c.setAttribute('data-html2canvas-ignore', 'true'); marked.push(c); } } }); }catch(e){}
+      try{ Array.prototype.forEach.call(doc.querySelectorAll('iframe'), function(f){ try{ walk(f.contentDocument, d + 1); }catch(e){} }); }catch(e){}
+    })(document, 0);
+    return function(){ marked.forEach(function(c){ try{ c.removeAttribute('data-html2canvas-ignore'); }catch(e){} }); };
+  }
+  function wrapH2C(h){
+    if(!h || h.__cxWrapped) return h;
+    var w = function(el, opts){ var undo = markZeroCanvases(), p; try{ p = h(el, opts); }catch(e){ undo(); throw e; } return Promise.resolve(p).then(function(r){ undo(); return r; }, function(e){ undo(); throw e; }); };
+    w.__cxWrapped = true; return w;
+  }
+  function loadH2C(){ return new Promise(function(res, rej){ if(window.html2canvas) return res(wrapH2C(window.html2canvas));
     var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    s.onload = function(){ res(window.html2canvas); }; s.onerror = function(){ rej(new Error('html2canvas load nahi hua')); }; document.head.appendChild(s); }); }
+    s.onload = function(){ res(wrapH2C(window.html2canvas)); }; s.onerror = function(){ rej(new Error('html2canvas load nahi hua')); }; document.head.appendChild(s); }); }
 
   async function snap(target){
     var h2c = await loadH2C();
@@ -31781,7 +31797,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     main.style.display = has ? 'flex' : 'none';
     if(has && fs && fs.parentNode && main.nextElementSibling !== fs){ try{ fs.parentNode.insertBefore(main, fs); }catch(e){} }
     if(has && !lastShown && ac.checked){ setTimeout(function(){ if(curPage === page && main.style.display !== 'none') main.sendNow(); }, 900); }
-    else if(has && !lastShown){ setTimeout(function(){ if(curPage === page) main.prep(); }, 600); }   /* thumbnail pehle se ready, drag turant chale */
+    else if(has && !lastShown && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ setTimeout(function(){ var go = function(){ if(curPage === page) main.prep(); }; if(window.requestIdleCallback) requestIdleCallback(go, { timeout: 4000 }); else go(); }, 1500); }   /* mobile par auto-screenshot band (answer tick par hang hota tha); tap/drag par screenshot tab banta hai */   /* thumbnail pehle se ready, drag turant chale */
     if(has && !lastShown) setMin(true);
     lastShown = has;
   }
