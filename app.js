@@ -31415,7 +31415,12 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP, 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
   }
   var hbar = null;
+  /* Google/Gemini tab khulte hi (app background me jaye) ye paste-helper khud band; wapas aane par bhi nahi dikhega */
+  (function(){ if(window.__cxHelpAuto) return; window.__cxHelpAuto = 1;
+    var hh = function(){ try{ if(document.hidden && hbar){ hbar.style.display = 'none'; clearTimeout(hbar._t); } }catch(e){} };
+    document.addEventListener('visibilitychange', hh); window.addEventListener('pagehide', hh); })();
   function helperBar(label, pngP, text, file){
+    if(document.hidden) return;
     if(!hbar){ hbar = document.createElement('div'); hbar.id = 'cxGemHelp';
       hbar.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center';
       document.body.appendChild(hbar); }
@@ -31691,9 +31696,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var sendNow0 = h.sendNow;
     h.sendNow = async function(tgt, ov){
       if(!ov) return sendNow0(tgt);
-      st.ov = ov; st.cv = ov.cv; st.du = ov.cv.toDataURL('image/jpeg', 0.88); st.err = null;
-      try{ var bb = await new Promise(function(r){ ov.cv.toBlob(r, 'image/jpeg', 0.88); }); st.file = bb ? new File([bb], 'screenshot.jpg', { type: 'image/jpeg' }) : null; }catch(e){ st.file = null; }
-      try{ await sendNow0(tgt); } finally { st.ov = null; }
+      st.ov = ov; st.cv = ov.cv; st.err = null; st.file = null;
+      /* base64 sirf extension / iframe ko chahiye; JPEG file (Share button) peeche background me bane — Google ko rokna nahi */
+      var needDu = !!(window.__gemExt || (window.parent && window.parent !== window)); st.du = needDu ? ov.cv.toDataURL('image/jpeg', 0.88) : '';
+      var fileP = new Promise(function(r){ try{ ov.cv.toBlob(function(bb){ st.file = bb ? new File([bb], 'screenshot.jpg', { type: 'image/jpeg' }) : null; r(); }, 'image/jpeg', 0.85); }catch(e){ r(); } });
+      try{ await sendNow0(tgt); await fileP; } finally { st.ov = null; }
     };
     /* ---- ➕ Mock me add: screenshot + question text -> Mock Question Add bank (localStorage 'mqb_v1', same origin) ---- */
     function bankSubject(t){
@@ -31759,18 +31766,19 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(clip && clip.indexOf('---MOCKBANK---') >= 0) go(clip); else askPaste(go);
     };
     var gBusy = false;
-    function fastGoogle(el){
+    function fastGoogle(el, tg){
+      tg = tg || 'google';
       if(gBusy) return; gBusy = true;
-      var old = el.textContent; el.textContent = '⏳ Google ko bhej raha hoon…'; el.style.opacity = '.75'; el.style.pointerEvents = 'none';
+      var old = el ? el.textContent : ''; if(el){ el.textContent = '⏳ ' + (tg === 'google' ? 'Google' : 'Gemini') + ' ko bhej raha hoon…'; el.style.opacity = '.75'; el.style.pointerEvents = 'none'; }
       var t = null; try{ t = getTarget(); }catch(x){}
       var qt = ''; try{ qt = t ? qText(t) : ''; }catch(x){}
       toast('Screenshot ban raha hai…');
-      var done = function(){ if(!gBusy) return; gBusy = false; el.textContent = old; el.style.opacity = ''; el.style.pointerEvents = ''; };
+      var done = function(){ if(!gBusy) return; gBusy = false; if(el){ el.textContent = old; el.style.opacity = ''; el.style.pointerEvents = ''; } };
       setTimeout(done, 12000);
-      var pr; try{ pr = window.__cxAiFast('google', qt); }catch(x){ pr = null; }
+      var pr; try{ pr = window.__cxAiFast(tg, qt); }catch(x){ pr = null; }
       Promise.resolve(pr).catch(function(){}).then(done);
     }
-    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } var gooEl = e.target.closest('.cxGoo'); if(gooEl && window.__cxAiFast){ fastGoogle(gooEl); } else h.sendNow(gooEl ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
+    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } var gooEl = e.target.closest('.cxGoo'); if(window.__cxAiFast){ fastGoogle(gooEl || e.target.closest('span'), gooEl ? 'google' : 'gemini'); } else h.sendNow(gooEl ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
     if(!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); }); }
     img.addEventListener('dragstart', function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.effectAllowed = 'copy'; if(st.file) ev.dataTransfer.items.add(st.file); }catch(e){} });
     h.prep = prep;
@@ -31868,13 +31876,28 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     async function shot(L, T, R, B){
       var h2c = await loadH2C(), w = Math.max(1, Math.round(R - L)), bg = getComputedStyle(document.body).backgroundColor;
       if(!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = '#ffffff';
+      /* html2canvas poora body clone karta hai (bada app = slow). ignoreElements wale node clone hi nahi hote:
+         display:none screens + screen se bahar ke bade blocks ko pehle hi chhod do => screenshot bahut jaldi */
+      var VH = window.innerHeight, VW = window.innerWidth;
+      function fastIgnore(el){
+        if(ignore(el)) return true;
+        if(el.nodeType !== 1) return false;
+        var tg = el.tagName; if(tg === 'BODY' || tg === 'HTML' || tg === 'STYLE' || tg === 'LINK' || tg === 'SCRIPT') return false;
+        var c; try{ c = getComputedStyle(el); }catch(e){ return false; }
+        if(c.display === 'none') return true;
+        if(c.position === 'fixed' || c.position === 'absolute' || c.position === 'sticky') return false;
+        var r = el.getBoundingClientRect();
+        if(r.height > 300 && r.width > 0 && (r.bottom < T - 40 || r.top > B + 40 || r.right < L - 40 || r.left > R + 40)) return true;
+        return false;
+      }
+      var mob = isMob(), sc0 = mob ? 1.5 : 2;
       return await h2c(document.body, { backgroundColor: bg, x: window.scrollX + L, y: window.scrollY + T, width: w, height: Math.max(1, Math.round(B - T)),
-        scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false, ignoreElements: ignore });
+        scale: Math.max(1, Math.min(sc0, 1100 / w)), useCORS: true, logging: false, ignoreElements: fastIgnore });
     }
     async function go(tgt, L, T, R, B, qtOv){
       if(tgt !== 'google' && !adminOK()) tgt = 'google';
       toast('Screenshot ban raha hai…');
-      await new Promise(function(r){ requestAnimationFrame(function(){ setTimeout(r, 30); }); });
+      await new Promise(function(r){ requestAnimationFrame(function(){ r(); }); });
       var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
       var qt = qtOv || ''; if(!qt){ try{ qt = textIn(L, T, R, B); }catch(e){} }
       await main.sendNow(tgt, { cv: cv, qt: qt });
@@ -31908,11 +31931,14 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       });
       ov.addEventListener('pointercancel', end);
     }
-    function full(tg){ closePick(); go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    /* button par turant loading (⏳) — double tap bhi nahi */
+    function withLoad(btn, name, p){ if(!btn || btn.__ld) return; btn.__ld = 1; var o = btn.textContent; btn.textContent = '⏳ ' + name; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
+      var d = function(){ if(!btn.__ld) return; btn.__ld = 0; btn.textContent = o; btn.style.opacity = ''; btn.style.pointerEvents = ''; }; setTimeout(d, 12000); Promise.resolve(p).catch(function(){}).then(d); }
     /* quiz/solution wale 🔍 Google button isi tez raste se chalte hain (turant loading + same screenshot pipeline) */
     window.__cxAiFast = function(tg, qt){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight, qt); };
-    mk('🔍 Google', 'g', function(){ full('google'); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
-    mk('🤖 Gemini', 'm', function(){ full('gemini'); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
+    mk('🔍 Google', 'g', function(e){ var b = e && e.currentTarget; withLoad(b, 'Google…', full('google')); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
+    mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
