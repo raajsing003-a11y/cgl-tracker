@@ -1,0 +1,37 @@
+<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Math + Reasoning Image Checker</title>
+<style>body{font-family:system-ui,sans-serif;background:#0d0d14;color:#eee;margin:0;padding:14px}button{background:#6c5ce7;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:15px;margin:4px 4px 4px 0}
+#bar{height:10px;background:#333;border-radius:6px;overflow:hidden;margin:10px 0}#bar i{display:block;height:100%;width:0;background:#00b894}pre{white-space:pre-wrap;background:#161622;padding:10px;border-radius:8px;font-size:12px;max-height:50vh;overflow:auto}</style></head><body>
+<h3>🖼 Math + Reasoning Image Checker</h3>
+<p>Ye page app ke saare Math aur Reasoning questions ki images ek-ek karke load karke check karta hai. Net on rakho, page khula rakho.</p>
+<button id="go">▶ Check shuru karo</button><button id="cp" disabled>📋 Broken list copy</button><button id="dl" disabled>⬇ broken_math_reasoning.json</button>
+<div id="bar"><i></i></div><div id="st">Ready</div><pre id="out"></pre>
+<script>
+const TOP=[['math_pyq','MATH_PYQ_SETS','Math'],['math_sp','SP_MATH_SETS','Math'],['math_p75','P75_MATH_SETS','Math'],
+ ['reasoning_p75','P75_REASONING_SETS','Reasoning'],['reasoning_sp','SP_REASONING_SETS','Reasoning'],['reasoningmock','REASONINGMOCK_SETS','Reasoning'],['reasoninghardmix','REASONINGHARDMIX_SETS','Reasoning']];
+const SUP=[['maths','Math'],['reasoning','Reasoning']];
+const rx=/<img[^>]*?src=["']?(https?:\/\/[^"' >]+)/g;
+function urls(t){const r=[];let m;rx.lastIndex=0;while((m=rx.exec(t)))r.push(m[1]);return r}
+async function J(p){const r=await fetch(p);return r.json()}
+function test(u){return new Promise(res=>{const i=new Image();let d=0;const f=ok=>{if(d)return;d=1;res(ok)};i.onload=()=>f(i.naturalWidth>0);i.onerror=()=>f(false);setTimeout(()=>f(false),12000);i.src=u})}
+function qtxt(q){return (q.en||'')+(q.hi||'')+(Array.isArray(q.options)?q.options.join(''):'')}
+let broken=[];
+document.getElementById('go').onclick=async()=>{
+ const st=document.getElementById('st'),bar=document.querySelector('#bar i'),out=document.getElementById('out');
+ st.textContent='Questions load ho rahe hain…';const items=[];
+ for(const [f,k,sub] of TOP){try{const d=(await J('../data/topics/'+f+'.json'))[k];for(const ch in d)d[ch].forEach((q,i)=>items.push({sub,src:f,ch,i,u:urls(qtxt(q))}))}catch(e){}}
+ for(const [dir,sub] of SUP){try{const idx=await J('../data/'+dir+'/index.json');
+  for(const c of idx.chapters){const d=await J('../data/'+dir+'/'+c.key+'.json');d.forEach((x,i)=>items.push({sub,src:'super_'+dir,ch:c.key,i,u:urls((x.t||'')+(x.h||'')+(x.o||[]).join('')+(x.oh||[]).join(''))}))}}catch(e){}}
+ const all=[...new Set(items.flatMap(x=>x.u))];const bad=new Set();let n=0;
+ st.textContent='Images check: 0/'+all.length;
+ let p=0;async function w(){while(p<all.length){const u=all[p++];if(!(await test(u)))bad.add(u);n++;if(n%10==0||n==all.length){bar.style.width=(100*n/all.length)+'%';st.textContent='Images check: '+n+'/'+all.length+' · broken: '+bad.size}}}
+ await Promise.all(Array.from({length:16},w));
+ broken=items.filter(x=>x.u.some(u=>bad.has(u))).map(x=>({sub:x.sub,src:x.src,ch:x.ch,i:x.i}));
+ st.textContent='Done ✔ — broken questions: '+broken.length+' (broken images: '+bad.size+')';
+ const g={};broken.forEach(b=>{const k=b.sub+' · '+b.src+' / '+b.ch;g[k]=(g[k]||0)+1});
+ out.textContent=Object.entries(g).sort().map(e=>e[0]+': '+e[1]).join('\n')||'Koi broken image nahi mili 🎉';
+ document.getElementById('cp').disabled=document.getElementById('dl').disabled=!broken.length;
+};
+document.getElementById('cp').onclick=()=>navigator.clipboard.writeText(JSON.stringify(broken));
+document.getElementById('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(broken)],{type:'application/json'}));a.download='broken_math_reasoning.json';a.click()};
+</script></body></html>

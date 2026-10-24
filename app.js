@@ -31213,7 +31213,6 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         '<div class="apStat"><b>' + names.length + '</b><span>Total members</span></div>' +
         '<div class="apStat"><b>' + (hid + res) + '</b><span>Hidden / Restricted</span></div>' +
         '<div class="apStat"><b>' + (ann ? '📌 ON' : '—') + '</b><span>Pinned announcement</span></div>' +
-        '<div class="apStat"><b>✏️</b><span>Pen tool — Controls tab me</span></div>' +
       '</div>' +
       '<div class="grid-label" style="margin-top:12px;">📡 Sabke liye Publish Status</div><div id="apStatusBox" class="losshint" style="padding-top:4px;">⏳ Check ho raha hai…</div>';
     pane.insertBefore(box, pane.firstChild);
@@ -31241,17 +31240,10 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     const d = document.createElement('div'); d.id = 'apCtrlBox';
     d.innerHTML =
       '<div class="grid-label" style="margin-top:14px;">🧰 App Controls (sabhi members ke liye)</div>' +
-      '<div class="apPenCard"><div class="ic">✏️</div><div class="tx"><b>Pen (scribble) tool</b><span>Sirf Admin Panel se chalta hai. Screen par likho/underline karo; pen button dobara dabane par band.</span></div>' +
-        '<button class="nav-btn" id="apPenStart" type="button">✏️ Pen Start</button></div>' +
       '<div class="grid-label" style="margin-top:14px;">🔄 Sabka App Refresh</div>' +
       '<div class="losshint" style="padding-top:0;">Naya update push karne ke baad dabao — sabke app me cache clean + reload ho jayega (jab wo app khole).</div>' +
       '<div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="apReloadBtn">🔄 Sabko Reload Karwao</button></div>' +
       '<div class="losshint" id="apReloadInfo" style="padding-top:6px;"></div>';
-    d.querySelector('#apPenStart').addEventListener('click', () => {
-      try{ hideAdminPanelModal(); }catch(e){}
-      document.documentElement.classList.add('penSess');
-      setTimeout(() => { const f = document.getElementById('scratchFab'); if(f) f.click(); if(window.appDefToast) appDefToast('✏️ Pen ON — likho. Band karne ke liye pen button dabao'); }, 250);
-    });
     d.querySelector('#apReloadBtn').addEventListener('click', async (ev) => {
       const b = ev.currentTarget;
       if(!confirm('Sabhi members ka app refresh karwa dein?')) return;
