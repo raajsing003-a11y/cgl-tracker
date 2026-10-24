@@ -31314,7 +31314,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
   }
-  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein, plain text — bold/table/markdown ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono; maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho)\n---END---";
+  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein. POORA block ---MOCKBANK--- se ---END--- tak EK HI code block (``` ... ```) ke andar likho, taaki maths render hokar bikhre nahi; code block ke andar plain text, bold/table ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono; maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho aur ek question ke liye sirf ek hi 'Q:' block ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
   function addFoot(p){ p = p || ''; return p.indexOf('---MOCKBANK---') >= 0 ? p : (p + MB_FOOT); }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return addFoot(v); var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return addFoot(adm ? '' : GEM_DEF); }
@@ -31329,7 +31329,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   css.textContent = '#cxGemMain{position:fixed;right:8px;top:104px;z-index:10050;display:none;flex-direction:column;align-items:center;gap:12px;padding:8px;border-radius:14px;background:rgba(20,22,27,.88);color:#fff;font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.4)}'
     + '#cxGemMain img,.cxGemH img{width:56px;height:74px;object-fit:contain;background:#fff;border-radius:5px;display:block;-webkit-user-drag:element}'
     + '#cxGemMain.busy img,.cxGemH.busy img{opacity:.4}'
-    + 'body.cxNoAdm #cxGemMain,body.cxNoAdm .cxGemH,body.cxNoAdm #cxGemHelp{display:none!important}'
+    + 'body.cxNoAdm #cxGemMain>:not(.cxGoo),body.cxNoAdm .cxGemH>:not(.cxGoo){display:none!important}'
     + '#cxGemMain.cxInl{position:static;right:auto;top:auto;display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;margin:10px 8px;padding:8px;background:transparent;box-shadow:none;max-width:none;opacity:1}'
     + '#cxGemMain.cxInl #cxGemTog{display:none}'
     + '#cxGemMain.cxInl .cxGoo,#cxGemMain.cxInl .cxBank,#cxGemMain.cxInl .cxRep,#cxGemMain.cxInl>span:not(.cxGoo):not(.cxBank):not(.cxRep){padding:9px 14px;font-size:14px}'
@@ -31478,14 +31478,58 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     bx.appendChild(hd); bx.appendChild(ls); bx.appendChild(ft); ov.appendChild(bx); document.body.appendChild(ov); draw();
   }
 
+  /* ---- bikhre 1-akshar wali lines jodo (extension mq-core.js ka same code) ---- */
+  var mqJoinTiny = (function(){ var MQ = {};
+/* ---------- 1) joinTiny ---------- */
+  var DEV = /[\u0900-\u097f]/, MATHCH = /^[\d.,+\-\u2212\u00d7\u00f7=<>\u2264\u2265\u2260\u00b1\u221a\u03c0%^()\[\]{}\/|:\u221e\u00b0]+$/;
+  var LABEL = /^(?:\(?[A-D]\s*[).:]|Q\s*\d*\s*[:\uff1a.)])$/;               // 'A)', 'Q:' jaisi asli labels
+  var TERM = /[\u0964.!?:\uff1a;]\s*$/;                                       // sentence/section ka ant
+  var STARTER = /^(?:\u0938\u094d\u091f\u0947\u092a|\u091a\u0930\u0923|Step|\u0905\u0924\u0903|\u092e\u0942\u0932 \u0905\u0935\u0927\u093e\u0930\u0923\u093e|\u092c\u0947\u0938\u093f\u0915|\u0938\u094d\u092e\u093e\u0930\u094d\u091f|\u0917\u0932\u0924 \u0935\u093f\u0915\u0932\u094d\u092a|\u0938\u0939\u0940 \u0909\u0924\u094d\u0924\u0930|SUBJECT\s*[:\uff1a]|Q\s*\d*\s*[:\uff1a.)]|\(?[A-D]\s*[).:]|ANS|EXP|---)/i;
+  function isTiny(l) {
+    var s = String(l).trim(); if (!s) return false;
+    if (LABEL.test(s)) return false;
+    if (s.length <= 2) return true;
+    if (s.length <= 6 && MATHCH.test(s)) return true;
+    if (s.length <= 3 && !DEV.test(s)) return true;
+    return false;
+  }
+  MQ.isTiny = isTiny;
+  MQ.joinTiny = function (text) {
+    var src = String(text == null ? '' : text).replace(/\r/g, '');
+    if (!src) return src;
+    var L = src.split('\n'), out = [], i = 0;
+    while (i < L.length) {
+      if (!isTiny(L[i])) { out.push(L[i]); i++; continue; }
+      var j = i; while (j < L.length && isTiny(L[j])) j++;
+      var run = L.slice(i, j);
+      if (run.length < 3) { for (var k = 0; k < run.length; k++) out.push(run[k]); i = j; continue; }
+      var line = run.map(function (x) { return x.trim(); }).join(' ');
+      var prev = out.length ? out[out.length - 1] : null;
+      if (prev != null && prev.trim() && !TERM.test(prev) && !STARTER.test(line)) { out[out.length - 1] = prev.replace(/\s+$/, '') + ' ' + line; line = null; }
+      var nxt = j < L.length ? L[j] : null, cur = line == null ? out[out.length - 1] : line;
+      if (nxt != null && nxt.trim() && !isTiny(nxt) && !TERM.test(cur) && !STARTER.test(nxt.trim()) && nxt.trim().length <= 60) {
+        cur = cur.replace(/\s+$/, '') + ' ' + nxt.trim(); j++;
+        if (line == null) out[out.length - 1] = cur; else line = cur;
+      }
+      if (line != null) out.push(line);
+      i = j;
+    }
+    return out.join('\n');
+  };
+
+  
+  return MQ.joinTiny; })();
+
   /* ---- Gemini reply (---MOCKBANK--- block) -> bank questions ---- */
   function parseBlock(raw){
     var txt = String(raw || '').replace(/\r/g, ''), i = txt.lastIndexOf('---MOCKBANK---');
     if(i >= 0) txt = txt.slice(i + 14);
     var j = txt.indexOf('---END---'); if(j >= 0) txt = txt.slice(0, j);
+    txt = mqJoinTiny(txt);
     var out = [], cur = null, mode = '', sub = '';
     function clean(x){ return String(x || '').replace(/\*\*/g, '').replace(/^\s*[*•\-]\s+/, '').trim(); }
     txt.split('\n').forEach(function(line0){
+      if(/^\s*```/.test(line0)) return;
       var l = clean(line0), m;
       if(!l) return;
       if((m = l.match(/^SUBJECT\s*[:：]\s*([A-Za-z]+)/i))){ var v = m[1].toLowerCase(); sub = /math/.test(v) ? 'Math' : /eng/.test(v) ? 'English' : /reason/.test(v) ? 'Reasoning' : /gk|gs|general/.test(v) ? 'GK' : ''; return; }
@@ -31516,6 +31560,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var st = { key: '', file: null, du: '', busy: null };
     function keyOf(t){ return (t.id || '') + '|' + hash(t.innerText || ''); }
     async function prep(){
+      if(st.ov) return true;
       var t = getTarget(); if(!t) return false; var k = keyOf(t);
       if(st.busy) { await st.busy; if(st.key === k) return true; }
       if(st.key === k && st.du) return true;
@@ -31538,8 +31583,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var png = await new Promise(function(r){ st.cv.toBlob(r, 'image/png'); }); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); return true; }catch(e){ return false; } }
     h.sendNow = async function(tgt){ var goo = (tgt === 'google');
       var inFrame = window.parent && window.parent !== window, mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), t = getTarget();
-      if(!t || !adminOK()) return;
-      st.qt = qText(t);
+      if(!st.ov && !t) return;
+      if(!goo && !adminOK()){ toast('Gemini sirf admin ke liye hai — Google use karo'); return; }
+      st.qt = st.ov ? st.ov.qt : qText(t);
       var ftxt = withQ(goo ? gemPromptG() : gemPrompt(), st.qt);       /* poora prompt + question + options text */
       var noExt = !window.__gemExt, name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
       /* Gesture ke time hi clipboard write shuru: image + poora text EK SATH (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
@@ -31589,6 +31635,14 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         helperBar(label, pngP, ftxt);
         toast(c ? '✅ Screenshot + prompt + question copy hai — Gemini ke box me Ctrl+V (extension ne jawab nahi diya)' : '⚠ Extension ne jawab nahi diya — neeche ke buttons se copy karo');
       });
+    };
+    /* ---- global bar / crop: apna canvas + text ke saath bhejo (h.sendNow(target, {cv, qt})) ---- */
+    var sendNow0 = h.sendNow;
+    h.sendNow = async function(tgt, ov){
+      if(!ov) return sendNow0(tgt);
+      st.ov = ov; st.cv = ov.cv; st.du = ov.cv.toDataURL('image/jpeg', 0.88); st.err = null;
+      try{ var bb = await new Promise(function(r){ ov.cv.toBlob(r, 'image/jpeg', 0.88); }); st.file = bb ? new File([bb], 'screenshot.jpg', { type: 'image/jpeg' }) : null; }catch(e){ st.file = null; }
+      try{ await sendNow0(tgt); } finally { st.ov = null; }
     };
     /* ---- ➕ Mock me add: screenshot + question text -> Mock Question Add bank (localStorage 'mqb_v1', same origin) ---- */
     function bankSubject(t){
@@ -31692,14 +31746,15 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mount();
     /* review overlay: har question ke upar apna handle */
     var list = document.getElementById('quizReviewList');
-    if(list && overlayOpen() && adminOK()) Array.prototype.forEach.call(list.children, function(it){
+    if(list && overlayOpen()) Array.prototype.forEach.call(list.children, function(it){
       if(it.__cxg) return; it.__cxg = 1; var cs = getComputedStyle(it); if(cs.position === 'static') it.style.position = 'relative';
       var h = document.createElement('div'); h.className = 'cxGemH'; h.title = 'Ye question + solution Gemini ko bhejo (tap) ya drag karo';
       var im = document.createElement('img'); im.src = PH; im.draggable = true; var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
       var gb2 = document.createElement('span'); gb2.className = 'cxGoo'; gb2.textContent = '🔍 Google'; var bb2 = document.createElement('span'); bb2.className = 'cxBank'; bb2.textContent = '➕ Mock me add'; var rr2 = document.createElement('span'); rr2.className = 'cxRep'; rr2.textContent = '📥 Reply se add'; h.appendChild(im); h.appendChild(lb); h.appendChild(gb2); h.appendChild(bb2); h.appendChild(rr2); it.appendChild(h); wire(h, im, function(){ return it; });
     });
     var adm = adminOK(); document.body.classList.toggle('cxNoAdm', !adm);
-    var page = (overlayOpen() || !adm) ? null : document.querySelector('.calcPage.active');
+    try{ var av = adm ? '1' : '0'; if(localStorage.getItem('cx:isAdmin') !== av) localStorage.setItem('cx:isAdmin', av); }catch(e){}   /* tools (Study Desk / PDF viewer) isse Gemini chhupate hain */
+    var page = overlayOpen() ? null : document.querySelector('.calcPage.active');
     var has = false, fs = null;
     document.body.classList.toggle('cxMob', /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
     if(page){ var q = page.querySelectorAll(SOL); for(var i = 0; i < q.length; i++){ if(vis(q[i])){ has = true; fs = q[i]; break; } } }
@@ -31711,6 +31766,101 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     if(has && !lastShown) setMin(true);
     lastShown = has;
   }
+  /* ===== GLOBAL AI BAR (poore app me, extension ke bar jaisa): 🔍 Google sabko, 🤖 Gemini sirf admin ko, ✂ Crop (area chuno). Poora bar drag hota hai, jagah yaad rehti hai ===== */
+  (function(){
+    var bar = document.createElement('div'); bar.id = 'cxAiBar'; bar.title = 'Pakad ke kahin bhi rakho';
+    var cs = document.createElement('style');
+    cs.textContent = '#cxAiBar{position:fixed;left:8px;bottom:84px;z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
+      + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
+      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
+      + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:3px}'
+      + 'body.cxNoAdm #cxAiBar .m,body.cxNoAdm #cxAiPick .m,body.cxMob #cxAiBar .m,body.cxMob #cxAiPick .m{display:none!important}'
+      + '#cxAiCrop{position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.25);cursor:crosshair;touch-action:none}'
+      + '#cxAiBox{position:fixed;border:2px dashed #ffeb3b;background:rgba(255,235,59,.14);display:none;pointer-events:none}'
+      + '#cxAiHint{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:rgba(20,22,27,.95);color:#fff;padding:8px 14px;border-radius:10px;font:700 13px sans-serif;z-index:100051;pointer-events:none;text-align:center}'
+      + '#cxAiPick{position:fixed;z-index:100052;display:flex;gap:6px;background:rgba(20,22,27,.96);padding:6px;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.55)}'
+      + '@media print{#cxAiBar,#cxAiCrop,#cxAiPick{display:none!important}}';
+    document.head.appendChild(cs);
+    function mk(txt, cls, fn, title){ var b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.className = cls; if(title) b.title = title; b.onclick = function(e){ e.stopPropagation(); fn(e); }; bar.appendChild(b); return b; }
+    var ignore = function(el){ return !!el.id && /^(cxAiBar|cxAiCrop|cxAiBox|cxAiHint|cxAiPick|cxGemMain|cxGemHelp|cxGemToast)$/.test(el.id) || !!(el.classList && el.classList.contains('cxGemH')); };
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+    function isMob(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+    function textIn(L, T, R, B){
+      var parts = [], lastTop = null, total = 0, rg = document.createRange();
+      var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: function(n){
+        var p = n.parentElement; if(!p || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|OPTION)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+        if(p.closest('#cxAiBar,#cxAiCrop,#cxAiPick,#cxGemMain,.cxGemH,#cxGemHelp,#cxGemToast')) return NodeFilter.FILTER_REJECT;
+        return n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } }), n;
+      while((n = w.nextNode()) && total < 9000){
+        rg.selectNodeContents(n); var rs = rg.getClientRects();
+        for(var i = 0; i < rs.length; i++){ var r = rs[i];
+          if(r.width > 0 && r.right > L && r.left < R && r.bottom > T && r.top < B){
+            var tx = n.nodeValue.replace(/\s+/g, ' ').trim();
+            parts.push((lastTop !== null && Math.abs(r.top - lastTop) > 8 ? '\n' : ' ') + tx); lastTop = r.top; total += tx.length; break; } }
+      }
+      return parts.join('').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    async function shot(L, T, R, B){
+      var h2c = await loadH2C(), w = Math.max(1, Math.round(R - L)), bg = getComputedStyle(document.body).backgroundColor;
+      if(!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = '#ffffff';
+      return await h2c(document.body, { backgroundColor: bg, x: window.scrollX + L, y: window.scrollY + T, width: w, height: Math.max(1, Math.round(B - T)),
+        scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false, ignoreElements: ignore });
+    }
+    async function go(tgt, L, T, R, B){
+      if(tgt !== 'google' && !adminOK()) tgt = 'google';
+      toast('Screenshot ban raha hai…');
+      await new Promise(function(r){ requestAnimationFrame(function(){ setTimeout(r, 30); }); });
+      var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
+      var qt = ''; try{ qt = textIn(L, T, R, B); }catch(e){}
+      main.sendNow(tgt, { cv: cv, qt: qt });
+    }
+    var picker = null;
+    function closePick(){ if(picker){ picker.remove(); picker = null; } }
+    function pick(L, T, R, B){
+      closePick();
+      if(!adminOK() || isMob()){ go('google', L, T, R, B); return; }       /* admin nahi => seedha Google */
+      picker = document.createElement('div'); picker.id = 'cxAiPick';
+      picker.style.left = clamp(L, 6, window.innerWidth - 230) + 'px'; picker.style.top = clamp(B + 8, 6, window.innerHeight - 52) + 'px';
+      function pb(t, cls, tg){ var b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.className = cls; b.onclick = function(){ closePick(); go(tg, L, T, R, B); }; picker.appendChild(b); }
+      pb('🔍 Google', 'g', 'google'); pb('🤖 Gemini', 'm', 'gemini');
+      var cx = document.createElement('button'); cx.type = 'button'; cx.textContent = '✕'; cx.onclick = closePick; picker.appendChild(cx);
+      document.body.appendChild(picker);
+    }
+    function startCrop(){
+      closePick();
+      var ov = document.createElement('div'); ov.id = 'cxAiCrop'; var bx = document.createElement('div'); bx.id = 'cxAiBox'; var hint = document.createElement('div'); hint.id = 'cxAiHint';
+      hint.textContent = '✂ Area drag karke chuno · Esc / bahar tap = cancel'; ov.appendChild(bx); document.body.appendChild(ov); document.body.appendChild(hint);
+      var a = null;
+      function end(){ ov.remove(); hint.remove(); document.removeEventListener('keydown', onKey, true); }
+      function onKey(e){ if(e.key === 'Escape'){ e.preventDefault(); end(); } }
+      document.addEventListener('keydown', onKey, true);
+      ov.addEventListener('pointerdown', function(e){ a = { x: e.clientX, y: e.clientY }; try{ ov.setPointerCapture(e.pointerId); }catch(x){} bx.style.display = 'block'; bx.style.left = a.x + 'px'; bx.style.top = a.y + 'px'; bx.style.width = '0px'; bx.style.height = '0px'; e.preventDefault(); });
+      ov.addEventListener('pointermove', function(e){ if(!a) return; bx.style.left = Math.min(a.x, e.clientX) + 'px'; bx.style.top = Math.min(a.y, e.clientY) + 'px'; bx.style.width = Math.abs(e.clientX - a.x) + 'px'; bx.style.height = Math.abs(e.clientY - a.y) + 'px'; });
+      ov.addEventListener('pointerup', function(e){
+        if(!a) return; var L = Math.min(a.x, e.clientX), T = Math.min(a.y, e.clientY), R = Math.max(a.x, e.clientX), B = Math.max(a.y, e.clientY); a = null; end();
+        if(R - L < 12 || B - T < 12){ toast('Area bahut chhota — dobara chuno'); return; }
+        pick(L, T, R, B);
+      });
+      ov.addEventListener('pointercancel', end);
+    }
+    function full(tg){ closePick(); go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    mk('🔍 Google', 'g', function(){ full('google'); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
+    mk('🤖 Gemini', 'm', function(){ full('gemini'); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
+    mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
+    var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
+    function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin', m ? '1' : '0'); }
+    /* poora bar drag */
+    var drag = null, moved = false;
+    bar.addEventListener('pointerdown', function(e){ if(e.button) return; var r = bar.getBoundingClientRect(); drag = { x: e.clientX, y: e.clientY, l: r.left, t: r.top }; moved = false; });
+    window.addEventListener('pointermove', function(e){ if(!drag) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y; if(!moved && Math.abs(dx) + Math.abs(dy) < 8) return; moved = true; var r = bar.getBoundingClientRect();
+      bar.style.left = clamp(drag.l + dx, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(drag.t + dy, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; });
+    window.addEventListener('pointerup', function(){ if(drag && moved){ var r = bar.getBoundingClientRect(); LS('cx:aiPos', JSON.stringify({ l: Math.round(r.left), t: Math.round(r.top) })); } drag = null; setTimeout(function(){ moved = false; }, 0); });
+    bar.addEventListener('click', function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); } }, true);
+    function place(){ try{ var p = JSON.parse(LS('cx:aiPos') || 'null'); if(p && isFinite(p.l)){ var r = bar.getBoundingClientRect(); bar.style.left = clamp(p.l, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(p.t, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; } }catch(e){} }
+    window.addEventListener('resize', place);
+    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin') === '1'); place(); try{ scan(); }catch(e){} }
+    if(document.body) init(); else document.addEventListener('DOMContentLoaded', init);
+  })();
   setInterval(function(){ sched(); }, 3000);
   /* ---- Extension (saved questions) -> Mock Question Add bank: extension 'sd-mock-import' bhejta hai, admin ho to merge + ack ---- */
   try{ document.documentElement.setAttribute('data-cgly-app', '1'); }catch(e){}
@@ -31731,7 +31881,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   });
   var tm = null; function sched(){ clearTimeout(tm); tm = setTimeout(scan, 250); }
   function start(){ mount(); new MutationObserver(function(ms){
-      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast')))) continue; sched(); return; } })
+      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
@@ -31946,7 +32096,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   function toPng(du){ return new Promise(function(res, rej){ var im = new Image(); im.onload = function(){ var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0); c.toBlob(function(b){ b ? res(b) : rej(new Error('png')); }, 'image/png'); }; im.onerror = rej; im.src = du; }); }
   window.addEventListener('message', function(ev){
     var m = ev.data; if(!m || m.type !== 'mpAsk') return;
-    var goo = m.target === 'google', label = goo ? 'Google' : 'Gemini', ai = window.__cxAI || {};
+    var goo = m.target === 'google' || !(typeof isMeAdmin === 'function' && isMeAdmin()), label = goo ? 'Google' : 'Gemini', ai = window.__cxAI || {};
     var pr = ai.prompt ? ai.prompt(goo) : '', text = (pr ? pr + '\n\n' : '') + '--- Question (text) ---\n' + (m.text || '');
     if(window.__gemExt){
       var got = false;

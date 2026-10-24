@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Study Desk</title>
+<style>html.cxNoAdm #aiShare,html.cxNoAdm #aiGem,html.cxNoAdm #btnAsk,html.cxNoAdm #btnPG,html.cxNoAdm .gemOnly{display:none!important}</style>
+<script>(function(){function a(){try{document.documentElement.classList.toggle('cxNoAdm',localStorage.getItem('cx:isAdmin')!=='1');}catch(e){}}a();addEventListener('storage',a);window.cxAdm=function(){try{return localStorage.getItem('cx:isAdmin')==='1';}catch(e){return false;}};})();</script>
 <style>
 :root{--bg:#0f0f12;--s1:#17171c;--s2:#202027;--s3:#2c2c35;--tx:#f1f1f4;--mu:#9a9aaa;--ac:#6c8cff;--ok:#3ecf8e;--bad:#ff6b6b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -332,7 +334,7 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
   $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
   $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
   document.addEventListener('paste',function(e){ if(!P.classList.contains('open')) return; var its=(e.clipboardData||{}).items||[]; for(var i=0;i<its.length;i++) if(its[i].type.indexOf('image/')===0){ fromBlob(its[i].getAsFile()); e.preventDefault(); return; } });
-  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(d.target==='google') window.sendToGoogle(d.image,d.text); else if(auto) window.sendToGemini(d.image,d.text); else setImg(d.image); } });
+  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(d.target==='google'||!window.cxAdm()) window.sendToGoogle(d.image,d.text); else if(auto) window.sendToGemini(d.image,d.text); else setImg(d.image); } });
   $('#aiShare').onclick=async function(){
     var txt=fullTxt();
     try{
@@ -423,6 +425,7 @@ window.sendToGoogle=function(du,extra){
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ toast('Extension ne jawab nahi diya — extension v3.4 load/reload karo, phir page refresh (Google ka naya window nahi khola)',5000); } },4500);
 };
 window.sendToGemini=function(du,extra){
+  if(!window.cxAdm()){ if(window.sendToGoogle) return window.sendToGoogle(du,extra); return; }   /* Gemini sirf admin */
   var got=false;
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
