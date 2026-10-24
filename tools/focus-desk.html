@@ -1245,7 +1245,10 @@ let dbp;const db=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.ope
 const tx=(m,fn)=>db().then(d=>new Promise((res,rej)=>{const q=fn(d.transaction('w',m).objectStore('w'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
 const dbAll=()=>tx('readonly',s=>s.getAll()),dbAdd=r=>tx('readwrite',s=>s.add(r)),dbDel=id=>tx('readwrite',s=>s.delete(id)),dbClr=()=>tx('readwrite',s=>s.clear()),dbGet=id=>tx('readonly',s=>s.get(id));
 const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,con:100,hue:0,blur:0,sep:0,gray:0,kb:false,drift:true,onlyRun:false,night:false};
-let ST=Object.assign({},DEF,g('fdwp',{}));const save=()=>w('fdwp',ST);
+let ST=Object.assign({},DEF,g('fdwp',{}));
+/* Har baar khulte hi effects Original (wallpaper/photos wahi rehte hain) */
+['bri','con','sat','hue','blur','sep','gray','dim','vig','night','fit'].forEach(k=>ST[k]=DEF[k]);
+const save=()=>w('fdwp',ST);
 let L=[];const U=new Map();
 function vis(){const hr=new Date().getHours(),n=ST.night&&(hr>=21||hr<6),dm=Math.min(92,ST.dim+(n?25:0));
  vids.forEach(v=>v.style.objectFit=ST.fit);const flt='brightness('+ST.bri/100+') contrast('+ST.con/100+') saturate('+ST.sat/100+')'+(ST.hue?' hue-rotate('+ST.hue+'deg)':'')+(ST.sep?' sepia('+ST.sep+'%)':'')+(ST.gray?' grayscale('+ST.gray+'%)':'')+(ST.blur?' blur('+ST.blur+'px)':'');

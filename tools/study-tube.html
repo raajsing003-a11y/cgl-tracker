@@ -9350,6 +9350,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     if (left() <= 0) return toast('Daily study limit reached');
     const v = cache.v.concat(res || [], hist).find(x => x.id === id); if (!v) return; cur = v; hAdd(v);
     const c = chans.find(x => x.id === v.c) || {};
+    try { window.__stFxReset && window.__stFxReset(); } catch (x) {}
     $('stP').style.display = 'block'; $('stPT').textContent = v.t; $('stPM').textContent = (c.n || v.cn || '') + ' \u00b7 ' + ago(v.p);
     const er = ov.querySelector('.stv-er'); if (er) er.remove();
     exitFast(false); spd(); await ytReady();
@@ -9795,8 +9796,10 @@ var G=[
 var PR={dark:{inv:100},normal:{},vivid:{s:140,vib:150,c:112,sharp:20},bright:{b:130,c:105,s:105},night:{b:80,c:95,s:80},eye:{b:88,c:95,s:85,sep:25},bw:{c:115,gray:100},sharptext:{b:105,c:135,s:110,sharp:40},warm:{b:102,s:120,sep:30,tmp:35},auto:{sharp:35,c:108,s:112,detail:20,gamma:96,ai:25},lowlight:{b:118,gamma:130,shad:45,den:25,c:105}};
 var NM={dark:'\uD83C\uDF11 Dark mode',normal:'Normal',vivid:'Vivid',bright:'Bright',night:'Night',eye:'Eye-care',bw:'B&W',sharptext:'Sharp text',warm:'Warm',auto:'\uD83E\uDE84 Auto enhance',lowlight:'Low-light fix'};
 var E,cur='normal';
-function load(){var o={};try{o=JSON.parse(localStorage.getItem(K)||'{}')||{}}catch(x){}E=Object.assign({},DEF,o);cur=o.p||'normal';delete E.p}
+function load(){E=Object.assign({},DEF);cur='normal'}
 load();
+/* Har nayi video khulte hi effects Original (speed ko nahi chhedte) */
+window.__stFxReset=function(){try{var sp=E.spd;E=Object.assign({},DEF);E.spd=sp;cur='normal';apply()}catch(x){}};
 function P(){return document.getElementById('stP')}
 function rate(){try{if(window.__stGetRate)return window.__stGetRate()}catch(x){}return E.spd}
 function calc(){
