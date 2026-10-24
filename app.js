@@ -31294,7 +31294,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
   function gemGeo(){ var sl = screen.availLeft || 0, st = screen.availTop || 0, sw = screen.availWidth || screen.width, sh = screen.availHeight || screen.height, w = Math.round(sw / 2); return { l: sl + w, t: st, w: w, h: sh }; }
   var GEM_DEF = "Tum ek expert SSC (CGL/CHSL/CPO/MTS) teacher ho. Image/text mein jo question hai wo Maths, Reasoning ya English kisi bhi subject ka ho sakta hai — subject khud pehchano aur usi ke hisaab se solve karo.\n\nLANGUAGE RULES (bahut zaroori):\n- Question, saare options aur explanation Hindi + English mix (Hinglish, Devanagari mein Hindi) mein likho. Jo bhi mushkil word, term ya full form ho, usse Hindi mein likho aur uske baad bracket mein English likho. Example: अनुपात (Ratio), समानार्थी (Synonym).\n- English subject mein original English sentence/options jaise hain waise hi rakho, bas explanation bilingual do.\n- Koi step skip mat karo. Har calculation / logic line by line dikhao, simple aur easy tareeke se.\n\nFORMAT (is order mein hi):\n\n1) मुख्य प्रश्न (Main Question)\n- Question ko bilkul exact likho, options (A/B/C/D) ke saath.\n- सही उत्तर (Correct Answer) clearly batao.\n- बेसिक कॉन्सेप्ट (Basic Concept): jad ka concept / rule / theory simple bhasha mein samjhao taaki fundamentals 100% clear ho jaye.\n- स्मार्ट ट्रिक (Smart Trick): exam mein 10-15 second mein solve karne ka sabse fast tareeka (Maths: Ratio, Deviation, Approximation, direct formula; Reasoning: pattern/elimination/diagram shortcut; English: rule + option elimination). Trick ke saath poora step-by-step solution bhi do.\n- Galat options kyun galat hain, ye ek-ek line mein batao.\n\n2) Same Pattern Practice (2 Questions)\n- Isi concept aur isi trick par 2 naye questions, bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: seekhi hui trick turant dimaag mein baith jaye aur speed badhe.\n\n3) Advanced / Variety Practice (3 Questions)\n- Isi topic ko thoda twist karke ya SSC Tier-2 level tak badha ke 3 alag questions do (Maths mein 'Reverse Calculation' type bhi), bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: exam mein kisi bhi variation ke liye 100% ready karna.\n\nEnd mein 2 line ka \"Yaad rakhne wali baat (Key Takeaway)\" likho.";
-  window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready') LS('sd:extok', '1'); });
+  window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready'){ window.__gemExt = true; LS('sd:extok', '1'); } });
   try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
   function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
   function qText(t){
@@ -31315,6 +31315,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     + '#cxGemMain img,.cxGemH img{width:44px;height:58px;object-fit:contain;background:#fff;border-radius:5px;display:block;-webkit-user-drag:element}'
     + '#cxGemMain.busy img,.cxGemH.busy img{opacity:.4}'
     + '#cxGemMain label{font-size:10px;font-weight:600;opacity:.85;display:flex;gap:3px;align-items:center;cursor:pointer}'
+    + '.cxGoo{display:block;margin-top:2px;padding:2px 6px;border-radius:8px;background:#1a73e8;color:#fff;font-size:10px;font-weight:700;text-align:center;cursor:pointer}'
     + '.cxGemH{position:absolute;top:8px;right:8px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;border-radius:10px;background:rgba(20,22,27,.85);color:#fff;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none}';
   document.head.appendChild(css);
 
@@ -31357,11 +31358,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; LS('sd:extok', '1'); window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
       window.addEventListener('message', onAck);
       window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, reuse: true, newTab: false, popup: true, geo: gemGeo() }, '*');
-      setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) cb(); }, 1800);
+      setTimeout(function(){ window.removeEventListener('message', onAck); if(!got) cb(); }, 4500);
     }
     async function copyPng(){ try{ if(!st.cv || !navigator.clipboard || !window.ClipboardItem) return false;
       var png = await new Promise(function(r){ st.cv.toBlob(r, 'image/png'); }); await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); return true; }catch(e){ return false; } }
-    h.sendNow = async function(){
+    h.sendNow = async function(tgt){ var goo = (tgt === 'google');
       var inFrame = window.parent && window.parent !== window, mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), t = getTarget();
       if(!t) return;
       st.qt = qText(t);
@@ -31369,26 +31370,35 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
       var copied = null;
-      if(!inFrame && !mobile && navigator.clipboard && window.ClipboardItem){
+      if(!goo && !inFrame && !mobile && navigator.clipboard && window.ClipboardItem){
         try{ copied = navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }catch(e){ copied = Promise.resolve(false); }
       }
       var w = null;
-      if(!inFrame && !mobile && LS('sd:extok') !== '1'){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
+      if(!goo && !inFrame && !mobile && LS('sd:extok') !== '1'){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
         var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); }catch(e){} }
       toast('Screenshot ban raha hai…');
       var ok; try{ await pngP; ok = true; }catch(e){ ok = false; }
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
-      if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); }catch(e){} return; }
+      if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, text: withQ(gemPrompt(), st.qt), target: goo ? 'google' : '', from: 'app' }, '*'); }catch(e){} return; }
+      if(goo){
+        if(mobile){ toast('Google auto-send sirf desktop (Chrome + extension) par chalta hai'); return; }
+        var gg = false, gtxt = withQ(gemPrompt(), st.qt);
+        function gAck(e){ var d = e.data; if(d && d.type === 'sd-google-ack' && d.kind === 'send'){ gg = true; window.removeEventListener('message', gAck); toast(d.found ? '🔍 Google ko bhej diya' : 'Google khul raha hai, image + question wahan aa jayega'); } }
+        window.addEventListener('message', gAck);
+        window.postMessage({ type: 'sd-google-send', image: st.du, text: gtxt, url: 'https://www.google.com/search?udm=50', geo: gemGeo() }, '*');
+        setTimeout(function(){ window.removeEventListener('message', gAck); if(!gg) toast('Extension ne jawab nahi diya — extension v3.4 reload karke page refresh karo (naya window nahi khola)'); }, 4500);
+        return;
+      }
       if(mobile){
         try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: withQ(gemPrompt(), st.qt) }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
         toast('Share nahi chala — screenshot save/copy karke Gemini me daalo'); return;
       }
       sendExt(st.du, async function(){
-        var c = copied ? await copied : false; if(!w){ try{ var g2 = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g2.l + ',top=' + g2.t + ',width=' + g2.w + ',height=' + g2.h); var bl = false; try{ bl = (w.location.href === 'about:blank'); }catch(e){} if(bl) w.location.href = gemUrl(); }catch(e){} } try{ if(w) w.focus(); }catch(e){}
+        var c = copied ? await copied : false; if(window.__gemExt || LS('sd:extok') === '1'){ toast(c ? 'Extension ne jawab nahi diya. Screenshot copy hai: khule Gemini window me Ctrl+V karo (naya window nahi khola)' : 'Extension ne jawab nahi diya — extension reload karke page refresh karo'); return; } if(!w){ try{ var g2 = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g2.l + ',top=' + g2.t + ',width=' + g2.w + ',height=' + g2.h); var bl = false; try{ bl = (w.location.href === 'about:blank'); }catch(e){} if(bl) w.location.href = gemUrl(); }catch(e){} } try{ if(w) w.focus(); }catch(e){}
         toast(c ? '✅ Screenshot copy ho gaya — Gemini popup me click karke Ctrl+V dabao' : '⚠ Auto-copy nahi hua. Handle ko drag karke Gemini me chhodo');
       });
     };
-    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); h.sendNow(); });
+    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); h.sendNow(e.target.closest('.cxGoo') ? 'google' : 'gemini'); });
     ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); });
     img.addEventListener('dragstart', function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.effectAllowed = 'copy'; if(st.file) ev.dataTransfer.items.add(st.file); }catch(e){} });
     h.prep = prep;
@@ -31401,7 +31411,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   var al = document.createElement('label'); al.title = 'ON = solution khulte hi screenshot khud Gemini ko chala jaye';
   var ac = document.createElement('input'); ac.type = 'checkbox'; ac.checked = LS('cx:gemAuto') === '1'; ac.onchange = function(){ LS('cx:gemAuto', ac.checked ? '1' : '0'); toast(ac.checked ? 'Auto-send ON' : 'Auto-send OFF'); };
   al.appendChild(ac); al.appendChild(document.createTextNode('Auto'));
-  main.appendChild(mi); main.appendChild(ml); main.appendChild(al);
+  var mg = document.createElement('span'); mg.className = 'cxGoo'; mg.textContent = '🔍 Google'; mg.title = 'Image + question/option text + prompt Google par bhejo';
+  main.appendChild(mi); main.appendChild(ml); main.appendChild(mg); main.appendChild(al);
   var curPage = null, lastShown = false;
   wire(main, mi, function(){ return curPage; });
   function mount(){ if(document.body && !main.parentNode) document.body.appendChild(main); }
@@ -31416,7 +31427,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(it.__cxg) return; it.__cxg = 1; var cs = getComputedStyle(it); if(cs.position === 'static') it.style.position = 'relative';
       var h = document.createElement('div'); h.className = 'cxGemH'; h.title = 'Ye question + solution Gemini ko bhejo (tap) ya drag karo';
       var im = document.createElement('img'); im.src = PH; im.draggable = true; var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
-      h.appendChild(im); h.appendChild(lb); it.appendChild(h); wire(h, im, function(){ return it; });
+      var gb2 = document.createElement('span'); gb2.className = 'cxGoo'; gb2.textContent = '🔍 Google'; h.appendChild(im); h.appendChild(lb); h.appendChild(gb2); it.appendChild(h); wire(h, im, function(){ return it; });
     });
     var page = overlayOpen() ? null : document.querySelector('.calcPage.active');
     var has = false;

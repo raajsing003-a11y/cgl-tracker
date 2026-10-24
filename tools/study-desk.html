@@ -24,7 +24,7 @@ button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 #main{flex:1 1 auto;min-height:0;display:flex;position:relative}
 .pane{display:none;min-width:0;min-height:0;background:#000}
 .pane iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
-#main.v-pdf #p-pdf,#main.v-tube #p-tube,#main.v-focus #p-focus{display:block;flex:1 1 auto}
+#main.v-pdf #p-pdf,#main.v-tube #p-tube,#main.v-google #p-tube,#main.v-focus #p-focus{display:block;flex:1 1 auto}
 #dv{display:none;flex:0 0 8px;background:var(--s3);cursor:col-resize;touch-action:none;position:relative}
 #dv::after{content:"";position:absolute;inset:0;margin:auto;width:3px;height:36px;border-radius:3px;background:var(--mu)}
 #main.v-split #p-pdf,#main.v-split #p-tube{display:block}
@@ -106,13 +106,14 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
     <button data-v="pdf">📄 PDF</button>
     <button data-v="tube">▶ Videos</button>
     <button data-v="split">◫ PDF + Video</button>
-    <button data-v="gem" title="PDF ke saath Gemini popup (right half)">🤖 PDF + Gemini</button>
+    <button data-v="google" title="Google search (Videos wala browser, search bar ke saath)">🔍 Google</button>
     <button data-v="tools">🧰 Tools</button>
   </div>
   <div class="sp"></div>
   <span id="clk" class="hide-s"></span>
   <button id="mbtn" title="Music chalao (Alt+M)">🔇</button>
   <button id="abtn" title="Gemini mein bhejo (Alt+G)">🤖</button>
+  <button id="gbtn" title="Google par bhejo (image + question text + prompt)">🔍</button>
   <button id="nbtn" title="Notes (Alt+N)">📝</button>
   <button id="zbtn" title="Zen mode (Alt+Z)">⛶</button>
   <button id="chip">⏱ 00:00</button>
@@ -140,7 +141,7 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
   <input type="file" id="aiFi" accept="image/*" hidden>
   <div class="chips" id="aiChips" style="display:none"><button data-t="Step-by-step samjhao.">🧮 Steps</button><button data-t="Shortcut trick batao.">⚡ Trick</button><button data-t="Hindi mein samjhao.">🇮🇳 Hindi</button><button data-t="Is jaise 3 aur question do (answer ke saath).">🔁 Similar 3</button><button data-t="Baaki options galat kyun hain?">❌ Galat options</button></div>
   <textarea id="aiQ" style="min-height:90px" placeholder="Apna prompt yahan likho. Jaisa likhoge bilkul waisa hi Gemini ko jayega, kuch add nahi hoga. Ye hamesha save rahega."></textarea>
-  <div class="row"><button id="aiShare" style="background:var(--ac);color:#fff">📤 Gemini app ko bhejo</button><button id="aiGem">↗ Gemini Pro kholo (same tab)</button></div>
+  <div class="row"><button id="aiShare" style="background:var(--ac);color:#fff">📤 Gemini app ko bhejo</button><button id="aiGoo">🔍 Google par bhejo</button><button id="aiGem">↗ Gemini Pro kholo (same tab)</button></div>
   <div class="row"><button id="aiEdit">🎨 Photo Studio mein edit karo</button></div>
   <div id="aiOut">PDF mein 🤖 dabao aur question pe drag karo, phir "Gemini app ko bhejo". Video ka screenshot Gallery/Paste se daalo.</div>
   <details><summary>⚙ Gemini link</summary>
@@ -184,6 +185,7 @@ function setView(v){
   view=v; main.className='v-'+v;
   $$('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.v===v); });
   if(v==='pdf'||v==='split') load('pdf');
+  if(v==='google'){ var f1=!fr.tube.getAttribute('src'); load('tube'); setTimeout(function(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); setTimeout(function(){ fr.tube.contentWindow.postMessage('uv-google-focus','*'); },300); }catch(e){} }, f1?1500:50); }
   if(v==='tube'||v==='split'){ var first=!fr.tube.getAttribute('src'); load('tube'); if(!first) tubeEnter(); }
   if(v==='focus') load('focus');
   if(v==='tool'||v==='ptool'){ if(!curTool){ return setView('tools'); } openTool(curTool,true); if(v==='ptool') load('pdf'); }
@@ -204,7 +206,7 @@ var studioPending=null, studioReady=false;
 window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-studio-ready'){ studioReady=true; if(studioPending){ try{ fr.tool.contentWindow.postMessage({type:'sd-edit-image',image:studioPending},'*'); }catch(x){} studioPending=null; } } });
 
 $('#tSplit').onclick=function(){ setView(view==='ptool'?'tool':'ptool'); };
-$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b){ if(b.dataset.v==='gem'){ openGemSide(); return; } setView(b.dataset.v); } });
+$('.tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(b){ setView(b.dataset.v); } });
 
 /* ---- divider ---- */
 (function(){
@@ -322,13 +324,15 @@ var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='
   function setImg(du){ data=du; img.src=du; img.style.display='block'; open(true); out.textContent='Image ready. Neeche "Gemini app ko bhejo" dabao.'; }
   function fromBlob(b){ var r=new FileReader(); r.onload=function(){ setImg(r.result); }; r.readAsDataURL(b); }
   $('#abtn').onclick=window.toggleAI; $('#aiX').onclick=function(){ open(false); };
+  $('#aiGoo').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } window.sendToGoogle(data,''); };
+  $('#gbtn').onclick=function(){ if(data){ window.sendToGoogle(data,''); } else { open(true); toast('Pehle image daalo, phir 🔍 Google par bhejo'); } };
   $('#aiEdit').onclick=function(){ if(!data){ toast('Pehle image daalo'); return; } open(false); window.editInStudio(data); };
   $('#aiNew').onclick=function(){ data=null; img.style.display='none'; out.textContent='Naya doubt shuru karo.'; };
   $('#aiFile').onclick=function(){ $('#aiFi').click(); };
   $('#aiFi').onchange=function(){ if(this.files[0]) fromBlob(this.files[0]); this.value=''; };
   $('#aiPaste').onclick=async function(){ try{ var it=await navigator.clipboard.read(); for(var i=0;i<it.length;i++){ var t=it[i].types.filter(function(x){return x.indexOf('image/')===0})[0]; if(t){ fromBlob(await it[i].getType(t)); return; } } toast('Clipboard mein image nahi hai'); }catch(e){ toast('Paste allow nahi hua. Gallery use karo'); } };
   document.addEventListener('paste',function(e){ if(!P.classList.contains('open')) return; var its=(e.clipboardData||{}).items||[]; for(var i=0;i<its.length;i++) if(its[i].type.indexOf('image/')===0){ fromBlob(its[i].getAsFile()); e.preventDefault(); return; } });
-  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(auto) window.sendToGemini(d.image); else setImg(d.image); } });
+  window.addEventListener('message',function(e){ var d=e.data; if(d&&d.type==='sd-ask-ai'&&d.image){ var auto=true; try{ auto=localStorage.getItem('sd:autogem')!=='0'; }catch(x){} if(d.target==='google') window.sendToGoogle(d.image,d.text); else if(auto) window.sendToGemini(d.image,d.text); else setImg(d.image); } });
   $('#aiShare').onclick=async function(){
     var txt=fullTxt();
     try{
@@ -355,7 +359,7 @@ function openGemSide(){
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='open'){ got=true; window.removeEventListener('message',onAck); setView('pdf'); toast(d.found?'Pehle se khula Gemini aage aa gaya':'Gemini right side khul gaya'); } }
   window.addEventListener('message',onAck);
   window.postMessage({type:'sd-gemini-open',url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
-  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got) openGemSideNative(); },1200);
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ if(gemExtKnown()){ toast('Extension ne jawab nahi diya — extension reload karke page refresh karo (naya window nahi khola)',4500); setView('pdf'); } else openGemSideNative(); } },4000);
 }
 function openGemSideNative(url){
   /* Hamesha EK hi popup window ('sd_gemini', right half). Pehle se khuli ho to wahi aage aati hai (naya popup nahi). */
@@ -375,16 +379,26 @@ function openGemSideNative(url){
   try{ if(localStorage.getItem('sd:hh')==='1') hh(true); }catch(e){} })();
 
 /* ---- image ko seedha Gemini mein bhejo (extension ke saath) ---- */
-window.sendToGemini=function(du){
+window.addEventListener('message',function(e){ var d=e.data; if(e.source===window&&d&&d.type==='sd-gemini-ext-ready'){ window.__gemExt=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} } });
+try{ window.postMessage({type:'sd-gemini-ping'},'*'); }catch(e){}
+function gemExtKnown(){ var k=false; try{ k=localStorage.getItem('sd:extok')==='1'; }catch(e){} return !!window.__gemExt||k; }
+window.sendToGoogle=function(du,extra){
+  var got=false, geo=gemGeo();
+  function onAck(e){ var d=e.data; if(d&&d.type==='sd-google-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'🔍 Google ko bhej diya':'Google khul raha hai, image+question wahan aa jayega',4000); } }
+  window.addEventListener('message',onAck);
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  window.postMessage({type:'sd-google-send',image:du||'',text:txt,url:'https://www.google.com/search?udm=50',geo:geo},'*');
+  setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ toast('Extension ne jawab nahi diya — extension v3.4 load/reload karo, phir page refresh (Google ka naya window nahi khola)',5000); } },4500);
+};
+window.sendToGemini=function(du,extra){
   var got=false;
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
-  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||'';
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
   window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
     try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}
-    openGemSideNative();
-    toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } },2500);
+    if(gemExtKnown()){ toast('Extension ne jawab nahi diya. Image clipboard mein hai: khule Gemini mein Ctrl+V karo (naya window nahi khola)',5000); } else { openGemSideNative(); toast('Extension nahi mila. Image clipboard mein hai: Gemini mein Ctrl+V karo',5000); } } },4500);
 };
 /* ---- zen mode ---- */
 function zen(on){ document.body.classList.toggle('zen',on); try{ window.dispatchEvent(new Event('resize')); }catch(e){} }
