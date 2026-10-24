@@ -31302,7 +31302,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     if(!t){ t = document.createElement('div'); t.id = 'cxGemToast'; t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,22,27,.94);color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:100000;max-width:86vw;text-align:center;display:none'; document.body.appendChild(t); }
     t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
   function gemGeo(){ var sl = screen.availLeft || 0, st = screen.availTop || 0, sw = screen.availWidth || screen.width, sh = screen.availHeight || screen.height, w = Math.round(sw / 2); return { l: sl + w, t: st, w: w, h: sh }; }
-  var GEM_DEF = "मास्टर प्रॉम्प्ट: SSC यूनिवर्सल '6-प्रश्न सेट' (गणित, रीजनिंग और अंग्रेजी)\n\n1. मुख्य प्रश्न (Main Question):\n * प्रश्न का प्रारूप: छात्र द्वारा दिए गए पूरे प्रश्न को हमेशा द्विभाषी (Bilingual - अंग्रेजी और हिंदी दोनों) में लिखें। प्रश्न का कोई भी हिस्सा अधूरा न छोड़ें।\n * मूल अवधारणा (Basic Concept): प्रश्न की जड़ और पूरी थ्योरी को आसान हिंदी में समझाएं, ताकि बेसिक्स 100% क्लियर हो जाएं। (अंग्रेजी के प्रश्नों के लिए ग्रामर रूल या वोकैबुलरी का लॉजिक विस्तार से बताएं)।\n * स्मार्ट ट्रिक (Smart Trick): परीक्षा में 10-15 सेकंड में उत्तर निकालने का सबसे तेज़ तरीका बताएं (गणित/रीजनिंग के लिए शॉर्ट ट्रिक या सीधा सूत्र; अंग्रेजी के लिए ऑप्शन एलिमिनेशन या कीवर्ड एप्रोच)।\n\n2. समान पैटर्न अभ्यास (Same Pattern Practice - 2 प्रश्न):\n * मुख्य प्रश्न के बिल्कुल समान कॉन्सेप्ट और ट्रिक पर आधारित 2 नए प्रश्न बनाएं।\n * प्रश्न की भाषा: पूरा प्रश्न हमेशा द्विभाषी (अंग्रेजी + हिंदी) होना चाहिए।\n * विकल्प (Options): हमेशा पूरे विकल्प लिखें।\n   * नया नियम: यदि विकल्पों में केवल संख्याएँ (Numbers) हैं, तो उन्हें दो बार (जैसे 36373/36373) नहीं लिखना है, उन्हें केवल एक ही बार लिखें।\n   * यदि विकल्प पूरे वाक्य (Sentence) या वाक्यांश के रूप में हैं, तो उन्हें हिंदी और अंग्रेजी दोनों में दें।\n * समाधान (Solution): पूरा समाधान आसान हिंदी में लिखें। किसी भी कठिन शब्द के आगे ब्रैकेट में उसका अंग्रेजी अनुवाद जरूर लिखें (जैसे: समानांतर (Parallel))। समाधान में केवल शॉर्टकट ट्रिक का ही उपयोग करें।\n\n3. विविध/उन्नत पैटर्न अभ्यास (Diverse/Advanced Practice - 3 प्रश्न):\n * उसी टॉपिक को थोड़ा घुमाकर या उच्च स्तर (Tier-2 लेवल) पर पूछने वाले 3 अलग-अलग प्रश्न बनाएं।\n * प्रारूप: पूरा प्रश्न (द्विभाषी), पूरे विकल्प (संख्या केवल एक बार, वाक्य दोनों भाषाओं में), और समाधान (हिंदी में, कठिन शब्द ब्रैकेट में अंग्रेजी के साथ) का नियम बिल्कुल ऊपर दिए गए सेक्शन 2 जैसा ही रहेगा।\n\n4. शर्तें (Strict Constraints):\n * पूरी बातचीत और समाधान केवल और केवल शुद्ध देवनागरी हिंदी में होंगे।\n * कोई भी स्टेप, कैलकुलेशन या ग्रामर का लॉजिक हवा में नहीं किया जाएगा, हर एक चीज़ स्पष्ट और स्टेप-बाय-स्टेप होनी चाहिए।\n * हमेशा पूरा प्रश्न और पूरे विकल्प लिखें, कोई भी शॉर्टकट या अधूरा वाक्य न लिखें।\n * विकल्पों का नियम सख्ती से लागू करें: संख्या = केवल 1 बार लिखें, वाक्य = 2 भाषाएं (अंग्रेजी + हिंदी)।";
+  var GEM_DEF = "मास्टर प्रॉम्प्ट: SSC यूनिवर्सल '4-प्रश्न सेट' (गणित, रीजनिंग और अंग्रेजी)\n\n1. मुख्य प्रश्न (Main Question):\n * प्रश्न का प्रारूप: छात्र द्वारा दिए गए पूरे प्रश्न को हमेशा द्विभाषी (Bilingual - अंग्रेजी और हिंदी दोनों) में लिखें। प्रश्न का कोई भी हिस्सा अधूरा न छोड़ें।\n * मूल अवधारणा (Basic Concept): प्रश्न की जड़ और पूरी थ्योरी को आसान हिंदी में समझाएं, ताकि बेसिक्स 100% क्लियर हो जाएं। (अंग्रेजी के प्रश्नों के लिए ग्रामर रूल या वोकैबुलरी का लॉजिक विस्तार से बताएं)।\n * स्मार्ट ट्रिक (Smart Trick): परीक्षा में 10-15 सेकंड में उत्तर निकालने का सबसे तेज़ तरीका बताएं (गणित/रीजनिंग के लिए शॉर्ट ट्रिक या सीधा सूत्र; अंग्रेजी के लिए ऑप्शन एलिमिनेशन या कीवर्ड एप्रोच)।\n\n2. समान पैटर्न अभ्यास (Same Pattern Practice - 1 प्रश्न):\n * मुख्य प्रश्न के बिल्कुल समान कॉन्सेप्ट और ट्रिक पर आधारित 1 नया प्रश्न बनाएं।\n * प्रश्न की भाषा: पूरा प्रश्न हमेशा द्विभाषी (अंग्रेजी + हिंदी) होना चाहिए।\n * विकल्प (Options): हमेशा पूरे विकल्प लिखें।\n   * नया नियम: यदि विकल्पों में केवल संख्याएँ (Numbers) हैं, तो उन्हें दो बार (जैसे 36373/36373) नहीं लिखना है, उन्हें केवल एक ही बार लिखें।\n   * यदि विकल्प पूरे वाक्य (Sentence) या वाक्यांश के रूप में हैं, तो उन्हें हिंदी और अंग्रेजी दोनों में दें।\n * समाधान (Solution): पूरा समाधान आसान हिंदी में लिखें। किसी भी कठिन शब्द के आगे ब्रैकेट में उसका अंग्रेजी अनुवाद जरूर लिखें (जैसे: समानांतर (Parallel))। समाधान में केवल शॉर्टकट ट्रिक का ही उपयोग करें।\n\n3. विविध/उन्नत पैटर्न अभ्यास (Diverse/Advanced Practice - 2 प्रश्न):\n * उसी टॉपिक को थोड़ा घुमाकर या उच्च स्तर (Tier-2 लेवल) पर पूछने वाले 2 अलग-अलग प्रश्न बनाएं।\n * प्रारूप: पूरा प्रश्न (द्विभाषी), पूरे विकल्प (संख्या केवल एक बार, वाक्य दोनों भाषाओं में), और समाधान (हिंदी में, कठिन शब्द ब्रैकेट में अंग्रेजी के साथ) का नियम बिल्कुल ऊपर दिए गए सेक्शन 2 जैसा ही रहेगा।\n\n4. शर्तें (Strict Constraints):\n * पूरी बातचीत और समाधान केवल और केवल शुद्ध देवनागरी हिंदी में होंगे।\n * कोई भी स्टेप, कैलकुलेशन या ग्रामर का लॉजिक हवा में नहीं किया जाएगा, हर एक चीज़ स्पष्ट और स्टेप-बाय-स्टेप होनी चाहिए।\n * हमेशा पूरा प्रश्न और पूरे विकल्प लिखें, कोई भी शॉर्टकट या अधूरा वाक्य न लिखें।\n * विकल्पों का नियम सख्ती से लागू करें: संख्या = केवल 1 बार लिखें, वाक्य = 2 भाषाएं (अंग्रेजी + हिंदी)।";
   window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready'){ window.__gemExt = true; LS('sd:extok', '1'); } });
   try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
   function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
@@ -31314,7 +31314,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
   }
-  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein. POORA block ---MOCKBANK--- se ---END--- tak EK HI code block (``` ... ```) ke andar likho, taaki maths render hokar bikhre nahi; code block ke andar plain text, bold/table ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono; maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho aur ek question ke liye sirf ek hi 'Q:' block ho)\n---END---";
+  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein. POORA block ---MOCKBANK--- se ---END--- tak EK HI code block (``` ... ```) ke andar likho, taaki maths render hokar bikhre nahi; code block ke andar plain text, bold/table ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question. SUBJECT Math/Reasoning/GK ho to Hindi + English dono; lekin SUBJECT English ho to question aur options SIRF English mein (Hindi bilkul nahi); maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(is block mein SIRF 2 question likho: pehla = main question, doosra = practice questions mein se sabse HARD / tricky wala. Baaki practice questions is block mein MAT likho (wo sirf upar ke jawab mein rahenge). Dono ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho aur ek question ke liye sirf ek hi 'Q:' block ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
   function addFoot(p){ p = p || ''; return p.indexOf('---MOCKBANK---') >= 0 ? p : (p + MB_FOOT); }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return addFoot(v); var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return addFoot(adm ? '' : GEM_DEF); }
@@ -31520,6 +31520,21 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   
   return MQ.joinTiny; })();
 
+
+  /* ---- English subject: question/options me Hindi (Devanagari) nahi; max 2 question (main + sabse hard) ---- */
+  var MQ_MAX = 2;
+  function mqEnOnly(s){
+    s = String(s || ''); if(!/[\u0900-\u097f]/.test(s)) return s;
+    var lines = s.split('\n'), keep = lines.filter(function(l){ return !/[\u0900-\u097f]/.test(l) || /[A-Za-z]{3}.*[\u0900-\u097f]|[\u0900-\u097f].*[A-Za-z]{3}/.test(l); });
+    if(keep.length) s = keep.join('\n');
+    s = s.replace(/[\u0900-\u097f]+(?:[\s,.?!\u0964'"\-:;()\/]*[\u0900-\u097f]+)*/g, '');
+    return s.replace(/\s*[\/|]\s*["'\u2018\u2019\u201c\u201d]+/g, '').replace(/\(\s*\)|\[\s*\]/g, '').replace(/\s+\/\s*(?=\n|$)/g, '').replace(/(^|\n)\s*\/\s+/g, '$1').replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+\n/g, '\n').trim();
+  }
+  function mqPost(list){
+    list.forEach(function(q){ if(q.s === 'English'){ q.t = mqEnOnly(q.t); q.o = (q.o || []).map(mqEnOnly); } });
+    return list.length > MQ_MAX ? list.slice(0, MQ_MAX) : list;
+  }
+
   /* ---- Gemini reply (---MOCKBANK--- block) -> bank questions ---- */
   function parseBlock(raw){
     var txt = String(raw || '').replace(/\r/g, ''), i = txt.lastIndexOf('---MOCKBANK---');
@@ -31542,7 +31557,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       else if(mode === 'e') cur.e += '\n' + l;
       else if(/^o[0-3]$/.test(mode)){ var k = +mode[1]; cur.o[k] += '\n' + l; }
     });
-    return out.filter(function(q){ return q.t && (q.o[0] || q.o[1]); }).map(mqFix);
+    return mqPost(out.filter(function(q){ return q.t && (q.o[0] || q.o[1]); })).map(mqFix);
   }
   function askPaste(cb){
     var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:14px';
@@ -31770,10 +31785,12 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   (function(){
     var bar = document.createElement('div'); bar.id = 'cxAiBar'; bar.title = 'Pakad ke kahin bhi rakho';
     var cs = document.createElement('style');
-    cs.textContent = '#cxAiBar{position:fixed;left:8px;bottom:84px;z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
+    cs.textContent = '#cxAiBar{position:fixed;right:8px;left:auto;top:calc(10% + 120px);z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
       + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
-      + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:3px}'
+      + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
+      + '#cxAiBar.min .x{width:46px;height:46px;padding:0;border-radius:50%;font-size:22px;line-height:46px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 3px rgba(255,255,255,.9),0 4px 16px rgba(255,61,119,.55),0 0 22px rgba(61,184,255,.5);animation:cxAiPulse 2.4s ease-in-out infinite}'
+      + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}'
       + 'body.cxNoAdm #cxAiBar .m,body.cxNoAdm #cxAiPick .m,body.cxMob #cxAiBar .m,body.cxMob #cxAiPick .m{display:none!important}'
       + '#cxAiCrop{position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.25);cursor:crosshair;touch-action:none}'
       + '#cxAiBox{position:fixed;border:2px dashed #ffeb3b;background:rgba(255,235,59,.14);display:none;pointer-events:none}'
@@ -31848,17 +31865,17 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mk('🤖 Gemini', 'm', function(){ full('gemini'); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
-    function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin', m ? '1' : '0'); }
+    function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
     /* poora bar drag */
     var drag = null, moved = false;
     bar.addEventListener('pointerdown', function(e){ if(e.button) return; var r = bar.getBoundingClientRect(); drag = { x: e.clientX, y: e.clientY, l: r.left, t: r.top }; moved = false; });
     window.addEventListener('pointermove', function(e){ if(!drag) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y; if(!moved && Math.abs(dx) + Math.abs(dy) < 8) return; moved = true; var r = bar.getBoundingClientRect();
-      bar.style.left = clamp(drag.l + dx, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(drag.t + dy, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; });
-    window.addEventListener('pointerup', function(){ if(drag && moved){ var r = bar.getBoundingClientRect(); LS('cx:aiPos', JSON.stringify({ l: Math.round(r.left), t: Math.round(r.top) })); } drag = null; setTimeout(function(){ moved = false; }, 0); });
+      bar.style.left = clamp(drag.l + dx, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(drag.t + dy, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; bar.style.right = 'auto'; });
+    window.addEventListener('pointerup', function(){ if(drag && moved){ var r = bar.getBoundingClientRect(); LS('cx:aiPos2', JSON.stringify({ l: Math.round(r.left), t: Math.round(r.top) })); } drag = null; setTimeout(function(){ moved = false; }, 0); });
     bar.addEventListener('click', function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); } }, true);
-    function place(){ try{ var p = JSON.parse(LS('cx:aiPos') || 'null'); if(p && isFinite(p.l)){ var r = bar.getBoundingClientRect(); bar.style.left = clamp(p.l, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(p.t, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; } }catch(e){} }
+    function place(){ try{ var p = JSON.parse(LS('cx:aiPos2') || 'null'); if(p && isFinite(p.l)){ var r = bar.getBoundingClientRect(); bar.style.left = clamp(p.l, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(p.t, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; bar.style.right = 'auto'; } else { var r2 = bar.getBoundingClientRect(); if(r2.left < 0 || r2.right > window.innerWidth){ bar.style.right = '8px'; bar.style.left = 'auto'; } } }catch(e){} }
     window.addEventListener('resize', place);
-    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin') === '1'); place(); try{ scan(); }catch(e){} }
+    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin2') !== '0'); place(); try{ scan(); }catch(e){} }
     if(document.body) init(); else document.addEventListener('DOMContentLoaded', init);
   })();
   setInterval(function(){ sched(); }, 3000);
