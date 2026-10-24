@@ -31314,7 +31314,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
   }
-  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein, plain text — bold/table/markdown ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution — bilkul waisa hi jaisa tum upar apne jawab mein dete ho: मूल अवधारणा (Basic Concept), स्मार्ट ट्रिक (Smart Trick), step-by-step calculation, aur galat options kyun galat hain. Chhota / summary mat likho, koi step mat chhodo. Kitni bhi lines ho sakti hain, bas koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed; har question 'Q:' se shuru ho)\n---END---";
+  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein, plain text — bold/table/markdown ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono; maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
   function addFoot(p){ p = p || ''; return p.indexOf('---MOCKBANK---') >= 0 ? p : (p + MB_FOOT); }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return addFoot(v); var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return addFoot(adm ? '' : GEM_DEF); }
@@ -31404,6 +31404,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 
 
   /* ---- near-duplicate check: same/lagbhag same question + milte-julte options = repeat ---- */
+
+  function mqTex(s){ return String(s || '').replace(/\\\[([\s\S]+?)\\\]/g, function(m, x){ return '$$' + x + '$$'; }).replace(/\\\(([\s\S]+?)\\\)/g, function(m, x){ return '$' + x + '$'; }); }
+  function mqFmt(e){ e = String(e || '').replace(/\r/g, '').trim(); if(!e) return e;
+    e = e.replace(/[ \t]*(मूल अवधारणा|बेसिक कॉन्सेप्ट|स्मार्ट ट्रिक|गलत विकल्प|सही उत्तर)/g, '\n\n$1').replace(/([।])[ \t]+(?=\S)/g, '$1\n').replace(/[ \t]+(?=(?:स्टेप|चरण|Step)\s*\d)/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n'); return e.trim(); }
+  function mqFix(q){ q.t = mqTex(q.t); q.o = (q.o || []).map(mqTex); q.e = mqTex(mqFmt(q.e)); return q; }
   function mqNorm(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim(); }
   function mqSet(s){ var o = {}; mqNorm(s).split(' ').forEach(function(w){ if(w) o[w] = 1; }); return o; }
   function mqJacArr(a, b){ var A = {}, B = {}, n = 0, u = 0, k; a.forEach(function(x){ A[x] = 1; }); b.forEach(function(x){ B[x] = 1; });
@@ -31493,7 +31498,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       else if(mode === 'e') cur.e += '\n' + l;
       else if(/^o[0-3]$/.test(mode)){ var k = +mode[1]; cur.o[k] += '\n' + l; }
     });
-    return out.filter(function(q){ return q.t && (q.o[0] || q.o[1]); });
+    return out.filter(function(q){ return q.t && (q.o[0] || q.o[1]); }).map(mqFix);
   }
   function askPaste(cb){
     var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:14px';
@@ -31716,7 +31721,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var D = []; try{ D = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(x){ D = []; }
     var ids = [], n = 0, skipped = [];
     d.items.forEach(function(q){
-      if(!q || (!q.t && !q.img)) return; ids.push(q.id);
+      if(!q || (!q.t && !q.img)) return; ids.push(q.id); q = mqFix(q);
       if(D.some(function(x){ return x.id === q.id || (!q.force && q.t && mqSame(q, x)); })){ skipped.push(q.id); return; }
       D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', pend: 1, t: q.t || '', img: q.img || '', o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
     });
