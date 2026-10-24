@@ -278,6 +278,10 @@ function typeset(el){try{window.MathJax&&MathJax.typesetPromise&&MathJax.typeset
 function detect(txt){const l=txt.toLowerCase();let best="Other",sc=0;
   for(const [t,kw] of Object.entries(T[S])){if(!kw)continue;let c=0;kw.split(" ").forEach(w=>{if(!w)return;w=w.toLowerCase();if(/^[a-z\/]+$/.test(w)?new RegExp("(^|[^a-z])"+w.replace("/","\\/")).test(l):l.includes(w))c++});if(c>sc){sc=c;best=t}}return best}
 
+/* ---- App se aaye (screenshot+text) questions: topic auto-detect + live refresh ---- */
+function resolvePend(){let ch=false;D.forEach(q=>{if(q&&q.pend){const o=S;S=q.s;try{q.tp=detect((q.t||"")+" "+(q.o||[]).join(" "))}catch(e){q.tp="Other"}S=o;delete q.pend;ch=true}});if(ch)persist();return ch}
+resolvePend();
+addEventListener("storage",e=>{if(e.key!==K)return;try{D=JSON.parse(e.newValue||"[]")}catch(x){return}resolvePend();try{renderTabs();render()}catch(x){}});
 /* ---- LaTeX auto-wrap (braces-aware) ---- */
 function sp(L){const t=[];let c="",d=0;for(const ch of L){if(ch=="{")d++;if(ch=="}")d--;if(ch==" "&&d<=0){t.push(c);c=""}else c+=ch}t.push(c);return t}
 function autoTex(s){if(!s||s.includes("$"))return s;
@@ -375,7 +379,7 @@ trUI();
 window.mv=(id,tp)=>{const x=D.find(y=>y.id==id);if(x){x.tp=tp;persist();renderTabs();render()}};
 $("sr").oninput=()=>{LIM=40;render()};
 $("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:"application/json"}));a.download="mock-questions.json";a.click();try{localStorage.setItem("mqb_bk",Date.now())}catch(e){}renderTabs()};
-$("imp").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const n=JSON.parse(r.result);D=n.concat(D.filter(x=>!n.some(y=>y.id==x.id)));persist();renderTabs();render()}catch(er){alert("Invalid file")}};r.readAsText(f)};
+$("imp").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const n=JSON.parse(r.result);D=n.concat(D.filter(x=>!n.some(y=>y.id==x.id)));resolvePend();persist();renderTabs();render()}catch(er){alert("Invalid file")}};r.readAsText(f)};
 $("th").onclick=()=>{const r=document.documentElement,d=r.dataset.theme=="dark"||(!r.dataset.theme&&!matchMedia("(prefers-color-scheme:light)").matches);r.dataset.theme=d?"light":"dark";try{localStorage.setItem("mqb_theme",r.dataset.theme)}catch(e){}};
 $("clr").hidden=true; /* bulk delete hata diya — questions kabhi delete nahi hote */
 window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},startup:{typeset:false}};
