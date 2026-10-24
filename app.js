@@ -31358,7 +31358,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     + '#cxGemMain.cxMin>*:not(#cxGemTog){display:none!important}'
     + '#cxGemMain:not(.cxMin) #cxGemTog{width:34px;height:34px;line-height:34px;font-size:16px;background:#444;align-self:flex-end}'
     + '#cxGemMain label{font-size:10px;font-weight:600;opacity:.85;display:flex;gap:3px;align-items:center;cursor:pointer}'
-    + '.cxGoo{display:block;margin-top:0;padding:11px 16px;min-height:22px;border-radius:12px;background:#1a73e8;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
+    + '.cxGoo{touch-action:manipulation;-webkit-tap-highlight-color:transparent;display:block;margin-top:0;padding:11px 16px;min-height:22px;border-radius:12px;background:#1a73e8;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '.cxRep{display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#00897b;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '.cxBank{display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#2e7d32;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '#cxGemMain>span:not(.cxGoo):not(.cxBank):not(.cxRep),.cxGemH>span:not(.cxGoo):not(.cxBank):not(.cxRep){display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#6a4cff;color:#fff;font-size:15px;font-weight:800;text-align:center}'
@@ -31758,8 +31758,20 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       try{ if(navigator.clipboard && navigator.clipboard.readText) clip = await navigator.clipboard.readText(); }catch(e){}
       if(clip && clip.indexOf('---MOCKBANK---') >= 0) go(clip); else askPaste(go);
     };
-    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } h.sendNow(e.target.closest('.cxGoo') ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
-    ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); });
+    var gBusy = false;
+    function fastGoogle(el){
+      if(gBusy) return; gBusy = true;
+      var old = el.textContent; el.textContent = '⏳ Google ko bhej raha hoon…'; el.style.opacity = '.75'; el.style.pointerEvents = 'none';
+      var t = null; try{ t = getTarget(); }catch(x){}
+      var qt = ''; try{ qt = t ? qText(t) : ''; }catch(x){}
+      toast('Screenshot ban raha hai…');
+      var done = function(){ if(!gBusy) return; gBusy = false; el.textContent = old; el.style.opacity = ''; el.style.pointerEvents = ''; };
+      setTimeout(done, 12000);
+      var pr; try{ pr = window.__cxAiFast('google', qt); }catch(x){ pr = null; }
+      Promise.resolve(pr).catch(function(){}).then(done);
+    }
+    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } var gooEl = e.target.closest('.cxGoo'); if(gooEl && window.__cxAiFast){ fastGoogle(gooEl); } else h.sendNow(gooEl ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
+    if(!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); }); }
     img.addEventListener('dragstart', function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.effectAllowed = 'copy'; if(st.file) ev.dataTransfer.items.add(st.file); }catch(e){} });
     h.prep = prep;
   }
@@ -31859,13 +31871,13 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       return await h2c(document.body, { backgroundColor: bg, x: window.scrollX + L, y: window.scrollY + T, width: w, height: Math.max(1, Math.round(B - T)),
         scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false, ignoreElements: ignore });
     }
-    async function go(tgt, L, T, R, B){
+    async function go(tgt, L, T, R, B, qtOv){
       if(tgt !== 'google' && !adminOK()) tgt = 'google';
       toast('Screenshot ban raha hai…');
       await new Promise(function(r){ requestAnimationFrame(function(){ setTimeout(r, 30); }); });
       var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
-      var qt = ''; try{ qt = textIn(L, T, R, B); }catch(e){}
-      main.sendNow(tgt, { cv: cv, qt: qt });
+      var qt = qtOv || ''; if(!qt){ try{ qt = textIn(L, T, R, B); }catch(e){} }
+      await main.sendNow(tgt, { cv: cv, qt: qt });
     }
     var picker = null;
     function closePick(){ if(picker){ picker.remove(); picker = null; } }
@@ -31897,6 +31909,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       ov.addEventListener('pointercancel', end);
     }
     function full(tg){ closePick(); go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    /* quiz/solution wale 🔍 Google button isi tez raste se chalte hain (turant loading + same screenshot pipeline) */
+    window.__cxAiFast = function(tg, qt){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight, qt); };
     mk('🔍 Google', 'g', function(){ full('google'); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
     mk('🤖 Gemini', 'm', function(){ full('gemini'); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
