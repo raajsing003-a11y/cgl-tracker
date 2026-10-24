@@ -1914,6 +1914,8 @@ window.__mqbShare = {
 (function initVocabFlashcardsPage(){
   const openBtn = document.getElementById('calcVocabFlashBtn');
   if(openBtn) openBtn.addEventListener('click', () => showCalcPage('flashhubmenu'));
+  const openBtn2 = document.getElementById('calcVocabFlashMainBtn');
+  if(openBtn2) openBtn2.addEventListener('click', () => showCalcPage('flashhubmenu'));
   const hubBackBtn = document.getElementById('flashHubBackBtn');
   if(hubBackBtn) hubBackBtn.addEventListener('click', () => showCalcPage('menu'));
   const hubFlashBtn = document.getElementById('flashHubVocabFlashBtn');
@@ -21148,7 +21150,7 @@ if('serviceWorker' in navigator){
 })();
 
 
-// ===== Focus Desk (premium study timer) <-> Tracker bridge =====
+// ===== Study Desk (premium study timer) <-> Tracker bridge =====
 // tools/focus-desk.html ek iframe overlay me chalta hai (band karne par bhi
 // chalta rehta hai). Study seconds har ~15s par yahan aate hain ->
 // addStudySeconds() -> d.studyMin me save (Firebase sync ke saath), target
@@ -21185,14 +21187,14 @@ if('serviceWorker' in navigator){
     if(hero) hero.classList.toggle('run', fdRunning);
     const go = document.getElementById('fdHeroGo'); if(go) go.textContent = fdRunning ? '⏱ OPEN' : '▶ START';
   }
-  // Timer kabhi apne aap start nahi hota — sirf Focus Desk khulta hai.
+  // Timer kabhi apne aap start nahi hota — sirf Study Desk khulta hai.
   function openFD(){
     if(!fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
     ov.classList.add('open');
     if(fdReady) push();
     if(fdReady && !fdRunning) fdSendGlobal();
   }
-  // ---- Admin ki Focus Desk setting => room ke sabhi members ka default (Firebase: rooms/<room>/_focusDefault) ----
+  // ---- Admin ki Study Desk setting => room ke sabhi members ka default (Firebase: rooms/<room>/_focusDefault) ----
   const fdPath = ()=>{ const c = getRoomCode(); return c ? ('rooms/'+c+'/_focusDefault') : null; };
   function fdSendRole(){ try{ if(fdReady) fr.contentWindow.postMessage({type:'fd-role', admin: !!(getRoomCode() && isMeAdmin())}, '*'); }catch(e){} }
   async function fdSendGlobal(){
@@ -21210,7 +21212,7 @@ if('serviceWorker' in navigator){
     if(!p) return ack(false, 'Sync Room me join nahi ho — sabke liye default sirf room ke members ko mil sakta hai.');
     if(!isMeAdmin()) return ack(false, 'Sirf room Admin hi sabke liye default set kar sakta hai.');
     if(!D || !D.ls || !D.v) return ack(false, 'Data galat hai.');
-    try{ await window.__fbSet(p, JSON.stringify(D)); ack(true, '✅ Sabhi members ke liye default set ho gaya (unke Focus Desk kholte hi apne aap lag jayega).'); }
+    try{ await window.__fbSet(p, JSON.stringify(D)); ack(true, '✅ Sabhi members ke liye default set ho gaya (unke Study Desk kholte hi apne aap lag jayega).'); }
     catch(e){ ack(false, 'Firebase save fail hua — internet check karo.'); }
   }
   function closeFD(){ ov.classList.remove('open'); push(); }
@@ -30834,7 +30836,7 @@ const AIReply = (function(){
 // Firebase (rooms/<room>/_appDefault) me chali jati hai. Members ke app me
 // ye settings apne aap lag jati hain (app kholte hi / wapas aate hi).
 // Personal cheezein (naam, progress, AI key, device id, friends) kabhi nahi jaatin.
-// Focus Desk ki settings ka alag auto-sync upar Focus Desk bridge me hai.
+// Study Desk ki settings ka alag auto-sync upar Study Desk bridge me hai.
 const APPDEF_KEYS = [
   'cgl50-timesettings',            // roz ka schedule: day-end + breaks
   'cgl50-target-reminder-enabled', // target reminder ON/OFF
@@ -30915,7 +30917,7 @@ async function appDefMemberSync(){
 function adminDefaultsHtml(){
   const on = appDefAutoOn();
   return '<div class="grid-label" style="margin-top:14px;">⚙️ Sabke Liye Default Settings</div>' +
-    '<div class="losshint" style="padding-top:0;">Tum jo bhi settings badloge (' + APPDEF_LABELS.join(', ') + ') wo apne aap sabhi members ke liye default ho jayengi. Focus Desk ki settings ka sync alag se auto chalta hai.</div>' +
+    '<div class="losshint" style="padding-top:0;">Tum jo bhi settings badloge (' + APPDEF_LABELS.join(', ') + ') wo apne aap sabhi members ke liye default ho jayengi. Study Desk ki settings ka sync alag se auto chalta hai.</div>' +
     '<label class="adminMemberToggle" style="margin-top:8px;"><span>Auto-publish ON (badalte hi sabko mile)</span><input type="checkbox" id="appDefAutoChk" ' + (on ? 'checked' : '') + '></label>' +
     '<div class="btnrow" style="margin-top:8px;"><button class="nav-btn" id="appDefNowBtn">📡 Abhi sabke liye publish</button></div>' +
     '<div class="losshint" id="appDefStatus" style="padding-top:6px;">' + (appDefLastMsg || 'Abhi tak is session me publish nahi hua.') + '</div>';
@@ -31129,7 +31131,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 // Purana renderAdminPanelBody() ka kaam waisa hi rehta hai (saare buttons/logic same);
 // ye layer uske baad content ko tabs me baant deta hai aur naye controls jodta hai:
 //  - Pen button sabke liye show/hide (APPDEF key: cgl50-pen-fab, default hidden)
-//  - Study Tube / Focus Desk / App-defaults ka publish status + reset
+//  - Study Tube / Study Desk / App-defaults ka publish status + reset
 //  - "Sabko app reload karwao" (rooms/<room>/_reloadAt)
 (function adminPanelV2(){
   const TABS = [['ov','📊','Overview'],['an','📢','Announce'],['mb','👥','Members'],['ct','🎛️','Controls'],['bk','💾','Backup']];
@@ -31223,7 +31225,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       el.innerHTML =
         syncRow('⚙️ App Defaults', S.app ? ('Aakhri publish: ' + fmt(S.app.v) + ' · ' + Object.keys(S.app.ls || {}).length + ' settings') : 'Abhi koi publish nahi', 'rooms/' + c + '/_appDefault', !!S.app) +
         syncRow('▶ Study Tube', S.st ? ('Aakhri publish: ' + fmt(S.st.v) + ' · ' + stN + ' channels') : 'Abhi koi publish nahi (Study Tube me channel add/setting badlo)', 'rooms/' + c + '/_studyTubeDefault', !!S.st) +
-        syncRow('🎯 Focus Desk', S.fd ? ('Aakhri publish: ' + fmt(S.fd.v)) : 'Abhi koi publish nahi (Focus Desk settings me 📡 dabao)', 'rooms/' + c + '/_focusDefault', !!S.fd) +
+        syncRow('🎯 Study Desk', S.fd ? ('Aakhri publish: ' + fmt(S.fd.v)) : 'Abhi koi publish nahi (Study Desk settings me 📡 dabao)', 'rooms/' + c + '/_focusDefault', !!S.fd) +
         '<div class="losshint" style="padding-top:8px;">Reset karne se published default hat jata hai — members ke paas jo abhi lagi hai wo rehti hai, naye members ko default nahi milta.</div>';
       el.querySelectorAll('[data-apreset]').forEach(b => b.addEventListener('click', async () => {
         if(!confirm('Ye published default hata dein?')) return;
@@ -31358,7 +31360,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     + '#cxGemMain.cxMin>*:not(#cxGemTog){display:none!important}'
     + '#cxGemMain:not(.cxMin) #cxGemTog{width:34px;height:34px;line-height:34px;font-size:16px;background:#444;align-self:flex-end}'
     + '#cxGemMain label{font-size:10px;font-weight:600;opacity:.85;display:flex;gap:3px;align-items:center;cursor:pointer}'
-    + '.cxGoo{display:block;margin-top:0;padding:11px 16px;min-height:22px;border-radius:12px;background:#1a73e8;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
+    + '.cxGoo{touch-action:manipulation;-webkit-tap-highlight-color:transparent;display:block;margin-top:0;padding:11px 16px;min-height:22px;border-radius:12px;background:#1a73e8;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '.cxRep{display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#00897b;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '.cxBank{display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#2e7d32;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
     + '#cxGemMain>span:not(.cxGoo):not(.cxBank):not(.cxRep),.cxGemH>span:not(.cxGoo):not(.cxBank):not(.cxRep){display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#6a4cff;color:#fff;font-size:15px;font-weight:800;text-align:center}'
@@ -31415,7 +31417,12 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP, 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
   }
   var hbar = null;
+  /* Google/Gemini tab khulte hi (app background me jaye) ye paste-helper khud band; wapas aane par bhi nahi dikhega */
+  (function(){ if(window.__cxHelpAuto) return; window.__cxHelpAuto = 1;
+    var hh = function(){ try{ if(document.hidden && hbar){ hbar.style.display = 'none'; clearTimeout(hbar._t); } }catch(e){} };
+    document.addEventListener('visibilitychange', hh); window.addEventListener('pagehide', hh); })();
   function helperBar(label, pngP, text, file){
+    if(document.hidden) return;
     if(!hbar){ hbar = document.createElement('div'); hbar.id = 'cxGemHelp';
       hbar.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center';
       document.body.appendChild(hbar); }
@@ -31691,9 +31698,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var sendNow0 = h.sendNow;
     h.sendNow = async function(tgt, ov){
       if(!ov) return sendNow0(tgt);
-      st.ov = ov; st.cv = ov.cv; st.du = ov.cv.toDataURL('image/jpeg', 0.88); st.err = null;
-      try{ var bb = await new Promise(function(r){ ov.cv.toBlob(r, 'image/jpeg', 0.88); }); st.file = bb ? new File([bb], 'screenshot.jpg', { type: 'image/jpeg' }) : null; }catch(e){ st.file = null; }
-      try{ await sendNow0(tgt); } finally { st.ov = null; }
+      st.ov = ov; st.cv = ov.cv; st.err = null; st.file = null;
+      /* base64 sirf extension / iframe ko chahiye; JPEG file (Share button) peeche background me bane — Google ko rokna nahi */
+      var needDu = !!(window.__gemExt || (window.parent && window.parent !== window)); st.du = needDu ? ov.cv.toDataURL('image/jpeg', 0.88) : '';
+      var fileP = new Promise(function(r){ try{ ov.cv.toBlob(function(bb){ st.file = bb ? new File([bb], 'screenshot.jpg', { type: 'image/jpeg' }) : null; r(); }, 'image/jpeg', 0.85); }catch(e){ r(); } });
+      try{ await sendNow0(tgt); await fileP; } finally { st.ov = null; }
     };
     /* ---- ➕ Mock me add: screenshot + question text -> Mock Question Add bank (localStorage 'mqb_v1', same origin) ---- */
     function bankSubject(t){
@@ -31758,8 +31767,21 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       try{ if(navigator.clipboard && navigator.clipboard.readText) clip = await navigator.clipboard.readText(); }catch(e){}
       if(clip && clip.indexOf('---MOCKBANK---') >= 0) go(clip); else askPaste(go);
     };
-    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } h.sendNow(e.target.closest('.cxGoo') ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
-    ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); });
+    var gBusy = false;
+    function fastGoogle(el, tg){
+      tg = tg || 'google';
+      if(gBusy) return; gBusy = true;
+      var old = el ? el.textContent : ''; if(el){ el.textContent = '⏳ ' + (tg === 'google' ? 'Google' : 'Gemini') + ' ko bhej raha hoon…'; el.style.opacity = '.75'; el.style.pointerEvents = 'none'; }
+      var t = null; try{ t = getTarget(); }catch(x){}
+      var qt = ''; try{ qt = t ? qText(t) : ''; }catch(x){}
+      toast('Screenshot ban raha hai…');
+      var done = function(){ if(!gBusy) return; gBusy = false; if(el){ el.textContent = old; el.style.opacity = ''; el.style.pointerEvents = ''; } };
+      setTimeout(done, 12000);
+      var pr; try{ pr = window.__cxAiFast(tg, qt); }catch(x){ pr = null; }
+      Promise.resolve(pr).catch(function(){}).then(done);
+    }
+    h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); if(e.target.closest('.cxRep')){ h.addReply(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } if(e.target.closest('.cxBank')){ h.addBank(); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); return; } var gooEl = e.target.closest('.cxGoo'); if(window.__cxAiFast){ fastGoogle(gooEl || e.target.closest('span'), gooEl ? 'google' : 'gemini'); } else h.sendNow(gooEl ? 'google' : 'gemini'); if(h.id === 'cxGemMain' && window.__cxGemCollapse) setTimeout(window.__cxGemCollapse, 300); });
+    if(!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ ['pointerenter', 'touchstart'].forEach(function(ev){ h.addEventListener(ev, function(){ prep(); }, { passive: true }); }); }
     img.addEventListener('dragstart', function(ev){ ev.stopPropagation(); try{ ev.dataTransfer.effectAllowed = 'copy'; if(st.file) ev.dataTransfer.items.add(st.file); }catch(e){} });
     h.prep = prep;
   }
@@ -31856,16 +31878,31 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     async function shot(L, T, R, B){
       var h2c = await loadH2C(), w = Math.max(1, Math.round(R - L)), bg = getComputedStyle(document.body).backgroundColor;
       if(!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = '#ffffff';
+      /* html2canvas poora body clone karta hai (bada app = slow). ignoreElements wale node clone hi nahi hote:
+         display:none screens + screen se bahar ke bade blocks ko pehle hi chhod do => screenshot bahut jaldi */
+      var VH = window.innerHeight, VW = window.innerWidth;
+      function fastIgnore(el){
+        if(ignore(el)) return true;
+        if(el.nodeType !== 1) return false;
+        var tg = el.tagName; if(tg === 'BODY' || tg === 'HTML' || tg === 'STYLE' || tg === 'LINK' || tg === 'SCRIPT') return false;
+        var c; try{ c = getComputedStyle(el); }catch(e){ return false; }
+        if(c.display === 'none') return true;
+        if(c.position === 'fixed' || c.position === 'absolute' || c.position === 'sticky') return false;
+        var r = el.getBoundingClientRect();
+        if(r.height > 300 && r.width > 0 && (r.bottom < T - 40 || r.top > B + 40 || r.right < L - 40 || r.left > R + 40)) return true;
+        return false;
+      }
+      var mob = isMob(), sc0 = mob ? 1.5 : 2;
       return await h2c(document.body, { backgroundColor: bg, x: window.scrollX + L, y: window.scrollY + T, width: w, height: Math.max(1, Math.round(B - T)),
-        scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false, ignoreElements: ignore });
+        scale: Math.max(1, Math.min(sc0, 1100 / w)), useCORS: true, logging: false, ignoreElements: fastIgnore });
     }
-    async function go(tgt, L, T, R, B){
+    async function go(tgt, L, T, R, B, qtOv){
       if(tgt !== 'google' && !adminOK()) tgt = 'google';
       toast('Screenshot ban raha hai…');
-      await new Promise(function(r){ requestAnimationFrame(function(){ setTimeout(r, 30); }); });
+      await new Promise(function(r){ requestAnimationFrame(function(){ r(); }); });
       var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
-      var qt = ''; try{ qt = textIn(L, T, R, B); }catch(e){}
-      main.sendNow(tgt, { cv: cv, qt: qt });
+      var qt = qtOv || ''; if(!qt){ try{ qt = textIn(L, T, R, B); }catch(e){} }
+      await main.sendNow(tgt, { cv: cv, qt: qt });
     }
     var picker = null;
     function closePick(){ if(picker){ picker.remove(); picker = null; } }
@@ -31896,9 +31933,14 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       });
       ov.addEventListener('pointercancel', end);
     }
-    function full(tg){ closePick(); go(tg, 0, 0, window.innerWidth, window.innerHeight); }
-    mk('🔍 Google', 'g', function(){ full('google'); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
-    mk('🤖 Gemini', 'm', function(){ full('gemini'); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
+    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    /* button par turant loading (⏳) — double tap bhi nahi */
+    function withLoad(btn, name, p){ if(!btn || btn.__ld) return; btn.__ld = 1; var o = btn.textContent; btn.textContent = '⏳ ' + name; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
+      var d = function(){ if(!btn.__ld) return; btn.__ld = 0; btn.textContent = o; btn.style.opacity = ''; btn.style.pointerEvents = ''; }; setTimeout(d, 12000); Promise.resolve(p).catch(function(){}).then(d); }
+    /* quiz/solution wale 🔍 Google button isi tez raste se chalte hain (turant loading + same screenshot pipeline) */
+    window.__cxAiFast = function(tg, qt){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight, qt); };
+    mk('🔍 Google', 'g', function(e){ var b = e && e.currentTarget; withLoad(b, 'Google…', full('google')); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
+    mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
@@ -32170,4 +32212,29 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       back(ok ? ('✅ Image + text copy hai — ' + label + ' me Ctrl+V karo') : ('⚠ Sirf text copy hua — ' + label + ' me paste karo (extension install karo to auto)'), 6000);
     })();
   });
+})();
+
+// ===== Quiz tab polish: Study Tube card pe aaj ka dekha time + idle me heavy tools prefetch (khulte hi turant) =====
+(function initQuizTabPolish(){
+  function paintTube(){
+    try{
+      const sub = document.querySelector('#calcStudyTubeBtn .calcSub'); if(!sub) return;
+      const d = JSON.parse(localStorage.getItem('uv99:st:day') || 'null');
+      const t = new Date().toISOString().slice(0,10);
+      const m = (d && d.d === t) ? Math.floor((+d.s || 0) / 60) : 0;
+      sub.textContent = m > 0 ? ('Aaj ' + m + 'm dekha · No Shorts') : 'Sirf study channels · No Shorts';
+    }catch(e){}
+  }
+  paintTube();
+  window.addEventListener('storage', e => { if(!e.key || e.key === 'uv99:st:day') paintTube(); });
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) paintTube(); });
+  const c = navigator.connection || {};
+  if(c.saveData || /(^|-)2g$/.test(c.effectiveType || '')) return;
+  const files = ['study-desk.html','focus-desk.html','study-tube.html','calc-speed-test.html','mock-question-bank.html','optional-elimination.html','vocab-srs.html'];
+  const idle = window.requestIdleCallback || (f => setTimeout(f, 1500));
+  window.addEventListener('load', () => setTimeout(() => {
+    files.forEach((f, i) => setTimeout(() => idle(() => {
+      try{ const l = document.createElement('link'); l.rel = 'prefetch'; l.href = './tools/' + f; l.as = 'document'; document.head.appendChild(l); }catch(e){}
+    }), i * 1200));
+  }, 4000));
 })();

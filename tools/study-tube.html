@@ -653,6 +653,11 @@
     .go-btn { padding:10px 26px; }
   }
 </style>
+<link rel="preconnect" href="https://www.youtube.com" crossorigin>
+<link rel="preconnect" href="https://www.youtube-nocookie.com" crossorigin>
+<link rel="preconnect" href="https://i.ytimg.com" crossorigin>
+<link rel="preconnect" href="https://s.ytimg.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.google.com">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute">
@@ -9194,6 +9199,24 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   function restoreChans() { if (chans.length) { saveChans(); return; } idbGet().then(function (l) { if (!adoptChans(l)) { try { if (window.parent !== window) window.parent.postMessage({ type: 'stv-chans-get' }, '*'); } catch (e) {} } }); }
   window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'stv-chans-set' && e.source === window.parent) adoptChans(d.chans); });
   setTimeout(restoreChans, 700);
+  /* ---- live sync: Study Desk wale Tube aur Focus Desk wale YouTube (dono yehi file) ek hi localStorage share karte hain.
+     Ek me channel/history/progress/setting badle to dusre me 0.4s me wahi dikhe (video chal raha ho to beech me disturb nahi). ---- */
+  (function () {
+    var KEYS = ['uv99:st:chans', 'uv99:st:hist', 'uv99:st:prog', 'uv99:st:seen', 'uv99:st:lim', 'uv99:st:auto', 'uv99:st:open', 'uv99:st:an', 'uv99:st:rate', 'uv99:st:day', 'uv99:st:cache'], t = null;
+    window.addEventListener('storage', function (e) {
+      if (e.key && KEYS.indexOf(e.key) < 0) return;
+      clearTimeout(t);
+      t = setTimeout(function () {
+        try {
+          var c = rd('uv99:st:chans', null); if (Array.isArray(c) && c.length) chans = c;
+          hist = rd('uv99:st:hist', hist); seen = rd('uv99:st:seen', seen); prog = rd('uv99:st:prog', prog);
+          lim = rd('uv99:st:lim', lim); auto = rd('uv99:st:auto', auto); opn = rd('uv99:st:open', opn); an = rd('uv99:st:an', an);
+          day = rd('uv99:st:day', day); cache = rd('uv99:st:cache', cache);
+          if (!cur) { render(); try { tmShow(); } catch (x) {} }
+        } catch (x) {}
+      }, 400);
+    });
+  })();
   /* ---- Admin ki Study Tube setting / channels => room ke sabhi members ke liye (app.js bridge: st-global-*) ---- */
   (function () {
     if (window.parent === window) return;
@@ -9329,11 +9352,18 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       const p = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { try { p && p(); } catch (e) {} res(); };
     });
   }
+  /* YouTube API pehle se load: pehli video par API download ka intezaar nahi */
+  setTimeout(function () { try { (window.requestIdleCallback || function (f) { f(); })(function () { ytReady(); }, { timeout: 4000 }); } catch (e) {} }, 800);
+  function ldOn() { try { const w = document.querySelector('#stP .stv-vw'); if (!w || w.querySelector('.stv-ld')) return; const d = document.createElement('div'); d.className = 'stv-ld';
+    d.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font:700 14px sans-serif;background:rgba(0,0,0,.45);pointer-events:none;z-index:3';
+    d.textContent = '\u23F3 Video load ho rahi hai\u2026'; w.appendChild(d); setTimeout(ldOff, 15000); } catch (e) {} }
+  function ldOff() { try { document.querySelectorAll('#stP .stv-ld').forEach(function (n) { n.remove(); }); } catch (e) {} }
   function save() {
     if (!yt || !cur || !yt.getCurrentTime) return;
     try { prog[cur.id] = { p: yt.getCurrentTime(), d: yt.getDuration(), t: Date.now() }; wr('uv99:st:prog', prog); } catch (e) {}
   }
   function onState(e) {
+    if (e.data === 1 || e.data === 2 || e.data === 0) ldOff();
     try { window.__stvState && window.__stvState(e.data); } catch (x) {}
     if (e.data === 0 && window.__stLoop && yt) { try { yt.seekTo(0, true); yt.playVideo(); } catch (x) {} return; }
     clearInterval(tick); wake(e.data === 1);
@@ -9345,13 +9375,15 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       }, 5000);
     } else { save(); if (e.data === 0 && cur) { const d = yt.getDuration(); prog[cur.id] = { p: d, d, t: Date.now() }; wr('uv99:st:prog', prog); const i = lastList.findIndex(x => x.id === cur.id), nx = i >= 0 ? lastList[i + 1] : null; render(); if (an && nx && left() > 0) { toast('Next: ' + nx.t.slice(0, 40)); setTimeout(() => { if (ov) play(nx.id); }, 1200); } } }
   }
-  function onErr() { const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
+  function onErr() { ldOff(); const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
   async function play(id) {
     if (left() <= 0) return toast('Daily study limit reached');
     const v = cache.v.concat(res || [], hist).find(x => x.id === id); if (!v) return; cur = v; hAdd(v);
     const c = chans.find(x => x.id === v.c) || {};
+    try { window.__stFxReset && window.__stFxReset(); } catch (x) {}
     $('stP').style.display = 'block'; $('stPT').textContent = v.t; $('stPM').textContent = (c.n || v.cn || '') + ' \u00b7 ' + ago(v.p);
     const er = ov.querySelector('.stv-er'); if (er) er.remove();
+    ldOn();
     exitFast(false); spd(); await ytReady();
     const sv = prog[id], start = sv && sv.d && sv.p < sv.d - 15 ? Math.floor(sv.p) : 0;
     if (yt && yt.loadVideoById) yt.loadVideoById({ videoId: id, startSeconds: start });
@@ -9605,7 +9637,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }, true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   window.uvOpenStudy = open;
-  window.addEventListener('message', e => { if (e.data === 'uv-study-enter') { if (!ov) open(); else { toStart(); if (depth === 0) pushS(); } } else if (e.data === 'uv-study-back') goBack(); else if (e.data === 'uv-google-focus') { setTimeout(function(){ var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 350); } });
+  window.addEventListener('message', e => { if (e.data === 'uv-study-enter') { if (!ov) open(); else { toStart(); if (depth === 0) pushS(); } } else if (e.data === 'uv-study-back') goBack(); else if (e.data === 'uv-browser-enter') { try { if (ov) close(); } catch (x) {} try { mark('navHome'); } catch (x) {} setTimeout(function () { var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 250); } else if (e.data === 'uv-google-focus') { setTimeout(function(){ var u = document.getElementById('urlInput'); if (u) { try { u.focus(); u.select(); } catch (x) {} } }, 350); } });
 
   /* entry button on the YouTube-style home feed (re-ensured whenever the feed refreshes) */
   function ensureBtn() {
@@ -9795,8 +9827,10 @@ var G=[
 var PR={dark:{inv:100},normal:{},vivid:{s:140,vib:150,c:112,sharp:20},bright:{b:130,c:105,s:105},night:{b:80,c:95,s:80},eye:{b:88,c:95,s:85,sep:25},bw:{c:115,gray:100},sharptext:{b:105,c:135,s:110,sharp:40},warm:{b:102,s:120,sep:30,tmp:35},auto:{sharp:35,c:108,s:112,detail:20,gamma:96,ai:25},lowlight:{b:118,gamma:130,shad:45,den:25,c:105}};
 var NM={dark:'\uD83C\uDF11 Dark mode',normal:'Normal',vivid:'Vivid',bright:'Bright',night:'Night',eye:'Eye-care',bw:'B&W',sharptext:'Sharp text',warm:'Warm',auto:'\uD83E\uDE84 Auto enhance',lowlight:'Low-light fix'};
 var E,cur='normal';
-function load(){var o={};try{o=JSON.parse(localStorage.getItem(K)||'{}')||{}}catch(x){}E=Object.assign({},DEF,o);cur=o.p||'normal';delete E.p}
+function load(){E=Object.assign({},DEF);cur='normal'}
 load();
+/* Har nayi video khulte hi effects Original (speed ko nahi chhedte) */
+window.__stFxReset=function(){try{var sp=E.spd;E=Object.assign({},DEF);E.spd=sp;cur='normal';apply()}catch(x){}};
 function P(){return document.getElementById('stP')}
 function rate(){try{if(window.__stGetRate)return window.__stGetRate()}catch(x){}return E.spd}
 function calc(){
