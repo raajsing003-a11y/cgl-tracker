@@ -9259,6 +9259,21 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     loading = false; render();
   }
 
+  const chPg = {};
+  async function chanAll() {
+    const c = chans.find(x => x.id === st.ch); if (!c || loading || chPg[c.id] === 'end') return;
+    loading = true; render();
+    try {
+      const p = { part: 'snippet', playlistId: c.up, maxResults: 50 }; if (chPg[c.id]) p.pageToken = chPg[c.id];
+      const j = await api('playlistItems', p); chPg[c.id] = j.nextPageToken || 'end';
+      let n = [];
+      (j.items || []).forEach(x => { const s = x.snippet; if (!s || s.title === 'Private video' || s.title === 'Deleted video' || !s.resourceId) return; if (cache.v.some(o => o.id === s.resourceId.videoId)) return; n.push({ id: s.resourceId.videoId, t: s.title, c: c.id, p: Date.parse(s.publishedAt) || 0, x: 1 }); });
+      n = await withDur(n); cache.v = cache.v.concat(n).sort((a, b) => b.p - a.p); wr('uv99:st:cache', cache);
+      cap = Math.max(cap, 80) + n.length; toast(n.length + ' videos aur aaye' + (chPg[c.id] === 'end' ? ' (channel ki saari videos ho gayi)' : ''));
+    } catch (e) { toast(fr(e.message)); }
+    loading = false; render();
+  }
+
   const ytId = v => { const m = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|embed\/|live\/|v\/))([\w-]{11})/i.exec(v || ''); return m ? m[1] : ''; };
   const isUrl = q => /^(https?:\/\/|www\.)\S+$/i.test(q);
   async function openLink(q) {
@@ -9502,6 +9517,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     lastList = vs; if (st.ch === '__h' && vs.length) h += '<button class="stv-dp" data-clh="1">Clear history</button>'; h += vs.slice(0, cap).map(v => card(v, cm)).join(''); if (vs.length > cap) h += '<button class="stv-dp" data-more="1">Aur dikhao (' + (vs.length - cap) + ')</button>';
     if (!vs.length && !loading) h += '<div class="stv-em">No videos' + (q ? ' match "' + esc(st.q) + '"' : ' yet. Tap refresh') + '.</div>';
     if (res === null && q && !loading) h += (st.ch && st.ch !== '__r' && st.ch !== '__h') ? '<button class="stv-dp" data-deep="1">Search "' + esc(st.q) + '" on YouTube in this channel only</button>' : '<div class="stv-em" style="padding:8px">Pick a channel chip to search deeper in that channel.</div>';
+    if (res === null && st.ch && st.ch !== '__r' && st.ch !== '__h' && !loading && chPg[st.ch] !== 'end' && chans.some(x => x.id === st.ch)) h += '<button class="stv-dp" data-chall="1">\uD83D\uDCC2 Is channel ki aur purani videos load karo</button>';
     L.innerHTML = h;
   }
   function sheet() {
@@ -9544,6 +9560,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       const t = e.target, b = t.closest('button'), c = t.closest('.stv-c');
       if (t.id === 'stSh') { t.style.display = 'none'; popS(); return; }
       if (!b && c) return play(c.dataset.i);
+      if (!b && t.id === 'stSN' && cur && cur.c && chans.some(x => x.id === cur.c)) { st.ch = cur.c; res = null; cap = 80; seen[st.ch] = Date.now(); wr('uv99:st:seen', seen); render(); try { $('stSc').scrollTop = 0; } catch (x) {} try { if (window.innerWidth < 900 && !ov.classList.contains('stv-mini')) minimize(); } catch (x) {} return; }
       if (!b) return;
       if (b.id === 'stX') close(); else if (b.id === 'stBk') goBack(); else if (b.id === 'stAdd') { sheet(); pushS(); setTimeout(() => { const a = $('stA'); if (a) a.focus(); }, 80); }
       else if (b.id === 'stMx') expand(); else if (b.id === 'stMk') { stop(); render(); } else if (b.id === 'stMp') { try { yt.getPlayerState() === 1 ? yt.pauseVideo() : yt.playVideo(); } catch (x) {} }
@@ -9556,6 +9573,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       else if (b.id === 'stCl') stop(), render();
       else if (b.id === 'stCx') { $('stSh').style.display = 'none'; popS(); }
       else if (b.dataset.c !== undefined && b.classList.contains('stv-ch')) { st.ch = b.dataset.c; res = null; cap = 80; if (seen[st.ch] != null || chans.some(x => x.id === st.ch)) { seen[st.ch] = Date.now(); wr('uv99:st:seen', seen); } render(); }
+      else if (b.dataset.chall) chanAll();
       else if (b.dataset.more) { cap += 80; render(); }
       else if (b.dataset.clh) { hist = []; wr('uv99:st:hist', hist); render(); toast('History clear'); }
       else if (b.dataset.an) { an = !an; wr('uv99:st:an', an); spd(); toast(an ? 'Auto-next ON' : 'Auto-next OFF'); }
@@ -10053,7 +10071,7 @@ __stvHook(org);
 .stv-ti{padding:10px 14px 8px;background:#0f0f0f}
 #stOv:not(.stv-playing) .stv-pm{display:none}
 @media (min-width:900px){
-  #stOv.stv-playing:not(.stv-mini){display:grid!important;grid-template-columns:minmax(0,1fr) 430px;grid-template-rows:auto minmax(0,1fr);overflow:hidden!important}
+  #stOv.stv-playing:not(.stv-mini){display:grid!important;grid-template-columns:minmax(0,1fr) var(--stv-side,430px);grid-template-rows:auto minmax(0,1fr);overflow:hidden!important}
   #stOv.stv-playing:not(.stv-mini) .stv-hd{grid-column:1/3;grid-row:1}
   #stOv.stv-playing:not(.stv-mini) #stP{display:block!important;grid-column:1;grid-row:2;overflow-y:auto;overflow-x:hidden;background:#0f0f0f}
   #stOv.stv-playing:not(.stv-mini) .stv-vw{position:relative!important;width:100%;max-height:none!important;aspect-ratio:16/9;background:#000;box-shadow:none}
@@ -10065,7 +10083,35 @@ __stvHook(org);
   .bottom-nav{justify-content:center!important;gap:18px}
   .bottom-nav .nav-item{flex:0 1 150px!important}
 }
+#stSN{cursor:pointer}#stSN::after{content:' \203A';opacity:.6}#stSN:hover{text-decoration:underline}
+#stRz{display:none;position:absolute;top:var(--stv-hd,56px);bottom:0;right:calc(var(--stv-side,430px) - 6px);width:12px;cursor:col-resize;z-index:6;touch-action:none}
+#stRz::after{content:'';position:absolute;left:5px;top:50%;width:3px;height:56px;margin-top:-28px;border-radius:3px;background:rgba(255,255,255,.28)}
+#stRz:hover::after,#stRz.on::after{background:#8ab4ff}
+@media (min-width:900px){#stOv.stv-playing:not(.stv-mini) #stRz{display:block}}
 </style>
+<script>
+/* Study Tube: video aur side panel ke beech ka divider drag karo (double-click = reset) */
+(function(){
+  var KEY='uv99:st:side';
+  function clamp(w,ov){ return Math.max(260, Math.min(ov.clientWidth-340, w)); }
+  function ensure(){
+    var ov=document.getElementById('stOv'); if(!ov) return;
+    var hd=ov.querySelector('.stv-hd'); if(hd) ov.style.setProperty('--stv-hd', hd.offsetHeight+'px');
+    if(document.getElementById('stRz')) return;
+    var h=document.createElement('div'); h.id='stRz'; h.title='Drag karke video / side panel ka size badlo (double-click = reset)'; ov.appendChild(h);
+    try{ var w=+localStorage.getItem(KEY); if(w) ov.style.setProperty('--stv-side', clamp(w,ov)+'px'); }catch(e){}
+    var on=false;
+    h.addEventListener('pointerdown',function(e){ on=true; h.classList.add('on'); try{h.setPointerCapture(e.pointerId);}catch(x){} e.preventDefault(); });
+    h.addEventListener('pointermove',function(e){ if(!on) return; var r=ov.getBoundingClientRect(); ov.style.setProperty('--stv-side', clamp(r.right-e.clientX,ov)+'px'); });
+    var end=function(){ if(!on) return; on=false; h.classList.remove('on'); try{ localStorage.setItem(KEY, parseInt(getComputedStyle(ov).getPropertyValue('--stv-side'))||430); }catch(e){} };
+    h.addEventListener('pointerup',end); h.addEventListener('pointercancel',end);
+    h.addEventListener('dblclick',function(){ ov.style.removeProperty('--stv-side'); try{ localStorage.removeItem(KEY); }catch(e){} });
+  }
+  new MutationObserver(ensure).observe(document.body,{childList:true});
+  window.addEventListener('resize',function(){ var ov=document.getElementById('stOv'),hd=ov&&ov.querySelector('.stv-hd'); if(hd) ov.style.setProperty('--stv-hd', hd.offsetHeight+'px'); });
+  ensure();
+})();
+</script>
 <script>
 /* Study Tube v3: desktop par tools (.stv-pm) sidebar mein, mobile par video ke neeche */
 (function(){

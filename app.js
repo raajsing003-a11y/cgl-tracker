@@ -31294,6 +31294,17 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(function(){ t.style.display = 'none'; }, 2600); }
   function gemGeo(){ var sl = screen.availLeft || 0, st = screen.availTop || 0, sw = screen.availWidth || screen.width, sh = screen.availHeight || screen.height, w = Math.round(sw / 2); return { l: sl + w, t: st, w: w, h: sh }; }
   var GEM_DEF = "Tum ek expert SSC (CGL/CHSL/CPO/MTS) teacher ho. Image/text mein jo question hai wo Maths, Reasoning ya English kisi bhi subject ka ho sakta hai — subject khud pehchano aur usi ke hisaab se solve karo.\n\nLANGUAGE RULES (bahut zaroori):\n- Question, saare options aur explanation Hindi + English mix (Hinglish, Devanagari mein Hindi) mein likho. Jo bhi mushkil word, term ya full form ho, usse Hindi mein likho aur uske baad bracket mein English likho. Example: अनुपात (Ratio), समानार्थी (Synonym).\n- English subject mein original English sentence/options jaise hain waise hi rakho, bas explanation bilingual do.\n- Koi step skip mat karo. Har calculation / logic line by line dikhao, simple aur easy tareeke se.\n\nFORMAT (is order mein hi):\n\n1) मुख्य प्रश्न (Main Question)\n- Question ko bilkul exact likho, options (A/B/C/D) ke saath.\n- सही उत्तर (Correct Answer) clearly batao.\n- बेसिक कॉन्सेप्ट (Basic Concept): jad ka concept / rule / theory simple bhasha mein samjhao taaki fundamentals 100% clear ho jaye.\n- स्मार्ट ट्रिक (Smart Trick): exam mein 10-15 second mein solve karne ka sabse fast tareeka (Maths: Ratio, Deviation, Approximation, direct formula; Reasoning: pattern/elimination/diagram shortcut; English: rule + option elimination). Trick ke saath poora step-by-step solution bhi do.\n- Galat options kyun galat hain, ye ek-ek line mein batao.\n\n2) Same Pattern Practice (2 Questions)\n- Isi concept aur isi trick par 2 naye questions, bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: seekhi hui trick turant dimaag mein baith jaye aur speed badhe.\n\n3) Advanced / Variety Practice (3 Questions)\n- Isi topic ko thoda twist karke ya SSC Tier-2 level tak badha ke 3 alag questions do (Maths mein 'Reverse Calculation' type bhi), bilingual, 4 options ke saath.\n- Har ek ka shortcut solution + answer do.\n- Maqsad: exam mein kisi bhi variation ke liye 100% ready karna.\n\nEnd mein 2 line ka \"Yaad rakhne wali baat (Key Takeaway)\" likho.";
+  window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready') LS('sd:extok', '1'); });
+  try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
+  function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
+  function qText(t){
+    try{
+      var c = t.cloneNode(true);
+      Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,button,script,style,svg,canvas,img,input,select,textarea,[hidden]'), function(x){ x.remove(); });
+      var tx = (c.innerText || c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      return tx.length > 3500 ? tx.slice(0, 3500) + '…' : tx;
+    }catch(e){ return ''; }
+  }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return v; var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return adm ? '' : GEM_DEF; }
   function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
   function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
@@ -31342,7 +31353,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       await st.busy; return !!st.du;
     }
     function sendExt(du, cb){
-      var got = false, txt = gemPrompt();
+      var got = false, txt = withQ(gemPrompt(), st.qt);
       function onAck(e){ var d = e.data; if(d && d.type === 'sd-gemini-ack' && d.kind === 'send'){ got = true; LS('sd:extok', '1'); window.removeEventListener('message', onAck); toast(d.found ? '📎 Screenshot Gemini mein bhej diya' : 'Gemini khul raha hai, screenshot wahan aa jayega'); } }
       window.addEventListener('message', onAck);
       window.postMessage({ type: 'sd-gemini-send', image: du, text: txt, url: gemUrl(), single: true, reuse: true, newTab: false, popup: true, geo: gemGeo() }, '*');
@@ -31353,6 +31364,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     h.sendNow = async function(){
       var inFrame = window.parent && window.parent !== window, mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), t = getTarget();
       if(!t) return;
+      st.qt = qText(t);
       /* Gesture ke time hi clipboard write shuru (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
@@ -31368,7 +31380,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
       if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, from: 'app' }, '*'); }catch(e){} return; }
       if(mobile){
-        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: gemPrompt() }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: withQ(gemPrompt(), st.qt) }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
         toast('Share nahi chala — screenshot save/copy karke Gemini me daalo'); return;
       }
       sendExt(st.du, async function(){
