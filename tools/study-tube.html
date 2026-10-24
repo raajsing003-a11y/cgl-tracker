@@ -653,6 +653,11 @@
     .go-btn { padding:10px 26px; }
   }
 </style>
+<link rel="preconnect" href="https://www.youtube.com" crossorigin>
+<link rel="preconnect" href="https://www.youtube-nocookie.com" crossorigin>
+<link rel="preconnect" href="https://i.ytimg.com" crossorigin>
+<link rel="preconnect" href="https://s.ytimg.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.google.com">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute">
@@ -9329,11 +9334,18 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       const p = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { try { p && p(); } catch (e) {} res(); };
     });
   }
+  /* YouTube API pehle se load: pehli video par API download ka intezaar nahi */
+  setTimeout(function () { try { (window.requestIdleCallback || function (f) { f(); })(function () { ytReady(); }, { timeout: 4000 }); } catch (e) {} }, 800);
+  function ldOn() { try { const w = document.querySelector('#stP .stv-vw'); if (!w || w.querySelector('.stv-ld')) return; const d = document.createElement('div'); d.className = 'stv-ld';
+    d.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font:700 14px sans-serif;background:rgba(0,0,0,.45);pointer-events:none;z-index:3';
+    d.textContent = '\u23F3 Video load ho rahi hai\u2026'; w.appendChild(d); setTimeout(ldOff, 15000); } catch (e) {} }
+  function ldOff() { try { document.querySelectorAll('#stP .stv-ld').forEach(function (n) { n.remove(); }); } catch (e) {} }
   function save() {
     if (!yt || !cur || !yt.getCurrentTime) return;
     try { prog[cur.id] = { p: yt.getCurrentTime(), d: yt.getDuration(), t: Date.now() }; wr('uv99:st:prog', prog); } catch (e) {}
   }
   function onState(e) {
+    if (e.data === 1 || e.data === 2 || e.data === 0) ldOff();
     try { window.__stvState && window.__stvState(e.data); } catch (x) {}
     if (e.data === 0 && window.__stLoop && yt) { try { yt.seekTo(0, true); yt.playVideo(); } catch (x) {} return; }
     clearInterval(tick); wake(e.data === 1);
@@ -9345,13 +9357,15 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       }, 5000);
     } else { save(); if (e.data === 0 && cur) { const d = yt.getDuration(); prog[cur.id] = { p: d, d, t: Date.now() }; wr('uv99:st:prog', prog); const i = lastList.findIndex(x => x.id === cur.id), nx = i >= 0 ? lastList[i + 1] : null; render(); if (an && nx && left() > 0) { toast('Next: ' + nx.t.slice(0, 40)); setTimeout(() => { if (ov) play(nx.id); }, 1200); } } }
   }
-  function onErr() { const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
+  function onErr() { ldOff(); const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
   async function play(id) {
     if (left() <= 0) return toast('Daily study limit reached');
     const v = cache.v.concat(res || [], hist).find(x => x.id === id); if (!v) return; cur = v; hAdd(v);
     const c = chans.find(x => x.id === v.c) || {};
+    try { window.__stFxReset && window.__stFxReset(); } catch (x) {}
     $('stP').style.display = 'block'; $('stPT').textContent = v.t; $('stPM').textContent = (c.n || v.cn || '') + ' \u00b7 ' + ago(v.p);
     const er = ov.querySelector('.stv-er'); if (er) er.remove();
+    ldOn();
     exitFast(false); spd(); await ytReady();
     const sv = prog[id], start = sv && sv.d && sv.p < sv.d - 15 ? Math.floor(sv.p) : 0;
     if (yt && yt.loadVideoById) yt.loadVideoById({ videoId: id, startSeconds: start });
@@ -9795,8 +9809,10 @@ var G=[
 var PR={dark:{inv:100},normal:{},vivid:{s:140,vib:150,c:112,sharp:20},bright:{b:130,c:105,s:105},night:{b:80,c:95,s:80},eye:{b:88,c:95,s:85,sep:25},bw:{c:115,gray:100},sharptext:{b:105,c:135,s:110,sharp:40},warm:{b:102,s:120,sep:30,tmp:35},auto:{sharp:35,c:108,s:112,detail:20,gamma:96,ai:25},lowlight:{b:118,gamma:130,shad:45,den:25,c:105}};
 var NM={dark:'\uD83C\uDF11 Dark mode',normal:'Normal',vivid:'Vivid',bright:'Bright',night:'Night',eye:'Eye-care',bw:'B&W',sharptext:'Sharp text',warm:'Warm',auto:'\uD83E\uDE84 Auto enhance',lowlight:'Low-light fix'};
 var E,cur='normal';
-function load(){var o={};try{o=JSON.parse(localStorage.getItem(K)||'{}')||{}}catch(x){}E=Object.assign({},DEF,o);cur=o.p||'normal';delete E.p}
+function load(){E=Object.assign({},DEF);cur='normal'}
 load();
+/* Har nayi video khulte hi effects Original (speed ko nahi chhedte) */
+window.__stFxReset=function(){try{var sp=E.spd;E=Object.assign({},DEF);E.spd=sp;cur='normal';apply()}catch(x){}};
 function P(){return document.getElementById('stP')}
 function rate(){try{if(window.__stGetRate)return window.__stGetRate()}catch(x){}return E.spd}
 function calc(){

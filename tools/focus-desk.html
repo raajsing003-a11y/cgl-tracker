@@ -192,7 +192,12 @@ body.editing .panel{display:none!important}body.dnd:not(.editing) #mq{pointer-ev
 *{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}
 #edbar{flex-wrap:wrap;justify-content:center;white-space:normal;border-radius:18px;row-gap:6px}body.editing .edt.edsel{outline:2px solid #fff;background-color:rgba(229,72,77,.14)}
 #eyy{display:none;flex:1;min-height:0;width:100%}#eyy iframe{width:100%;height:100%;border:0;background:#000;display:block}#eyy .fbk{margin:auto;text-align:center;padding:24px}
-</style></head><body>
+</style><style id="cgly-perf">
+/* SPEED: blur (backdrop-filter) phone GPU ko sabse zyada slow karta hai — band; tap delay hataya */
+*,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+a,button,input,select,textarea,label,summary,[onclick],[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+</style>
+</head><body>
 <div id="bg"></div><canvas id="fx"></canvas>
 <audio id="aud" loop preload="auto" src="./focus-track.m4a"></audio>
 <div class="top"><span class="logo">Focus Desk</span><button class="edb" id="edt" title="Layout edit: kisi bhi cheez ki jagah badlo">✎ Edit</button><div class="row"><button class="pill" id="xit" title="Tracker">✕</button><span class="pill" id="stk" title="Streak">🔥0</span><span class="pill" id="tot">0m</span><button class="pill" data-p="stats">Stats</button><button class="pill" data-p="set">⚙</button><button class="pill" id="fs">⛶</button></div></div>
@@ -1245,7 +1250,10 @@ let dbp;const db=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.ope
 const tx=(m,fn)=>db().then(d=>new Promise((res,rej)=>{const q=fn(d.transaction('w',m).objectStore('w'));q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
 const dbAll=()=>tx('readonly',s=>s.getAll()),dbAdd=r=>tx('readwrite',s=>s.add(r)),dbDel=id=>tx('readwrite',s=>s.delete(id)),dbClr=()=>tx('readwrite',s=>s.clear()),dbGet=id=>tx('readonly',s=>s.get(id));
 const DEF={mode:'none',cur:null,int:120,order:'seq',fade:1.5,fit:'cover',dim:25,vig:35,bri:100,sat:100,con:100,hue:0,blur:0,sep:0,gray:0,kb:false,drift:true,onlyRun:false,night:false};
-let ST=Object.assign({},DEF,g('fdwp',{}));const save=()=>w('fdwp',ST);
+let ST=Object.assign({},DEF,g('fdwp',{}));
+/* Har baar khulte hi effects Original (wallpaper/photos wahi rehte hain) */
+['bri','con','sat','hue','blur','sep','gray','dim','vig','night','fit'].forEach(k=>ST[k]=DEF[k]);
+const save=()=>w('fdwp',ST);
 let L=[];const U=new Map();
 function vis(){const hr=new Date().getHours(),n=ST.night&&(hr>=21||hr<6),dm=Math.min(92,ST.dim+(n?25:0));
  vids.forEach(v=>v.style.objectFit=ST.fit);const flt='brightness('+ST.bri/100+') contrast('+ST.con/100+') saturate('+ST.sat/100+')'+(ST.hue?' hue-rotate('+ST.hue+'deg)':'')+(ST.sep?' sepia('+ST.sep+'%)':'')+(ST.gray?' grayscale('+ST.gray+'%)':'')+(ST.blur?' blur('+ST.blur+'px)':'');
