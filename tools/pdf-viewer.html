@@ -217,6 +217,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
 .dragH.busy2 img{opacity:.4}
 .dragH .gooChip{display:block;margin-top:3px;padding:6px 8px;border-radius:8px;background:#1a73e8;color:#fff;font-size:12px;font-weight:800;text-align:center;cursor:pointer}
 .dragH .gooChip:hover{background:#1558b0}
+@media (hover:none){.dragH{opacity:.92;transform:scale(.82);transform-origin:top right}}
 </style>
 <style id="lib-css">
 #libPop{position:fixed;right:10px;top:96px;width:min(360px,calc(100vw - 20px));max-height:70vh;overflow:auto;background:var(--chrome);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px;z-index:80;display:none}
@@ -252,6 +253,8 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     <button class="btn" id="btnCrop" title="Page ka koi hissa chuno aur screenshot lo (Alt+A)" aria-label="Screenshot area"><span>✂️</span><span class="lbl">Area</span></button>
     <button class="btn" id="btnAsk" title="Area chuno aur AI se samjho (Alt+G)" aria-label="Ask AI about area"><span>🤖</span><span class="lbl">Ask AI</span></button>
     <button class="btn" id="btnAskG" title="Area chuno aur Google par bhejo (Alt+Shift+G)" aria-label="Ask Google about area"><span>🔍</span><span class="lbl">Google</span></button>
+    <button class="btn" id="btnPG" title="Ye poora page Gemini ko bhejo (Alt+P)" aria-label="Page to Gemini"><span>📄</span><span class="lbl">Page→Gemini</span></button>
+    <button class="btn" id="btnPGG" title="Ye poora page Google ko bhejo (Alt+Shift+P)" aria-label="Page to Google"><span>📄</span><span class="lbl">Page→Google</span></button>
   </div>
   <div class="grp">
     <button class="btn" id="zOut" title="Zoom out" aria-label="Zoom out" data-ic="minus" disabled></button>
@@ -617,6 +620,16 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       try { ev.dataTransfer.effectAllowed = 'copy'; if (e._dragFile) ev.dataTransfer.items.add(e._dragFile); } catch (x) {}
     });
   }
+  async function sendCurPage(tg) {
+    if (!pages.length) { toast('Pehle PDF kholo'); return; }
+    var n = curPage, e = pages[n - 1]; toast((tg === 'google' ? '🔍 Google' : '🤖 Gemini') + ' ko page ' + n + ' bhej raha hoon…');
+    try {
+      var cv = await regionCanvas(e, 0, 0, 1, 1, 1500), du = cv.toDataURL('image/jpeg', 0.88), m = { type: 'sd-ask-ai', image: du, from: 'pdf' };
+      if (tg === 'google') m.target = 'google';
+      window.parent.postMessage(m, '*');
+      setTimeout(function () { try { if (!navigator.clipboard || !window.ClipboardItem) return; cv.toBlob(function (b) { if (b) navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(function () {}); }, 'image/png'); } catch (x) {} }, 30);
+    } catch (err) { toast('Page nahi bhej paya: ' + (err && err.message || err)); }
+  }
   var cropMode = 'save';
   function cropStart(m) { cropMode = (m === 'ai' || m === 'aig') ? m : 'save'; if (!pages.length) { toast('Pehle PDF kholo'); return; } cropOv.classList.add('on'); cropBox.style.display = 'none'; }
   function cropEnd() { cropOv.classList.remove('on'); cropBox.style.display = 'none'; }
@@ -645,10 +658,13 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   document.getElementById('btnCrop').addEventListener('click', function () { cropStart('save'); });
   document.getElementById('btnAsk').addEventListener('click', function () { cropStart('ai'); });
   document.getElementById('btnAskG').addEventListener('click', function () { cropStart('aig'); });
+  document.getElementById('btnPG').addEventListener('click', function () { sendCurPage('gemini'); });
+  document.getElementById('btnPGG').addEventListener('click', function () { sendCurPage('google'); });
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape' && cropOv.classList.contains('on')) { cr = null; cropEnd(); }
     if (ev.altKey && !ev.ctrlKey && (ev.key === 'g' || ev.key === 'G')) { ev.preventDefault(); cropStart(ev.shiftKey ? 'aig' : 'ai'); }
     if (ev.altKey && !ev.ctrlKey && (ev.key === 's' || ev.key === 'S')) { ev.preventDefault(); shotPage(); }
+    if (ev.altKey && !ev.ctrlKey && (ev.key === 'p' || ev.key === 'P')) { ev.preventDefault(); sendCurPage(ev.shiftKey ? 'google' : 'gemini'); }
     if (ev.altKey && !ev.ctrlKey && (ev.key === 'a' || ev.key === 'A')) { ev.preventDefault(); cropStart(); }
   });
 

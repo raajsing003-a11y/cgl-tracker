@@ -31314,7 +31314,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
   }
-  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein, plain text — bold/table/markdown ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <question exact, Hindi + English>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <chhota solution + smart trick, 3-6 lines>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions; har question 'Q:' se shuru ho)\n---END---";
+  var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein, plain text — bold/table/markdown ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question, Hindi + English dono>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution — bilkul waisa hi jaisa tum upar apne jawab mein dete ho: मूल अवधारणा (Basic Concept), स्मार्ट ट्रिक (Smart Trick), step-by-step calculation, aur galat options kyun galat hain. Chhota / summary mat likho, koi step mat chhodo. Kitni bhi lines ho sakti hain, bas koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(isi tarah har question ke liye dohrao: 1 main + practice ke sabhi questions, har ek ka EXP poora detailed; har question 'Q:' se shuru ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
   function addFoot(p){ p = p || ''; return p.indexOf('---MOCKBANK---') >= 0 ? p : (p + MB_FOOT); }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return addFoot(v); var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return addFoot(adm ? '' : GEM_DEF); }
@@ -31401,6 +31401,77 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     clearTimeout(hbar._t); hbar._t = setTimeout(function(){ if(hbar) hbar.style.display = 'none'; }, 180000);
   }
 
+
+
+  /* ---- near-duplicate check: same/lagbhag same question + milte-julte options = repeat ---- */
+  function mqNorm(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim(); }
+  function mqSet(s){ var o = {}; mqNorm(s).split(' ').forEach(function(w){ if(w) o[w] = 1; }); return o; }
+  function mqJacArr(a, b){ var A = {}, B = {}, n = 0, u = 0, k; a.forEach(function(x){ A[x] = 1; }); b.forEach(function(x){ B[x] = 1; });
+    for(k in A){ u++; if(B[k]) n++; } for(k in B){ if(!A[k]) u++; } return u ? n / u : 0; }
+  function mqSame(q, x){
+    if(!q || !x) return false;
+    var tq = mqNorm(q.t), tx = mqNorm(x.t); if(!tq || !tx) return false;
+    var oq = (q.o || []).map(mqNorm).filter(Boolean), ox = (x.o || []).map(mqNorm).filter(Boolean), both = oq.length && ox.length;
+    if(tq === tx) return both ? mqJacArr(oq, ox) >= 0.5 : true;
+    var A = mqSet(q.t), B = mqSet(x.t), ka = Object.keys(A), kb = Object.keys(B), n = 0;
+    if(Math.min(ka.length, kb.length) < 5) return false;
+    ka.forEach(function(k){ if(B[k]) n++; });
+    var ov = n / Math.min(ka.length, kb.length);
+    if(ov < 0.9) return false;
+    return both ? mqJacArr(oq, ox) >= 0.5 : ov >= 0.97;
+  }
+
+  /* ---- Reply se aaye questions ka preview: har question ke saath ➕, duplicate pehle se pehchane hue ---- */
+  function previewBank(list, sub0, img){
+    var D = []; try{ D = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(e){ D = []; }
+    var rows = list.map(function(q, i){
+      var inDb = D.some(function(x){ return mqSame(q, x); }), inBatch = false;
+      for(var j = 0; j < i; j++){ if(mqSame(q, list[j])){ inBatch = true; break; } }
+      return { q: q, dup: inDb || inBatch, why: inDb ? 'Bank me pehle se hai' : (inBatch ? 'Is reply me repeat' : ''), done: false };
+    });
+    var imgUsed = false;
+    var ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:10px';
+    var bx = document.createElement('div'); bx.style.cssText = 'background:#1b1d22;color:#fff;border-radius:14px;width:min(640px,100%);max-height:92vh;display:flex;flex-direction:column;font:13px/1.4 sans-serif;overflow:hidden';
+    var hd = document.createElement('div'); hd.style.cssText = 'padding:12px 14px;font-weight:800;border-bottom:1px solid #333';
+    var ls = document.createElement('div'); ls.style.cssText = 'overflow:auto;padding:8px 10px;flex:1 1 auto';
+    var ft = document.createElement('div'); ft.style.cssText = 'display:flex;gap:8px;padding:10px 12px;border-top:1px solid #333;justify-content:flex-end;flex-wrap:wrap';
+    function pending(){ return rows.filter(function(r){ return !r.dup && !r.done; }); }
+    function head(){ var nu = rows.filter(function(r){ return !r.dup; }).length; hd.textContent = rows.length + ' questions mile · ' + nu + ' naye · ' + (rows.length - nu) + ' repeat'; }
+    function addRows(rs){
+      var D2 = []; try{ D2 = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(e){ D2 = []; }
+      var ts = Date.now(), n = 0;
+      rs.forEach(function(r, i){
+        if(r.done) return;
+        D2.unshift({ id: ts + i, s: r.q.s || sub0, tp: 'Other', pend: 1, t: r.q.t, img: (!imgUsed && img) ? img : '', o: r.q.o, a: r.q.a, e: r.q.e });
+        if(!imgUsed && img) imgUsed = true; r.done = true; n++;
+      });
+      if(!n) return;
+      try{ localStorage.setItem('mqb_v1', JSON.stringify(D2)); LS('cx:bankSub', sub0); }catch(e){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); rs.forEach(function(r){ r.done = false; }); return; }
+      toast('✅ ' + n + ' question Mock Question Add me add ho gaya');
+      draw();
+    }
+    function draw(){
+      head(); ls.textContent = '';
+      rows.forEach(function(r, i){
+        var it = document.createElement('div'); it.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:8px;margin:6px 0;border-radius:10px;background:' + (r.done ? '#17301c' : r.dup ? '#2a2a2a' : '#22262e') + ';opacity:' + (r.dup && !r.done ? '.7' : '1');
+        var bd = document.createElement('div'); bd.style.cssText = 'flex:1 1 auto;min-width:0';
+        var t1 = document.createElement('div'); t1.style.cssText = 'font-weight:700;white-space:pre-wrap;word-break:break-word'; t1.textContent = (i + 1) + '. ' + (r.q.t.length > 260 ? r.q.t.slice(0, 260) + '…' : r.q.t);
+        var t2 = document.createElement('div'); t2.style.cssText = 'font-size:12px;opacity:.85;margin-top:3px'; t2.textContent = (r.q.s || sub0) + (r.q.a ? ' · Ans ' + r.q.a : ' · Ans ?') + (r.q.e ? ' · solution ' + r.q.e.length + ' akshar' : '') + (r.dup ? ' · ⏭ ' + r.why : '');
+        bd.appendChild(t1); bd.appendChild(t2);
+        var bt = document.createElement('button'); bt.type = 'button';
+        bt.textContent = r.done ? '✅' : (r.dup ? '➕ phir bhi' : '➕');
+        bt.disabled = r.done;
+        bt.style.cssText = 'flex:none;border:0;border-radius:10px;padding:10px 13px;font:800 15px sans-serif;color:#fff;background:' + (r.done ? '#2e7d32' : r.dup ? '#666' : '#1a73e8') + ';cursor:pointer';
+        bt.onclick = function(){ addRows([r]); };
+        it.appendChild(bd); it.appendChild(bt); ls.appendChild(it);
+      });
+      all.textContent = '➕ Sab unique add karo (' + pending().length + ')'; all.disabled = !pending().length; all.style.opacity = pending().length ? '1' : '.5';
+    }
+    function fb(t, bg, fn){ var x = document.createElement('button'); x.type = 'button'; x.textContent = t; x.style.cssText = 'border:0;border-radius:10px;padding:10px 14px;font:800 13px sans-serif;color:#fff;background:' + bg; x.onclick = fn; ft.appendChild(x); return x; }
+    fb('Band karo', '#555', function(){ ov.remove(); });
+    var all = fb('', '#2e7d32', function(){ addRows(pending()); });
+    bx.appendChild(hd); bx.appendChild(ls); bx.appendChild(ft); ov.appendChild(bx); document.body.appendChild(ov); draw();
+  }
 
   /* ---- Gemini reply (---MOCKBANK--- block) -> bank questions ---- */
   function parseBlock(raw){
@@ -31545,7 +31616,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       c2.width = Math.round(cv.width * k); c2.height = Math.round(cv.height * k); c2.getContext('2d').drawImage(cv, 0, 0, c2.width, c2.height);
       var img = c2.toDataURL('image/jpeg', 0.7), pq = parseQ(qText(t)), sub = bankSubject(t), D = [];
       try{ D = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(e){ D = []; }
-      if(pq.t && D.some(function(x){ return x.s === sub && x.t === pq.t; })){ toast('Ye question pehle se Mock bank me hai'); return; }
+      if(pq.t && D.some(function(x){ return mqSame(pq, x); })){ toast('Ye question pehle se Mock bank me hai'); return; }
       D.unshift({ id: Date.now(), s: sub, tp: 'Other', pend: 1, t: pq.t, img: img, o: pq.o, a: pq.a, e: pq.e });
       try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); LS('cx:bankSub', sub); }
       catch(e){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
@@ -31556,7 +31627,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var n = 0, dup = 0, ts = Date.now();
       list.forEach(function(q, i){
         var sub = q.s || sub0;
-        if(D.some(function(x){ return x.s === sub && x.t === q.t; })){ dup++; return; }
+        if(D.some(function(x){ return mqSame(q, x); })){ dup++; return; }
         D.unshift({ id: ts + i, s: sub, tp: 'Other', pend: 1, t: q.t, img: (n === 0 && img) ? img : '', o: q.o, a: q.a, e: q.e }); n++;
       });
       if(!n){ toast(dup ? 'Ye questions pehle se Mock bank me hain' : 'Koi question nahi mila'); return; }
@@ -31571,7 +31642,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         if(!list.length){ toast('Reply me ---MOCKBANK--- block nahi mila. Naya prompt (v3.17) use karke Gemini se dobara poocho.'); return; }
         var img = '';
         try{ if(t && await prep() && st.cv){ var cv = st.cv, k = Math.min(1, 900 / Math.max(cv.width, cv.height)), c2 = document.createElement('canvas'); c2.width = Math.round(cv.width * k); c2.height = Math.round(cv.height * k); c2.getContext('2d').drawImage(cv, 0, 0, c2.width, c2.height); img = c2.toDataURL('image/jpeg', 0.7); } }catch(e){}
-        saveBank(list, t ? bankSubject(t) : (LS('cx:bankSub') || 'Math'), img);
+        previewBank(list, t ? bankSubject(t) : (LS('cx:bankSub') || 'Math'), img);
       }
       var clip = '';
       try{ if(navigator.clipboard && navigator.clipboard.readText) clip = await navigator.clipboard.readText(); }catch(e){}
@@ -31643,15 +31714,15 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     if(e.source !== window || !d || d.type !== 'sd-mock-import' || !Array.isArray(d.items)) return;
     if(!adminOK()) return;
     var D = []; try{ D = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(x){ D = []; }
-    var ids = [], n = 0;
+    var ids = [], n = 0, skipped = [];
     d.items.forEach(function(q){
       if(!q || (!q.t && !q.img)) return; ids.push(q.id);
-      if(D.some(function(x){ return x.id === q.id || (q.t && x.s === (q.s || 'Math') && x.t === q.t); })) return;
+      if(D.some(function(x){ return x.id === q.id || (!q.force && q.t && mqSame(q, x)); })){ skipped.push(q.id); return; }
       D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', pend: 1, t: q.t || '', img: q.img || '', o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
     });
     try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); }catch(x){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
-    window.postMessage({ type: 'sd-mock-import-ack', ids: ids }, '*');
-    if(n) toast('📥 Extension se ' + n + ' question Mock Question Add me aa gaye');
+    window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
+    if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });
   var tm = null; function sched(){ clearTimeout(tm); tm = setTimeout(scan, 250); }
   function start(){ mount(); new MutationObserver(function(ms){

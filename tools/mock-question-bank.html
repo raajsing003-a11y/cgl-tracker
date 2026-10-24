@@ -127,6 +127,7 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
     <label class="btn" for="imp">⬆ Import</label><input type="file" id="imp" accept=".json" hidden>
     <button class="btn" onclick="window.print()">🖨 Print</button>
     <button class="btn" id="exptxt">📝 Export TXT (current list)</button>
+    <button class="btn" id="dupf">🧬 Repeat questions hatao</button>
     <button class="btn" id="clr" hidden>x</button><button class="btn" id="trb">♻ Deleted questions (0)</button>
   </div>
   <div class="m" id="sz" style="margin-top:10px"></div><div id="trl" style="margin-top:10px"></div>
@@ -310,7 +311,7 @@ function parseBulk(raw){const hd=/^(अभ्यास|समान पैटर
       if(st==0){if(l)q.push(l)}else{st=2;ex.push(l)}}
     const am=b.l.join("\n").match(ar),qt=q.join("\n"),e=ex.join("\n").replace(new RegExp(ar.source,"gi"),"").trim();
     return{id:Date.now()+n,s:S,tp:detect(qt+" "+op.join(" ")),t:autoTex(qt),img:"",o:op.map(autoTex),a:am?am[1].toUpperCase():"",e:autoTex(e)}})}
-$("bkgo").onclick=()=>{let n=0;parseBulk($("bk").value).reverse().forEach(q=>{if(!q.t||D.some(x=>x.s==q.s&&x.t==q.t))return;D.unshift(q);n++});
+$("bkgo").onclick=()=>{let n=0;parseBulk($("bk").value).reverse().forEach(q=>{if(!q.t||D.some(x=>mqSame(q,x)))return;D.unshift(q);n++});
   if(persist()){$("bkm").textContent="✓ "+n+" question add hue → "+S+" (topic auto)";if(n){$("bk").value="";try{localStorage.removeItem("mqb_draft")}catch(e){}}renderTabs();render()}};
 $("bkf").onchange=e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=()=>{$("bk").value=r.result};r.readAsText(f)}};
 
@@ -562,6 +563,43 @@ setInterval(mkTick,1000);mkTick();
 })();
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async onload="render();if(!$('mk').hidden)typeset($('mk'))"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async onload="render();if(!$('mk').hidden)typeset($('mk'))">
+/* ---- Repeat questions dhundo (milte-julte question + options) -> Trash me, wapas laa sakte ho ---- */
+function mqNorm(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim(); }
+function mqSet(s){ var o = {}; mqNorm(s).split(' ').forEach(function(w){ if(w) o[w] = 1; }); return o; }
+function mqJacArr(a, b){ var A = {}, B = {}, n = 0, u = 0, k; a.forEach(function(x){ A[x] = 1; }); b.forEach(function(x){ B[x] = 1; });
+  for(k in A){ u++; if(B[k]) n++; } for(k in B){ if(!A[k]) u++; } return u ? n / u : 0; }
+function mqSame(q, x){
+  if(!q || !x) return false;
+  var tq = mqNorm(q.t), tx = mqNorm(x.t); if(!tq || !tx) return false;
+  var oq = (q.o || []).map(mqNorm).filter(Boolean), ox = (x.o || []).map(mqNorm).filter(Boolean), both = oq.length && ox.length;
+  if(tq === tx) return both ? mqJacArr(oq, ox) >= 0.5 : true;
+  var A = mqSet(q.t), B = mqSet(x.t), ka = Object.keys(A), kb = Object.keys(B), n = 0;
+  if(Math.min(ka.length, kb.length) < 5) return false;
+  ka.forEach(function(k){ if(B[k]) n++; });
+  var ov = n / Math.min(ka.length, kb.length);
+  if(ov < 0.9) return false;
+  return both ? mqJacArr(oq, ox) >= 0.5 : ov >= 0.97;
+}
+
+
+(function(){
+  const bt=document.getElementById("dupf"); if(!bt) return;
+  bt.onclick=()=>{
+    const keep=[],drop=[];
+    const score=q=>(q.e?q.e.length:0)+(q.a?50:0)+(q.img?20:0)+(q.f?200:0);
+    D.forEach(q=>{ if(!q||!q.t){keep.push(q);return}
+      let j=-1; for(let i=0;i<keep.length;i++){ const k=keep[i]; if(k&&k.t&&k.s==q.s&&mqSame(q,k)){j=i;break} }
+      if(j<0){keep.push(q);return}
+      if(score(q)>score(keep[j])){ drop.push(keep[j]); keep[j]=q } else drop.push(q);
+    });
+    if(!drop.length){toast("Koi repeat question nahi mila");return}
+    if(!confirm(drop.length+" repeat question Trash me bhejo? (har question ka sabse detailed version bacha rahega, ♻ se wapas aa sakte hain)"))return;
+    const now=Date.now(); drop.forEach(q=>{q.dt=now;TR.push(q)}); D=keep;
+    persist(); try{renderTabs();render();trUI()}catch(e){}
+    toast(drop.length+" repeat Trash me gaye");
+  };
+})();
+</script>
 </body>
 </html>
