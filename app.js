@@ -31392,9 +31392,12 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     try{ if(window.MathJax && MathJax.startup && MathJax.startup.promise) await MathJax.startup.promise; }catch(e){}
     var w = Math.max(target.scrollWidth, target.clientWidth, 1);
     var bg = getComputedStyle(document.body).backgroundColor; if(!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = '#ffffff';
-    var cv = await h2c(target, { backgroundColor: bg, scale: Math.max(1, Math.min(2, 1100 / w)), useCORS: true, logging: false,
+    /* tez screenshot: bahut lambe page par scale girao (pixel budget ~2.2M) — warna html2canvas + PNG/JPEG encode kaafi time leta tha */
+    var hh = Math.max(target.scrollHeight, target.clientHeight, 1), sc0 = Math.min(2, 1100 / w), budget = Math.sqrt(2200000 / (w * hh));
+    var cv = await h2c(target, { backgroundColor: bg, scale: Math.max(0.7, Math.min(sc0, budget)), useCORS: true, logging: false,
       ignoreElements: function(el){ return !!(el.classList && el.classList.contains('cxGemH')) || el.id === 'cxGemMain'; },
       onclone: function(doc, el){ el.style.overflow = 'visible'; el.style.height = 'auto'; el.style.maxHeight = 'none';
+        try{ Array.prototype.forEach.call(doc.querySelectorAll('iframe'), function(f){ if(!el.contains(f)) f.remove(); }); }catch(e){}   /* baki tools ke iframe clone na ho */
         Array.prototype.forEach.call(doc.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH'), function(x){ x.style.display = 'none'; }); } });
     return cv;
   }
@@ -31908,7 +31911,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     bar.addEventListener('click', function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); } }, true);
     function place(){ try{ var p = JSON.parse(LS('cx:aiPos2') || 'null'); if(p && isFinite(p.l)){ var r = bar.getBoundingClientRect(); bar.style.left = clamp(p.l, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(p.t, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; bar.style.right = 'auto'; } else { var r2 = bar.getBoundingClientRect(); if(r2.left < 0 || r2.right > window.innerWidth){ bar.style.right = '8px'; bar.style.left = 'auto'; } } }catch(e){} }
     window.addEventListener('resize', place);
-    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin2') !== '0'); place(); try{ scan(); }catch(e){}
+    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(true); /* har baar app khulne par bar band (chhota) se shuru — khud tap karke kholo */ place(); try{ scan(); }catch(e){}
       /* screenshot library pehle se load rakho (pehla Google/Gemini tap turant chale) */
       var pre = function(){ try{ loadH2C().catch(function(){}); }catch(e){} }; if(window.requestIdleCallback) requestIdleCallback(pre, { timeout: 8000 }); else setTimeout(pre, 5000); }
     if(document.body) init(); else document.addEventListener('DOMContentLoaded', init);
