@@ -382,11 +382,43 @@ function openGemSideNative(url){
 window.addEventListener('message',function(e){ var d=e.data; if(e.source===window&&d&&d.type==='sd-gemini-ext-ready'){ window.__gemExt=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} } });
 try{ window.postMessage({type:'sd-gemini-ping'},'*'); }catch(e){}
 function gemExtKnown(){ var k=false; try{ k=localStorage.getItem('sd:extok')==='1'; }catch(e){} return !!window.__gemExt||k; }
+/* ---- EXTENSION NAHI HAI to: image + poora prompt + question/options clipboard me + helper bar ---- */
+function toPng(du){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){ var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); c.toBlob(function(b){ b?res(b):rej(new Error('png')); },'image/png'); }; im.onerror=rej; im.src=du; }); }
+function copyTxt2(s){ var p=(navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(s):Promise.reject(new Error('x')); return p.catch(function(){ var ta=document.createElement('textarea'); ta.value=s; ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); if(!ok) throw new Error('fail'); }); }
+var hbar=null;
+function helperBar(label,pngP,text){
+  if(!hbar){ hbar=document.createElement('div'); hbar.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center'; document.body.appendChild(hbar); }
+  hbar.innerHTML=''; hbar.style.display='block';
+  var msg=document.createElement('div'); msg.style.marginBottom='8px'; msg.textContent=label+' ke box me paste karo (Ctrl+V / long-press → Paste). Sirf image ya sirf text aaye to neeche se wahi copy karke dobara paste karo:'; hbar.appendChild(msg);
+  var row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;justify-content:center'; hbar.appendChild(row);
+  function btn(t,bg,fn){ var b=document.createElement('button'); b.type='button'; b.textContent=t; b.style.cssText='border:0;border-radius:9px;padding:7px 11px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:'+bg; b.onclick=function(ev){ ev.stopPropagation(); fn(b); }; row.appendChild(b); }
+  function flash(b,ok,o){ b.textContent=ok?'✅ Copy ho gaya':'⚠ Copy nahi hua'; setTimeout(function(){ b.textContent=o; },1800); }
+  function wr(b,items){ var o=b.textContent; (navigator.clipboard&&window.ClipboardItem?navigator.clipboard.write([new ClipboardItem(items)]):Promise.reject(new Error('x'))).then(function(){ flash(b,true,o); },function(){ flash(b,false,o); }); }
+  if(pngP) btn('📋 Image + Text dono','#2e7d32',function(b){ wr(b,{'image/png':pngP,'text/plain':new Blob([text],{type:'text/plain'})}); });
+  if(pngP) btn('🖼 Sirf Image','#1a73e8',function(b){ wr(b,{'image/png':pngP}); });
+  btn('📝 Sirf Prompt + Question','#6a1b9a',function(b){ var o=b.textContent; copyTxt2(text).then(function(){ flash(b,true,o); },function(){ flash(b,false,o); }); });
+  btn('✕','#555',function(){ hbar.style.display='none'; });
+  clearTimeout(hbar._t); hbar._t=setTimeout(function(){ if(hbar) hbar.style.display='none'; },180000);
+}
+function manualSend(kind,du,txt){
+  var goo=kind==='google', name=goo?'sd_google':'sd_gemini', home=goo?'https://www.google.com/search?udm=50':gemUrl(), label=goo?'Google':'Gemini';
+  if(!du&&!txt) return;
+  var pngP=du?toPng(du):null; if(pngP) pngP.catch(function(){});
+  var done;
+  if(navigator.clipboard&&window.ClipboardItem){
+    var it={}; if(txt) it['text/plain']=new Blob([txt],{type:'text/plain'}); if(pngP) it['image/png']=pngP;
+    try{ done=navigator.clipboard.write([new ClipboardItem(it)]).then(function(){ return true; },function(){ return pngP?navigator.clipboard.write([new ClipboardItem({'image/png':pngP})]).then(function(){ return true; },function(){ return false; }):false; }); }catch(e){ done=Promise.resolve(false); }
+  } else done=Promise.resolve(false);
+  var w=null; try{ var g=gemGeo(); w=window.open('',name,'popup=yes,left='+g.l+',top='+g.t+',width='+g.w+',height='+g.h); var bl=false; try{ bl=(w.location.href==='about:blank'); }catch(e){} if(bl) w.location.href=home; }catch(e){}
+  helperBar(label,pngP,txt);
+  done.then(function(c){ try{ if(w) w.focus(); }catch(e){} toast(c?'✅ Screenshot + prompt + question copy ho gaya — '+label+' ke box me Ctrl+V':'⚠ Auto-copy nahi hua — neeche ke buttons se copy karo'); });
+}
 window.sendToGoogle=function(du,extra){
   var got=false, geo=gemGeo();
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-google-ack'&&d.kind==='send'){ got=true; window.removeEventListener('message',onAck); toast(d.found?'🔍 Google ko bhej diya':'Google khul raha hai, image+question wahan aa jayega',4000); } }
   window.addEventListener('message',onAck);
-  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=window.__gemDef||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  if(!window.__gemExt){ window.removeEventListener('message',onAck); manualSend('google',du,txt); return; }
   window.postMessage({type:'sd-google-send',image:du||'',text:txt,url:'https://www.google.com/search?udm=50',geo:geo},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){ toast('Extension ne jawab nahi diya — extension v3.4 load/reload karo, phir page refresh (Google ka naya window nahi khola)',5000); } },4500);
 };
@@ -395,6 +427,7 @@ window.sendToGemini=function(du,extra){
   function onAck(e){ var d=e.data; if(d&&d.type==='sd-gemini-ack'&&d.kind==='send'){ got=true; try{ localStorage.setItem('sd:extok','1'); }catch(x){} window.removeEventListener('message',onAck); toast(d.found?'📎 Image Gemini mein bhej di':'Gemini khul raha hai, image wahan aa jayegi'); } }
   window.addEventListener('message',onAck);
   var txt=''; try{ txt=(localStorage.getItem('sd:gemprompt')||'').trim(); }catch(e){} if(!txt) txt=(window.__gemIsAdm()?'':window.__gemDef)||''; if(extra) txt=(txt?txt+'\n\n':'')+'--- Question (text) ---\n'+extra;
+  if(!window.__gemExt){ window.removeEventListener('message',onAck); manualSend('gemini',du,txt); return; }
   window.postMessage({type:'sd-gemini-send',image:du,text:txt,url:gemUrl(),single:true,reuse:true,newTab:false,popup:true,geo:gemGeo()},'*');
   setTimeout(function(){ window.removeEventListener('message',onAck); if(!got){
     try{ fetch(du).then(function(r){return r.blob();}).then(function(b){ return navigator.clipboard.write([new ClipboardItem({[b.type]:b})]); }).catch(function(){}); }catch(e){}

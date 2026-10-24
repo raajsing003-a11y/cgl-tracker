@@ -1496,6 +1496,10 @@ function openQuizReviewOverlay(title, attempt, onReattempt){
 // Set-menu grid mein ek "already attempted" card banata hai (score + tap
 // to review + corner 🔁 reattempt). Agar is set ka koi saved attempt nahi
 // hai to false return karta hai — caller phir normal button bana sakta hai.
+// Har attempted quiz/mock card par ALAG se 📖 Solution aur 🔁 Reattempt button (score ke neeche).
+function attBtnsHtml(){
+  return '<span class="attRow"><button type="button" class="attBtn attSolBtn">📖 Solution</button><button type="button" class="attBtn mockCardReattemptBtn">🔁 Reattempt</button></span>';
+}
 function renderQuizAttemptCard(grid, prefix, setKey, icon, labelText, onReattempt){
   const attempt = getQuizAttemptDetail(prefix, setKey);
   if(!attempt) return false;
@@ -1505,8 +1509,8 @@ function renderQuizAttemptCard(grid, prefix, setKey, icon, labelText, onReattemp
   card.innerHTML =
     '<span class="calcIcon">' + icon + '</span>' +
     '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(labelText) + '</span>' +
-    '<span style="font-size:11px;color:var(--muted);font-weight:600;">✅ Score: ' + attempt.correct + '/' + attempt.total + ' · Tap to review</span></span>' +
-    '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">🔁</button>';
+    '<span class="attScore">✅ Score: ' + attempt.correct + '/' + attempt.total + (attempt.acc != null ? ' · ' + attempt.acc + '%' : '') + '</span>' +
+    attBtnsHtml() + '</span>';
   card.addEventListener('click', (e) => {
     if(e.target.closest('.mockCardReattemptBtn')) return;
     openQuizReviewOverlay(labelText, attempt, onReattempt);
@@ -12844,8 +12848,7 @@ function makeMathPyqQuiz(){
           card.innerHTML =
             '<span class="calcIcon">' + (meta ? meta.icon : '📐') + '</span>' +
             '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
-            '<span style="font-size:11px;color:var(--muted);font-weight:600;">✅ Score: ' + examFormatMarks(saved.marks) + ' · Tap to review</span></span>' +
-            '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">🔁</button>';
+            '<span class="attScore">✅ Score: ' + examFormatMarks(saved.marks) + '</span>' + attBtnsHtml() + '</span>';
           card.addEventListener('click', (e) => {
             if(e.target.closest('.mockCardReattemptBtn')) return;
             viewSavedMockAttempt(key);
@@ -13377,11 +13380,11 @@ function makeMathPyqQuiz(){
       grid.appendChild(btn);
     });
   }
-  let resultRevealed = false;
+  let resultRevealed = true;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
-    resultRevealed = false;
+    resultRevealed = true;
     resultRenderQuestion();
     resultRenderPalette();
   }
@@ -14586,8 +14589,7 @@ function makeReasoningMockQuiz(){
         card.innerHTML =
           '<span class="calcIcon">🧠</span>' +
           '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
-          '<span style="font-size:11px;color:var(--muted);font-weight:600;">✅ Score: ' + examFormatMarksReasoning(saved.marks) + ' · Tap to review</span></span>' +
-          '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">🔁</button>';
+          '<span class="attScore">✅ Score: ' + examFormatMarksReasoning(saved.marks) + '</span>' + attBtnsHtml() + '</span>';
         card.addEventListener('click', (e) => {
           if(e.target.closest('.mockCardReattemptBtn')) return;
           viewSavedMockAttempt(key);
@@ -14887,11 +14889,11 @@ function makeReasoningMockQuiz(){
       grid.appendChild(btn);
     });
   }
-  let resultRevealed = false;
+  let resultRevealed = true;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
-    resultRevealed = false;
+    resultRevealed = true;
     resultRenderQuestion();
     resultRenderPalette();
   }
@@ -15114,8 +15116,7 @@ function makeEnglishMockQuiz(){
         card.innerHTML =
           '<span class="calcIcon">\ud83d\udcd8</span>' +
           '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
-          '<span style="font-size:11px;color:var(--muted);font-weight:600;">\u2705 Score: ' + examFormatMarksEnglish(saved.marks) + ' \u00b7 Tap to review</span></span>' +
-          '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">\ud83d\udd01</button>';
+          '<span class="attScore">\u2705 Score: ' + examFormatMarksEnglish(saved.marks) + '</span>' + attBtnsHtml() + '</span>';
         card.addEventListener('click', (e) => {
           if(e.target.closest('.mockCardReattemptBtn')) return;
           viewSavedMockAttempt(key);
@@ -15405,11 +15406,11 @@ function makeEnglishMockQuiz(){
       grid.appendChild(btn);
     });
   }
-  let resultRevealed = false;
+  let resultRevealed = true;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
-    resultRevealed = false;
+    resultRevealed = true;
     resultRenderQuestion();
     resultRenderPalette();
   }
@@ -15623,8 +15624,7 @@ function makeEnglishFullMockQuiz(){
         card.innerHTML =
           '<span class="calcIcon">\ud83d\udcd7</span>' +
           '<span class="calcLabelCol"><span class="calcLabel">' + escapeHtml(setLabel(key, count)) + '</span>' +
-          '<span style="font-size:11px;color:var(--muted);font-weight:600;">\u2705 Score: ' + examFormatMarksEnglishFull(saved.marks) + ' \u00b7 Tap to review</span></span>' +
-          '<button type="button" class="mockCardReattemptBtn" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--muted);">\ud83d\udd01</button>';
+          '<span class="attScore">\u2705 Score: ' + examFormatMarksEnglishFull(saved.marks) + '</span>' + attBtnsHtml() + '</span>';
         card.addEventListener('click', (e) => {
           if(e.target.closest('.mockCardReattemptBtn')) return;
           viewSavedMockAttempt(key);
@@ -15916,11 +15916,11 @@ function makeEnglishFullMockQuiz(){
       grid.appendChild(btn);
     });
   }
-  let resultRevealed = false;
+  let resultRevealed = true;
   function resultGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
     examSession.current = idx;
-    resultRevealed = false;
+    resultRevealed = true;
     resultRenderQuestion();
     resultRenderPalette();
   }
@@ -16117,6 +16117,7 @@ function renderEmMocksGrid(entries){
       '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span class="calcSub">' + e.q + ' Qs</span>';
     btn.addEventListener('click', () => openEmMock(emmocksCurrentKey, e.file, emmocksCurrentLabel, e));
+    try{ window.__cxNatDecorate && window.__cxNatDecorate(btn, 'emnative', emmocksCurrentKey + '/' + e.file, function(){ return openEmMock(emmocksCurrentKey, e.file, emmocksCurrentLabel, e); }, false); }catch(_){}
     grid.appendChild(btn);
   });
   if(!entries.length){
@@ -16150,6 +16151,7 @@ const emnativeSession = {
 };
 
 async function openEmMock(key, file, label, entry){
+  if(window.mockUIIsSSC && window.mockUIIsSSC()){ return window.openSSCMock({ ns:'emnative', key:key, file:file, label:label, entry:entry, load:async function(){ const jf = file.replace(/\.html$/, '.json'); const r = await fetch('emmocks/data/' + key + '/' + jf); return await r.json(); } }); }
   emnativeCurrentKey = key;
   emnativeCurrentFile = file;
   emnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
@@ -16384,11 +16386,11 @@ function emnativeResultRenderPalette(){
     grid.appendChild(btn);
   });
 }
-let emnativeResultRevealed = false;
+let emnativeResultRevealed = true;
 function emnativeResultGoTo(idx){
   if(idx < 0 || idx >= emnativeSession.questions.length) return;
   emnativeSession.current = idx;
-  emnativeResultRevealed = false;
+  emnativeResultRevealed = true;
   emnativeResultRenderQuestion();
   emnativeResultRenderPalette();
 }
@@ -17010,6 +17012,7 @@ function renderSPMockRows(items, body){
       '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
     row.addEventListener('click', () => openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e));
+    try{ window.__cxNatDecorate && window.__cxNatDecorate(row, 'spnative', spCurrentSubjectKey + '/' + e.file, function(){ return openSPMock(spCurrentSubjectKey, e.file, spCurrentSubjectLabel, e); }, true); }catch(_){}
     body.appendChild(row);
   });
   const lastRow = body.lastElementChild;
@@ -17136,6 +17139,7 @@ function spnativeToggleLang(){
 }
 
 async function openSPMock(key, file, label, entry){
+  if(window.mockUIIsSSC && window.mockUIIsSSC()){ return window.openSSCMock({ ns:'spnative', key:key, file:file, label:label, entry:entry, load:async function(){ const jf = file.replace(/\.html$/, '.json'); if(SPV[key]) return await spvLoad(key, entry); const r = await fetch(key === 'gk' ? ('gkquiz/sp/' + jf) : key === 'computer' ? ('gkquiz/computer/' + jf) : ('superpractice/data/' + key + '/' + jf)); return await r.json(); } }); }
   spnativeCurrentKey = key;
   spnativeCurrentFile = file;
   const spExamPageEl = document.getElementById('calcPage-spnativeexam');
@@ -17417,13 +17421,13 @@ function spnativeResultRenderPalette(){
     grid.appendChild(btn);
   });
 }
-let spnativeResultRevealed = false;
+let spnativeResultRevealed = true;
 function spnativeResultGoTo(idx){
   if(idx < 0 || idx >= spnativeSession.questions.length) return;
   spnativeSession.current = idx;
   // Mock-mode (quant 25Q mixed) sessions show the answer & solution right
   // away on the result page — no need to tap each question first.
-  spnativeResultRevealed = spnativeMockModeActive;
+  spnativeResultRevealed = true;
   spnativeResultRenderQuestion();
   spnativeResultRenderPalette();
 }
@@ -17662,6 +17666,7 @@ function renderP75MockGrid(entries){
           '<span>' + escapeHtml(rowLabel) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
           '<span style="color:var(--muted);font-size:13px;">' + e.q + ' Qs &#8250;</span>';
         row.addEventListener('click', () => openP75Mock(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e));
+        try{ window.__cxNatDecorate && window.__cxNatDecorate(row, 'p75native', p75CurrentSubjectKey + '/' + e.file, function(){ return openP75MockNative(p75CurrentSubjectKey, e.file, p75CurrentSubjectLabel, e); }, true); }catch(_){}
         body.appendChild(row);
       });
       const lastRow = body.lastElementChild;
@@ -17723,6 +17728,7 @@ function p75nativeToggleLang(){
 }
 
 async function openP75MockNative(key, file, label, entry){
+  if(window.mockUIIsSSC && window.mockUIIsSSC()){ return window.openSSCMock({ ns:'p75native', key:key, file:file, label:label, entry:entry, load:async function(){ const jf = file.replace(/\.html$/, '.json'); const r = await fetch(key === 'gk' ? ('gkquiz/p75/' + jf) : ('practice75/data/' + key + '/' + jf)); return await r.json(); } }); }
   p75nativeCurrentKey = key;
   p75nativeCurrentFile = file;
   const p75ExamPageEl = document.getElementById('calcPage-p75nativeexam');
@@ -17988,11 +17994,11 @@ function p75nativeResultRenderPalette(){
     grid.appendChild(btn);
   });
 }
-let p75nativeResultRevealed = false;
+let p75nativeResultRevealed = true;
 function p75nativeResultGoTo(idx){
   if(idx < 0 || idx >= p75nativeSession.questions.length) return;
   p75nativeSession.current = idx;
-  p75nativeResultRevealed = false;
+  p75nativeResultRevealed = true;
   p75nativeResultRenderQuestion();
   p75nativeResultRenderPalette();
 }
@@ -18136,8 +18142,8 @@ function gkQuizLabels(topicObj){
 function gkQuizOpen(it, topicName, label){
   gkQuizReturnPage = 'gkquiz';
   const entry = { n: it.n, q: it.q, file: it.file, topic: it.otopic, label: label };
-  if(it.src === 'p75') openP75Mock('gk', it.file, topicName, entry);
-  else openSPMock(it.key || 'gk', it.file, topicName, entry);
+  if(it.src === 'p75') return openP75MockNative('gk', it.file, topicName, entry);
+  return openSPMock(it.key || 'gk', it.file, topicName, entry);
 }
 
 function gkQuizRender(){
@@ -18226,6 +18232,7 @@ function gkQuizRender(){
                 (r.it.src === 'p75' ? '75 Day' : 'Super') + '</span></span>' +
               '<span style="flex:0 0 auto;color:var(--muted);font-size:13px;">' + r.it.q + ' Qs &#8250;</span>';
             row.addEventListener('click', () => gkQuizOpen(r.it, tp.topic, r.label));
+            try{ window.__cxNatDecorate && window.__cxNatDecorate(row, r.it.src === 'p75' ? 'p75native' : 'spnative', (r.it.key || 'gk') + '/' + r.it.file, function(){ return gkQuizOpen(r.it, tp.topic, r.label); }, true); }catch(_){}
             inner.appendChild(row);
           });
           tWrap.appendChild(inner);
@@ -18350,6 +18357,7 @@ function renderMainsMockGrid(entries){
       '<span class="calcLabel">' + escapeHtml(e.label || ('Mock ' + e.n)) + (done ? ' <span style="color:var(--gain,#16A34A);">✅</span>' : '') + '</span>' +
       '<span class="calcSub">' + e.q + ' Qs</span>';
     btn.addEventListener('click', () => openMainsMock(mainsmockCurrentTypeKey, e.file, mainsmockCurrentTypeLabel, e));
+    try{ window.__cxNatDecorate && window.__cxNatDecorate(btn, 'mmnative', mainsmockCurrentTypeKey + '/' + e.file, function(){ return openMainsMockNative(mainsmockCurrentTypeKey, e.file, mainsmockCurrentTypeLabel, e); }, false); }catch(_){}
     grid.appendChild(btn);
   });
   if(!entries.length){
@@ -18406,6 +18414,7 @@ function mmnativeToggleLang(){
 }
 
 async function openMainsMockNative(key, file, label, entry){
+  if(window.mockUIIsSSC && window.mockUIIsSSC()){ return window.openSSCMock({ ns:'mmnative', key:key, file:file, label:label, entry:entry, load:async function(){ const jf = file.replace(/\.html$/, '.json'); const r = await fetch('mainsmock/data/' + key + '/' + jf); return await r.json(); } }); }
   mmnativeCurrentKey = key;
   mmnativeCurrentFile = file;
   mmnativeMockLabel = label + ' — ' + (entry.label || ('Mock ' + entry.n));
@@ -18763,11 +18772,11 @@ function mmnativeResultRenderPalette(){
     grid.appendChild(btn);
   });
 }
-let mmnativeResultRevealed = false;
+let mmnativeResultRevealed = true;
 function mmnativeResultGoTo(idx){
   if(idx < 0 || idx >= mmnativeSession.questions.length) return;
   mmnativeSession.current = idx;
-  mmnativeResultRevealed = false;
+  mmnativeResultRevealed = true;
   mmnativeResultRenderQuestion();
   mmnativeResultRenderPalette();
 }
@@ -31302,21 +31311,23 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var c = t.cloneNode(true);
       Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,button,script,style,svg,canvas,img,input,select,textarea,[hidden]'), function(x){ x.remove(); });
       var tx = (c.innerText || c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-      return tx.length > 3500 ? tx.slice(0, 3500) + '…' : tx;
+      return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
   }
   function gemPrompt(){ var v = (LS('sd:gemprompt') || '').trim(); if(v) return v; var adm = false; try{ adm = !!(typeof isMeAdmin === 'function' && typeof getRoomCode === 'function' && getRoomCode() && isMeAdmin()); }catch(e){} return adm ? '' : GEM_DEF; }
+  function gemPromptG(){ var v = (LS('sd:gemprompt') || '').trim(); return v || GEM_DEF; }   /* Google ke liye: default prompt hamesha (admin ho ya na ho) */
   function gemUrl(){ return LS('sd:gemurl') || 'https://gemini.google.com/app'; }
   function vis(el){ return !!(el && el.getClientRects().length && (el.innerText || '').trim().length); }
   function hash(s){ var h = 0; for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 
   var css = document.createElement('style');
-  css.textContent = '#cxGemMain{position:fixed;right:8px;top:104px;z-index:10050;display:none;flex-direction:column;align-items:center;gap:3px;padding:5px;border-radius:12px;background:rgba(20,22,27,.88);color:#fff;font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.4)}'
-    + '#cxGemMain img,.cxGemH img{width:44px;height:58px;object-fit:contain;background:#fff;border-radius:5px;display:block;-webkit-user-drag:element}'
+  css.textContent = '#cxGemMain{position:fixed;right:8px;top:104px;z-index:10050;display:none;flex-direction:column;align-items:center;gap:12px;padding:8px;border-radius:14px;background:rgba(20,22,27,.88);color:#fff;font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px rgba(0,0,0,.4)}'
+    + '#cxGemMain img,.cxGemH img{width:56px;height:74px;object-fit:contain;background:#fff;border-radius:5px;display:block;-webkit-user-drag:element}'
     + '#cxGemMain.busy img,.cxGemH.busy img{opacity:.4}'
     + '#cxGemMain label{font-size:10px;font-weight:600;opacity:.85;display:flex;gap:3px;align-items:center;cursor:pointer}'
-    + '.cxGoo{display:block;margin-top:2px;padding:2px 6px;border-radius:8px;background:#1a73e8;color:#fff;font-size:10px;font-weight:700;text-align:center;cursor:pointer}'
-    + '.cxGemH{position:absolute;top:8px;right:8px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;border-radius:10px;background:rgba(20,22,27,.85);color:#fff;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none}';
+    + '.cxGoo{display:block;margin-top:0;padding:11px 16px;min-height:22px;border-radius:12px;background:#1a73e8;color:#fff;font-size:15px;font-weight:800;text-align:center;cursor:pointer}'
+    + '#cxGemMain>span:not(.cxGoo),.cxGemH>span:not(.cxGoo){display:block;padding:11px 16px;min-height:22px;border-radius:12px;background:#6a4cff;color:#fff;font-size:15px;font-weight:800;text-align:center}'
+    + '.cxGemH{position:absolute;top:8px;right:8px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px;border-radius:14px;background:rgba(20,22,27,.85);color:#fff;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none}';
   document.head.appendChild(css);
 
   var PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="44" height="58"><rect width="44" height="58" fill="#fff"/><text x="22" y="34" font-size="20" text-anchor="middle">📄</text></svg>');
@@ -31335,6 +31346,40 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       onclone: function(doc, el){ el.style.overflow = 'visible'; el.style.height = 'auto'; el.style.maxHeight = 'none';
         Array.prototype.forEach.call(doc.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH'), function(x){ x.style.display = 'none'; }); } });
     return cv;
+  }
+
+  /* ---- EXTENSION NAHI HAI to: image + poora prompt + question/options clipboard me, aur helper bar ---- */
+  function copyTxt(s){
+    var p = (navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(s) : Promise.reject(new Error('no clipboard'));
+    return p.catch(function(){
+      var ta = document.createElement('textarea'); ta.value = s; ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok = false; try{ ok = document.execCommand('copy'); }catch(e){} ta.remove(); if(!ok) throw new Error('copy fail');
+    });
+  }
+  function copyImgTxt(pngP, text){
+    if(!navigator.clipboard || !window.ClipboardItem) return Promise.reject(new Error('no clipboard'));
+    return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP, 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
+  }
+  var hbar = null;
+  function helperBar(label, pngP, text){
+    if(!hbar){ hbar = document.createElement('div'); hbar.id = 'cxGemHelp';
+      hbar.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center';
+      document.body.appendChild(hbar); }
+    hbar.innerHTML = ''; hbar.style.display = 'block';
+    var msg = document.createElement('div'); msg.style.marginBottom = '8px';
+    msg.textContent = label + ' ke box me paste karo (Ctrl+V / long-press → Paste). Agar sirf image ya sirf text aaye to neeche se wahi copy karke dobara paste karo:';
+    hbar.appendChild(msg);
+    var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center'; hbar.appendChild(row);
+    function btn(txt, bg, fn){ var b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
+      b.style.cssText = 'border:0;border-radius:9px;padding:7px 11px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:' + bg;
+      b.onclick = function(ev){ ev.stopPropagation(); fn(b); }; row.appendChild(b); return b; }
+    function flash(b, ok, t0){ var o = t0; b.textContent = ok ? '✅ Copy ho gaya' : '⚠ Copy nahi hua'; setTimeout(function(){ b.textContent = o; }, 1800); }
+    btn('📋 Image + Text dono', '#2e7d32', function(b){ var o = b.textContent; copyImgTxt(pngP, text).then(function(){ flash(b, true, o); }, function(){ flash(b, false, o); }); });
+    btn('🖼 Sirf Image', '#1a73e8', function(b){ var o = b.textContent;
+      (navigator.clipboard && window.ClipboardItem ? navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]) : Promise.reject(new Error('x'))).then(function(){ flash(b, true, o); }, function(){ flash(b, false, o); }); });
+    btn('📝 Sirf Prompt + Question', '#6a1b9a', function(b){ var o = b.textContent; copyTxt(text).then(function(){ flash(b, true, o); }, function(){ flash(b, false, o); }); });
+    btn('✕', '#555', function(){ hbar.style.display = 'none'; });
+    clearTimeout(hbar._t); hbar._t = setTimeout(function(){ if(hbar) hbar.style.display = 'none'; }, 180000);
   }
 
   /* ---- ek handle (main ya per-item) ke liye state + prep + send + drag ---- */
@@ -31366,36 +31411,46 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var inFrame = window.parent && window.parent !== window, mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent), t = getTarget();
       if(!t) return;
       st.qt = qText(t);
-      /* Gesture ke time hi clipboard write shuru (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
+      var ftxt = withQ(goo ? gemPromptG() : gemPrompt(), st.qt);       /* poora prompt + question + options text */
+      var noExt = !window.__gemExt, name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
+      /* Gesture ke time hi clipboard write shuru: image + poora text EK SATH (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
       var copied = null;
-      if(!goo && !inFrame && !mobile && navigator.clipboard && window.ClipboardItem){
-        try{ copied = navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }catch(e){ copied = Promise.resolve(false); }
+      if(!inFrame && !mobile && navigator.clipboard && window.ClipboardItem){
+        try{ copied = copyImgTxt(pngP, ftxt).then(function(){ return true; }, function(){
+          return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }); }catch(e){ copied = Promise.resolve(false); }
       }
       var w = null;
-      if(!goo && !inFrame && !mobile && LS('sd:extok') !== '1'){ try{ var g = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
-        var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = gemUrl(); }catch(e){} }
+      if(!inFrame && !mobile && noExt){ try{ var g = gemGeo(); w = window.open('', name, 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
+        var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = home; }catch(e){} }
       toast('Screenshot ban raha hai…');
       var ok; try{ await pngP; ok = true; }catch(e){ ok = false; }
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
-      if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, text: withQ(gemPrompt(), st.qt), target: goo ? 'google' : '', from: 'app' }, '*'); }catch(e){} return; }
+      if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, text: ftxt, target: goo ? 'google' : '', from: 'app' }, '*'); }catch(e){} return; }
+      if(mobile){
+        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: ftxt }); toast('Share list me ' + label + ' chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+        helperBar(label, pngP, ftxt); toast('Share nahi chala — neeche ke buttons se image/text copy karo'); return;
+      }
+      if(noExt){        /* extension install nahi: clipboard (image + prompt + question) + khula window */
+        var c0 = copied ? await copied : false;
+        try{ if(w) w.focus(); }catch(e){}
+        helperBar(label, pngP, ftxt);
+        toast(c0 ? '✅ Screenshot + prompt + question copy ho gaya — ' + label + ' ke box me Ctrl+V' : '⚠ Auto-copy nahi hua — neeche ke buttons se copy karo');
+        return;
+      }
       if(goo){
-        if(mobile){ toast('Google auto-send sirf desktop (Chrome + extension) par chalta hai'); return; }
-        var gg = false, gtxt = withQ(gemPrompt(), st.qt);
+        var gg = false, gtxt = ftxt;
         function gAck(e){ var d = e.data; if(d && d.type === 'sd-google-ack' && d.kind === 'send'){ gg = true; window.removeEventListener('message', gAck); toast(d.found ? '🔍 Google ko bhej diya' : 'Google khul raha hai, image + question wahan aa jayega'); } }
         window.addEventListener('message', gAck);
         window.postMessage({ type: 'sd-google-send', image: st.du, text: gtxt, url: 'https://www.google.com/search?udm=50', geo: gemGeo() }, '*');
-        setTimeout(function(){ window.removeEventListener('message', gAck); if(!gg) toast('Extension ne jawab nahi diya — extension v3.4 reload karke page refresh karo (naya window nahi khola)'); }, 4500);
+        setTimeout(function(){ window.removeEventListener('message', gAck); if(!gg){ helperBar(label, pngP, ftxt); toast('Extension ne jawab nahi diya — neeche ke buttons se copy karo, ya extension reload karo'); } }, 4500);
         return;
       }
-      if(mobile){
-        try{ if(st.file && navigator.canShare && navigator.canShare({ files: [st.file] })){ await navigator.share({ files: [st.file], text: withQ(gemPrompt(), st.qt) }); toast('Share list me Gemini chuno'); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
-        toast('Share nahi chala — screenshot save/copy karke Gemini me daalo'); return;
-      }
       sendExt(st.du, async function(){
-        var c = copied ? await copied : false; if(window.__gemExt || LS('sd:extok') === '1'){ toast(c ? 'Extension ne jawab nahi diya. Screenshot copy hai: khule Gemini window me Ctrl+V karo (naya window nahi khola)' : 'Extension ne jawab nahi diya — extension reload karke page refresh karo'); return; } if(!w){ try{ var g2 = gemGeo(); w = window.open('', 'sd_gemini', 'popup=yes,left=' + g2.l + ',top=' + g2.t + ',width=' + g2.w + ',height=' + g2.h); var bl = false; try{ bl = (w.location.href === 'about:blank'); }catch(e){} if(bl) w.location.href = gemUrl(); }catch(e){} } try{ if(w) w.focus(); }catch(e){}
-        toast(c ? '✅ Screenshot copy ho gaya — Gemini popup me click karke Ctrl+V dabao' : '⚠ Auto-copy nahi hua. Handle ko drag karke Gemini me chhodo');
+        var c = copied ? await copied : false; try{ if(w) w.focus(); }catch(e){}
+        helperBar(label, pngP, ftxt);
+        toast(c ? '✅ Screenshot + prompt + question copy hai — Gemini ke box me Ctrl+V (extension ne jawab nahi diya)' : '⚠ Extension ne jawab nahi diya — neeche ke buttons se copy karo');
       });
     };
     h.addEventListener('click', function(e){ if(e.target.closest('label')) return; e.stopPropagation(); h.sendNow(e.target.closest('.cxGoo') ? 'google' : 'gemini'); });
@@ -31443,4 +31498,161 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+
+/* ===== NATIVE MOCKS (EM / Super Practice / 75-Day / GK / Mains): score + 📖 Solution + 🔁 Reattempt =====
+   Submit hone par answers+score chhota snapshot save hota hai (localStorage). 📖 Solution = mock dobara load karke
+   saved answers ke saath seedha result/solution page (har question ka answer + solution automatic). 🔁 Reattempt = fresh start. */
+(function(){
+  if(window.__cxNatAtt) return; window.__cxNatAtt = true;
+  var KEY = 'cgl50-native-attempts', silent = false;
+  function loadAll(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
+  function getSnap(k){ return loadAll()[k] || null; }
+  function putSnap(k, v){ var m = loadAll(); m[k] = v; try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+  function fmt(x){ return (Math.round(x * 100) / 100).toString(); }
+  var CFG = {
+    emnative:  { sess: function(){ return emnativeSession; },  ck: function(){ return emnativeCurrentKey + '/' + emnativeCurrentFile; },  submit: 'emnativeSubmit',  start: 'emnativeStartExam',  loaded: function(){ return emnativeLoaded; } },
+    spnative:  { sess: function(){ return spnativeSession; },  ck: function(){ return spnativeCurrentKey + '/' + spnativeCurrentFile; },  submit: 'spnativeSubmit',  start: 'spnativeStartExam',  loaded: function(){ return spnativeLoaded; } },
+    p75native: { sess: function(){ return p75nativeSession; }, ck: function(){ return p75nativeCurrentKey + '/' + p75nativeCurrentFile; }, submit: 'p75nativeSubmit', start: 'p75nativeStartExam', loaded: function(){ return p75nativeLoaded; } },
+    mmnative:  { sess: function(){ return mmnativeSession; },  ck: function(){ return mmnativeCurrentKey + '/' + mmnativeCurrentFile; },  submit: 'mmnativeSubmit',  start: 'mmnativeStartExam',  loaded: function(){ return mmnativeLoaded; } }
+  };
+  Object.keys(CFG).forEach(function(p){
+    var c = CFG[p], orig = window[c.submit]; if(typeof orig !== 'function') return;
+    window[c.submit] = function(){
+      var s = c.sess(), was = s.submitted, r = orig.apply(this, arguments);
+      try{
+        if(!was && s.submitted && !silent){
+          var q = s.questions || [], ans = s.answers || [], co = 0, wr = 0, mk = 0, tm = 0;
+          q.forEach(function(x, i){ tm += (x.marks || 0); var a = ans[i]; if(a === null || a === undefined) return; if(a === x.answer){ co++; mk += (x.marks || 0); } else { wr++; mk -= (x.neg || 0); } });
+          var att = co + wr;
+          putSnap(p + '|' + c.ck(), { answers: ans.slice(), marked: (s.marked || []).slice(), marks: mk, totalMarks: tm, correct: co, wrong: wr, skipped: q.length - att, total: q.length, acc: att ? Math.round(co / att * 100) : 0, t: Date.now() });
+        }
+      }catch(e){}
+      return r;
+    };
+  });
+  async function viewSaved(p, ck, opener){
+    var c = CFG[p], snap = getSnap(p + '|' + ck); if(!snap) return;
+    if(window.mockUIIsSSC && window.mockUIIsSSC() && window.openSSCMock){ window.__sscReview = snap; try{ await opener(); }catch(e){} window.__sscReview = null; return; }
+    var oL = window.logQuizActivity, oS = window.logSubjectMockToSectional;
+    silent = true; window.logQuizActivity = function(){}; if(typeof oS === 'function') window.logSubjectMockToSectional = function(){};
+    try{
+      await opener();
+      if(!c.loaded()) return;
+      window[c.start]();
+      var s = c.sess(); s.answers = snap.answers.slice(); s.marked = (snap.marked || []).slice();
+      window[c.submit]();
+    }catch(err){}
+    finally{ window.logQuizActivity = oL; if(typeof oS === 'function') window.logSubjectMockToSectional = oS; silent = false; }
+  }
+  window.__cxNatDecorate = function(el, p, ck, opener, rowMode){
+    var snap = getSnap(p + '|' + ck); if(!snap || el.__natDone) return; el.__natDone = 1;
+    var box = document.createElement('span'); box.className = 'attWrap';
+    if(rowMode){ el.style.flexWrap = 'wrap'; box.style.flexBasis = '100%'; }
+    box.innerHTML = '<span class="attScore">✅ Score: ' + fmt(snap.marks) + (snap.totalMarks ? '/' + fmt(snap.totalMarks) : '') + ' · ✔ ' + snap.correct + ' ✖ ' + snap.wrong + ' · ' + snap.acc + '%</span>' +
+      '<span class="attRow"><span role="button" class="attBtn attSolBtn">📖 Solution</span><span role="button" class="attBtn attReBtn">🔁 Reattempt</span></span>';
+    function stop(ev){ ev.stopPropagation(); ev.preventDefault(); }
+    box.querySelector('.attSolBtn').addEventListener('click', function(ev){ stop(ev); viewSaved(p, ck, opener); });
+    box.querySelector('.attReBtn').addEventListener('click', function(ev){ stop(ev); opener(); });
+    el.appendChild(box);
+  };
+  var css = document.createElement('style');
+  css.textContent = '.attScore{display:block;font-size:12.5px;font-weight:700;color:var(--gain,#16A34A);margin-top:2px}'
+    + '.attWrap{display:block;width:100%;text-align:left;margin-top:4px}'
+    + '.attRow{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}'
+    + '.attBtn{display:inline-block;border:0;border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;color:#fff;background:#1a73e8;cursor:pointer;font-family:inherit;line-height:1.2}'
+    + '.attBtn.mockCardReattemptBtn,.attBtn.attReBtn{background:#6a4cff}';
+  document.head.appendChild(css);
+})();
+
+/* ===================== Mock Pattern toggle (SSC / Normal) ===================== */
+(function(){
+  function isMobile(){ return /Mobile|iPhone|iPod|Opera Mini|IEMobile|BlackBerry/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 600); }
+  window.mockUIMode = function(){ var v = null; try{ v = localStorage.getItem('mockUI'); }catch(e){} return (v === 'ssc' || v === 'normal') ? v : (isMobile() ? 'normal' : 'ssc'); };
+  window.mockUIIsSSC = function(){ return window.mockUIMode() === 'ssc'; };
+  var SECS = { reasoning:'General Intelligence and Reasoning', english:'English Language', quant:'Quantitative Aptitude', math:'Quantitative Aptitude', gk:'General Awareness', computer:'Computer Knowledge', full:'Full Length Mock', sectional:'Sectional Mock', cglpre:'SSC CGL Pre', cpopre:'SSC CPO Pre' };
+  var cur = null, pendingRefresh = false;
+  /* list re-render ke liye last grid yaad rakho (score/Solution/Reattempt card turant dikhe) */
+  ['renderEmMocksGrid','renderP75MockGrid','renderMainsMockGrid','renderSPMockRows','gkQuizRender'].forEach(function(n){ var f = window[n]; if(typeof f !== 'function') return; window[n] = function(){ window.__lastMockGrid = { n:n, a:arguments }; return f.apply(this, arguments); }; });
+  function refreshGrid(){ if(!pendingRefresh) return; pendingRefresh = false; var g = window.__lastMockGrid; if(g && typeof window[g.n] === 'function'){ try{ window[g.n].apply(null, g.a); }catch(x){} } }
+  function ensureOverlay(){
+    var o = document.getElementById('sscMockOverlay'); if(o) return o;
+    o = document.createElement('div'); o.id = 'sscMockOverlay';
+    o.style.cssText = 'display:none;position:fixed;inset:0;z-index:2147483000;background:#fff';
+    o.innerHTML = '<iframe id="sscMockFrame" title="SSC Pattern Mock" allow="fullscreen" style="border:0;width:100%;height:100%;display:block"></iframe>';
+    document.body.appendChild(o); return o;
+  }
+  function closeOv(){
+    var ov = document.getElementById('sscMockOverlay');
+    if(ov && ov.style.display !== 'none'){ ov.style.display = 'none'; var fr = ov.firstChild; fr.onload = null; fr.src = 'about:blank'; setTimeout(refreshGrid, 50); return true; }
+    return false;
+  }
+  /* SSC CGL Tier-2 Paper-I: section-wise timer, section switch nahi, 3 marks / -1 negative */
+  function mainsCfg(o, n){
+    if(o.ns !== 'mmnative') return {};
+    var M = { name:'Mathematical Abilities', tag:'Section-I' }, RG = { name:'Reasoning & General Intelligence', tag:'Section-I' };
+    if(o.key === 'full' && n === 150) return { marking:{ marks:3, neg:1 }, sections:[
+      { tag:'Section-I', name:'Mathematical Abilities', s:0, e:30, min:30 },
+      { tag:'Section-I', name:'Reasoning & General Intelligence', s:30, e:60, min:30 },
+      { tag:'Section-II', name:'English Language & Comprehension', s:60, e:105, min:40 },
+      { tag:'Section-II', name:'General Awareness', s:105, e:130, min:20 },
+      { tag:'Section-III', name:'Computer Knowledge Test', s:130, e:150, min:15, qual:true } ] };
+    if(o.key === 'sectional' && n === 60) return { marking:{ marks:3, neg:1 }, sections:[
+      { tag:M.tag, name:M.name, s:0, e:30, min:30 }, { tag:RG.tag, name:RG.name, s:30, e:60, min:30 } ] };
+    return {};
+  }
+  window.openSSCMock = async function(o){
+    var rv = window.__sscReview || null; window.__sscReview = null;
+    var data;
+    try{ data = await o.load(); data = fixMockImagesInData(data); }
+    catch(e){ alert('Ye mock load nahi ho paaya. Dobara try karein.'); return; }
+    if(!data || !data.questions || !data.questions.length){ alert('Ye mock abhi available nahi hai.'); return; }
+    var e = o.entry || {};
+    var title = o.label + ' \u2014 ' + (e.label || ('Mock ' + e.n));
+    var ov = ensureOverlay(), fr = ov.firstChild; cur = o;
+    fr.onload = function(){
+      if(fr.getAttribute('src') !== 'ssc-player.html') return;
+      fr.contentWindow.postMessage({ type:'mpInit', data:data, meta:Object.assign({ id:o.ns + '/' + o.key + '/' + o.file, title:title, sec:SECS[o.key] || 'Mock Test', app:true, review: rv ? { answers: rv.answers, marked: rv.marked } : null }, mainsCfg(o, data.questions.length)) }, '*');
+    };
+    ov.style.display = 'block'; fr.src = 'ssc-player.html';
+    try{ history.pushState({ sscmock:1 }, ''); }catch(x){}
+  };
+  window.addEventListener('message', function(ev){
+    var m = ev.data; if(!m || typeof m !== 'object') return;
+    if(m.type === 'mpClose'){ if(closeOv() && history.state && history.state.sscmock){ try{ history.back(); }catch(x){} } }
+    else if(m.type === 'mpResult' && cur){
+      try{ logQuizActivity(cur.label + ' \u2014 ' + ((cur.entry && cur.entry.label) || ('Mock ' + (cur.entry && cur.entry.n))), m.correct, m.attempted); markQuizSetAttempted(cur.ns, cur.key + '/' + cur.file); }catch(x){}
+      try{
+        var KEY = 'cgl50-native-attempts', all = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+        var att = m.correct + m.wrong;
+        all[cur.ns + '|' + cur.key + '/' + cur.file] = { answers: m.answers, marked: m.marked, marks: m.score, totalMarks: m.totalMarks, correct: m.correct, wrong: m.wrong, skipped: m.total - att, total: m.total, acc: att ? Math.round(m.correct / att * 100) : 0, t: Date.now() };
+        localStorage.setItem(KEY, JSON.stringify(all));
+        pendingRefresh = true;
+      }catch(x){}
+    }
+  });
+  window.addEventListener('popstate', function(){ closeOv(); });
+  /* ---- top toggle bar on every mock menu/list page ---- */
+  var PAGES = ['mainsmockmenu','mainsmocklist','emmocksmenu','emmockslist','superpracticelist','75daylist','gkquiz'];
+  function refreshBars(){
+    var v = window.mockUIMode();
+    document.querySelectorAll('.mockUIBar button').forEach(function(b){ b.classList.toggle('on', b.dataset.v === v); });
+  }
+  function initBars(){
+    if(!document.getElementById('mockUIStyle')){
+      var st = document.createElement('style'); st.id = 'mockUIStyle';
+      st.textContent = '.mockUIBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;border-radius:14px;background:rgba(127,127,127,.14)}.mockUIBar span{font-size:12px;font-weight:700;opacity:.8}.mockUIBar button{border:0;border-radius:10px;padding:8px 14px;font:700 13px system-ui,sans-serif;background:rgba(127,127,127,.2);color:inherit;cursor:pointer}.mockUIBar button.on{background:#2a62d3;color:#fff}';
+      document.head.appendChild(st);
+    }
+    PAGES.forEach(function(n){
+      var pg = document.getElementById('calcPage-' + n); if(!pg || pg.querySelector('.mockUIBar')) return;
+      var bar = document.createElement('div'); bar.className = 'mockUIBar';
+      bar.innerHTML = '<span>Mock Pattern:</span><button type="button" data-v="ssc">\uD83D\uDDA5 SSC Pattern</button><button type="button" data-v="normal">\uD83D\uDCF1 Normal Pattern</button>';
+      bar.addEventListener('click', function(ev){ var b = ev.target.closest('button'); if(!b) return; try{ localStorage.setItem('mockUI', b.dataset.v); }catch(x){} refreshBars(); });
+      pg.insertBefore(bar, pg.firstChild);
+    });
+    refreshBars();
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBars); else initBars();
 })();
