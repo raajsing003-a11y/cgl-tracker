@@ -1,3 +1,7 @@
+/* ===== SPEED: 250-900ms wale polling setInterval tab hidden hone par skip (sab time-based kaam Date.now() se hote hain, to safe) ===== */
+(function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; var _si = window.setInterval;
+  window.setInterval = function(fn, ms){ if(typeof fn === 'function' && ms >= 250 && ms <= 900){ var ex = Array.prototype.slice.call(arguments, 2); return _si.call(window, function(){ if(document.hidden) return; return fn.apply(this, ex); }, ms); } return _si.apply(window, arguments); };
+})();
 /* ===== CXPOLL: chat/call/camera UI "inject" pollers sirf tab chalte hain jab wo screen khuli ho (aur tab hidden na ho) =====
    Pehle 20+ setInterval (120-800ms) har waqt DOM scan karte the, chat band ho tab bhi -> main thread/battery. Ab idle me ~0 kaam.
    Chat khulte hi kick('chat') se sab ek baar turant chalte hain (buttons pehle se jaldi). Band hone par ek aakhri cleanup run. */
@@ -31895,10 +31899,12 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     bar.addEventListener('click', function(e){ if(moved){ e.stopPropagation(); e.preventDefault(); } }, true);
     function place(){ try{ var p = JSON.parse(LS('cx:aiPos2') || 'null'); if(p && isFinite(p.l)){ var r = bar.getBoundingClientRect(); bar.style.left = clamp(p.l, 0, Math.max(0, window.innerWidth - r.width)) + 'px'; bar.style.top = clamp(p.t, 0, Math.max(0, window.innerHeight - r.height)) + 'px'; bar.style.bottom = 'auto'; bar.style.right = 'auto'; } else { var r2 = bar.getBoundingClientRect(); if(r2.left < 0 || r2.right > window.innerWidth){ bar.style.right = '8px'; bar.style.left = 'auto'; } } }catch(e){} }
     window.addEventListener('resize', place);
-    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin2') !== '0'); place(); try{ scan(); }catch(e){} }
+    function init(){ document.body.classList.add('cxNoAdm'); document.body.appendChild(bar); setMin(LS('cx:aiMin2') !== '0'); place(); try{ scan(); }catch(e){}
+      /* screenshot library pehle se load rakho (pehla Google/Gemini tap turant chale) */
+      var pre = function(){ try{ loadH2C().catch(function(){}); }catch(e){} }; if(window.requestIdleCallback) requestIdleCallback(pre, { timeout: 8000 }); else setTimeout(pre, 5000); }
     if(document.body) init(); else document.addEventListener('DOMContentLoaded', init);
   })();
-  setInterval(function(){ sched(); }, 3000);
+  setInterval(function(){ if(!document.hidden) sched(); }, 6000);
   /* ---- Extension (saved questions) -> Mock Question Add bank: extension 'sd-mock-import' bhejta hai, admin ho to merge + ack ---- */
   try{ document.documentElement.setAttribute('data-cgly-app', '1'); }catch(e){}
   window.addEventListener('message', function(e){
@@ -31916,7 +31922,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
     if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });
-  var tm = null; function sched(){ clearTimeout(tm); tm = setTimeout(scan, 250); }
+  var tm = null; function sched(){ if(tm) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
       for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
