@@ -32235,7 +32235,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 // galat image link, <img> tag text ban jana, HTML tag ya &#...; code text ban ke dikhna,
 // LaTeX (\frac, $..$) bacha hona, extra </span>, kharaab characters, khali question/option,
 // answer range se bahar, duplicate options, figure ka zikr par image nahi, missing
-// explanation / Hindi, aur manifest me hai par file nahi mili.
+// Hindi (solution / explanation ko ye scanner check NAHI karta), aur manifest me hai par file nahi mili.
 (function(){
   const CORE = (function(){
     const SEV = { error:3, warn:2, info:1 };
@@ -32270,6 +32270,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     const LATEX_OK = /\\(left|right|times|div|cdot|pi|propto|approx|Rightarrow|rightarrow|downarrow|circ)(?![a-zA-Z])/g;
 
     function isObj(o){ return o && typeof o === 'object' && !Array.isArray(o); }
+    // Solution / explanation wali strings scanner ignore karta hai (sirf question + options check hote hain)
+    const EXPPATH = /(^|\.)(sol|sol1|sol2|e|eh|explanation|solution|solution_en|solution_hi|exp)(\.|\[|$)/;
+    function isExpStr(x){ return EROOT.test(x.root) || EXPPATH.test(x.p || ''); }
     function stripTags(s){ return String(s == null ? '' : s).replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/\s+/g,' ').trim(); }
     function looksQ(o){ return isObj(o) && ('options' in o || 'o' in o || 'q_en' in o || 'en' in o || 't' in o || 'word' in o || 'options_en' in o || 'question' in o); }
 
@@ -32323,10 +32326,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       Object.keys(q).forEach(function(k){ collect(q[k], k, k, strs, 0); });
 
       // ---- question text / images ----
-      const qStrs = strs.filter(function(x){ return QROOT.test(x.root); });
+      const qStrs = strs.filter(function(x){ return QROOT.test(x.root) && !isExpStr(x); });
       let qText = '', hasImg = false, anyImg = false;
       const imgSeen = {};
       strs.forEach(function(x){
+        if(isExpStr(x)) return;
         const isImgKey = /^(img|image|figure|fig|imgs)$/i.test(x.root) && /^https?:|^\/\/|^data:image|\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(x.v);
         const tags = x.v.match(/<img\b[^>]*>/gi) || [];
         if(tags.length || isImgKey) anyImg = true;
@@ -32354,7 +32358,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       const once = function(code, key, detail){ const k = code + '|' + key; if(seenCode[k]) return; seenCode[k] = 1; add(code, detail); };
       strs.forEach(function(x){
         const v = x.v; if(!v) return;
-        const isExp = EROOT.test(x.root);
+        const isExp = isExpStr(x);
+        if(isExp) return; // solution/explanation me errors nahi dhundhne
         // RAW tags
         if(ctx.render === 'spv' || ctx.render === 'esc'){
           const m = v.match(KNOWN_TAG);
@@ -32432,7 +32437,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       }
 
       // ---- explanation (sirf jab is array me kuch questions ke paas hai) ----
-      if(ctx.expKeys && ctx.expKeys.length){
+      if(false && ctx.expKeys && ctx.expKeys.length){ // NO_EXPL check band: solution/explanation scan nahi hota
         const has = ctx.expKeys.some(function(k){ const v = q[k]; return typeof v === 'string' ? stripTags(v).length > 0 : (v && typeof v === 'object'); });
         if(!has) add('NO_EXPL');
       }
