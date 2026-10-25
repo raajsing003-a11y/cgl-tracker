@@ -31825,7 +31825,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     main.style.display = has ? 'flex' : 'none';
     if(has && fs && fs.parentNode && main.nextElementSibling !== fs){ try{ fs.parentNode.insertBefore(main, fs); }catch(e){} }
     if(has && !lastShown && ac.checked){ setTimeout(function(){ if(curPage === page && main.style.display !== 'none') main.sendNow(); }, 900); }
-    else if(has && !lastShown && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ setTimeout(function(){ var go = function(){ if(curPage === page) main.prep(); }; if(window.requestIdleCallback) requestIdleCallback(go, { timeout: 4000 }); else go(); }, 1500); }   /* mobile par auto-screenshot band (answer tick par hang hota tha); tap/drag par screenshot tab banta hai */   /* thumbnail pehle se ready, drag turant chale */
+    /* auto-screenshot (html2canvas) hata diya: answer tick/scroll par page hang hota tha. Screenshot ab sirf button tap par banta hai. */   /* mobile par auto-screenshot band (answer tick par hang hota tha); tap/drag par screenshot tab banta hai */   /* thumbnail pehle se ready, drag turant chale */
     if(has && !lastShown) setMin(true);
     lastShown = has;
   }
