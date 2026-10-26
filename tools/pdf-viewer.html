@@ -6842,11 +6842,1443 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   }
   var sb3 = stbBuild; stbBuild = function (r) { sb3(r); stbOutUi(r); };
 
-  Object.assign(window.CFL, { slide: { state: function () { return STB; }, apply: stbApply, color: stbColor, isDark: stbIsDark, boxes: stbBoxes, render: stbRender, trim: stbTrim, layout: stbLayout, process: stbProcess, info: stbInfo, splitNotes: stbSplitNotes, pages: stbPages, eff: stbEff, findSame: stbFindSame, sig: stbSig, sim: stbSim, hist: { snap: stbSnap, undo: stbUndo, redo: stbRedo, state: stbState }, grid: stbGrid, test3: stbTest3, run: stbRun, merge: stbMerge, sections: stbSections, out: function () { return STB.out; }, load: stbLoad, show: stbShow, presets: function () { return STB.presets; } } });
+  /* ===== Slide to Book — SIMPLE WIZARD (alag screen: Book banane ki zarurat nahi, 4 aasan steps) ===== */
+  var WZ = { root: null, ref: 1, tmr: 0, prevRoot: null, W: 760 };
+  function wzCss() {
+    if (document.getElementById('stbWCss')) return; var s = document.createElement('style'); s.id = 'stbWCss';
+    s.textContent = '#stbW{position:fixed;inset:0;z-index:2147483000;background:var(--bg);color:var(--fg);overflow:auto;padding:10px 12px 40px}#stbW .wb{max-width:820px;margin:0 auto}#stbW .wt{display:flex;align-items:center;gap:8px;margin-bottom:8px}#stbW .wt b{font-size:18px;flex:1}' +
+      '#stbW section{background:var(--chrome);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}#stbW h3{margin:0 0 8px;font-size:16px}#stbW .wh{color:var(--muted);font-size:13px;margin:4px 0}' +
+      '#stbW button{padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-size:14px}#stbW button.p{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;font-size:16px;padding:12px 18px}#stbW button:disabled{opacity:.4}' +
+      '#stbW .r{display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap}#stbW .r>span:first-child{flex:0 0 150px}#stbW input[type=range]{flex:1;min-width:130px}#stbW select,#stbW input[type=number]{padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--panel)}' +
+      '#stbW .pv{display:flex;gap:8px;flex-wrap:wrap}#stbW .pv>div{flex:1;min-width:230px}#stbW canvas{width:100%;border:1px solid var(--line);background:#fff;display:block}#stbW .bar2{height:12px;background:var(--hover);border-radius:6px;overflow:hidden;margin:10px 0}#stbW .bar2 i{display:block;height:100%;width:0;background:var(--accent)}';
+    document.head.appendChild(s);
+  }
+  function wzK(k) { return WZ.root.querySelector('[data-k=' + k + ']'); }
+  function wzSync() {
+    var v = function (k) { return +wzK(k).value || 0; }, t = v('ct') / 100, b = v('cb') / 100, l = v('cl') / 100, rr = v('cr') / 100;
+    STB.ovAct = 0; STB.base = null; STB.ov = {};
+    STB.zones = (t || b || l || rr) ? [{ type: 'c', mode: 'fill', x: l, y: t, w: Math.max(0.05, 1 - l - rr), h: Math.max(0.05, 1 - t - b) }] : [];
+    STB.fx.mode = 'none'; STB.fx.wm = wzK('wm').checked ? 1 : 0; STB.fx.wmp = 0;
+    STB.lay.per = +wzK('per').value; STB.lay.label = wzK('lab').value; STB.lay.trim = wzK('trim').checked ? 1 : 0; STB.lay.notes = wzK('notes').value;
+    var f = v('from'), to = v('to'); STB.sel.scope = (f || to) ? 'range' : 'all'; STB.sel.from = f || 1; STB.sel.to = to || 9999;
+    ['ct', 'cb', 'cl', 'cr'].forEach(function (k) { wzK(k + 'v').textContent = v(k) + '%'; });
+    clearTimeout(WZ.tmr); WZ.tmr = setTimeout(function () { wzSave(); wzPreview(); }, 150);
+  }
+  async function wzPreview() {
+    if (!STB.doc || !WZ.root) return; STB.ref = clamp(WZ.ref, 1, STB.npg); wzK('pgi').textContent = 'Page ' + STB.ref + ' / ' + STB.npg;
+    try {
+      var page = await STB.doc.getPage(STB.ref), v0 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: WZ.W / v0.width }), c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height); var cx = c.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: cx, viewport: vp }).promise;
+      var a = wzK('after'), b = wzK('before'), o = stbRender(c, STB.zones, STB.fx), z = STB.zones[0];
+      b.width = c.width; b.height = c.height; var bx = b.getContext('2d'); bx.drawImage(c, 0, 0);
+      if (z) { bx.fillStyle = 'rgba(239,68,68,.35)'; bx.fillRect(0, 0, c.width, z.y * c.height); bx.fillRect(0, (z.y + z.h) * c.height, c.width, c.height); bx.fillRect(0, z.y * c.height, z.x * c.width, z.h * c.height); bx.fillRect((z.x + z.w) * c.width, z.y * c.height, c.width, z.h * c.height); }
+      a.width = o.width; a.height = o.height; a.getContext('2d').drawImage(o, 0, 0); o.width = o.height = 0; c.width = c.height = 0; wzA4();
+    } catch (e) { toast('Preview fail: ' + (e && e.message || e)); }
+  }
+  async function wzLoad(file) {
+    if (typeof pdfjsLib === 'undefined' || !pdfjsLib.getDocument) { toast('Internet chahiye — pdf.js load nahi hua'); return; } busy('PDF khul rahi hai…', 0.3);
+    try { var buf = await file.arrayBuffer(); if (STB.doc) { try { STB.doc.destroy(); } catch (e) {} } STB.doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; STB.name = file.name; STB.npg = STB.doc.numPages; STB.ref = WZ.ref = 1; }
+    catch (e) { busyOff(); toast('PDF load fail: ' + (e && e.message || e)); return; }
+    busyOff(); wzK('info').textContent = '✔ ' + file.name + ' · ' + STB.npg + ' pages'; wzK('go').disabled = false; wzSync();
+  }
+  async function wzAuto() {
+    if (!STB.doc) { toast('Pehle PDF chuno'); return; } busy('Neeche ki patti dhundh raha hoon…', 0.4);
+    try {
+      var n = Math.min(6, STB.npg), ys = [];
+      for (var i = 0; i < n; i++) { var pn = Math.max(1, Math.round((i + 0.5) * STB.npg / n)), im = await stbPageImg(pn, 500), bx = stbBoxes(im.c).filter(function (z) { return z.y > 0.8; }); im.c.width = im.c.height = 0; ys.push(bx.map(function (z) { return z.y; })); }
+      var all = [].concat.apply([], ys).sort(function (a, b) { return a - b; }), best = null;
+      all.forEach(function (y) { var cnt = ys.filter(function (a) { return a.some(function (v) { return Math.abs(v - y) < 0.03; }); }).length; if (cnt >= n / 2 && best === null) best = y; });
+      busyOff(); if (best === null) { toast('Neeche koi patti nahi mili — slider haath se set karo'); return; }
+      var v = clamp(Math.ceil((1 - best) * 100) + 1, 0, 40); wzK('cb').value = v; wzSync(); toast('Neeche ka ' + v + '% hatane ke liye set kiya — preview check karo');
+    } catch (e) { busyOff(); toast('Auto fail: ' + (e && e.message || e)); }
+  }
+  async function wzA4() {
+    var cv = wzK('a4'); if (!cv || !STB.doc) return; var items = [];
+    try { for (var n = STB.ref; n < STB.ref + STB.lay.per && n <= STB.npg; n++) items.push(await stbProcess(n)); var a = stbLayout(items, STB.lay, { pg: 1, chapter: '', qstart: 1 }); cv.width = a.width; cv.height = a.height; cv.getContext('2d').drawImage(a, 0, 0); a.width = a.height = 0; } catch (e) {}
+    items.forEach(function (it) { if (it.c) it.c.width = it.c.height = 0; });
+  }
+  var WZ_K = ['ct', 'cb', 'cl', 'cr', 'per', 'lab', 'notes'];
+  function wzSave() { var o = {}; WZ_K.forEach(function (k) { o[k] = wzK(k).value; }); o.wm = wzK('wm').checked; o.trim = wzK('trim').checked; try { kPut('kv', 'stb|wiz', o); } catch (e) {} }
+  function wzRestore() { kGet('kv', 'stb|wiz').then(function (o) { if (!o || !WZ.root) return; WZ_K.forEach(function (k) { if (o[k] != null) wzK(k).value = o[k]; }); wzK('wm').checked = !!o.wm; wzK('trim').checked = !!o.trim; wzSync(); }).catch(function () {}); }
+  function wzOpen() {
+    wzCss(); var old = document.getElementById('stbW'); if (old) old.remove();
+    var d = document.createElement('div'); d.id = 'stbW'; WZ.root = d; WZ.prevRoot = STB.root; STB.root = d;
+    var sl = function (k, lab, val) { return '<div class="r"><span>' + lab + '</span><input type="range" data-k="' + k + '" min="0" max="40" value="' + val + '"><b data-k="' + k + 'v" style="width:44px">' + val + '%</b></div>'; };
+    d.innerHTML = '<div class="wb"><div class="wt"><b>🎞 Slide to Book</b><button data-a="x">✖ Band karo</button></div>' +
+      '<section><h3>① PDF chuno</h3><button class="p" data-a="file">📄 Slide PDF chuno</button><input type="file" data-k="file" accept="application/pdf" hidden> <span data-k="info" class="wh"></span><div class="wh">Book banane ki zarurat nahi — PDF seedha khulti hai, browser ki storage nahi bharti.</div></section>' +
+      '<section><h3>② Kya hatana hai?</h3><div class="wh">Slider se kinare kaato. Laal hissa = hat jayega. Neeche ki black patti / source tag / page number ke liye "Neeche" badhao.</div>' +
+      sl('ct', 'Upar se', 0) + sl('cb', 'Neeche se', 10) + sl('cl', 'Left se', 0) + sl('cr', 'Right se', 0) +
+      '<div class="r"><label><input type="checkbox" data-k="wm" checked> Watermark hatao (halka "coaching center" jaisa)</label></div>' +
+      '<div class="r"><button data-a="auto">🪄 Neeche ki patti apne aap dhundo</button></div><div class="r"><button data-a="pv">◀</button><b data-k="pgi">Page -</b><button data-a="nx">▶</button><span class="wh">Alag-alag page par jaake check karo</span></div>' +
+      '<div class="pv"><div><div class="wh">Pehle (laal = hatega)</div><canvas data-k="before"></canvas></div><div><div class="wh">Baad mein</div><canvas data-k="after"></canvas></div></div></section>' +
+      '<section><h3>③ Book kaisi chahiye?</h3>' +
+      '<div class="r"><span>Ek A4 page mein</span><select data-k="per"><option value="1">1 slide</option><option value="2" selected>2 slides</option><option value="4">4 slides</option></select></div>' +
+      '<div class="r"><span>Slide ka label</span><select data-k="lab"><option value="none" selected>Koi nahi</option><option value="slide">Slide 1, 2, 3…</option></select></div>' +
+      '<div class="r"><span>Notes wali slides</span><select data-k="notes"><option value="keep" selected>Sab slides rakho</option><option value="sep">Notes alag (end mein)</option><option value="drop">Notes hata do</option></select></div>' +
+      '<div class="r"><label><input type="checkbox" data-k="trim" checked> Khaali jagah apne aap kaato</label></div>' +
+      '<div class="r"><span>Sirf pages (khaali = sab)</span><input type="number" data-k="from" min="1" placeholder="se" style="width:70px"> <input type="number" data-k="to" min="1" placeholder="tak" style="width:70px"></div><div class="wh">Book ka ek page aisa dikhega (jis page par preview hai wahin se):</div><canvas data-k="a4" style="max-width:380px"></canvas></section>' +
+      '<section><h3>④ Book banao</h3><button class="p" data-a="go" disabled>▶ Book banao</button> <button data-a="pz">⏸ Pause</button> <button data-a="cx">✖ Cancel</button><div class="bar2" data-k="oprog"><i></i></div><div class="wh" data-k="omsg"></div><div data-k="oparts" style="display:none"></div><button class="p" data-a="dl" data-k="dl" hidden>⬇ PDF download karo</button></section></div>';
+    document.body.appendChild(d);
+    d.oninput = d.onchange = function (e) { if (e.target.dataset.k === 'file') { var f = e.target.files[0]; e.target.value = ''; if (f) wzLoad(f); } else wzSync(); };
+    d.onclick = async function (e) {
+      var b = e.target.closest('[data-a]'); if (!b) return; var a = b.dataset.a;
+      if (a === 'x') { if (STB.run) STB.run.cancel = true; STB.root = WZ.prevRoot; d.remove(); }
+      else if (a === 'file') wzK('file').click();
+      else if (a === 'pv' && STB.doc) { WZ.ref = Math.max(1, WZ.ref - 1); wzPreview(); } else if (a === 'nx' && STB.doc) { WZ.ref = Math.min(STB.npg, WZ.ref + 1); wzPreview(); }
+      else if (a === 'pz' && STB.run) { STB.run.paused = !STB.run.paused; b.textContent = STB.run.paused ? '▶ Resume' : '⏸ Pause'; }
+      else if (a === 'cx' && STB.run) STB.run.cancel = true; else if (a === 'auto') wzAuto();
+      else if (a === 'dl' && STB.job) stbMerge(STB.job).catch(function (er) { busyOff(); toast('Merge fail: ' + (er && er.message || er)); });
+      else if (a === 'go') {
+        wzSync(); STB.out.mode = 'book'; wzK('dl').hidden = true; b.disabled = true; await stbRun(); b.disabled = false;
+        if (STB.job && STB.job.finished) { wzK('dl').hidden = false; var sz = STB.job.parts.reduce(function (t, p) { return t + (p.size || 0); }, 0); wzK('omsg').textContent = '✔ Book ready · ' + STB.job.pg + ' A4 pages · ~' + Math.max(1, Math.round(sz / 1048576)) + ' MB — neeche "PDF download karo" dabao'; }
+      }
+    };
+    wzSync(); wzRestore();
+  }
+  (function () { var row = $('cflHome').querySelector('.cflRow'), wb = document.createElement('button'); wb.id = 'cflWizB'; wb.className = 'primary'; wb.textContent = '🎞 Slide to Book (aasan)'; wb.onclick = wzOpen; row.insertBefore(wb, $('cflImpF')); })();
+
+  Object.assign(window.CFL, { slide: { wizard: wzOpen, state: function () { return STB; }, apply: stbApply, color: stbColor, isDark: stbIsDark, boxes: stbBoxes, render: stbRender, trim: stbTrim, layout: stbLayout, process: stbProcess, info: stbInfo, splitNotes: stbSplitNotes, pages: stbPages, eff: stbEff, findSame: stbFindSame, sig: stbSig, sim: stbSim, hist: { snap: stbSnap, undo: stbUndo, redo: stbRedo, state: stbState }, grid: stbGrid, test3: stbTest3, run: stbRun, merge: stbMerge, sections: stbSections, out: function () { return STB.out; }, load: stbLoad, show: stbShow, presets: function () { return STB.presets; } } });
 
   Object.assign(window.CFL, {
     split: { state: function () { return SP; }, load: spLoad, detect: function () { spDetect(); spRender(); return SP.ch; }, rows: function () { return SP.ch.map(function (c, i) { return Object.assign({ end: spEnd(i) }, c, spStats(i)); }); }, files: spFiles, zip: spZip, ocr: spOcr, insert: spInsert },
     _s8: { spLines: spLines, spDetect: spDetect, spStats: spStats, spClean: spClean }
   });
+})();
+</script>
+<script id="autoBookBuilder">
+(function (root) {
+  'use strict';
+  var WM = /apna_pdf|@apna|telegram|search on t/i, BIDI = /[\u202a-\u202e\u200e\u200f\u2066-\u2069]/g;
+  function med(a) { if (!a.length) return 0; a = a.slice().sort(function (x, y) { return x - y; }); return a[a.length >> 1]; }
+  function pageItems(tc, view) {
+    var out = [], X0 = view[0], H = view[3] - view[1];
+    tc.items.forEach(function (it) {
+      var s = (it.str || '').replace(BIDI, ''); if (!s.trim()) return;
+      var t = it.transform, a = Math.hypot(t[0], t[1]) || 1;
+      if (Math.abs(t[1]) > 0.1 * a || t[0] < 0) return;          // rotated
+      if (WM.test(s)) return;                                      // watermark / banner text
+      out.push({ s: s, x: t[4] - X0, x1: t[4] - X0 + (it.width || 0), y: H - t[5], sz: Math.hypot(t[2], t[3]) || 10 });
+    });
+    return out;
+  }
+  function bands(pages) {
+    var tops = [], bots = [];
+    pages.forEach(function (p) { if (p.items.length > 3) { tops.push(Math.min.apply(null, p.items.map(function (i) { return i.y; }))); bots.push(Math.max.apply(null, p.items.map(function (i) { return i.y; }))); } });
+    return { top: med(tops) + 3, bot: med(bots) - 3 };
+  }
+  function findCols(pages, W) {
+    var N = Math.ceil(W) + 2, h = new Array(N).fill(0);
+    pages.forEach(function (p) { p.body.forEach(function (i) { if (i.x1 - i.x > 0.5 * W) return; for (var x = Math.max(0, Math.floor(i.x)); x <= Math.min(N - 1, Math.ceil(i.x1)); x++) h[x]++; }); });
+    var mx = Math.max.apply(null, h) || 1, th = mx * 0.02, runs = [], st = -1;
+    for (var x = 0; x <= N; x++) { var on = x < N && h[x] > th; if (on && st < 0) st = x; if (!on && st >= 0) { var gap = 0, k = x; while (k < N && h[k] <= th) { gap++; k++; } if (gap >= 4 || k >= N) { runs.push({ x0: st, x1: x }); st = -1; } } }
+    runs = runs.filter(function (r) { return r.x1 - r.x0 > 0.12 * W; });
+    return runs.length ? runs : [{ x0: 0, x1: W }];
+  }
+  function colOf(cols, cx) { var b = 0, bd = 1e9; cols.forEach(function (c, i) { var d = cx < c.x0 ? c.x0 - cx : cx > c.x1 ? cx - c.x1 : 0; if (d < bd) { bd = d; b = i; } }); return b; }
+  function lines(pn, items, cols) {
+    var by = cols.map(function () { return []; }), out = [];
+    items.forEach(function (i) { by[colOf(cols, (i.x + i.x1) / 2)].push(i); });
+    by.forEach(function (arr, ci) {
+      arr.sort(function (a, b) { return a.y - b.y || a.x - b.x; });
+      var cur = null;
+      arr.forEach(function (i) {
+        if (!cur || Math.abs(i.y - cur.y) > Math.max(1.8, 0.25 * i.sz)) { cur = { page: pn, col: ci, y: i.y, its: [] }; out.push(cur); }
+        cur.its.push(i);
+      });
+    });
+    out.forEach(function (l) {
+      l.its.sort(function (a, b) { return a.x - b.x; });
+      var t = '', pe = null; l.its.forEach(function (i) { if (pe !== null && i.x - pe > 1.2 && !/^\s/.test(i.s) && !/\s$/.test(t)) t += ' '; t += i.s; pe = i.x1; });
+      l.text = t.trim(); l.x0 = l.its[0].x; l.x1 = Math.max.apply(null, l.its.map(function (i) { return i.x1; }));
+      var sz = Math.max.apply(null, l.its.map(function (i) { return i.sz; }));
+      l.sz = sz; l.top = Math.min.apply(null, l.its.map(function (i) { return i.y - i.sz * 0.9; })); l.bot = Math.max.apply(null, l.its.map(function (i) { return i.y + i.sz * 0.3; }));
+      l.y = med(l.its.map(function (i) { return i.y; }));
+    });
+    out.sort(function (a, b) { return a.col - b.col || a.y - b.y; });
+    return out;
+  }
+  var RQ = /^Q\s*\.\s*(\d+)\s*[.:)]?(?:\s|$)/, RS = /^Sol\s*\.\s*(\d+)\s*\.?\s*\(\s*([a-d])\s*\)/i, RK = /(\d+)\s*\.\s*\(\s*([a-d])\s*\)/g;
+  function segs(L, a, e, cols, bd) {
+    var out = [];
+    for (var i = a; i <= e; i++) { var l = L[i], s = out[out.length - 1]; if (s && s.page === l.page && s.col === l.col) { s.top = Math.min(s.top, l.top); s.bot = Math.max(s.bot, l.bot); s.i1 = i; } else out.push({ page: l.page, col: l.col, top: l.top, bot: l.bot, x0: cols[l.col].x0, x1: cols[l.col].x1, i0: i, i1: i }); }
+    out.forEach(function (s) { var p = L[s.i0 - 1], n = L[s.i1 + 1]; s.l0 = p && p.page === s.page && p.col === s.col ? (p.bot + s.top) / 2 : null; s.l1 = n && n.page === s.page && n.col === s.col ? (s.bot + n.top) / 2 : null; if (s.l0 == null && s.top - 8 < bd.top + 4) s.l0 = bd.top + 4; if (s.l1 == null && s.bot + 8 > bd.bot - 8) s.l1 = bd.bot - 8; });
+    return out;
+  }
+  function markBox(l) {
+    var acc = '', re = /^(Q\.\d+\.?|Sol\.\d+\.?\([a-d]\))/i;
+    for (var i = 0; i < l.its.length; i++) { acc += l.its[i].s.replace(/\s/g, ''); if (re.test(acc)) { var m = re.exec(acc)[0]; if (acc.length >= m.length) return { x0: l.its[0].x, x1: l.its[i].x1, top: l.top, bot: l.bot, sz: l.sz }; } }
+    return null;
+  }
+  function chapName(p, bd) { var hl = p.items.filter(function (i) { return i.y <= bd.top; }).sort(function (a, b) { return a.x - b.x; }).map(function (i) { return i.s; }).join(' '); return hl.replace(/Pinnacle/gi, '').replace(/Day\s*:\s*\w+/gi, '').replace(/\s+/g, ' ').trim(); }
+  function analyze(pages, W) {
+    var bd = bands(pages);
+    pages.forEach(function (p) { p.body = p.items.filter(function (i) { return i.y > bd.top && i.y < bd.bot; }); });
+    var cols = findCols(pages, W), L = [];
+    pages.forEach(function (p) { L = L.concat(lines(p.n, p.body, cols)); });
+    var dys = []; for (var i = 1; i < L.length; i++) if (L[i].page === L[i - 1].page && L[i].col === L[i - 1].col) { var d = L[i].y - L[i - 1].y; if (d > 4 && d < 30) dys.push(d); }
+    var lead = med(dys) || 12, tight = 0.72 * lead;
+    var isMk = function (t) { return RQ.test(t) || RS.test(t); };
+    for (var z = 0; z < L.length - 1; z++) { var za = L[z], zb = L[z + 1]; if (za.page === zb.page && za.col === zb.col && isMk(zb.text) && !isMk(za.text) && zb.y - za.y < 0.9 * lead && za.x0 > zb.x0 + 15) { L[z] = zb; L[z + 1] = za; z++; } }
+    L.forEach(function (l) { var m; l.kind = null; var near = l.x0 <= cols[l.col].x0 + 8; if (near && (m = RQ.exec(l.text))) { l.kind = 'Q'; l.num = +m[1]; } else if (near && (m = RS.exec(l.text))) { l.kind = 'S'; l.num = +m[1]; l.opt = m[2].toLowerCase(); } });
+    var key = {}, firstS = L.findIndex(function (l) { return l.kind === 'S'; }), kStart = -1;
+    L.forEach(function (l, i) { if (kStart < 0 && /answer\s*key/i.test(l.text)) kStart = i; });
+    if (kStart >= 0) for (var k = kStart; k < (firstS < 0 ? L.length : firstS); k++) { var mm; RK.lastIndex = 0; while ((mm = RK.exec(L[k].text))) key[+mm[1]] = mm[2].toLowerCase(); }
+    var Q = [], S = [], ch = 0, chapters = [], lastQ = 0, lastH = null;
+    pages.forEach(function (p) { p.ch = chapName(p, bd); });
+    for (var i2 = 0; i2 < L.length; i2++) {
+      var l = L[i2]; if (!l.kind) continue;
+      var pg = pages[l.page - 1]; if (lastH !== null && pg.ch !== lastH && pg.ch) { ch++; lastQ = 0; } lastH = pg.ch || lastH;
+      if (l.kind === 'Q') {
+        if (l.num <= lastQ && lastQ > 0) { ch++; } lastQ = l.num;
+        var e = i2, sawA = false, found = false, flags = [];
+        for (var k2 = i2; k2 < L.length; k2++) {
+          if (k2 > i2 && L[k2].kind) { flags.push('options kam'); e = k2 - 1; break; }
+          if (/\(\s*a\s*\)/.test(L[k2].text)) sawA = true;
+          e = k2; if (sawA && /\(\s*d\s*\)/.test(L[k2].text)) { found = true; break; }
+        }
+        if (!found && !flags.length) flags.push('options kam');
+        if (found) while (e + 1 < L.length) { var a = L[e], b = L[e + 1]; if (b.page === a.page && b.col === a.col && !b.kind && b.y - a.y < tight && b.text.length <= 14) e++; else break; }
+        Q.push({ n: l.num, ch: ch, a: i2, e: e, segs: segs(L, i2, e, cols, bd), flags: flags, mk: markBox(l) });
+      } else {
+        var e2 = i2; while (e2 + 1 < L.length && !L[e2 + 1].kind) e2++;
+        S.push({ n: l.num, ch: ch, opt: l.opt, a: i2, e: e2, segs: segs(L, i2, e2, cols, bd), flags: [], mk: markBox(l) });
+      }
+      if (!chapters.length || chapters[chapters.length - 1].ch !== ch) chapters.push({ ch: ch, page: l.page, name: pg.ch || ('Chapter ' + (ch + 1)) });
+    }
+    var sm = {}; S.forEach(function (s) { sm[s.ch + ':' + s.n] = s; });
+    var prev = {};
+    Q.forEach(function (q) { var s = sm[q.ch + ':' + q.n]; q.sol = s || null; if (!s) q.flags.push('missing Sol'); else if (key[q.n] && key[q.n] !== s.opt) { q.flags.push('pair mismatch'); s.flags.push('pair mismatch'); } var p0 = prev[q.ch] || 0; if (q.n !== p0 + 1) q.flags.push('sequence toota'); prev[q.ch] = q.n; });
+    var qm = {}; Q.forEach(function (q) { qm[q.ch + ':' + q.n] = 1; }); S.forEach(function (s) { if (!qm[s.ch + ':' + s.n]) s.flags.push('orphan Sol'); });
+    var flagged = Q.filter(function (q) { return q.flags.length; }).length + S.filter(function (s) { return s.flags.length; }).length;
+    return { cols: cols, bands: bd, lead: lead, lines: L, Q: Q, S: S, key: key, chapters: chapters, flagged: flagged };
+  }
+  function order(r) { var o = []; r.Q.forEach(function (q) { o.push({ t: 'Q', n: q.n, ch: q.ch, segs: q.segs }); if (q.sol) o.push({ t: 'S', n: q.sol.n, ch: q.ch, segs: q.sol.segs }); }); return o; }
+  async function detectPdf(pdf, opt) {
+    opt = opt || {}; var pages = [], W = 0;
+    for (var i = 1; i <= pdf.numPages; i++) {
+      if (opt.stop && opt.stop()) throw new Error('cancelled');
+      while (opt.paused && opt.paused()) await new Promise(function (r) { setTimeout(r, 120); });
+      var pg = await pdf.getPage(i), tc = await pg.getTextContent(); W = pg.view[2] - pg.view[0];
+      pages.push({ n: i, items: pageItems(tc, pg.view), view: pg.view }); if (pg.cleanup) pg.cleanup();
+      if (opt.progress) opt.progress(i, pdf.numPages);
+    }
+    return analyze(pages, W);
+  }
+  root.ABB = { pageItems: pageItems, analyze: analyze, detectPdf: detectPdf, order: order };
+  if (typeof module !== 'undefined') module.exports = root.ABB;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+(function (root) {
+  'use strict';
+  function stripWM(s) {
+    var re = /\/Artifact\s*<<[^>]*Watermark[^>]*>>\s*BDC/g, out = '', last = 0, m, n = 0;
+    while ((m = re.exec(s))) {
+      var t = /\bBDC\b|\bBMC\b|\bEMC\b/g; t.lastIndex = re.lastIndex; var d = 1, x, end = -1;
+      while ((x = t.exec(s))) { if (x[0] === 'EMC') { d--; if (!d) { end = t.lastIndex; break; } } else d++; }
+      if (end < 0) break; out += s.slice(last, m.index) + ' '; last = end; re.lastIndex = end; n++;
+    }
+    return { s: out + s.slice(last), n: n };
+  }
+  async function cleanPdf(bytes) {
+    var P = root.PDFLib, doc = await P.PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false }), tot = 0, forms = 0;
+    doc.context.enumerateIndirectObjects().forEach(function (e) {
+      var ref = e[0], o = e[1]; if (!(o instanceof P.PDFRawStream)) return;
+      var st = o.dict.get(P.PDFName.of('Subtype')); if (st && /Image/.test(String(st))) return;
+      var f = o.dict.get(P.PDFName.of('Filter')); if (f && /DCT|JPX|CCITT|JBIG/.test(String(f))) return;
+      var dec; try { dec = P.decodePDFRawStream(o).decode(); } catch (e2) { return; }
+      var txt = ''; for (var i = 0; i < dec.length; i += 8192) txt += String.fromCharCode.apply(null, dec.subarray(i, i + 8192));
+      var isForm = st && /Form/.test(String(st)), r = stripWM(txt);
+      if (!r.n && !(isForm && /Watermark/.test(txt))) return;
+      var body = r.n ? r.s : ' '; if (!r.n) forms++; tot += r.n;
+      var bb = new Uint8Array(body.length); for (var j = 0; j < body.length; j++) bb[j] = body.charCodeAt(j) & 255;
+      var nd = o.dict.clone(); nd.delete(P.PDFName.of('Filter')); nd.delete(P.PDFName.of('DecodeParms'));
+      doc.context.assign(ref, P.PDFRawStream.of(nd, bb));
+    });
+    var out = await doc.save({ useObjectStreams: false });
+    return { bytes: out, blocks: tot, forms: forms };
+  }
+  // ink bbox on RGBA ImageData-like {data,width,height}; bg = white after optional invert
+  function inkBox(img, thr) {
+    var d = img.data, w = img.width, h = img.height, x0 = w, y0 = h, x1 = -1, y1 = -1; thr = thr || 200;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = (y * w + x) * 4; if ((d[i] + d[i + 1] + d[i + 2]) / 3 < thr || Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 60) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+    return x1 < 0 ? null : { x0: x0, y0: y0, x1: x1 + 1, y1: y1 + 1 };
+  }
+  root.ABB2 = { cleanPdf: cleanPdf, stripWM: stripWM, inkBox: inkBox };
+  if (typeof module !== 'undefined') module.exports = root.ABB2;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+(function (root) {
+  'use strict';
+  var PW = 595.28, PH = 841.89;
+  function parseRange(s) { var o = {}; String(s || '').split(/[,\s]+/).forEach(function (p) { var m = /^(\d+)(?:-(\d+))?$/.exec(p); if (m) for (var i = +m[1]; i <= (+m[2] || +m[1]); i++) o[i] = 1; }); return o; }
+  function select(items, o) {
+    var rg = o.sel === 'range' ? parseRange(o.range) : null, mk = o.marks || {};
+    function keep(it) { var k = it.ch + '_' + it.n; switch (o.sel) { case 'range': return rg[it.n]; case 'marked': return mk.marked && mk.marked[k]; case 'starred': return mk.star && mk.star[k]; case 'tough': return mk.tough && mk.tough[k]; case 'unique': return !(mk.dup && mk.dup[k]); default: return true; } }
+    return items.filter(keep);
+  }
+  function units(items, mode) {
+    if (mode === 'Q') return items.filter(function (i) { return i.t === 'Q'; }).map(function (i) { return [i]; });
+    if (mode === 'S') return items.filter(function (i) { return i.t === 'S'; }).map(function (i) { return [i]; });
+    if (mode === 'QthenS') { var q = items.filter(function (i) { return i.t === 'Q'; }), s = items.filter(function (i) { return i.t === 'S'; }); return q.concat(s).map(function (i) { return [i]; }); }
+    var out = [], cur = null; items.forEach(function (i) { if (i.t === 'Q') { cur = [i]; out.push(cur); } else if (cur && cur.length === 1 && cur[0].n === i.n && cur[0].ch === i.ch) cur.push(i); else out.push([i]); }); return out;
+  }
+  async function layout(us, P, D) {
+    var top = P.margin + (P.header ? 14 : 0), bot = PH - P.margin - (P.footer ? 14 : 0), colH = P.hLimit || (bot - top), usable = PW - 2 * P.margin - (P.side || 0), colW = (usable - (P.cols - 1) * P.gap) / P.cols, pages = [], col = 0, y = 0, MIN = 50;
+    var G = P.itemGap;
+    function np() { pages.push({ pl: [], start: cur }); col = 0; y = 0; }
+    function nc() { if (++col >= P.cols) np(); else y = 0; }
+    var cur = 0; np();
+    function hp(it, a, b) { return (b - a) / D.ZS * colW / it.srcW; }
+    function put(it, a, b) { var k = colW / it.srcW; pages[pages.length - 1].pl.push({ it: it, col: col, x: P.margin + col * (colW + P.gap), y: top + y, k: k, sy0: a, sy1: b, wpt: it.w / D.ZS * k, hpt: hp(it, a, b) }); y += hp(it, a, b); }
+    async function place(it, isQ) {
+      var from = 0, guard = 0;
+      while (from < it.h && guard++ < 50) {
+        if (y > 0 && y + G < colH) y += G; else if (y > 0) { nc(); }
+        var rem = colH - y, hFull = hp(it, from, it.h);
+        if (hFull <= rem + 0.01) { put(it, from, it.h); return; }
+        if (isQ) { if (y > 0) { nc(); continue; } var sc = colH / hFull; put({ w: it.w, h: it.h, srcW: it.srcW / sc, id: it.id, orig: it }, 0, it.h); return; }
+        var cands = await D.splits(it), lim = rem * D.ZS * it.srcW / colW + from, best = -1;
+        cands.forEach(function (c) { if (c >= from + MIN && c <= lim && it.h - c >= MIN && c > best) best = c; });
+        if (best > 0) { put(it, from, best); from = best; nc(); continue; }
+        if (y > 0 && hFull <= colH) { nc(); continue; }
+        if (y > 0) { nc(); continue; }
+        var cut = Math.min(it.h, Math.floor(colH * D.ZS * it.srcW / colW)); var c2 = cands.filter(function (c) { return c > from + MIN && c <= from + cut; }).pop() || from + cut; put(it, from, c2); from = c2; nc();
+      }
+    }
+    for (var u = 0; u < us.length; u++) {
+      cur = u; var un = us[u];
+      if (un.length === 2 && P.together !== 'flow') {
+        var tot = hp(un[0], 0, un[0].h) + G + hp(un[1], 0, un[1].h), rem0 = colH - y - (y > 0 ? G : 0);
+        if (y > 0 && tot > rem0 + 0.01 && tot <= colH && (P.together === 'strict' || rem0 < 0.35 * colH)) nc();
+      }
+      for (var j = 0; j < un.length; j++) { var pg0 = pages.length; await place(un[j], un[j].t === 'Q'); if (j === 1 || un.length === 1) { } }
+      if (pages.length > 0 && pages[pages.length - 1].start === undefined) pages[pages.length - 1].start = u;
+    }
+    pages.forEach(function (p) { if (!p.pl.length) p.dead = 1; }); while (pages.length && pages[pages.length - 1].dead) pages.pop();
+    if (P.balance && !P.hLimit && pages.length > 0) {
+      var last = pages[pages.length - 1], ls = last.start, ok = typeof ls === 'number' && last.pl.length && last.pl[0].sy0 === 0 && last.pl[0].it.t !== undefined;
+      if (ok && pages.length >= 1) { var lo = 40, hi = colH, bestL = null; var sub = us.slice(ls);
+        for (var it2 = 0; it2 < 12; it2++) { var mid = (lo + hi) / 2, r = await layout(sub, Object.assign({}, P, { balance: false, hLimit: mid }), D); if (r.length === 1) { bestL = r[0]; hi = mid; } else lo = mid; }
+        if (bestL) { bestL.start = ls; pages[pages.length - 1] = bestL; } }
+    }
+    pages.colW = colW; pages.forEach(function (p) { p.colW = colW; }); return pages;
+  }
+  function renumber(cv, it, newNum, ZS, mkMode) {
+    var m = it.mk, c0 = it.firstCrop; if (!m || !c0 || mkMode === 'none' || !newNum) return;
+    var x = m.x0 * ZS - c0.ox - 2, y = m.top * ZS - c0.oy - 1, w = (m.x1 - m.x0) * ZS + 4, h = (m.bot - m.top) * ZS + 2, g = cv.getContext('2d');
+    if (x + w <= 0 || y + h <= 0) return;
+    g.fillStyle = '#fff'; g.fillRect(x, y, w, h);
+    var txt = it.t === 'Q' ? 'Q.' + newNum + '.' : 'Sol.' + newNum + '.(' + it.opt + ')', fs = m.sz * ZS * 0.95; g.fillStyle = '#000'; g.textBaseline = 'alphabetic'; g.font = 'bold ' + fs + 'px Arial, sans-serif';
+    var tw = g.measureText(txt).width; if (tw > w - 2) { fs *= (w - 2) / tw; g.font = 'bold ' + fs + 'px Arial, sans-serif'; }
+    g.fillText(txt, x + 2, y + h - Math.max(2, (m.bot - m.top) * ZS * 0.28));
+  }
+  function renderPage(pg, pi, P, D, scale) {
+    var c = D.mk(Math.round(PW * scale), Math.round(PH * scale)), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    pg.pl.forEach(function (p) { var src = D.canvas(p.it.orig || p.it); g.drawImage(src, 0, p.sy0, src.width, p.sy1 - p.sy0, p.x * scale, p.y * scale, p.wpt * scale, p.hpt * scale); });
+    if (P.rule) { var cw = pg.colW || 0; g.strokeStyle = '#999'; g.lineWidth = Math.max(0.5, scale * 0.4); for (var i = 1; i < P.cols; i++) { var x = P.margin + i * (cw + P.gap) - P.gap / 2; g.beginPath(); g.moveTo(x * scale, (P.margin + (P.header ? 14 : 0)) * scale); g.lineTo(x * scale, (PH - P.margin - (P.footer ? 14 : 0)) * scale); g.stroke(); } }
+    g.fillStyle = '#555'; g.font = (7 * scale) + 'px Arial, sans-serif';
+    if (P.header && D.chName) g.fillText(D.chName(pg), P.margin * scale, (P.margin + 6) * scale);
+    if (P.footer) { g.textAlign = 'center'; g.fillText(String(pi + 1), PW / 2 * scale, (PH - P.margin + 4) * scale); g.textAlign = 'left'; }
+    return c;
+  }
+  root.ABB3 = { PW: PW, PH: PH, parseRange: parseRange, select: select, units: units, layout: layout, renumber: renumber, renderPage: renderPage };
+  if (typeof module !== 'undefined') module.exports = root.ABB3;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { pdf: null, name: '', res: null, stop: false, pause: false, busy: false };
+  window.ABB.state = S;
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var css = document.createElement('style');
+  css.textContent = '#abbOv{position:fixed;inset:0;z-index:2147483100;background:var(--bg,#eef0f4);color:var(--fg,#1b1f27);overflow:auto;padding:12px;font-size:14px}#abbOv .w{max-width:900px;margin:0 auto}#abbOv .g{background:var(--chrome,#fff);border:1px solid var(--line,#d3d8e0);border-radius:12px;padding:10px 12px;margin-bottom:10px}#abbOv .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#abbOv button{padding:7px 12px;border-radius:9px;border:1px solid var(--line,#d3d8e0);background:var(--panel,#f5f6f9);color:inherit;font:inherit;cursor:pointer}#abbOv button.p{background:var(--accent,#0f6cbd);color:#fff;border-color:transparent}#abbOv .m{height:9px;background:var(--hover,#e8ecf3);border-radius:5px;overflow:hidden;flex:1;min-width:120px}#abbOv .m i{display:block;height:100%;width:0;background:var(--accent,#0f6cbd)}#abbOv table{width:100%;border-collapse:collapse}#abbOv td,#abbOv th{border-bottom:1px solid var(--line,#d3d8e0);padding:4px 6px;text-align:left}#abbOv input[type=text]{width:100%;font:inherit;padding:4px;box-sizing:border-box}#abbOv .bad{color:#c62828}#abbOv .ok{color:#2e7d32}#abbOv .mu{color:var(--muted,#5b6472);font-size:12px}';
+  document.head.appendChild(css);
+  function open() {
+    var o = $('abbOv'); if (o) { o.hidden = false; return; }
+    o = document.createElement('div'); o.id = 'abbOv';
+    o.innerHTML = '<div class="w"><div class="r"><h2 style="margin:0;flex:1">📚 Auto Book Builder</h2><button id="abbX">✕ Band</button></div>' +
+      '<div class="g"><div class="r"><input type="file" id="abbF" accept="application/pdf,.pdf"><button class="p" id="abbGo" disabled>▶ Ek click: Detect</button><button id="abbPa" disabled>⏸ Pause</button><button id="abbCa" disabled>⏹ Cancel</button></div>' +
+      '<div class="r" style="margin-top:8px"><div class="m"><i id="abbPb"></i></div><span class="mu" id="abbSt">PDF chuno (Pinnacle-style: Q pages, Answer Key, Solutions)</span></div></div>' +
+      '<div id="abbRes"></div></div>';
+    document.body.appendChild(o);
+    $('abbX').onclick = function () { o.hidden = true; };
+    $('abbF').onchange = function () { var f = this.files[0]; if (!f) return; S.name = f.name.replace(/\.pdf$/i, ''); f.arrayBuffer().then(function (b) { S.bytes = b.slice(0); return pdfjsLib.getDocument({ data: new Uint8Array(b) }).promise; }).then(function (p) { S.pdf = p; $('abbGo').disabled = false; $('abbSt').textContent = f.name + ' · ' + p.numPages + ' pages — taiyar'; }).catch(function (e) { $('abbSt').textContent = 'PDF nahi khuli: ' + e.message; }); };
+    $('abbPa').onclick = function () { S.pause = !S.pause; this.textContent = S.pause ? '▶ Resume' : '⏸ Pause'; };
+    $('abbCa').onclick = function () { S.stop = true; };
+    $('abbGo').onclick = run;
+  }
+  async function run() {
+    if (S.busy || !S.pdf) return; S.busy = true; S.stop = false; S.pause = false;
+    $('abbGo').disabled = true; $('abbPa').disabled = false; $('abbCa').disabled = false; $('abbRes').innerHTML = '';
+    try {
+      S.res = await window.ABB.detectPdf(S.pdf, { stop: function () { return S.stop; }, paused: function () { return S.pause; }, progress: function (i, n) { $('abbPb').style.width = (100 * i / n) + '%'; $('abbSt').textContent = 'Page ' + i + '/' + n + ' padh raha hoon…'; } });
+      $('abbSt').textContent = 'Detect poora ✔'; window.ABB.show();
+    } catch (e) { $('abbSt').textContent = e.message === 'cancelled' ? 'Cancel kiya' : 'Error: ' + e.message; }
+    S.busy = false; $('abbGo').disabled = false; $('abbPa').disabled = true; $('abbCa').disabled = true;
+  }
+  function show() {
+    var r = S.res, ok = r.flagged === 0, h = '<div class="g"><b>' + r.Q.length + ' Q</b> · <b>' + r.S.length + ' Sol</b> · Answer key ' + Object.keys(r.key).length + ' · Columns ' + r.cols.length + ' · Chapters ' + r.chapters.length + ' · <b class="' + (ok ? 'ok' : 'bad') + '">Flagged: ' + r.flagged + '</b><div class="mu">Header band y&lt;' + r.bands.top.toFixed(0) + ', footer y&gt;' + r.bands.bot.toFixed(0) + ' · Output order: Q.1, Sol.1, Q.2, Sol.2…</div></div>';
+    h += '<div class="g"><b>Chapters (naam edit kar sakte ho)</b><table><tr><th>#</th><th>Shuru page</th><th>Naam</th><th>Q</th></tr>' + r.chapters.map(function (c, i) { return '<tr><td>' + (i + 1) + '</td><td>' + c.page + '</td><td><input type="text" data-c="' + i + '" value="' + esc(c.name.replace(/\u0000/g, '')) + '"></td><td>' + r.Q.filter(function (q) { return q.ch === c.ch; }).length + '</td></tr>'; }).join('') + '</table></div>';
+    var fl = r.Q.concat(r.S).filter(function (x) { return x.flags.length; });
+    h += '<div class="g"><b>Flagged items</b>' + (fl.length ? '<table>' + fl.map(function (x) { return '<tr><td>' + (x.opt ? 'Sol.' : 'Q.') + x.n + '</td><td class="bad">' + x.flags.join(', ') + '</td></tr>'; }).join('') + '</table>' : '<div class="ok">Koi flag nahi ✔</div>') + '</div>';
+    h += '<div class="g"><b>Crop segments (column/page jodne wale ⛓)</b><div class="mu">' + r.Q.concat(r.S).filter(function (x) { return x.segs.length > 1; }).map(function (x) { return (x.opt ? 'Sol.' : 'Q.') + x.n + ' ⛓' + x.segs.length; }).join(' · ') + '</div></div>';
+    $('abbRes').innerHTML = h;
+    $('abbRes').querySelectorAll('input[data-c]').forEach(function (inp) { inp.oninput = function () { r.chapters[+inp.dataset.c].name = inp.value; }; });
+  }
+  function hook() { var h = $('cflHome'), row = h && h.querySelector('.cflRow'); if (!row) return; var b = document.createElement('button'); b.id = 'abbB'; b.className = 'primary'; b.textContent = '📚 Auto Book Builder'; b.onclick = function () { window.ABB.open(); }; row.insertBefore(b, $('cflImpF')); }
+  hook();
+  Object.assign(window.ABB, { open: open, run: run, show: show });
+})();
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); }, S = window.ABB.state, ZS = 2.5, PC = {}, PK = [];
+  S.crops = {}; S.items = [];
+  var css = document.createElement('style');
+  css.textContent = '#abbOv .it{display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;border-bottom:1px solid var(--line,#d3d8e0);padding:6px 0;align-items:start}#abbOv .it img{max-width:100%;background:#fff;border:1px solid var(--line,#d3d8e0)}#abbOv .fl{display:inline-block;background:#fdecea;color:#c62828;border-radius:6px;padding:1px 6px;margin:1px;font-size:12px}#abbOv .mb{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483200;overflow:auto;padding:10px}#abbOv .mb .bx{position:relative;display:inline-block;max-width:100%;touch-action:none}#abbOv .mb canvas{max-width:100%;display:block}#abbOv .sel{position:absolute;border:2px solid #e53935;background:rgba(229,57,53,.15);pointer-events:none}';
+  document.head.appendChild(css);
+  function ctrl() { return S.stop ? 'x' : 0; }
+  async function ensureClean() {
+    if (S.cdoc) return;
+    $('abbSt').textContent = 'Watermark hata raha hoon (content stream)…';
+    var r = await window.ABB2.cleanPdf(new Uint8Array(S.bytes)); S.wm = r.blocks + r.forms;
+    S.cdoc = await pdfjsLib.getDocument({ data: r.bytes }).promise;
+  }
+  async function pageCanvas(pn) {
+    if (PC[pn]) return PC[pn];
+    if (PK.length >= 3) { var o = PK.shift(); if (PC[o]) { PC[o].c.width = PC[o].c.height = 0; delete PC[o]; } }
+    var pg = await S.cdoc.getPage(pn), vp = pg.getViewport({ scale: ZS }), c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    var x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: x, viewport: vp }).promise; if (pg.cleanup) pg.cleanup();
+    var im = x.getImageData(0, 0, c.width, c.height), d = im.data, s = 0, n = 0; for (var i = 0; i < d.length; i += 4 * 97) { s += (d[i] + d[i + 1] + d[i + 2]) / 3; n++; }
+    var dark = s / n < 110;
+    if (dark) { for (var j = 0; j < d.length; j += 4) { var mx = Math.max(d[j], d[j + 1], d[j + 2]), mn = Math.min(d[j], d[j + 1], d[j + 2]); if (mx - mn < 50) { d[j] = 255 - d[j]; d[j + 1] = 255 - d[j + 1]; d[j + 2] = 255 - d[j + 2]; } else { var l = (mx + mn) / 2; if (l > 150) { d[j] = d[j] * .45; d[j + 1] = d[j + 1] * .45; d[j + 2] = d[j + 2] * .45; } } } x.putImageData(im, 0, 0); }
+    PC[pn] = { c: c, dark: dark }; PK.push(pn); return PC[pn];
+  }
+  function toBlob(c) { return new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.92); }); }
+  async function cropSeg(sg) {
+    var pc = await pageCanvas(sg.page), c = pc.c, x0 = Math.max(0, Math.floor((sg.x0 - 4) * ZS)), x1 = Math.min(c.width, Math.ceil((sg.x1 + 4) * ZS)), T = sg.l0 == null ? sg.top - 8 : Math.max(sg.top - 8, sg.l0), B = sg.l1 == null ? sg.bot + 8 : Math.min(sg.bot + 8, sg.l1), y0 = Math.max(0, Math.floor(T * ZS)), y1 = Math.min(c.height, Math.ceil(B * ZS));
+    var w = x1 - x0, h = y1 - y0; if (w < 4 || h < 4) return { blank: true };
+    var im = c.getContext('2d').getImageData(x0, y0, w, h), k = window.ABB2.inkBox(im); if (!k) return { blank: true };
+    var P = 5, cx0 = Math.max(0, k.x0 - P), cy0 = Math.max(0, k.y0 - P), cx1 = Math.min(w, k.x1 + P), cy1 = Math.min(h, k.y1 + P), o = document.createElement('canvas');
+    o.width = cx1 - cx0; o.height = cy1 - cy0; var ox = o.getContext('2d'); ox.fillStyle = '#fff'; ox.fillRect(0, 0, o.width, o.height); ox.putImageData(im, -cx0, -cy0, cx0, cy0, o.width, o.height);
+    var cut = (sg.l1 == null && k.y1 >= h - 1) || (sg.l0 == null && k.y0 <= 0);
+    return { blob: await toBlob(o), w: o.width, h: o.height, cut: cut, ox: x0 + cx0, oy: y0 + cy0 };
+  }
+  function sk(it, i) { return it.id + ':' + i; }
+  function buildItems() {
+    var r = S.res, ms = {}; S.items = [];
+    r.Q.forEach(function (q) { var off = S.off || 0, s = q.sol; if (off) s = r.S.filter(function (x) { return x.ch === q.ch && x.n === q.n + off; })[0] || null; q.solU = s; S.items.push({ id: 'Q' + q.ch + '_' + q.n, t: 'Q', n: q.n, ch: q.ch, ref: q, segs: q.segs, base: q.flags }); if (s) S.items.push({ id: 'S' + q.ch + '_' + q.n, t: 'S', n: q.n, ch: q.ch, ref: s, segs: s.segs, base: s.flags }); });
+  }
+  function flagsOf(it) { var f = it.base.filter(function (x) { return !(it.ok && it.ok[x]); }); (it.segs || []).forEach(function (s, i) { var c = S.crops[sk(it, i)]; if (c && c.cut && !(it.ok && it.ok.cut)) { if (f.indexOf('Shayad cut') < 0) f.push('Shayad cut'); } if (c && c.blank) f.push('crop khali'); }); return f; }
+  async function buildCrops(opt) {
+    opt = opt && opt.only ? opt : {}; var resume = !opt.only && S.resume; S.resume = false;
+    S.stop = false; S.pause = false; $('abbCa').disabled = false; $('abbPa').disabled = false;
+    try {
+      await ensureClean(); if (!opt.only && !resume) { buildItems(); S.crops = {}; S.failed = {}; } S.failed = S.failed || {};
+      var byPage = {}; S.items.forEach(function (it) { it.segs.forEach(function (s, i) { (byPage[s.page] = byPage[s.page] || []).push([it, i, s]); }); });
+      var all = Object.keys(byPage).map(Number).sort(function (a, b) { return a - b; }), only = opt.only ? opt.only.reduce(function (o, p) { o[p] = 1; return o; }, {}) : null;
+      if (only) Object.keys(only).forEach(function (p) { if (!byPage[p]) delete S.failed[p]; }); var pgs = all.filter(function (p) { return (!only || only[p]) && (only || !byPage[p].every(function (e) { return S.crops[sk(e[0], e[1])]; })); }), k = 0;
+      for (var pi = 0; pi < pgs.length; pi++) { if (S.stop) throw new Error('cancelled'); while (S.pause) await new Promise(function (r) { setTimeout(r, 120); });
+        var pn = pgs[pi]; try { for (var e of byPage[pn]) S.crops[sk(e[0], e[1])] = await cropSeg(e[2]); delete S.failed[pn]; } catch (err) { S.failed[pn] = (err && err.message) || String(err); for (var e2 of byPage[pn]) delete S.crops[sk(e2[0], e2[1])]; }
+        if (S.onPage) await S.onPage(pn, byPage[pn]);
+        $('abbPb').style.width = (100 * (++k) / pgs.length) + '%'; $('abbSt').textContent = 'Crop: page ' + pn + ' (' + k + '/' + pgs.length + ')'; }
+      if (S.onDone) await S.onDone();
+      var nf = Object.keys(S.failed).length; $('abbSt').textContent = 'Crops taiyar ✔ (watermark blocks hataye: ' + (S.wm || 0) + ')' + (nf ? ' · ⚠ ' + nf + ' page fail' : ''); S.review();
+    } catch (e) { if (S.onDone) try { await S.onDone(); } catch (x) { } $('abbSt').textContent = e.message === 'cancelled' ? 'Cancel kiya (progress save hai, resume kar sakte ho)' : 'Error: ' + e.message; }
+    $('abbCa').disabled = true; $('abbPa').disabled = true;
+  }
+  async function joined(it) {
+    var bms = []; for (var i = 0; i < it.segs.length; i++) { var c = S.crops[sk(it, i)]; if (c && c.blob) bms.push(await createImageBitmap(c.blob)); }
+    if (!bms.length) return null; var w = Math.max.apply(null, bms.map(function (b) { return b.width; })), h = bms.reduce(function (a, b) { return a + b.height; }, 0) + 2 * (bms.length - 1);
+    var o = document.createElement('canvas'); o.width = w; o.height = h; var x = o.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); var y = 0; bms.forEach(function (b) { x.drawImage(b, 0, y); y += b.height + 2; }); return o;
+  }
+  S.joined = joined;
+  var SHOW = 40;
+  function review(more) {
+    if (!more) SHOW = 40;
+    var list = S.items.map(function (it) { it.fl = flagsOf(it); return it; }), bad = list.filter(function (i) { return i.fl.length; }), good = list.filter(function (i) { return !i.fl.length; }), rows = bad.concat(good);
+    var h = '<div class="g"><b>Step 2: Review</b> · Flagged <b class="' + (bad.length ? 'bad' : 'ok') + '">' + bad.length + '</b> / ' + list.length + ' crops <span class="mu"> · Pair offset (Sol.n+offset ↔ Q.n): </span><input type="number" id="abbOff" value="' + (S.off || 0) + '" style="width:60px"><button id="abbOffB">Re-pair</button> <label class="mu"><input type="checkbox" id="abbSbs"' + (S.sbs ? ' checked' : '') + '> Q | Sol saath dikhao</label></div><div class="g" id="abbRv"></div>';
+    var rv = $('abbRv'); if (!rv) { var d = document.createElement('div'); d.id = 'abbRev'; $('abbRes').appendChild(d); }
+    $('abbRev') ? ($('abbRev').innerHTML = h) : 0; if (!$('abbRev')) return;
+    var box = $('abbRv'); box.innerHTML = ''; var cache = {};
+    rows.slice(0, SHOW).forEach(function (it) { var el = document.createElement('div'); el.className = 'it'; el.innerHTML = '<div><b>' + (it.t === 'Q' ? 'Q.' : 'Sol.') + it.n + '</b>' + (it.segs.length > 1 ? ' ⛓' + it.segs.length : '') + '<br>' + it.fl.map(function (f) { return '<span class="fl">' + f + '</span>'; }).join('') + '</div><div class="im"></div><div class="bt"><button data-a="m">✎ Manual box</button> ' + (it.base.indexOf('options kam') >= 0 ? '<button data-a="x">➕ Agla line jodo</button> ' : '') + (it.fl.length ? '<button data-a="ok">✔ Theek hai</button>' : '') + '</div>'; box.appendChild(el);
+      joined(it).then(function (c) { if (c) { var im = new Image(); im.src = c.toDataURL('image/jpeg', .8); el.querySelector('.im').appendChild(im); } });
+      if (S.sbs) { var pr = S.items.filter(function (x) { return x.ch === it.ch && x.n === it.n && x.t !== it.t; })[0]; if (pr) joined(pr).then(function (c) { if (c) { var im2 = new Image(); im2.src = c.toDataURL('image/jpeg', .8); im2.title = (pr.t === 'Q' ? 'Q.' : 'Sol.') + pr.n; im2.style.marginTop = '4px'; el.querySelector('.im').appendChild(im2); } }); }
+      el.querySelector('.bt').onclick = function (ev) { var a = ev.target.dataset.a; if (a === 'ok') { it.ok = it.ok || {}; it.base.forEach(function (f) { it.ok[f] = 1; }); it.ok.cut = 1; S.review(1); } if (a === 'x') extend(it); if (a === 'm') manual(it); };
+    });
+    if (rows.length > SHOW) { var b = document.createElement('button'); b.textContent = 'Aur dikhao (' + (rows.length - SHOW) + ')'; b.onclick = function () { SHOW += 60; S.review(1); }; box.appendChild(b); }
+    $('abbSbs').onchange = function () { S.sbs = this.checked; S.review(1); };
+    $('abbOffB').onclick = function () { S.off = +$('abbOff').value || 0; buildItems(); S.items.forEach(function (it) { it.segs.forEach(function (s, i) { if (!S.crops[sk(it, i)]) S.crops[sk(it, i)] = { blank: false }; }); }); buildCrops(); };
+  }
+  function segsOf(a, e) { var L = S.res.lines, cols = S.res.cols, out = []; for (var i = a; i <= e; i++) { var l = L[i], s = out[out.length - 1]; if (s && s.page === l.page && s.col === l.col) { s.top = Math.min(s.top, l.top); s.bot = Math.max(s.bot, l.bot); s.i1 = i; } else out.push({ page: l.page, col: l.col, top: l.top, bot: l.bot, x0: cols[l.col].x0, x1: cols[l.col].x1, i0: i, i1: i }); } out.forEach(function (s) { var p = L[s.i0 - 1], n = L[s.i1 + 1]; s.l0 = p && p.page === s.page && p.col === s.col ? (p.bot + s.top) / 2 : null; s.l1 = n && n.page === s.page && n.col === s.col ? (s.bot + n.top) / 2 : null; var bd = S.res.bands; if (s.l0 == null && s.top - 8 < bd.top + 4) s.l0 = bd.top + 4; if (s.l1 == null && s.bot + 8 > bd.bot - 8) s.l1 = bd.bot - 8; }); return out; }
+  async function recrop(it) { for (var k in S.crops) if (k.indexOf(it.id + ':') === 0) delete S.crops[k]; for (var i = 0; i < it.segs.length; i++) S.crops[sk(it, i)] = await cropSeg(it.segs[i]); S.review(1); }
+  function extend(it) { var r = it.ref; r.e = Math.min(S.res.lines.length - 1, r.e + 1); it.segs = r.segs = segsOf(r.a, r.e); if (/\(\s*d\s*\)/.test(S.res.lines[r.e].text)) it.base = r.flags = r.flags.filter(function (f) { return f !== 'options kam'; }); recrop(it); }
+  async function manual(it) {
+    var pn = it.segs[0].page, pc = await pageCanvas(pn), m = document.createElement('div'); m.className = 'mb';
+    m.innerHTML = '<div class="r" style="background:#fff;padding:6px;border-radius:8px;margin-bottom:6px"><b>' + (it.t === 'Q' ? 'Q.' : 'Sol.') + it.n + ' — page ' + pn + ': mouse/ungli se box kheencho</b><button class="p" id="mbOk">Save</button><button id="mbNo">Cancel</button></div><div class="bx"><canvas></canvas><div class="sel" hidden></div></div>';
+    document.getElementById('abbOv').appendChild(m); var cv = m.querySelector('canvas'); cv.width = pc.c.width; cv.height = pc.c.height; cv.getContext('2d').drawImage(pc.c, 0, 0);
+    var bx = m.querySelector('.bx'), sel = m.querySelector('.sel'), st = null, rc = null;
+    function pt(e) { var b = cv.getBoundingClientRect(); return { x: Math.max(0, Math.min(1, (e.clientX - b.left) / b.width)), y: Math.max(0, Math.min(1, (e.clientY - b.top) / b.height)) }; }
+    bx.onpointerdown = function (e) { st = pt(e); bx.setPointerCapture(e.pointerId); };
+    bx.onpointermove = function (e) { if (!st) return; var p = pt(e); rc = { x0: Math.min(st.x, p.x), y0: Math.min(st.y, p.y), x1: Math.max(st.x, p.x), y1: Math.max(st.y, p.y) }; sel.hidden = false; sel.style.left = rc.x0 * 100 + '%'; sel.style.top = rc.y0 * 100 + '%'; sel.style.width = (rc.x1 - rc.x0) * 100 + '%'; sel.style.height = (rc.y1 - rc.y0) * 100 + '%'; };
+    bx.onpointerup = function () { st = null; };
+    m.querySelector('#mbNo').onclick = function () { m.remove(); };
+    m.querySelector('#mbOk').onclick = function () { if (!rc) return; var W = cv.width / ZS, H = cv.height / ZS; it.segs = [{ page: pn, col: 0, x0: rc.x0 * W + 4, x1: rc.x1 * W - 4, top: rc.y0 * H + 3, bot: rc.y1 * H - 4 }]; it.manual = 1; it.base = []; m.remove(); recrop(it); };
+  }
+  S.review = review; S.buildCrops = buildCrops; S.flagsOf = flagsOf; S.buildItems = buildItems; S.sk = sk;
+  var oldShow = window.ABB.show;
+  window.ABB.show = function () { oldShow(); var b = document.createElement('div'); b.className = 'g'; b.innerHTML = '<button class="p" id="abbCr">✂ Step 2: Smart crop + watermark saaf + review</button> <span class="mu">watermark content-stream se hata ke page render hota hai</span>'; $('abbRes').appendChild(b); $('abbCr').onclick = buildCrops; };
+  window.ABB.pair = { flagsOf: flagsOf, items: function () { return S.items; } };
+})();
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); }, S = window.ABB.state, L = window.ABB3, ZS = 2.5;
+  var DEF = { cols: 3, margin: 22, gap: 9, itemGap: 4, together: 'smart', rule: true, header: false, footer: false, balance: true, side: 0, renum: 'none', sel: 'all', range: '', marked: '', star: '', tough: '', mode: 'QS', q: 85 };
+  S.cfg = Object.assign({}, DEF, (function () { try { return JSON.parse(localStorage.getItem('abbCfg') || '{}'); } catch (e) { return {}; } })());
+  var css = document.createElement('style');
+  css.textContent = '#abbOv .cf{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 10px}#abbOv .cf label{display:flex;flex-direction:column;font-size:12px;color:var(--muted,#5b6472)}#abbOv .cf input,#abbOv .cf select{font:inherit;padding:4px}#abbOv .pv{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}#abbOv .pv canvas{max-width:100%;width:420px;border:1px solid var(--line,#d3d8e0);background:#fff}';
+  document.head.appendChild(css);
+  function numRange(txt, ch, n) { // "1-5,9" ya "2:1-5" (chapter 2 ke liye)
+    var ok = false; String(txt || '').split(/[,\s]+/).forEach(function (p) { if (!p) return; var m = /^(?:(\d+):)?(\d+)(?:-(\d+))?$/.exec(p); if (!m) return; if (m[1] && +m[1] !== ch + 1) return; if (n >= +m[2] && n <= (+m[3] || +m[2])) ok = true; }); return ok;
+  }
+  function marks(c) { var mk = { marked: {}, star: {}, tough: {}, dup: S.dup || {} }; (S.res ? S.res.Q : []).forEach(function (q) { var k = q.ch + '_' + q.n; if (numRange(c.marked, q.ch, q.n)) mk.marked[k] = 1; if (numRange(c.star, q.ch, q.n)) mk.star[k] = 1; if (numRange(c.tough, q.ch, q.n)) mk.tough[k] = 1; }); return mk; }
+  function layItems() {
+    var out = [];
+    S.items.forEach(function (it) {
+      var cs = it.segs.map(function (s, i) { return S.crops[it.id + ':' + i]; }).filter(function (c) { return c && c.blob; }); if (!cs.length) return;
+      var w = Math.max.apply(null, cs.map(function (c) { return c.w; })), h = cs.reduce(function (a, c) { return a + c.h; }, 0) + 2 * (cs.length - 1);
+      out.push({ id: it.id, t: it.t, n: it.n, ch: it.ch, opt: it.ref.opt, mk: it.manual ? null : it.ref.mk, firstCrop: cs[0], w: w, h: h, srcW: it.segs[0].x1 - it.segs[0].x0 + 8, src: it });
+    }); return out;
+  }
+  async function loadCv(li) { if (!li.cv) li.cv = await S.joined(li.src); return li.cv; }
+  async function splits(li) {
+    if (li.sp) return li.sp; var had = !!li.cv, cv = await loadCv(li), w = cv.width, h = cv.height, d = cv.getContext('2d').getImageData(0, 0, w, h).data, out = [], run = 0;
+    for (var y = 0; y < h; y++) { var ink = false; for (var x = 0; x < w && !ink; x += 2) { var i = (y * w + x) * 4; if (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200) ink = true; } if (!ink) run++; else { if (run >= 3) out.push(y - (run >> 1)); run = 0; } }
+    if (!had) li.cv = null; return (li.sp = out);
+  }
+  function numMap(sel, mode) { var map = {}, cnt = {}, tot = 0; sel.forEach(function (it) { var k = it.ch + '_' + it.n; if (map[k] != null) return; if (mode === 'chapter') { cnt[it.ch] = (cnt[it.ch] || 0) + 1; map[k] = cnt[it.ch]; } else map[k] = ++tot; }); return map; }
+  async function plan(c) {
+    c = c || S.cfg; var all = layItems().filter(function (li) { return c.chFilter == null || li.ch === c.chFilter; }), sel = L.select(all, { sel: c.sel, range: c.range, marks: marks(c) }), us = L.units(sel, c.mode);
+    var P = { cols: +c.cols, margin: +c.margin, gap: +c.gap, itemGap: +c.itemGap, together: c.together, header: !!c.header, footer: !!c.footer, rule: !!c.rule, balance: !!c.balance, side: +c.side || 0 };
+    var D = { ZS: ZS, splits: splits, mk: function (w, h) { var k = document.createElement('canvas'); k.width = w; k.height = h; return k; }, chName: function (pg) { var f = pg.pl[0]; var ch = f && S.res.chapters.filter(function (x) { return x.ch === (f.it.orig || f.it).ch; })[0]; return ch ? ch.name.replace(/\u0000/g, '') : ''; } };
+    var map = c.renum === 'none' ? null : numMap(sel, c.renum);
+    D.canvas = function (li) { if (!li._r) { var src = li.cv, k = D.mk(src.width, src.height); k.getContext('2d').drawImage(src, 0, 0); if (map) L.renumber(k, li, map[li.ch + '_' + li.n], ZS, c.renum); li._r = k; } return li._r; };
+    var pages = await L.layout(us, P, D); return { pages: pages, P: P, D: D, sel: sel, us: us, map: map };
+  }
+  async function renderIdx(pl, i, scale) { var pg = pl.pages[i]; for (var p of pg.pl) { var li = p.it.orig || p.it; await loadCv(li); } return L.renderPage(pg, i, pl.P, pl.D, scale); }
+  S.plan = plan; S.renderIdx = renderIdx;
+  S.readCfg = function () { return read(); };
+  function read() { var c = S.cfg; document.querySelectorAll('#abbCf [data-k]').forEach(function (e) { var k = e.dataset.k; c[k] = e.type === 'checkbox' ? e.checked : e.value; }); try { localStorage.setItem('abbCfg', JSON.stringify(c)); } catch (e) { } return c; }
+  function f(k, lab, type, extra) { var v = S.cfg[k]; if (type === 'checkbox') return '<label>' + lab + '<input type="checkbox" data-k="' + k + '"' + (v ? ' checked' : '') + '></label>'; if (type === 'select') return '<label>' + lab + '<select data-k="' + k + '">' + extra.map(function (o) { return '<option value="' + o[0] + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>'; return '<label>' + lab + '<input data-k="' + k + '" type="' + (type || 'text') + '" value="' + String(v).replace(/"/g, '&quot;') + '"></label>'; }
+  function panel() {
+    var d = document.createElement('div'); d.className = 'g'; d.id = 'abbCf';
+    d.innerHTML = '<b>Step 3: Layout + Selection</b><div class="cf" style="margin-top:6px">' +
+      f('cols', 'Columns', 'select', [['1', '1'], ['2', '2'], ['3', '3 (default)']]) + f('margin', 'Margin (pt)', 'number') + f('gap', 'Column gap (pt)', 'number') + f('itemGap', 'Item gap (pt)', 'number') + f('side', 'Side space (pt, rough work)', 'number') +
+      f('together', 'Q+Sol saath', 'select', [['strict', 'Strict'], ['smart', 'Smart'], ['flow', 'Flow']]) + f('renum', 'Renumber', 'select', [['none', 'Nahi'], ['chapter', 'Chapter ke andar'], ['cont', 'Poori file']]) + f('mode', 'Mode', 'select', [['QS', 'Q + Sol'], ['Q', 'Sirf Q'], ['S', 'Sirf Sol'], ['QthenS', 'Q pehle, Sol end mein']]) +
+      f('sel', 'Selection', 'select', [['all', 'Sab'], ['range', 'Range'], ['marked', 'Marked'], ['starred', 'Starred'], ['unique', 'Unique (dup hatao)'], ['tough', 'Tough']]) + f('range', 'Range (1-10, 15)', 'text') + f('marked', 'Marked (2:1-5, 9)', 'text') + f('star', 'Starred', 'text') + f('tough', 'Tough', 'text') +
+      f('rule', 'Column rule', 'checkbox') + f('header', 'Header (chapter)', 'checkbox') + f('footer', 'Footer (page no.)', 'checkbox') + f('balance', 'Last page balance', 'checkbox') + '</div>' +
+      '<div class="r" style="margin-top:8px"><button class="p" id="abbPv">👁 Live preview (pehle 2 pages)</button><span class="mu" id="abbPi"></span></div><div class="pv" id="abbPvC"></div>';
+    return d;
+  }
+  async function preview() {
+    var c = read(); $('abbPi').textContent = 'Layout bana raha hoon…'; $('abbPvC').innerHTML = '';
+    try { var pl = await S.plan(c); S.lastPlan = pl; for (var i = 0; i < Math.min(2, pl.pages.length); i++) $('abbPvC').appendChild(await renderIdx(pl, i, 1.4)); $('abbPi').textContent = pl.sel.length + ' items · ' + pl.pages.length + ' pages (A4, ' + c.cols + ' col)'; }
+    catch (e) { $('abbPi').textContent = 'Error: ' + e.message; }
+  }
+  var oldReview = S.review;
+  S.review = function (m) { oldReview(m); if (!$('abbCf') && $('abbRes')) { $('abbRes').appendChild(panel()); $('abbPv').onclick = preview; } };
+  Object.assign(window.ABB, { plan: plan, layItems: layItems });
+})();
+
+(function (root) {
+  'use strict';
+  var PW = 595.28, PH = 841.89, TW_W = 11906, TW_H = 16838, MG = 284; // A4 in twips, ~5mm margin
+  var E = { env: null, PW: PW, PH: PH };
+  // env = { mk(w,h)->canvas, jpeg(canvas,q01)->Promise<Uint8Array>, free(canvas) }
+  E.safeName = function (s, fb) {
+    s = String(s == null ? '' : s).replace(/\u0000/g, '').replace(/[\/\\:*?"<>|\u0001-\u001f]/g, '_').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, 80);
+    return s || fb || 'file';
+  };
+  E.uniqueNames = function (names) { var seen = {}; return names.map(function (n) { var k = n.toLowerCase(); if (seen[k]) { seen[k]++; return n + ' (' + seen[k] + ')'; } seen[k] = 1; return n; }); };
+  E.colBounds = function (P, colW) { // [x0,x1] pt per column; edges absorb margins, inner edges split gap
+    var n = +P.cols, out = [], cw = colW || (PW - 2 * P.margin - (P.side || 0) - (n - 1) * P.gap) / n;
+    for (var i = 0; i < n; i++) { var a = i === 0 ? 0 : P.margin + i * (cw + P.gap) - P.gap / 2, b = i === n - 1 ? PW : P.margin + (i + 1) * (cw + P.gap) - P.gap / 2; out.push([a, b]); }
+    return out;
+  };
+  function freeC(c) { try { E.env.free(c); } catch (e) { } }
+  function slice(cv, x0, x1) { var w = Math.max(1, x1 - x0), k = E.env.mk(w, cv.height); var g = k.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, cv.height); g.drawImage(cv, x0, 0, w, cv.height, 0, 0, w, cv.height); return k; }
+  // job: { n, render(i,scale)->canvas, P, colW, q(1-100), scale, docx(bool), onProgress(i,n), stop()->bool, release(i) }
+  E.build = async function (job) {
+    var PDF = root.PDFLib, doc = await PDF.PDFDocument.create(), recs = [], q = (job.q || 85) / 100, sc = job.scale || 2.5, bounds = E.colBounds(job.P, job.colW);
+    for (var i = 0; i < job.n; i++) {
+      if (job.stop && job.stop()) throw new Error('cancelled');
+      var cv = await job.render(i, sc), W = cv.width, jp = await E.env.jpeg(cv, q), img = await doc.embedJpg(jp);
+      var pg = doc.addPage([PW, PH]); pg.drawImage(img, { x: 0, y: 0, width: PW, height: PH });
+      if (job.docx) { var cols = []; for (var c = 0; c < bounds.length; c++) { var a = Math.round(bounds[c][0] / PW * W), b = c === bounds.length - 1 ? W : Math.round(bounds[c][1] / PW * W), k = slice(cv, a, b); cols.push({ bytes: await E.env.jpeg(k, q), w: b - a, h: cv.height, pt: bounds[c][1] - bounds[c][0] }); freeC(k); } recs.push(cols); }
+      freeC(cv); if (job.release) job.release(i); if (job.onProgress) job.onProgress(i + 1, job.n);
+    }
+    var pdf = await doc.save(), dx = null; if (job.docx) dx = await E.docx(recs);
+    return { pdf: pdf, docx: dx, pages: job.n };
+  };
+  E.docx = async function (recs) {
+    var D = root.docx; if (!D) throw new Error('docx library load nahi hui');
+    var UW = TW_W - 2 * MG, sTw = UW / PW, H = Math.floor(PH * sTw), none = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' }, nb = { top: none, bottom: none, left: none, right: none };
+    var tiny = function () { return new D.Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: D.LineRuleType ? D.LineRuleType.EXACT : 'exact' }, run: { size: 2 }, children: [] }); };
+    var sections = recs.map(function (cols) {
+      var tot = cols.reduce(function (a, c) { return a + c.pt; }, 0), ws = cols.map(function (c) { return Math.floor(c.pt / tot * UW); }); ws[ws.length - 1] += UW - ws.reduce(function (a, b) { return a + b; }, 0);
+      var cells = cols.map(function (c, i) {
+        return new D.TableCell({ width: { size: ws[i], type: D.WidthType.DXA }, borders: nb, margins: { top: 0, bottom: 0, left: 0, right: 0 },
+          children: [new D.Paragraph({ spacing: { before: 0, after: 0 }, run: { size: 2 }, children: [new D.ImageRun({ data: c.bytes, transformation: { width: Math.round(ws[i] / 15), height: Math.round((H - 60) / 15) } })] })] });
+      });
+      var tbl = new D.Table({ width: { size: UW, type: D.WidthType.DXA }, columnWidths: ws, layout: D.TableLayoutType.FIXED, borders: { top: none, bottom: none, left: none, right: none, insideHorizontal: none, insideVertical: none }, margins: { top: 0, bottom: 0, left: 0, right: 0, marginUnitType: D.WidthType.DXA },
+        rows: [new D.TableRow({ cantSplit: true, height: { value: H, rule: D.HeightRule.EXACT }, children: cells })] });
+      return { properties: { page: { size: { width: TW_W, height: TW_H }, margin: { top: MG, bottom: MG, left: MG, right: MG, header: 0, footer: 0 } } }, children: [tbl, tiny()] };
+    });
+    var d = new D.Document({ creator: 'Auto Book Builder', sections: sections });
+    if (typeof Blob !== 'undefined' && typeof window !== 'undefined') { var b = await D.Packer.toBlob(d); return new Uint8Array(await b.arrayBuffer()); }
+    return new Uint8Array(await D.Packer.toBuffer(d));
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = E; else root.ABB4 = E;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); }, S = window.ABB.state, E = window.ABB4, ex = { stop: false, busy: false };
+  var URLS = { JSZip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', docx: 'https://unpkg.com/docx@8.5.0/build/index.umd.js' };
+  E.env = {
+    mk: function (w, h) { var k = document.createElement('canvas'); k.width = w; k.height = h; return k; },
+    jpeg: function (c, q) { return new Promise(function (res, rej) { c.toBlob(function (b) { if (!b) return rej(new Error('JPEG encode fail')); b.arrayBuffer().then(function (a) { res(new Uint8Array(a)); }); }, 'image/jpeg', q); }); },
+    free: function (c) { c.width = c.height = 0; }
+  };
+  function loadLib(name) {
+    if (window[name]) return Promise.resolve();
+    return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = URLS[name]; s.onload = function () { window[name] ? res() : rej(new Error(name + ' load nahi hui')); }; s.onerror = function () { rej(new Error(name + ' download fail (internet check karo)')); }; document.head.appendChild(s); });
+  }
+  function dl(name, bytes, mime) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: mime })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+  var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var MIME = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', zip: 'application/zip' };
+  function flaggedList() { return (S.items || []).filter(function (it) { return S.flagsOf && S.flagsOf(it).length; }); }
+  function bookName() { var n = (S.name || 'Book').replace(/\.pdf$/i, ''); return E.safeName(n, 'Book'); }
+  function release(pl) { // item ka canvas tabhi free karo jab uski aakhri page ho chuki ho
+    var last = {}; pl.pages.forEach(function (pg, i) { pg.pl.forEach(function (p) { last[(p.it.orig || p.it).id] = i; }); });
+    return function (i) { pl.pages[i].pl.forEach(function (p) { var li = p.it.orig || p.it; if (last[li.id] === i) { if (li._r) { li._r.width = li._r.height = 0; li._r = null; } li.cv = null; } }); };
+  }
+  function prog(txt, f) { if (ex.cb) ex.cb(txt, f); var a = $('abbExSt'), b = $('abbExPb'); if (a) a.textContent = txt; if (b) b.style.width = (100 * f) + '%'; }
+  async function runPlan(cfg, o, label, base, span) {
+    var pl = await S.plan(cfg); if (!pl.pages.length) return null;
+    var res = await E.build({ n: pl.pages.length, render: function (i, sc) { return S.renderIdx(pl, i, sc); }, P: pl.P, colW: pl.pages[0].colW, q: o.q, scale: o.scale, docx: o.docx, stop: function () { return ex.stop; }, release: release(pl),
+      onProgress: function (i, n) { prog(label + ': page ' + i + '/' + n, base + span * i / n); } });
+    res.items = pl.sel.length; return res;
+  }
+  async function doExport() {
+    if (ex.busy) return; ex.busy = true; ex.stop = false; $('abbExGo').disabled = true; $('abbExX').disabled = false; $('abbExWarn').style.display = 'none';
+    try {
+      var cfg = Object.assign({}, S.readCfg ? S.readCfg() : S.cfg), o = { q: +$('abbExQ').value, scale: +$('abbExSc').value, docx: $('abbExFm').value === 'pdfdocx' }, split = $('abbExCh').value === 'split';
+      if (o.docx) await loadLib('docx'); if (split) await loadLib('JSZip');
+      var nm = bookName(), t0 = Date.now();
+      if (!split) {
+        var r = await runPlan(cfg, o, 'Book', 0, 1); if (!r) throw new Error('Selection mein koi item nahi');
+        dl(nm + '.pdf', r.pdf, MIME.pdf); if (r.docx) { await wait(500); dl(nm + '.docx', r.docx, MIME.docx); }
+        prog('Ho gaya ✔ ' + r.pages + ' pages' + (r.docx ? ' (PDF + DOCX)' : '') + ' · ' + Math.round((Date.now() - t0) / 1000) + 's', 1);
+      } else {
+        var chs = S.res.chapters, names = E.uniqueNames(chs.map(function (c, i) { return String(i + 1).padStart(2, '0') + ' - ' + E.safeName(c.name, 'Chapter ' + (i + 1)); })), zip = new window.JSZip(), done = 0, pages = 0;
+        for (var i = 0; i < chs.length; i++) {
+          var r2 = await runPlan(Object.assign({}, cfg, { chFilter: chs[i].ch }), o, 'Ch ' + (i + 1) + '/' + chs.length, i / chs.length, 1 / chs.length); if (!r2) continue;
+          zip.file(names[i] + '.pdf', r2.pdf); if (r2.docx) zip.file(names[i] + '.docx', r2.docx); done++; pages += r2.pages;
+        }
+        if (!done) throw new Error('Selection mein koi item nahi');
+        prog('ZIP bana raha hoon…', 0.99); var z = await zip.generateAsync({ type: 'uint8array', compression: 'STORE' });
+        dl(nm + ' - chapters.zip', z, MIME.zip); prog('Ho gaya ✔ ' + done + ' chapters, ' + pages + ' pages (ZIP)', 1);
+      }
+    } catch (e) { prog(e.message === 'cancelled' ? 'Cancel kiya' : 'Error: ' + e.message, 0); }
+    ex.busy = false; $('abbExGo').disabled = false; $('abbExX').disabled = true;
+  }
+  function onGo() {
+    var f = flaggedList(); if (f.length && !ex.ok) { var w = $('abbExWarn'); w.style.display = 'block'; w.innerHTML = '⚠ <b>' + f.length + ' item flagged hain</b> (Step 2 review mein theek nahi kiye). Export mein kuch crops galat/cut ho sakte hain. <button id="abbExForce">Phir bhi export</button>'; $('abbExForce').onclick = function () { ex.ok = true; w.style.display = 'none'; doExport().then(function () { ex.ok = false; }); }; return; }
+    doExport();
+  }
+  function refresh() { var f = flaggedList().length, e = $('abbExFl'); if (e) { e.className = f ? 'bad' : 'ok'; e.textContent = f ? 'Flagged: ' + f : 'Flagged: 0 ✔'; } }
+  function panel() {
+    var d = document.createElement('div'); d.className = 'g'; d.id = 'abbEx';
+    d.innerHTML = '<b>Step 4: Export</b> · <b id="abbExFl"></b><div class="cf" style="margin-top:6px">' +
+      '<label>Format<select id="abbExFm"><option value="pdf">Sirf PDF</option><option value="pdfdocx">PDF + DOCX (saath mein)</option></select></label>' +
+      '<label>Chapters<select id="abbExCh"><option value="merged">Ek merged book</option><option value="split">Har chapter alag (ZIP)</option></select></label>' +
+      '<label>JPEG quality: <span id="abbExQv">' + (S.cfg.q || 85) + '</span><input id="abbExQ" type="range" min="40" max="100" value="' + (S.cfg.q || 85) + '"></label>' +
+      '<label>Resolution<select id="abbExSc"><option value="2">Chhota (144 dpi)</option><option value="2.5" selected>Normal (180 dpi)</option><option value="3">High (216 dpi)</option></select></label></div>' +
+      '<div class="r" style="margin-top:8px"><button class="p" id="abbExGo">⬇ Export</button><button id="abbExX" disabled>■ Cancel</button></div>' +
+      '<div class="g bad" id="abbExWarn" style="display:none;margin-top:6px"></div><div class="pb" style="height:6px;background:#e5e8ee;margin-top:8px"><div id="abbExPb" style="height:6px;width:0;background:#2563eb"></div></div><div class="mu" id="abbExSt"></div>';
+    return d;
+  }
+  var old = S.review;
+  S.review = function (m) { old(m); if (!$('abbEx') && $('abbRes')) { $('abbRes').appendChild(panel()); $('abbExQ').oninput = function () { $('abbExQv').textContent = this.value; S.cfg.q = +this.value; }; $('abbExGo').onclick = onGo; $('abbExX').onclick = function () { ex.stop = true; }; } refresh(); };
+  window.ABB.export = { run: doExport, flagged: flaggedList, loadLib: loadLib, runPlan: function (cfg, o, label) { return runPlan(cfg, o, label, 0, 1); }, setCb: function (f) { ex.cb = f; }, stop: function () { ex.stop = true; }, reset: function () { ex.stop = false; } };
+})();
+
+(function (root) {
+  'use strict';
+  var N = 64, D = {};
+  D.N = N;
+  // gray: Float32Array(N*N) in 0..1 (1 = white), made by downscaling the item's crop to N x N
+  function norm(g) { var m = 0, i; for (i = 0; i < g.length; i++) m += g[i]; m /= g.length; var out = new Float32Array(g.length), s = 0; for (i = 0; i < g.length; i++) { out[i] = g[i] - m; s += out[i] * out[i]; } s = Math.sqrt(s) || 1; for (i = 0; i < g.length; i++) out[i] /= s; return out; }
+  D.corr = function (a, b) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+  // items: [{key, w, h, g}] in book order. Returns {dupKey: keepKey} (pehla rakho, baad wale duplicates)
+  D.find = function (items, o) {
+    o = o || {}; var th = o.th || 0.85, tol = o.tol || 0.04, list = items.map(function (it) { return { key: it.key, w: it.w, h: it.h, g: norm(it.g) }; }), out = {}, kept = [];
+    list.forEach(function (it) {
+      var hit = null;
+      for (var j = 0; j < kept.length && !hit; j++) { var k = kept[j]; if (Math.abs(k.h - it.h) / Math.max(k.h, it.h) > tol || Math.abs(k.w - it.w) / Math.max(k.w, it.w) > tol) continue; if (D.corr(k.g, it.g) >= th) hit = k; }
+      if (hit) out[it.key] = hit.key; else kept.push(it);
+    });
+    return out;
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.ABB5 = D;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); }, S = window.ABB.state, A = window.ABB, CH = 30, DBN = 'abbDB';
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // ---------- IndexedDB ----------
+  var dbp = null;
+  function db() { return dbp || (dbp = new Promise(function (res, rej) { var r = indexedDB.open(DBN, 1); r.onupgradeneeded = function () { ['meta', 'pdf', 'chunks', 'presets'].forEach(function (n) { r.result.createObjectStore(n); }); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; })); }
+  function op(store, mode, fn) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(store, mode), o = t.objectStore(store), q = fn(o); t.oncomplete = function () { res(q && q.result); }; t.onerror = t.onabort = function () { rej(t.error); }; }); }); }
+  function put(st, k, v) { return op(st, 'readwrite', function (o) { return o.put(v, k); }); }
+  function get(st, k) { return op(st, 'readonly', function (o) { return o.get(k); }); }
+  function clr(st) { return op(st, 'readwrite', function (o) { return o.clear(); }); }
+  function eachChunk(fn) { return db().then(function (d) { return new Promise(function (res, rej) { var o = d.transaction('chunks', 'readonly').objectStore('chunks'), c = o.openCursor(); c.onsuccess = function () { var cur = c.result; if (!cur) return res(); fn(cur.key, cur.value); cur.continue(); }; c.onerror = function () { rej(c.error); }; }); }); }
+  function clone(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+  function putSafe(st, k, v) { return put(st, k, v).catch(function (e) { if (e && e.name === 'DataCloneError') return put(st, k, clone(v)); throw e; }); }
+  var on = true, buf = { pages: [], crops: {} }, nch = 0, snap = {}, dirty = null;
+  function saveErr(e) { on = false; var s = $('abbSt'); if (s) s.textContent += ' · ⚠ auto-save band (' + ((e && e.message) || e) + ')'; }
+  function meta() { return { name: S.name, pages: S.pdf ? S.pdf.numPages : 0, off: S.off || 0, nch: nch, t: Date.now() }; }
+  async function startSave() {
+    if (!window.indexedDB) { on = false; return; }
+    try { on = true; await clr('chunks'); buf = { pages: [], crops: {} }; nch = 0; S.dup = {}; S.dupDone = false; await put('pdf', 'cur', S.bytes); await putSafe('meta', 'res', S.res); await put('meta', 'edits', null); await put('meta', 'cur', meta()); } catch (e) { saveErr(e); }
+  }
+  async function flush() { if (!on || !buf.pages.length) return; var id = 'c' + String(++nch).padStart(6, '0'); try { await put('chunks', id, buf); buf = { pages: [], crops: {} }; await put('meta', 'cur', meta()); } catch (e) { saveErr(e); } }
+  S.onPage = async function (pn, entries) { if (!on) return; entries.forEach(function (e) { var k = S.sk(e[0], e[1]); if (S.crops[k]) buf.crops[k] = S.crops[k]; }); buf.pages.push(pn); if (buf.pages.length >= CH) await flush(); };
+  S.onDone = flush;
+  function takeSnap() { snap = {}; S.items.forEach(function (it) { snap[it.id] = JSON.stringify(it.segs); }); }
+  async function saveEdits() {
+    if (!on || !S.items || !S.items.length || !S.res) return;
+    try {
+      var ok = {}, man = {}, cm = {}, ch = S.res.chapters.map(function (c) { return c.name; });
+      S.items.forEach(function (it) { if (it.ok) ok[it.id] = it.ok; if (it.manual || (snap[it.id] && snap[it.id] !== JSON.stringify(it.segs))) { man[it.id] = { segs: it.segs, manual: it.manual ? 1 : 0, base: it.base }; it.segs.forEach(function (s, i) { var k = S.sk(it, i); if (S.crops[k]) cm[k] = S.crops[k]; }); } });
+      await put('meta', 'edits', { ok: ok, man: man, ch: ch, off: S.off || 0, dup: S.dup || {}, dupDone: !!S.dupDone });
+      await put('chunks', 'cm', { pages: [], crops: cm }); await put('meta', 'cur', meta());
+    } catch (e) { saveErr(e); }
+  }
+  function later() { clearTimeout(dirty); dirty = setTimeout(saveEdits, 700); }
+  window.addEventListener('pagehide', function () { saveEdits(); });
+  // ---------- resume ----------
+  async function banner() {
+    if (!window.indexedDB || $('abbRsm') || !$('abbOv')) return;
+    var m = null; try { m = await get('meta', 'cur'); } catch (e) { } if (!m || !m.pages) return;
+    var d = document.createElement('div'); d.className = 'g'; d.id = 'abbRsm';
+    d.innerHTML = '<b>💾 Pichla kaam mila:</b> ' + esc(m.name) + ' · ' + m.pages + ' pages · ' + new Date(m.t).toLocaleString() + ' <button class="p" id="abbRsB">▶ Resume</button> <button id="abbRsD">🗑 Delete</button> <span class="mu" id="abbRsI"></span>';
+    var w = $('abbOv').querySelector('.w'); w.insertBefore(d, $('abbRes')); $('abbRsB').onclick = resume; $('abbRsD').onclick = async function () { await clr('chunks'); await clr('pdf'); await clr('meta'); d.remove(); };
+  }
+  async function resume() {
+    var inf = $('abbRsI'); inf.textContent = 'Load ho raha hai…';
+    try {
+      var m = await get('meta', 'cur'), bytes = await get('pdf', 'cur'), res = await get('meta', 'res'), ed = await get('meta', 'edits'); if (!m || !bytes || !res) throw new Error('save adhura hai');
+      S.name = m.name; S.bytes = bytes.slice(0); S.cdoc = null; S.pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)) }).promise; S.res = res; S.off = (ed && ed.off) || m.off || 0;
+      if (ed && ed.ch) ed.ch.forEach(function (n, i) { if (S.res.chapters[i]) S.res.chapters[i].name = n; });
+      S._resuming = true; $('abbRes').innerHTML = ''; A.show(); S._resuming = false; S.buildItems(); S.crops = {}; S.failed = {}; takeSnap();
+      var n = 0; await eachChunk(function (k, v) { if (k === 'cm') return; nch = Math.max(nch, +k.slice(1) || 0); Object.keys(v.crops).forEach(function (kk) { S.crops[kk] = v.crops[kk]; n++; }); });
+      if (ed) { S.items.forEach(function (it) { if (ed.ok && ed.ok[it.id]) it.ok = ed.ok[it.id]; var mm = ed.man && ed.man[it.id]; if (mm) { it.segs = mm.segs; if (mm.manual) it.manual = 1; it.base = mm.base || it.base; } }); S.dup = ed.dup || {}; S.dupDone = !!ed.dupDone; }
+      var cm = await get('chunks', 'cm'); if (cm) Object.keys(cm.crops).forEach(function (k) { S.crops[k] = cm.crops[k]; });
+      on = true; S.resume = true; var tot = 0, done = 0; S.items.forEach(function (it) { it.segs.forEach(function (s, i) { tot++; if (S.crops[S.sk(it, i)]) done++; }); });
+      $('abbRsm').remove(); $('abbSt').textContent = 'Resume ✔ crops ' + done + '/' + tot + (done < tot ? ' — ✂ Step 2 dabao, baaki wahin se chalega' : '');
+      S.review();
+    } catch (e) { inf.textContent = 'Resume fail: ' + e.message; }
+  }
+  var oShow = A.show; A.show = function () { oShow(); if (!S._resuming) startSave(); };
+  var oOpen = A.open; A.open = function () { oOpen(); banner(); };
+  // ---------- failed pages ----------
+  function failPanel() {
+    var f = S.failed || {}, ks = Object.keys(f).map(Number).sort(function (a, b) { return a - b; }), el = $('abbFail'); if (!ks.length) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.className = 'g'; el.id = 'abbFail'; $('abbRes').insertBefore(el, $('abbRes').firstChild); }
+    el.innerHTML = '<b class="bad">⚠ ' + ks.length + ' page fail hue</b> <button class="p" id="abbRt">↻ Retry failed pages</button><div class="mu">' + ks.map(function (p) { return 'p' + p + ': ' + esc(f[p]); }).join(' · ') + '</div>';
+    $('abbRt').onclick = function () { S.buildCrops({ only: ks }); };
+  }
+  // ---------- presets ----------
+  var PIN = { cols: '3', margin: 22, gap: 9, itemGap: 4, together: 'smart', rule: true, footer: true, balance: true, renum: 'chapter', mode: 'QS', footer: true }, DEFN = 'Race Book - Pinnacle', LAY = ['cols', 'margin', 'gap', 'itemGap', 'side', 'together', 'renum', 'mode', 'rule', 'header', 'footer', 'balance', 'q'];
+  var PS = {};
+  function loadPS() { try { PS = JSON.parse(localStorage.getItem('abbPresets') || '{}') || {}; } catch (e) { PS = {}; } if (!Object.keys(PS).length && window.indexedDB) get('presets', 'all').then(function (v) { if (v) { PS = v; try { localStorage.setItem('abbPresets', JSON.stringify(PS)); } catch (e) { } fillSel(); } }).catch(function () { }); }
+  function savePS() { try { localStorage.setItem('abbPresets', JSON.stringify(PS)); } catch (e) { } if (window.indexedDB) put('presets', 'all', PS).catch(function () { }); }
+  function allPS() { var o = {}; o[DEFN] = PIN; Object.keys(PS).forEach(function (k) { if (k !== DEFN) o[k] = PS[k]; }); return o; }
+  function applyPreset(p) {
+    Object.keys(p).forEach(function (k) { S.cfg[k] = p[k]; var e = document.querySelector('#abbCf [data-k="' + k + '"]'); if (e) { if (e.type === 'checkbox') e.checked = !!p[k]; else e.value = p[k]; } });
+    if (p.q != null && $('abbExQ')) { $('abbExQ').value = p.q; $('abbExQv').textContent = p.q; }
+    if (S.readCfg) S.readCfg(); try { localStorage.setItem('abbCfg', JSON.stringify(S.cfg)); } catch (e) { }
+  }
+  function curLayout() { var c = S.readCfg ? S.readCfg() : S.cfg, o = {}; LAY.forEach(function (k) { if (c[k] != null) o[k] = c[k]; }); return o; }
+  function fillSel(keep) { var s = $('abbPsSel'); if (!s) return; var a = allPS(); s.innerHTML = Object.keys(a).map(function (k) { return '<option>' + esc(k) + '</option>'; }).join(''); if (keep && a[keep]) s.value = keep; }
+  function dl(name, text) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 3000); }
+  function say(t) { var e = $('abbPsI'); if (e) e.textContent = t; }
+  // ---------- unique (duplicate Q) ----------
+  async function dupScan() {
+    var qs = S.items.filter(function (it) { return it.t === 'Q'; }), items = [], k = document.createElement('canvas'); k.width = k.height = ABB5.N; var g = k.getContext('2d', { willReadFrequently: true });
+    for (var i = 0; i < qs.length; i++) {
+      var cv = await S.joined(qs[i]); if (!cv) continue; g.fillStyle = '#fff'; g.fillRect(0, 0, k.width, k.height); g.imageSmoothingQuality = 'high'; g.drawImage(cv, 0, 0, k.width, k.height);
+      var d = g.getImageData(0, 0, k.width, k.height).data, a = new Float32Array(k.width * k.height); for (var j = 0; j < a.length; j++) a[j] = (d[j * 4] + d[j * 4 + 1] + d[j * 4 + 2]) / 765;
+      items.push({ key: qs[i].ch + '_' + qs[i].n, w: cv.width, h: cv.height, g: a }); cv.width = cv.height = 0; if (i % 10 === 0) { say('Duplicate scan ' + i + '/' + qs.length); await new Promise(function (r) { setTimeout(r, 0); }); }
+    }
+    var map = ABB5.find(items); S.dup = {}; Object.keys(map).forEach(function (x) { S.dup[x] = 1; }); S.dupMap = map; S.dupDone = true; later();
+    var n = Object.keys(map).length; say(n ? n + ' duplicate Q mile: ' + Object.keys(map).map(function (x) { return x + '→' + map[x]; }).slice(0, 12).join(', ') + (n > 12 ? '…' : '') + ' · Selection = "Unique" chuno' : 'Koi duplicate nahi mila ✔'); return n;
+  }
+  var oPlan = S.plan; S.plan = async function (c) { c = c || S.cfg; if (c.sel === 'unique' && !S.dupDone && S.items && S.items.length) await dupScan(); return oPlan(c); };
+  S.dupScan = dupScan;
+  function psPanel() {
+    var d = document.createElement('div'); d.className = 'g'; d.id = 'abbPs';
+    d.innerHTML = '<b>Presets</b><div class="r" style="margin-top:6px"><select id="abbPsSel"></select><button id="abbPsL">Load</button><button id="abbPsS">💾 Save as…</button><button id="abbPsD">🗑 Delete</button><button id="abbPsE">⬆ JSON export</button><label class="mu" style="cursor:pointer">⬇ JSON import <input type="file" id="abbPsF" accept=".json,application/json" hidden></label></div>' +
+      '<div class="r" style="margin-top:8px"><button id="abbDp">🔍 Duplicate Q dhoondo (Unique ke liye)</button></div><div class="mu" id="abbPsI"></div>';
+    return d;
+  }
+  function wire() {
+    fillSel(S.lastPreset); $('abbPsL').onclick = function () { var n = $('abbPsSel').value, p = allPS()[n]; if (p) { applyPreset(p); S.lastPreset = n; try { localStorage.setItem('abbPresetLast', n); } catch (e) { } say('"' + n + '" laga diya ✔ (👁 preview dobara dabao)'); } };
+    $('abbPsS').onclick = function () { var n = (prompt('Preset ka naam:') || '').trim(); if (!n) return; if (n === DEFN) return say('Default preset overwrite nahi hota — dusra naam do'); PS[n] = curLayout(); savePS(); fillSel(n); say('"' + n + '" save ✔'); };
+    $('abbPsD').onclick = function () { var n = $('abbPsSel').value; if (n === DEFN) return say('Default preset delete nahi hota'); if (!PS[n]) return; if (!confirm('"' + n + '" delete karna hai?')) return; delete PS[n]; savePS(); fillSel(); say('Delete ✔'); };
+    $('abbPsE').onclick = function () { var o = {}; Object.keys(PS).forEach(function (k) { o[k] = PS[k]; }); dl('abb-presets.json', JSON.stringify({ abbPresets: 1, presets: o }, null, 1)); };
+    $('abbPsF').onchange = function () { var f = this.files[0]; if (!f) return; f.text().then(function (t) { var j = JSON.parse(t), src = j && j.presets ? j.presets : j, n = 0; Object.keys(src || {}).forEach(function (k) { if (k === DEFN || !src[k] || typeof src[k] !== 'object') return; var o = {}; LAY.forEach(function (x) { if (src[k][x] != null) o[x] = src[k][x]; }); PS[k] = o; n++; }); savePS(); fillSel(); say(n + ' preset import ✔'); }).catch(function (e) { say('Import fail: ' + e.message); }); this.value = ''; };
+    $('abbDp').onclick = function () { say('Scan chal raha hai…'); dupScan().catch(function (e) { say('Error: ' + e.message); }); };
+  }
+  var oRev = S.review;
+  S.review = function (m) { oRev(m); failPanel(); if (!$('abbPs') && $('abbCf')) { $('abbCf').insertAdjacentElement('afterend', psPanel()); wire(); } later(); };
+  // ---------- init ----------
+  loadPS(); try { S.lastPreset = localStorage.getItem('abbPresetLast') || DEFN; if (!localStorage.getItem('abbCfg')) { Object.assign(S.cfg, PIN); } } catch (e) { }
+  A.store = { resume: resume, flush: flush, save: saveEdits, presets: allPS, apply: function (n) { var p = allPS()[n]; if (p) applyPreset(p); return !!p; }, pause: function (v) { var o = on; if (v) { on = false; clearTimeout(dirty); } else on = o; return o; }, setOn: function (v) { on = v; } };
+})();
+
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); }, S = window.ABB.state, A = window.ABB, E = window.ABB4;
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function psOpts() { var k = Object.keys(A.store ? A.store.presets() : {}); return '<option value="">(Abhi wali setting)</option>' + k.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join(''); }
+  function panel() {
+    var d = document.createElement('div'); d.className = 'g'; d.id = 'abbBk';
+    d.innerHTML = '<b>📦 Bulk: kai PDF ek saath (har PDF ka alag PDF/DOCX, ek ZIP mein)</b>' +
+      '<div class="r" style="margin-top:6px"><input type="file" id="abbBkF" accept="application/pdf,.pdf" multiple></div>' +
+      '<div class="cf" style="margin-top:6px"><label>Format<select id="abbBkFm"><option value="pdf">Sirf PDF</option><option value="pdfdocx">PDF + DOCX (saath mein)</option></select></label>' +
+      '<label>Preset<select id="abbBkPs">' + psOpts() + '</select></label><label>JPEG quality<input id="abbBkQ" type="number" min="40" max="100" value="85"></label>' +
+      '<label>Flagged wale<select id="abbBkSk"><option value="0">Phir bhi export (report mein ⚠)</option><option value="1">Skip karo</option></select></label>' +
+      '<label>Duplicate Q<select id="abbBkUq"><option value="all">Sab rakho</option><option value="unique">Duplicate hatao</option></select></label></div>' +
+      '<div class="r" style="margin-top:8px"><button class="p" id="abbBkGo" disabled>▶ Bulk chalao</button><span class="mu">Layout/columns: Presets ya Step 3 ki saved setting lagegi. Cancel: ⏹ Cancel.</span></div><div id="abbBkR" style="margin-top:6px"></div>';
+    return d;
+  }
+  function render(rows) { $('abbBkR').innerHTML = '<table><tr><th>#</th><th>PDF</th><th>Q</th><th>Sol</th><th>Flagged</th><th>Pages</th><th>Status</th></tr>' + rows.map(function (r, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + (r.q == null ? '' : r.q) + '</td><td>' + (r.s == null ? '' : r.s) + '</td><td>' + (r.flagged == null ? '' : r.flagged) + '</td><td>' + (r.pages || '') + '</td><td>' + esc(r.status || '…') + '</td></tr>'; }).join('') + '</table>'; }
+  function dl(name, bytes) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 5000); }
+  function bar(f) { var b = $('abbPb'); if (b) b.style.width = (100 * Math.min(1, f)) + '%'; }
+  async function run() {
+    var files = [].slice.call($('abbBkF').files); if (!files.length || S.busy) return;
+    S.busy = true; S.stop = false; S.pause = false; $('abbBkGo').disabled = true;
+    var fm = $('abbBkFm').value, q = +$('abbBkQ').value || 85, skip = $('abbBkSk').value === '1', ps = $('abbBkPs').value, N = files.length, rows = [], cancelled = false, used = {};
+    if (ps) A.store.apply(ps);
+    var base = Object.assign({}, S.cfg, { sel: $('abbBkUq').value, chFilter: null, q: q }), saved = { rv: S.review, op: S.onPage, od: S.onDone }, wasOn = A.store.pause(true);
+    S.review = function () { }; S.onPage = null; S.onDone = null;
+    var st = function (i, t) { $('abbSt').textContent = '[' + (i + 1) + '/' + N + '] ' + files[i].name + ' · ' + t; };
+    try {
+      await A.export.loadLib('JSZip'); if (fm === 'pdfdocx') await A.export.loadLib('docx');
+      var zip = new window.JSZip(); A.export.reset();
+      A.export.setCb(function (t, f) { if (S.stop) A.export.stop(); $('abbSt').textContent = $('abbSt').textContent.split(' · ')[0] + ' · ' + t; });
+      for (var i = 0; i < N; i++) {
+        if (S.stop) { cancelled = true; break; }
+        var f = files[i], row = { name: f.name }; rows.push(row); render(rows); $('abbCa').disabled = false;
+        var nm = E.safeName(f.name.replace(/\.pdf$/i, ''), 'PDF ' + (i + 1)), key = nm.toLowerCase(); used[key] = (used[key] || 0) + 1; if (used[key] > 1) nm += ' (' + used[key] + ')';
+        try {
+          st(i, 'PDF padh raha hoon'); var buf = await f.arrayBuffer();
+          S.name = nm; S.bytes = buf.slice(0); S.cdoc = null; S.off = 0; S.crops = {}; S.failed = {}; S.dup = {}; S.dupDone = false; S.items = []; S.lastPlan = null;
+          S.pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+          S.res = await A.detectPdf(S.pdf, { stop: function () { return S.stop; }, paused: function () { return S.pause; }, progress: function (p, n) { st(i, 'Detect page ' + p + '/' + n); bar((i + 0.3 * p / n) / N); } });
+          row.q = S.res.Q.length; row.s = S.res.S.length; if (!row.q) throw new Error('Koi Q nahi mila'); render(rows);
+          st(i, 'Crop'); await S.buildCrops(); if (S.stop) throw new Error('cancelled');
+          row.flagged = S.items.filter(function (it) { return S.flagsOf(it).length; }).length + Object.keys(S.failed || {}).length;
+          if (skip && row.flagged) { row.status = '⏭ skip (flagged)'; }
+          else {
+            st(i, 'Export'); var r = await A.export.runPlan(base, { q: q, scale: 2.5, docx: fm === 'pdfdocx' }, nm); if (!r) throw new Error('Selection khali'); row.pages = r.pages;
+            zip.file(nm + '.pdf', r.pdf); if (r.docx) zip.file(nm + '.docx', r.docx); row.status = row.flagged ? '⚠ export hua (flagged ' + row.flagged + ')' : '✔';
+          }
+        } catch (e) { if (e.message === 'cancelled') { cancelled = true; row.status = '⏹ cancel'; } else row.status = '❌ ' + e.message; }
+        try { if (S.pdf) S.pdf.destroy(); if (S.cdoc) S.cdoc.destroy(); } catch (x) { } S.pdf = S.cdoc = null; S.crops = {}; S.items = []; S.res = null; render(rows); bar((i + 1) / N);
+        if (cancelled) break;
+      }
+      var ok = rows.filter(function (r) { return r.pages; }).length;
+      if (ok) { zip.file('report.txt', rows.map(function (r, i) { return (i + 1) + '. ' + r.name + ' | Q ' + (r.q == null ? '-' : r.q) + ' | Sol ' + (r.s == null ? '-' : r.s) + ' | flagged ' + (r.flagged == null ? '-' : r.flagged) + ' | pages ' + (r.pages || '-') + ' | ' + r.status; }).join('\n')); $('abbSt').textContent = 'ZIP bana raha hoon…'; dl('AutoBookBuilder_bulk.zip', await zip.generateAsync({ type: 'uint8array', compression: 'STORE' })); }
+      $('abbSt').textContent = (cancelled ? 'Cancel kiya · ' : 'Bulk poora ✔ · ') + ok + '/' + N + ' PDF export hue' + (ok ? ' (ZIP download)' : '');
+    } catch (e) { $('abbSt').textContent = 'Bulk error: ' + e.message; }
+    A.export.setCb(null); S.review = saved.rv; S.onPage = saved.op; S.onDone = saved.od; A.store.setOn(wasOn); $('abbRes').innerHTML = ''; $('abbCa').disabled = true; $('abbPa').disabled = true; $('abbBkGo').disabled = false; S.busy = false;
+  }
+  var oOpen = A.open; A.open = function () { oOpen(); var w = $('abbOv') && $('abbOv').querySelector('.w'); if (w && !$('abbBk')) { w.insertBefore(panel(), $('abbRes')); $('abbBkF').onchange = function () { $('abbBkGo').disabled = !this.files.length; }; $('abbBkGo').onclick = run; $('abbBkPs').onfocus = function () { var v = this.value; this.innerHTML = psOpts(); this.value = v; }; } };
+  A.bulk = { run: run };
+})();
+
+</script>
+<script id="slideAutoBook">
+/* 🎞 Slide Auto Book Builder — coaching ki slide-PDF (sawal upar typed, solution haath se likha) ko Q.1 / Sol.1 wali book PDF mein badalta hai.
+   Purana 📚 Auto Book Builder (Pinnacle text-PDF) jyun ka tyun hai; yeh alag button/alag tool hai. */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var pdfjsLib = window['pdfjs-dist/build/pdf'];
+  var BIDI = /[\u202a-\u202e\u200e\u200f\u2066-\u2069]/g;
+  var S = { pdf: null, name: '', W0: 544, items: [], busy: false, stop: false, pause: false };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function R(n) { return Math.round(n); }
+  function mk(w, h) { var c = document.createElement('canvas'); c.width = Math.max(1, R(w)); c.height = Math.max(1, R(h)); return c; }
+  function white(c) { var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); return x; }
+  function blobOf(c, q) { return new Promise(function (res) { c.toBlob(function (b) { res(b); }, 'image/jpeg', q || 0.9); }); }
+  function toast(m) { var t = document.createElement('div'); t.textContent = m; t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;z-index:2147483647;font-size:14px;max-width:90%'; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3200); }
+  function dl(name, blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+
+  /* ---------- slide analysis ---------- */
+  // neeche ka kaala bar (video overlay) dhundo: bar ke upar tak hi solution hota hai
+  function findBar(d, W, H) {
+    var xs = [R(W * 0.03), R(W * 0.12), R(W * 0.25)];
+    for (var y = R(H * 0.75); y < H - 5; y++) {
+      var ok = true;
+      for (var a = 0; a < xs.length && ok; a++) for (var k = 0; k < 4; k++) { var i = ((y + k) * W + xs[a]) * 4; if (d[i] > 50 || d[i + 1] > 50 || d[i + 2] > 50) { ok = false; break; } }
+      if (ok) return y - 2;
+    }
+    return null;
+  }
+  function joinG(a) { a = a.slice().sort(function (p, q) { return p.x - q.x; }); var t = '', pe = null; a.forEach(function (i) { var w = i.s.trim(); if (pe !== null && i.x - pe > 0.08 * i.sz) t += ' '; t += w; pe = i.x1; }); return t.replace(/\s+/g, ' ').trim(); }
+  function clusterLines(items) {
+    var its = items.slice().sort(function (a, b) { return a.base - b.base || a.x - b.x; }), lines = [];
+    its.forEach(function (it) {
+      var L = lines[lines.length - 1];
+      if (L && Math.abs(it.base - L.base) <= 0.45 * Math.max(it.sz, L.sz)) { L.its.push(it); L.sz = Math.max(L.sz, it.sz); } else lines.push({ base: it.base, sz: it.sz, its: [it] });
+    });
+    lines.forEach(function (L) { L.its.sort(function (a, b) { return a.x - b.x; }); L.top = L.base - 1.05 * L.sz; L.bot = L.base + 0.42 * L.sz; L.text = L.its.map(function (i) { return i.s; }).join(' '); });
+    var cls = [];
+    lines.forEach(function (L) {
+      var c = cls[cls.length - 1];
+      if (c && L.top - c.bot <= 1.3 * Math.max(L.sz, c.sz)) { c.lines.push(L); c.bot = Math.max(c.bot, L.bot); c.sz = Math.max(c.sz, L.sz); } else cls.push({ lines: [L], top: L.top, bot: L.bot, sz: L.sz });
+    });
+    cls.forEach(function (c) { c.text = c.lines.map(function (l) { return l.text; }).join('\n'); });
+    // options alag cluster mein reh gaye ho (thoda gap) to question se jodo
+    if (cls.length > 1 && !/(?:^|[\s(])a\)/.test(cls[0].text) && /^\s*\(?a\)/.test(cls[1].text) && cls[1].top - cls[0].bot < 2.6 * Math.max(cls[0].sz, cls[1].sz)) {
+      cls[0].lines = cls[0].lines.concat(cls[1].lines); cls[0].bot = cls[1].bot; cls[0].text += '\n' + cls[1].text; cls.splice(1, 1);
+    }
+    return cls;
+  }
+  // text ke tight rectangles (words ke beech ka chhota gap jodkar)
+  function textRects(lines) {
+    var out = [];
+    lines.forEach(function (L) {
+      var cur = null;
+      L.its.forEach(function (it) {
+        var t = it.base - 1.05 * it.sz, b = it.base + 0.42 * it.sz;
+        if (cur && it.x - cur.x1 < 1.8 * Math.max(it.sz, cur.sz)) { cur.x1 = Math.max(cur.x1, it.x1); cur.t = Math.min(cur.t, t); cur.b = Math.max(cur.b, b); cur.sz = Math.max(cur.sz, it.sz); }
+        else { cur = { x0: it.x, x1: it.x1, t: t, b: b, sz: it.sz }; out.push(cur); }
+      });
+    });
+    return out.map(function (r) { var px = 0.45 * r.sz + 2; return { x: r.x0 - px, y: r.t - 2, w: r.x1 - r.x0 + 2 * px, h: r.b - r.t + 4 }; });
+  }
+  function boxOf(rs, pad, W, H) {
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    rs.forEach(function (r) { x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); });
+    x0 = Math.max(0, R(x0 - pad)); y0 = Math.max(0, R(y0 - pad)); x1 = Math.min(W, R(x1 + pad)); y1 = Math.min(H, R(y1 + pad));
+    return { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
+  }
+  // ink bbox + khali patti kam karna
+  function trimCompact(src, compact, thr) {
+    thr = thr || 235;
+    var W = src.width, H = src.height, d = src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    var rows = new Uint32Array(H), cols = new Uint32Array(W), tot = 0;
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { var i = (y * W + x) * 4; if (Math.min(d[i], d[i + 1], d[i + 2]) < thr) { rows[y]++; cols[x]++; tot++; } }
+    if (tot < 40) return null;
+    var x0 = -1, x1 = -1, r0 = -1, r1 = -1;
+    for (x = 0; x < W; x++) if (cols[x] >= 2) { if (x0 < 0) x0 = x; x1 = x; }
+    for (y = 0; y < H; y++) if (rows[y] >= 2) { if (r0 < 0) r0 = y; r1 = y; }
+    if (x0 < 0 || r0 < 0) return null;
+    var pad = 8, segs = [], tol = R(0.065 * H), gap = R(0.02 * H);
+    if (compact) { var cur = null; for (y = r0; y <= r1; y++) if (rows[y] >= 2) { if (cur && y - cur.e <= tol) cur.e = y + 1; else { cur = { s: y, e: y + 1 }; segs.push(cur); } } }
+    else segs = [{ s: r0, e: r1 + 1 }];
+    segs.forEach(function (s) { s.s = Math.max(0, s.s - 5); s.e = Math.min(H, s.e + 5); });
+    var w = x1 - x0 + 1, tw = w + 2 * pad, th = pad * 2 - gap; segs.forEach(function (s) { th += (s.e - s.s) + gap; });
+    var o = mk(tw, th), ox = white(o), yy = pad;
+    segs.forEach(function (s) { ox.drawImage(src, x0, s.s, w, s.e - s.s, pad, yy, w, s.e - s.s); yy += (s.e - s.s) + gap; });
+    return o;
+  }
+
+
+  // Sol ke sabse upar akela chhota haath-ka number ("161.") wali line dhundo — sirf tab jab woh akeli line ho aur uske neeche aur likhai ho
+  function numBand(d, W, H) {
+    var thr = 190, rows = new Uint32Array(H), y, x, i;
+    for (y = 0; y < H; y++) { var c = 0; for (x = 0; x < W; x++) { i = (y * W + x) * 4; if (Math.min(d[i], d[i + 1], d[i + 2]) < thr) c++; } rows[y] = c; }
+    var r0 = -1; for (y = 0; y < H; y++) if (rows[y] >= 2) { r0 = y; break; } if (r0 < 0) return null;
+    var tol = Math.max(2, R(0.006 * H)), r1 = r0, last = r0;
+    for (y = r0; y < H; y++) { if (rows[y] >= 2) { last = y; r1 = y; } else if (y - last > tol) break; }
+    if (r1 - r0 + 1 > 0.06 * H) return null;
+    var x0 = W, x1 = -1;
+    for (y = r0; y <= r1; y++) for (x = 0; x < W; x++) { i = (y * W + x) * 4; if (Math.min(d[i], d[i + 1], d[i + 2]) < thr) { if (x < x0) x0 = x; if (x > x1) x1 = x; } }
+    if (x1 < 0 || x1 - x0 + 1 > 0.14 * W) return null;
+    var next = -1; for (y = r1 + 1; y < Math.min(H, r1 + 1 + R(0.25 * H)); y++) if (rows[y] >= 2) { next = y; break; }
+    if (next < 0 || next - r1 < tol) return null; // neeche aur likhai nahi / bilkul chipki hui -> mat hatao
+    var ink = 0; for (y = r0; y <= r1; y++) ink += rows[y]; if (ink < 15) return null;
+    return { x: Math.max(0, x0 - 4), y: Math.max(0, r0 - 4), w: x1 - x0 + 9, h: r1 - r0 + 9 };
+  }
+
+  async function processSlide(pn, o, ov) {
+    ov = ov || {};
+    var page = await S.pdf.getPage(pn), v0 = page.getViewport({ scale: 1 }), W0 = v0.width; S.W0 = W0;
+    var sc = o.pxW / W0, vp = page.getViewport({ scale: sc }), W = R(vp.width), H = R(vp.height);
+    var cv = mk(W, H), cx = white(cv);
+    await page.render({ canvasContext: cx, viewport: vp }).promise;
+    var id = cx.getImageData(0, 0, W, H), d = id.data, bt = findBar(d, W, H), foot = bt != null ? bt : R(H * 0.905);
+    if (o.wm) { var t = o.wmt; for (var i = 0; i < d.length; i += 4) if (d[i] >= t && d[i + 1] >= t && d[i + 2] >= t) { d[i] = d[i + 1] = d[i + 2] = 255; } cx.putImageData(id, 0, 0); }
+    var tc = await page.getTextContent(), view = page.view, its = [];
+    tc.items.forEach(function (it) {
+      var s = (it.str || '').replace(BIDI, ''); if (!s.trim()) return; var tr = it.transform;
+      if (Math.abs(tr[1]) > 0.1 * (Math.hypot(tr[0], tr[1]) || 1) || tr[0] < 0) return;
+      its.push({ s: s, x: (tr[4] - view[0]) * sc, x1: (tr[4] - view[0] + (it.width || 0)) * sc, base: (view[3] - tr[5]) * sc, sz: (Math.hypot(tr[2], tr[3]) || 10) * sc });
+    });
+    var foots = its.filter(function (i) { return i.base > foot; }), body = its.filter(function (i) { return i.base <= foot; });
+    var left = joinG(foots.filter(function (i) { return i.x < 0.45 * W; }));
+    var tag = joinG(foots.filter(function (i) { return i.x >= 0.45 * W && !(i.x > 0.9 * W && /^\d{1,4}$/.test(i.s.trim())); }));
+    var mA = /(?:^|\s)([a-dA-D])\s*$/.exec(left), ans = mA ? mA[1].toLowerCase() : '?', topic = left.replace(/(?:^|\s)[a-dA-D]\s*$/, '').trim();
+    var cl = clusterLines(body), qc = cl[0] || null, qT = qc ? qc.text : '', nOpt = (qT.match(/(?:^|[\s(])[a-d]\)/g) || []).length;
+    var isQ = !!qc && (nOpt >= 3 || (nOpt >= 2 && qT.length >= 30) || qT.length >= 80), kind = ov.kind || (ov.qBox ? 'q' : (isQ ? 'q' : 'note'));
+    if (kind === 'q' && !qc && !ov.qBox) kind = 'note';
+    var item = { pn: pn, kind: kind, sc: sc, ans: ans, topic: topic, src: tag, flags: [], q: null, s: null, qRaw: !!ov.qRaw, solInQ: !!ov.solInQ, numKeep: !!ov.numKeep, qBox: ov.qBox || null, nOpt: nOpt };
+    var sv = mk(W, H), sx = sv.getContext('2d'); sx.drawImage(cv, 0, 0); sx.fillStyle = '#fff'; sx.fillRect(0, Math.max(0, foot), W, H - foot);
+    if (o.cropOnly) {
+      var scc = trimCompact(sv, false, 215);
+      if (scc) { item.s = { blob: await blobOf(scc, 0.92), w: scc.width, h: scc.height }; scc.width = scc.height = 0; } else item.flags.push('slide khali');
+      if (kind === 'q' && ans === '?') item.flags.push('answer nahi mila');
+      if (!item.s) item.kind = 'skip';
+      cv.width = cv.height = 0; sv.width = sv.height = 0; try { page.cleanup(); } catch (e) {}
+      return item;
+    }
+    if (kind === 'q') {
+      var rects = ov.qBox ? [{ x: ov.qBox.x * W, y: ov.qBox.y * H, w: ov.qBox.w * W, h: ov.qBox.h * H }] : textRects(qc.lines), bb = boxOf(rects, ov.qBox ? 0 : 4, W, H), qc2 = mk(bb.w, bb.h), qx = white(qc2);
+      item.bbN = { x: bb.x / W, y: bb.y / H, w: bb.w / W, h: bb.h / H };
+      if (ov.qRaw || !o.qClean) qx.drawImage(cv, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h);
+      else rects.forEach(function (r) { var x = Math.max(bb.x, R(r.x)), y = Math.max(bb.y, R(r.y)), w = Math.min(bb.x + bb.w, R(r.x + r.w)) - x, h = Math.min(bb.y + bb.h, R(r.y + r.h)) - y; if (w > 0 && h > 0) qx.drawImage(cv, x, y, w, h, x - bb.x, y - bb.y, w, h); });
+    var tOK = false, tv = null;
+    if (!ov.qRaw && o.qClean) {
+      try {
+        var qo = mk(bb.w, bb.h), qox = white(qo); qox.drawImage(cv, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h);
+        item.q0 = { blob: await blobOf(qo, 0.9), w: bb.w, h: bb.h }; qo.width = qo.height = 0;
+      } catch (e) { item.q0 = null; }
+      if (o.qRender) {
+        try {
+          tv = mk(W, H); var tx = white(tv);
+          await page.render({ canvasContext: noInkCtx(tx), viewport: vp }).promise;
+          if (o.wm) { var tid = tx.getImageData(0, 0, W, H), td = tid.data, tt = o.wmt; for (var ti = 0; ti < td.length; ti += 4) if (td[ti] >= tt && td[ti + 1] >= tt && td[ti + 2] >= tt) { td[ti] = td[ti + 1] = td[ti + 2] = 255; } tx.putImageData(tid, 0, 0); }
+          var cropT = mk(bb.w, bb.h), cxT = white(cropT); cxT.drawImage(tv, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h);
+          var dT = darkN(cropT), dR = darkN(qc2);
+          if (dT >= 60 && dT >= 0.5 * dR) { qx.fillStyle = '#fff'; qx.fillRect(0, 0, bb.w, bb.h); qx.drawImage(cropT, 0, 0); tOK = true; }
+          cropT.width = cropT.height = 0;
+        } catch (e) { tOK = false; }
+      }
+    }
+    item.qRender = tOK;
+      var qb = await blobOf(qc2, 0.92); item.q = { blob: qb, w: qc2.width, h: qc2.height }; item.qh = bb.h / H; qc2.width = qc2.height = 0;
+      sx.fillStyle = '#fff';
+      if (ov.solInQ && tOK) eraseTextFrom(sx, tv, bb); else if (ov.solInQ) rects.forEach(function (r) { sx.fillRect(R(r.x) - 1, R(r.y) - 1, R(r.w) + 2, R(r.h) + 2); }); else sx.fillRect(bb.x - 2, bb.y - 2, bb.w + 4, bb.h + 4);
+      if (tv) tv.width = tv.height = 0;
+      if (nOpt < 4) item.flags.push('options kam (' + nOpt + ')');
+      if (item.qh > 0.6) item.flags.push('Q box bahut bada'); if (item.qh < 0.06) item.flags.push('Q box bahut chhota');
+    }
+    if (kind === 'q' && o.numRm && !ov.numKeep) { try { var nbx = numBand(sx.getImageData(0, 0, W, H).data, W, H); if (nbx) { sx.fillStyle = '#fff'; sx.fillRect(nbx.x, nbx.y, nbx.w, nbx.h); item.numRm = true; item.flags.push('number hataya (check)'); } } catch (e) {} }
+    var sc2 = trimCompact(sv, o.compact);
+    if (sc2) { var sb = await blobOf(sc2, 0.9); item.s = { blob: sb, w: sc2.width, h: sc2.height }; sc2.width = sc2.height = 0; }
+    else if (kind === 'q') item.flags.push('Sol khali');
+    if (kind === 'q' && ans === '?') item.flags.push('answer nahi mila');
+    if (kind === 'note' && !item.s) item.kind = 'skip';
+    cv.width = cv.height = 0; sv.width = sv.height = 0; try { page.cleanup(); } catch (e) {}
+    return item;
+  }
+
+  /* ---------- UI ---------- */
+  function procOpt() { return { pxW: +$('sabQ').value, wm: $('sabWm').checked, wmt: 215, qClean: $('sabQc').checked, compact: $('sabCp').checked, numRm: $('sabNr').checked, qRender: $('sabQr').checked, cropOnly: $('sabMode').value === 'crop' }; }
+  function layOpt() { return { cols: +$('sabCols').value, boost: +$('sabSz').value, keep: $('sabKeep').checked, hdr: $('sabHdr').checked, notes: $('sabNotes').checked, title: $('sabTitle').value.trim() }; }
+  function parseRange(s, n) {
+    s = (s || '').trim(); if (!s) { var a = []; for (var i = 1; i <= n; i++) a.push(i); return a; }
+    var set = {}; s.split(/[,\s]+/).forEach(function (p) { var m = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(p); if (!m) return; var a = +m[1], b = m[2] ? +m[2] : a; for (var i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) set[i] = 1; });
+    return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+  }
+  function css() {
+    if ($('sabCss')) return; var c = document.createElement('style'); c.id = 'sabCss';
+    c.textContent = '#sabOv{position:fixed;inset:0;z-index:2147483100;background:var(--bg,#eef0f4);color:var(--fg,#1b1f27);overflow:auto;padding:12px;font-size:14px}#sabOv .w{max-width:980px;margin:0 auto}#sabOv .g{background:var(--chrome,#fff);border:1px solid var(--line,#d3d8e0);border-radius:12px;padding:10px 12px;margin-bottom:10px}#sabOv .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+      '#sabOv button{padding:7px 12px;border-radius:9px;border:1px solid var(--line,#d3d8e0);background:var(--panel,#f5f6f9);color:inherit;font:inherit;cursor:pointer}#sabOv button.p{background:var(--accent,#0f6cbd);color:#fff;border-color:transparent}#sabOv button:disabled{opacity:.5;cursor:default}' +
+      '#sabOv input[type=text],#sabOv input[type=number],#sabOv select{padding:5px 7px;border-radius:8px;border:1px solid var(--line,#d3d8e0);background:var(--panel,#f5f6f9);color:inherit;font:inherit;max-width:100%}#sabOv label{display:inline-flex;gap:5px;align-items:center}#sabOv .mu{color:var(--muted,#5b6472);font-size:13px}#sabOv .m{height:8px;background:var(--hover,#e8ecf3);border-radius:5px;overflow:hidden;flex:1;min-width:120px}#sabOv .m i{display:block;height:100%;width:0;background:var(--accent,#0f6cbd)}' +
+      '#sabOv .it{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;border-bottom:1px solid var(--line,#d3d8e0);padding:8px 0}#sabOv .it.sk{opacity:.45}#sabOv .it .im{background:#fff;border:1px solid var(--line,#d3d8e0);border-radius:6px;padding:3px;min-height:30px}#sabOv .it img{max-width:100%;max-height:200px;display:block;margin:0 auto}#sabOv .it .ct{grid-column:1/3;display:flex;gap:8px;flex-wrap:wrap;align-items:center}' +
+      '#sabOv .fl{display:inline-block;background:#fdecea;color:#c62828;border-radius:6px;padding:1px 6px;font-size:12px}#sabOv .ok{color:#2e7d32}#sabOv .bad{color:#c62828}';
+    document.head.appendChild(c);
+  }
+  function open() {
+    css(); var o = $('sabOv'); if (o) { o.hidden = false; return; }
+    o = document.createElement('div'); o.id = 'sabOv';
+    o.innerHTML = '<div class="w"><div class="r"><h2 style="margin:0;flex:1">🎞 Slide Auto Book Builder</h2><button id="sabX">✕ Band</button></div>' +
+      '<div class="g mu">Coaching ki slide-PDF ke liye: <b>sawal (typed)</b> aur <b>haath ka solution</b> alag pehchaan kar, watermark + neeche ki kaali patti hata kar <b>Q.1 → Sol.1</b> wali book PDF banata hai. Answer letter neeche ki kaali patti ke text se aata hai.</div>' +
+      '<div class="g"><div class="r"><input type="file" id="sabF" accept="application/pdf,.pdf"><span class="mu" id="sabInfo">Slide PDF chuno</span> <label title="Pehle save kiya project .json kholo">📂 Project <input type="file" id="sabPjF" accept=".json,application/json"></label></div>' +
+      '<div class="r" style="margin-top:8px"><label>Book ka naam <input type="text" id="sabTitle" placeholder="jaise Number System" style="width:170px"></label><label>Pehla Q no. <input type="number" id="sabStart" value="1" min="1" style="width:70px"></label><label>Slides <input type="text" id="sabRg" placeholder="sab (ya 1-20)" style="width:100px"></label>' +
+      '<label>Quality <select id="sabQ"><option value="1800">Normal</option><option value="2400" selected>High</option><option value="3200">Ultra (dheema)</option></select></label></div>' +
+      '<div class="r" style="margin-top:8px"><label>Mode <select id="sabMode"><option value="crop" selected>Sirf Crop (slide jaisi hai waisi)</option><option value="split">Q / Sol alag karo</option></select></label><label><input type="checkbox" id="sabWm">Watermark hatao</label><label><input type="checkbox" id="sabQc" checked>Sawal ke aas-paas ki likhai (tick/underline) hatao</label><label title="Haath ki ink (tick/underline/circle) PDF ke path se hatao — text rect se behtar"><input type="checkbox" id="sabQr" checked>Ink render se hatao (naya)</label><label><input type="checkbox" id="sabCp" checked>Solution ki khali patti kam karo</label><label title="Sol ke upar akela chhota haath-ka number (jaise 161.) hatao"><input type="checkbox" id="sabNr" checked>Sol ka upar wala chhota number hatao</label></div>' +
+      '<div class="r" style="margin-top:8px"><b>Book layout:</b><label>Columns <select id="sabCols"><option>1</option><option selected>2</option><option>3</option></select></label><label>Text size <select id="sabSz"><option value="0.85">Chhota</option><option value="1" selected>Normal</option><option value="1.2">Bada</option></select></label>' +
+      '<label><input type="checkbox" id="sabKeep" checked>Q + Sol ek saath</label><label><input type="checkbox" id="sabHdr" checked>Header + page no.</label><label><input type="checkbox" id="sabNotes" checked>Concept/Notes slides bhi</label><button id="sabRace" title="Race Book jaisa compact 3-column">⚡ 3-col compact preset</button></div>' +
+      '<div class="r" style="margin-top:10px"><button class="p" id="sabGo" disabled>▶ 1) Detect + crop</button><button id="sabPa" disabled>⏸ Pause</button><button id="sabCa" disabled>⏹ Cancel</button><button class="p" id="sabBk" disabled>📘 2) Book PDF banao</button></div>' +
+      '<div class="r" style="margin-top:8px"><div class="m"><i id="sabPb"></i></div><span class="mu" id="sabSt"></span></div></div><div id="sabRes"></div></div>';
+    document.body.appendChild(o);
+    $('sabX').onclick = function () { o.hidden = true; };
+    $('sabF').onchange = function () {
+      var f = this.files[0]; if (!f) return; S.name = f.name.replace(/\.pdf$/i, '');
+      f.arrayBuffer().then(function (b) { return pdfjsLib.getDocument({ data: new Uint8Array(b) }).promise; }).then(function (p) {
+        if (S.pdf) { try { S.pdf.destroy(); } catch (e) {} } S.pdf = p; S.items = []; $('sabRes').innerHTML = ''; $('sabGo').disabled = false; $('sabBk').disabled = true;
+        $('sabInfo').textContent = f.name + ' · ' + p.numPages + ' slides'; if (!$('sabTitle').value) $('sabTitle').value = S.name.replace(/[_]+/g, ' ').replace(/^\d+\s*/, '').trim();
+      }).catch(function (e) { $('sabInfo').textContent = 'PDF nahi khuli: ' + e.message; });
+    };
+    $('sabPjF').onchange = function () { loadProject(this.files[0]); this.value = ''; };
+    $('sabPa').onclick = function () { S.pause = !S.pause; this.textContent = S.pause ? '▶ Resume' : '⏸ Pause'; };
+    $('sabCa').onclick = function () { S.stop = true; };
+    $('sabMode').onchange = function () { var c = this.value === 'crop'; $('sabWm').checked = !c; $('sabQc').disabled = $('sabCp').disabled = $('sabNr').disabled = $('sabQr').disabled = c; $('sabCols').value = c ? '1' : '2'; };
+    var SET = ['sabQ', 'sabWm', 'sabQc', 'sabCp', 'sabNr', 'sabQr', 'sabCols', 'sabSz', 'sabKeep', 'sabHdr', 'sabNotes'], SK = 'sabSettings';
+    function saveSet() { try { var v = { sabMode: $('sabMode').value }; SET.forEach(function (id) { var e = $(id); if (e) v[id] = e.type === 'checkbox' ? e.checked : e.value; }); localStorage.setItem(SK, JSON.stringify(v)); } catch (e) {} }
+    $('sabMode').onchange();
+    try { var sv0 = JSON.parse(localStorage.getItem(SK) || 'null'); if (sv0) { if (sv0.sabMode) { $('sabMode').value = sv0.sabMode; $('sabMode').onchange(); } SET.forEach(function (id) { var e = $(id); if (e && sv0[id] != null && !e.disabled) { if (e.type === 'checkbox') e.checked = !!sv0[id]; else e.value = sv0[id]; } }); } } catch (e) {}
+    ['sabMode'].concat(SET).forEach(function (id) { var e = $(id); if (e) e.addEventListener('change', saveSet); });
+    $('sabRace').onclick = function () { $('sabCols').value = '3'; $('sabSz').value = '0.85'; $('sabKeep').checked = true; $('sabHdr').checked = true; saveSet(); toast('3-column compact set'); };
+    $('sabGo').onclick = runAll; $('sabBk').onclick = buildBook;
+    $('sabRes').addEventListener('change', function (e) { if (e.target.id === 'sabPlF') loadProject(e.target.files[0]); });
+    $('sabRes').addEventListener('change', onChange); $('sabRes').addEventListener('click', onClick);
+  }
+  function busyUi(on) { $('sabGo').disabled = on || !S.pdf; $('sabPa').disabled = !on; $('sabCa').disabled = !on; $('sabBk').disabled = on || !S.items.length; }
+  async function runAll() {
+    if (S.busy || !S.pdf) return; S.busy = true; S.stop = false; S.pause = false; busyUi(true);
+    var o = procOpt(), list = parseRange($('sabRg').value, S.pdf.numPages), out = [];
+    try {
+      for (var k = 0; k < list.length; k++) {
+        while (S.pause && !S.stop) await sleep(200); if (S.stop) throw new Error('cancelled');
+        $('sabSt').textContent = 'Slide ' + list[k] + ' (' + (k + 1) + '/' + list.length + ') — detect + crop…'; $('sabPb').style.width = (100 * k / list.length) + '%';
+        out.push(await processSlide(list[k], o)); await sleep(0);
+      }
+      $('sabPb').style.width = '100%'; $('sabSt').textContent = 'Detect poora ✔ — neeche review karo, phir Book PDF banao';
+    } catch (e) { $('sabSt').textContent = e.message === 'cancelled' ? 'Cancel kiya (' + out.length + ' slides tak ka kaam rakha hai)' : 'Error: ' + e.message; }
+    S.items.forEach(freeUrls); S.items = out; renumber(); S.busy = false; render(); busyUi(false);
+  }
+  function freeUrls(it) { if (it._qu) URL.revokeObjectURL(it._qu); if (it._su) URL.revokeObjectURL(it._su); if (it._q0u) URL.revokeObjectURL(it._q0u); it._qu = it._su = it._q0u = null; it._cmp = false; }
+  function renumber() { var n = Math.max(1, +$('sabStart').value || 1); S.items.forEach(function (it) { if (it.kind === 'q') it.qn = n++; }); }
+  function render() {
+    var its = S.items, nq = its.filter(function (i) { return i.kind === 'q'; }).length, nn = its.filter(function (i) { return i.kind === 'note'; }).length, fl = its.filter(function (i) { return i.kind !== 'skip' && i.flags.length; }).length;
+    var h = '<div class="g"><b>' + nq + ' Q</b> · <b>' + nn + ' Notes</b> · ' + (its.length - nq - nn) + ' skip · <b class="' + (fl ? 'bad' : 'ok') + '">Flagged: ' + fl + '</b> <button id="sabRn">🔢 Q dubara number karo</button> <button id="sabCsv">🧾 Answer key CSV</button> <button id="sabRep">📝 report.txt</button> <button id="sabHd">🏷 Topic se heading</button> <button id="sabDx">📄 Answer key DOCX</button> <button id="sabPj">💾 Project save</button> <button id="sabPl">📂 Project kholo</button><input type="file" id="sabPlF" accept=".json,application/json" hidden> <label><input type="checkbox" id="sabOnlyFl">Sirf flagged dikhao</label></div><div id="sabList">';
+    its.forEach(function (it, i) {
+      if (!it._qu && it.q) it._qu = URL.createObjectURL(it.q.blob); if (!it._su && it.s) it._su = URL.createObjectURL(it.s.blob);
+      var fls = it.flags.map(function (f) { return '<span class="fl">' + esc(f) + '</span>'; }).join(' ');
+      h += '<div class="it' + (it.kind === 'skip' ? ' sk' : '') + '" data-i="' + i + '" data-fl="' + (it.flags.length ? 1 : 0) + '">' +
+        '<div><div class="mu">Slide ' + it.pn + (it.kind === 'q' ? ' · Question' : '') + ' ' + fls + '</div><div class="im">' + (it._qu ? '<img loading="lazy" src="' + it._qu + '">' : '<span class="mu">— sawal nahi —</span>') + '</div></div>' +
+        '<div><div class="mu">Solution' + (it.kind === 'note' ? ' / Note' : '') + '</div><div class="im">' + (it._su ? '<img loading="lazy" src="' + it._su + '">' : '<span class="mu">— khali —</span>') + '</div></div>' +
+        '<div class="ct"><select data-f="kind"><option value="q"' + (it.kind === 'q' ? ' selected' : '') + '>Sawal</option><option value="note"' + (it.kind === 'note' ? ' selected' : '') + '>Note</option><option value="skip"' + (it.kind === 'skip' ? ' selected' : '') + '>Skip</option></select>' +
+        (it.kind === 'q' ? '<label>Q <input type="number" data-f="qn" value="' + (it.qn || '') + '" style="width:64px"></label><label>Ans <select data-f="ans">' + ['?', 'a', 'b', 'c', 'd'].map(function (a) { return '<option' + (it.ans === a ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></label>' +
+          '<label>Source <input type="text" data-f="src" value="' + esc(it.src) + '" style="width:190px"></label>' +
+          '<label title="Sawal ka original crop (ink samet)"><input type="checkbox" data-f="qRaw"' + (it.qRaw ? ' checked' : '') + '>Q original</label><label title="Sawal ke beech ki likhai bhi Sol mein"><input type="checkbox" data-f="solInQ"' + (it.solInQ ? ' checked' : '') + '>Beech ki likhai Sol mein</label>' : '') +
+          (it.kind === 'q' ? '<label title="Sol ke upar ka chhota number wapas rakho"><input type="checkbox" data-f="numKeep"' + (it.numKeep ? ' checked' : '') + '>Sol number rakho</label>' : '') +
+        '<label>Heading <input type="text" data-f="head" value="' + esc(it.head || '') + '" placeholder="is se pehle chapter heading" style="width:170px"></label>' +
+        '<button data-a="redo">↻ Dubara crop</button>' + (it.kind === 'q' ? '<button data-a="box">✂ Box adjust</button>' : '') + (it.q0 ? '<button data-a="cmp">👁 Original / Clean</button>' : '') + '</div></div>';
+    });
+    $('sabRes').innerHTML = h + '</div>';
+  }
+  function onChange(e) {
+    var el = e.target; if (el.id === 'sabOnlyFl') { $('sabList').querySelectorAll('.it').forEach(function (d) { d.style.display = (el.checked && d.dataset.fl !== '1') ? 'none' : ''; }); return; }
+    var f = el.dataset.f, row = el.closest('.it'); if (!f || !row) return; var it = S.items[+row.dataset.i];
+    if (f === 'kind') { var nk = el.value; if (nk === 'skip') { it.kind = 'skip'; renumber(); render(); } else redo(it, { kind: nk }); }
+    else if (f === 'qn') it.qn = +el.value || it.qn; else if (f === 'ans') it.ans = el.value; else if (f === 'src') it.src = el.value; else if (f === 'head') it.head = el.value;
+    else if (f === 'qRaw') { it.qRaw = el.checked; redo(it, {}); } else if (f === 'solInQ') { it.solInQ = el.checked; redo(it, {}); } else if (f === 'numKeep') { it.numKeep = el.checked; redo(it, {}); }
+  }
+  function onClick(e) {
+    if (e.target.id === 'sabRn') { renumber(); render(); return; }
+    if (e.target.id === 'sabCsv') { exportKey(); return; }
+    if (e.target.id === 'sabHd') { autoHeads(); render(); return; }
+    if (e.target.id === 'sabDx') { exportDocx(); return; }
+    if (e.target.id === 'sabPj') { saveProject(); return; }
+    if (e.target.id === 'sabPl') { $('sabPlF').click(); return; }
+    if (e.target.id === 'sabRep') { exportReport(); return; }
+    var cb = e.target.closest('[data-a=cmp]'); if (cb) { cmpQ(cb.closest('.it')); return; }
+    var bx = e.target.closest('[data-a=box]'); if (bx) { boxEdit(S.items[+bx.closest('.it').dataset.i]); return; }
+    var b = e.target.closest('[data-a=redo]'); if (b) { var it = S.items[+b.closest('.it').dataset.i]; redo(it, {}); }
+  }
+  async function redo(it, ov) {
+    if (S.busy) return; if (!S.pdf) { toast('Dubara crop ke liye wahi slide PDF kholo'); render(); return; } S.busy = true; $('sabSt').textContent = 'Slide ' + it.pn + ' dubara crop ho raha hai…';
+    try {
+      var n = await processSlide(it.pn, procOpt(), { kind: ov.kind || (it.kind === 'skip' ? undefined : it.kind), qRaw: it.qRaw, solInQ: it.solInQ, numKeep: it.numKeep, qBox: ('qBox' in ov ? ov.qBox : it.qBox) });
+      freeUrls(it); var keep = { qn: it.qn, head: it.head, ans: it.ans, src: it.src }; Object.assign(it, n); if (keep.ans && keep.ans !== '?') it.ans = keep.ans; if (keep.src) it.src = keep.src; it.head = keep.head; it.qn = keep.qn;
+      if (n.kind === 'q' && !it.qn) renumber();
+      if (it.kind === 'q' && it.ans === '?' && it.flags.indexOf('answer nahi mila') < 0) it.flags.push('answer nahi mila');
+      $('sabSt').textContent = 'Slide ' + it.pn + ' ho gaya ✔';
+    } catch (e) { $('sabSt').textContent = 'Error: ' + e.message; }
+    S.busy = false; var sy = $('sabOv').scrollTop; render(); $('sabOv').scrollTop = sy;
+  }
+
+
+  /* ---------- ink-free Q (render se), compare, box edit, DOCX key ---------- */
+  // ctx ka wrapper jo path stroke/fill (haath ki ink) chhod deta hai; text (fillText) aur images chalte hain
+  function noInkCtx(cx) {
+    var skip = { stroke: 1, fill: 1 };
+    return new Proxy(cx, {
+      get: function (t, k) { var v = t[k]; if (typeof v === 'function') { if (skip[k]) return function () {}; return v.bind(t); } return v; },
+      set: function (t, k, v) { t[k] = v; return true; }
+    });
+  }
+  function darkN(c) { var d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data, n = 0; for (var i = 0; i < d.length; i += 4) if (Math.min(d[i], d[i + 1], d[i + 2]) < 200) n++; return n; }
+  // Sol me Q ke andar ki likhai rakho: sirf typed text (tv me dikhne wala) saaf karo
+  function eraseTextFrom(sx, tv, bb) {
+    var x0 = Math.max(0, bb.x - 2), y0 = Math.max(0, bb.y - 2), w = Math.min(sx.canvas.width - x0, bb.w + 4), h = Math.min(sx.canvas.height - y0, bb.h + 4);
+    if (w < 1 || h < 1) return;
+    var a = tv.getContext('2d', { willReadFrequently: true }).getImageData(x0, y0, w, h).data, id = sx.getImageData(x0, y0, w, h), b = id.data, m = new Uint8Array(w * h), m2 = new Uint8Array(w * h), x, y, i, dx, dy, nx, ny;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = (y * w + x) * 4; if (Math.min(a[i], a[i + 1], a[i + 2]) < 200) m[y * w + x] = 1; }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (m[y * w + x]) for (dy = -2; dy <= 2; dy++) for (dx = -2; dx <= 2; dx++) { nx = x + dx; ny = y + dy; if (nx >= 0 && ny >= 0 && nx < w && ny < h) m2[ny * w + nx] = 1; }
+    for (i = 0; i < m2.length; i++) if (m2[i]) { b[i * 4] = b[i * 4 + 1] = b[i * 4 + 2] = 255; }
+    sx.putImageData(id, x0, y0);
+  }
+  function cmpQ(row) {
+    var it = S.items[+row.dataset.i]; if (!it || !it.q0) return;
+    it._cmp = !it._cmp; if (it._cmp && !it._q0u) it._q0u = URL.createObjectURL(it.q0.blob);
+    var img = row.querySelector('.im img'); if (img) img.src = it._cmp ? it._q0u : it._qu;
+    toast(it._cmp ? 'Original (ink samet)' : 'Clean (ink hata hua)');
+  }
+  async function boxEdit(it) {
+    if (!it) return; if (!S.pdf) { toast('Box ke liye wahi slide PDF kholo'); return; }
+    var page = await S.pdf.getPage(it.pn), vw = Math.min(window.innerWidth - 24, 900), v0 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: vw / v0.width });
+    var cv = mk(vp.width, vp.height), cx = white(cv); await page.render({ canvasContext: cx, viewport: vp }).promise; try { page.cleanup(); } catch (e) {}
+    var W = cv.width, H = cv.height, b0 = it.qBox || it.bbN || { x: 0.04, y: 0.05, w: 0.9, h: 0.3 }, B = { x: b0.x * W, y: b0.y * H, w: b0.w * W, h: b0.h * H };
+    var ovl = document.createElement('div'); ovl.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:rgba(0,0,0,.78);overflow:auto;padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px';
+    var info = document.createElement('div'); info.style.cssText = 'color:#fff;font-size:14px;text-align:center'; info.textContent = 'Slide ' + it.pn + ' — neela box = Sawal. Box ko kheencho, kone ke gole se size badlo.';
+    var wrap = document.createElement('div'); wrap.style.cssText = 'position:relative;touch-action:none;background:#fff;flex:none;width:' + W + 'px;height:' + H + 'px'; cv.style.cssText = 'display:block;width:100%;height:100%';
+    var bd = document.createElement('div'); bd.style.cssText = 'position:absolute;border:2px solid #0f6cbd;background:rgba(15,108,189,.15);box-sizing:border-box;cursor:move;touch-action:none';
+    var hd = document.createElement('div'); hd.style.cssText = 'position:absolute;right:-13px;bottom:-13px;width:26px;height:26px;background:#0f6cbd;border-radius:50%;cursor:nwse-resize;border:2px solid #fff;touch-action:none;box-sizing:border-box';
+    bd.appendChild(hd); wrap.appendChild(cv); wrap.appendChild(bd);
+    function put() { B.w = Math.max(30, Math.min(B.w, W)); B.h = Math.max(20, Math.min(B.h, H)); B.x = Math.max(0, Math.min(B.x, W - B.w)); B.y = Math.max(0, Math.min(B.y, H - B.h)); bd.style.left = B.x + 'px'; bd.style.top = B.y + 'px'; bd.style.width = B.w + 'px'; bd.style.height = B.h + 'px'; }
+    function drag(el, fn) {
+      el.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId);
+        var sx0 = e.clientX, sy0 = e.clientY, s0 = { x: B.x, y: B.y, w: B.w, h: B.h };
+        function mv(ev) { fn(s0, ev.clientX - sx0, ev.clientY - sy0); put(); }
+        function up() { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); }
+        el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      });
+    }
+    drag(bd, function (s, dx, dy) { B.x = s.x + dx; B.y = s.y + dy; B.w = s.w; B.h = s.h; });
+    drag(hd, function (s, dx, dy) { B.x = s.x; B.y = s.y; B.w = s.w + dx; B.h = s.h + dy; });
+    var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+    function btn(t, fn, pri) { var b = document.createElement('button'); b.textContent = t; b.style.cssText = 'padding:9px 14px;border-radius:9px;border:0;font:inherit;font-size:15px;cursor:pointer;background:' + (pri ? '#0f6cbd;color:#fff' : '#eee;color:#111'); b.onclick = fn; row.appendChild(b); }
+    btn('✔ Apply', function () { it.qBox = { x: B.x / W, y: B.y / H, w: B.w / W, h: B.h / H }; ovl.remove(); cv.width = cv.height = 0; redo(it, { kind: 'q' }); }, true);
+    btn('🤖 Auto box', function () { it.qBox = null; ovl.remove(); cv.width = cv.height = 0; redo(it, { qBox: null }); });
+    btn('✕ Cancel', function () { ovl.remove(); cv.width = cv.height = 0; });
+    ovl.appendChild(info); ovl.appendChild(wrap); ovl.appendChild(row); document.body.appendChild(ovl); put();
+  }
+
+  /* ---------- Answer key DOCX (bina library ke, chhota zip writer) ---------- */
+  var CRCT = null;
+  function crc32(u) { if (!CRCT) { CRCT = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c0 = n; for (var k = 0; k < 8; k++) c0 = c0 & 1 ? 0xEDB88320 ^ (c0 >>> 1) : c0 >>> 1; CRCT[n] = c0 >>> 0; } } var c = 0xFFFFFFFF; for (var i = 0; i < u.length; i++) c = CRCT[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zipStore(files, mime) {
+    var enc = new TextEncoder(), parts = [], cen = [], off = 0, cl = 0;
+    files.forEach(function (f) {
+      var nm = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data), sz = data.length;
+      var h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(12, 0x21, true); h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true); h.setUint16(26, nm.length, true);
+      parts.push(h.buffer, nm, data);
+      var c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+      cen.push(c.buffer, nm); cl += 46 + nm.length; off += 30 + nm.length + sz;
+    });
+    var e = new DataView(new ArrayBuffer(22)); e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cl, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(cen, [e.buffer]), { type: mime });
+  }
+  function exportDocx() {
+    var qs = S.items.filter(function (i) { return i.kind === 'q'; }); if (!qs.length) { toast('Pehle detect karo'); return; }
+    var PAIRS = 5, bd = '<w:tblBorders>' + ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(function (s) { return '<w:' + s + ' w:val="single" w:sz="4" w:space="0" w:color="888888"/>'; }).join('') + '</w:tblBorders>';
+    function cell(t, bold, w) { return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>' + (bold ? '<w:rPr><w:b/></w:rPr>' : '') + '<w:t xml:space="preserve">' + esc(t) + '</w:t></w:r></w:p></w:tc>'; }
+    var rows = '<w:tr>', k, r;
+    for (k = 0; k < PAIRS; k++) rows += cell('Q', true, 900) + cell('Ans', true, 900); rows += '</w:tr>';
+    for (r = 0; r < qs.length; r += PAIRS) { rows += '<w:tr>'; for (k = 0; k < PAIRS; k++) { var it = qs[r + k]; rows += it ? cell(String(it.qn || ''), false, 900) + cell(it.ans && it.ans !== '?' ? it.ans.toUpperCase() : '-', false, 900) : cell('', false, 900) + cell('', false, 900); } rows += '</w:tr>'; }
+    var title = (document.getElementById('sabTitle') && document.getElementById('sabTitle').value.trim()) || S.name || 'Slides';
+    var doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+      '<w:p><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t xml:space="preserve">' + esc(title) + ' — Answer Key</w:t></w:r></w:p>' +
+      '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>' + bd + '</w:tblPr>' + rows + '</w:tbl><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1000" w:right="900" w:bottom="1000" w:left="900"/></w:sectPr></w:body></w:document>';
+    var blob = zipStore([
+      { name: '[Content_Types].xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>' },
+      { name: '_rels/.rels', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>' },
+      { name: 'word/document.xml', text: doc }
+    ], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    dl((S.name || 'slides') + '_answer_key.docx', blob);
+  }
+
+  /* ---------- auto heading (kaali patti topic se) + project save/load ---------- */
+  function autoHeads() {
+    var prev = null, n = 0;
+    S.items.forEach(function (it) {
+      if (it.kind !== 'q') return; var t = (it.topic || '').replace(/\s+/g, ' ').trim();
+      if (!t) return;
+      if (t !== prev) { if (!it.head || it._ah) { it.head = t; it._ah = true; n++; } prev = t; }
+      else if (it._ah) { it.head = ''; it._ah = false; }
+    });
+    toast(n ? n + ' heading lagi' : 'Koi topic nahi mila');
+  }
+  function b2d(b) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.readAsDataURL(b); }); }
+  function d2b(u) { var m = /^data:([^;]*);base64,(.*)$/.exec(u), bin = atob(m[2]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: m[1] }); }
+  async function saveProject() {
+    if (!S.items.length) { toast('Pehle detect karo'); return; }
+    $('sabSt').textContent = 'Project save ho raha hai…';
+    var out = [];
+    for (var k = 0; k < S.items.length; k++) {
+      var it = S.items[k], c = {}; Object.keys(it).forEach(function (key) { if (key !== 'q' && key !== 's' && key !== 'q0' && key.charAt(0) !== '_') c[key] = it[key]; });
+      if (it.q) c.q = { u: await b2d(it.q.blob), w: it.q.w, h: it.q.h }; if (it.s) c.s = { u: await b2d(it.s.blob), w: it.s.w, h: it.s.h };
+      if (it._ah) c._ah = true; out.push(c);
+    }
+    dl((S.name || 'slides') + '_project.json', new Blob([JSON.stringify({ v: 1, name: S.name, W0: S.W0, items: out })], { type: 'application/json' }));
+    $('sabSt').textContent = 'Project save ✔ (' + out.length + ' slides)';
+  }
+  async function loadProject(f) {
+    if (!f) return;
+    try {
+      var j = JSON.parse(await f.text()); if (!j || j.v !== 1 || !j.items) throw new Error('galat project file');
+      S.items.forEach(freeUrls); S.name = j.name || S.name; S.W0 = j.W0 || S.W0;
+      S.items = j.items.map(function (c) { if (c.q) c.q = { blob: d2b(c.q.u), w: c.q.w, h: c.q.h }; if (c.s) c.s = { blob: d2b(c.s.u), w: c.s.w, h: c.s.h }; return c; });
+      render(); busyUi(false); $('sabSt').textContent = 'Project khula ✔ — ' + S.items.length + ' slides (Book PDF seedha ban sakti hai)';
+    } catch (e) { $('sabSt').textContent = 'Project nahi khula: ' + e.message; }
+  }
+
+  /* ---------- exports: answer key CSV + flagged report ---------- */
+  function csvCell(v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function exportKey() {
+    var qs = S.items.filter(function (i) { return i.kind === 'q'; }); if (!qs.length) { toast('Pehle detect karo'); return; }
+    var rows = [['Q', 'Answer', 'Slide', 'Topic', 'Source', 'Heading', 'Flags']];
+    qs.forEach(function (i) { rows.push([i.qn || '', i.ans && i.ans !== '?' ? i.ans : '', i.pn, i.topic || '', i.src || '', i.head || '', i.flags.join('; ')]); });
+    dl((S.name || 'slides') + '_answer_key.csv', new Blob(['\ufeff' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n')], { type: 'text/csv' }));
+  }
+  function exportReport() {
+    if (!S.items.length) { toast('Pehle detect karo'); return; }
+    var its = S.items, q = its.filter(function (i) { return i.kind === 'q'; }), n = its.filter(function (i) { return i.kind === 'note'; }), sk = its.filter(function (i) { return i.kind === 'skip'; });
+    var fl = its.filter(function (i) { return i.kind !== 'skip' && i.flags.length; }), L = [];
+    L.push('Slide Auto Book report — ' + (S.name || ''), 'Q: ' + q.length + ' | Notes: ' + n.length + ' | Skip: ' + sk.length + ' | Flagged: ' + fl.length, 'Number hataya (Sol upar): ' + its.filter(function (i) { return i.numRm; }).length, '');
+    if (fl.length) { L.push('--- Flagged (dubara dekho) ---'); fl.forEach(function (i) { L.push('Slide ' + i.pn + (i.kind === 'q' ? ' (Q.' + (i.qn || '?') + ')' : ' (Note)') + ': ' + i.flags.join(', ')); }); L.push(''); }
+    var noAns = q.filter(function (i) { return !i.ans || i.ans === '?'; }); if (noAns.length) L.push('Answer missing: Slide ' + noAns.map(function (i) { return i.pn; }).join(', '));
+    if (sk.length) L.push('Skip slides: ' + sk.map(function (i) { return i.pn; }).join(', '));
+    dl((S.name || 'slides') + '_report.txt', new Blob([L.join('\n')], { type: 'text/plain' }));
+  }
+
+  /* ---------- Book PDF ---------- */
+  var ASCII = /^[\x20-\x7E]*$/;
+  function txtImg(doc, text, px, bold) {
+    var c = document.createElement('canvas'), x = c.getContext('2d'), f = (bold ? 'bold ' : '') + px + 'px "Noto Sans Devanagari",Mangal,sans-serif'; x.font = f; var w = Math.ceil(x.measureText(text).width) + 4; c.width = w; c.height = Math.ceil(px * 1.5); x = c.getContext('2d'); x.font = f; x.fillStyle = '#000'; x.textBaseline = 'middle'; x.fillText(text, 2, c.height / 2);
+    return new Promise(function (res) { c.toBlob(function (b) { b.arrayBuffer().then(function (ab) { return doc.embedPng(ab); }).then(function (im) { res({ im: im, w: w / 3, h: c.height / 3 }); }); }, 'image/png'); });
+  }
+  async function buildBook() {
+    var PL = window.PDFLib; if (!PL) { toast('pdf-lib load nahi hua'); return; }
+    var its = S.items.filter(function (i) { return i.kind === 'q' || (i.kind === 'note' && layOpt().notes); }).filter(function (i) { return i.q || i.s; });
+    if (!its.length) { toast('Book ke liye kuch nahi bacha'); return; }
+    S.busy = true; busyUi(true); $('sabPa').disabled = true; $('sabCa').disabled = true;
+    try {
+      var o = layOpt(), doc = await PL.PDFDocument.create(), fB = await doc.embedFont(PL.StandardFonts.HelveticaBold), fR = await doc.embedFont(PL.StandardFonts.Helvetica);
+      var PW = 595.28, PH = 841.89, M = 28, TOP = o.hdr ? 44 : 30, BOT = o.hdr ? 38 : 28, GAP = 14, cols = o.cols, colW = (PW - 2 * M - GAP * (cols - 1)) / cols, colH = PH - TOP - BOT;
+      var k0 = Math.min(1.3, colW / (0.92 * S.W0)) * o.boost, pages = [], pg = null, col = 0, y = 0, LAB = 12;
+      var cache = {};
+      async function drawT(p, text, x, yb, size, bold, gray) {
+        if (ASCII.test(text)) p.drawText(text, { x: x, y: yb, size: size, font: bold ? fB : fR, color: PL.rgb(gray, gray, gray) });
+        else { var t = await txtImg(doc, text, 36, bold); p.drawImage(t.im, { x: x, y: yb - 2, width: t.w * size / 12, height: t.h * size / 12 }); }
+      }
+      async function newPage() {
+        pg = doc.addPage([PW, PH]); pages.push(pg); col = 0; y = 0;
+        if (o.hdr) {
+          if (o.title) await drawT(pg, o.title, M, PH - 24, 8, true, 0.35);
+          pg.drawLine({ start: { x: M, y: PH - 30 }, end: { x: PW - M, y: PH - 30 }, thickness: 0.5, color: PL.rgb(0.7, 0.7, 0.7) });
+          var pn = String(pages.length); pg.drawText(pn, { x: PW / 2 - 3 * pn.length, y: 16, size: 8, font: fR, color: PL.rgb(0.35, 0.35, 0.35) });
+        }
+      }
+      function colX(c) { return M + c * (colW + GAP); }
+      async function advance() { col++; y = 0; if (col >= cols) await newPage(); }
+      function measure(b) {
+        if (b.type === 'h') { b.h = 20; return; }
+        b.k = Math.min(k0, colW / b.wpt); b.ih = b.hpt * b.k; b.h = LAB + b.ih + (b.src ? 9 : 0) + 6;
+        if (b.h > colH) { b.k = (colH - LAB - 15) / b.hpt; b.ih = b.hpt * b.k; b.h = LAB + b.ih + (b.src ? 9 : 0) + 6; }
+      }
+      async function img(it, key) { var kk = it.pn + key; if (!cache[kk]) cache[kk] = await doc.embedJpg(await it[key === 'q' ? 'q' : 's'].blob.arrayBuffer()); return cache[kk]; }
+      async function put(b) {
+        var x = colX(col), yt = TOP + y;
+        if (b.type === 'h') { await drawT(pg, b.text, x, PH - yt - 13, 11, true, 0.1); pg.drawLine({ start: { x: x, y: PH - yt - 16 }, end: { x: x + colW, y: PH - yt - 16 }, thickness: 0.8, color: PL.rgb(0.2, 0.3, 0.6) }); }
+        else {
+          pg.drawText(b.label, { x: x, y: PH - yt - 9, size: 8.5, font: fB, color: PL.rgb(0.05, 0.1, 0.35) });
+          var im = await img(b.it, b.key); pg.drawImage(im, { x: x, y: PH - yt - LAB - b.ih, width: b.wpt * b.k, height: b.ih });
+          if (b.src && ASCII.test(b.src)) pg.drawText(b.src.slice(0, 80), { x: x, y: PH - yt - LAB - b.ih - 7, size: 6.5, font: fR, color: PL.rgb(0.3, 0.3, 0.3) });
+        }
+        y += b.h;
+      }
+      await newPage(); var done = 0;
+      for (var n = 0; n < its.length; n++) {
+        var it = its[n], g = [];
+        $('sabSt').textContent = 'Book ban rahi hai… ' + (n + 1) + '/' + its.length; $('sabPb').style.width = (100 * n / its.length) + '%'; await sleep(0);
+        if (it.head && it.head.trim()) g.push({ type: 'h', text: it.head.trim() });
+        if (it.kind === 'q') {
+          if (!it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Q.' + (it.qn || '') + (it.ans && it.ans !== '?' ? '   (Ans: ' + it.ans + ')' : ''), src: (it.src || '').trim(), wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
+          if (it.q) g.push({ type: 'b', it: it, key: 'q', label: 'Q.' + (it.qn || ''), src: (it.src || '').trim(), wpt: it.q.w / it.sc, hpt: it.q.h / it.sc });
+          if (it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Sol.' + (it.qn || '') + '.' + (it.ans && it.ans !== '?' ? '(' + it.ans + ')' : ''), src: '', wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
+        } else if (it.s) g.push({ type: 'b', it: it, key: 's', label: 'Note', src: '', wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
+        g.forEach(measure);
+        var tot = g.reduce(function (a, b) { return a + b.h; }, 0);
+        if (o.keep && tot <= colH) { if (tot > colH - y && y > 0) await advance(); for (var a = 0; a < g.length; a++) await put(g[a]); }
+        else for (var c = 0; c < g.length; c++) { var need = g[c].h + (g[c].type === 'h' && g[c + 1] ? g[c + 1].h : 0); if (need > colH - y && y > 0) await advance(); await put(g[c]); }
+        done++;
+      }
+      if (cols > 1) pages.forEach(function (p) { for (var c2 = 1; c2 < cols; c2++) { var lx = colX(c2) - GAP / 2; p.drawLine({ start: { x: lx, y: PH - TOP + 4 }, end: { x: lx, y: BOT - 4 }, thickness: 0.4, color: PL.rgb(0.8, 0.8, 0.8) }); } });
+      var bytes = await doc.save(); dl((S.name || 'slides') + '_book.pdf', new Blob([bytes], { type: 'application/pdf' }));
+      $('sabPb').style.width = '100%'; $('sabSt').textContent = 'Book PDF ban gayi ✔ — ' + done + ' blocks, ' + pages.length + ' pages';
+    } catch (e) { $('sabSt').textContent = 'Book error: ' + (e && e.message || e); console.error(e); }
+    S.busy = false; busyUi(false);
+  }
+
+  function hook() { var h = $('cflHome'), row = h && h.querySelector('.cflRow'); if (!row) return; var b = document.createElement('button'); b.id = 'sabB'; b.className = 'primary'; b.textContent = '🎞 Slide Auto Book'; b.onclick = open; row.insertBefore(b, $('cflImpF')); }
+  hook();
+  window.SAB = { open: open, state: S, process: processSlide, build: buildBook, numBand: numBand, boxEdit: boxEdit, exportDocx: exportDocx, autoHeads: autoHeads, saveProject: saveProject, loadProject: loadProject, saveSet: function () { var e = document.getElementById('sabMode'); if (e) e.dispatchEvent(new Event('change')); }, exportKey: exportKey, exportReport: exportReport };
+})();
+</script>
+
+<script id="aasanHub">
+/* 🧭 Kaam chuno — saare PDF tools ek aasan menu mein (purane tools jyun ke tyun, yeh sirf raasta dikhata hai) */
+(function () {
+  var $ = function (i) { return document.getElementById(i); };
+  function toast(m) { var t = document.createElement('div'); t.textContent = m; t.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;z-index:2147483647;font-size:14px;max-width:90%'; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3200); }
+  function lib(id) { return function () { if (window.CFL) CFL.open(); var bk = $('cflBack'); if (bk && !bk.hidden) bk.click(); var b = $(id); if (b) b.click(); else toast('Yeh tool nahi mila'); }; }
+  function rd(id, need) { return function () { var b = $(id); if (!b) return toast('Yeh button nahi mila'); if (b.disabled) { toast('Pehle PDF kholo'); var o = $('btnOpen'); if (o) o.click(); return; } b.click(); }; }
+  var T = [
+    ['🎞', 'Slide PDF se Book banao', 'Coaching ki slides (haath ke notes wali) ko saaf A4 book mein badalna — neeche ki patti, watermark hatao, 2 slides ek page par.', function () { CFL.slide.wizard(); }],
+    ['📘', 'Slide Auto Book (Q + Solution)', 'Slide PDF mein sawal aur haath ka solution alag pehchaan kar Q.1 → Sol.1 wali book PDF banao (answer letter bhi apne aap).', function () { SAB.open(); }],
+    ['📂', 'PDF kholo aur padho', 'Koi bhi PDF kholo, zoom karo, bookmark lagao, dark mode.', function () { var o = $('btnOpen'); if (o) o.click(); }],
+    ['❓', 'Sawal chuno, naya PDF banao', 'Hindi/Math PDF mein se sirf zaroori sawal tick karo aur unki nayi PDF bana lo.', rd('btnQF')],
+    ['✂️', 'Page kaato ya Watermark hatao', 'PDF ke sab pages ek saath crop karo, ya watermark mita do.', rd('btnPgCrop')],
+    ['🧽', 'Sirf watermark hatao', 'Page par jo logo/naam chhapa hai use hatao.', rd('btnWmRm')],
+    ['📑', 'Chapter-wise PDF alag karo', 'Ek badi PDF ko chapter ke hisaab se tod kar ZIP banao.', lib('cflSpB')],
+    ['🔎', 'Duplicate sawal dhundo', 'Ek jaise sawal pakdo aur sirf unique rakho.', lib('cflDupB')],
+    ['📚', 'Crop Library (sawal-wise book)', 'Sawal kaat-kaat kar chapter-wise book banane ka poora tool.', function () { CFL.open(); }],
+    ['🛡', 'Badi PDF (600+ pages) safe mode', 'Bahut badi PDF par browser atke to yeh use karo.', lib('cflLgB')]
+  ];
+  function css() {
+    if ($('hubCss')) return; var s = document.createElement('style'); s.id = 'hubCss';
+    s.textContent = '#aasanHub{position:fixed;inset:0;z-index:2147483001;background:var(--bg,#eef0f4);color:var(--fg,#1b1f27);overflow:auto;padding:12px}#aasanHub .hb{max-width:760px;margin:0 auto}#aasanHub h2{margin:0;font-size:20px;flex:1}#aasanHub .top{display:flex;align-items:center;gap:8px;margin-bottom:8px}' +
+      '#aasanHub .g{background:var(--chrome,#fff);border:1px solid var(--line,#d3d8e0);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px}#aasanHub .c{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--chrome,#fff);border:1px solid var(--line,#d3d8e0);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;color:inherit;font:inherit}' +
+      '#aasanHub .c:hover{background:var(--hover,#e8ecf3)}#aasanHub .c .i{font-size:30px}#aasanHub .c b{display:block;font-size:17px}#aasanHub .c span.d{color:var(--muted,#5b6472);font-size:13px}#aasanHub .m{height:8px;background:var(--hover,#e8ecf3);border-radius:5px;overflow:hidden;margin:6px 0}#aasanHub .m i{display:block;height:100%;background:var(--accent,#0f6cbd)}' +
+      '#aasanHub button.x{padding:8px 14px;border-radius:9px;border:1px solid var(--line,#d3d8e0);background:var(--panel,#f5f6f9);color:inherit;font:inherit}';
+    document.head.appendChild(s);
+  }
+  async function open() {
+    css(); var o = $('aasanHub'); if (o) o.remove(); var d = document.createElement('div'); d.id = 'aasanHub';
+    d.innerHTML = '<div class="hb"><div class="top"><h2>🧭 Aaj kya karna hai?</h2><button class="x" data-i="x">✖ Band karo</button></div>' +
+      '<div class="g"><b>Pehli baar?</b> Neeche jo kaam karna hai uska bada button dabao — baaki sab tool apne aap khul jaayega. Samajh na aaye to yahi menu dobara kholo (upar 🧭 button).</div>' +
+      '<div class="g" data-k="st">Storage check ho raha hai…</div>' +
+      T.map(function (t, i) { return '<button class="c" data-i="' + i + '"><span class="i">' + t[0] + '</span><span><b>' + t[1] + '</b><span class="d">' + t[2] + '</span></span></button>'; }).join('') + '</div>';
+    document.body.appendChild(d);
+    d.onclick = function (e) { var b = e.target.closest('[data-i]'); if (!b) return; if (b.dataset.i === 'x') { d.remove(); return; } d.remove(); try { T[+b.dataset.i][3](); } catch (er) { toast('Error: ' + (er && er.message || er)); } };
+    try { var q = await navigator.storage.estimate(), u = q.usage || 0, cap = q.quota || 1, p = Math.round(u / cap * 100), mb = function (x) { return Math.round(x / 1048576); };
+      d.querySelector('[data-k=st]').innerHTML = '💾 Browser storage: <b>' + mb(u) + ' MB</b> / ' + mb(cap) + ' MB bhara (' + p + '%)<div class="m"><i style="width:' + Math.min(100, p) + '%"></i></div>' + (p > 80 ? '<span style="color:#c4314b">⚠ Storage lagbhag full — purani books ya Saved PDFs delete karo, warna Nayi Book fail hogi.</span>' : 'Sab theek hai.');
+    } catch (e) { var s = d.querySelector('[data-k=st]'); if (s) s.remove(); }
+  }
+  var o = $('btnOpen');
+  if (o && o.parentNode) { var h = document.createElement('button'); h.className = 'btn'; h.id = 'btnHub'; h.title = 'Kaam chuno (aasan menu)'; h.setAttribute('aria-label', 'Kaam chuno'); h.innerHTML = '<span>🧭</span><span class="lbl">Kaam chuno</span>'; o.parentNode.insertBefore(h, o); h.onclick = open; }
+  var lh = $('cflHome') && $('cflHome').querySelector('.cflRow'); if (lh) { var lb = document.createElement('button'); lb.textContent = '🧭 Kaam chuno'; lb.onclick = open; lh.insertBefore(lb, lh.firstChild); }
+  window.AASAN = { open: open };
 })();
 </script>
