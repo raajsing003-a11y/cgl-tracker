@@ -1782,6 +1782,11 @@ window.addEventListener('message', function(e){
   });
   const backBtn = document.getElementById('mockbankBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+  // Background preload: app me kahin se bhi "➕ Mock me add" karne par question apne-aap
+  // cloud bank me pahunche, isliye iframe bina khole bhi chhupa hua load ho jata hai.
+  window.addEventListener('load', () => setTimeout(() => {
+    try{ if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src); }catch(e){}
+  }, 3000));
 })();
 // Mock Question Add <-> Sync Room bridge: har member ke ⭐ questions room me share (rooms/<room>/mqbstar_<naam>),
 // taaki Mock Question Add me "👥 Dusron ke ⭐" view sabke saved questions count ke saath dikha sake.
