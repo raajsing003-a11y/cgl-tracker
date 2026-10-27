@@ -93,6 +93,43 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
 .ctl label.m{display:flex;align-items:center;gap:6px}
 .ctl [hidden]{display:none}
 @media print{.nav,.hd,.card,.chips,.ft,#up,#toast,.ctl{display:none}.qi{break-inside:avoid}}
+
+/* ===== MQX: sync strip, export preview (A4), print ===== */
+#pv{position:fixed;inset:0;z-index:70;background:#3a3a40;overflow:auto;-webkit-overflow-scrolling:touch}
+#pv[hidden]{display:none}
+.pvb{position:sticky;top:0;z-index:3;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--cd);border-bottom:1px solid var(--bd)}
+.pvb .btn{padding:8px 12px;font-size:14px}
+.pvh{padding:6px 12px;text-align:center}
+.pgs{padding:12px 0 40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.pg{background:#fff;color:#111;width:210mm;height:296.6mm;position:relative;overflow:hidden;flex:none;box-shadow:0 4px 22px #0009;font:700 12pt/1.5 'Noto Sans Devanagari','Nirmala UI',Inter,'Segoe UI',Arial,sans-serif;box-sizing:border-box}
+.pg *{font-weight:700;box-sizing:border-box}
+.pgb{position:absolute;left:12mm;right:12mm;top:11mm;bottom:15mm;overflow:hidden}
+.pgf{position:absolute;left:12mm;right:12mm;bottom:6mm;display:flex;justify-content:space-between;font-size:9pt;color:#666;border-top:1px solid #ccc;padding-top:2mm}
+.pgm{position:absolute!important;left:-99999px;top:0;visibility:hidden;height:auto!important;box-shadow:none}
+.pgm .pgb{position:static;height:auto;overflow:visible}
+.pg .dt{border-bottom:2.5px solid #1f3864;margin-bottom:10px;padding-bottom:6px}
+.pg .dtt{font-size:17pt;color:#1f3864;line-height:1.3}.pg .m2{font-size:10pt;color:#666}
+.pg .hs{background:#1f3864;color:#fff;padding:5px 12px;border-radius:6px;font-size:14pt;margin:4px 0 8px}
+.pg .ht{color:#1f3864;border-bottom:1.5px solid #9db2d8;font-size:13pt;padding:2px 0;margin:6px 0 8px}
+.pg .qb{margin:0 0 10px;padding:0 0 8px;border-bottom:1px dashed #bbb;break-inside:avoid}
+.pg .qh2{display:flex;gap:10px;align-items:baseline}.pg .qno{color:#b45309;font-size:13pt}.pg .tpc{font-size:9pt;color:#888}
+.pg .qtx{margin:2px 0 4px;word-break:break-word}
+.pg img.qi2{max-width:100%;max-height:110mm;display:block;margin:4px 0}
+.pg .opg{display:grid;grid-template-columns:1fr 1fr;gap:1px 16px;margin:2px 0 0 4px}.pg .opg.one{grid-template-columns:1fr}
+.pg .op2{display:flex;gap:6px;align-items:baseline}.pg .ol{color:#1f3864;flex:none}
+.pg .an{margin-top:5px;padding:3px 9px;background:#e8f5e9;color:#166534;border-radius:5px}
+.pg .ex{margin-top:4px;padding:4px 9px;background:#fff7e6;border-radius:5px}.pg .exl{color:#92400e}
+.pg .keyg{display:grid;grid-template-columns:repeat(5,1fr);gap:3px 8px}.pg .keyg span{font-size:11pt}
+.pg mjx-container{font-size:100%!important}.pg mjx-container svg{vertical-align:middle}
+@media print{
+ body.pvopen>*:not(#pv){display:none!important}
+ body.pvopen{background:#fff!important;padding:0!important;overflow:visible!important;height:auto!important}
+ body.pvopen #pv{position:static!important;background:#fff;overflow:visible;display:block}
+ body.pvopen .pvb,body.pvopen .pvh,body.pvopen .pgm{display:none!important}
+ body.pvopen .pgs{display:block;padding:0;gap:0;zoom:1!important}
+ body.pvopen .pg{box-shadow:none;margin:0;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ @page{size:A4;margin:0}
+}
 </style>
 </head>
 <body>
@@ -387,7 +424,7 @@ $("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjec
 $("imp").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const n=JSON.parse(r.result);D=n.concat(D.filter(x=>!n.some(y=>y.id==x.id)));resolvePend();persist();renderTabs();render()}catch(er){alert("Invalid file")}};r.readAsText(f)};
 $("th").onclick=()=>{const r=document.documentElement,d=r.dataset.theme=="dark"||(!r.dataset.theme&&!matchMedia("(prefers-color-scheme:light)").matches);r.dataset.theme=d?"light":"dark";try{localStorage.setItem("mqb_theme",r.dataset.theme)}catch(e){}};
 $("clr").hidden=true; /* bulk delete hata diya — questions kabhi delete nahi hote */
-window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},startup:{typeset:false}};
+window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},svg:{fontCache:"none"},startup:{typeset:false}};
 /* ---- v6 extras ---- */
 function isW(x){return x.w>0&&(x.k||0)<2}
 function toast(m,lbl,fn){const t=$("toast");t.innerHTML="<span>"+m+"</span>"+(lbl?'<button id="tu">'+lbl+"</button>":"");t.hidden=false;if(lbl)$("tu").onclick=()=>{fn();t.hidden=true};clearTimeout(TO);TO=setTimeout(()=>{t.hidden=true},6000)}
@@ -637,7 +674,8 @@ $("othb").onclick=()=>toggle(true);
 const _render=render;render=function(){if(OTH.open){renderOth();return}return _render.apply(this,arguments)};
 })();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async onload="render();if(!$('mk').hidden)typeset($('mk'))">
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async onload="render();if(!$('mk').hidden)typeset($('mk'))"></script>
+<script>
 /* ---- Repeat questions dhundo (milte-julte question + options) -> Trash me, wapas laa sakte ho ---- */
 function mqNorm(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim(); }
 function mqSet(s){ var o = {}; mqNorm(s).split(' ').forEach(function(w){ if(w) o[w] = 1; }); return o; }
@@ -674,6 +712,399 @@ function mqSame(q, x){
     toast(drop.length+" repeat Trash me gaye");
   };
 })();
+</script>
+<script>
+/* ===================================================================
+   MQX — Cloud sync (sab device + sab users), delete-section, PDF & Word export
+   Is block ko mock-question-bank.html ke end me (</body> se pehle) rakha gaya hai.
+   =================================================================== */
+(function(){
+"use strict";
+const $=i=>document.getElementById(i);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function hs(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
+const lsj=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const lss=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const hh=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const SUBS=()=>Object.keys(T);
+
+/* ================================================================
+   1) CLOUD SYNC  (Firebase Realtime DB — wahi jo app use karta hai)
+   rooms/<ROOM>/mqbank/q/<id>   = question (JSON string, bina image)
+   rooms/<ROOM>/mqbank/im/<id>  = image (dataURL)  — alag, taaki list halki rahe
+   rooms/<ROOM>/mqbank/del/<id> = tombstone (sirf tab jab koi KHUD delete kare)
+   Cloud se kuch bhi apne-aap delete nahi hota; sirf manual delete tombstone banata hai.
+   ================================================================ */
+const ROOM="b0bb1ba85948456aa334",BASE="rooms/"+ROOM+"/mqbank";
+const CFG={apiKey:"AIzaSyBmGn402mqnzCNpjzU13gLQbMPBIkma2ws",authDomain:"study-414cf.firebaseapp.com",databaseURL:"https://study-414cf-default-rtdb.firebaseio.com",projectId:"study-414cf",storageBucket:"study-414cf.firebasestorage.app",messagingSenderId:"165701458469",appId:"1:165701458469:web:e6870346d665a6508ebdcc"};
+let FBR=null,QM=null,DM=null,busy=false,again=false,tmr=0,imgBusy=false;
+const ST={msg:"⏳ Cloud se jud raha hai…",ok:false,at:0,err:""};
+const TSW={};let TSS=new Set(lsj("mqb_ts_sent",[]));const saveTSS=()=>lss("mqb_ts_sent",[...TSS]);
+const me=()=>{try{const s=window.parent&&window.parent!==window&&window.parent.__mqbShare;return s&&s.me?String(s.me()||""):""}catch(e){return ""}};
+
+function parentFb(){try{const p=window.parent;if(p&&p!==window&&p.__fbReadyPromise&&p.__fbGet&&p.__fbSet&&p.__fbListenReady&&p.__fbUpdate)return p}catch(e){}return null}
+async function ownFb(){
+  const B="https://www.gstatic.com/firebasejs/12.15.0/";
+  const [A,Au,Db]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-database.js")]);
+  const app=A.initializeApp(CFG,"mqx"),auth=Au.getAuth(app),db=Db.getDatabase(app);
+  await new Promise((res,rej)=>{Au.onAuthStateChanged(auth,u=>{if(u)res(u)});Au.signInAnonymously(auth).catch(rej)});
+  return{get:async p=>{const s=await Db.get(Db.ref(db,p));return s.exists()?s.val():null},
+    set:async(p,v)=>{await Db.set(Db.ref(db,p),v);return true},
+    upd:async u=>{await Db.update(Db.ref(db),u);return true},
+    listen:async(p,cb)=>Db.onValue(Db.ref(db,p),s=>cb(s.exists()?s.val():null),()=>{})}}
+async function getFb(){
+  for(let i=0;i<40;i++){const p=parentFb();
+    if(p){await p.__fbReadyPromise;return{get:p.__fbGet,set:p.__fbSet,upd:p.__fbUpdate,listen:p.__fbListenReady}}
+    if(window.parent===window)break;await sleep(250)}
+  return await ownFb()}
+
+/* question ki identity (same text => same question, chahe alag device pe alag id bani ho) */
+const nrm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g," ").trim();
+function ck(x){const t=nrm(x.t),im=x.img||"";
+  return (x.s||"")+"|"+(t.length>=12?"t"+hs(t):im?"i"+hs(im.length+im.slice(100,1100)+im.slice(-600)):"o"+hs(t+nrm((x.o||[]).join(" "))))}
+function ckc(c){return (c.s||"")+"|"+(nrm(c.t).length>=12?"t"+hs(nrm(c.t)):"o"+hs(nrm(c.t)+nrm((c.o||[]).join(" "))))}
+function pack(x){return JSON.stringify({id:x.id,s:x.s,tp:x.tp,t:x.t||"",o:x.o||["","","",""],a:x.a||"",e:x.e||"",by:x.by||"",mt:x.mt||0,hi:x.img?1:0})}
+function toLocal(c){return{id:c.id,s:c.s,tp:c.tp||"Other",t:c.t||"",img:"",o:(c.o||["","","",""]).slice(),a:c.a||"",e:c.e||"",by:c.by||"",mt:c.mt||0}}
+function applyCloud(x,c){x.s=c.s;x.tp=c.tp||x.tp;x.t=c.t||"";x.o=(c.o||x.o).slice();x.a=c.a||"";x.e=c.e||"";x.by=c.by||x.by||"";x.mt=c.mt||0}
+function parseQ(v){const m={};if(!v)return m;Object.keys(v).forEach(k=>{try{const c=JSON.parse(typeof v[k]==="string"?v[k]:JSON.stringify(v[k]));if(c&&c.id!=null&&c.s&&T[c.s])m[String(c.id)]=c}catch(e){}});return m}
+
+function status(){const b=$("syb");if(!b)return;
+  const n=QM?Object.keys(QM).length:0;
+  b.innerHTML=(ST.err?'<span style="color:var(--rd)">⚠ '+hh(ST.err)+"</span>":ST.msg)+
+   (ST.at&&!ST.err?' <span class="m">· cloud me '+n+' Q · '+new Date(ST.at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})+"</span>":"")}
+function refreshUI(){try{if(typeof E!=="undefined"&&E!=null){status();return}renderTabs();render();trUI()}catch(e){}status()}
+function schedule(ms){clearTimeout(tmr);tmr=setTimeout(reconcile,ms==null?600:ms)}
+
+async function pushChunks(upd,sizeCap){
+  const keys=Object.keys(upd);let cur={},sz=0;
+  const flush=async()=>{if(Object.keys(cur).length){await FBR.upd(cur);cur={};sz=0}};
+  for(const k of keys){const v=upd[k],l=typeof v==="string"?v.length:20;if(sz+l>sizeCap&&sz){await flush()}cur[k]=v;sz+=l}
+  await flush()}
+
+async function reconcile(){
+  if(!FBR||!QM||!DM)return;
+  if(busy){again=true;return}
+  busy=true;
+  try{
+    let changed=false;const now=Date.now(),upd={};
+    const dm=DM;
+    /* (a) tombstone vs mere D (live) */
+    for(const x of D.slice()){const id=String(x.id);if(dm[id]==null)continue;
+      if(TSS.has(id)||(x.mt||0)>dm[id]){ /* maine khud restore kiya */
+        upd[BASE+"/del/"+id]=null;TSS.delete(id);x.mt=Math.max(x.mt||0,now);delete dm[id]}
+      else{ /* kisi aur ne delete kiya => mere Trash me */
+        D.splice(D.indexOf(x),1);x.dt=dm[id];x.rd=1;TR.push(x);changed=true}}
+    /* (b) mera Trash: tombstone likho, ya dusre ne restore kiya ho to wapas lao */
+    for(const x of TR.slice()){const id=String(x.id);if(!x.dt)x.dt=now;
+      if(dm[id]!=null)continue;
+      const c=QM[id];
+      if(x.rd){if(c){TR.splice(TR.indexOf(x),1);delete x.dt;delete x.rd;applyCloud(x,c);D.unshift(x);changed=true}}
+      else if(c&&((TSS.has(id)&&!(TSW[id]>now-15000))||(c.mt||0)>x.dt)){TSS.delete(id);TR.splice(TR.indexOf(x),1);delete x.dt;applyCloud(x,c);D.unshift(x);changed=true}
+      else{upd[BASE+"/del/"+id]=x.dt;TSS.add(id);TSW[id]=now;dm[id]=x.dt}}
+    /* (c) cloud ke naye questions mere paas laao */
+    const have=new Set(D.map(x=>String(x.id)).concat(TR.map(x=>String(x.id))));
+    const cks=new Map();D.forEach(x=>{if(!QM[String(x.id)]&&!x.pend)cks.set(ck(x),x)});
+    const fresh=[];
+    Object.keys(QM).forEach(id=>{if(have.has(id))return;const c=QM[id];
+      if(dm[id]!=null){const l=toLocal(c);l.dt=dm[id];l.rd=1;TR.push(l);changed=true;return}
+      const l=nrm(c.t).length>=12?cks.get(ckc(c)):null;
+      if(l){l.id=c.id;l.mt=c.mt||l.mt;if(!l.by)l.by=c.by;cks.delete(ckc(c));changed=true;return}  /* same question pehle se hai => id jodo */
+      fresh.push(toLocal(c))});
+    if(fresh.length){fresh.sort((a,b)=>b.id-a.id);D.unshift.apply(D,fresh);changed=true}
+    /* (d) update / upload */
+    const up=[];
+    D.forEach(x=>{if(!x||x.pend)return;const id=String(x.id),c=QM[id];
+      if(!c){if(!x.mt)x.mt=now;if(!x.by)x.by=me();up.push(x)}
+      else{const lm=x.mt||0,cm=c.mt||0;
+        if(cm>lm){applyCloud(x,c);changed=true}
+        else if(lm>cm){if(!x.by)x.by=c.by||me();up.push(x)}}});
+    up.forEach(x=>{const id=String(x.id);upd[BASE+"/q/"+id]=pack(x);if(x.img&&!(QM[id]&&QM[id].hi))upd[BASE+"/im/"+id]=x.img});
+    if(changed){persist();saveTSS();refreshUI()}
+    if(Object.keys(upd).length){
+      ST.msg="⏳ Cloud me save ho raha hai…";status();
+      try{await pushChunks(upd,900000);
+        up.forEach(x=>{QM[String(x.id)]=JSON.parse(pack(x))});saveTSS();ST.err="";
+        ST.msg="☁ Synced ✓";ST.at=Date.now();ST.ok=true}
+      catch(e){ST.err="Cloud save nahi hua ("+((e&&e.message)||e)+") — questions is device me safe hain, baad me auto retry hoga";setTimeout(()=>schedule(0),20000)}
+    }else{ST.err="";ST.msg="☁ Synced ✓";ST.at=Date.now();ST.ok=true}
+    status();
+    fetchImgs();
+  }catch(e){ST.err="Sync error: "+((e&&e.message)||e)}
+  finally{busy=false;if(again){again=false;schedule(300)}}
+}
+
+async function fetchImgs(){
+  if(imgBusy||!FBR||!QM)return;imgBusy=true;
+  try{
+    const need=D.filter(x=>!x.img&&QM[String(x.id)]&&QM[String(x.id)].hi&&!(fetchImgs.fail&&fetchImgs.fail[x.id]>Date.now()));
+    let n=0;fetchImgs.fail=fetchImgs.fail||{};
+    for(let i=0;i<need.length;i+=3){
+      await Promise.all(need.slice(i,i+3).map(async x=>{try{const v=await FBR.get(BASE+"/im/"+x.id);if(typeof v==="string"&&v){x.img=v;n++}else fetchImgs.fail[x.id]=Date.now()+60000}catch(e){fetchImgs.fail[x.id]=Date.now()+60000}}));
+      if(n&&(i/3)%5==4){persist();refreshUI()}}
+    if(n){persist();refreshUI()}
+  }finally{imgBusy=false}}
+
+async function initSync(){
+  try{
+    FBR=await getFb();
+    await FBR.listen(BASE+"/q",v=>{QM=parseQ(v);schedule(400)});
+    await FBR.listen(BASE+"/del",v=>{DM={};if(v)Object.keys(v).forEach(k=>{DM[k]=Number(v[k])||1});schedule(400)});
+  }catch(e){ST.err="Cloud se connect nahi ho paya — questions device me safe hain";status()}
+}
+/* har local change ke baad sync */
+const _persist=persist;persist=function(){const r=_persist.apply(this,arguments);schedule(1500);return r};
+/* edit / chapter-change => modified time (taaki sab jagah latest version aaye) */
+const _esave=window.esave;if(_esave)window.esave=function(id){_esave.apply(this,arguments);const x=D.find(y=>y.id==id);if(x){x.mt=Date.now();persist()}};
+const _mv=window.mv;if(_mv)window.mv=function(id){_mv.apply(this,arguments);const x=D.find(y=>y.id==id);if(x){x.mt=Date.now();persist()}};
+const _trr=window.trRestore;if(_trr)window.trRestore=function(id){_trr.apply(this,arguments);const x=D.find(y=>y.id==id);if(x){x.mt=Date.now();persist()}};
+/* import / new add me 'by' (kisne dala) dikhane ke liye */
+const _qcard=qcard;qcard=function(x,i){let h=_qcard(x,i);if(x&&x.by&&x.by!==me())h=h.replace(/(<span class="qn">[^<]*<\/span>)/,'$1<span class="m">👤 '+hh(x.by)+"</span>");return h};
+
+/* ================================================================
+   2) UI: sync strip + Delete + Export cards
+   ================================================================ */
+const st=$("st");
+st.insertAdjacentHTML("afterend",'<div class="card" style="padding:10px 14px;margin-bottom:12px"><div class="row" style="margin:0;justify-content:space-between"><div class="m" id="syb">⏳ Cloud se jud raha hai…</div><button class="btn" id="syn" style="padding:6px 12px;font-size:13px">🔄 Sync now</button></div></div>');
+$("syn").onclick=()=>{ST.msg="⏳ Sync…";status();schedule(0);toast("Sync shuru…")};
+const MAIN=document.querySelector(".main");
+MAIN.insertAdjacentHTML("beforeend",`
+<div class="card" id="mqx_ex"><b>📄 PDF / Word export</b>
+ <div class="m" style="margin-top:4px">A4 · poora text bold · LaTeX/formula sahi dikhte hain</div>
+ <div class="row"><label class="m">Kaun se questions <select id="ex_sc"><option value="list">Abhi ki list (search/chapter filter ke saath)</option><option value="sub">Poora current subject</option><option value="all">Sabhi subjects</option></select></label></div>
+ <div class="row"><label class="m">Answer <select id="ex_an"><option value="inl">Har question ke neeche Answer + Explanation</option><option value="ans">Har question ke neeche sirf Answer</option><option value="key">Sirf questions + last me Answer Key</option><option value="none">Sirf questions</option></select></label></div>
+ <div class="row"><button class="btn y" id="ex_pdf">📄 PDF banao</button><button class="btn y" id="ex_doc">📝 Word (.docx)</button></div>
+ <div class="m" id="ex_msg" style="margin-top:8px"></div></div>
+<div class="card" id="mqx_dl" style="border-color:#f8717166"><b style="color:var(--rd)">🗑 Delete options</b>
+ <div class="m" style="margin-top:4px">Questions apne-aap kabhi delete nahi hote. Yahan se tum khud delete karoge to sab device pe hat jayenge, par ♻ <i>Deleted questions</i> me safe rahenge (wahin se Restore ho sakte hain).</div>
+ <div class="row"><button class="btn" id="dl_sub" style="color:var(--rd);border-color:var(--rd)"></button><button class="btn" id="dl_ch" style="color:var(--rd);border-color:var(--rd)" hidden></button></div></div>`);
+
+function dlLabels(){
+  const A=D.filter(x=>x.s==S);$("dl_sub").textContent="🗑 "+S+" ke SAB "+A.length+" questions delete";$("dl_sub").disabled=!A.length;
+  const n=(F&&!["★","✗","○"].includes(F))?A.filter(x=>x.tp==F).length:0;$("dl_ch").hidden=!n;if(n)$("dl_ch").textContent="🗑 Sirf chapter “"+F+"” ke "+n+" Q delete"}
+const _rt=renderTabs;renderTabs=function(){const r=_rt.apply(this,arguments);try{dlLabels()}catch(e){}return r};
+const _rd=render;render=function(){const r=_rd.apply(this,arguments);try{dlLabels()}catch(e){}return r};
+
+function delMany(L,label){
+  if(!L.length){toast("Delete karne ke liye kuch nahi hai");return}
+  if(!confirm(label+" ke "+L.length+" questions delete karne hain?\n\nYe sab devices/users se hat jayenge. ♻ Deleted questions me se wapas la sakte ho."))return;
+  if(!confirm("Pakka? "+L.length+" questions delete honge."))return;
+  const now=Date.now(),set=new Set(L);L.forEach(x=>{x.dt=now});
+  D=D.filter(x=>!set.has(x));L.forEach(x=>TR.push(x));
+  persist();renderTabs();render();trUI();
+  toast("🗑 "+L.length+" questions Deleted me gaye","↩ Undo",()=>{
+    const s2=new Set(L);TR=TR.filter(x=>!s2.has(x));L.forEach(x=>{delete x.dt;x.mt=Date.now()});D=L.concat(D);persist();renderTabs();render();trUI()})}
+$("dl_sub").onclick=()=>delMany(D.filter(x=>x.s==S),S);
+$("dl_ch").onclick=()=>delMany(D.filter(x=>x.s==S&&x.tp==F),S+" / "+F);
+/* Trash: ek saath sab restore */
+const _trList=trList;trList=function(){_trList.apply(this,arguments);const l=$("trl");if(TR.length&&l&&!$("trall"))l.insertAdjacentHTML("afterbegin",'<div class="row" style="margin:0 0 10px"><button class="btn y" id="trall">↩ Sab '+TR.length+' restore karo</button></div>');
+  const b=$("trall");if(b)b.onclick=()=>{if(!confirm(TR.length+" questions wapas laane hain?"))return;const now=Date.now();TR.forEach(x=>{delete x.dt;x.mt=now});D=TR.concat(D);TR=[];persist();renderTabs();render();trUI()}};
+
+/* ================================================================
+   3) EXPORT (PDF + Word)
+   ================================================================ */
+const msg=t=>{const m=$("ex_msg");if(m)m.textContent=t||""};
+const libs={};
+function loadScript(urls,test){urls=[].concat(urls);if(libs[urls[0]])return libs[urls[0]];
+  return libs[urls[0]]=(async()=>{for(const u of urls){try{await new Promise((res,rej)=>{const s=document.createElement("script");s.src=u;s.onload=res;s.onerror=()=>rej(new Error("load"));document.head.appendChild(s)});if(!test||test())return true}catch(e){}}
+    throw new Error("Library load nahi hui — internet check karo")})()}
+const L_H2C=["https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js","https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"];
+const L_PDF=["https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js","https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
+const L_DOCX=["https://cdn.jsdelivr.net/npm/docx@9.8.1/dist/index.iife.js","https://unpkg.com/docx@9.8.1/dist/index.iife.js"];
+
+function pickItems(){
+  const sc=$("ex_sc").value;let L;
+  if(sc=="list")L=(typeof CL!=="undefined"&&CL&&CL.length)?CL.slice():D.filter(x=>x.s==S);
+  else if(sc=="sub")L=D.filter(x=>x.s==S);else L=D.slice();
+  /* subject (T order) -> chapter (A-Z) -> jaisa list me hai */
+  const so=SUBS();const g={};L.forEach(x=>{const k=x.s+"\u0001"+(x.tp||"Other");(g[k]=g[k]||[]).push(x)});
+  return Object.keys(g).sort((a,b)=>{const[as,at]=a.split("\u0001"),[bs,bt]=b.split("\u0001");return so.indexOf(as)-so.indexOf(bs)||(at<bt?-1:at>bt?1:0)}).reduce((o,k)=>o.concat(g[k]),[])}
+function titleOf(items){const s=[...new Set(items.map(x=>x.s))];return "Mock Question Bank — "+s.join(" · ")}
+const fname=(items,ext)=>"MockQ-"+[...new Set(items.map(x=>x.s))].join("-")+"-"+new Date().toISOString().slice(0,10)+"."+ext;
+
+/* ---------- PDF: A4 pages ---------- */
+const PV={pages:[],busy:false};
+function ensurePv(){if($("pv"))return;
+  document.body.insertAdjacentHTML("beforeend",'<div id="pv" hidden><div class="pvb"><b>📄 Preview</b><span class="m" id="pv_s"></span><span style="flex:1"></span><button class="btn y" id="pv_pr">🖨 Print / Save as PDF</button><button class="btn y" id="pv_dl">⬇ PDF file</button><button class="btn" id="pv_x">✖ Band</button></div><div class="pvh m">🖨 = sabse saaf (text select ho sakta hai) · ⬇ = seedha file download</div><div class="pgs" id="pgs"></div><div id="pv_meas" class="pg pgm"><div class="pgb"></div></div></div>');
+  $("pv_x").onclick=()=>{$("pv").hidden=true;document.body.style.overflow="";document.body.classList.remove("pvopen");$("pgs").innerHTML=""};
+  $("pv_pr").onclick=()=>{const g=$("pgs"),z=g.style.zoom;g.style.zoom="1";setTimeout(()=>{try{window.print()}catch(e){toast("Print nahi khula — ⬇ PDF file try karo")}setTimeout(()=>{g.style.zoom=z},400)},120)};
+  $("pv_dl").onclick=downloadPdf}
+function qBlock(x,n,mode){
+  const k=x.a?"ABCD".indexOf(x.a):-1,ops=(x.o||[]).map((o,j)=>[j,o]).filter(a=>a[1]);
+  const short=ops.every(a=>String(a[1]).length<=26&&!/\\frac|\\sqrt|\\dfrac/.test(a[1]));
+  let h='<div class="qb"><div class="qh2"><span class="qno">Q'+n+'.</span>'+(x.tp?'<span class="tpc">'+hh(x.tp)+"</span>":"")+"</div>";
+  if(x.t)h+='<div class="qtx">'+fmt(x.t)+"</div>";
+  if(x.img)h+='<img class="qi2" src="'+x.img+'">';
+  h+='<div class="opg'+(short?"":" one")+'">'+ops.map(a=>'<div class="op2"><span class="ol">('+"ABCD"[a[0]]+')</span><span>'+fmt(a[1])+"</span></div>").join("")+"</div>";
+  if((mode=="inl"||mode=="ans")&&k>=0)h+='<div class="an">✔ Answer: ('+x.a+") "+(x.o[k]?fmt(x.o[k]):"")+"</div>";
+  if(mode=="inl"&&x.e)h+='<div class="ex"><span class="exl">Explanation:</span> '+fmt(x.e)+"</div>";
+  return h+"</div>"}
+function buildBlocks(items,mode){
+  const B=['<div class="dt"><div class="dtt">'+hh(titleOf(items))+'</div><div class="m2">'+items.length+" questions · "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+"</div></div>"];let ps="",pt="",n=0;
+  items.forEach(x=>{
+    if(x.s!==ps){B.push('<div class="hs keep">'+hh(IC[x.s]||"")+" "+hh(x.s)+"</div>");ps=x.s;pt=""}
+    if((x.tp||"Other")!==pt){B.push('<div class="ht keep">'+hh(x.tp||"Other")+"</div>");pt=x.tp||"Other"}
+    n++;B.push(qBlock(x,n,mode))});
+  if(mode=="key"){
+    const E=items.map((x,i)=>(i+1)+"-"+(x.a||"—"));
+    for(let i=0;i<E.length;i+=70){B.push('<div class="keyb">'+(i==0?'<div class="hs">Answer Key</div>':'<div class="ht">Answer Key (contd.)</div>')+'<div class="keyg">'+E.slice(i,i+70).map(e=>"<span>"+e+"</span>").join("")+"</div></div>")}}
+  return B}
+function pageEl(){const p=document.createElement("div");p.className="pg";p.innerHTML='<div class="pgb"></div><div class="pgf"><span class="pgt"></span><span class="pgn"></span></div>';return p}
+async function waitImgs(root){await Promise.all([...root.querySelectorAll("img")].map(im=>im.complete?1:new Promise(r=>{im.onload=im.onerror=r})))}
+async function typesetAll(root){
+  try{if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,sleep(3000)])}catch(e){}
+  for(let i=0;i<60&&!(window.MathJax&&MathJax.typesetPromise);i++)await sleep(150);
+  try{if(window.MathJax&&MathJax.startup&&MathJax.startup.promise)await MathJax.startup.promise;await MathJax.typesetPromise([root])}catch(e){}
+  await waitImgs(root)}
+async function buildPages(items,mode){
+  ensurePv();const pv=$("pv"),pgs=$("pgs"),meas=$("pv_meas").firstElementChild;
+  pgs.innerHTML="";pgs.style.zoom="1";pv.hidden=false;document.body.style.overflow="hidden";document.body.classList.add("pvopen");
+  const probe=pageEl();pgs.appendChild(probe);const pb=probe.querySelector(".pgb"),W=pb.clientWidth,H=pb.clientHeight;pgs.removeChild(probe);
+  meas.style.width=W+"px";meas.innerHTML="";
+  const blocks=buildBlocks(items,mode).map(h=>{const d=document.createElement("div");d.innerHTML=h;return d.firstElementChild});
+  blocks.forEach(b=>meas.appendChild(b));
+  $("pv_s").textContent="Math/formula render ho rahe hain…";
+  await typesetAll(meas);
+  const hts=blocks.map(b=>b.getBoundingClientRect().height+10);
+  const pages=[];let cur=[],used=0;
+  for(let i=0;i<blocks.length;i++){
+    if(used+hts[i]>H&&cur.length){
+      const carry=[];while(cur.length>1&&cur[cur.length-1].classList.contains("keep"))carry.unshift(cur.pop());
+      pages.push(cur);cur=carry;used=carry.reduce((a,b)=>a+hts[blocks.indexOf(b)],0)}
+    cur.push(blocks[i]);used+=hts[i]}
+  if(cur.length)pages.push(cur);
+  const T0=titleOf(items);
+  pages.forEach((bl,i)=>{const p=pageEl();p.querySelector(".pgt").textContent=T0;p.querySelector(".pgn").textContent="Page "+(i+1)+" / "+pages.length;const body=p.querySelector(".pgb");bl.forEach(b=>body.appendChild(b));pgs.appendChild(p)});
+  PV.pages=[...pgs.children];
+  const sc=Math.min(1,(innerWidth-16)/(210*3.7795));pgs.style.zoom=sc;
+  $("pv_s").textContent=items.length+" Q · "+pages.length+" pages";
+  return pages.length}
+async function makePdf(){
+  const items=pickItems();if(!items.length){msg("Export ke liye koi question nahi hai");return}
+  msg("⏳ A4 pages ban rahe hain…");
+  try{const n=await buildPages(items,$("ex_an").value);msg("✓ "+items.length+" questions · "+n+" pages — Preview me Print/Save ya PDF file dabao");PV.items=items}
+  catch(e){msg("Error: "+(e&&e.message||e))}}
+async function downloadPdf(){
+  if(PV.busy||!PV.pages.length)return;PV.busy=true;const btn=$("pv_dl"),old=btn.textContent;
+  const g=$("pgs"),z=g.style.zoom;g.style.zoom="1";
+  try{await loadScript(L_H2C,()=>window.html2canvas);await loadScript(L_PDF,()=>window.jspdf);
+    const pdf=new jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
+    for(let i=0;i<PV.pages.length;i++){btn.textContent="⏳ "+(i+1)+"/"+PV.pages.length;await sleep(10);
+      const cv=await html2canvas(PV.pages[i],{scale:2,backgroundColor:"#ffffff",logging:false,useCORS:true});
+      if(i)pdf.addPage();pdf.addImage(cv.toDataURL("image/jpeg",.88),"JPEG",0,0,210,297,undefined,"FAST");cv.width=cv.height=0}
+    pdf.save(fname(PV.items||[{s:"All"}],"pdf"));toast("✅ PDF download ho gayi")}
+  catch(e){toast("PDF error: "+(e&&e.message||e))}
+  g.style.zoom=z;btn.textContent=old;PV.busy=false}
+$("ex_pdf").onclick=makePdf;
+
+/* ---------- Word (.docx) ---------- */
+const SYM={alpha:"α",beta:"β",gamma:"γ",delta:"δ",epsilon:"ε",varepsilon:"ε",zeta:"ζ",eta:"η",theta:"θ",vartheta:"ϑ",iota:"ι",kappa:"κ",lambda:"λ",mu:"μ",nu:"ν",xi:"ξ",pi:"π",rho:"ρ",sigma:"σ",tau:"τ",upsilon:"υ",phi:"φ",varphi:"φ",chi:"χ",psi:"ψ",omega:"ω",Gamma:"Γ",Delta:"Δ",Theta:"Θ",Lambda:"Λ",Xi:"Ξ",Pi:"Π",Sigma:"Σ",Phi:"Φ",Psi:"Ψ",Omega:"Ω",
+  times:"×",div:"÷",cdot:"⋅",pm:"±",mp:"∓",le:"≤",leq:"≤",ge:"≥",geq:"≥",ne:"≠",neq:"≠",approx:"≈",equiv:"≡",sim:"∼",infty:"∞",circ:"°",degree:"°",rightarrow:"→",to:"→",Rightarrow:"⇒",leftarrow:"←",leftrightarrow:"↔",Leftrightarrow:"⇔",therefore:"∴",because:"∵",angle:"∠",triangle:"△",perp:"⊥",parallel:"∥",propto:"∝",ldots:"…",cdots:"⋯",dots:"…",in:"∈",notin:"∉",subset:"⊂",cup:"∪",cap:"∩",emptyset:"∅",forall:"∀",exists:"∃",neg:"¬",land:"∧",lor:"∨",prime:"′",star:"⋆",bullet:"•",ast:"∗",lt:"<",gt:">",lbrace:"{",rbrace:"}",langle:"⟨",rangle:"⟩",
+  "%":"%","{":"{","}":"}","$":"$","&":"&","_":"_","#":"#","|":"‖",",":" ",";":" ",":":" ","!":"",quad:"  ",qquad:"    "," ":" ",hspace:" "};
+const FNS=["sin","cos","tan","cot","sec","csc","cosec","log","ln","lim","max","min","exp","sinh","cosh","tanh","arcsin","arccos","arctan","gcd","lcm","det","mod"];
+const TXT=["text","mathrm","mathbf","textbf","mathit","operatorname","mbox","textit","rm","bf"];
+function texToMath(tex){
+  const d=docx,s=String(tex||"").trim();let i=0,bad=false;
+  const ws=()=>{while(i<s.length&&/\s/.test(s[i]))i++};
+  const run=t=>new d.MathRun(t);
+  function arg(){ws();if(s[i]=="{"){i++;const r=seq("}");i++;return r}
+    if(s[i]=="\\"){const a=atom();return a||[]}
+    if(i<s.length){return [run(s[i++])]}return []}
+  function rawGroup(){ws();if(s[i]!="{"){return s[i++]||""}let dp=0,o="";i++;while(i<s.length){const c=s[i];if(c=="{")dp++;else if(c=="}"){if(!dp)break;dp--}o+=c;i++}i++;return o}
+  function atom(){ws();if(i>=s.length)return null;const c=s[i];
+    if(c=="{"){i++;const r=seq("}");i++;return r}
+    if(c=="\\"){i++;let nm="";
+      if(/[A-Za-z]/.test(s[i])){while(i<s.length&&/[A-Za-z]/.test(s[i]))nm+=s[i++]}else{nm=s[i++]||""}
+      if(nm=="frac"||nm=="dfrac"||nm=="tfrac"){const a=arg(),b=arg();return [new d.MathFraction({numerator:a,denominator:b})]}
+      if(nm=="sqrt"){ws();let deg=null;if(s[i]=="["){i++;let o="";while(i<s.length&&s[i]!="]")o+=s[i++];i++;deg=[run(o)]}const a=arg();return [new d.MathRadical(deg?{children:a,degree:deg}:{children:a})]}
+      if(nm=="left"||nm=="right"){ws();let ch=s[i++]||"";if(ch=="\\"){let n2="";if(/[A-Za-z]/.test(s[i])){while(i<s.length&&/[A-Za-z]/.test(s[i]))n2+=s[i++]}else n2=s[i++]||"";ch=SYM[n2]||(n2=="|"?"‖":n2)}
+        return ch=="."?[]:[run(ch)]}
+      if(nm=="\\"||nm=="newline"){return [run(" ")]}
+      if(TXT.indexOf(nm)>=0){return [run(rawGroup())]}
+      if(nm=="pmod"){return [run(" (mod "+rawGroup()+")")]}
+      if(nm=="displaystyle"||nm=="textstyle"||nm=="limits"||nm=="nolimits"||nm=="big"||nm=="Big"||nm=="bigg"||nm=="Bigg"){return []}
+      if(FNS.indexOf(nm)>=0)return [run(nm=="cosec"?"cosec":nm)];
+      if(SYM.hasOwnProperty(nm)){const r=run(SYM[nm]);if(nm=="circ"||nm=="degree")r.__deg=1;return [r]}
+      bad=true;return [run("\\"+nm)]}
+    if(c=="^"||c=="_"){bad=true;i++;return []}
+    if(/[0-9]/.test(c)){let o="";while(i<s.length&&/[0-9.]/.test(s[i]))o+=s[i++];return [run(o)]}
+    i++;return [run(c)]}
+  function seq(stop){const out=[];
+    while(i<s.length){ws();if(i>=s.length||s[i]==stop)break;
+      let a=atom();if(a===null)break;
+      /* scripts */
+      for(;;){ws();const c=s[i];if(c!="^"&&c!="_")break;
+        let sup=null,sub=null;
+        while(s[i]=="^"||s[i]=="_"){const t=s[i++];const v=arg();if(t=="^")sup=v;else sub=v;ws()}
+        if(sup&&!sub&&sup.length==1&&sup[0].__deg){a=a.concat(sup)}
+        else a=[sup&&sub?new d.MathSubSuperScript({children:a,subScript:sub,superScript:sup}):sup?new d.MathSuperScript({children:a,superScript:sup}):new d.MathSubScript({children:a,subScript:sub})]}
+      out.push.apply(out,a)}
+    return out}
+  const ch=seq("");if(bad||!ch.length)return null;
+  try{return new d.Math({children:ch})}catch(e){return null}}
+
+async function texImg(tex){
+  try{
+    if(!(window.MathJax&&MathJax.tex2svg)&&!texImg.dead){for(let k=0;k<40&&!(window.MathJax&&MathJax.tex2svg);k++)await sleep(150);if(!(window.MathJax&&MathJax.tex2svg))texImg.dead=1}
+    const c=MathJax.tex2svg(tex,{display:false});const host=document.createElement("div");host.style.cssText="position:absolute;left:-9999px;top:0;font-size:16px";host.appendChild(c);document.body.appendChild(host);
+    const sv=c.querySelector("svg"),r=sv.getBoundingClientRect(),w=Math.ceil(r.width),h=Math.ceil(r.height);
+    sv.setAttribute("width",w);sv.setAttribute("height",h);sv.style.color="#000";sv.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    let xml=new XMLSerializer().serializeToString(sv).replace(/currentColor/g,"#000000");document.body.removeChild(host);
+    const im=await new Promise((res,rej)=>{const i2=new Image();i2.onload=()=>res(i2);i2.onerror=rej;i2.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(xml)});
+    const cv=document.createElement("canvas"),K=3;cv.width=w*K;cv.height=h*K;const cx=cv.getContext("2d");cx.drawImage(im,0,0,cv.width,cv.height);
+    const b64=cv.toDataURL("image/png").split(",")[1],bin=atob(b64),u=new Uint8Array(bin.length);for(let q=0;q<bin.length;q++)u[q]=bin.charCodeAt(q);
+    return [new docx.ImageRun({data:u,type:"png",transformation:{width:w,height:h}})]}
+  catch(e){return [new docx.TextRun({text:tex,bold:true,size:24})]}}
+const dataU8=du=>{const b=atob(du.split(",")[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+const loadIm=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+
+async function buildDocx(items,mode){
+  const d=docx,FN="Nirmala UI",SZ=24;
+  const tr=(text,o)=>new d.TextRun(Object.assign({text,bold:true,boldComplexScript:true,size:SZ,sizeComplexScript:SZ,font:{ascii:FN,hAnsi:FN,cs:FN,eastAsia:FN}},o||{}));
+  async function rich(str){const parts=String(str||"").split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g),out=[];
+    for(let i=0;i<parts.length;i++){const p=parts[i];if(!p)continue;
+      if(i%2){const dm=p.startsWith("$$"),tex=p.slice(dm?2:1,dm?-2:-1),m=texToMath(tex);if(m)out.push(m);else out.push.apply(out,await texImg(tex))}
+      else p.split("\n").forEach((ln,k)=>out.push(tr(ln,k?{break:1}:{})))}
+    return out}
+  const P=(children,o)=>new d.Paragraph(Object.assign({children,spacing:{line:336,before:0,after:60}},o||{}));
+  const kids=[];let ps="",pt="",n=0;
+  kids.push(P([tr(titleOf(items),{size:34,sizeComplexScript:34,color:"1F3864"})],{spacing:{after:60,line:336}}));
+  kids.push(P([tr(items.length+" questions · "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),{size:20,sizeComplexScript:20,color:"666666"})],{spacing:{after:200,line:336},border:{bottom:{style:d.BorderStyle.SINGLE,size:8,color:"1F3864",space:4}}}));
+  for(const x of items){
+    if(x.s!==ps){kids.push(P([tr((IC[x.s]?IC[x.s]+" ":"")+x.s,{size:30,sizeComplexScript:30,color:"FFFFFF"})],{keepNext:true,shading:{type:d.ShadingType.CLEAR,fill:"1F3864",color:"auto"},spacing:{before:240,after:100,line:336}}));ps=x.s;pt=""}
+    if((x.tp||"Other")!==pt){kids.push(P([tr(x.tp||"Other",{size:26,sizeComplexScript:26,color:"1F3864"})],{keepNext:true,spacing:{before:160,after:80,line:336},border:{bottom:{style:d.BorderStyle.SINGLE,size:4,color:"9DB2D8",space:2}}}));pt=x.tp||"Other"}
+    n++;
+    const qr=[tr("Q"+n+". ",{color:"B45309"})];if(x.t)qr.push.apply(qr,await rich(x.t));
+    kids.push(P(qr,{keepNext:true,keepLines:true,spacing:{before:140,after:60,line:336}}));
+    if(x.img){const im=await loadIm(x.img);if(im){const k=Math.min(1,560/im.width,520/im.height);kids.push(P([new d.ImageRun({data:dataU8(x.img),type:/^data:image\/png/.test(x.img)?"png":"jpg",transformation:{width:Math.round(im.width*k),height:Math.round(im.height*k)}})],{keepNext:true}))}}
+    const ops=(x.o||[]).map((o,j)=>[j,o]).filter(a=>a[1]);
+    for(let j=0;j<ops.length;j++){const a=ops[j];kids.push(P([tr("("+"ABCD"[a[0]]+") ",{color:"1F3864"})].concat(await rich(a[1])),{indent:{left:360},keepLines:true,keepNext:j<ops.length-1||mode=="inl"||mode=="ans",spacing:{after:30,line:336}}))}
+    const k=x.a?"ABCD".indexOf(x.a):-1;
+    if((mode=="inl"||mode=="ans")&&k>=0)kids.push(P([tr("✔ Answer: ("+x.a+") ",{color:"166534"})].concat(x.o[k]?await rich(x.o[k]):[]),{indent:{left:360},keepNext:mode=="inl"&&!!x.e,shading:{type:d.ShadingType.CLEAR,fill:"E8F5E9",color:"auto"},spacing:{before:40,after:40,line:336}}));
+    if(mode=="inl"&&x.e)kids.push(P([tr("Explanation: ",{color:"92400E"})].concat(await rich(x.e)),{indent:{left:360},shading:{type:d.ShadingType.CLEAR,fill:"FFF7E6",color:"auto"},spacing:{before:40,after:100,line:336}}))}
+  if(mode=="key"){
+    kids.push(new d.Paragraph({children:[],pageBreakBefore:true}));
+    kids.push(P([tr("Answer Key",{size:30,sizeComplexScript:30,color:"FFFFFF"})],{shading:{type:d.ShadingType.CLEAR,fill:"1F3864",color:"auto"},spacing:{after:120,line:336}}));
+    const E=items.map((x,i)=>(i+1)+"-"+(x.a||"—"));
+    for(let i=0;i<E.length;i+=8)kids.push(P([tr(E.slice(i,i+8).join("      "))],{spacing:{after:60,line:336}}))}
+  const doc=new d.Document({creator:"Mock Question Bank",title:titleOf(items),
+    styles:{default:{document:{run:{font:{ascii:FN,hAnsi:FN,cs:FN},size:SZ,bold:true},paragraph:{spacing:{line:336}}}}},
+    sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:850,left:850,right:850}}},
+      footers:{default:new d.Footer({children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,children:[new d.TextRun({children:["Page ",d.PageNumber.CURRENT," / ",d.PageNumber.TOTAL_PAGES],size:18,color:"666666"})]})]})},
+      children:kids}]});
+  return await d.Packer.toBlob(doc)}
+$("ex_doc").onclick=async()=>{
+  const items=pickItems();if(!items.length){msg("Export ke liye koi question nahi hai");return}
+  msg("⏳ Word file ban rahi hai…");
+  try{await loadScript(L_DOCX,()=>window.docx);
+    const blob=await buildDocx(items,$("ex_an").value);
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname(items,"docx");document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+    msg("✅ "+items.length+" questions — Word file download ho gayi")}
+  catch(e){msg("Error: "+(e&&e.message||e))}};
+window.__mqx={texToMath,buildDocx,pickItems,reconcile,get cloud(){return{QM,DM}},ST};
+
+initSync();
+})();
+
 </script>
 </body>
 </html>
