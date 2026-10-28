@@ -31814,7 +31814,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mount();
     /* review overlay: har question ke upar apna handle */
     var list = document.getElementById('quizReviewList');
-    if(list && overlayOpen()) Array.prototype.forEach.call(list.children, function(it){
+    if(false && list && overlayOpen()) Array.prototype.forEach.call(list.children, function(it){
       if(it.__cxg) return; it.__cxg = 1; var cs = getComputedStyle(it); if(cs.position === 'static') it.style.position = 'relative';
       var h = document.createElement('div'); h.className = 'cxGemH'; h.title = 'Ye question + solution Gemini ko bhejo (tap) ya drag karo';
       var im = document.createElement('img'); im.src = PH; im.draggable = true; var lb = document.createElement('span'); lb.textContent = '⠿ Gemini';
@@ -31827,9 +31827,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     document.body.classList.toggle('cxMob', /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
     if(page){ var q = page.querySelectorAll(SOL); for(var i = 0; i < q.length; i++){ if(vis(q[i])){ has = true; fs = q[i]; break; } } }
     curPage = has ? page : null;
-    main.style.display = has ? 'flex' : 'none';
-    if(has && fs && fs.parentNode && main.nextElementSibling !== fs){ try{ fs.parentNode.insertBefore(main, fs); }catch(e){} }
-    if(has && !lastShown && ac.checked){ setTimeout(function(){ if(curPage === page && main.style.display !== 'none') main.sendNow(); }, 900); }
+    main.style.display = 'none';   /* question ke niche wala Gemini/Google/Mock add bar hata diya (lag/hang) */
+    
+    
     /* auto-screenshot (html2canvas) hata diya: answer tick/scroll par page hang hota tha. Screenshot ab sirf button tap par banta hai. */   /* mobile par auto-screenshot band (answer tick par hang hota tha); tap/drag par screenshot tab banta hai */   /* thumbnail pehle se ready, drag turant chale */
     if(has && !lastShown) setMin(true);
     lastShown = has;
