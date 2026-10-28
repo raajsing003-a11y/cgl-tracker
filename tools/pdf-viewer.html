@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <meta charset="UTF-8">
-<title>Edge PDF Reader</title>
+<title>Pdf viewer</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>html.cxNoAdm #aiShare,html.cxNoAdm #aiGem,html.cxNoAdm #btnAsk,html.cxNoAdm #btnPG,html.cxNoAdm .gemOnly{display:none!important}</style>
 <script>(function(){function a(){try{document.documentElement.classList.toggle('cxNoAdm',localStorage.getItem('cx:isAdmin')!=='1');}catch(e){}}a();addEventListener('storage',a);window.cxAdm=function(){try{return localStorage.getItem('cx:isAdmin')==='1';}catch(e){return false;}};})();</script>
@@ -6597,6 +6597,81 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   }
   var sb0 = stbBuild; stbBuild = function (r) { sb0(r); stbFxUi(r); };
 
+  /* ===== Slide to Book — ADJUST panel (Canva jaisa): Light / Colour / Texture. stbColor pipeline mein judta hai,
+     isliye preview, saari pages, preset, per-page override aur final PDF/ZIP output — sab par automatically lagta hai ===== */
+  Object.assign(STB.fx, { hl: 0, sh: 0, wh: 0, bl: 0, vib: 0, sa: 0, shp: 0, cla: 0, vig: 0 });
+  var STB_ADJ = ['br', 'ct', 'hl', 'sh', 'wh', 'bl', 'vib', 'sa', 'shp', 'cla', 'vig'];
+  function stbBlur(a, W, H, rad) {
+    var r = Math.max(1, Math.round(rad)), t = new Float32Array(W * H), o = new Float32Array(W * H), x, y, s, n, row, ad, rm;
+    for (y = 0; y < H; y++) {
+      row = y * W; s = 0; n = 0; for (x = 0; x <= r && x < W; x++) { s += a[row + x]; n++; }
+      for (x = 0; x < W; x++) { t[row + x] = s / n; ad = x + r + 1; rm = x - r; if (ad < W) { s += a[row + ad]; n++; } if (rm >= 0) { s -= a[row + rm]; n--; } }
+    }
+    for (x = 0; x < W; x++) {
+      s = 0; n = 0; for (y = 0; y <= r && y < H; y++) { s += t[y * W + x]; n++; }
+      for (y = 0; y < H; y++) { o[y * W + x] = s / n; ad = y + r + 1; rm = y - r; if (ad < H) { s += t[ad * W + x]; n++; } if (rm >= 0) { s -= t[rm * W + x]; n--; } }
+    }
+    return o;
+  }
+  // in-place on canvas. Highlights/Shadows/Whites/Blacks, Vibrance/Saturation, Sharpness/Clarity, Vignette (sab -100..100 ya 0..100)
+  function stbAdj(c, f) {
+    if (!f) return c; var any = false, q; for (q = 0; q < STB_ADJ.length; q++) { var kk0 = STB_ADJ[q]; if (kk0 !== 'br' && kk0 !== 'ct' && f[kk0]) { any = true; break; } } if (!any) return c;
+    var W = c.width, H = c.height, cx = c.getContext('2d', { willReadFrequently: true }), im = cx.getImageData(0, 0, W, H), d = im.data, N = W * H, i, p, r, g, b, l, mx, mn, s, av, add, kk,
+      hl = (f.hl || 0) / 100, sh = (f.sh || 0) / 100, wh = (f.wh || 0) / 100, bl = (f.bl || 0) / 100, vib = (f.vib || 0) / 100, sa = (f.sa || 0) / 100, shp = (f.shp || 0) / 100, cla = (f.cla || 0) / 100, vig = (f.vig || 0) / 100;
+    if (hl || sh || wh || bl || vib || sa) {
+      for (i = 0; i < N; i++) {
+        p = i * 4; r = d[p]; g = d[p + 1]; b = d[p + 2];
+        if (hl || sh || wh || bl) {
+          l = (r * 299 + g * 587 + b * 114) / 255000;
+          add = 255 * (sh * 0.35 * Math.max(0, 1 - Math.abs(l - 0.25) / 0.35) + hl * 0.35 * Math.max(0, 1 - Math.abs(l - 0.75) / 0.35) + wh * 0.25 * Math.max(0, (l - 0.7) / 0.3) + bl * 0.25 * Math.max(0, 1 - l / 0.3));
+          r += add; g += add; b += add;
+        }
+        if (vib || sa) {
+          mx = Math.max(r, g, b); mn = Math.min(r, g, b); s = mx > 0 ? (mx - mn) / mx : 0; kk = (1 + sa) * (1 + vib * (1 - s)); av = (r + g + b) / 3;
+          r = av + (r - av) * kk; g = av + (g - av) * kk; b = av + (b - av) * kk;
+        }
+        d[p] = r < 0 ? 0 : r > 255 ? 255 : r; d[p + 1] = g < 0 ? 0 : g > 255 ? 255 : g; d[p + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      }
+    }
+    if (shp || cla) {
+      var Lm = new Float32Array(N), big, sm, dl; for (i = 0; i < N; i++) Lm[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000;
+      big = cla ? stbBlur(Lm, W, H, Math.max(8, Math.max(W, H) / 40)) : null; sm = shp ? stbBlur(Lm, W, H, 2) : null;
+      for (i = 0; i < N; i++) {
+        dl = 0; if (cla) dl += cla * 1.2 * (Lm[i] - big[i]) * (1 - Math.abs(Lm[i] / 127.5 - 1) * 0.6); if (shp) dl += shp * 2 * (Lm[i] - sm[i]);
+        p = i * 4; r = d[p] + dl; g = d[p + 1] + dl; b = d[p + 2] + dl;
+        d[p] = r < 0 ? 0 : r > 255 ? 255 : r; d[p + 1] = g < 0 ? 0 : g > 255 ? 255 : g; d[p + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      }
+      Lm = big = sm = null;
+    }
+    if (vig) {
+      var hx = W / 2, hy = H / 2, hm = Math.sqrt(hx * hx + hy * hy), x, y, w, m;
+      for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+        w = Math.max(0, (Math.sqrt((x - hx) * (x - hx) + (y - hy) * (y - hy)) / hm - 0.35) / 0.65); w = w * w; if (!w) continue; p = (y * W + x) * 4;
+        if (vig > 0) { m = 1 - vig * 0.9 * w; d[p] *= m; d[p + 1] *= m; d[p + 2] *= m; }
+        else { m = -vig * 0.9 * w; d[p] += (255 - d[p]) * m; d[p + 1] += (255 - d[p + 1]) * m; d[p + 2] += (255 - d[p + 2]) * m; }
+      }
+    }
+    cx.putImageData(im, 0, 0); return c;
+  }
+  var stbColor0 = stbColor; stbColor = function (c, fx) { return stbAdj(stbColor0(c, fx), fx || STB.fx); };
+  window.__stbAdj = stbAdj;
+  function stbAdjUi(r) {
+    var f = STB.fx, fs = document.createElement('fieldset'); fs.className = 'cflMst';
+    var row = function (k, lb, mn) { return '<div style="margin:4px 0"><label style="display:block">' + lb + '</label><div class="cflRow" style="gap:8px;align-items:center"><input type="range" data-adj="' + k + '" min="' + mn + '" max="100" step="1" style="flex:1"><input type="number" data-adj="' + k + '" min="' + mn + '" max="100" style="width:64px;text-align:center"></div></div>'; };
+    fs.innerHTML = '<legend>🎚 Adjust (sab pages par auto)</legend>' +
+      '<details open><summary><b>☀ Light</b></summary>' + row('br', 'Brightness', -100) + row('ct', 'Contrast', -100) + row('hl', 'Highlights', -100) + row('sh', 'Shadows', -100) + row('wh', 'Whites', -100) + row('bl', 'Blacks', -100) + '</details>' +
+      '<details open><summary><b>💧 Colour</b></summary>' + '<div class="cflMuted">Invert ke liye upar Mode → Invert chuno</div>' + row('vib', 'Vibrance', -100) + row('sa', 'Saturation', -100) + '</details>' +
+      '<details open><summary><b>≋ Texture</b></summary>' + row('shp', 'Sharpness', 0) + row('cla', 'Clarity', -100) + row('vig', 'Vignette', -100) + '</details>' +
+      '<div class="cflRow" style="margin-top:8px"><button data-adjreset="1" style="width:100%">↺ Reset adjustments</button></div><div class="cflMuted" style="margin-top:4px">Yeh settings preview, saari slides/pages, presets aur final PDF/ZIP — sab par apne aap lagti hain. Ek page alag chahiye to Section 4 mein "override" use karo.</div>';
+    var fx2 = r.querySelector('[data-fx=mode]'), anchorFs = fx2 && fx2.closest('fieldset'); if (anchorFs) anchorFs.after(fs); else r.insertBefore(fs, r.lastElementChild);
+    ['br', 'ct'].forEach(function (k) { var e = r.querySelector('[data-fx=' + k + ']'), dv = e && e.closest('div'); if (dv) dv.style.display = 'none'; });
+    function sync() { STB_ADJ.forEach(function (k) { [].forEach.call(fs.querySelectorAll('[data-adj=' + k + ']'), function (e) { e.value = f[k] || 0; }); }); }
+    var old = STB.fxSync; STB.fxSync = function () { if (old) old(); sync(); }; sync();
+    fs.oninput = fs.onchange = function (e) { var k = e.target.dataset.adj; if (!k) return; var v = +e.target.value; if (isNaN(v)) v = 0; f[k] = Math.max(+e.target.min, Math.min(100, v)); sync(); clearTimeout(STB.prevTmr); STB.prevTmr = setTimeout(stbPreview, 120); };
+    fs.onclick = function (e) { if (!e.target.closest('[data-adjreset]')) return; STB_ADJ.forEach(function (k) { f[k] = 0; }); sync(); stbPreview(); toast('Adjustments reset'); };
+  }
+  var sb1 = stbBuild; stbBuild = function (r) { sb1(r); stbAdjUi(r); };
+
 
   /* ===== Slide to Book — Section 3: auto trim + A4 book layout + notes handling ===== */
   STB.lay = { per: 2, arr: 'stack', margin: 10, gap: 6, border: 0, sideL: 0, sideR: 0, trim: 1, padT: 8, padB: 8, padL: 8, padR: 8, label: 'none', head: '', foot: 1, notes: 'keep', ren: 0, dpi: 150 };
@@ -7728,7 +7803,23 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   var BIDI = /[\u202a-\u202e\u200e\u200f\u2066-\u2069]/g;
   var S = { pdf: null, name: '', W0: 544, items: [], busy: false, stop: false, pause: false };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  /* sleep(0) ab MessageChannel se: background tab mein setTimeout 1s+ throttle hota hai, yeh nahi */
+  var MCH = new MessageChannel(), MQ = []; MCH.port1.onmessage = function () { var f = MQ.shift(); if (f) f(); };
+  function sleep(ms) { return ms > 0 ? new Promise(function (r) { setTimeout(r, ms); }) : new Promise(function (r) { MQ.push(r); MCH.port2.postMessage(0); }); }
+  /* Keep-alive: kaam chalte waqt tab ko "audible" + wake-lock rakho taaki doosra tab kholne par Chrome slow/freeze na kare */
+  var KA = { ctx: null, osc: null, wl: null, n: 0 };
+  function kaOn() {
+    if (KA.n++) return;
+    try { KA.ctx = new (window.AudioContext || window.webkitAudioContext)(); var g = KA.ctx.createGain(); g.gain.value = 0.002; KA.osc = KA.ctx.createOscillator(); KA.osc.frequency.value = 30; KA.osc.connect(g); g.connect(KA.ctx.destination); KA.osc.start(); if (KA.ctx.state === 'suspended') KA.ctx.resume(); } catch (e) {}
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { KA.wl = w; }).catch(function () {}); } catch (e) {}
+  }
+  function kaOff() {
+    if (--KA.n > 0) return; KA.n = 0;
+    try { if (KA.osc) KA.osc.stop(); if (KA.ctx) KA.ctx.close(); } catch (e) {} KA.osc = KA.ctx = null;
+    try { if (KA.wl) KA.wl.release(); } catch (e) {} KA.wl = null;
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && KA.n && !KA.wl) { try { navigator.wakeLock.request('screen').then(function (w) { KA.wl = w; }).catch(function () {}); } catch (e) {} } });
+  function kaWrap(fn) { return async function () { kaOn(); try { return await fn.apply(this, arguments); } finally { kaOff(); } }; }
   function R(n) { return Math.round(n); }
   function mk(w, h) { var c = document.createElement('canvas'); c.width = Math.max(1, R(w)); c.height = Math.max(1, R(h)); return c; }
   function white(c) { var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); return x; }
@@ -7844,14 +7935,15 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var tag = joinG(foots.filter(function (i) { return i.x >= 0.45 * W && !(i.x > 0.9 * W && /^\d{1,4}$/.test(i.s.trim())); }));
     var mA = /(?:^|\s)([a-dA-D])\s*$/.exec(left), ans = mA ? mA[1].toLowerCase() : '?', topic = left.replace(/(?:^|\s)[a-dA-D]\s*$/, '').trim();
     var cl = clusterLines(body), qc = cl[0] || null, qT = qc ? qc.text : '', nOpt = (qT.match(/(?:^|[\s(])[a-d]\)/g) || []).length;
-    var isQ = !!qc && (nOpt >= 3 || (nOpt >= 2 && qT.length >= 30) || qT.length >= 80), kind = ov.kind || (ov.qBox ? 'q' : (isQ ? 'q' : 'note'));
+    var QCUE = /(?:\bfind\b|\bwhat\b|\bwhich\b|\bhow many\b|\bcalculate\b|\bevaluate\b|\bdetermine\b|\bcompute\b|\bprove\b|\bsolve\b|ज्ञात|बताओ|बताइए|बताएं|कीजिए|कीजिये|\?|(?:\bis|\bare|equal to)\s*:\s*$)/im, nBul = (qT.match(/^\s*[▪•■●◦▫]/gm) || []).length, divider = !!qc && qT.length < 70 && /^\s*(?:homework|thank\s*you|break|end\b)/i.test(qT);
+    var isQ = !!qc && !divider && nBul < 2 && (nOpt >= 3 || (nOpt >= 2 && qT.length >= 30) || QCUE.test(qT)), kind = ov.kind || (ov.qBox ? 'q' : (isQ ? 'q' : 'note'));
     if (kind === 'q' && !qc && !ov.qBox) kind = 'note';
-    var item = { pn: pn, kind: kind, sc: sc, ans: ans, topic: topic, src: tag, flags: [], q: null, s: null, qRaw: !!ov.qRaw, solInQ: !!ov.solInQ, numKeep: !!ov.numKeep, qBox: ov.qBox || null, nOpt: nOpt };
+    var item = { noFoot: (bt == null && !left && !tag), pn: pn, kind: kind, sc: sc, ans: ans, topic: topic, src: tag, flags: [], q: null, s: null, qRaw: !!ov.qRaw, solInQ: !!ov.solInQ, numKeep: !!ov.numKeep, qBox: ov.qBox || null, nOpt: nOpt };
     var sv = mk(W, H), sx = sv.getContext('2d'); sx.drawImage(cv, 0, 0); sx.fillStyle = '#fff'; sx.fillRect(0, Math.max(0, foot), W, H - foot);
     if (o.cropOnly) {
       var scc = trimCompact(sv, false, 215);
       if (scc) { item.s = { blob: await blobOf(scc, 0.92), w: scc.width, h: scc.height }; scc.width = scc.height = 0; } else item.flags.push('slide khali');
-      if (kind === 'q' && ans === '?') item.flags.push('answer nahi mila');
+      /* answer flag band: answer nahi chahiye */
       if (!item.s) item.kind = 'skip';
       cv.width = cv.height = 0; sv.width = sv.height = 0; try { page.cleanup(); } catch (e) {}
       return item;
@@ -7884,22 +7976,22 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       sx.fillStyle = '#fff';
       if (ov.solInQ && tOK) eraseTextFrom(sx, tv, bb); else if (ov.solInQ) rects.forEach(function (r) { sx.fillRect(R(r.x) - 1, R(r.y) - 1, R(r.w) + 2, R(r.h) + 2); }); else sx.fillRect(bb.x - 2, bb.y - 2, bb.w + 4, bb.h + 4);
       if (tv) tv.width = tv.height = 0;
-      if (nOpt < 4) item.flags.push('options kam (' + nOpt + ')');
-      if (item.qh > 0.6) item.flags.push('Q box bahut bada'); if (item.qh < 0.06) item.flags.push('Q box bahut chhota');
+      if (nOpt > 0 && nOpt < 4) item.flags.push('options kam (' + nOpt + ')');
+      if (item.qh > 0.6) item.flags.push('Q box bahut bada'); if (item.qh < (nOpt ? 0.06 : 0.02)) item.flags.push('Q box bahut chhota');
     }
     if (kind === 'q' && o.numRm && !ov.numKeep) { try { var nbx = numBand(sx.getImageData(0, 0, W, H).data, W, H); if (nbx) { sx.fillStyle = '#fff'; sx.fillRect(nbx.x, nbx.y, nbx.w, nbx.h); item.numRm = true; item.flags.push('number hataya (check)'); } } catch (e) {} }
     var sc2 = trimCompact(sv, o.compact);
     if (sc2) { var sb = await blobOf(sc2, 0.9); item.s = { blob: sb, w: sc2.width, h: sc2.height }; sc2.width = sc2.height = 0; }
     else if (kind === 'q') item.flags.push('Sol khali');
-    if (kind === 'q' && ans === '?') item.flags.push('answer nahi mila');
-    if (kind === 'note' && !item.s) item.kind = 'skip';
+    /* answer flag band: answer nahi chahiye */
+    if ((kind === 'note' && !item.s) || divider) item.kind = 'skip';
     cv.width = cv.height = 0; sv.width = sv.height = 0; try { page.cleanup(); } catch (e) {}
     return item;
   }
 
   /* ---------- UI ---------- */
   function procOpt() { return { pxW: +$('sabQ').value, wm: $('sabWm').checked, wmt: 215, qClean: $('sabQc').checked, compact: $('sabCp').checked, numRm: $('sabNr').checked, qRender: $('sabQr').checked, cropOnly: $('sabMode').value === 'crop' }; }
-  function layOpt() { return { cols: +$('sabCols').value, boost: +$('sabSz').value, keep: $('sabKeep').checked, hdr: $('sabHdr').checked, notes: $('sabNotes').checked, title: $('sabTitle').value.trim() }; }
+  function layOpt() { return { cols: +$('sabCols').value, boost: +$('sabSz').value, keep: $('sabKeep').checked, hdr: $('sabHdr').checked, notes: $('sabNotes').checked, title: $('sabTitle').value.trim(), gray: $('sabGray').checked, mOn: $('sabMOn').checked, mC: Math.max(1, Math.min(10, +$('sabMC').value || 1)), mR: Math.max(1, Math.min(10, +$('sabMR').value || 1)), mOrd: $('sabMOrd').value, mMar: Math.max(0, +$('sabMMar').value || 0), mGap: Math.max(0, +$('sabMGap').value || 0), mPaper: $('sabMPaper').value, mOri: $('sabMOri').value, mBrd: $('sabMBrd').checked, mBoth: $('sabMBoth').checked }; }
   function parseRange(s, n) {
     s = (s || '').trim(); if (!s) { var a = []; for (var i = 1; i <= n; i++) a.push(i); return a; }
     var set = {}; s.split(/[,\s]+/).forEach(function (p) { var m = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(p); if (!m) return; var a = +m[1], b = m[2] ? +m[2] : a; for (var i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) set[i] = 1; });
@@ -7925,6 +8017,9 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       '<div class="r" style="margin-top:8px"><label>Mode <select id="sabMode"><option value="crop" selected>Sirf Crop (slide jaisi hai waisi)</option><option value="split">Q / Sol alag karo</option></select></label><label><input type="checkbox" id="sabWm">Watermark hatao</label><label><input type="checkbox" id="sabQc" checked>Sawal ke aas-paas ki likhai (tick/underline) hatao</label><label title="Haath ki ink (tick/underline/circle) PDF ke path se hatao — text rect se behtar"><input type="checkbox" id="sabQr" checked>Ink render se hatao (naya)</label><label><input type="checkbox" id="sabCp" checked>Solution ki khali patti kam karo</label><label title="Sol ke upar akela chhota haath-ka number (jaise 161.) hatao"><input type="checkbox" id="sabNr" checked>Sol ka upar wala chhota number hatao</label></div>' +
       '<div class="r" style="margin-top:8px"><b>Book layout:</b><label>Columns <select id="sabCols"><option>1</option><option selected>2</option><option>3</option></select></label><label>Text size <select id="sabSz"><option value="0.85">Chhota</option><option value="1" selected>Normal</option><option value="1.2">Bada</option></select></label>' +
       '<label><input type="checkbox" id="sabKeep" checked>Q + Sol ek saath</label><label><input type="checkbox" id="sabHdr" checked>Header + page no.</label><label><input type="checkbox" id="sabNotes" checked>Concept/Notes slides bhi</label><button id="sabRace" title="Race Book jaisa compact 3-column">⚡ 3-col compact preset</button></div>' +
+      '<div class="r" style="margin-top:8px"><b>📄 Multiple (ek sheet par kai pages) — PDF save ke liye:</b><label><input type="checkbox" id="sabMOn">Multiple chalu</label><label>Pages per sheet <select id="sabMPre"><option value="2">2</option><option value="4">4</option><option value="6">6</option><option value="9">9</option><option value="16">16</option><option value="c" selected>Customize</option></select></label><label>Columns <input type="number" id="sabMC" value="3" min="1" max="10" style="width:56px"></label><b>×</b><label>Rows <input type="number" id="sabMR" value="1" min="1" max="10" style="width:56px"></label></div>' +
+      '<div class="r" style="margin-top:8px"><label>Page order <select id="sabMOrd"><option value="h" selected>Z → (left se right, upar se neeche)</option><option value="hr">Z ← (right se left)</option><option value="v">N ↓ (upar se neeche, phir agla column right)</option><option value="vr">N ↓ (right column se left)</option></select></label><label>Margin (cm) <input type="number" id="sabMMar" value="0.51" min="0" max="5" step="0.05" style="width:70px"></label><label>Gap (cm) <input type="number" id="sabMGap" value="0" min="0" max="5" step="0.05" style="width:70px"></label><label>Paper <select id="sabMPaper"><option>A4</option><option>A3</option><option>A5</option><option>Letter</option><option>Legal</option></select></label><label>Sheet <select id="sabMOri"><option value="auto" selected>Auto (best fit)</option><option value="port">Portrait</option><option value="land">Landscape</option></select></label></div>' +
+      '<div class="r" style="margin-top:8px"><label><input type="checkbox" id="sabMBrd">Page border</label><label title="Duplex print ke liye sheets ki ginti even rakhta hai (aakhri sheet ka peecha khali)"><input type="checkbox" id="sabMBoth">Both sides (even sheets)</label><label><input type="checkbox" id="sabGray">Grayscale</label><span class="mu">Preview:</span><span id="sabMPv"></span></div>' +
       '<div class="r" style="margin-top:10px"><button class="p" id="sabGo" disabled>▶ 1) Detect + crop</button><button id="sabPa" disabled>⏸ Pause</button><button id="sabCa" disabled>⏹ Cancel</button><button class="p" id="sabBk" disabled>📘 2) Book PDF banao</button></div>' +
       '<div class="r" style="margin-top:8px"><div class="m"><i id="sabPb"></i></div><span class="mu" id="sabSt"></span></div></div><div id="sabRes"></div></div>';
     document.body.appendChild(o);
@@ -7940,15 +8035,26 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     $('sabPa').onclick = function () { S.pause = !S.pause; this.textContent = S.pause ? '▶ Resume' : '⏸ Pause'; };
     $('sabCa').onclick = function () { S.stop = true; };
     $('sabMode').onchange = function () { var c = this.value === 'crop'; $('sabWm').checked = !c; $('sabQc').disabled = $('sabCp').disabled = $('sabNr').disabled = $('sabQr').disabled = c; $('sabCols').value = c ? '1' : '2'; };
-    var SET = ['sabQ', 'sabWm', 'sabQc', 'sabCp', 'sabNr', 'sabQr', 'sabCols', 'sabSz', 'sabKeep', 'sabHdr', 'sabNotes'], SK = 'sabSettings';
+    var SET = ['sabMOn', 'sabMPre', 'sabMC', 'sabMR', 'sabMOrd', 'sabMMar', 'sabMGap', 'sabMPaper', 'sabMOri', 'sabMBrd', 'sabMBoth', 'sabGray', 'sabQ', 'sabWm', 'sabQc', 'sabCp', 'sabNr', 'sabQr', 'sabCols', 'sabSz', 'sabKeep', 'sabHdr', 'sabNotes'], SK = 'sabSettings';
     function saveSet() { try { var v = { sabMode: $('sabMode').value }; SET.forEach(function (id) { var e = $(id); if (e) v[id] = e.type === 'checkbox' ? e.checked : e.value; }); localStorage.setItem(SK, JSON.stringify(v)); } catch (e) {} }
     $('sabMode').onchange();
     try { var sv0 = JSON.parse(localStorage.getItem(SK) || 'null'); if (sv0) { if (sv0.sabMode) { $('sabMode').value = sv0.sabMode; $('sabMode').onchange(); } SET.forEach(function (id) { var e = $(id); if (e && sv0[id] != null && !e.disabled) { if (e.type === 'checkbox') e.checked = !!sv0[id]; else e.value = sv0[id]; } }); } } catch (e) {}
     ['sabMode'].concat(SET).forEach(function (id) { var e = $(id); if (e) e.addEventListener('change', saveSet); });
     $('sabRace').onclick = function () { $('sabCols').value = '3'; $('sabSz').value = '0.85'; $('sabKeep').checked = true; $('sabHdr').checked = true; saveSet(); toast('3-column compact set'); };
-    $('sabGo').onclick = runAll; $('sabBk').onclick = buildBook;
+    $('sabGo').onclick = kaWrap(runAll); $('sabBk').onclick = kaWrap(buildBook);
+    var PRE = { '2': [2, 1], '4': [2, 2], '6': [3, 2], '9': [3, 3], '16': [4, 4] };
+    function mulPv() {
+      var C = Math.max(1, Math.min(10, +$('sabMC').value || 1)), Rr = Math.max(1, Math.min(10, +$('sabMR').value || 1)), od = $('sabMOrd').value, h = '<span style="display:inline-grid;grid-template-columns:repeat(' + C + ',20px);gap:2px;vertical-align:middle">', cells = [], s, r, c;
+      for (s = 0; s < C * Rr; s++) { if (od === 'h') { r = Math.floor(s / C); c = s % C; } else if (od === 'hr') { r = Math.floor(s / C); c = C - 1 - s % C; } else if (od === 'v') { c = Math.floor(s / Rr); r = s % Rr; } else { c = C - 1 - Math.floor(s / Rr); r = s % Rr; } cells[r * C + c] = s + 1; }
+      cells.forEach(function (n) { h += '<span style="border:1px solid #888;border-radius:3px;text-align:center;font-size:11px;line-height:18px;background:#fff;color:#000">' + n + '</span>'; });
+      $('sabMPv').innerHTML = h + '</span>';
+    }
+    $('sabMPre').onchange = function () { var p = PRE[this.value]; if (p) { $('sabMC').value = p[0]; $('sabMR').value = p[1]; } mulPv(); saveSet(); };
+    ['sabMC', 'sabMR'].forEach(function (id) { $(id).addEventListener('input', function () { var c = +$('sabMC').value, r = +$('sabMR').value, k = String(c * r); $('sabMPre').value = (PRE[k] && PRE[k][0] === c && PRE[k][1] === r) ? k : 'c'; mulPv(); }); });
+    $('sabMOrd').addEventListener('change', mulPv); mulPv();
     $('sabRes').addEventListener('change', function (e) { if (e.target.id === 'sabPlF') loadProject(e.target.files[0]); });
     $('sabRes').addEventListener('change', onChange); $('sabRes').addEventListener('click', onClick);
+    fxUi();
   }
   function busyUi(on) { $('sabGo').disabled = on || !S.pdf; $('sabPa').disabled = !on; $('sabCa').disabled = !on; $('sabBk').disabled = on || !S.items.length; }
   async function runAll() {
@@ -8010,7 +8116,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
       var n = await processSlide(it.pn, procOpt(), { kind: ov.kind || (it.kind === 'skip' ? undefined : it.kind), qRaw: it.qRaw, solInQ: it.solInQ, numKeep: it.numKeep, qBox: ('qBox' in ov ? ov.qBox : it.qBox) });
       freeUrls(it); var keep = { qn: it.qn, head: it.head, ans: it.ans, src: it.src }; Object.assign(it, n); if (keep.ans && keep.ans !== '?') it.ans = keep.ans; if (keep.src) it.src = keep.src; it.head = keep.head; it.qn = keep.qn;
       if (n.kind === 'q' && !it.qn) renumber();
-      if (it.kind === 'q' && it.ans === '?' && it.flags.indexOf('answer nahi mila') < 0) it.flags.push('answer nahi mila');
+      /* answer flag band: answer nahi chahiye */
       $('sabSt').textContent = 'Slide ' + it.pn + ' ho gaya ✔';
     } catch (e) { $('sabSt').textContent = 'Error: ' + e.message; }
     S.busy = false; var sy = $('sabOv').scrollTop; render(); $('sabOv').scrollTop = sy;
@@ -8168,26 +8274,154 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
     var c = document.createElement('canvas'), x = c.getContext('2d'), f = (bold ? 'bold ' : '') + px + 'px "Noto Sans Devanagari",Mangal,sans-serif'; x.font = f; var w = Math.ceil(x.measureText(text).width) + 4; c.width = w; c.height = Math.ceil(px * 1.5); x = c.getContext('2d'); x.font = f; x.fillStyle = '#000'; x.textBaseline = 'middle'; x.fillText(text, 2, c.height / 2);
     return new Promise(function (res) { c.toBlob(function (b) { b.arrayBuffer().then(function (ab) { return doc.embedPng(ab); }).then(function (im) { res({ im: im, w: w / 3, h: c.height / 3 }); }); }, 'image/png'); });
   }
-  async function buildBook() {
+  
+  /* ---------- Grayscale + Multiple (N-up) — saved PDF ke liye ---------- */
+  /* ---------- 🎚 Effects (Canva jaisa Adjust) — Book PDF ke saare Q / Sol / Note par automatic ---------- */
+  var FXK = ['br', 'ct', 'hl', 'sh', 'wh', 'bl', 'vib', 'sa', 'shp', 'cla', 'vig'], FX = {};
+  FXK.forEach(function (k) { FX[k] = 0; });
+  try { var sfx = JSON.parse(localStorage.getItem('sabFx') || 'null'); if (sfx) FXK.forEach(function (k) { if (typeof sfx[k] === 'number') FX[k] = sfx[k]; }); } catch (e) {}
+  function fxAny() { return FXK.some(function (k) { return FX[k]; }); }
+  function fxCss() {
+    var st = $('sabFxCss'); if (!st) { st = document.createElement('style'); st.id = 'sabFxCss'; document.head.appendChild(st); }
+    st.textContent = fxAny() ? '#sabOv .it img{filter:brightness(' + (1 + FX.br / 200).toFixed(3) + ') contrast(' + (1 + FX.ct / 100).toFixed(3) + ') saturate(' + Math.max(0, (1 + FX.sa / 100) * (1 + FX.vib / 200)).toFixed(3) + ')}' : '';
+  }
+  async function fxBlob(blob) {
+    var bm = await createImageBitmap(blob), c = mk(bm.width, bm.height), x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0); try { bm.close(); } catch (e) {}
+    if (FX.br || FX.ct) {
+      var id = x.getImageData(0, 0, c.width, c.height), d = id.data, ct = FX.ct / 100 + 1, bo = FX.br * 2.55, i, lut = new Uint8ClampedArray(256);
+      for (i = 0; i < 256; i++) lut[i] = (i - 128) * ct + 128 + bo;
+      for (i = 0; i < d.length; i += 4) { d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]]; }
+      x.putImageData(id, 0, 0);
+    }
+    if (window.__stbAdj) window.__stbAdj(c, FX);
+    var out = await blobOf(c, 0.92); c.width = c.height = 0; return out;
+  }
+  function fxUi() {
+    if ($('sabFxBox')) return;
+    var fs = document.createElement('div'); fs.className = 'g'; fs.id = 'sabFxBox';
+    var row = function (k, lb, mn) { return '<div style="margin:4px 0"><div>' + lb + '</div><div class="r" style="flex-wrap:nowrap"><input type="range" data-fx="' + k + '" min="' + mn + '" max="100" step="1" style="flex:1;min-width:0"><input type="number" data-fx="' + k + '" min="' + mn + '" max="100" style="width:64px;text-align:center"></div></div>'; };
+    fs.innerHTML = '<details><summary><b>🎚 Effects (Canva jaisa Adjust) — sab pages par automatic</b> <span class="mu" id="sabFxSt"></span></summary>' +
+      '<div class="mu" style="margin:6px 0">Jo bhi slider 0 se hilaoge, wo Book PDF ke saare Q / Sol / Notes par apne aap lagega. Neeche list ka preview andaza (approx) hai; final PDF mein poora effect aata hai.</div>' +
+      '<div class="fxW"><div class="fxL">' +
+      '<b>☀ Light</b>' + row('br', 'Brightness', -100) + row('ct', 'Contrast', -100) + row('hl', 'Highlights', -100) + row('sh', 'Shadows', -100) + row('wh', 'Whites', -100) + row('bl', 'Blacks', -100) +
+      '<b>💧 Colour</b>' + row('vib', 'Vibrance', -100) + row('sa', 'Saturation', -100) +
+      '<b>≋ Texture</b>' + row('shp', 'Sharpness', 0) + row('cla', 'Clarity', -100) + row('vig', 'Vignette', -100) +
+      '<div class="r" style="margin-top:8px"><button id="sabFxReset" style="flex:1">↺ Reset adjustments</button></div></div>' +
+      '<div class="fxR" id="sabFxPv"><div class="r" style="margin-bottom:6px"><b>👁 Live preview</b><select id="sabFxSrc"><option value="q">Sawal</option><option value="s">Solution</option></select><button id="sabFxPrev" title="Pichhla">◀</button><button id="sabFxNext" title="Agla">▶</button><button id="sabFxOrig" title="Dabaye rakho = original dikhega">👆 Original (dabaye rakho)</button></div>' +
+      '<div class="mu" id="sabFxPi" style="margin-bottom:4px"></div><div class="pv"><canvas id="sabFxCv" width="1" height="1" style="display:none"></canvas></div></div></div></details>';
+    $('sabGo').parentNode.before(fs);
+    function sync() { FXK.forEach(function (k) { [].forEach.call(fs.querySelectorAll('[data-fx=' + k + ']'), function (e) { e.value = FX[k]; }); }); $('sabFxSt').textContent = fxAny() ? '· ON' : ''; fxCss(); fxPrevSoon(); try { localStorage.setItem('sabFx', JSON.stringify(FX)); } catch (e) {} }
+    fs.addEventListener('input', function (e) { var k = e.target.dataset && e.target.dataset.fx; if (!k) return; var v = +e.target.value; if (isNaN(v)) v = 0; FX[k] = Math.max(+e.target.min, Math.min(100, v)); sync(); });
+    $('sabFxReset').onclick = function () { FXK.forEach(function (k) { FX[k] = 0; }); sync(); toast('Adjustments reset'); };
+    fxPrevCss();
+    $('sabFxSrc').onchange = function () { FP.src = this.value; fxPrevSoon(); };
+    $('sabFxPrev').onclick = function () { FP.i--; fxPrevSoon(); };
+    $('sabFxNext').onclick = function () { FP.i++; fxPrevSoon(); };
+    var ob = $('sabFxOrig'); function oSet(v) { FP.orig = v; fxPrevSoon(0); }
+    ob.addEventListener('pointerdown', function (e) { e.preventDefault(); oSet(true); }); ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { ob.addEventListener(ev, function () { if (FP.orig) oSet(false); }); });
+    fs.querySelector('details').addEventListener('toggle', function () { fxPrevSoon(0); });
+    var r0 = render; render = function () { r0.apply(this, arguments); FP.key = ''; fxPrevSoon(); };
+    sync();
+  }
+  /* ---------- 👁 Effects live preview (side mein badi image) ---------- */
+  var FP = { i: 0, src: 'q', base: null, key: '', tk: 0, tm: 0, orig: false };
+  function fxPrevCss() {
+    if ($('sabFxCss2')) return; var st = document.createElement('style'); st.id = 'sabFxCss2';
+    st.textContent = '#sabOv .fxW{display:flex;gap:14px;align-items:flex-start}#sabOv .fxL{flex:1 1 0;min-width:0}' +
+      '#sabOv .fxR{flex:0 0 50%;max-width:50%;position:sticky;top:8px;align-self:flex-start;background:var(--chrome,#fff);border:1px solid var(--line,#d3d8e0);border-radius:10px;padding:8px;z-index:2}' +
+      '#sabOv .fxR .pv{max-height:calc(100vh - 140px);overflow:auto;background:#fff;border:1px solid var(--line,#d3d8e0);border-radius:6px}#sabOv .fxR canvas{width:100%;height:auto;display:block}' +
+      '@media(max-width:760px){#sabOv .fxW{flex-direction:column}#sabOv .fxR{order:-1;flex:none;max-width:none;width:100%}#sabOv .fxR .pv{max-height:38vh}}';
+    document.head.appendChild(st);
+  }
+  function fxApply(c) {
+    var x = c.getContext('2d', { willReadFrequently: true });
+    if (FX.br || FX.ct) {
+      var id = x.getImageData(0, 0, c.width, c.height), d = id.data, ct = FX.ct / 100 + 1, bo = FX.br * 2.55, i, lut = new Uint8ClampedArray(256);
+      for (i = 0; i < 256; i++) lut[i] = (i - 128) * ct + 128 + bo;
+      for (i = 0; i < d.length; i += 4) { d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]]; }
+      x.putImageData(id, 0, 0);
+    }
+    if (window.__stbAdj) window.__stbAdj(c, FX);
+    return c;
+  }
+  function fxList() { return S.items.filter(function (i) { return i.kind !== 'skip' && (i.q || i.s); }); }
+  async function fxBase() {
+    var L = fxList(), key, blob = null, it = null, k;
+    if (L.length) {
+      FP.i = Math.max(0, Math.min(L.length - 1, FP.i)); it = L[FP.i]; k = FP.src; if (!it[k]) k = k === 'q' ? 's' : 'q'; if (!it[k]) return null;
+      blob = it[k].blob; key = it.pn + k + ':' + blob.size; FP.cur = { n: FP.i + 1, t: L.length, pn: it.pn, k: k };
+    } else if (S.pdf) { key = 'pdf1'; FP.cur = null; } else return null;
+    if (FP.key === key && FP.base) return FP.base;
+    var c = document.createElement('canvas'), x;
+    if (blob) {
+      var bm = await createImageBitmap(blob), sc = Math.min(1, 1100 / bm.width); c.width = Math.max(1, Math.round(bm.width * sc)); c.height = Math.max(1, Math.round(bm.height * sc));
+      x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0, c.width, c.height); try { bm.close(); } catch (e) {}
+    } else {
+      var pg = await S.pdf.getPage(1), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 1100 / v0.width });
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height); x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: x, viewport: vp }).promise;
+    }
+    if (FP.base) FP.base.width = FP.base.height = 0; FP.base = c; FP.key = key; return c;
+  }
+  function fxPrevSoon(ms) { clearTimeout(FP.tm); FP.tm = setTimeout(fxPrev, ms == null ? 90 : ms); }
+  async function fxPrev() {
+    var box = $('sabFxPv'), dt = $('sabFxBox') && $('sabFxBox').querySelector('details'); if (!box || !dt || !dt.open) return;
+    var tk = ++FP.tk, b; try { b = await fxBase(); } catch (e) { b = null; } if (tk !== FP.tk) return;
+    var cv = $('sabFxCv'), pi = $('sabFxPi');
+    if (!b) { cv.style.display = 'none'; pi.textContent = 'Preview ke liye pehle PDF chuno (aur 1) Detect + crop chalao)'; return; }
+    var w = document.createElement('canvas'); w.width = b.width; w.height = b.height; w.getContext('2d', { willReadFrequently: true }).drawImage(b, 0, 0);
+    var on = !FP.orig && fxAny(); if (on) fxApply(w);
+    cv.width = w.width; cv.height = w.height; cv.getContext('2d').drawImage(w, 0, 0); cv.style.display = 'block'; w.width = w.height = 0;
+    pi.textContent = (FP.cur ? 'Slide ' + FP.cur.pn + ' · ' + (FP.cur.k === 'q' ? 'Sawal' : 'Solution') + ' (' + FP.cur.n + '/' + FP.cur.t + ')' : 'Slide 1 (abhi detect nahi hua)') + ' · ' + (FP.orig ? 'ORIGINAL' : on ? 'EFFECT laga hua' : 'koi effect nahi (sab 0)');
+  }
+  async function grayBlob(blob) {
+    var bm = await createImageBitmap(blob), c = mk(bm.width, bm.height), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bm, 0, 0); try { bm.close(); } catch (e) {}
+    var id = x.getImageData(0, 0, c.width, c.height), d = id.data, i, l;
+    for (i = 0; i < d.length; i += 4) { l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0; d[i] = d[i + 1] = d[i + 2] = l; }
+    x.putImageData(id, 0, 0); var out = await blobOf(c, 0.9); c.width = c.height = 0; return out;
+  }
+  async function nup(bytes, o) {
+    var PL = window.PDFLib, srcDoc = await PL.PDFDocument.load(bytes), out = await PL.PDFDocument.create(), sp = srcDoc.getPages(), emb = await out.embedPages(sp);
+    var P = { A4: [595.28, 841.89], A3: [841.89, 1190.55], A5: [419.53, 595.28], Letter: [612, 792], Legal: [612, 1008] }[o.mPaper] || [595.28, 841.89];
+    var C = o.mC, Rr = o.mR, per = C * Rr, cm = 28.3465, mar = o.mMar * cm, gap = o.mGap * cm, sw = sp[0].getWidth(), sh = sp[0].getHeight();
+    function fit(W, H) { return Math.min(((W - 2 * mar - gap * (C - 1)) / C) / sw, ((H - 2 * mar - gap * (Rr - 1)) / Rr) / sh); }
+    var land = o.mOri === 'land' ? true : o.mOri === 'port' ? false : fit(P[1], P[0]) > fit(P[0], P[1]);
+    var W = land ? P[1] : P[0], H = land ? P[0] : P[1], cw = (W - 2 * mar - gap * (C - 1)) / C, ch = (H - 2 * mar - gap * (Rr - 1)) / Rr, k = Math.min(cw / sw, ch / sh), dw = sw * k, dh = sh * k;
+    if (!(k > 0)) throw new Error('Margin/gap bahut bada hai');
+    function pos(s) { var r, c; if (o.mOrd === 'h') { r = Math.floor(s / C); c = s % C; } else if (o.mOrd === 'hr') { r = Math.floor(s / C); c = C - 1 - s % C; } else if (o.mOrd === 'v') { c = Math.floor(s / Rr); r = s % Rr; } else { c = C - 1 - Math.floor(s / Rr); r = s % Rr; } return { r: r, c: c }; }
+    var sheets = Math.ceil(sp.length / per), bc = o.gray ? PL.rgb(0.4, 0.4, 0.4) : PL.rgb(0.35, 0.35, 0.5);
+    for (var i = 0; i < sheets; i++) {
+      var pg = out.addPage([W, H]);
+      for (var s = 0; s < per; s++) {
+        var idx = i * per + s; if (idx >= sp.length) break; var p = pos(s), x = mar + p.c * (cw + gap) + (cw - dw) / 2, y = H - (mar + p.r * (ch + gap) + (ch - dh) / 2) - dh;
+        pg.drawPage(emb[idx], { x: x, y: y, width: dw, height: dh });
+        if (o.mBrd) pg.drawRectangle({ x: x, y: y, width: dw, height: dh, borderColor: bc, borderWidth: 0.7 });
+      }
+    }
+    if (o.mBoth && out.getPageCount() % 2) out.addPage([W, H]);
+    return await out.save();
+  }
+
+async function buildBook() {
     var PL = window.PDFLib; if (!PL) { toast('pdf-lib load nahi hua'); return; }
     var its = S.items.filter(function (i) { return i.kind === 'q' || (i.kind === 'note' && layOpt().notes); }).filter(function (i) { return i.q || i.s; });
     if (!its.length) { toast('Book ke liye kuch nahi bacha'); return; }
     S.busy = true; busyUi(true); $('sabPa').disabled = true; $('sabCa').disabled = true;
     try {
-      var o = layOpt(), doc = await PL.PDFDocument.create(), fB = await doc.embedFont(PL.StandardFonts.HelveticaBold), fR = await doc.embedFont(PL.StandardFonts.Helvetica);
+      var o = layOpt(), G = function (r, g, b) { if (o.gray) { var l = 0.3 * r + 0.59 * g + 0.11 * b; return PL.rgb(l, l, l); } return PL.rgb(r, g, b); }, doc = await PL.PDFDocument.create(), fB = await doc.embedFont(PL.StandardFonts.HelveticaBold), fR = await doc.embedFont(PL.StandardFonts.Helvetica);
       var PW = 595.28, PH = 841.89, M = 28, TOP = o.hdr ? 44 : 30, BOT = o.hdr ? 38 : 28, GAP = 14, cols = o.cols, colW = (PW - 2 * M - GAP * (cols - 1)) / cols, colH = PH - TOP - BOT;
       var k0 = Math.min(1.3, colW / (0.92 * S.W0)) * o.boost, pages = [], pg = null, col = 0, y = 0, LAB = 12;
       var cache = {};
       async function drawT(p, text, x, yb, size, bold, gray) {
-        if (ASCII.test(text)) p.drawText(text, { x: x, y: yb, size: size, font: bold ? fB : fR, color: PL.rgb(gray, gray, gray) });
+        if (ASCII.test(text)) p.drawText(text, { x: x, y: yb, size: size, font: bold ? fB : fR, color: G(gray, gray, gray) });
         else { var t = await txtImg(doc, text, 36, bold); p.drawImage(t.im, { x: x, y: yb - 2, width: t.w * size / 12, height: t.h * size / 12 }); }
       }
       async function newPage() {
         pg = doc.addPage([PW, PH]); pages.push(pg); col = 0; y = 0;
         if (o.hdr) {
           if (o.title) await drawT(pg, o.title, M, PH - 24, 8, true, 0.35);
-          pg.drawLine({ start: { x: M, y: PH - 30 }, end: { x: PW - M, y: PH - 30 }, thickness: 0.5, color: PL.rgb(0.7, 0.7, 0.7) });
-          var pn = String(pages.length); pg.drawText(pn, { x: PW / 2 - 3 * pn.length, y: 16, size: 8, font: fR, color: PL.rgb(0.35, 0.35, 0.35) });
+          pg.drawLine({ start: { x: M, y: PH - 30 }, end: { x: PW - M, y: PH - 30 }, thickness: 0.5, color: G(0.7, 0.7, 0.7) });
+          var pn = String(pages.length); pg.drawText(pn, { x: PW / 2 - 3 * pn.length, y: 16, size: 8, font: fR, color: G(0.35, 0.35, 0.35) });
         }
       }
       function colX(c) { return M + c * (colW + GAP); }
@@ -8197,14 +8431,14 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
         b.k = Math.min(k0, colW / b.wpt); b.ih = b.hpt * b.k; b.h = LAB + b.ih + (b.src ? 9 : 0) + 6;
         if (b.h > colH) { b.k = (colH - LAB - 15) / b.hpt; b.ih = b.hpt * b.k; b.h = LAB + b.ih + (b.src ? 9 : 0) + 6; }
       }
-      async function img(it, key) { var kk = it.pn + key; if (!cache[kk]) cache[kk] = await doc.embedJpg(await it[key === 'q' ? 'q' : 's'].blob.arrayBuffer()); return cache[kk]; }
+      async function img(it, key) { var kk = it.pn + key; if (cache[kk]) return cache[kk]; var bl = it[key === 'q' ? 'q' : 's'].blob; if (fxAny()) bl = await fxBlob(bl); if (o.gray) bl = await grayBlob(bl); cache[kk] = await doc.embedJpg(await bl.arrayBuffer()); return cache[kk]; }
       async function put(b) {
         var x = colX(col), yt = TOP + y;
-        if (b.type === 'h') { await drawT(pg, b.text, x, PH - yt - 13, 11, true, 0.1); pg.drawLine({ start: { x: x, y: PH - yt - 16 }, end: { x: x + colW, y: PH - yt - 16 }, thickness: 0.8, color: PL.rgb(0.2, 0.3, 0.6) }); }
+        if (b.type === 'h') { await drawT(pg, b.text, x, PH - yt - 13, 11, true, 0.1); pg.drawLine({ start: { x: x, y: PH - yt - 16 }, end: { x: x + colW, y: PH - yt - 16 }, thickness: 0.8, color: G(0.2, 0.3, 0.6) }); }
         else {
-          pg.drawText(b.label, { x: x, y: PH - yt - 9, size: 8.5, font: fB, color: PL.rgb(0.05, 0.1, 0.35) });
+          pg.drawText(b.label, { x: x, y: PH - yt - 9, size: 8.5, font: fB, color: G(0.05, 0.1, 0.35) });
           var im = await img(b.it, b.key); pg.drawImage(im, { x: x, y: PH - yt - LAB - b.ih, width: b.wpt * b.k, height: b.ih });
-          if (b.src && ASCII.test(b.src)) pg.drawText(b.src.slice(0, 80), { x: x, y: PH - yt - LAB - b.ih - 7, size: 6.5, font: fR, color: PL.rgb(0.3, 0.3, 0.3) });
+          if (b.src && ASCII.test(b.src)) pg.drawText(b.src.slice(0, 80), { x: x, y: PH - yt - LAB - b.ih - 7, size: 6.5, font: fR, color: G(0.3, 0.3, 0.3) });
         }
         y += b.h;
       }
@@ -8214,9 +8448,9 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
         $('sabSt').textContent = 'Book ban rahi hai… ' + (n + 1) + '/' + its.length; $('sabPb').style.width = (100 * n / its.length) + '%'; await sleep(0);
         if (it.head && it.head.trim()) g.push({ type: 'h', text: it.head.trim() });
         if (it.kind === 'q') {
-          if (!it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Q.' + (it.qn || '') + (it.ans && it.ans !== '?' ? '   (Ans: ' + it.ans + ')' : ''), src: (it.src || '').trim(), wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
+          if (!it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Q.' + (it.qn || ''), src: (it.src || '').trim(), wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
           if (it.q) g.push({ type: 'b', it: it, key: 'q', label: 'Q.' + (it.qn || ''), src: (it.src || '').trim(), wpt: it.q.w / it.sc, hpt: it.q.h / it.sc });
-          if (it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Sol.' + (it.qn || '') + '.' + (it.ans && it.ans !== '?' ? '(' + it.ans + ')' : ''), src: '', wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
+          if (it.q && it.s) g.push({ type: 'b', it: it, key: 's', label: 'Sol.' + (it.qn || ''), src: '', wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
         } else if (it.s) g.push({ type: 'b', it: it, key: 's', label: 'Note', src: '', wpt: it.s.w / it.sc, hpt: it.s.h / it.sc });
         g.forEach(measure);
         var tot = g.reduce(function (a, b) { return a + b.h; }, 0);
@@ -8224,9 +8458,9 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
         else for (var c = 0; c < g.length; c++) { var need = g[c].h + (g[c].type === 'h' && g[c + 1] ? g[c + 1].h : 0); if (need > colH - y && y > 0) await advance(); await put(g[c]); }
         done++;
       }
-      if (cols > 1) pages.forEach(function (p) { for (var c2 = 1; c2 < cols; c2++) { var lx = colX(c2) - GAP / 2; p.drawLine({ start: { x: lx, y: PH - TOP + 4 }, end: { x: lx, y: BOT - 4 }, thickness: 0.4, color: PL.rgb(0.8, 0.8, 0.8) }); } });
-      var bytes = await doc.save(); dl((S.name || 'slides') + '_book.pdf', new Blob([bytes], { type: 'application/pdf' }));
-      $('sabPb').style.width = '100%'; $('sabSt').textContent = 'Book PDF ban gayi ✔ — ' + done + ' blocks, ' + pages.length + ' pages';
+      if (cols > 1) pages.forEach(function (p) { for (var c2 = 1; c2 < cols; c2++) { var lx = colX(c2) - GAP / 2; p.drawLine({ start: { x: lx, y: PH - TOP + 4 }, end: { x: lx, y: BOT - 4 }, thickness: 0.4, color: G(0.8, 0.8, 0.8) }); } });
+      var bytes = await doc.save(); if (o.mOn) { $('sabSt').textContent = 'Multiple layout lag raha hai…'; bytes = await nup(bytes, o); } dl((S.name || 'slides') + '_book.pdf', new Blob([bytes], { type: 'application/pdf' }));
+      $('sabPb').style.width = '100%'; $('sabSt').textContent = 'Book PDF ban gayi ✔ — ' + done + ' blocks, ' + pages.length + ' pages' + (o.mOn ? ' → ' + o.mC + '×' + o.mR + ' per sheet' : '');
     } catch (e) { $('sabSt').textContent = 'Book error: ' + (e && e.message || e); console.error(e); }
     S.busy = false; busyUi(false);
   }
