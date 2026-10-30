@@ -31377,10 +31377,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   }
   /* ---- mobile: Google URL me query NAHI (prefilled query hi 'Continue with this search?' popup lati hai). Image + poora prompt clipboard / share sheet me.
          Sirf agar chaaho: localStorage 'sd:mobq' = akshar (max 120) -> question ki pehli line utni URL me. Default 0 = bilkul khali. ---- */
-  function gUrl(qt){
-    var base = 'https://www.google.com/search?udm=50', n = parseInt(LS('sd:mobq'), 10);
-    if(!(n > 0)) return base;
-    var s = String(qt || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0] || ''; s = s.slice(0, Math.min(n, 120));
+  function gUrl(txt){
+    var base = 'https://www.google.com/search?udm=50', cfg = LS('sd:mobq');
+    if(cfg === '0') return base;                         /* '0' = URL khali (popup se bachne ke liye) */
+    var s = String(txt || '').trim(), n = parseInt(cfg, 10);
+    s = s.slice(0, n > 0 ? Math.min(n, 1800) : 1800);    /* default: poora prompt + question URL me (pehle jaisa) */
     return s ? base + '&q=' + encodeURIComponent(s) : base;
   }
   function shareImgTxt(pngB, jpgF, text){   /* image (file) + prompt text EK share me; text clipboard me bhi (kuch apps file ke saath text chhod dete hain) */
@@ -31737,7 +31738,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       /* TEXT-ONLY mode (mobile, extension nahi): localStorage 'sd:textonly' = '1' -> screenshot nahi; sirf prompt + question + options text clipboard me, Google/Gemini khulta hai, box me ek baar Paste */
       if(!inFrame && mobile && noExt && LS('sd:textonly') === '1'){
         var tOk = false; try{ await copyTxt(ftxt); tOk = true; }catch(e){}
-        var tUrl = goo ? gUrl(st.qt) : home, tW = null;
+        var tUrl = goo ? gUrl(ftxt) : home, tW = null;
         try{ tW = window.open(tUrl, '_blank'); }catch(e){}
         toast(tOk ? (tW ? '📝 ' + label + ' khul gaya — prompt + question copy hai: box me long-press → Paste' : '📝 Text copy ho gaya — ' + label + ' khud kholo aur Paste karo') : '⚠ Copy nahi hua — app me wapas aakar dobara try karo');
         return;
@@ -31765,7 +31766,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         try{ pngB = await pngP; }catch(e){}
         try{ var jb = await new Promise(function(r){ st.cv.toBlob(r, 'image/jpeg', 0.9); }); if(jb) jpgF = new File([jb], 'question.jpg', { type: 'image/jpeg' }); }catch(e){}
         var mc = copied ? await copied : false;          /* clipboard (image + prompt) page focused rehte hi */
-        var murl = goo ? gUrl(st.qt) : home;
+        var murl = goo ? gUrl(ftxt) : home;
         var actOn = function(){ return !!(navigator.userActivation && navigator.userActivation.isActive); };
         if(shareMode){
           if(actOn()){
