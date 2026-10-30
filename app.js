@@ -31734,6 +31734,14 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       st.qt = st.ov ? st.ov.qt : qText(t);
       var ftxt = withQ(goo ? gemPromptG() : gemPrompt(), st.qt);       /* poora prompt + question + options text */
       var noExt = !window.__gemExt, name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
+      /* TEXT-ONLY mode (mobile, extension nahi): localStorage 'sd:textonly' = '1' -> screenshot nahi; sirf prompt + question + options text clipboard me, Google/Gemini khulta hai, box me ek baar Paste */
+      if(!inFrame && mobile && noExt && LS('sd:textonly') === '1'){
+        var tOk = false; try{ await copyTxt(ftxt); tOk = true; }catch(e){}
+        var tUrl = goo ? gUrl(st.qt) : home, tW = null;
+        try{ tW = window.open(tUrl, '_blank'); }catch(e){}
+        toast(tOk ? (tW ? '📝 ' + label + ' khul gaya — prompt + question copy hai: box me long-press → Paste' : '📝 Text copy ho gaya — ' + label + ' khud kholo aur Paste karo') : '⚠ Copy nahi hua — app me wapas aakar dobara try karo');
+        return;
+      }
       /* Gesture ke time hi clipboard write shuru: image + poora text EK SATH (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
