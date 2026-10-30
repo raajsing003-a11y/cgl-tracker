@@ -31645,7 +31645,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
       var copied = null;
-      var shareMode = goo && mobile && noExt && !inFrame && !!navigator.share && LS('sd:mobshare') !== '0';   /* mobile Google: image + prompt EK SATH share sheet se (URL me image nahi ja sakti) */
+      var shareMode = goo && mobile && noExt && !inFrame && !!navigator.share && LS('sd:mobshare') === '1';   /* OPTIONAL (default band): mobile Google par image + prompt share sheet se */
       if(!inFrame && navigator.clipboard && window.ClipboardItem && (!mobile || !window.__gemExt)){
         try{ copied = copyImgTxt(pngP, ftxt).then(function(){ return true; }, function(){
           return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }); }catch(e){ copied = Promise.resolve(false); }
@@ -31653,7 +31653,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var w = null;
       if(!inFrame && mobile && noExt && !shareMode){   /* MOBILE (extension nahi): Google/Gemini apne aap naye tab me khulta hai — Google par question+prompt URL se khud search ho jata hai */
         var murl = home;
-        if(goo){ /* Google ka 'Continue with this search?' popup lamba query dekhkar scroll karwata hai — isliye URL me chhota query: question (max 1400 akshar) + chhota prompt */ var qq = String(st.qt || '').replace(/\s+/g, ' ').trim().slice(0, 1400) + '\n\n' + (LS('sd:mobfull') === '1' ? gemPromptG() : 'ऊपर का प्रश्न शुद्ध देवनागरी हिंदी में हल करो: मूल अवधारणा (Basic Concept), 10-15 सेकंड की स्मार्ट ट्रिक, फिर स्टेप-बाय-स्टेप समाधान। उसके बाद इसी पैटर्न के 2 नए प्रश्न (पूरे विकल्प, सही उत्तर और समाधान सहित) बनाओ।'); while(encodeURIComponent(qq).length > 6500) qq = qq.slice(0, Math.floor(qq.length * 0.9)); murl = 'https://www.google.com/search?udm=50&q=' + encodeURIComponent(qq); }
+        if(goo){ /* Google ka 'Continue with this search?' popup lamba query dekhkar scroll karwata hai — isliye URL me chhota query: question (max 1400 akshar) + chhota prompt */ var qq = String(st.qt || '').replace(/\s+/g, ' ').trim().slice(0, 1400) + '\n\n' + (LS('sd:mobfull') === '1' ? gemPromptG() : (LS('sd:mobprompt') || 'ऊपर का प्रश्न शुद्ध देवनागरी हिंदी में हल करो: मूल अवधारणा (Basic Concept), 10-15 सेकंड की स्मार्ट ट्रिक, फिर स्टेप-बाय-स्टेप समाधान। उसके बाद इसी पैटर्न के 2 नए प्रश्न (पूरे विकल्प, सही उत्तर और समाधान सहित) बनाओ।')); while(encodeURIComponent(qq).length > 6500) qq = qq.slice(0, Math.floor(qq.length * 0.9)); murl = 'https://www.google.com/search?udm=50&q=' + encodeURIComponent(qq); }
         try{ w = window.open(murl, '_blank'); }catch(e){}
         if(!w){ try{ location.href = murl; }catch(e){} }
       }
