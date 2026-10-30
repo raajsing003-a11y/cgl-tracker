@@ -31320,13 +31320,83 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready'){ window.__gemExt = true; LS('sd:extok', '1'); } });
   try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
   function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
+  /* ---- question text SAAF: app ka header/nav/stat kachra (EXAM TRACKER BY ..., "👑 ❓ 0%", 🔥 streak, timer, Question No., set naam) nahi — sirf question + options.
+         Pehle visible *WordText/*QuestionText + *OptList se seedha uthata hai; na mile to page ka text lekar kachra-lines hata deta hai.
+         Naya header-line chhute to localStorage 'sd:qnoise' me regex (pipe '|' se alag) daal do. ---- */
+  var QNOISE = [/exam\s*tracker/i, /yuvraj\s*sisodiya/i, /^question\s*no\.?\s*\d+\s*$/i, /^(?:\d{1,2}:){1,2}\d{2}$/, /mark(?:ed)?\s*for\s*review/i,
+    /^(?:save\s*(?:&|and)?\s*next|next|previous|prev|back|submit|clear|pause|resume|skip|hindi|english|हिंदी|अंग्रेज़ी)$/i,
+    /^[^\n]{0,60}[—–-]\s*set\s*\d+\s*$/i, /^q(?:uestion)?\s*\d+\s*\/\s*\d+$/i];
+  function qNoise(l){
+    var s = String(l).trim(); if(!s) return true;
+    if(!/[A-Za-z\u0900-\u097f]/.test(s) && /[\ud83c-\ud83e\u2600-\u27bf\ufe0f]/.test(s)) return true;   /* sirf emoji + number/% wali stat line */
+    for(var i = 0; i < QNOISE.length; i++){ if(QNOISE[i].test(s)) return true; }
+    var ex = LS('sd:qnoise'); if(ex){ try{ if(new RegExp(ex, 'i').test(s)) return true; }catch(e){} }
+    return false;
+  }
+  function scrubQ(tx){
+    return String(tx || '').replace(/\u00a0/g, ' ').split('\n').filter(function(l){ return !qNoise(l); }).map(function(l){ return l.replace(/[ \t]+/g, ' ').trim(); }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function flatTxt(el){   /* layout ke bina bhi lines tootein: br / block ke baad newline, MathJax ka chhupa assistive text duplicate na ho */
+    var c = el.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll('script,style,svg,canvas,mjx-assistive-mml,.MJX_Assistive_MathML,[hidden]'), function(x){ x.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll('br'), function(b){ b.replaceWith('\n'); });
+    Array.prototype.forEach.call(c.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5,h6'), function(b){ b.appendChild(document.createTextNode('\n')); });
+    return (c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function structQ(scope){
+    try{
+      scope = (scope && scope.querySelectorAll) ? scope : document;
+      var shown = function(el){ return !!(el && el.getClientRects && el.getClientRects().length); };
+      var qEl = Array.prototype.filter.call(scope.querySelectorAll('[id$="WordText"],[id$="QuestionText"]'), shown)[0];
+      if(!qEl) return '';
+      var oEl = null, p = qEl;
+      for(var d = 0; p && d < 6 && !oEl; d++, p = p.parentElement){ oEl = Array.prototype.filter.call(p.querySelectorAll('[id$="OptList"]'), shown)[0] || null; }
+      if(!oEl) return '';
+      var opts = [];
+      Array.prototype.forEach.call(oEl.children, function(b, i){
+        var mk = b.querySelector('.examOptMark'), full = flatTxt(b).replace(/\s*\n\s*/g, ' ').trim(), m = mk ? flatTxt(mk).trim() : '';
+        if(m && full.indexOf(m) === 0) full = full.slice(m.length).trim();
+        if(full) opts.push('ABCDEFGH'.charAt(i) + ') ' + full);
+      });
+      if(opts.length < 2) return '';
+      var q = scrubQ(flatTxt(qEl)); if(!q) return '';
+      return q + '\n' + opts.join('\n');
+    }catch(e){ return ''; }
+  }
   function qText(t){
     try{
-      var c = t.cloneNode(true);
-      Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,button,script,style,svg,canvas,img,input,select,textarea,[hidden]'), function(x){ x.remove(); });
-      var tx = (c.innerText || c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-      return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
+      var s = structQ(t); if(!s) s = '';
+      if(!s){
+        var c = t.cloneNode(true);
+        Array.prototype.forEach.call(c.querySelectorAll('.examOptBtn'), function(ob, oi){ var mk = ob.querySelector('.examOptMark'), lt = mk ? (mk.textContent || '').trim() : 'ABCDEFGH'.charAt(oi); if(mk) mk.remove(); ob.insertBefore(document.createTextNode(lt + ') '), ob.firstChild); ob.appendChild(document.createTextNode('\n')); ob.classList.add('keepOpt'); });
+        Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,header,nav,button:not(.keepOpt),script,style,svg,canvas,img,input,select,textarea,[hidden],[id$="SolutionCard"],[id$="SolutionText"],[id$="SolutionTag"],[id$="TagWrap"],.dsSolBlock,.examReviewTag,mjx-assistive-mml'), function(x){ x.remove(); });
+        s = scrubQ(flatTxt(c));
+      }
+      return s.length > 9000 ? s.slice(0, 9000) + '…' : s;
     }catch(e){ return ''; }
+  }
+  /* ---- mobile: Google URL me query NAHI (prefilled query hi 'Continue with this search?' popup lati hai). Image + poora prompt clipboard / share sheet me.
+         Sirf agar chaaho: localStorage 'sd:mobq' = akshar (max 120) -> question ki pehli line utni URL me. Default 0 = bilkul khali. ---- */
+  function gUrl(qt){
+    var base = 'https://www.google.com/search?udm=50', n = parseInt(LS('sd:mobq'), 10);
+    if(!(n > 0)) return base;
+    var s = String(qt || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean)[0] || ''; s = s.slice(0, Math.min(n, 120));
+    return s ? base + '&q=' + encodeURIComponent(s) : base;
+  }
+  function shareImgTxt(pngB, jpgF, text){   /* image (file) + prompt text EK share me; text clipboard me bhi (kuch apps file ke saath text chhod dete hain) */
+    var f = jpgF || new File([pngB], 'question.png', { type: 'image/png' });
+    try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function(){}); }catch(e){}
+    var d = { files: [f], text: text };
+    try{ if(navigator.canShare && !navigator.canShare(d)){ d = { files: [f] }; if(!navigator.canShare(d)) return Promise.reject(new Error('is browser me file share support nahi')); } }catch(e){}
+    return navigator.share(d);
+  }
+  function copyReady(pngB, text){   /* tayyar blob = turant (sync) clipboard write, taaki tap ka gesture na jaye */
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': pngB, 'text/plain': new Blob([text], { type: 'text/plain' }) })]).catch(function(){
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': pngB })]).catch(function(){}); });
+      } else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(function(){}); }
+    }catch(e){}
   }
   var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein. POORA block ---MOCKBANK--- se ---END--- tak EK HI code block (``` ... ```) ke andar likho, taaki maths render hokar bikhre nahi; code block ke andar plain text, bold/table ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question. SUBJECT Math/Reasoning/GK ho to Hindi + English dono; lekin SUBJECT English ho to question aur options SIRF English mein (Hindi bilkul nahi); maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(is block mein SIRF 2 question likho: pehla = main question, doosra = practice questions mein se sabse HARD / tricky wala. Baaki practice questions is block mein MAT likho (wo sirf upar ke jawab mein rahenge). Dono ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho aur ek question ke liye sirf ek hi 'Q:' block ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
@@ -31441,6 +31511,29 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 
 
 
+  /* mobile "ready" sheet: screenshot pehle se bana hua hai, isliye har button apne FRESH tap me sync chalta hai (gesture expire nahi hota) */
+  function mobSheet(label, pngB, jpgF, text, url, preferShare){
+    if(document.hidden) return;
+    if(!hbar){ hbar = document.createElement('div'); hbar.id = 'cxGemHelp';
+      hbar.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center';
+      document.body.appendChild(hbar); }
+    hbar.innerHTML = ''; hbar.style.display = 'block';
+    var msg = document.createElement('div'); msg.style.marginBottom = '8px';
+    msg.textContent = '✅ Screenshot taiyar. ' + (preferShare ? 'Share dabao — image + prompt saath jayenge.' : label + ' kholne par box me ek baar long-press → Paste.');
+    hbar.appendChild(msg);
+    var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center'; hbar.appendChild(row);
+    function btn(txt, bg, fn){ var b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
+      b.style.cssText = 'border:0;border-radius:10px;padding:10px 14px;font:800 14px sans-serif;color:#fff;cursor:pointer;background:' + bg;
+      b.onclick = function(ev){ ev.stopPropagation(); fn(b); }; row.appendChild(b); return b; }
+    function doShare(){ shareImgTxt(pngB, jpgF, text).then(function(){ toast('📤 Image + prompt share ho gaya'); }, function(e){ if(e && e.name === 'AbortError') return; toast('⚠ Share nahi khula: ' + ((e && e.message) || e)); }); }
+    function doOpen(){ copyReady(pngB, text); var w2 = null; try{ w2 = window.open(url, '_blank'); }catch(e){} if(!w2) toast('⚠ Tab nahi khula — browser me popup allow karo'); }
+    var canSh = !!(navigator.share && navigator.canShare);
+    if(preferShare && canSh){ btn('📤 Share (image + prompt)', '#d84315', doShare); btn('🔍 ' + label + ' kholo', '#1a73e8', doOpen); }
+    else { btn('🔍 ' + label + ' kholo (copy + open)', '#1a73e8', doOpen); if(canSh) btn('📤 Share (image + prompt)', '#d84315', doShare); }
+    btn('📋 Dobara copy', '#2e7d32', function(b){ var o = b.textContent; copyReady(pngB, text); b.textContent = '✅ Copy ho gaya'; setTimeout(function(){ b.textContent = o; }, 1500); });
+    btn('✕', '#555', function(){ hbar.style.display = 'none'; });
+    clearTimeout(hbar._t); hbar._t = setTimeout(function(){ if(hbar) hbar.style.display = 'none'; }, 180000);
+  }
   /* ---- near-duplicate check: same/lagbhag same question + milte-julte options = repeat ---- */
 
   function mqTex(s){ return String(s || '').replace(/\\\[([\s\S]+?)\\\]/g, function(m, x){ return '$$' + x + '$$'; }).replace(/\\\(([\s\S]+?)\\\)/g, function(m, x){ return '$' + x + '$'; }); }
@@ -31651,32 +31744,36 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
           return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }); }catch(e){ copied = Promise.resolve(false); }
       }
       var w = null;
-      if(!inFrame && mobile && noExt && !shareMode){   /* MOBILE (extension nahi): Google/Gemini apne aap naye tab me khulta hai — Google par question+prompt URL se khud search ho jata hai */
-        var murl = home;
-        if(goo){ /* Google ka 'Continue with this search?' popup lamba query dekhkar scroll karwata hai — isliye URL me chhota query: question (max 1400 akshar) + chhota prompt */ var qq = String(st.qt || '').replace(/\s+/g, ' ').trim().slice(0, 1400) + '\n\n' + (LS('sd:mobfull') === '1' ? gemPromptG() : (LS('sd:mobprompt') || 'ऊपर का प्रश्न शुद्ध देवनागरी हिंदी में हल करो: मूल अवधारणा (Basic Concept), 10-15 सेकंड की स्मार्ट ट्रिक, फिर स्टेप-बाय-स्टेप समाधान। उसके बाद इसी पैटर्न के 2 नए प्रश्न (पूरे विकल्प, सही उत्तर और समाधान सहित) बनाओ।')); while(encodeURIComponent(qq).length > 6500) qq = qq.slice(0, Math.floor(qq.length * 0.9)); murl = 'https://www.google.com/search?udm=50&q=' + encodeURIComponent(qq); }
-        try{ w = window.open(murl, '_blank'); }catch(e){}
-        if(!w){ try{ location.href = murl; }catch(e){} }
-      }
+      /* MOBILE: Google/Gemini ab screenshot ready hone ke BAAD niche khulta hai (URL me query nahi) */
       if(!inFrame && !mobile && noExt){ try{ var g = gemGeo(); w = window.open('', name, 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
         var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = home; }catch(e){} }
       toast('Screenshot ban raha hai…');
       var ok; try{ await pngP; ok = true; }catch(e){ ok = false; }
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
       if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, text: ftxt, target: goo ? 'google' : '', from: 'app' }, '*'); }catch(e){} return; }
-      if(shareMode){
-        var shDone = false, shErr = null;
-        try{ var shBl = await pngP, shFile = new File([shBl], 'question.png', { type: 'image/png' });
-          if(navigator.canShare && navigator.canShare({ files: [shFile] })){ await navigator.share({ files: [shFile], text: ftxt }); shDone = true; } }catch(e){ shErr = e; }
-        if(shDone){ toast('📤 Image + prompt share ho gaya'); return; }
-        if(shErr && shErr.name === 'AbortError') return;                     /* tumne share sheet band kar di */
-        helperBar(label, pngP, ftxt, st.file);
-        toast('⚠ Share sheet nahi khula — neeche ke buttons se Share / Copy karo');
-        return;
-      }
       if(mobile && noExt){
-        var mc = copied ? await copied : false;
-        helperBar(label, pngP, ftxt, st.file);
-        toast(goo ? (mc ? '🔍 Google khul gaya (question search ho gaya) — image copy hai: box me long-press → Paste' : '🔍 Google khul gaya — image ke liye app me wapas aakar copy karo') : (mc ? '✅ Gemini khul gaya — image + prompt copy hai: box me long-press → Paste' : 'Gemini khul gaya — app me wapas aakar copy/share karo'));
+        /* MOBILE (extension nahi): screenshot ab TAIYAR hai. Google URL me query nahi (popup se bachav) — image + poora prompt clipboard me, ya share sheet me. */
+        var pngB = null, jpgF = null;
+        try{ pngB = await pngP; }catch(e){}
+        try{ var jb = await new Promise(function(r){ st.cv.toBlob(r, 'image/jpeg', 0.9); }); if(jb) jpgF = new File([jb], 'question.jpg', { type: 'image/jpeg' }); }catch(e){}
+        var mc = copied ? await copied : false;          /* clipboard (image + prompt) page focused rehte hi */
+        var murl = goo ? gUrl(st.qt) : home;
+        var actOn = function(){ return !!(navigator.userActivation && navigator.userActivation.isActive); };
+        if(shareMode){
+          if(actOn()){
+            try{ await shareImgTxt(pngB, jpgF, ftxt); toast('📤 Image + prompt share ho gaya'); return; }
+            catch(e){ if(e && e.name === 'AbortError') return; }      /* sheet band ki */
+          }
+          mobSheet(label, pngB, jpgF, ftxt, murl, true);
+          toast('📤 Screenshot taiyar — "Share" dabao');
+          return;
+        }
+        if(actOn()){
+          var w3 = null; try{ w3 = window.open(murl, '_blank'); }catch(e){}
+          if(w3){ toast(goo ? (mc ? '🔍 Google khul gaya — image + prompt copy hai: box me long-press → Paste' : '🔍 Google khul gaya — image ke liye app me wapas aakar copy/share karo') : (mc ? '✅ Gemini khul gaya — image + prompt copy hai: box me long-press → Paste' : 'Gemini khul gaya — app me wapas aakar copy/share karo')); return; }
+        }
+        mobSheet(label, pngB, jpgF, ftxt, murl, false);       /* gesture nikal gaya / popup block: ek fresh tap se kholo */
+        toast('✅ Screenshot taiyar — "' + label + ' kholo" dabao');
         return;
       }
       if(noExt){        /* extension install nahi: clipboard (image + prompt + question) + khula window */
@@ -31907,7 +32004,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       toast('Screenshot ban raha hai…');
       await new Promise(function(r){ requestAnimationFrame(function(){ r(); }); });
       var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
-      var qt = qtOv || ''; if(!qt){ try{ qt = textIn(L, T, R, B); }catch(e){} }
+      var qt = qtOv || ''; if(!qt){ try{ qt = scrubQ(textIn(L, T, R, B)); }catch(e){} }
       await main.sendNow(tgt, { cv: cv, qt: qt });
     }
     var picker = null;
@@ -31939,7 +32036,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       });
       ov.addEventListener('pointercancel', end);
     }
-    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight); }
+    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight, structQ(document) || ''); }
     /* button par turant loading (⏳) — double tap bhi nahi */
     function withLoad(btn, name, p){ if(!btn || btn.__ld) return; btn.__ld = 1; var o = btn.textContent; btn.textContent = '⏳ ' + name; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
       var d = function(){ if(!btn.__ld) return; btn.__ld = 0; btn.textContent = o; btn.style.opacity = ''; btn.style.pointerEvents = ''; }; setTimeout(d, 12000); Promise.resolve(p).catch(function(){}).then(d); }
