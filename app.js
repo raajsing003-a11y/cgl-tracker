@@ -31965,7 +31965,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     d.items.forEach(function(q){
       if(!q || (!q.t && !q.img)) return; ids.push(q.id); q = mqFix(q);
       if(D.some(function(x){ return x.id === q.id || (!q.force && q.t && mqSame(q, x)); })){ skipped.push(q.id); return; }
-      D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', pend: 1, t: q.t || '', img: q.img || '', o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
+      D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', ctp: String(q.c || q.tp || q.chapter || '').slice(0, 60), pend: 1, t: q.t || '', img: q.img || '', o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
     });
     try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); }catch(x){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');

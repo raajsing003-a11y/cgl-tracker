@@ -161,6 +161,15 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
 <div id="list"></div>
 <div id="oth" hidden></div>
 
+<details class="card" id="fxc"><summary>🧠 Purane questions ka chapter sahi karo (Gemini/Google se)</summary>
+  <div class="m" id="fx_i" style="margin:10px 0"></div>
+  <div class="row" style="margin-top:0"><select id="fx_sc" style="flex:1"><option value="all">Is subject ke saare questions</option><option value="other">Sirf "Other" wale</option></select><select id="fx_b" style="flex:1"></select></div>
+  <div class="row"><button class="btn y" id="fx_cp">📋 Prompt banao + copy</button></div>
+  <textarea id="fx_p" readonly placeholder="Prompt yahan aayega — Gemini/Google me paste karo (copy na ho to yahin se select karke copy karo)" style="height:90px;margin-top:8px"></textarea>
+  <textarea id="fx_r" placeholder="Gemini ka jawab yahan paste karo (1|Percentage jaisi lines)" style="height:90px;margin-top:8px"></textarea>
+  <div class="row"><button class="btn y" id="fx_ap">✅ Chapter lagao</button><button class="btn" id="fx_un">↩ Pichla chapter wapas</button></div>
+  <div class="m" id="fx_m" style="margin-top:8px"></div>
+</details>
 <div class="card" style="margin-top:22px">
   <b>🧰 Backup & tools</b>
   <div class="row">
@@ -321,7 +330,14 @@ function detect(txt){const l=txt.toLowerCase();let best="Other",sc=0;
   for(const [t,kw] of Object.entries(T[S])){if(!kw)continue;let c=0;kw.split(" ").forEach(w=>{if(!w)return;w=w.toLowerCase();if(/^[a-z\/]+$/.test(w)?new RegExp("(^|[^a-z])"+w.replace("/","\\/")).test(l):l.includes(w))c++});if(c>sc){sc=c;best=t}}return best}
 
 /* ---- App se aaye (screenshot+text) questions: topic auto-detect + live refresh ---- */
-function resolvePend(){let ch=false;D.forEach(q=>{if(q&&q.pend){const o=S;S=q.s;try{q.tp=detect((q.t||"")+" "+(q.o||[]).join(" "))}catch(e){q.tp="Other"}S=o;delete q.pend;ch=true}});if(ch)persist();return ch}
+/* extension ne chapter bheja ho to wahi (app ke chapter naam se match), warna keyword detect */
+function chKey(x){return String(x||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean)}
+function matchCh(sub,c){const m=T[sub];if(!m||!c)return"";const ck=chKey(c);if(!ck.length)return"";const cs=ck.slice().sort().join(" "),cj=ck.join("");let part="";
+  for(const n of Object.keys(m)){if(n=="Other")continue;const nk=chKey(n);if(!nk.length)continue;
+    if(nk.slice().sort().join(" ")==cs||nk.join("")==cj)return n;
+    const nj=nk.join("");if(!part&&cj.length>=4&&nj.length>=4&&(nj.indexOf(cj)>=0||cj.indexOf(nj)>=0))part=n}
+  return part}
+function resolvePend(){let ch=false;D.forEach(q=>{if(q&&q.pend){const o=S;S=q.s;try{const g=matchCh(q.s,q.ctp);q.tp=g||detect((q.t||"")+" "+(q.o||[]).join(" "))}catch(e){q.tp="Other"}S=o;delete q.pend;delete q.ctp;ch=true}});if(ch)persist();return ch}
 resolvePend();
 addEventListener("storage",e=>{if(e.key!==K)return;try{D=JSON.parse(e.newValue||"[]")}catch(x){return}resolvePend();try{renderTabs();render()}catch(x){}});
 /* ---- LaTeX auto-wrap (braces-aware) ---- */
@@ -1105,6 +1121,40 @@ window.__mqx={texToMath,buildDocx,pickItems,reconcile,get cloud(){return{QM,DM}}
 initSync();
 })();
 
+</script>
+
+<script>
+/* ---- Purane questions ka chapter Gemini/Google se theek karwana: 40-40 ke batch, jawab sirf "number|Chapter" ---- */
+(function(){
+  const g=i=>document.getElementById(i),BS=40,BK="mqb_tpbk";let ids=[];
+  function pool(){const o=g("fx_sc").value=="other";return D.filter(x=>x&&x.s==S&&x.t&&!x.pend&&(!o||(x.tp||"Other")=="Other"))}
+  function fill(){const L=pool(),n=Math.ceil(L.length/BS),cur=g("fx_b").value;
+    g("fx_i").textContent="Abhi khula subject: "+S+" · "+L.length+" question (text wale). Pehle subject tab chuno, phir batch banao.";
+    g("fx_b").innerHTML=n?Array.from({length:n},(_,k)=>"<option value=\""+k+"\">Batch "+(k+1)+" / "+n+" (Q "+(k*BS+1)+"–"+Math.min(L.length,(k+1)*BS)+")</option>").join(""):"<option>— koi question nahi —</option>";
+    if(cur&&+cur<n)g("fx_b").value=cur}
+  g("fxc").addEventListener("toggle",()=>{if(g("fxc").open)fill()});g("fx_sc").onchange=fill;
+  g("fx_cp").onclick=()=>{fill();const L=pool(),k=+g("fx_b").value||0,B=L.slice(k*BS,(k+1)*BS);if(!B.length){g("fx_m").textContent="Is subject me koi question nahi mila";return}
+    ids=B.map(x=>x.id);const ch=Object.keys(T[S]).filter(t=>t!="Other");
+    const q=B.map((x,i)=>(i+1)+") "+String(x.t).replace(/\s+/g," ").slice(0,320)+((x.o||[]).filter(Boolean).length?" | "+(x.o||[]).map((o,j)=>"ABCD"[j]+") "+String(o).replace(/\s+/g," ").slice(0,50)).join(" "):"")).join("\n");
+    const p="Neeche "+B.length+" "+S+" questions hain. Har question ka SAHI chapter is list me se HUBAHU wahi naam chuno (koi naya naam nahi; na fit ho to Other):\n"+ch.join(", ")+", Other\n\nSirf jawab do, har question ki ek line, bilkul isi format me: number|Chapter (jaise 1|Percentage). Koi explanation, heading ya extra text nahi.\n\nQuestions:\n"+q;
+    g("fx_p").value=p;g("fx_p").select();
+    const ok=()=>g("fx_m").textContent="📋 Prompt copy ho gaya ("+B.length+" Q) — Gemini/Google me paste karo, jawab niche paste karke ✅ dabao";
+    const fb=()=>{try{document.execCommand("copy");ok()}catch(e){g("fx_m").textContent="Upar ke box se khud copy karo"}};
+    try{navigator.clipboard.writeText(p).then(ok,fb)}catch(e){fb()}};
+  g("fx_ap").onclick=()=>{if(!ids.length){g("fx_m").textContent="Pehle 📋 Prompt banao";return}
+    const bk={};let n=0,ch=0,miss=0;
+    g("fx_r").value.split(/\r?\n/).forEach(l=>{const m=l.replace(/[*`]/g,"").match(/^\s*(\d+)\s*[|:.)\-–]\s*(.+?)\s*$/);if(!m)return;
+      const x=D.find(y=>y.id==ids[+m[1]-1]);if(!x)return;n++;
+      const nm=T[x.s]&&T[x.s][m[2]]!==undefined?m[2]:matchCh(x.s,m[2]);if(!nm){miss++;return}
+      if(x.tp!=nm){bk[x.id]=x.tp||"Other";x.tp=nm;ch++}});
+    if(!n){g("fx_m").textContent="Jawab me 'number|Chapter' wali lines nahi mili";return}
+    try{const o=JSON.parse(localStorage.getItem(BK)||"{}");localStorage.setItem(BK,JSON.stringify(Object.assign(o,bk)))}catch(e){}
+    persist();try{renderTabs();render()}catch(e){}
+    g("fx_m").textContent="✅ "+ch+" question ka chapter badla · "+(n-ch-miss)+" pehle se sahi"+(miss?" · "+miss+" ka naam list se match nahi hua (chhode)":"")+". Agla batch chuno.";
+    g("fx_r").value="";const b=g("fx_b"),k=+b.value||0;if(b.options[k+1])b.value=String(k+1)};
+  g("fx_un").onclick=()=>{let o={};try{o=JSON.parse(localStorage.getItem(BK)||"{}")}catch(e){}const ks=Object.keys(o);if(!ks.length){g("fx_m").textContent="Wapas karne ko kuch nahi";return}
+    let n=0;D.forEach(x=>{if(x&&o[x.id]!==undefined){x.tp=o[x.id];n++}});localStorage.removeItem(BK);persist();try{renderTabs();render()}catch(e){}g("fx_m").textContent="↩ "+n+" question ka pichla chapter wapas"};
+})();
 </script>
 </body>
 </html>
