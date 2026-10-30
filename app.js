@@ -6368,6 +6368,8 @@ function renderMockEntryCard(catId, e){
   const actions = e.auto
     ? (e.autoSrc === 'Math Mock Quiz'
         ? `<div class="mockENote" style="margin-top:8px;">🔗 Ye Quiz tab ke Math Mock (Exam Mode) se aaya hai — automatic add hua.</div>`
+        : e.autoSrc === 'Mains Target'
+        ? `<div class="mockENote" style="margin-top:8px;">🎯 Ye Quiz tab ke Mains Target se aaya hai — edit karne ke liye Mains Target kholo.</div>`
         : `<div class="mockENote" style="margin-top:8px;">🔗 Ye Today tab ke ${e.autoSrc||'Full Mock'} se aaya hai — edit karne ke liye Today tab kholo.</div>`)
     : `<div class="mockEActions">
         <button class="edit" type="button" data-id="${e.id}"><span class="icoEdit" aria-hidden="true"></span> Edit</button>
