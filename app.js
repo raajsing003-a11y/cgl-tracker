@@ -33191,6 +33191,27 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       + '#cxBcBox .row.big{border:0;font-size:19px}'
       + '#cxBcBox button.plain{width:100%;margin-top:16px}'
       + '#cxBcBox button.snd{padding:6px 10px;font-size:18px;background:#2b2e38}'
+      + '#cxBcBox.cxBc2{padding:0;display:flex;flex-direction:column;overflow:hidden;height:94vh;max-height:94vh}'
+      + '#cxBcBox.cxBc2 .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:21px;flex:none}'
+      + '#cxBcBox.cxBc2 .hd .x{width:auto;margin:0;padding:6px 12px;font-size:18px}'
+      + '#cxBcBox.cxBc2 .bd{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}'
+      + '#cxBcBox.cxBc2 .ft{flex:none;padding:10px 16px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#17181c}'
+      + '#cxBcBox.cxBc2 .lbl{font-weight:800;font-size:17px;margin-bottom:8px}'
+      + '#cxBcBox.cxBc2 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}'
+      + '#cxBcBox.cxBc2 .chips button{width:auto;margin:0;padding:9px 13px;border-radius:999px;font-size:15px}'
+      + '#cxBcBox.cxBc2 .meta{display:flex;justify-content:space-between;font-size:14px;opacity:.75;margin-top:6px}'
+      + '#cxBcBox.cxBc2 .pv{white-space:pre-wrap;max-height:150px;overflow-y:auto}'
+      + '#cxBcBox.cxBc2 .cnt2{font-size:14px;opacity:.75;margin:4px 0 6px}'
+      + '#cxBcBox.cxBc2 .row2{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.07)}'
+      + '#cxBcBox.cxBc2 .row2 input{width:24px;height:24px;flex:none}'
+      + '#cxBcBox.cxBc2 .row2.exc{opacity:.6}'
+      + '#cxBcBox.cxBc2 .av{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:17px}'
+      + '#cxBcBox.cxBc2 .nm2{flex:1;min-width:0;display:flex;flex-direction:column}'
+      + '#cxBcBox.cxBc2 .nm2 b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cxBcBox.cxBc2 .nm2 small{font-size:13px;opacity:.65}'
+      + '#cxBcBox.cxBc2 button.exb{width:auto;margin:0;padding:7px 10px;font-size:14px;flex:none}'
+      + '#cxBcBox.cxBc2 .row2.exc button.exb{background:#7f1d1d;border-color:#b91c1c}'
+      + '#cxBcBox.cxBc2 .prog{height:8px;border-radius:6px;background:#2a2d36;overflow:hidden;margin-bottom:6px}#cxBcBox.cxBc2 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#fbbf24);transition:width .2s}'
+      + '#cxBcBox.cxBc2 button.go{margin-top:4px}'
       + '.cxBcWrapC{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}';
     document.head.appendChild(st);
   }
@@ -33214,61 +33235,116 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     const inp = box.querySelector('#'+idInput); if(!inp) return;
     inp.addEventListener('input', ()=>{
       const q = inp.value.trim().toLowerCase();
-      box.querySelectorAll('#'+idList+' .row').forEach(r=>{ r.style.display = (!q || (r.getAttribute('data-n')||'').includes(q)) ? '' : 'none'; });
+      box.querySelectorAll('#'+idList+' .row, #'+idList+' .row2').forEach(r=>{ r.style.display = (!q || (r.getAttribute('data-n')||'').includes(q)) ? '' : 'none'; });
     });
   }
   const preview = (tpl, name)=> fill(tpl, name || 'Rahul', myName);
 
-  // ================= 📢 BROADCAST =================
+  // ================= 📢 BROADCAST (v2) =================
+  const BC_TEMPLATES = [
+    ['🎯 Mains Series', "{name}, CGL Mains ka countdown shuru ho chuka hai. ⏳🔥\n\nAb sirf ek cheez matter karti hai: *roz ka target poora karna.*\n\n🎯 *50 Day Target Series* aise follow karo:\n1️⃣ App kholo, Home par *Mains Target* card dabao\n2️⃣ Aaj ka plan dekho aur jo kaam ho jaye use tick karo\n3️⃣ Apna score fill karo, Score tab mein apne aap sync ho jayega\n4️⃣ Rank tab mein dekho tum kahan khade ho\n\n✅ Roz ka kaam roz khatam, kal par kuch mat chhodo.\n✅ Ek din miss hua to agle din double mat karo, bas wapas track par aao.\n\nResult door lagta hai, par har din uska ek hissa hai. Aaj ka din jeet lo. 💪\n\nKoi doubt ho to yahin msg karo. All the best, {name}! 🚀"],
+    ['🔥 Motivation', "{name}, aaj ka target poora kiya? Thoda aur, bas thoda aur! Roz ki mehnat hi result banti hai. 💪🔥"],
+    ['⏰ Reminder', "{name}, aaj ka plan abhi adhura hai. App kholo, kaam tick karo aur din poora karo. ✅"],
+    ['🆕 App update', "{name}, app mein naya update aaya hai. App band karke dobara kholo, Stats mein Cache Clean + Refresh bhi kar lena. 🙌"]
+  ];
   async function openPanel(){
     const wrap = ensureWrap('cxBcWrap'); const box = wrap.querySelector('#cxBcBox');
+    box.classList.add('cxBc2');
     const cfg = await loadCfg(); const members = await getMembers();
-    const except = new Set(Array.isArray(cfg.except) ? cfg.except : []);
-    box.innerHTML = `
-      <h3>📢 Sabko message bhejo</h3>
-      <div class="sub">Ek hi baar me sabko. Jin par ✔ hai unhe jayega; ✔ hatao = exception (yaad rahega).</div>
-      <textarea id="cxBcText" maxlength="1000" placeholder="Yahan message likho…"></textarea>
-      <div class="sub" style="margin-top:6px">💡 <b>{name}</b> likhoge to har user ka naam lag jayega.</div>
-      <div class="pv" id="cxBcPv"></div>
-      <div class="h2">👥 Kisko bhejna hai</div>
-      <input type="search" id="cxBcQ" class="srch" placeholder="🔍 Naam dhoondho…">
-      <div class="mini"><button type="button" id="cxBcAll">✔ Sab</button><button type="button" id="cxBcNone">✖ Koi nahi</button><span class="cnt" id="cxBcCnt"></span></div>
-      <div id="cxBcList">${members.length ? members.map(m=>`<label class="row" data-n="${esc(m.name.toLowerCase())}"><input type="checkbox" data-k="${esc(m.key)}" ${except.has(m.key)?'':'checked'}><span class="nm">${esc(m.name)}</span><span class="tag">${except.has(m.key)?'🚫 exception':''}</span></label>`).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
-      <button type="button" class="go" id="cxBcSend">📤 Bhejo</button>
-      <div class="msg" id="cxBcMsg"></div>
-      <button type="button" id="cxBcClose" class="plain">Band karo</button>`;
-    const $ = (id)=> box.querySelector('#'+id);
-    const boxes = ()=> Array.from(box.querySelectorAll('#cxBcList input[data-k]'));
-    const upd = ()=>{ const n = boxes().filter(b=> b.checked).length; $('cxBcSend').textContent = '📤 ' + n + ' logo ko bhejo'; $('cxBcSend').disabled = !n; $('cxBcCnt').textContent = n + '/' + boxes().length + ' select'; };
-    const persist = async ()=>{
-      const ex = boxes().filter(b=> !b.checked).map(b=> b.getAttribute('data-k'));
-      boxes().forEach(b=>{ const t = b.parentElement.querySelector('.tag'); if(t) t.textContent = b.checked ? '' : '🚫 exception'; });
-      const c = await loadCfg(); c.except = ex; await saveCfg(c); upd();
+    let usage = {}; try{ usage = await loadUsageForLB(); }catch(e){}
+    const exSet = new Set(Array.isArray(cfg.except) ? cfg.except : []);
+    const avCols = ['#2563eb','#7c3aed','#db2777','#ea580c','#0d9488','#16a34a'];
+    const info = (m)=>{
+      let online = false; try{ online = presenceStatusFor(m.name).online; }catch(e){}
+      const td = usageSecFor(usage[m.key], 'today');
+      m.online = online; m.today = td;
+      return (online ? '🟢 Online' : '⚪ Offline') + ' · aaj ' + (td ? fmtUse(td) : '0m');
     };
+    box.innerHTML = `
+      <div class="hd"><b>📢 Sabko message</b><button type="button" class="x" id="cxBcX">✕</button></div>
+      <div class="bd">
+        <div class="lbl">⚡ Ready message (tap karo)</div>
+        <div class="chips">${BC_TEMPLATES.map((t,i)=>`<button type="button" data-t="${i}">${esc(t[0])}</button>`).join('')}</div>
+        <textarea id="cxBcText" maxlength="1000" rows="5" placeholder="Ya apna message yahan likho…"></textarea>
+        <div class="meta"><span>💡 <b>{name}</b> = user ka naam</span><span id="cxBcLen">0/1000</span></div>
+        <div class="pv" id="cxBcPv"></div>
+
+        <div class="lbl" style="margin-top:16px">👥 Kisko bhejna hai</div>
+        <div class="chips">
+          <button type="button" id="fAll">✔ Sab</button>
+          <button type="button" id="fOn">🟢 Online</button>
+          <button type="button" id="fIn">😴 Aaj app nahi khola</button>
+          <button type="button" id="fNone">✖ Koi nahi</button>
+        </div>
+        <input type="search" id="cxBcQ" class="srch" placeholder="🔍 Naam dhoondho…">
+        <div class="cnt2" id="cxBcCnt"></div>
+        <div id="cxBcList">${members.length ? members.map((m,i)=>{
+          const ex = exSet.has(m.key);
+          return `<label class="row2 ${ex?'exc':''}" data-n="${esc(m.name.toLowerCase())}" data-k="${esc(m.key)}">
+            <input type="checkbox" ${ex?'':'checked'}>
+            <span class="av" style="background:${avCols[i%avCols.length]}">${esc((m.name||'?').trim().charAt(0).toUpperCase())}</span>
+            <span class="nm2"><b>${esc(m.name)}</b><small>${info(m)}</small></span>
+            <button type="button" class="exb" title="Hamesha ke liye exception">${ex?'🚫 Exception':'🚫'}</button>
+          </label>`; }).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
+        <div class="sub" style="margin-top:10px">🚫 dabao = us user ko <b>hamesha</b> ke liye exception me daalo (bulk select me bhi nahi judega). ✔ sirf is baar ke liye hai.</div>
+      </div>
+      <div class="ft">
+        <div class="prog" id="cxBcProg" hidden><i></i></div>
+        <div class="msg" id="cxBcMsg"></div>
+        <button type="button" class="go" id="cxBcSend">📤 Bhejo</button>
+      </div>`;
+    const $ = (id)=> box.querySelector('#'+id);
+    const rows = ()=> Array.from(box.querySelectorAll('#cxBcList .row2'));
+    const cb = (r)=> r.querySelector('input');
+    const keyOf = (r)=> r.getAttribute('data-k');
+    const upd = ()=>{
+      const n = rows().filter(r=> cb(r).checked).length;
+      $('cxBcCnt').textContent = n + ' select · ' + rows().length + ' me se · 🚫 ' + rows().filter(r=> r.classList.contains('exc')).length + ' exception';
+      $('cxBcSend').textContent = '📤 ' + n + ' logo ko bhejo'; $('cxBcSend').disabled = !n;
+    };
+    const apply = (fn)=>{ rows().forEach(r=>{ const m = members.find(x=> x.key === keyOf(r)); cb(r).checked = !r.classList.contains('exc') && !!fn(m); }); upd(); };
     upd(); wireSearch(box, 'cxBcQ', 'cxBcList');
-    $('cxBcText').addEventListener('input', ()=>{ const t = $('cxBcText').value.trim(); $('cxBcPv').textContent = t ? '👁 Preview: ' + preview(t) : ''; });
-    box.querySelector('#cxBcList').addEventListener('change', persist);
-    $('cxBcAll').addEventListener('click', ()=>{ boxes().forEach(b=> { if(b.parentElement.style.display !== 'none') b.checked = true; }); persist(); });
-    $('cxBcNone').addEventListener('click', ()=>{ boxes().forEach(b=> { if(b.parentElement.style.display !== 'none') b.checked = false; }); persist(); });
-    $('cxBcClose').addEventListener('click', ()=> wrap.remove());
+    $('cxBcX').addEventListener('click', ()=> wrap.remove());
+    $('fAll').addEventListener('click', ()=> apply(()=> true));
+    $('fNone').addEventListener('click', ()=>{ rows().forEach(r=> cb(r).checked = false); upd(); });
+    $('fOn').addEventListener('click', ()=> apply(m=> m.online));
+    $('fIn').addEventListener('click', ()=> apply(m=> !m.today));
+    box.querySelector('#cxBcList').addEventListener('change', upd);
+    box.querySelector('#cxBcList').addEventListener('click', async (e)=>{
+      const b = e.target.closest && e.target.closest('button.exb'); if(!b) return;
+      e.preventDefault(); e.stopPropagation();
+      const r = b.closest('.row2'), k = keyOf(r);
+      const c = await loadCfg(); const set = new Set(Array.isArray(c.except) ? c.except : []);
+      const now = !set.has(k); if(now) set.add(k); else set.delete(k);
+      c.except = Array.from(set); await saveCfg(c);
+      r.classList.toggle('exc', now); cb(r).checked = !now; b.textContent = now ? '🚫 Exception' : '🚫'; upd();
+    });
+    const pv = ()=>{ const t = $('cxBcText').value.trim(); $('cxBcLen').textContent = $('cxBcText').value.length + '/1000'; $('cxBcPv').textContent = t ? '👁 Preview (Rahul ko aisa dikhega):\n' + preview(t) : ''; };
+    $('cxBcText').addEventListener('input', pv);
+    box.querySelectorAll('.chips button[data-t]').forEach(bt=> bt.addEventListener('click', ()=>{
+      $('cxBcText').value = BC_TEMPLATES[Number(bt.getAttribute('data-t'))][1].slice(0, 1000); pv();
+      $('cxBcText').scrollIntoView({ block:'nearest', behavior:'smooth' });
+    }));
     $('cxBcSend').addEventListener('click', async ()=>{
       const text = $('cxBcText').value.trim();
-      if(!text){ $('cxBcMsg').textContent = '⚠ Pehle message likho.'; return; }
-      const targets = members.filter(m=> boxes().some(b=> b.checked && b.getAttribute('data-k') === m.key));
+      if(!text){ $('cxBcMsg').textContent = '⚠ Pehle message likho ya upar se ready message chuno.'; return; }
+      const targets = members.filter(m=> rows().some(r=> keyOf(r) === m.key && cb(r).checked));
       if(!targets.length) return;
-      if(!confirm(targets.length + ' logo ko ye message bhejna hai?')) return;
+      if(!confirm(targets.length + ' logo ko ye message bhejna hai?\n\n' + preview(text, targets[0].name).slice(0, 200) + (text.length > 200 ? '…' : ''))) return;
       const btn = $('cxBcSend'); btn.disabled = true;
+      const prog = $('cxBcProg'); prog.hidden = false; const bar = prog.querySelector('i'); bar.style.width = '0%';
       let ok = 0, fail = 0, i = 0;
       const worker = async ()=>{
         while(i < targets.length){
           const t = targets[i++];
           try{ await sendDirect(myName, t.name, fill(text, t.name, myName).slice(0, CHAT_MAX_LEN)); ok++; }catch(e){ fail++; }
           $('cxBcMsg').textContent = '⏳ Bhej raha hu… ' + (ok+fail) + '/' + targets.length;
+          bar.style.width = Math.round((ok+fail)/targets.length*100) + '%';
         }
       };
       await Promise.all([worker(), worker(), worker(), worker()]);
       $('cxBcMsg').textContent = '✅ ' + ok + ' ko chala gaya' + (fail ? ' · ❌ ' + fail + ' fail' : '') + '.';
-      $('cxBcText').value = ''; $('cxBcPv').textContent = ''; upd();
+      $('cxBcText').value = ''; pv(); upd();
       try{ if(typeof chatLoadMembers === 'function') chatLoadMembers(); }catch(e){}
     });
   }
@@ -33481,4 +33557,76 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       openProfile(chatPeer.name);
     }catch(err){}
   }, true);
+})();
+
+// ============================================================================
+// 🚫 ADMIN: chat list ki long-press menu (Pin / Archive wali) me exception buttons
+//  - "Broadcast exception" aur "Auto welcome exception" toggle (same list jo 📢/👋 panel aur profile me hai)
+//  - Chat list me exception wale users ke naam ke aage 🚫📢 / 🚫👋 nishaan
+// ============================================================================
+(function adminExceptionInChatMenu(){
+  if(window.__cxExMenu) return; window.__cxExMenu = 1;
+  let cache = null, cacheAt = 0;
+  const isAdm = ()=>{ try{ return typeof isMeAdmin === 'function' && isMeAdmin(); }catch(e){ return false; } };
+  async function cfg(force){
+    if(!force && cache && Date.now() - cacheAt < 6000) return cache;
+    try{ cache = await window.__cxBcApi.loadCfg(); cacheAt = Date.now(); }catch(e){ cache = cache || {}; }
+    return cache;
+  }
+  const has = (arr, k)=> Array.isArray(arr) && arr.includes(k);
+
+  async function toggle(field, name){
+    const k = chatSeenKey(name);
+    const c = await window.__cxBcApi.loadCfg();
+    const set = new Set(Array.isArray(c[field]) ? c[field] : []);
+    if(set.has(k)) set.delete(k); else set.add(k);
+    c[field] = Array.from(set);
+    const ok = await window.__cxBcApi.saveCfg(c);
+    cache = c; cacheAt = Date.now();
+    const on = set.has(k);
+    const label = field === 'except' ? 'Broadcast' : 'Auto welcome';
+    try{ chatToastMsg((on ? '🚫 ' + name + ' ko ' + label + ' nahi jayega' : '✅ ' + name + ' ko ' + label + ' jayega') + (ok ? '' : ' (⚠ sirf is phone me save hua)')); }catch(e){}
+    mark();
+  }
+
+  // ---- long-press menu me buttons jodo ----
+  async function decorateMenu(w){
+    if(!isAdm() || w.__cxExDone) return;
+    const p = w.querySelector('p'); const name = p && p.textContent.trim(); if(!name) return;
+    w.__cxExDone = true;
+    const c = await cfg(true), k = chatSeenKey(name);
+    const box = w.querySelector('div'); if(!box) return;
+    const mk = (field, onTxt, offTxt)=>{
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-ex', field);
+      b.textContent = has(c[field], k) ? onTxt : offTxt;
+      b.addEventListener('click', ()=>{ toggle(field, name); });
+      box.appendChild(b);
+    };
+    mk('except',   '✅ Broadcast exception se hatao',  '🚫 Broadcast exception me daalo');
+    mk('welExcept','✅ Welcome exception se hatao',    '🚫 Auto welcome se bahar rakho');
+  }
+  try{
+    new MutationObserver((muts)=>{
+      for(const m of muts) m.addedNodes && m.addedNodes.forEach(n=>{ if(n && n.id === 'cxP19menu') decorateMenu(n); });
+    }).observe(document.body, { childList:true });
+  }catch(e){}
+
+  // ---- chat list me nishaan ----
+  async function mark(){
+    try{
+      if(!isAdm()) return;
+      const list = document.getElementById('chatList'); if(!list) return;
+      const c = await cfg();
+      list.querySelectorAll('.chatRow[data-name]').forEach(r=>{
+        const nm = r.querySelector('.chatRowName'); if(!nm) return;
+        const k = chatSeenKey(r.getAttribute('data-name'));
+        let t = (has(c.except, k) ? '🚫📢' : '') + (has(c.welExcept, k) ? '🚫👋' : '');
+        let m = nm.querySelector('.cxExMark');
+        if(!t){ if(m) m.remove(); return; }
+        if(!m){ m = document.createElement('span'); m.className = 'cxExMark'; m.style.cssText = 'font-size:12px;margin-left:6px;opacity:.9'; nm.appendChild(m); }
+        if(m.textContent !== t) m.textContent = t;
+      });
+    }catch(e){}
+  }
+  setInterval(mark, 1500);
 })();
