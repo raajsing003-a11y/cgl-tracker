@@ -19229,7 +19229,7 @@ function fireTargetReminder(slot, msg){
 // Runs once right when the app is opened — if a slot (12 PM or 6 PM) is
 // currently due and we haven't already reminded for it today, pop it
 // immediately instead of waiting for the scheduled clock-time below.
-function checkTargetReminderOnAppOpen(){
+function checkTargetReminderOnAppOpen(){ return; /* auto popup band (user request) */
   const due = targetReminderDueMessage();
   if(!due) return;
   fireTargetReminder(due.slot, due.msg);
@@ -19238,7 +19238,7 @@ function checkTargetReminderOnAppOpen(){
 // per slot (12 PM, then 6 PM) per day, the moment each slot's time passes
 // and the target is still incomplete. Also acts as a fallback catch-up
 // for a slot that was still on-target at app-open time but slipped later.
-function checkTargetReminder(){
+function checkTargetReminder(){ return; /* auto popup band (user request) */
   const due = targetReminderDueMessage();
   if(!due) return;
   fireTargetReminder(due.slot, due.msg);
@@ -19555,7 +19555,7 @@ function strictManagerDue(){
 // Shared by both the on-open check and the once-a-minute ticker below.
 // Marks "fired" BEFORE the (async) analysis finishes, so two overlapping
 // checks can never both pop the modal for the same day.
-async function fireStrictManagerPopupIfDue(){
+async function fireStrictManagerPopupIfDue(){ return; /* auto popup band (user request) */
   if(!strictManagerDue()) return;
   setStrictManagerLastFiredDate(fmtISODate(new Date()));
   await openStrictManagerModal(false);
@@ -19582,7 +19582,7 @@ function hideHelpModal(){
   if(modal) modal.style.display = 'none';
   try{ localStorage.setItem('cgl50-help-seen', '1'); }catch(e){}
 }
-function maybeShowHelpModalOnce(){
+function maybeShowHelpModalOnce(){ return; /* auto popup band (user request) */
   try{
     if(localStorage.getItem('cgl50-help-seen') === '1') return;
   }catch(e){}

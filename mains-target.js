@@ -116,6 +116,7 @@ function renderPage(){
 /* ---- Today panel mirror ---- */
 function renderToday(){
   try{
+    var pn0=document.getElementById('panel'); if(pn0) pn0.classList.remove('mtOnly');
     if(!ready()) return;
     if(typeof viewingName!=='undefined' && typeof myName!=='undefined' && viewingName!==myName) return;
     var panel=document.getElementById('panel'); if(!panel) return;
@@ -123,8 +124,8 @@ function renderToday(){
     var d=firstPending(), p=planOf(d), pr=dayProgress(d), c=phCol(p.phase);
     var box=document.createElement('div'); box.id='mtTodayPanel'; box.className='mtCard mtToday'; box.style.setProperty('--c',c);
     box.innerHTML='<div class="mtCardH" data-mt-toggle="1"><div><div class="mtDayT">🎯 Mains Target — Day '+d+'</div><div class="mtDayS">'+esc(p.phase)+' · '+(p.kind==='mock'?'Full Mock day':'Sectional day')+'</div></div><div class="mtRingS">'+ringSVG(pr.pct,56,c)+'<span>'+pr.done+'/'+pr.total+'</span></div></div>'+
-      '<div class="mtBody'+(window.__mtTodayOpen===false?' hide':'')+'">'+controlsHTML(d,true)+'<button type="button" class="mtOpenBtn" data-mt-open="'+d+'">Poora Mains Target kholo ›</button></div>';
-    panel.insertBefore(box,panel.firstChild);
+      earnLine()+'<div class="mtBody'+(window.__mtTodayOpen===false?' hide':'')+'">'+controlsHTML(d,true)+'<button type="button" class="mtOpenBtn" data-mt-open="'+d+'">Poora Mains Target kholo ›</button>'+onlyBtn()+'</div>';
+    panel.insertBefore(box,panel.firstChild); panel.classList.toggle('mtOnly',mainsOn());
   }catch(e){ console.warn('mainsTarget today',e); }
 }
 
@@ -244,7 +245,7 @@ function inject(){
   var wrap=document.createElement('div'); wrap.className='calcGrid calcGrid-1col'; wrap.style.marginBottom='10px';
   wrap.innerHTML='<button type="button" class="calcCard calcCard-prem pm-mains pmBig" id="calcMainsTargetBtn"><span class="calcIcon">🎯</span><span class="calcLabelCol"><span class="calcLabel">Mains Target</span><span class="calcSub">50-Day plan · Daily tick &amp; fill · Score tab auto-sync</span></span><span class="calcArrow">&#8250;</span></button>';
   menu.insertBefore(wrap,menu.firstChild);
-  document.getElementById('calcMainsTargetBtn').addEventListener('click',function(){ selDay=firstPending(); showCalcPage('mainstarget'); renderPage(); try{ window.scrollTo(0,0); var pgx=document.getElementById('calcPage-mainstarget'); if(pgx) pgx.scrollTop=0; }catch(e){} });
+  document.getElementById('calcMainsTargetBtn').addEventListener('click',function(){ if(state.mainsOnly===undefined){ state.mainsOnly=true; try{ save(); }catch(e){} renderToday(); } selDay=firstPending(); showCalcPage('mainstarget'); renderPage(); try{ window.scrollTo(0,0); var pgx=document.getElementById('calcPage-mainstarget'); if(pgx) pgx.scrollTop=0; }catch(e){} });
 
   var pg=document.createElement('div'); pg.className='calcPage'; pg.id='calcPage-mainstarget';
   pg.innerHTML='<div class="calcSubHead"><button class="calcBackBtn" id="mtBackBtn" aria-label="Back">&#8249;</button><div class="calcSubTitle">🎯 Mains Target — 50 Days</div></div><div id="mtBody"></div>';
@@ -259,6 +260,7 @@ function hookPanel(){
     var orig=renderPanel; var w=function(){ var r=orig.apply(this,arguments); renderToday(); return r; }; w.__mt=1;
     try{ renderPanel=w; }catch(e){ window.renderPanel=w; }
   }
+  hookMoney();
   renderToday();
 }
 /* ---- UI v3: mission card, weekly summary, next-unlock, glass/shimmer polish ---- */
@@ -354,7 +356,7 @@ document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&
  var s=document.createElement('style'); s.id='mtCSS4'; s.textContent=css; document.head.appendChild(s); })();
 
 /* ---- v5: Day 1 se start, target card sabse upar ---- */
-function firstPending(){ for(var d=1; d<=PLAN.length; d++){ if(dayProgress(d).pct<100) return d; } return PLAN.length; }
+function firstPending(){ for(var d=1; d<=PLAN.length; d++){ if(dayProgress(d).pct<30) return d; } return PLAN.length; }
 var _rp5=renderPage;
 renderPage=function(){ _rp5(); var pg=document.getElementById('mtBody'); if(!pg) return;
   try{ var card=pg.querySelector('.mtCard'); if(card&&pg.firstChild!==card) pg.insertBefore(card,pg.firstChild); }catch(e){ console.warn('mt v5',e); } };
@@ -426,6 +428,38 @@ function isTypeEl(t){ return !!(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA')
 renderPage=function(){ if(BUSY){ PEND=true; return; } PEND=false; _rp8(); };
 document.addEventListener('focusin',function(e){ if(isTypeEl(e.target)) BUSY=true; });
 document.addEventListener('focusout',function(e){ if(!isTypeEl(e.target)) return; setTimeout(function(){ if(!isTypeEl(document.activeElement)){ BUSY=false; if(PEND) renderPage(); } },0); });
+
+/* ---- v9: Today tab = sirf Mains, 30% rule, Mains se paise ---- */
+function mainsOn(){ return !!(state&&state.mainsOnly===true); }
+function DAILY(){ return (typeof DAILY_TARGET!=='undefined')?DAILY_TARGET:5000; }
+function onlyBtn(){ return '<button type="button" class="mtOnlyBtn" data-mt-only="toggle">'+(mainsOn()?'🔁 App ke normal tasks bhi dikhao':'🎯 Sirf Mains Target dikhao')+'</button>'; }
+function earnLine(){ try{ var dn=todayDayNum(), e=dayEarnLoss(getDay(dn),dn).earned; return '<div class="mtEarn">💰 Aaj ki kamai: <b>₹'+Math.round(e).toLocaleString('en-IN')+'</b>'+(mainsOn()?' · Mains ke kaam se':'')+'</div>'; }catch(x){ return ''; } }
+function syncEarn(d){
+  var p=planOf(d), r=rec(d), it=items(p), N=it.length; if(!state.mainsEarn) state.mainsEarn={};
+  it.forEach(function(x){ var id='mt_d'+d+'_'+x.k, on=isTicked(r,x.k), cur=state.mainsEarn[id], dd, i;
+    if(on&&!cur){ var ad=todayDayNum(); dd=getDay(ad); if(!Array.isArray(dd.quizLog)) dd.quizLog=[];
+      dd.quizLog.push({label:'🎯 Mains D'+d+' · '+x.t,correct:1,total:1,ts:Date.now(),mt:1,id:id,n:N}); state.mainsEarn[id]=ad; }
+    else if(!on&&cur){ dd=getDay(cur); i=(dd.quizLog||[]).findIndex(function(q){ return q&&q.id===id; }); if(i>=0) dd.quizLog.splice(i,1); delete state.mainsEarn[id]; } }); }
+function mtVals(st,d,len,orig){
+  if(!(st&&st.mainsOnly===true)) return orig();
+  var ql=(d&&d.quizLog)||[], v=[], i, base=6, sum=0; for(i=0;i<len;i++) v.push(0);
+  ql.forEach(function(q){ if(q&&q.mt&&q.n) base=Math.max(base,q.n); });
+  ql.forEach(function(q){ var x=DAILY()/((q&&q.mt&&q.n)?q.n:base); v.push(x); sum+=x; });
+  if(sum>DAILY()){ var f=DAILY()/sum; for(i=len;i<v.length;i++) v[i]=v[i]*f; }
+  for(i=len;i<v.length;i++) v[i]=Math.round(v[i]); return v; }
+function hookMoney(){
+  try{ if(typeof dayTaskValues==='function' && !dayTaskValues.__mt){ var o1=dayTaskValues; var w1=function(d){ return mtVals(state,d,TASKS.length,function(){ return o1(d); }); }; w1.__mt=1; try{ dayTaskValues=w1; }catch(e){ window.dayTaskValues=w1; } }
+    if(typeof dayTaskValuesFrom==='function' && !dayTaskValuesFrom.__mt){ var o2=dayTaskValuesFrom; var w2=function(st,d){ return mtVals(st,d,getTaskDefsFromState(st).length,function(){ return o2(st,d); }); }; w2.__mt=1; try{ dayTaskValuesFrom=w2; }catch(e){ window.dayTaskValuesFrom=w2; } }
+  }catch(e){ console.warn('mt money',e); } }
+var _commit9=commit;
+commit=function(d,sc){ try{ syncEarn(d); }catch(e){ console.warn('mt earn',e); } _commit9(d,sc); };
+var _rp9=renderPage;
+renderPage=function(){ _rp9(); var pg=document.getElementById('mtBody'); if(!pg) return;
+  try{ var b=document.createElement('div'); b.className='mtOnlyRow'; b.innerHTML='<button type="button" class="mtOnlyBtn on'+(mainsOn()?'':' off')+'" data-mt-only="toggle">'+(mainsOn()?'✅ Today tab mein sirf Mains Target · paise Mains se':'⬜ Today tab mein sirf Mains Target (OFF)')+'</button>'; pg.appendChild(b); }catch(e){} };
+document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-mt-only]'); if(!t) return; state.mainsOnly=!mainsOn(); try{ save(); }catch(x){} try{ if(typeof renderPanel==='function') renderPanel(); }catch(x){} renderToday(); renderPage(); });
+(function(){ var css='#panel.mtOnly>:not(#mtTodayPanel){display:none!important}.mtEarn{margin:0 0 8px;padding:8px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,.18),rgba(250,204,21,.14));border:1px solid rgba(52,211,153,.45);font-size:13px;color:var(--text)}.mtEarn b{color:#34d399;font-size:15px}'+
+ '.mtOnlyBtn{width:100%;margin-top:8px;border:1px dashed var(--border);background:rgba(255,255,255,.04);color:var(--muted);border-radius:12px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer}.mtOnlyRow{margin-bottom:14px}.mtOnlyBtn.on{border-color:#34d399;color:#6ee7b7;background:rgba(52,211,153,.1)}.mtOnlyBtn.off{border-color:var(--border);color:var(--muted);background:rgba(255,255,255,.04)}';
+ var st=document.createElement('style'); st.id='mtCSS9'; st.textContent=css; document.head.appendChild(st); })();
 var tries=0;
 (function boot(){
   if(!ready()){ if(++tries<200) return setTimeout(boot,150); return; }
