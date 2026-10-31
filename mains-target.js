@@ -34,12 +34,13 @@ function items(p){
   a.push({k:'edit',ic:'📰',t:'2 Editorial',s:''});
   a.push({k:'weekly',ic:'🔤',t:p.weekly,s:'English weekly'});
   a.push({k:'grammar',ic:'✍️',t:'Grammar: '+p.grammar,s:''});
-  a.push({k:'rcz',ic:'📖',t:'RC · Cloze · PQRS',s:'RC 1 · Cloze 1 · PQRS 5'});
+  a.push({k:'rcz',ic:'📖',t:'RC · Cloze · PQRS — PYQ Reading Set '+pyqNo(p.d),s:'Cloze + RC + PQRS ek hi set mein · 98 sets mein se'});
   a.push({k:'errnb',ic:'📓',t:'Error Notebook',s:'2 pages'});
   if(p.ct){ a.push({k:'comp',ic:'💻',t:'Computer',s:'20 min'}); a.push({k:'typing',ic:'⌨️',t:'Typing',s:'20 min'}); }
   return a;
 }
 /* daily tick keys (maths alag: r.maths.done) — member view / progress copies ke liye */
+function pyqNo(d){ return String(d).padStart(3,'0'); }
 var TICK_KEYS=['mockT','analysis','formula','calc','gk','vocab','idioms','spell','edit','weekly','grammar','rcz','errnb','comp','typing'];
 function tickView(r,m){ var o={maths:m||r.maths||{}}; TICK_KEYS.forEach(function(k){ o[k]=r[k]; }); return o; }
 function isTicked(r,k){ return k==='maths' ? !!r.maths.done : !!r[k]; }
@@ -81,6 +82,9 @@ function grpMeta(g,p){ return {maths:['📐','MATHS'],test:[p.kind==='mock'?'�
 function rowHTML(x,d,p,r,AM){
   var on=isTicked(r,x.k), h='';
   h+='<div class="mtRow'+(on?' on':'')+'" data-mt-tick="'+x.k+'" data-d="'+d+'"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.s?'<i>'+esc(x.s)+'</i>':'')+'</span><span class="mtRs">'+rs(AM[x.k]||0)+'</span></div>';
+  if(x.k==='rcz'){
+    h+='<div class="mtQBtns"><button type="button" class="full" data-mt-pyq="'+d+'">📖 PYQ Set '+pyqNo(d)+' kholo</button></div>';
+  }
   if(x.k==='calc'){
     h+='<div class="mtQBtns"><button type="button" class="full" data-mt-calc="'+d+'">⚡ Calculation Test kholo (Lite)</button></div>';
   }
@@ -607,6 +611,20 @@ var tries=0;
   /* data cloud/local se baad me load ho to dubara draw */
   var n=0, iv=setInterval(function(){ renderToday(); if(++n>12) clearInterval(iv); },1500);
 })();
+/* ---- Daily RC/Cloze/PQRS: PYQ Reading (98 Sets) ka aaj ka set seedha kholo (Day N = Set N) ---- */
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('[data-mt-pyq]'); if(!b) return;
+  e.stopPropagation(); e.preventDefault();
+  var n=+b.getAttribute('data-mt-pyq')||1, lab='PYQ Reading — 98 Sets';
+  (async function(){
+    try{
+      await openSPSubject('rd98',lab,true);
+      var list=(typeof spCurrentEntries!=='undefined'&&spCurrentEntries)||[];
+      var en=list.filter(function(x){ return +x.n===n; })[0]||list[n-1];
+      if(en) await openSPMock('rd98',en.file,lab,en);
+    }catch(x){ console.warn('mt pyq open',x); }
+  })();
+},true);
 /* ---- Daily Calculation: Mains Target se Calculation Speed Test kholo; Submit hote hi us din ka Calculation tick ---- */
 var MT_CALC_DAY=0;
 document.addEventListener('click',function(e){
