@@ -1576,6 +1576,26 @@ let scoreTimer = null;
 let mistakesTimer = null;
 let myName = null;       // this device's chosen player name
 let viewingName = null;  // whose tracker is currently on screen (me or a friend)
+let lbSortJoin = false; try{ lbSortJoin = localStorage.getItem('cgl-lb-sortjoin')==='1'; }catch(e){}
+function fmtUse(sec){ const m=Math.round((sec||0)/60); return m<60 ? m+'m' : Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'; }
+function lbDayKey(t){ const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+async function loadUsageForLB(){
+  const room=getRoomCode(); const out={}; if(!room) return out;
+  let raw=null; try{ await waitForFirebase(); raw=await window.__fbGet(`rooms/${room}/usage`); }catch(e){}
+  if(raw && typeof raw==='object'){ Object.keys(raw).forEach(k=>{ try{ const o=typeof raw[k]==='string'?JSON.parse(raw[k]):raw[k]; if(o&&typeof o==='object') out[k]=o; }catch(e){} }); }
+  // apna data: local copy zyada fresh ho sakti hai
+  try{ const mk=presenceKey(myName); const loc=JSON.parse(localStorage.getItem('cgl-usage-'+room+'-'+mk)||'null'); if(loc && (!out[mk] || (loc.t||0)>=(out[mk].t||0))) out[mk]=loc; }catch(e){}
+  return out;
+}
+function usageSecFor(u, mode){
+  if(!u) return 0;
+  if(mode==='all') return u.t||0;
+  const d=u.d||{}; const now=new Date();
+  if(mode==='today') return d[lbDayKey(now)]||0;
+  const dow=(now.getDay()+6)%7; let sum=0;
+  for(let i=0;i<=dow;i++){ sum += d[lbDayKey(now.getTime()-i*86400000)]||0; }
+  return sum;
+}
 let leaderboardMode = 'today'; // 'today' = just today (default), 'week' = current Mon-Sun week so far, 'all' = all-time
 const REGISTRY_KEY = 'cgl50-players-registry';
 // ===== "Today Rank" 24-hour auto-refresh =====
@@ -3671,10 +3691,14 @@ async function renderCompetePanel(){
   // per tick, which is a big chunk of blocked/janky time every 25s.
   const todayIdx = todayDayNum();
   const weekRange = thisWeekDayRange();
+  const usageAll = await loadUsageForLB();
   const rows = await Promise.all(names.map(async (nm)=>{
     const st = await loadPlayerState(nm);
+    const uu = usageAll[presenceKey(nm)];
     return {
       name: nm,
+      useAll: usageSecFor(uu,'all'), useToday: usageSecFor(uu,'today'), useWeek: usageSecFor(uu,'week'), useSec: usageSecFor(uu,'all'),
+      joinIdx: (()=>{ const i=roomNames.findIndex(x=>x.toLowerCase()===nm.toLowerCase()); return i<0 ? 99999 : i; })(),
       ...computeStatsFrom(st),
       todayStats: computeRangeStatsFrom(st, todayIdx, todayIdx),
       weekStats: computeRangeStatsFrom(st, weekRange.from, weekRange.to),
@@ -3688,7 +3712,7 @@ async function renderCompetePanel(){
   // order: days fully completed, money earned, then streak — so someone
   // who's actually doing tasks and earning outranks someone who isn't,
   // instead of the leaderboard looking frozen until pct itself moves.
-  rows.sort((a,b)=> b.pct-a.pct || b.daysDone-a.daysDone || b.earned-a.earned || b.streak-a.streak);
+  rows.sort((a,b)=> b.useAll-a.useAll || b.pct-a.pct || b.daysDone-a.daysDone || b.earned-a.earned || b.streak-a.streak);
 
   // Notify when a live room-member's progress moved forward since the last
   // check.
@@ -3714,11 +3738,13 @@ async function renderCompetePanel(){
   // pre-computed range stats and re-sort/re-rank on that — kept entirely
   // separate from `rows` above so the notification logic and the all-time
   // Home card snapshot never see anything but true all-time numbers.
-  const todayRows = rows.map(r=>({ ...r, ...r.todayStats })).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
-  const weekRows = rows.map(r=>({ ...r, ...r.weekStats })).sort((a,b)=> b.pct-a.pct || b.earned-a.earned);
+  const todayRows = rows.map(r=>({ ...r, ...r.todayStats, useSec:r.useToday })).sort((a,b)=> b.useSec-a.useSec || b.pct-a.pct || b.earned-a.earned);
+  const weekRows = rows.map(r=>({ ...r, ...r.weekStats, useSec:r.useWeek })).sort((a,b)=> b.useSec-a.useSec || b.pct-a.pct || b.earned-a.earned);
   const displayRows = leaderboardMode==='today' ? todayRows : leaderboardMode==='week' ? weekRows : rows;
   const displayMyRowIdx = displayRows.findIndex(r=>r.name.toLowerCase()===myName.toLowerCase());
   const displayMyPct = displayMyRowIdx>=0 ? displayRows[displayMyRowIdx].pct : 0;
+  const displayMyUse = displayMyRowIdx>=0 ? (displayRows[displayMyRowIdx].useSec||0) : 0;
+  const maxUse = Math.max(1, ...displayRows.map(r=>r.useSec||0));
   const displayMyRank = displayMyRowIdx>=0 ? displayMyRowIdx+1 : null;
 
   // Pinning is purely a local display reorder — it never touches `rows`/
@@ -3728,10 +3754,14 @@ async function renderCompetePanel(){
   // keeping unpinned rows in their original relative order.
   const pinnedList = loadPinnedList();
   const rankedDisplayRows = displayRows.map((r,i)=>({ ...r, _trueRank:i+1, _pinned:isPinned(r.name, pinnedList) }));
-  const orderedDisplayRows = [
+  let orderedDisplayRows = [
     ...rankedDisplayRows.filter(r=>r._pinned),
     ...rankedDisplayRows.filter(r=>!r._pinned)
   ];
+  if(lbSortJoin){
+    orderedDisplayRows = [...rankedDisplayRows].sort((a,b)=> a.joinIdx-b.joinIdx);
+    orderedDisplayRows.forEach((r,i)=>{ r._joinNo = i+1; });
+  }
 
   let html = '';
   html += `<div class="lbModeToggle">
@@ -3739,6 +3769,9 @@ async function renderCompetePanel(){
     <button class="lbModeBtn ${leaderboardMode==='week'?'active':''}" type="button" data-lbmode="week">🗓️ This Week</button>
     <button class="lbModeBtn ${leaderboardMode==='all'?'active':''}" type="button" data-lbmode="all">🏆 All-Time</button>
   </div>`;
+  html += `<div style="margin:0 0 10px;"><button class="nav-btn" type="button" id="lbSortBtn" style="font-size:14px;padding:8px 12px;${lbSortJoin?'outline:2px solid var(--accent);':''}">${lbSortJoin?'🏅 Rank se dikhao':'🕒 Joining order se dikhao'}</button></div>`;
+  html += `<div class="lbWeekHint">📱 Rank app use hone ke <b>time</b> ke hisaab se hai (jisne app zyada use kiya woh upar).</div>`;
+  if(lbSortJoin) html += `<div class="lbWeekHint">🕒 Joining order: jo room mein sabse pehle juda woh sabse upar.</div>`;
   if(leaderboardMode==='today'){
     html += `<div class="lbWeekHint">📅 Aaj (${new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})}) ka scoreboard — roz raat 12 baje khud-ba-khud fresh ho jata hai.</div>`;
   } else if(leaderboardMode==='week'){
@@ -3748,7 +3781,7 @@ async function renderCompetePanel(){
   if(displayRows.length>1 && displayMyRank){
     const rankMsg = displayMyRank===1
       ? `🏆 Tum <b>#1</b> par ho, ${displayRows.length-1} dost${displayRows.length-1>1?'o':''} se aage! Lead banaye rakho 🔥`
-      : `📍 Tumhari Rank: <b>#${displayMyRank}</b> / ${displayRows.length} — leader se <b>${displayRows[0].pct - displayMyPct}%</b> peeche ho`;
+      : `📍 Tumhari Rank: <b>#${displayMyRank}</b> / ${displayRows.length} — leader se <b>${fmtUse((displayRows[0].useSec||0) - displayMyUse)}</b> peeche ho (📱 ${fmtUse(displayMyUse)})`;
     html += `<div class="lbsummary">${rankMsg}</div>`;
   }
 
@@ -3756,8 +3789,8 @@ async function renderCompetePanel(){
     const rank = r._trueRank;
     const isMe = r.name.toLowerCase()===myName.toLowerCase();
     const isViewing = r.name.toLowerCase()===viewingName.toLowerCase();
-    const rankTier = rank===1?'lead':rank===2?'silver':rank===3?'bronze':'';
-    const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+    const rankTier = lbSortJoin ? '' : (rank===1?'lead':rank===2?'silver':rank===3?'bronze':'');
+    const medal = lbSortJoin ? `🕒${r._joinNo}` : (rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`);
     const avatarColors=['av-blue','av-purple','av-pink','av-orange','av-teal','av-gain'];
     const avatarColor = avatarColors[Math.abs([...r.name.toLowerCase()].reduce((a,c)=>a+c.charCodeAt(0),0)) % avatarColors.length];
     const avatarHtml = `<span class="lbavatar ${avatarColor}">${escapeHtml((r.name||'?').trim().charAt(0).toUpperCase())}</span>`;
@@ -3767,9 +3800,9 @@ async function renderCompetePanel(){
     const pinBtn = `<button class="lbpin ${r._pinned?'active':''}" type="button" data-pin="${escapeHtml(r.name)}" title="${r._pinned?'Unpin karo':'Top pe pin karo'}">${r._pinned?'📌':'📍'}</button>`;
     let deltaHtml = '';
     if(!isMe && displayRows.length>1){
-      const delta = r.pct - displayMyPct;
-      if(delta>0) deltaHtml = `<span class="lbdelta up">🔺${delta}% aage tumse</span>`;
-      else if(delta<0) deltaHtml = `<span class="lbdelta down">🔻${Math.abs(delta)}% peeche tumse</span>`;
+      const delta = (r.useSec||0) - displayMyUse;
+      if(delta>=60) deltaHtml = `<span class="lbdelta up">🔺${fmtUse(delta)} aage tumse</span>`;
+      else if(delta<=-60) deltaHtml = `<span class="lbdelta down">🔻${fmtUse(-delta)} peeche tumse</span>`;
       else deltaHtml = `<span class="lbdelta even">🤝 barabar tumse</span>`;
     }
     const dotHtml = isMe ? '🟢' : presenceLabel(r.name).dot;
@@ -3785,8 +3818,8 @@ async function renderCompetePanel(){
             <div class="lbname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}</div>
             ${deltaHtml}
           </div>
-          <div class="lbbar"><div class="lbbarfill" style="width:${r.pct}%;"></div></div>
-          <div class="lbstats"><span>⭐Lvl ${r.level}</span><span>🔥${r.streak} streak</span><span>📈${r.pct}%</span>${daysStat}<span><span class="icoClock" aria-hidden="true"></span>${fmtHours(r.studyMins)}</span><span class="lbgain">💰+₹${Math.round(r.earned).toLocaleString('en-IN')}</span>${r.lost>0?`<span class="lbloss">📉-₹${Math.round(r.lost).toLocaleString('en-IN')}</span>`:''}</div>
+          <div class="lbbar"><div class="lbbarfill" style="width:${Math.round(((r.useSec||0)/maxUse)*100)}%;"></div></div>
+          <div class="lbstats"><span>📱${fmtUse(r.useSec)}</span>${lbSortJoin?`<span>🏅Rank #${rank}</span>`:''}<span>⭐Lvl ${r.level}</span><span>🔥${r.streak} streak</span><span>📈${r.pct}%</span>${daysStat}<span><span class="icoClock" aria-hidden="true"></span>${fmtHours(r.studyMins)}</span><span class="lbgain">💰+₹${Math.round(r.earned).toLocaleString('en-IN')}</span>${r.lost>0?`<span class="lbloss">📉-₹${Math.round(r.lost).toLocaleString('en-IN')}</span>`:''}</div>
         </div>
         ${pinBtn}${actionBtn}
       </div>`;
@@ -3809,6 +3842,12 @@ async function renderCompetePanel(){
       leaderboardMode = mode;
       renderCompetePanel();
     });
+  });
+  const sortBtn = document.getElementById('lbSortBtn');
+  if(sortBtn) sortBtn.addEventListener('click', ()=>{
+    lbSortJoin = !lbSortJoin;
+    try{ localStorage.setItem('cgl-lb-sortjoin', lbSortJoin?'1':'0'); }catch(e){}
+    renderCompetePanel();
   });
   el.querySelectorAll('.lbview').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
@@ -3871,7 +3910,7 @@ function renderHomeLeaderboardCard(rows, myRank, myPct){
         <div class="homeLBrank">${medal}</div>
         ${avatarHtml}
         <div class="homeLBname">${dotHtml} ${escapeHtml(r.name)}${isMe?' (You)':''}</div>
-        <div class="homeLBmeta"><span>⭐Lv${r.level}</span><span>🔥${r.streak}</span><span>📈${r.pct}%</span></div>
+        <div class="homeLBmeta"><span>⭐Lv${r.level}</span><span>🔥${r.streak}</span><span>📱${fmtUse(r.useAll)}</span></div>
         ${viewBtn}
       </div>`;
   }).join('');
