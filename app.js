@@ -32985,3 +32985,416 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     renderAdminPanelBody = async function(){ const r = await origRender.apply(this, arguments); try{ mountCard(); }catch(e){} return r; };
   }
 })();
+
+// ============================================================================
+// ✏️ Floating pencil button — HAMESHA BAND (admin ko bhi nahi dikhega)
+// Koi bhi fixed/floating gol button jiska sirf pencil icon ho, use turant hata deta hai.
+// Chat ke andar ke pencil (Edit message etc.) fixed nahi hote, isliye unko kuch nahi hota.
+// ============================================================================
+(function killFloatingPencil(){
+  const isPencilText = (t)=>{ t = (t||'').replace(/[\uFE0F\s]/g,''); return t === '\u270F' || t === '\u270E' || t === '\u{1F58A}' || t === '\u{1F58B}'; };
+  function sweep(){
+    try{
+      const f = document.getElementById('scratchFab'); if(f) f.remove();
+      document.querySelectorAll('button,div,a,span').forEach(el=>{
+        if(el.__pencilChecked && el.__pencilGone) return;
+        const onlyIcon = el.querySelector && el.querySelector('.icoEdit') && !(el.textContent||'').trim();
+        if(!(isPencilText(el.textContent) || onlyIcon)) return;
+        if(el.children.length > 1) return;
+        const cs = getComputedStyle(el);
+        let n = el, fixed = false;
+        for(let i=0; n && n!==document.body && i<3; i++, n = n.parentElement){
+          if(getComputedStyle(n).position === 'fixed'){ fixed = true; el = n; break; }
+        }
+        if(!fixed) return;
+        const r = el.getBoundingClientRect();
+        if(r.width < 24 || r.width > 90) return;
+        el.__pencilGone = true; el.__pencilChecked = true;
+        el.style.setProperty('display','none','important');
+        el.style.setProperty('pointer-events','none','important');
+      });
+    }catch(e){}
+  }
+  let t = 0;
+  const later = ()=>{ clearTimeout(t); t = setTimeout(sweep, 250); };
+  try{ new MutationObserver(later).observe(document.documentElement, { childList:true, subtree:true }); }catch(e){}
+  setInterval(sweep, 2000);
+  window.addEventListener('load', ()=>{ sweep(); setTimeout(sweep, 1500); });
+  sweep();
+})();
+
+// ============================================================================
+// 👑 Chat list: Admin ka account HAMESHA sabse upar pinned (Saved Messages ke theek neeche)
+// User usse seedha msg kar sake. Admin ko archive nahi kiya ja sakta, aur dusre pins uske upar nahi aate.
+// ============================================================================
+(function pinAdminInChat(){
+  if(window.__pinAdminChat) return; window.__pinAdminChat = 1;
+  function fix(){
+    try{
+      const list = document.getElementById('chatList'); if(!list) return;
+      const adm = (typeof currentRoomAdmin !== 'undefined' && currentRoomAdmin) ? String(currentRoomAdmin).toLowerCase() : '';
+      if(!adm || (myName && adm === myName.toLowerCase())) return;
+      const q = ((document.getElementById('chatSearch') || {}).value || '').trim();
+      const row = Array.from(list.querySelectorAll('.chatRow[data-name]')).find(r=> (r.getAttribute('data-name')||'').toLowerCase() === adm);
+      if(!row) return;
+      row.style.display = '';
+      const nm = row.querySelector('.chatRowName');
+      if(nm && !nm.querySelector('.cxAdmMark')){ const m = document.createElement('span'); m.className = 'cxAdmMark'; m.textContent = ' 👑📌'; m.style.cssText = 'font-size:12px;margin-left:6px'; nm.appendChild(m); }
+      if(q) return;   // search chal raha ho to order mat chhedo
+      const saved = list.querySelector('.cxxSaved');
+      const target = saved ? saved.nextElementSibling : list.firstElementChild;
+      if(target !== row){ list.insertBefore(row, target); }
+    }catch(e){}
+  }
+  let t = 0;
+  const later = ()=>{ clearTimeout(t); t = setTimeout(fix, 60); };
+  let obs = null;
+  function attach(){
+    const list = document.getElementById('chatList'); if(!list || list.__admObs) return;
+    list.__admObs = true;
+    try{ obs = new MutationObserver(later); obs.observe(list, { childList:true }); }catch(e){}
+    fix();
+  }
+  setInterval(()=>{ attach(); fix(); }, 800);
+  document.addEventListener('input', (e)=>{ if(e.target && e.target.id === 'chatSearch') later(); }, true);
+})();
+
+// ============================================================================
+// 📢 ADMIN BROADCAST + 👋 AUTO WELCOME (chat)
+//  - Admin ke chat inbox header me 📢 button: ek hi baar me sabko msg (exceptions chhod ke).
+//  - Naya user room me aaye to Admin ki taraf se welcome msg apne aap jata hai
+//    (naye user ka device bhejta hai, isliye Admin ka app khula hona zaroori nahi).
+//  - Config: rooms/<room>/_welcomeCfg (JSON string) = { init, on, text, except:[keys] }
+//    Welcome ho chuke users: rooms/<room>/_welcomed/<key>
+//  - Admin ka app pehli baar khulte hi abhi ke SAB purane members "welcomed" mark ho jate hain
+//    (unko welcome nahi jata) — uske baad jo naya aayega usi ko jayega.
+// ============================================================================
+(function adminBroadcastAndWelcome(){
+  if(window.__cxBcWelcome) return; window.__cxBcWelcome = 1;
+  const DEFAULT_WELCOME = 'Welcome {name}! 👋 Main {admin}, is app ka admin hu. Padhai ya app mein kuch bhi doubt ho to yahin msg karo. All the best! 🎯';
+  const room = ()=>{ try{ return getRoomCode(); }catch(e){ return null; } };
+  const kOf = (n)=> chatSeenKey(n);
+  const parse = (v)=>{ try{ const o = typeof v==='string' ? JSON.parse(v) : v; return (o && typeof o==='object') ? o : null; }catch(e){ return null; } };
+  const esc = (t)=> (typeof escapeHtml==='function') ? escapeHtml(String(t)) : String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const lsCfgKey = ()=> 'cx-bc-cfg:' + room();
+
+  async function loadCfg(){
+    const r = room(); if(!r) return {};
+    let cfg = null;
+    try{ await waitForFirebase(); cfg = parse(await window.__fbGet(`rooms/${r}/_welcomeCfg`)); }catch(e){}
+    if(!cfg){ try{ cfg = parse(localStorage.getItem(lsCfgKey())); }catch(e){} }
+    return cfg || {};
+  }
+  async function saveCfg(cfg){
+    const r = room(); if(!r) return false;
+    const json = JSON.stringify(cfg);
+    try{ localStorage.setItem(lsCfgKey(), json); }catch(e){}
+    try{ await waitForFirebase(); await window.__fbSet(`rooms/${r}/_welcomeCfg`, json); return true; }catch(e){ return false; }
+  }
+
+  // ---- ek insaan ko ek msg (from -> to), chatSend jaisa hi data likhta hai ----
+  async function sendDirect(fromName, toName, text){
+    const b = chatBase();
+    const fk = kOf(fromName), tk = kOf(toName);
+    if(!fk || !tk || fk === tk) return false;
+    const pair = chatPairKey(fk, tk);
+    const id = window.__fbKey(`${b}/_chats/${pair}/m`);
+    const TS = { '.sv': 'timestamp' };
+    const preview = text.replace(/\s+/g, ' ').slice(0, 80);
+    const [ka, kb] = [fk, tk].sort();
+    const up = {};
+    up[`${b}/_chats/${pair}/meta`] = { a: ka, b: kb, an: ka === fk ? fromName : toName, bn: kb === fk ? fromName : toName };
+    up[`${b}/_chats/${pair}/m/${id}`] = { f: fk, t: text, ts: TS };
+    up[`${b}/_chats/${pair}/r/${fk}`] = TS;
+    up[`${b}/_chatIdx/${fk}/${tk}/n`] = toName;
+    up[`${b}/_chatIdx/${fk}/${tk}/l`] = preview;
+    up[`${b}/_chatIdx/${fk}/${tk}/ts`] = TS;
+    up[`${b}/_chatIdx/${fk}/${tk}/f`] = fk;
+    up[`${b}/_chatIdx/${fk}/${tk}/u`] = 0;
+    up[`${b}/_chatIdx/${tk}/${fk}/n`] = fromName;
+    up[`${b}/_chatIdx/${tk}/${fk}/l`] = preview;
+    up[`${b}/_chatIdx/${tk}/${fk}/ts`] = TS;
+    up[`${b}/_chatIdx/${tk}/${fk}/f`] = fk;
+    up[`${b}/_chatIdx/${tk}/${fk}/u`] = { '.sv': { increment: 1 } };
+    await window.__fbUpdate(up);
+    return true;
+  }
+  const fill = (tpl, name, adminName)=> String(tpl||'').replace(/\{name\}/gi, name).replace(/\{admin\}/gi, adminName || 'Admin');
+
+  // ---- Admin: pehli baar purane sab members ko "welcomed" mark karo (unko welcome nahi jayega) ----
+  async function adminInit(){
+    try{
+      if(!isMeAdmin()) return;
+      const r = room(); if(!r) return;
+      const cfg = await loadCfg();
+      if(cfg.init) return;
+      const names = await loadRoomRegistry();
+      const up = {}; const now = Date.now();
+      names.forEach(n=>{ up[`rooms/${r}/_welcomed/${kOf(n)}`] = now; });
+      up[`rooms/${r}/_welcomed/${kOf(myName)}`] = now;
+      await window.__fbUpdate(up);
+      cfg.init = now; if(cfg.on === undefined) cfg.on = true;
+      await saveCfg(cfg);
+    }catch(e){}
+  }
+
+  // ---- Naya user: apne device se Admin ki taraf se welcome bhejo (sirf ek baar) ----
+  let welcomeBusy = false;
+  async function maybeWelcomeMe(){
+    if(welcomeBusy) return;
+    try{
+      const r = room(); if(!r || !myName) return;
+      if(typeof isMeAdmin === 'function' && isMeAdmin()) return;
+      const adminName = (typeof currentRoomAdmin !== 'undefined') ? currentRoomAdmin : null;
+      if(!adminName) return;
+      welcomeBusy = true;
+      const mk = kOf(myName);
+      if(localStorage.getItem('cx-welcomed:' + r + ':' + mk) === '1') return;
+      const cfg = await loadCfg();
+      if(!cfg.init || cfg.on === false) return;
+      const names = await loadRoomRegistry();
+      if(!names.some(n=> kOf(n) === mk)) return;
+      await waitForFirebase();
+      const done = await window.__fbGet(`rooms/${r}/_welcomed/${mk}`);
+      if(done){ try{ localStorage.setItem('cx-welcomed:' + r + ':' + mk, '1'); }catch(e){} return; }
+      await window.__fbSet(`rooms/${r}/_welcomed/${mk}`, Date.now());
+      try{ localStorage.setItem('cx-welcomed:' + r + ':' + mk, '1'); }catch(e){}
+      const text = fill(cfg.text || DEFAULT_WELCOME, myName, adminName).slice(0, CHAT_MAX_LEN);
+      await sendDirect(adminName, myName, text);
+    }catch(e){ console.error('welcome failed', e); }
+    finally{ welcomeBusy = false; }
+  }
+
+  // ---- UI ----
+  function css(){
+    if(document.getElementById('cxBcCss')) return;
+    const st = document.createElement('style'); st.id = 'cxBcCss';
+    st.textContent = '#cxBcWrap{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}'
+      + '#cxBcBox{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:#17181c;color:#eceef2;border-radius:18px 18px 0 0;padding:16px 16px 22px;font-size:17px;line-height:1.45;box-sizing:border-box}'
+      + '#cxBcBox h3{margin:0 0 4px;font-size:21px}#cxBcBox .sub{opacity:.7;font-size:14px;margin-bottom:10px}'
+      + '#cxBcBox textarea{width:100%;box-sizing:border-box;min-height:110px;background:#0e0f12;color:#fff;border:1px solid #3a3d46;border-radius:12px;padding:12px;font-size:17px;font-family:inherit;resize:vertical}'
+      + '#cxBcBox .row{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid rgba(255,255,255,.07);font-size:17px}'
+      + '#cxBcBox .row input{width:22px;height:22px;flex:none}'
+      + '#cxBcBox .row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '#cxBcBox .row .tag{font-size:13px;opacity:.65}'
+      + '#cxBcBox .mini{display:flex;gap:8px;margin:10px 0}'
+      + '#cxBcBox button{font-size:16px;border-radius:12px;border:1px solid #3a3d46;background:#262932;color:#fff;padding:11px 14px;font-family:inherit}'
+      + '#cxBcBox button.go{background:linear-gradient(135deg,#22c55e,#16a34a);border:0;font-weight:800;width:100%;font-size:18px;padding:14px;margin-top:10px}'
+      + '#cxBcBox button.go:disabled{opacity:.5}'
+      + '#cxBcBox .sec{margin-top:20px;padding-top:14px;border-top:2px dashed #3a3d46}'
+      + '#cxBcBox .msg{margin-top:8px;font-size:15px;color:#fbbf24}'
+      + '#cxBcBtn{margin-left:auto}';
+    document.head.appendChild(st);
+  }
+
+  async function openPanel(){
+    css();
+    const old = document.getElementById('cxBcWrap'); if(old) old.remove();
+    const wrap = document.createElement('div'); wrap.id = 'cxBcWrap';
+    wrap.innerHTML = '<div id="cxBcBox"><h3>📢 Sabko message</h3><div class="sub">Loading…</div></div>';
+    wrap.addEventListener('click', (e)=>{ if(e.target === wrap) wrap.remove(); });
+    document.body.appendChild(wrap);
+    const box = wrap.querySelector('#cxBcBox');
+
+    const cfg = await loadCfg();
+    let names = []; try{ names = await loadRoomRegistry(); }catch(e){}
+    const me = kOf(myName);
+    const seen = new Set(); const members = [];
+    names.forEach(n=>{ const k = kOf(n); if(!n || k === me || seen.has(k)) return; seen.add(k); members.push({ name:n, key:k }); });
+    const except = new Set(Array.isArray(cfg.except) ? cfg.except : []);
+    const welcomeText = cfg.text || DEFAULT_WELCOME;
+    const welcomeOn = cfg.on !== false;
+
+    box.innerHTML = `
+      <h3>📢 Sabko message</h3>
+      <div class="sub">Neeche jin par ✔ hai unhe jayega. ❌ hatao = exception (unhe nahi jayega, yaad rahega). <b>{name}</b> likhoge to har user ka naam lag jayega.</div>
+      <textarea id="cxBcText" maxlength="1000" placeholder="Yahan message likho…"></textarea>
+      <div class="mini"><button type="button" id="cxBcAll">✔ Sab</button><button type="button" id="cxBcNone">✖ Koi nahi</button></div>
+      <div id="cxBcList">${members.length ? members.map(m=>`<label class="row"><input type="checkbox" data-k="${esc(m.key)}" ${except.has(m.key)?'':'checked'}><span class="nm">${esc(m.name)}</span><span class="tag">${except.has(m.key)?'exception':''}</span></label>`).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
+      <button type="button" class="go" id="cxBcSend">📤 Bhejo</button>
+      <div class="msg" id="cxBcMsg"></div>
+      <div class="sec">
+        <h3>👋 Welcome message (naye user ko auto)</h3>
+        <div class="sub">Jo naya user join karega use Admin ki taraf se ye msg apne aap jayega. {name} = user ka naam, {admin} = tumhara naam.</div>
+        <label class="row" style="border:0"><input type="checkbox" id="cxWelOn" ${welcomeOn?'checked':''}><span class="nm">Auto welcome ON</span></label>
+        <textarea id="cxWelText" maxlength="500">${esc(welcomeText)}</textarea>
+        <button type="button" class="go" id="cxWelSave" style="background:#2563eb">💾 Welcome save karo</button>
+        <div class="msg" id="cxWelMsg"></div>
+      </div>
+      <button type="button" id="cxBcClose" style="width:100%;margin-top:16px">Band karo</button>`;
+
+    const $ = (id)=> box.querySelector('#'+id);
+    const boxes = ()=> Array.from(box.querySelectorAll('#cxBcList input[data-k]'));
+    const persistExcept = async ()=>{
+      const ex = boxes().filter(b=> !b.checked).map(b=> b.getAttribute('data-k'));
+      boxes().forEach(b=>{ const t = b.parentElement.querySelector('.tag'); if(t) t.textContent = b.checked ? '' : 'exception'; });
+      const c = await loadCfg(); c.except = ex; if(c.on === undefined) c.on = true; await saveCfg(c);
+      updateBtn();
+    };
+    const updateBtn = ()=>{ const n = boxes().filter(b=> b.checked).length; $('cxBcSend').textContent = '📤 ' + n + ' logo ko bhejo'; $('cxBcSend').disabled = !n; };
+    updateBtn();
+    box.querySelector('#cxBcList').addEventListener('change', persistExcept);
+    $('cxBcAll').addEventListener('click', ()=>{ boxes().forEach(b=> b.checked = true); persistExcept(); });
+    $('cxBcNone').addEventListener('click', ()=>{ boxes().forEach(b=> b.checked = false); persistExcept(); });
+    $('cxBcClose').addEventListener('click', ()=> wrap.remove());
+
+    $('cxBcSend').addEventListener('click', async ()=>{
+      const text = $('cxBcText').value.trim();
+      if(!text){ $('cxBcMsg').textContent = '⚠ Pehle message likho.'; return; }
+      const targets = members.filter(m=> boxes().some(b=> b.checked && b.getAttribute('data-k') === m.key));
+      if(!targets.length) return;
+      if(!confirm(targets.length + ' logo ko ye message bhejna hai?')) return;
+      const btn = $('cxBcSend'); btn.disabled = true;
+      let ok = 0, fail = 0, i = 0;
+      const worker = async ()=>{
+        while(i < targets.length){
+          const t = targets[i++];
+          try{ await sendDirect(myName, t.name, fill(text, t.name, myName).slice(0, CHAT_MAX_LEN)); ok++; }catch(e){ fail++; }
+          $('cxBcMsg').textContent = '⏳ Bhej raha hu… ' + (ok+fail) + '/' + targets.length;
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      $('cxBcMsg').textContent = '✅ ' + ok + ' ko chala gaya' + (fail ? ' · ❌ ' + fail + ' fail' : '') + '.';
+      $('cxBcText').value = ''; updateBtn();
+      try{ if(typeof chatLoadMembers === 'function') chatLoadMembers(); }catch(e){}
+    });
+
+    $('cxWelSave').addEventListener('click', async ()=>{
+      const c = await loadCfg();
+      c.on = $('cxWelOn').checked; c.text = $('cxWelText').value.trim() || DEFAULT_WELCOME;
+      if(!c.init){ c.init = Date.now(); }
+      const ok = await saveCfg(c);
+      $('cxWelMsg').textContent = ok ? '✅ Save ho gaya.' : '⚠ Server par save nahi hua (sirf is phone me). Firebase rules check karo.';
+    });
+  }
+
+  function ensureButton(){
+    try{
+      const head = document.querySelector('#chatInbox .chatHead'); if(!head) return;
+      const show = (typeof isMeAdmin === 'function') && isMeAdmin();
+      let b = document.getElementById('cxBcBtn');
+      if(!show){ if(b) b.remove(); return; }
+      if(b) return;
+      css();
+      b = document.createElement('button'); b.type = 'button'; b.id = 'cxBcBtn'; b.className = 'chatIconBtn';
+      b.setAttribute('aria-label', 'Sabko message bhejo'); b.textContent = '📢';
+      b.addEventListener('click', openPanel);
+      const lock = document.getElementById('chatLockBtn');
+      head.insertBefore(b, lock || null);
+    }catch(e){}
+  }
+
+  window.__cxBcApi = { loadCfg, saveCfg };
+  setInterval(ensureButton, 1000);
+  setTimeout(adminInit, 6000); setInterval(adminInit, 90000);
+  setTimeout(maybeWelcomeMe, 9000); setInterval(()=>{ if(!document.hidden) maybeWelcomeMe(); }, 45000);
+})();
+
+// ============================================================================
+// 👤 ADMIN: chat me user ke naam/photo par tap -> uska poora profile + usage + exception toggle
+// ============================================================================
+(function adminUserProfileInChat(){
+  if(window.__cxUserProf) return; window.__cxUserProf = 1;
+  const esc = (t)=> (typeof escapeHtml==='function') ? escapeHtml(String(t)) : String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtT = (sec)=>{ const m = Math.round((sec||0)/60); return m < 60 ? m+' min' : Math.floor(m/60)+' ghanta '+String(m%60).padStart(2,'0')+' min'; };
+  const dk = (t)=>{ const d = new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const ago = (ts)=>{ if(!ts) return 'kabhi nahi dikha'; const m = Math.max(1, Math.round((Date.now()-ts)/60000)); return m < 60 ? m+' min pehle' : (m < 1440 ? Math.floor(m/60)+' ghante pehle' : Math.floor(m/1440)+' din pehle'); };
+
+  function css(){
+    if(document.getElementById('cxUpCss')) return;
+    const st = document.createElement('style'); st.id = 'cxUpCss';
+    st.textContent = '#cxUpWrap{position:fixed;inset:0;z-index:2147483001;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}'
+      + '#cxUpBox{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:#17181c;color:#eceef2;border-radius:18px 18px 0 0;padding:16px 16px 22px;font-size:17px;line-height:1.5;box-sizing:border-box}'
+      + '#cxUpBox h3{margin:0;font-size:22px}#cxUpBox .sub{opacity:.7;font-size:14px;margin:2px 0 12px}'
+      + '#cxUpBox .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}'
+      + '#cxUpBox .c{background:#22242b;border-radius:12px;padding:10px 12px}#cxUpBox .c b{display:block;font-size:20px}#cxUpBox .c span{font-size:13px;opacity:.7}'
+      + '#cxUpBox .h{margin:16px 0 6px;font-weight:800;font-size:17px}'
+      + '#cxUpBox .ln{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}'
+      + '#cxUpBox .bar{height:10px;border-radius:6px;background:#2a2d36;overflow:hidden;flex:1;margin:6px 10px 0}#cxUpBox .bar i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#fbbf24)}'
+      + '#cxUpBox button{font-size:16px;border-radius:12px;border:1px solid #3a3d46;background:#262932;color:#fff;padding:12px 14px;font-family:inherit;width:100%;margin-top:8px}'
+      + '#cxUpBox button.warn{background:#7f1d1d;border-color:#b91c1c}#cxUpBox button.ok{background:#14532d;border-color:#16a34a}';
+    document.head.appendChild(st);
+  }
+
+  async function openProfile(name){
+    css();
+    const old = document.getElementById('cxUpWrap'); if(old) old.remove();
+    const wrap = document.createElement('div'); wrap.id = 'cxUpWrap';
+    wrap.innerHTML = '<div id="cxUpBox"><h3>'+esc(name)+'</h3><div class="sub">Loading…</div></div>';
+    wrap.addEventListener('click', (e)=>{ if(e.target === wrap) wrap.remove(); });
+    document.body.appendChild(wrap);
+    const box = wrap.querySelector('#cxUpBox');
+    const key = chatSeenKey(name), room = getRoomCode();
+    let st = null, usage = null, names = [], cfg = {};
+    try{ st = await loadPlayerState(name); }catch(e){}
+    try{ await waitForFirebase(); const raw = await window.__fbGet(`rooms/${room}/usage/${key}`); usage = (typeof raw==='string') ? JSON.parse(raw) : raw; }catch(e){}
+    try{ names = await loadRoomRegistry(); }catch(e){}
+    try{ cfg = await window.__cxBcApi.loadCfg(); }catch(e){}
+    let s = null; try{ if(st) s = computeStatsFrom(st); }catch(e){}
+    const u = usage || {}; const d = u.d || {};
+    const today = d[dk(Date.now())] || 0;
+    const days = []; for(let i=0;i<7;i++){ const t = Date.now()-i*86400000; days.push({ k: dk(t), lab: new Date(t).toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'}), v: d[dk(t)]||0 }); }
+    const mx = Math.max(1, ...days.map(x=>x.v));
+    const week = days.reduce((a,x)=>a+x.v,0);
+    const joinNo = names.findIndex(n=> chatSeenKey(n) === key) + 1;
+    const pr = presenceLabel(name);
+    const seen = Math.max(u.l||0, (typeof presenceMap==='object' && presenceMap[key]) || 0);
+    const isEx = Array.isArray(cfg.except) && cfg.except.includes(key);
+    const c = (b,l)=> `<div class="c"><b>${b}</b><span>${l}</span></div>`;
+    box.innerHTML = `
+      <h3>${pr.dot} ${esc(name)}</h3>
+      <div class="sub">${pr.text}${seen ? ' · last active ' + ago(seen) : ''}${joinNo ? ' · Join #' + joinNo : ''}</div>
+
+      <div class="h">📱 App use</div>
+      <div class="grid">
+        ${c(fmtT(u.t), 'Total time')}${c(fmtT(today), 'Aaj')}
+        ${c(fmtT(week), 'Is 7 din me')}${c(u.s||0, 'Kitni baar khola')}
+      </div>
+      ${u.t ? '' : '<div class="sub">Is user ka usage abhi record nahi hua (naya code update karne ke baad se shuru hota hai).</div>'}
+      <div class="h">📅 Pichhle 7 din</div>
+      ${days.map(x=>`<div class="ln" style="align-items:center"><span style="min-width:96px;font-size:15px">${x.lab}</span><div class="bar"><i style="width:${Math.round(x.v/mx*100)}%"></i></div><span style="min-width:70px;text-align:right;font-size:15px">${fmtT(x.v)}</span></div>`).join('')}
+
+      <div class="h">🎯 Padhai / Progress</div>
+      ${s ? `<div class="grid">
+        ${c('⭐ ' + s.level, 'Level')}${c('🔥 ' + s.streak, 'Streak (din)')}
+        ${c(s.pct + '%', 'Plan complete')}${c(s.daysDone + '/' + TOTAL_DAYS, 'Din poore')}
+        ${c(fmtT((s.studyMins||0)*60), 'Study time (timer)')}${c('₹' + Math.round(s.earned||0).toLocaleString('en-IN'), 'Kamaye')}
+        ${(s.lost>0) ? c('₹' + Math.round(s.lost).toLocaleString('en-IN'), 'Nuksaan') : ''}
+      </div>` : '<div class="sub">Progress data nahi mila.</div>'}
+
+      <button type="button" id="cxUpView">👀 Poora tracker dekho</button>
+      <button type="button" id="cxUpEx" class="${isEx ? 'ok' : 'warn'}">${isEx ? '✅ Exception se hatao (broadcast jayega)' : '🚫 Broadcast exception list me daalo'}</button>
+      <div class="sub" id="cxUpMsg" style="margin-top:8px"></div>
+      <button type="button" id="cxUpClose">Band karo</button>`;
+    box.querySelector('#cxUpClose').addEventListener('click', ()=> wrap.remove());
+    box.querySelector('#cxUpView').addEventListener('click', async ()=>{
+      wrap.remove();
+      try{ const ov = document.getElementById('chatOverlay'); if(ov){ const cb = document.getElementById('chatCloseBtn'); if(cb) cb.click(); } }catch(e){}
+      try{ await switchViewing(name); switchTab('today'); }catch(e){}
+    });
+    box.querySelector('#cxUpEx').addEventListener('click', async ()=>{
+      const c2 = await window.__cxBcApi.loadCfg();
+      const ex = new Set(Array.isArray(c2.except) ? c2.except : []);
+      if(ex.has(key)) ex.delete(key); else ex.add(key);
+      c2.except = Array.from(ex); if(c2.on === undefined) c2.on = true;
+      const ok = await window.__cxBcApi.saveCfg(c2);
+      const now = ex.has(key);
+      const b = box.querySelector('#cxUpEx');
+      b.className = now ? 'ok' : 'warn';
+      b.textContent = now ? '✅ Exception se hatao (broadcast jayega)' : '🚫 Broadcast exception list me daalo';
+      box.querySelector('#cxUpMsg').textContent = (now ? '🚫 ' + name + ' ab exception list me hai — broadcast nahi jayega.' : '✅ ' + name + ' exception se hat gaya.') + (ok ? '' : ' (⚠ server par save nahi hua, sirf is phone me)');
+    });
+  }
+
+  document.addEventListener('click', (e)=>{
+    try{
+      if(typeof isMeAdmin !== 'function' || !isMeAdmin()) return;
+      if(typeof chatView === 'undefined' || chatView !== 'conv' || !chatPeer) return;
+      const hit = e.target.closest && e.target.closest('#chatPeerAv, .chatHeadTxt');
+      if(!hit || !hit.closest('#chatOverlay')) return;
+      if(chatSeenKey(chatPeer.name) === chatMyKey()) return;   // Saved Messages
+      e.preventDefault(); e.stopPropagation();
+      openProfile(chatPeer.name);
+    }catch(err){}
+  }, true);
+})();
