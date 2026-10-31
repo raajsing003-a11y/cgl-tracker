@@ -77,8 +77,7 @@ function inp(k,sub,d,val,ph,w){ return '<input type="'+(sub==='name'?'text':'num
 function scoreHTML(d,p,r,compact){
   var h='<div class="mtScore"><div class="mtScoreT">'+(p.kind==='mock'?'🏆 Full Mock Score':'🎯 Sectional Scores (2 Maths + 2 Reasoning)')+' <span>→ Score tab me auto</span></div>';
   if(p.kind==='mock'){
-    var m=r.mock; h+='<div class="mtGrid">'+inp('mock','name',d,m.name,'Mock name',2)+inp('mock','total',d,m.total,'Total')+inp('mock','pct',d,m.pct,'Percentile')+
-      inp('mock','math',d,m.math,'Maths')+inp('mock','eng',d,m.eng,'English')+inp('mock','gk',d,m.gk,'GK')+inp('mock','reas',d,m.reas,'Reasoning')+inp('mock','right',d,m.right,'Correct')+inp('mock','wrong',d,m.wrong,'Wrong')+'</div>';
+    h+=mockForm(d,r.mock);
   } else {
     [['m1','Maths Sec 1'],['m2','Maths Sec 2'],['r1','Reasoning Sec 1'],['r2','Reasoning Sec 2']].forEach(function(s){
       var v=r.sect[s[0]]; h+='<div class="mtSecL">'+s[1]+'</div><div class="mtGrid g3">'+inp(s[0],'score',d,v.score,'Score /90')+inp(s[0],'right',d,v.right,'C')+inp(s[0],'wrong',d,v.wrong,'W')+'</div>';
@@ -195,6 +194,7 @@ function onChange(e){
   } else if(s){ var r2=rec(d), sub=t.getAttribute('data-sub'), val=t.value;
     var tgt=(s==='mock')?r2.mock:r2.sect[s];
     if(val==='') delete tgt[sub]; else tgt[sub]=(sub==='name')?val:num(val);
+    if(s==='mock') mockTotals(tgt);
     commit(d,true);
   }
 }
@@ -397,6 +397,35 @@ document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&
  '.mtMore{border:1px solid var(--border);border-radius:16px;padding:0 12px 12px;margin-bottom:14px;background:rgba(255,255,255,.02)}.mtMore>summary{cursor:pointer;font-weight:800;font-size:14px;padding:13px 0;color:var(--text);list-style:none}.mtMore>summary::-webkit-details-marker{display:none}';
  var s=document.createElement('style'); s.id='mtCSS6'; s.textContent=css; document.head.appendChild(s); })();
 
+
+var MSUB=[['math','🧮','Maths','#38bdf8',90],['reas','🧩','Reasoning','#a78bfa',90],['eng','📖','English','#34d399',135],['gk','🌍','GK','#fbbf24',75]];
+function nz(x){ return filled(x)?(parseFloat(x)||0):0; }
+function mockTotals(m){ var R=0,W=0,any=false; MSUB.forEach(function(u){ if(filled(m[u[0]+'R'])||filled(m[u[0]+'W'])){ any=true; R+=nz(m[u[0]+'R']); W+=nz(m[u[0]+'W']); } });
+  if(any){ m.right=R; m.wrong=W; } else { delete m.right; delete m.wrong; } }
+function lbl(t,input){ return '<label class="mtL"><span>'+t+'</span>'+input+'</label>'; }
+function mockForm(d,m){
+  var h='<div class="mtMock"><label class="mtL mtL1"><span>📝 Mock ka naam</span>'+inp('mock','name',d,m.name,'e.g. RBE Mock 1')+'</label><div class="mtGrid g2">'+
+    lbl('🏆 Total Score <small>/390</small>',inp('mock','total',d,m.total,'Total'))+lbl('📊 Percentile',inp('mock','pct',d,m.pct,'%ile'))+'</div>';
+  var sum=0;
+  MSUB.forEach(function(u){ var k=u[0], R=m[k+'R'], W=m[k+'W'], rw=nz(R)+nz(W), acc=rw>0?Math.round(nz(R)/rw*100):null; sum+=nz(m[k]);
+    h+='<div class="mtSub" style="--c:'+u[3]+'"><div class="mtSubH"><b>'+u[1]+' '+u[2]+'</b><em>'+(acc===null?'max '+u[4]:'🎯 '+acc+'% sahi')+'</em></div><div class="mtGrid">'+
+      lbl('Score <small>/'+u[4]+'</small>',inp('mock',k,d,m[k],'Score'))+lbl('✅ Sahi',inp('mock',k+'R',d,R,'Right'))+lbl('❌ Galat',inp('mock',k+'W',d,W,'Wrong'))+'</div></div>'; });
+  var R=nz(m.right), W=nz(m.wrong), acc=(R+W)>0?Math.round(R/(R+W)*100)+'%':'—';
+  h+='<div class="mtSum"><span>✅ <b>'+R+'</b> Sahi</span><span>❌ <b>'+W+'</b> Galat</span><span>🎯 <b>'+acc+'</b></span><span>➕ <b>'+sum+'</b> Sum</span></div>';
+  if(!filled(m.total)&&sum>0) h+='<button type="button" class="mtUse" data-mt-sum="'+d+'">Total = '+sum+' use karo</button>';
+  return h+'</div>'; }
+document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-mt-sum]'); if(!t) return; var d=+t.getAttribute('data-mt-sum'), m=rec(d).mock, S=0; MSUB.forEach(function(u){ S+=nz(m[u[0]]); }); m.total=S; commit(d,true); });
+(function(){ var css='.mtL{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-weight:600}.mtL small{opacity:.7;font-weight:500}.mtL1{margin-bottom:8px}.mtGrid.g2{grid-template-columns:repeat(2,1fr);margin-bottom:8px}'+
+ '.mtSub{border-left:4px solid var(--c);background:rgba(255,255,255,.04);border-radius:12px;padding:8px 10px 10px;margin-bottom:8px}.mtSubH{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.mtSubH b{font-size:13.5px;color:var(--c)}.mtSubH em{font-style:normal;font-size:11px;color:var(--muted)}'+
+ '.mtSum{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}.mtSum span{flex:1;min-width:70px;text-align:center;font-size:11px;padding:7px 4px;border-radius:10px;background:rgba(255,255,255,.06);color:var(--muted)}.mtSum b{display:block;font-size:15px;color:var(--text)}'+
+ '.mtUse{width:100%;margin-top:8px;border:1px dashed #38bdf8;background:rgba(56,189,248,.1);color:#7dd3fc;border-radius:10px;padding:9px;font-weight:700;font-size:12.5px;cursor:pointer}';
+ var st=document.createElement('style'); st.id='mtCSS7'; st.textContent=css; document.head.appendChild(st); })();
+/* ---- v8: typing ke dauraan redraw nahi (keyboard band na ho) ---- */
+var BUSY=false, PEND=false, _rp8=renderPage;
+function isTypeEl(t){ return !!(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA')&&t.closest&&t.closest('#mtBody')); }
+renderPage=function(){ if(BUSY){ PEND=true; return; } PEND=false; _rp8(); };
+document.addEventListener('focusin',function(e){ if(isTypeEl(e.target)) BUSY=true; });
+document.addEventListener('focusout',function(e){ if(!isTypeEl(e.target)) return; setTimeout(function(){ if(!isTypeEl(document.activeElement)){ BUSY=false; if(PEND) renderPage(); } },0); });
 var tries=0;
 (function boot(){
   if(!ready()){ if(++tries<200) return setTimeout(boot,150); return; }
