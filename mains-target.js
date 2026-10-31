@@ -39,7 +39,7 @@ function hasScore(d){ var r=(state.mainsPlan&&state.mainsPlan[d]); if(!r) return
   if(p.kind==='mock') return !!(r.mock&&(r.mock.total!==undefined&&r.mock.total!==''&&r.mock.total!==null));
   return !!(r.sect&&['m1','m2','r1','r2'].some(function(k){return r.sect[k]&&r.sect[k].score!==undefined&&r.sect[k].score!==''&&r.sect[k].score!==null;})); }
 function stats(){
-  var daysDone=0, solved=0, streak=0, best=0, run=0, xp=0, scores=0, td=todayDayNum();
+  var daysDone=0, solved=0, streak=0, best=0, run=0, xp=0, scores=0, td=firstPending();
   for(var d=1; d<=PLAN.length; d++){ var pr=dayProgress(d); if(pr.pct===100){ daysDone++; run++; if(run>best) best=run; xp+=50; } else run=0;
     xp+=pr.done*10; if(hasScore(d)){ scores++; xp+=25; }
     var r=state.mainsPlan&&state.mainsPlan[d]; if(r&&r.maths&&r.maths.solved){ var sv=parseFloat(r.maths.solved)||0; solved+=sv; xp+=Math.round(sv/2); } }
@@ -121,7 +121,7 @@ function renderToday(){
     if(typeof viewingName!=='undefined' && typeof myName!=='undefined' && viewingName!==myName) return;
     var panel=document.getElementById('panel'); if(!panel) return;
     var old=document.getElementById('mtTodayPanel'); if(old) old.remove();
-    var d=todayDayNum(), p=planOf(d), pr=dayProgress(d), c=phCol(p.phase);
+    var d=firstPending(), p=planOf(d), pr=dayProgress(d), c=phCol(p.phase);
     var box=document.createElement('div'); box.id='mtTodayPanel'; box.className='mtCard mtToday'; box.style.setProperty('--c',c);
     box.innerHTML='<div class="mtCardH" data-mt-toggle="1"><div><div class="mtDayT">🎯 Mains Target — Day '+d+'</div><div class="mtDayS">'+esc(p.phase)+' · '+(p.kind==='mock'?'Full Mock day':'Sectional day')+'</div></div><div class="mtRingS">'+ringSVG(pr.pct,56,c)+'<span>'+pr.done+'/'+pr.total+'</span></div></div>'+
       '<div class="mtBody'+(window.__mtTodayOpen===false?' hide':'')+'">'+controlsHTML(d,true)+'<button type="button" class="mtOpenBtn" data-mt-open="'+d+'">Poora Mains Target kholo ›</button></div>';
@@ -130,7 +130,8 @@ function renderToday(){
 }
 
 /* ---- Score sync (stable ids) ---- */
-function dateOf(d){ try{ var x=new Date(START_DATE); x.setDate(x.getDate()+d-1); return fmtISODate(x); }catch(e){ return fmtISODate(new Date()); } }
+function ownStart(){ if(!state.mainsStart){ state.mainsStart=fmtISODate(new Date()); try{ save(); }catch(e){} } return state.mainsStart; }
+function dateOf(d){ try{ var x=new Date(ownStart()); x.setDate(x.getDate()+d-1); return fmtISODate(x); }catch(e){ return fmtISODate(new Date()); } }
 function upsert(arr,id,entry){ var i=arr.findIndex(function(e){return e.id===id;}); if(entry){ if(i>=0) arr[i]=entry; else arr.push(entry);} else if(i>=0) arr.splice(i,1); }
 function filled(v){ return v!==undefined && v!==null && v!==''; }
 function syncScores(d){
@@ -242,8 +243,8 @@ function inject(){
   var mb=document.getElementById('calcMainsMockBtn');
   var wrap=document.createElement('div'); wrap.className='calcGrid calcGrid-1col'; wrap.style.marginBottom='10px';
   wrap.innerHTML='<button type="button" class="calcCard calcCard-prem pm-mains pmBig" id="calcMainsTargetBtn"><span class="calcIcon">🎯</span><span class="calcLabelCol"><span class="calcLabel">Mains Target</span><span class="calcSub">50-Day plan · Daily tick &amp; fill · Score tab auto-sync</span></span><span class="calcArrow">&#8250;</span></button>';
-  if(mb&&mb.parentNode&&mb.parentNode.parentNode) mb.parentNode.parentNode.insertBefore(wrap,mb.parentNode.nextSibling); else menu.appendChild(wrap);
-  document.getElementById('calcMainsTargetBtn').addEventListener('click',function(){ selDay=todayDayNum(); showCalcPage('mainstarget'); renderPage(); });
+  menu.insertBefore(wrap,menu.firstChild);
+  document.getElementById('calcMainsTargetBtn').addEventListener('click',function(){ selDay=firstPending(); showCalcPage('mainstarget'); renderPage(); try{ window.scrollTo(0,0); var pgx=document.getElementById('calcPage-mainstarget'); if(pgx) pgx.scrollTop=0; }catch(e){} });
 
   var pg=document.createElement('div'); pg.className='calcPage'; pg.id='calcPage-mainstarget';
   pg.innerHTML='<div class="calcSubHead"><button class="calcBackBtn" id="mtBackBtn" aria-label="Back">&#8249;</button><div class="calcSubTitle">🎯 Mains Target — 50 Days</div></div><div id="mtBody"></div>';
@@ -291,7 +292,7 @@ renderPage=function(){
 };
 document.addEventListener('click',function(e){
   var t=e.target; if(!t||!t.closest) return;
-  var g=t.closest('[data-mt-go]'); if(g){ selDay=parseInt(g.getAttribute('data-mt-go'),10)||todayDayNum(); renderPage(); var c=document.querySelector('#mtBody .mtCard'); if(c&&c.scrollIntoView) c.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  var g=t.closest('[data-mt-go]'); if(g){ selDay=parseInt(g.getAttribute('data-mt-go'),10)||firstPending(); renderPage(); var c=document.querySelector('#mtBody .mtCard'); if(c&&c.scrollIntoView) c.scrollIntoView({behavior:'smooth',block:'start'}); return; }
   var q=t.closest('#mtBody .mtQuote'); if(q){ q.innerHTML=QUOTES[Math.floor(Math.random()*QUOTES.length)]; q.classList.remove('pop'); void q.offsetWidth; q.classList.add('pop'); }
 });
 (function(){ var css=''+
@@ -351,6 +352,50 @@ document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&
  '.mtTimer{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:10px;border-radius:14px;background:linear-gradient(135deg,rgba(56,189,248,.14),rgba(52,211,153,.12));border:1px solid rgba(56,189,248,.4)}.mtTimer b{font-size:22px;font-variant-numeric:tabular-nums;color:#38bdf8;letter-spacing:1px}.mtTb{margin-left:auto;display:flex;gap:6px}'+
  '.mtTimer.run{box-shadow:0 0 18px rgba(56,189,248,.45);animation:mtBeat 2s infinite}.mtTb button{border:0;border-radius:99px;padding:8px 13px;font-weight:800;font-size:12px;color:#fff;background:#0ea5e9;cursor:pointer}.mtTb button.sv{background:#10b981}';
  var s=document.createElement('style'); s.id='mtCSS4'; s.textContent=css; document.head.appendChild(s); })();
+
+/* ---- v5: Day 1 se start, target card sabse upar ---- */
+function firstPending(){ for(var d=1; d<=PLAN.length; d++){ if(dayProgress(d).pct<100) return d; } return PLAN.length; }
+var _rp5=renderPage;
+renderPage=function(){ _rp5(); var pg=document.getElementById('mtBody'); if(!pg) return;
+  try{ var card=pg.querySelector('.mtCard'); if(card&&pg.firstChild!==card) pg.insertBefore(card,pg.firstChild); }catch(e){ console.warn('mt v5',e); } };
+/* ---- v6: simple page = Day card + Calendar + Remaining + (stats collapsed) ---- */
+function remHTML(){ var rows='', days=0, tasks=0;
+  for(var d=1; d<=PLAN.length; d++){ var p=planOf(d), r=(state.mainsPlan&&state.mainsPlan[d])||{maths:{}}; if(!r.maths) r.maths={};
+    var pend=items(p).filter(function(x){ return !isTicked(r,x.k); }); if(!pend.length) continue; days++; tasks+=pend.length;
+    rows+='<button type="button" class="mtRemR" data-mt-day="'+d+'" style="--c:'+phCol(p.phase)+'"><div class="mtRemH"><b>Day '+d+'</b><small>'+esc(p.phase)+' · '+(p.kind==='mock'?'Mock':'Sectional')+'</small><em>'+pend.length+' baaki</em></div><div class="mtRemI">'+
+      pend.map(function(x){ var t=x.t.length>26?x.t.slice(0,25)+'…':x.t; return '<span>'+x.ic+' '+esc(t)+'</span>'; }).join('')+'</div></button>'; }
+  return {days:days,tasks:tasks,html:rows||'<div class="mtRemDone">🎉 Sab target complete! Shabaash!</div>'}; }
+function calHTML(st){ var h='<div class="mtCalT"><b>📅 Mera 50 Din Calendar</b><span>'+st.daysDone+'/'+PLAN.length+' ✅</span></div><div class="mtCalLg"><span><i class="g"></i>Complete</span><span><i class="y"></i>Adhura</span><span><i class="n"></i>Baaki</span></div><div class="mtCal">';
+  PLAN.forEach(function(p){ var d=p.d, pr=dayProgress(d), cls=pr.pct===100?' full':pr.pct>0?' part':'';
+    h+='<button type="button" class="mtCell'+cls+(d===selDay?' sel':'')+(d===st.td?' today':'')+'" data-mt-day="'+d+'" style="--c:'+phCol(p.phase)+';--p:'+pr.pct+'"><b>'+d+'</b><small>'+(pr.pct===100?'✓':pr.pct>0?pr.pct+'%':(p.kind==='mock'?'M':'S'))+(hasScore(d)?' •':'')+'</small></button>'; });
+  return h+'</div>'; }
+var _rp6=renderPage;
+renderPage=function(){
+  _rp6(); var pg=document.getElementById('mtBody'); if(!pg) return;
+  try{ var st=stats(), card=pg.querySelector('.mtCard'), kids=[].slice.call(pg.children), cut=-1;
+    kids.forEach(function(k,i){ if(cut<0 && k.classList.contains('mtSec') && k.textContent.indexOf('50 Din Map')>=0) cut=i; });
+    var more=document.createElement('details'); more.className='mtMore'; if(window.__mtMoreOpen) more.open=true;
+    more.innerHTML='<summary>📊 Stats, Badges &amp; Weekly Report</summary>';
+    more.addEventListener('toggle',function(){ window.__mtMoreOpen=more.open; });
+    kids.forEach(function(k,i){ if(k===card) return; if(cut>=0 && i>=cut){ k.remove(); return; } if(k.classList.contains('mtMiss')||k.classList.contains('mtQuote')){ k.remove(); return; } more.appendChild(k); });
+    var rm=remHTML(), open=!!window.__mtRem;
+    var cal=document.createElement('div'); cal.className='mtCalW'; cal.innerHTML=calHTML(st);
+    var rb=document.createElement('div'); rb.innerHTML='<button type="button" class="mtRemBtn'+(open?' on':'')+'" data-mt-rem="1"><span>📋 Remaining Target</span><em>'+rm.days+' din · '+rm.tasks+' kaam baaki '+(open?'▲':'▼')+'</em></button>'+(open?'<div class="mtRemList">'+rm.html+'</div>':'');
+    pg.appendChild(cal); pg.appendChild(rb); pg.appendChild(more);
+  }catch(e){ console.warn('mt v6',e); } };
+document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-mt-rem]'); if(!t) return; window.__mtRem=!window.__mtRem; renderPage(); });
+(function(){ var css=''+
+ '.mtCalW{background:var(--card,#141b2d);border:1px solid var(--border);border-radius:18px;padding:12px;margin-bottom:12px}.mtCalT{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.mtCalT b{font-size:15px;color:var(--text)}.mtCalT span{font-size:12px;font-weight:800;color:#34d399}'+
+ '.mtCalLg{display:flex;gap:12px;font-size:10.5px;color:var(--muted);margin-bottom:10px}.mtCalLg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}.mtCalLg .g{background:#22c55e}.mtCalLg .y{background:#fbbf24}.mtCalLg .n{background:rgba(255,255,255,.15)}'+
+ '.mtCal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.mtCell{aspect-ratio:1;border-radius:12px;border:1px solid rgba(255,255,255,.1);border-bottom:3px solid var(--c);background:rgba(255,255,255,.05);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;cursor:pointer;transition:transform .15s}.mtCell b{font-size:15px}.mtCell small{font-size:9.5px;color:var(--muted);font-weight:700}.mtCell:active{transform:scale(.9)}'+
+ '.mtCell.part{background:rgba(251,191,36,.16);border-color:#fbbf24;border-bottom-color:#fbbf24}.mtCell.part small{color:#fbbf24}'+
+ '.mtCell.full{background:linear-gradient(145deg,#4ade80,#16a34a);border-color:#4ade80;border-bottom-color:#14532d;color:#fff;box-shadow:0 3px 12px rgba(34,197,94,.45)}.mtCell.full b{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35)}.mtCell.full small{color:#dcfce7;font-size:12px}'+
+ '.mtCell.today{outline:2px solid #fff;outline-offset:1px;animation:mtPulse 1.6s infinite}.mtCell.sel{transform:scale(1.12);z-index:2;box-shadow:0 0 0 2px #fff,0 6px 16px rgba(0,0,0,.5)}'+
+ '.mtRemBtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px;border-radius:16px;border:1px solid rgba(248,113,113,.5);background:linear-gradient(135deg,rgba(248,113,113,.18),rgba(251,146,60,.16));color:var(--text);font-weight:800;font-size:15px;cursor:pointer;margin-bottom:10px}.mtRemBtn em{font-style:normal;font-size:12px;font-weight:600;color:#fca5a5}.mtRemBtn.on{border-color:#f87171}'+
+ '.mtRemList{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}.mtRemR{text-align:left;border:1px solid var(--border);border-left:4px solid var(--c);background:var(--card,#141b2d);color:var(--text);border-radius:12px;padding:10px;cursor:pointer}.mtRemH{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}.mtRemH b{font-size:14px}.mtRemH small{font-size:11px;color:var(--c)}.mtRemH em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;color:#fca5a5}'+
+ '.mtRemI{display:flex;flex-wrap:wrap;gap:5px}.mtRemI span{font-size:11px;background:rgba(255,255,255,.07);border-radius:99px;padding:3px 9px;color:var(--muted)}.mtRemDone{text-align:center;padding:18px;font-weight:700;color:#34d399}'+
+ '.mtMore{border:1px solid var(--border);border-radius:16px;padding:0 12px 12px;margin-bottom:14px;background:rgba(255,255,255,.02)}.mtMore>summary{cursor:pointer;font-weight:800;font-size:14px;padding:13px 0;color:var(--text);list-style:none}.mtMore>summary::-webkit-details-marker{display:none}';
+ var s=document.createElement('style'); s.id='mtCSS6'; s.textContent=css; document.head.appendChild(s); })();
 
 var tries=0;
 (function boot(){
