@@ -293,6 +293,15 @@
     padding:12px; font-size:13px; text-align:center; border-radius:14px;
   }
 
+  .liteToggle{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin:6px auto 4px; padding:8px 18px; font-size:13px; font-weight:700;
+    border-radius:999px; border:1px solid var(--gold-dim); cursor:pointer;
+    background:linear-gradient(160deg,#1b2745,#0f1830); color:var(--gold2);
+  }
+  .liteToggle b{color:var(--green);}
+  .liteToggle.off b{color:var(--dim);}
+  body > .liteToggle{position:relative; z-index:2;}
   .sheet{max-width:720px; margin:10px auto 0; padding:0 10px;}
   .section{
     position:relative;
@@ -716,6 +725,7 @@
 <div class="besttime-bar" id="bestTimeBar"></div>
 
 <button class="newmock purple" id="newMockBtn">🔀 New Mock — Isi Chapter Se</button>
+<button class="liteToggle" id="liteBtn" type="button"></button>
 
 <div class="sheet" id="sheet"></div>
 
@@ -1627,10 +1637,34 @@ function updateStreakDisplay(){
 }
 function resetStreak(){ streak = 0; bestStreak = 0; updateStreakDisplay(); }
 
+/* ===== LITE MODE (~8-10 min): kam sections + har section mein kam questions ===== */
+let liteMode = (localStorage.getItem('cst_lite') !== '0');   // default ON
+const LITE_KEEP = [0,1,2,3,4,6,7,8,9,13,14,16,18,19,21];     // daily gens ke index
+function liteTrim(sec){
+  if (sec.kind === 'grid'){
+    const maxRows = sec.cols.length === 1 ? 3 : 2;
+    if (sec.rows.length > maxRows){
+      const keep = [...Array(maxRows-1).keys(), sec.rows.length-1];   // aakhri row (hard row) rakho
+      sec.rows = keep.map(i => sec.rows[i]);
+      sec.matrix = keep.map(i => sec.matrix[i]);
+    }
+    if (sec.cols.length > 3){
+      sec.cols = sec.cols.slice(0,3);
+      sec.matrix = sec.matrix.map(r => r.slice(0,3));
+    }
+  } else if (sec.kind === 'qlist'){
+    sec.items = sec.items.slice(0, 2);
+  }
+  return sec;
+}
 function buildSections(){
   resetFormulaCache();
   const chap = CHAPTERS[currentChapterIdx];
-  sections = chap.gens.map(g => g());
+  if (liteMode && chap.key === 'daily'){
+    sections = LITE_KEEP.map(i => chap.gens[i]).filter(Boolean).map(g => liteTrim(g()));
+  } else {
+    sections = chap.gens.map(g => g());
+  }
 }
 
 function makeBlank(item, sectionIdx){
@@ -1904,7 +1938,7 @@ function fmtTime(s){
 }
 
 /* ================= TIME HISTORY (per chapter, saved in localStorage) ================= */
-function historyKey(){ return `cst_history_${CHAPTERS[currentChapterIdx].key}`; }
+function historyKey(){ return `cst_history_${CHAPTERS[currentChapterIdx].key}${liteMode?'_lite':''}`; }
 function loadHistory(){
   try { return JSON.parse(localStorage.getItem(historyKey())) || []; }
   catch(e){ return []; }
@@ -2124,7 +2158,7 @@ function submitTest(){
   try {
     const payload = {
       type: 'examTrackerCalcSpeedComplete',
-      label: (CHAPTERS[currentChapterIdx] && CHAPTERS[currentChapterIdx].label) || 'Calculation Speed Test',
+      label: ((CHAPTERS[currentChapterIdx] && CHAPTERS[currentChapterIdx].label) || 'Calculation Speed Test') + (liteMode ? ' (Lite)' : ''),
       correct: correct,
       total: cells.length
     };
@@ -2160,6 +2194,19 @@ document.getElementById('submitBtn').addEventListener('click', submitTest);
 document.getElementById('closeResultBtn').addEventListener('click', () => document.getElementById('overlay').classList.remove('show'));
 document.getElementById('retryBtn').addEventListener('click', newMock);
 document.getElementById('newMockBtn').addEventListener('click', newMock);
+function applyLiteBtn(){
+  const b = document.getElementById('liteBtn');
+  b.classList.toggle('off', !liteMode);
+  b.innerHTML = liteMode ? '⚡ Lite Mode: <b>ON</b> · ~8-10 min' : '⚡ Lite Mode: <b>OFF</b> · Full ~20 min';
+}
+document.getElementById('liteBtn').addEventListener('click', () => {
+  liteMode = !liteMode;
+  try{ localStorage.setItem('cst_lite', liteMode ? '1' : '0'); }catch(e){}
+  applyLiteBtn();
+  newMock();
+  renderBestTimeBar();
+});
+applyLiteBtn();
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.blank') && !e.target.closest('.picker')) closePicker();
 });
