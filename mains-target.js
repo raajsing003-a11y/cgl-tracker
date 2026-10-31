@@ -29,6 +29,14 @@ function items(p){
   return a;
 }
 function isTicked(r,k){ return k==='maths' ? !!r.maths.done : !!r[k]; }
+/* ---- v11: paise target ke weight (time/effort) ke hisaab se baantte hain; din ka total hamesha exact DAILY ---- */
+function itemW(p,k){ return k==='maths' ? Math.max(20,+p.maths.m||0) : k==='formula' ? 20 : k==='gk' ? 45 : k==='weekly' ? 20 : k==='grammar' ? 30 : 20; }
+function amtMap(d){
+  var p=planOf(d), it=items(p), ws=it.map(function(x){ return itemW(p,x.k); }), tot=ws.reduce(function(a,b){return a+b;},0)||1, D=(typeof DAILY_TARGET!=='undefined')?DAILY_TARGET:5000;
+  var raw=ws.map(function(w){ return w/tot*D; }), v=raw.map(Math.floor), rem=Math.round(D-v.reduce(function(a,b){return a+b;},0));
+  raw.map(function(x,i){ return {i:i,f:x-Math.floor(x)}; }).sort(function(a,b){ return b.f-a.f; }).slice(0,Math.max(0,rem)).forEach(function(o){ v[o.i]++; });
+  var m={}; it.forEach(function(x,i){ m[x.k]=v[i]; }); return m; }
+function rs(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
 function dayProgress(d){
   var p=planOf(d), r=(state.mainsPlan&&state.mainsPlan[d])||{maths:{}}; if(!r.maths) r.maths={};
   var it=items(p), done=0;
@@ -55,10 +63,10 @@ function totalQ(){ return PLAN.reduce(function(a,p){return a+p.maths.q;},0); }
 
 /* ---- controls (shared by page + Today panel) ---- */
 function controlsHTML(d, compact){
-  var p=planOf(d), r=rec(d), h='';
+  var p=planOf(d), r=rec(d), h='', AM=amtMap(d);
   items(p).forEach(function(x){
     var on=isTicked(r,x.k);
-    h+='<div class="mtRow'+(on?' on':'')+'" data-mt-tick="'+x.k+'" data-d="'+d+'"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.s?'<i>'+esc(x.s)+'</i>':'')+'</span></div>';
+    h+='<div class="mtRow'+(on?' on':'')+'" data-mt-tick="'+x.k+'" data-d="'+d+'"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.s?'<i>'+esc(x.s)+'</i>':'')+'</span><span class="mtRs">'+rs(AM[x.k]||0)+'</span></div>';
     if(x.k==='maths'){
       h+='<div class="mtFill"><label>Solved Q<input type="number" inputmode="numeric" min="0" data-mt-f="solved" data-d="'+d+'" value="'+esc(r.maths.solved===undefined?'':r.maths.solved)+'" placeholder="/'+p.maths.q+'"></label>'+
          '<label>Time (min)<input type="number" inputmode="numeric" min="0" data-mt-f="mins" data-d="'+d+'" value="'+esc(r.maths.mins===undefined?'':r.maths.mins)+'" placeholder="'+p.maths.m+'"></label></div>';
@@ -237,6 +245,7 @@ function inject(){
   '.mtNav{display:flex;gap:8px;margin-top:12px}.mtNav button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);font-weight:700;cursor:pointer}.mtNav button:disabled{opacity:.3}'+
   '.mtConf{position:fixed;top:-30px;z-index:99999;pointer-events:none;animation:mtFall 2.2s ease-in forwards}@keyframes mtFall{to{transform:translateY(110vh) rotate(540deg);opacity:.2}}'+
   '.mtToast{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:100000;background:linear-gradient(135deg,#f59e0b,#dc2626);color:#fff;font-weight:800;font-size:20px;text-align:center;padding:16px 26px;border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:mtPop .5s cubic-bezier(.2,1.6,.4,1)}.mtToast small{display:block;font-size:12px;font-weight:500;margin-top:4px}@keyframes mtPop{from{transform:translateX(-50%) scale(.3);opacity:0}}'+
+  '.mtRs{margin-left:auto;flex:none;font-size:12px;font-weight:800;color:#34d399;background:rgba(52,211,153,.12);border-radius:99px;padding:3px 9px}.mtRow:not(.on) .mtRs{color:var(--muted);background:rgba(255,255,255,.06)}'+
   '.mtToday{margin-bottom:14px}.mtToday .mtCardH{cursor:pointer;margin-bottom:6px}.mtBody.hide{display:none}.mtOpenBtn{width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1px solid var(--c);background:transparent;color:var(--text);font-weight:600;cursor:pointer}';
   var st=document.createElement('style'); st.id='mtCSS'; st.textContent=css; document.head.appendChild(st);
 
@@ -440,16 +449,17 @@ function DAILY(){ return (typeof DAILY_TARGET!=='undefined')?DAILY_TARGET:5000; 
 function onlyBtn(){ return '<button type="button" class="mtOnlyBtn" data-mt-only="toggle">'+(mainsOn()?'🔁 App ke normal tasks bhi dikhao':'🎯 Sirf Mains Target dikhao')+'</button>'; }
 function earnLine(){ try{ var dn=todayDayNum(), e=dayEarnLoss(getDay(dn),dn).earned; return '<div class="mtEarn">💰 Aaj ki kamai: <b>₹'+Math.round(e).toLocaleString('en-IN')+'</b>'+(mainsOn()?' · Mains ke kaam se':'')+'</div>'; }catch(x){ return ''; } }
 function syncEarn(d){
-  var p=planOf(d), r=rec(d), it=items(p), N=it.length; if(!state.mainsEarn) state.mainsEarn={};
+  var p=planOf(d), r=rec(d), it=items(p), N=it.length, AMT=amtMap(d); if(!state.mainsEarn) state.mainsEarn={};
   it.forEach(function(x){ var id='mt_d'+d+'_'+x.k, on=isTicked(r,x.k), cur=state.mainsEarn[id], dd, i;
     if(on&&!cur){ var ad=todayDayNum(); dd=getDay(ad); if(!Array.isArray(dd.quizLog)) dd.quizLog=[];
-      dd.quizLog.push({label:'🎯 Mains D'+d+' · '+x.t,correct:1,total:1,ts:Date.now(),mt:1,id:id,n:N}); state.mainsEarn[id]=ad; }
+      dd.quizLog.push({label:'🎯 Mains D'+d+' · '+x.t,correct:1,total:1,ts:Date.now(),mt:1,id:id,n:N,amt:AMT[x.k]}); state.mainsEarn[id]=ad; }
+    else if(on&&cur){ dd=getDay(cur); i=(dd.quizLog||[]).findIndex(function(q){ return q&&q.id===id; }); if(i>=0&&dd.quizLog[i].amt!==AMT[x.k]) dd.quizLog[i].amt=AMT[x.k]; }
     else if(!on&&cur){ dd=getDay(cur); i=(dd.quizLog||[]).findIndex(function(q){ return q&&q.id===id; }); if(i>=0) dd.quizLog.splice(i,1); delete state.mainsEarn[id]; } }); }
 function mtVals(st,d,len,orig){
   if(!(st&&st.mainsOnly===true)) return orig();
   var ql=(d&&d.quizLog)||[], v=[], i, base=6, sum=0; for(i=0;i<len;i++) v.push(0);
   ql.forEach(function(q){ if(q&&q.mt&&q.n) base=Math.max(base,q.n); });
-  ql.forEach(function(q){ var x=DAILY()/((q&&q.mt&&q.n)?q.n:base); v.push(x); sum+=x; });
+  ql.forEach(function(q){ var x=(q&&q.mt&&typeof q.amt==='number')?q.amt:DAILY()/((q&&q.mt&&q.n)?q.n:base); v.push(x); sum+=x; });
   if(sum>DAILY()){ var f=DAILY()/sum; for(i=len;i<v.length;i++) v[i]=v[i]*f; }
   for(i=len;i<v.length;i++) v[i]=Math.round(v[i]); return v; }
 function hookMoney(){
