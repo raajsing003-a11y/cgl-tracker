@@ -124,7 +124,7 @@ function renderToday(){
     var d=firstPending(), p=planOf(d), pr=dayProgress(d), c=phCol(p.phase);
     var box=document.createElement('div'); box.id='mtTodayPanel'; box.className='mtCard mtToday'; box.style.setProperty('--c',c);
     box.innerHTML='<div class="mtCardH" data-mt-toggle="1"><div><div class="mtDayT">🎯 Mains Target — Day '+d+'</div><div class="mtDayS">'+esc(p.phase)+' · '+(p.kind==='mock'?'Full Mock day':'Sectional day')+'</div></div><div class="mtRingS">'+ringSVG(pr.pct,56,c)+'<span>'+pr.done+'/'+pr.total+'</span></div></div>'+
-      earnLine()+'<div class="mtBody'+(window.__mtTodayOpen===false?' hide':'')+'">'+controlsHTML(d,true)+'<button type="button" class="mtOpenBtn" data-mt-open="'+d+'">Poora Mains Target kholo ›</button>'+onlyBtn()+'</div>';
+      earnLine()+'<div class="mtBody'+(window.__mtTodayOpen===false?' hide':'')+'">'+controlsHTML(d,true)+'<button type="button" class="mtOpenBtn" data-mt-open="'+d+'">Poora Mains Target kholo ›</button>'+onlyBtn()+'</div>'+todayNav(d,pr);
     panel.insertBefore(box,panel.firstChild); panel.classList.toggle('mtOnly',mainsOn());
   }catch(e){ console.warn('mainsTarget today',e); }
 }
@@ -356,7 +356,12 @@ document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&
  var s=document.createElement('style'); s.id='mtCSS4'; s.textContent=css; document.head.appendChild(s); })();
 
 /* ---- v5: Day 1 se start, target card sabse upar ---- */
-function firstPending(){ for(var d=1; d<=PLAN.length; d++){ if(dayProgress(d).pct<30) return d; } return PLAN.length; }
+/* v10: din AUTO nahi badalta. state.mainsCur = Today tab ka din; sirf user 'Agla din' dabaye tab badle. */
+function firstPending(){ var c=parseInt(state&&state.mainsCur,10);
+  if(c>=1&&c<=PLAN.length) return c;
+  var d0=PLAN.length; for(var d=1; d<=PLAN.length; d++){ if(dayProgress(d).pct<30){ d0=d; break; } }
+  try{ state.mainsCur=d0; save(); }catch(e){} return d0; }
+function setCurDay(n){ n=Math.min(PLAN.length,Math.max(1,n)); state.mainsCur=n; selDay=n; try{ save(); }catch(e){} refresh(); }
 var _rp5=renderPage;
 renderPage=function(){ _rp5(); var pg=document.getElementById('mtBody'); if(!pg) return;
   try{ var card=pg.querySelector('.mtCard'); if(card&&pg.firstChild!==card) pg.insertBefore(card,pg.firstChild); }catch(e){ console.warn('mt v5',e); } };
@@ -460,6 +465,28 @@ document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&
 (function(){ var css='#panel.mtOnly>:not(#mtTodayPanel){display:none!important}.mtEarn{margin:0 0 8px;padding:8px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,.18),rgba(250,204,21,.14));border:1px solid rgba(52,211,153,.45);font-size:13px;color:var(--text)}.mtEarn b{color:#34d399;font-size:15px}'+
  '.mtOnlyBtn{width:100%;margin-top:8px;border:1px dashed var(--border);background:rgba(255,255,255,.04);color:var(--muted);border-radius:12px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer}.mtOnlyRow{margin-bottom:14px}.mtOnlyBtn.on{border-color:#34d399;color:#6ee7b7;background:rgba(52,211,153,.1)}.mtOnlyBtn.off{border-color:var(--border);color:var(--muted);background:rgba(255,255,255,.04)}';
  var st=document.createElement('style'); st.id='mtCSS9'; st.textContent=css; document.head.appendChild(st); })();
+
+/* ---- v10: Today tab me manual din badalna ---- */
+function todayNav(d,pr){
+  var ready30=pr.pct>=30, last=d>=PLAN.length;
+  return '<div class="mtDayNav">'+
+    '<button type="button" class="mtDnB" data-mt-tday="-1"'+(d<=1?' disabled':'')+'>‹ Pichhla din</button>'+
+    '<button type="button" class="mtDnB nx'+(ready30?' go':'')+'" data-mt-tday="1"'+(last?' disabled':'')+'>'+(last?'Last din ✅':(ready30?'✅ Agla din (Day '+(d+1)+') ›':'Agla din (Day '+(d+1)+') ›'))+'</button></div>'+
+    '<div class="mtDnHint">Din apne aap nahi badlega — jab tum chaho tab <b>Agla din</b> dabao.</div>';
+}
+document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest&&e.target.closest('[data-mt-tday],[data-mt-setday]'); if(!t||t.disabled) return;
+  e.preventDefault(); e.stopPropagation();
+  if(t.hasAttribute('data-mt-setday')) return setCurDay(+t.getAttribute('data-mt-setday'));
+  setCurDay(firstPending()+(+t.getAttribute('data-mt-tday')));
+},true);
+/* Mains page: dekha hua din Today me lagane ka button */
+var _rp10=renderPage;
+renderPage=function(){ _rp10(); var pg=document.getElementById('mtBody'); if(!pg) return;
+  try{ var card=pg.querySelector('.mtCard'); if(!card||card.querySelector('[data-mt-setday]')) return; var cd=firstPending();
+    if(selDay&&selDay!==cd){ var b=document.createElement('button'); b.type='button'; b.className='mtDnB set'; b.setAttribute('data-mt-setday',selDay); b.textContent='📌 Day '+selDay+' ko Today tab mein lagao'; card.appendChild(b); } }catch(e){} };
+(function(){ var css='.mtDayNav{display:flex;gap:8px;margin-top:10px}.mtDnB{flex:1;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);border-radius:12px;padding:11px 8px;font-size:13px;font-weight:800;cursor:pointer}.mtDnB.nx{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:transparent;color:#fff}.mtDnB.go{background:linear-gradient(135deg,#10b981,#06b6d4);box-shadow:0 0 14px rgba(16,185,129,.45)}.mtDnB:disabled{opacity:.4}.mtDnB.set{width:100%;margin-top:10px;border-style:dashed;color:#7dd3fc}.mtDnHint{margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center}.mtDnHint b{color:#7dd3fc}';
+ var st=document.createElement('style'); st.id='mtCSS10'; st.textContent=css; document.head.appendChild(st); })();
 var tries=0;
 (function boot(){
   if(!ready()){ if(++tries<200) return setTimeout(boot,150); return; }

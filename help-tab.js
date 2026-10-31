@@ -165,9 +165,11 @@ var P = [
     'Accuracy khud dikhti hai. Ye data <b>Score tab mein auto-sync</b> hota hai.'
   ] },
   { k: 'c', ic: '📋', t: 'Remaining Target', s: 'Kya baaki hai', l: ['Jo din / kaam baaki hain wo day-wise ek hi jagah — pichhla chhoota kaam yahan se pakdo.'] },
-  { k: 'c', ic: '➡️', t: 'Din apne aap kaise badalta hai', s: '30% rule', l: [
-    'Today tab mein <b>agla din tab aata hai jab current din ka 30% kaam ho jaye</b>.',
-    'Warna wahi din dikhta rehta hai. App ke Target Settings se iska koi lena-dena nahi.'
+  { k: 'c', ic: '➡️', t: 'Agla din kaise lagayein', s: 'Din apne aap nahi badalta', l: [
+    'Today tab ka Mains Target din <b>apne aap nahi badalta</b> — 100% ho jaye tab bhi wahi din rehta hai.',
+    'Card ke neeche <b>Agla din ›</b> aur <b>‹ Pichhla din</b> buttons hain. Jab chaho tab dabao.',
+    'Day ka 30% ya zyada ho jaye to Agla din button <b>hara</b> ho jata hai (sirf ishara, din nahi badalta).',
+    'Mains Target page mein kisi din ko dekhte hue <b>📌 Ye din Today mein lagao</b> se bhi Today ka din badal sakte ho.'
   ] },
   { k: 'c', ic: '🔒', t: 'Sirf-Mains mode', s: 'Dhyaan sirf Mains par', l: [
     'ON hone par Today tab mein <b>sirf Mains Target</b> dikhta hai.',
@@ -222,7 +224,7 @@ var P = [
   { k: 'faq', q: 'Naya update / feature nahi dikh raha', a: 'App ko poora band karke dobara kholo. Phir bhi na dikhe to <b>Stats → 🧹 Cache Clean + Refresh</b> dabao.' },
   { k: 'faq', q: 'Phone badal gaya, data kaise laoon?', a: 'Purane phone ka <b>Backup Code</b> naye phone ke Stats → <b>♻️ Restore From Code</b> mein paste karo.' },
   { k: 'faq', q: 'Streak kyun toot gayi?', a: 'Us din 50% se kam kaam hua aur 🧊 Freeze bacha nahi tha. Freeze max 2 hi hote hain.' },
-  { k: 'faq', q: 'Mains Target ka agla din kyun nahi aaya?', a: 'Agla din tab aata hai jab current din ka <b>30% kaam</b> ho jaye. Thoda aur tick karo.' },
+  { k: 'faq', q: 'Mains Target ka agla din kaise aayega?', a: 'Din khud nahi badalta. Today tab mein Mains Target card ke neeche <b>Agla din ›</b> dabao.' },
   { k: 'faq', q: 'Dost ka progress Rank mein nahi dikh raha', a: 'Dono ka <b>Room Code same</b> hona chahiye aur internet on. Stats ka <b>🔗 Sync Room</b> status dekho, phir <b>🔄 Refresh Numbers</b> dabao.' },
   { k: 'faq', q: '₹ kam / zyada kyun mila?', a: 'Roz ka ₹5,000 tasks ke <b>time ke hisaab</b> se bantta hai. Bade task ka ₹ zyada hota hai. Rest day mein na earn na loss.' },
   { k: 'faq', q: 'Task ka time / naam badalna hai', a: 'Today → <b>Customize Tasks</b> kholo, edit karo aur <b>💾 Save Karo</b>. Galti ho to ↩️ Default Pe Reset.' },
