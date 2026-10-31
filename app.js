@@ -2896,6 +2896,8 @@ async function save(opts){
   // declaration for why this matters (stops a blank/half-loaded state
   // from ever being persisted anywhere, including Firebase).
   if(!stateReady) return;
+  if(window.__bgLoadP){ try{ await window.__bgLoadP; }catch(e){} }   // cache-first open: pehle background merge poora hone do
+  if(viewingName !== myName && !(canAdminEditViewed() && adminEditModeOn)) return;
   const targetName = editingOther ? viewingName : myName;
   // opts.overwrite is only used by explicit, user-confirmed full-replace
   // actions (Reset Progress, Restore Backup) where the local `state` is
@@ -20543,18 +20545,75 @@ window.addEventListener('pagehide', ()=>{ save(); if(findRunningTaskIdx()!==unde
   viewingName = myName;
   await migrateOldDataIfNeeded(myName);
   await registerPlayer(myName);
-  state = await loadPlayerState(myName);
-  await ensureQuizDetailStoreForCurrentViewer();
-  applyLoadedExtras();
-  snapshotLoadedStateKeys();
-  stateReady = true;
+  // ===== Instant open (cache-first) =====
+  // Is device par pichli baar ka saved data (localStorage) turant use karke screen
+  // dikha dete hain — Firebase ka wait nahi. Asli (remote) data background me aata
+  // hai aur 3-way merge se judta hai: jo cheez tumne in kuch second me badli wo
+  // safe rehti hai, baaki sab dusre device ke latest data se update ho jaata hai.
+  // Cache nahi mila (naya device) to purana tareeka: network se load, par parallel.
+  let _cached = null, _baseJ = null, _bgLoad = null, _pMeta = null;
   if(getRoomCode()){
-    await refreshRoomMeta();
-    await applySharedTaskModeIfNeeded();
+    try{
+      const _raw = localStorage.getItem(localPlayerKey(myName));
+      if(_raw){ const _o = JSON.parse(_raw); if(_o && typeof _o==='object' && !Array.isArray(_o) && Object.keys(_o).length) _cached = _o; }
+    }catch(e){ _cached = null; }
   }
-  selectedDay = todayDayNum();
-  lastRenderedDayNum = todayDayNum(); // baseline for the 24hr Today-Rank rollover check
-  await loadTaskPhotoKeySet(); // so 📷 badges are correct on the very first render
+  if(_cached){
+    state = _cached;
+    _baseJ = {}; Object.keys(_cached).forEach(k=>{ try{ _baseJ[k] = JSON.stringify(_cached[k]); }catch(e){ _baseJ[k] = ''; } });
+    try{ const _qr = localStorage.getItem(quizDetailLocalKey(myName)); if(_qr){ const _qo = JSON.parse(_qr); if(_qo && typeof _qo==='object') quizDetailStore = _qo; } }catch(e){}
+    applyLoadedExtras();
+    snapshotLoadedStateKeys();
+    stateReady = true;
+    selectedDay = todayDayNum();
+    lastRenderedDayNum = todayDayNum();
+    await loadTaskPhotoKeySet(); // local IndexedDB — fast
+    _pMeta = refreshRoomMeta();
+    window.__bgLoadP = _bgLoad = (async function(){
+      try{
+        const remote = await loadPlayerState(myName);
+        if(viewingName === myName && remote && typeof remote==='object' && !Array.isArray(remote) && Object.keys(remote).length){
+          const merged = Object.assign({}, remote);
+          Object.keys(state).forEach(k=>{
+            let cur = ''; try{ cur = JSON.stringify(state[k]); }catch(e){}
+            if(cur === _baseJ[k]) return;                      // is session me user ne nahi badla -> remote ka latest
+            if(/^\d+$/.test(k) && remote[k] && typeof remote[k]==='object') merged[k] = mergeDayObjects(remote[k], state[k]);
+            else merged[k] = state[k];                         // user ne badla -> user ka version
+          });
+          Object.keys(_baseJ).forEach(k=>{ if(!(k in state)) delete merged[k]; });
+          if(JSON.stringify(merged) !== JSON.stringify(state)){
+            state = merged;
+            applyLoadedExtras();
+            snapshotLoadedStateKeys();
+            renderAll();
+          }
+        }
+        try{ await ensureQuizDetailStoreForCurrentViewer(); }catch(e){}
+        try{ await _pMeta; await applySharedTaskModeIfNeeded(); applyReadOnlyUI(); renderProfileBar(); renderRoomPanel(); renderTaskModeSelector(); }catch(e){ console.error('bg meta', e); }
+      }catch(e){ console.error('background refresh failed', e); }
+      finally{ window.__bgLoadP = null; }
+    })();
+  } else {
+    // Startup speed: ye 4 kaam ek dusre par depend nahi karte, isliye ek saath
+    // (parallel) chalate hain.
+    const _pState = loadPlayerState(myName);
+    const _pQuiz = ensureQuizDetailStoreForCurrentViewer();
+    _pMeta = getRoomCode() ? refreshRoomMeta() : null;
+    const _pPhoto = loadTaskPhotoKeySet(); // so 📷 badges are correct on the very first render
+    [_pState,_pQuiz,_pMeta,_pPhoto].forEach(p=>{ if(p && p.catch) p.catch(()=>{}); });
+    state = await _pState;
+    await _pQuiz;
+    applyLoadedExtras();
+    snapshotLoadedStateKeys();
+    stateReady = true;
+    if(getRoomCode()){
+      await _pMeta;
+      await applySharedTaskModeIfNeeded();
+    }
+    selectedDay = todayDayNum();
+    lastRenderedDayNum = todayDayNum(); // baseline for the 24hr Today-Rank rollover check
+    await _pPhoto;
+  }
   resumeTaskTimersOnLoad();
   setupHomeScreenIcon();
   initSwipeTabs();
@@ -20569,8 +20628,12 @@ window.addEventListener('pagehide', ()=>{ save(); if(findRunningTaskIdx()!==unde
   renderProfileBar();
   applyReadOnlyUI();
   renderRoomPanel();
-  if(getRoomCode()) await addToRoomRegistry(myName);
-  await renderCompetePanel();
+  // Startup speed: leaderboard (saare members ka data) background me load hota hai —
+  // isse app interactive hone ka wait nahi karta.
+  (async function(){
+    try{ if(getRoomCode()) await addToRoomRegistry(myName); await renderCompetePanel(); }
+    catch(e){ console.error('initial leaderboard load failed', e); }
+  })();
   startRoomAutoSync();
   startPresenceHeartbeat();
   startPendingSyncWatcher();

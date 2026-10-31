@@ -497,6 +497,81 @@ renderPage=function(){ _rp10(); var pg=document.getElementById('mtBody'); if(!pg
     if(selDay&&selDay!==cd){ var b=document.createElement('button'); b.type='button'; b.className='mtDnB set'; b.setAttribute('data-mt-setday',selDay); b.textContent='📌 Day '+selDay+' ko Today tab mein lagao'; card.appendChild(b); } }catch(e){} };
 (function(){ var css='.mtDayNav{display:flex;gap:8px;margin-top:10px}.mtDnB{flex:1;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);border-radius:12px;padding:11px 8px;font-size:13px;font-weight:800;cursor:pointer}.mtDnB.nx{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:transparent;color:#fff}.mtDnB.go{background:linear-gradient(135deg,#10b981,#06b6d4);box-shadow:0 0 14px rgba(16,185,129,.45)}.mtDnB:disabled{opacity:.4}.mtDnB.set{width:100%;margin-top:10px;border-style:dashed;color:#7dd3fc}.mtDnHint{margin-top:6px;font-size:11.5px;color:var(--muted);text-align:center}.mtDnHint b{color:#7dd3fc}';
  var st=document.createElement('style'); st.id='mtCSS10'; st.textContent=css; document.head.appendChild(st); })();
+/* ---- v12: Members ka Mains Target (dusre members ne kitna kiya — sirf dekhne ke liye) ---- */
+var MEM={at:0,busy:false,data:{},names:[],sel:null,day:null,err:false};
+function mpOf(st){ var m=st&&st.mainsPlan; return (m&&typeof m==='object'&&!Array.isArray(m))?m:{}; }
+function prOf(mp,d){ var p=planOf(d), r=mp[d]||{}, rr={maths:r.maths||{},formula:r.formula,gk:r.gk,weekly:r.weekly,grammar:r.grammar,comp:r.comp,typing:r.typing}, it=items(p), done=0; it.forEach(function(x){ if(isTicked(rr,x.k)) done++; }); return {done:done,total:it.length,pct:Math.round(done/it.length*100)}; }
+function scoreOf(mp,d){ var r=mp[d]; if(!r) return false; var p=planOf(d);
+  if(p.kind==='mock') return !!(r.mock&&filled(r.mock.total));
+  return !!(r.sect&&['m1','m2','r1','r2'].some(function(k){ return r.sect[k]&&filled(r.sect[k].score); })); }
+function mstats(st){
+  var mp=mpOf(st), daysDone=0, solved=0, best=0, run=0, xp=0, scores=0, streak=0, pcts=[], active=false, d, cur=parseInt(st&&st.mainsCur,10);
+  for(d=1; d<=PLAN.length; d++){ var pr=prOf(mp,d); if(pr.pct>0) active=true;
+    if(pr.pct===100){ daysDone++; run++; if(run>best) best=run; xp+=50; } else run=0;
+    xp+=pr.done*10; if(scoreOf(mp,d)){ scores++; xp+=25; }
+    var r=mp[d]; if(r&&r.maths&&r.maths.solved){ var sv=parseFloat(r.maths.solved)||0; solved+=sv; xp+=Math.round(sv/2); if(sv>0) active=true; }
+    if(r&&r.mock&&parseFloat(r.mock.pct)) pcts.push(parseFloat(r.mock.pct)); }
+  if(!(cur>=1&&cur<=PLAN.length)){ cur=PLAN.length; for(d=1; d<=PLAN.length; d++){ if(prOf(mp,d).pct<30){ cur=d; break; } } }
+  for(var e=cur; e>=1; e--){ if(prOf(mp,e).pct===100) streak++; else if(e===cur) continue; else break; }
+  var avg=pcts.length?Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length):null;
+  return {mp:mp,daysDone:daysDone,solved:solved,best:best,streak:streak,xp:xp,scores:scores,cur:cur,avg:avg,active:active||scores>0}; }
+function memNames(){
+  var out=[], seen={}; function add(n){ if(!n) return; var k=String(n).toLowerCase(); if(seen[k]) return; seen[k]=1; out.push(n); }
+  add(typeof myName!=='undefined'?myName:null);
+  return Promise.resolve().then(function(){ return (typeof loadRoomRegistry==='function')?loadRoomRegistry():[]; }).catch(function(){ return []; }).then(function(rn){
+    (rn||[]).forEach(add);
+    try{ if(typeof loadFriendsList==='function') (loadFriendsList()||[]).forEach(add); }catch(e){}
+    try{ if(typeof getRoomCode==='function'&&getRoomCode()&&typeof visibleNamesFor==='function') out=visibleNamesFor(out); }catch(e){}
+    return out; }); }
+function memLoad(force){
+  if(MEM.busy) return; if(!force && MEM.at && Date.now()-MEM.at<25000) return;
+  if(typeof loadPlayerState!=='function') return; MEM.busy=true; paintMem();
+  memNames().then(function(names){ MEM.names=names;
+    return Promise.all(names.map(function(nm){ return loadPlayerState(nm).then(function(st){ MEM.data[nm.toLowerCase()]=st||{}; }).catch(function(){}); })); })
+  .then(function(){ MEM.err=false; }).catch(function(e){ MEM.err=true; console.warn('mt members',e); })
+  .then(function(){ MEM.busy=false; MEM.at=Date.now(); paintMem(); }); }
+function isMe(nm){ return typeof myName!=='undefined' && String(nm).toLowerCase()===String(myName).toLowerCase(); }
+function stOf(nm){ if(isMe(nm) && typeof viewingName!=='undefined' && viewingName===myName) return state; return MEM.data[String(nm).toLowerCase()]||{}; }
+function miniCal(S,sel){ var h='<div class="mtCal mtCalM">'; PLAN.forEach(function(p){ var d=p.d, pr=prOf(S.mp,d), cls=pr.pct===100?' full':pr.pct>0?' part':'';
+  h+='<button type="button" class="mtCell'+cls+(d===sel?' sel':'')+(d===S.cur?' today':'')+'" data-mt-mday="'+d+'" style="--c:'+phCol(p.phase)+'"><b>'+d+'</b><small>'+(pr.pct===100?'✓':pr.pct>0?pr.pct+'%':(p.kind==='mock'?'M':'S'))+(scoreOf(S.mp,d)?' •':'')+'</small></button>'; }); return h+'</div>'; }
+function dayDetail(S,d){ var p=planOf(d), r=S.mp[d]||{}, rm=r.maths||{}, rr={maths:rm,formula:r.formula,gk:r.gk,weekly:r.weekly,grammar:r.grammar,comp:r.comp,typing:r.typing}, pr=prOf(S.mp,d), h='';
+  h+='<div class="mtMemDay" style="--c:'+phCol(p.phase)+'"><div class="mtMemDayH"><b>Day '+d+(d===S.cur?' · abhi yahan':'')+'</b><span>'+esc(p.phase)+' · '+(p.kind==='mock'?'Full Mock':'Sectional')+' · '+pr.done+'/'+pr.total+'</span></div>';
+  items(p).forEach(function(x){ var on=isTicked(rr,x.k); h+='<div class="mtRow'+(on?' on':'')+' mtRO"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.k==='maths'?'<i>'+(parseFloat(rm.solved)||0)+'/'+p.maths.q+' Q'+(rm.mins?' · '+rm.mins+' min':'')+'</i>':(x.s?'<i>'+esc(x.s)+'</i>':''))+'</span></div>'; });
+  if(p.kind==='mock'){ var m=r.mock||{}; if(filled(m.total)||filled(m.pct)) h+='<div class="mtMemSc">🏆 Mock'+(m.name?' · '+esc(m.name):'')+': <b>'+(filled(m.total)?m.total:'-')+'</b>/390'+(filled(m.pct)?' · '+m.pct+' %ile':'')+(filled(m.math)||filled(m.reas)||filled(m.eng)||filled(m.gk)?'<br><small>M '+(filled(m.math)?m.math:'-')+' · R '+(filled(m.reas)?m.reas:'-')+' · E '+(filled(m.eng)?m.eng:'-')+' · GK '+(filled(m.gk)?m.gk:'-')+'</small>':'')+'</div>'; }
+  else { var sc=[['m1','Maths 1'],['m2','Maths 2'],['r1','Reas 1'],['r2','Reas 2']].filter(function(k){ return r.sect&&r.sect[k[0]]&&filled(r.sect[k[0]].score); }).map(function(k){ return k[1]+': <b>'+r.sect[k[0]].score+'</b>/90'; }); if(sc.length) h+='<div class="mtMemSc">🎯 '+sc.join(' · ')+'</div>'; }
+  return h+'</div>'; }
+function memHTML(){
+  var rows=MEM.names.map(function(nm){ var st=stOf(nm); return {nm:nm,S:mstats(st)}; }), act=rows.filter(function(r){ return r.S.active; }).sort(function(a,b){ return b.S.xp-a.S.xp||b.S.daysDone-a.S.daysDone; }), idle=rows.filter(function(r){ return !r.S.active; });
+  var h='<div class="mtSec">👥 Members ka Mains Target <em class="mtEm">'+act.length+' kar rahe hain</em></div><div class="mtMemBox">';
+  if(!MEM.names.length) h+='<div class="mtMemEmpty">'+(MEM.busy?'⏳ Members load ho rahe hain...':(MEM.err?'⚠️ Members load nahi hue — dubara try karo.':'Abhi koi member nahi mila.'))+'</div>';
+  act.forEach(function(r,i){ var S=r.S, lv=levelOf(S.xp), pc=Math.round(S.daysDone/PLAN.length*100), open=MEM.sel&&MEM.sel.toLowerCase()===r.nm.toLowerCase(), medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    h+='<div class="mtMem'+(open?' open':'')+(isMe(r.nm)?' me':'')+'"><button type="button" class="mtMemTop" data-mt-mem="'+esc(r.nm)+'"><span class="mtMemRk">'+medal+'</span><span class="mtMemAv">'+esc(r.nm.charAt(0).toUpperCase())+'</span><span class="mtMemMid"><b>'+esc(r.nm)+(isMe(r.nm)?' <u>Tum</u>':'')+'</b><small>'+lv.ic+' '+lv.name+' · Day '+S.cur+' · ✅ '+S.daysDone+'/'+PLAN.length+' · 🔥 '+S.streak+' · 📐 '+S.solved+' Q'+(S.avg!==null?' · 📈 '+S.avg+'%':'')+'</small><div class="mtBar sm"><div style="width:'+pc+'%"></div></div></span><span class="mtMemXp">⭐ '+S.xp+'<small>'+(open?'▲':'▼')+'</small></span></button>';
+    if(open){ var sd=(MEM.day&&MEM.day>=1&&MEM.day<=PLAN.length)?MEM.day:S.cur; h+='<div class="mtMemDet"><div class="mtMemSt"><div><b>'+S.daysDone+'</b><small>Days done</small></div><div><b>'+S.solved+'</b><small>Q solved</small></div><div><b>'+S.best+'</b><small>Best streak</small></div><div><b>'+S.scores+'</b><small>Scores</small></div></div>'+miniCal(S,sd)+dayDetail(S,sd)+'<div class="mtMemNote">👀 Sirf dekhne ke liye — edit nahi hota.</div></div>'; }
+    h+='</div>'; });
+  if(idle.length) h+='<div class="mtMemIdle">⏳ Abhi shuru nahi kiya: '+idle.map(function(r){ return esc(r.nm); }).join(', ')+'</div>';
+  h+='<button type="button" class="mtMemRef" data-mt-memref="1">'+(MEM.busy?'⏳ Refresh ho raha hai...':'🔄 Refresh')+'</button></div>';
+  return h; }
+function paintMem(){ var pg=document.getElementById('mtBody'); if(!pg) return; var box=document.getElementById('mtMem');
+  if(!box){ box=document.createElement('div'); box.id='mtMem'; var more=pg.querySelector('.mtMore'); if(more) pg.insertBefore(box,more); else pg.appendChild(box); }
+  try{ box.innerHTML=memHTML(); }catch(e){ console.warn('mt mem paint',e); } }
+var _rp12=renderPage;
+renderPage=function(){ _rp12(); try{ var old=document.getElementById('mtMem'); if(old) old.remove(); paintMem(); memLoad(false); }catch(e){ console.warn('mt v12',e); } };
+document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-mt-mem],[data-mt-mday],[data-mt-memref]'); if(!t) return;
+  if(t.hasAttribute('data-mt-memref')){ memLoad(true); return; }
+  if(t.hasAttribute('data-mt-mday')){ MEM.day=+t.getAttribute('data-mt-mday'); paintMem(); return; }
+  var nm=t.getAttribute('data-mt-mem'); if(MEM.sel&&MEM.sel.toLowerCase()===nm.toLowerCase()){ MEM.sel=null; MEM.day=null; } else { MEM.sel=nm; MEM.day=null; } paintMem(); });
+setInterval(function(){ var pg=document.getElementById('calcPage-mainstarget'); if(pg&&pg.classList.contains('active')) memLoad(false); },30000);
+(function(){ var css='.mtMemBox{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}.mtMem{background:var(--card,#141b2d);border:1px solid var(--border);border-radius:16px;overflow:hidden}.mtMem.me{border-color:#fbbf24}.mtMem.open{border-color:#a78bfa}'+
+ '.mtMemTop{width:100%;display:flex;align-items:center;gap:9px;padding:11px;background:none;border:0;color:var(--text);text-align:left;cursor:pointer}.mtMemRk{width:24px;text-align:center;font-weight:800;font-size:15px;flex:none;color:var(--muted)}'+
+ '.mtMemAv{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:linear-gradient(135deg,#8b5cf6,#38bdf8)}'+
+ '.mtMemMid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.mtMemMid b{font-size:14px}.mtMemMid b u{text-decoration:none;font-size:10px;background:#fbbf24;color:#0b1220;border-radius:99px;padding:1px 7px;margin-left:4px}.mtMemMid small{font-size:11px;color:var(--muted)}'+
+ '.mtMemXp{flex:none;text-align:right;font-weight:800;font-size:13px;color:#fbbf24;display:flex;flex-direction:column}.mtMemXp small{font-size:10px;color:var(--muted)}'+
+ '.mtMemDet{padding:0 11px 12px}.mtMemSt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}.mtMemSt div{text-align:center;padding:8px 2px;border-radius:12px;background:rgba(255,255,255,.05)}.mtMemSt b{display:block;font-size:16px;color:#38bdf8}.mtMemSt small{font-size:10px;color:var(--muted)}'+
+ '.mtCalM{margin-bottom:10px}.mtMemDay{border-left:4px solid var(--c);background:rgba(255,255,255,.03);border-radius:12px;padding:10px}.mtMemDayH{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}.mtMemDayH b{font-size:14px;color:var(--text)}.mtMemDayH span{font-size:11px;color:var(--c)}'+
+ '.mtRO{cursor:default}.mtRO:active{transform:none}.mtMemSc{margin-top:8px;font-size:12.5px;padding:8px 10px;border-radius:10px;background:rgba(251,146,60,.1);border:1px dashed rgba(251,146,60,.4);color:var(--text)}.mtMemSc small{color:var(--muted)}'+
+ '.mtMemNote{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}.mtMemIdle{font-size:12px;color:var(--muted);padding:8px 4px}.mtMemEmpty{text-align:center;padding:16px;color:var(--muted);font-size:13px}'+
+ '.mtMemRef{border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);border-radius:12px;padding:10px;font-weight:700;font-size:13px;cursor:pointer}';
+ var st=document.createElement('style'); st.id='mtCSS12'; st.textContent=css; document.head.appendChild(st); })();
 var tries=0;
 (function boot(){
   if(!ready()){ if(++tries<200) return setTimeout(boot,150); return; }
