@@ -20,17 +20,31 @@ function planOf(d){ return PLAN[d-1]; }
 
 /* ---- items applicable for a day ---- */
 function items(p){
-  var a=[{k:'maths',ic:'📐',t:'Maths: '+p.maths.t,s:p.maths.r+' · '+p.maths.m+' min · target '+p.maths.q+' Q'},
-         {k:'formula',ic:'📝',t:'Formula: '+p.formula,s:''}];
+  var mk=p.kind==='mock';
+  var a=[{k:'maths',ic:'📐',t:'Maths: '+p.maths.t,s:p.maths.r+' · '+p.maths.m+' min · target '+p.maths.q+' Q'}];
+  a.push(mk ? {k:'mockT',ic:'🏆',t:'Full Mock attempt',s:'1 full mock + score neeche bharo'}
+            : {k:'mockT',ic:'🎯',t:'Sectionals: 2 Maths + 2 Reasoning',s:'30 Q each · 90 marks · score neeche bharo'});
+  a.push({k:'analysis',ic:'🔍',t:mk?'Mock Analysis':'Sectional Analysis',s:'Galti → Error Notebook'});
+  a.push({k:'formula',ic:'📝',t:'Formula: '+p.formula,s:''});
+  a.push({k:'calc',ic:'🧮',t:'Calculation',s:'Daily speed test · Lite ~8-10 min'});
   if(p.gk) a.push({k:'gk',ic:'🌍',t:'GK R'+p.gk.round+': '+p.gk.subject,s:p.gk.detail});
+  a.push({k:'vocab',ic:'📚',t:'Vocab',s:'50 new + 50 old revise'});
+  a.push({k:'idioms',ic:'🗣️',t:'Idioms',s:'50'});
+  a.push({k:'spell',ic:'🔠',t:'Spelling',s:'50'});
+  a.push({k:'edit',ic:'📰',t:'2 Editorial',s:''});
   a.push({k:'weekly',ic:'🔤',t:p.weekly,s:'English weekly'});
   a.push({k:'grammar',ic:'✍️',t:'Grammar: '+p.grammar,s:''});
+  a.push({k:'rcz',ic:'📖',t:'RC · Cloze · PQRS',s:'RC 1 · Cloze 1 · PQRS 5'});
+  a.push({k:'errnb',ic:'📓',t:'Error Notebook',s:'2 pages'});
   if(p.ct){ a.push({k:'comp',ic:'💻',t:'Computer',s:'20 min'}); a.push({k:'typing',ic:'⌨️',t:'Typing',s:'20 min'}); }
   return a;
 }
+/* daily tick keys (maths alag: r.maths.done) — member view / progress copies ke liye */
+var TICK_KEYS=['mockT','analysis','formula','calc','gk','vocab','idioms','spell','edit','weekly','grammar','rcz','errnb','comp','typing'];
+function tickView(r,m){ var o={maths:m||r.maths||{}}; TICK_KEYS.forEach(function(k){ o[k]=r[k]; }); return o; }
 function isTicked(r,k){ return k==='maths' ? !!r.maths.done : !!r[k]; }
 /* ---- v11: paise target ke weight (time/effort) ke hisaab se baantte hain; din ka total hamesha exact DAILY ---- */
-function itemW(p,k){ return k==='maths' ? Math.max(20,+p.maths.m||0) : k==='formula' ? 20 : k==='gk' ? 45 : k==='weekly' ? 20 : k==='grammar' ? 30 : 20; }
+function itemW(p,k){ return k==='maths' ? Math.max(20,+p.maths.m||0) : k==='mockT' ? (p.kind==='mock'?120:100) : k==='analysis' ? 40 : k==='formula' ? 20 : k==='calc' ? 20 : k==='gk' ? 45 : k==='vocab' ? 30 : k==='idioms' ? 15 : k==='spell' ? 15 : k==='edit' ? 20 : k==='weekly' ? 20 : k==='grammar' ? 30 : k==='rcz' ? 30 : k==='errnb' ? 15 : 20; }
 function amtMap(d){
   var p=planOf(d), it=items(p), ws=it.map(function(x){ return itemW(p,x.k); }), tot=ws.reduce(function(a,b){return a+b;},0)||1, D=(typeof DAILY_TARGET!=='undefined')?DAILY_TARGET:5000;
   var raw=ws.map(function(w){ return w/tot*D; }), v=raw.map(Math.floor), rem=Math.round(D-v.reduce(function(a,b){return a+b;},0));
@@ -62,23 +76,37 @@ function phaseStats(){ var o={},order=[]; PLAN.forEach(function(p){ if(!o[p.phas
 function totalQ(){ return PLAN.reduce(function(a,p){return a+p.maths.q;},0); }
 
 /* ---- controls (shared by page + Today panel) ---- */
-function controlsHTML(d, compact){
-  var p=planOf(d), r=rec(d), h='', AM=amtMap(d);
-  items(p).forEach(function(x){
-    var on=isTicked(r,x.k);
-    h+='<div class="mtRow'+(on?' on':'')+'" data-mt-tick="'+x.k+'" data-d="'+d+'"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.s?'<i>'+esc(x.s)+'</i>':'')+'</span><span class="mtRs">'+rs(AM[x.k]||0)+'</span></div>';
-    if(x.k==='maths'){
-      h+='<div class="mtFill"><label>Solved Q<input type="number" inputmode="numeric" min="0" data-mt-f="solved" data-d="'+d+'" value="'+esc(r.maths.solved===undefined?'':r.maths.solved)+'" placeholder="/'+p.maths.q+'"></label>'+
-         '<label>Time (min)<input type="number" inputmode="numeric" min="0" data-mt-f="mins" data-d="'+d+'" value="'+esc(r.maths.mins===undefined?'':r.maths.mins)+'" placeholder="'+p.maths.m+'"></label></div>';
-      var sq=parseFloat(r.maths.solved)||0, qp=Math.min(100,Math.round(sq/p.maths.q*100));
-      h+='<div class="mtQBar"><div style="width:'+qp+'%"></div></div><div class="mtQBtns"><span>'+sq+'/'+p.maths.q+' Q</span><button type="button" data-mt-q="'+d+'|10">+10</button><button type="button" data-mt-q="'+d+'|25">+25</button><button type="button" data-mt-q="'+d+'|50">+50</button><button type="button" class="full" data-mt-q="'+d+'|full">✅ Full</button></div>';
-    }
-  });
-  if(!p.gk) h+='<div class="mtOff">🌍 GK: aaj OFF day</div>';
-  if(!compact){
-    h+='<textarea class="mtNotes" data-mt-f="notes" data-d="'+d+'" placeholder="Notes (aaj kya seekha / kahan atka)...">'+esc(r.notes||'')+'</textarea>';
+var GRP_OF={maths:'maths',mockT:'test',analysis:'test',formula:'fc',calc:'fc',gk:'gk',vocab:'eng',idioms:'eng',spell:'eng',edit:'eng',weekly:'eng',grammar:'eng',rcz:'eng',errnb:'eng',comp:'ct',typing:'ct'};
+function grpMeta(g,p){ return {maths:['📐','MATHS'],test:[p.kind==='mock'?'🏆':'🎯',p.kind==='mock'?'FULL MOCK + ANALYSIS':'SECTIONALS + ANALYSIS'],fc:['📝','FORMULA + CALCULATION'],gk:['🌍','GK'],eng:['✍️','ENGLISH · ROZ KA KAAM'],ct:['💻','COMPUTER + TYPING']}[g]; }
+function rowHTML(x,d,p,r,AM){
+  var on=isTicked(r,x.k), h='';
+  h+='<div class="mtRow'+(on?' on':'')+'" data-mt-tick="'+x.k+'" data-d="'+d+'"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.s?'<i>'+esc(x.s)+'</i>':'')+'</span><span class="mtRs">'+rs(AM[x.k]||0)+'</span></div>';
+  if(x.k==='calc'){
+    h+='<div class="mtQBtns"><button type="button" class="full" data-mt-calc="'+d+'">⚡ Calculation Test kholo (Lite)</button></div>';
   }
-  h+=scoreHTML(d,p,r,compact);
+  if(x.k==='maths'){
+    h+='<div class="mtFill"><label>Solved Q<input type="number" inputmode="numeric" min="0" data-mt-f="solved" data-d="'+d+'" value="'+esc(r.maths.solved===undefined?'':r.maths.solved)+'" placeholder="/'+p.maths.q+'"></label>'+
+       '<label>Time (min)<input type="number" inputmode="numeric" min="0" data-mt-f="mins" data-d="'+d+'" value="'+esc(r.maths.mins===undefined?'':r.maths.mins)+'" placeholder="'+p.maths.m+'"></label></div>';
+    var sq=parseFloat(r.maths.solved)||0, qp=Math.min(100,Math.round(sq/p.maths.q*100));
+    h+='<div class="mtQBar"><div style="width:'+qp+'%"></div></div><div class="mtQBtns"><span>'+sq+'/'+p.maths.q+' Q</span><button type="button" data-mt-q="'+d+'|10">+10</button><button type="button" data-mt-q="'+d+'|25">+25</button><button type="button" data-mt-q="'+d+'|50">+50</button><button type="button" class="full" data-mt-q="'+d+'|full">✅ Full</button></div>';
+  }
+  return h;
+}
+function controlsHTML(d, compact){
+  var p=planOf(d), r=rec(d), h='', AM=amtMap(d), it=items(p), order=[], by={};
+  it.forEach(function(x){ var g=GRP_OF[x.k]||'eng'; if(!by[g]){ by[g]=[]; order.push(g); } by[g].push(x); });
+  order.forEach(function(g, gi){
+    var list=by[g], done=list.filter(function(x){ return isTicked(r,x.k); }).length, all=done===list.length, m=grpMeta(g,p), badge=done+'/'+list.length;
+    if(g==='maths'){ var sq=parseFloat(r.maths.solved)||0; badge=sq+'/'+p.maths.q+' Q'; all=!!r.maths.done; }
+    h+='<div class="mtSecCard'+(all?' fin':'')+'"><div class="mtSecH"><span class="mtSecIc">'+m[0]+'</span><span class="mtSecT">'+m[1]+'</span><span class="mtPill'+(all?' done':'')+'">'+badge+'</span></div>';
+    list.forEach(function(x){ h+=rowHTML(x,d,p,r,AM); });
+    if(g==='test') h+=scoreHTML(d,p,r,compact);
+    h+='</div>';
+    if(g==='fc' && !p.gk) h+='<div class="mtSecCard off"><div class="mtSecH"><span class="mtSecIc">🌍</span><span class="mtSecT">GK</span><span class="mtPill">OFF</span></div><div class="mtOff">Aaj GK OFF — Maths heavy day, skip karo.</div></div>';
+  });
+  if(!compact){
+    h+='<div class="mtSecCard"><div class="mtSecH"><span class="mtSecIc">📓</span><span class="mtSecT">NOTES</span></div><textarea class="mtNotes" data-mt-f="notes" data-d="'+d+'" placeholder="Notes (aaj kya seekha / kahan atka)...">'+esc(r.notes||'')+'</textarea></div>';
+  }
   return h;
 }
 function inp(k,sub,d,val,ph,w){ return '<input type="'+(sub==='name'?'text':'number')+'" '+(sub==='name'?'':'inputmode="decimal" step="any" ')+'data-mt-s="'+k+'" data-sub="'+sub+'" data-d="'+d+'" value="'+esc(val===undefined?'':val)+'" placeholder="'+ph+'"'+(w?' style="grid-column:span '+w+'"':'')+'>'; }
@@ -347,7 +375,7 @@ renderPage=function(){
   try{ var ch=pg.querySelector('.mtChips'); if(ch){ ch.insertAdjacentHTML('beforebegin',phaseBar());
       if(PHF) ch.querySelectorAll('.mtChip').forEach(function(c){ var d=parseInt(c.getAttribute('data-mt-day'),10); if(planOf(d).phase!==PHF) c.classList.add('dim'); }); }
     var wk=pg.querySelector('.mtWeek'); if(wk){ var t=trendHTML(); if(t) wk.insertAdjacentHTML('afterend',t); }
-    var hd=pg.querySelector('.mtCard .mtCardH'); if(hd) hd.insertAdjacentHTML('afterend',timerHTML(selDay));
+    
   }catch(e){ console.warn('mt v4',e); } };
 document.addEventListener('click',function(e){ var t=e.target&&e.target.closest&&e.target.closest('[data-mt-t],[data-mt-ph]'); if(!t) return;
   if(t.hasAttribute('data-mt-ph')){ PHF=t.getAttribute('data-mt-ph')||null; renderPage(); return; }
@@ -500,7 +528,7 @@ renderPage=function(){ _rp10(); var pg=document.getElementById('mtBody'); if(!pg
 /* ---- v12: Members ka Mains Target (dusre members ne kitna kiya — sirf dekhne ke liye) ---- */
 var MEM={at:0,busy:false,data:{},names:[],sel:null,day:null,err:false};
 function mpOf(st){ var m=st&&st.mainsPlan; return (m&&typeof m==='object'&&!Array.isArray(m))?m:{}; }
-function prOf(mp,d){ var p=planOf(d), r=mp[d]||{}, rr={maths:r.maths||{},formula:r.formula,gk:r.gk,weekly:r.weekly,grammar:r.grammar,comp:r.comp,typing:r.typing}, it=items(p), done=0; it.forEach(function(x){ if(isTicked(rr,x.k)) done++; }); return {done:done,total:it.length,pct:Math.round(done/it.length*100)}; }
+function prOf(mp,d){ var p=planOf(d), r=mp[d]||{}, rr=tickView(r), it=items(p), done=0; it.forEach(function(x){ if(isTicked(rr,x.k)) done++; }); return {done:done,total:it.length,pct:Math.round(done/it.length*100)}; }
 function scoreOf(mp,d){ var r=mp[d]; if(!r) return false; var p=planOf(d);
   if(p.kind==='mock') return !!(r.mock&&filled(r.mock.total));
   return !!(r.sect&&['m1','m2','r1','r2'].some(function(k){ return r.sect[k]&&filled(r.sect[k].score); })); }
@@ -534,7 +562,7 @@ function isMe(nm){ return typeof myName!=='undefined' && String(nm).toLowerCase(
 function stOf(nm){ if(isMe(nm) && typeof viewingName!=='undefined' && viewingName===myName) return state; return MEM.data[String(nm).toLowerCase()]||{}; }
 function miniCal(S,sel){ var h='<div class="mtCal mtCalM">'; PLAN.forEach(function(p){ var d=p.d, pr=prOf(S.mp,d), cls=pr.pct===100?' full':pr.pct>0?' part':'';
   h+='<button type="button" class="mtCell'+cls+(d===sel?' sel':'')+(d===S.cur?' today':'')+'" data-mt-mday="'+d+'" style="--c:'+phCol(p.phase)+'"><b>'+d+'</b><small>'+(pr.pct===100?'✓':pr.pct>0?pr.pct+'%':(p.kind==='mock'?'M':'S'))+(scoreOf(S.mp,d)?' •':'')+'</small></button>'; }); return h+'</div>'; }
-function dayDetail(S,d){ var p=planOf(d), r=S.mp[d]||{}, rm=r.maths||{}, rr={maths:rm,formula:r.formula,gk:r.gk,weekly:r.weekly,grammar:r.grammar,comp:r.comp,typing:r.typing}, pr=prOf(S.mp,d), h='';
+function dayDetail(S,d){ var p=planOf(d), r=S.mp[d]||{}, rm=r.maths||{}, rr=tickView(r,rm), pr=prOf(S.mp,d), h='';
   h+='<div class="mtMemDay" style="--c:'+phCol(p.phase)+'"><div class="mtMemDayH"><b>Day '+d+(d===S.cur?' · abhi yahan':'')+'</b><span>'+esc(p.phase)+' · '+(p.kind==='mock'?'Full Mock':'Sectional')+' · '+pr.done+'/'+pr.total+'</span></div>';
   items(p).forEach(function(x){ var on=isTicked(rr,x.k); h+='<div class="mtRow'+(on?' on':'')+' mtRO"><span class="mtChk">'+(on?'✓':'')+'</span><span class="mtTxt"><b>'+x.ic+' '+esc(x.t)+'</b>'+(x.k==='maths'?'<i>'+(parseFloat(rm.solved)||0)+'/'+p.maths.q+' Q'+(rm.mins?' · '+rm.mins+' min':'')+'</i>':(x.s?'<i>'+esc(x.s)+'</i>':''))+'</span></div>'; });
   if(p.kind==='mock'){ var m=r.mock||{}; if(filled(m.total)||filled(m.pct)) h+='<div class="mtMemSc">🏆 Mock'+(m.name?' · '+esc(m.name):'')+': <b>'+(filled(m.total)?m.total:'-')+'</b>/390'+(filled(m.pct)?' · '+m.pct+' %ile':'')+(filled(m.math)||filled(m.reas)||filled(m.eng)||filled(m.gk)?'<br><small>M '+(filled(m.math)?m.math:'-')+' · R '+(filled(m.reas)?m.reas:'-')+' · E '+(filled(m.eng)?m.eng:'-')+' · GK '+(filled(m.gk)?m.gk:'-')+'</small>':'')+'</div>'; }
@@ -579,5 +607,55 @@ var tries=0;
   /* data cloud/local se baad me load ho to dubara draw */
   var n=0, iv=setInterval(function(){ renderToday(); if(++n>12) clearInterval(iv); },1500);
 })();
+/* ---- Daily Calculation: Mains Target se Calculation Speed Test kholo; Submit hote hi us din ka Calculation tick ---- */
+var MT_CALC_DAY=0;
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('[data-mt-calc]'); if(!b) return;
+  e.stopPropagation(); e.preventDefault();
+  MT_CALC_DAY=+b.getAttribute('data-mt-calc')||0;
+  try{ showCalcPage('speedtest'); }catch(x){ console.warn('mt calc open',x); }
+},true);
+window.addEventListener('message',function(e){
+  var m=e&&e.data; if(!m||m.type!=='examTrackerCalcSpeedComplete'||!MT_CALC_DAY) return;
+  var d=MT_CALC_DAY; MT_CALC_DAY=0;
+  try{ var r=rec(d); if(!r.calc){ r.calc=true; commit(d,false); } }catch(x){ console.warn('mt calc tick',x); }
+});
+/* ---- UI v13: premium card design (gold accent bar, gradient cards, pill badges) ---- */
+(function(){ var css=''+
+ 'html body .mtHero{background:linear-gradient(135deg,#1a1242 0%,#4b1d6e 38%,#b8400f 78%,#f2a93b 100%);background-size:200% 200%;border:1px solid rgba(255,210,122,.38);border-radius:22px;padding:18px;box-shadow:0 12px 36px rgba(124,58,237,.28),inset 0 1px 0 rgba(255,255,255,.14)}'+
+ 'html body .mtH1{font-size:22px;letter-spacing:.3px}html body .mtH2{color:#ffe3b8}'+
+ 'html body .mtPills span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);font-weight:700;backdrop-filter:blur(6px)}'+
+ 'html body .mtLvl,html body .mtStats div{background:linear-gradient(160deg,#16223f,#0d1526 70%);border:1px solid rgba(255,255,255,.08);border-radius:16px}'+
+ 'html body .mtStats b{background:linear-gradient(180deg,#ffe3a3,#f2b544);-webkit-background-clip:text;background-clip:text;color:transparent}'+
+ 'html body .mtQuote{background:linear-gradient(90deg,rgba(242,181,68,.18),rgba(242,181,68,.03));border-left:4px solid #f2b544;border-radius:12px}'+
+ 'html body .mtSec{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.6px}html body .mtSec:before{content:"";width:4px;height:16px;border-radius:3px;background:linear-gradient(180deg,#ffd27a,#f2b544)}'+
+ 'html body .mtChip{border-radius:12px}html body .mtChip.full:before{background:linear-gradient(145deg,color-mix(in srgb,var(--c) 45%,#0b1220),#0b1220)}'+
+ 'html body .mtCard{background:linear-gradient(160deg,#141f38,#0b1424 70%);border:1px solid rgba(255,255,255,.08);border-top:2px solid var(--c);border-radius:22px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.38)}'+
+ 'html body .mtDayT{font-size:19px;letter-spacing:.2px}'+
+ 'html body .mtDayS{display:inline-block;font-weight:700;padding:3px 10px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 55%,transparent)}'+
+ 'html body .mtSecCard{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(27,40,70,.96),rgba(13,21,38,.96) 70%);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:12px 12px 6px 17px;margin:0 0 12px;box-shadow:0 4px 16px rgba(0,0,0,.25)}'+
+ 'html body .mtSecCard:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:linear-gradient(180deg,#ffd27a,#f2b544 55%,#3ecf8e)}'+
+ 'html body .mtSecCard.fin{border-color:rgba(52,211,153,.45);box-shadow:0 4px 18px rgba(52,211,153,.12)}html body .mtSecCard.off{opacity:.7}'+
+ 'html body .mtSecH{display:flex;align-items:center;gap:10px;margin-bottom:10px}'+
+ 'html body .mtSecIc{width:34px;height:34px;flex:none;border-radius:11px;background:linear-gradient(145deg,#ffd27a,#e0942a);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 12px rgba(242,181,68,.35)}'+
+ 'html body .mtSecT{font-size:12.5px;font-weight:800;letter-spacing:.9px;color:#ffd27a}'+
+ 'html body .mtPill{margin-left:auto;font-size:12px;font-weight:800;color:#ffd27a;background:rgba(242,181,68,.12);border:1px solid rgba(242,181,68,.5);border-radius:99px;padding:4px 12px;white-space:nowrap}'+
+ 'html body .mtPill.done{color:#6ee7b7;background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.55)}'+
+ 'html body .mtRow{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;margin-bottom:7px}'+
+ 'html body .mtChk{width:26px;height:26px;border-radius:9px;border:2px solid rgba(255,255,255,.28)}'+
+ 'html body .mtRow.on{background:linear-gradient(135deg,rgba(52,211,153,.17),rgba(52,211,153,.05));border-color:rgba(52,211,153,.5)}'+
+ 'html body .mtRow.on .mtChk{background:linear-gradient(145deg,#6ee7b7,#22c55e);border-color:transparent;box-shadow:0 0 10px rgba(52,211,153,.5)}'+
+ 'html body .mtRs{color:#ffd27a;background:rgba(242,181,68,.12);border:1px solid rgba(242,181,68,.3)}html body .mtRow.on .mtRs{color:#6ee7b7;background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.4)}html body .mtRow:not(.on) .mtRs{color:#ffd27a;background:rgba(242,181,68,.1)}'+
+ 'html body .mtQBar{height:8px}html body .mtQBar div{background:linear-gradient(90deg,#f2b544,#3ecf8e)}'+
+ 'html body .mtQBtns span{color:#ffd27a}'+
+ 'html body .mtQBtns button{background:linear-gradient(160deg,#1d2c4f,#121d36);border:1px solid rgba(242,181,68,.4);color:#ffd27a;padding:6px 13px}'+
+ 'html body .mtQBtns button.full{background:linear-gradient(135deg,#ffd27a,#f2b544);border-color:transparent;color:#2a1c05;box-shadow:0 4px 14px rgba(242,181,68,.35)}'+
+ 'html body .mtFill input,html body .mtGrid input,html body .mtNotes{background:rgba(8,14,28,.7);border:1px solid rgba(255,255,255,.12);border-radius:12px}'+
+ 'html body .mtFill input:focus,html body .mtGrid input:focus,html body .mtNotes:focus{outline:none;border-color:#f2b544;box-shadow:0 0 0 3px rgba(242,181,68,.22)}'+
+ 'html body .mtScore{background:linear-gradient(160deg,rgba(242,181,68,.09),rgba(242,181,68,.02));border:1px solid rgba(242,181,68,.35);border-radius:16px;margin:4px 0 8px}html body .mtScoreT{color:#ffd27a}'+
+ 'html body .mtOff{color:var(--muted,#8ea0bd);font-size:12.5px;padding:2px 2px 8px}'+
+ 'html body .mtNav button{background:linear-gradient(160deg,#1d2c4f,#121d36);border:1px solid rgba(242,181,68,.35);color:#ffd27a;border-radius:14px;padding:12px}'+
+ 'html body .mtToday .mtSecCard{margin-bottom:10px}';
+ var st=document.createElement('style'); st.id='mtCSS13'; st.textContent=css; document.head.appendChild(st); })();
 window.mainsTarget={open:openPage,render:refresh,sync:syncScores};
 })();
