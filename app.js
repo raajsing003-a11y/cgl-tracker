@@ -33152,6 +33152,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(localStorage.getItem('cx-welcomed:' + r + ':' + mk) === '1') return;
       const cfg = await loadCfg();
       if(!cfg.init || cfg.on === false) return;
+      if(Array.isArray(cfg.welExcept) && cfg.welExcept.includes(mk)) return;   // admin ne is user ko welcome exception me rakha hai
       const names = await loadRoomRegistry();
       if(!names.some(n=> kOf(n) === mk)) return;
       await waitForFirebase();
@@ -33169,7 +33170,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   function css(){
     if(document.getElementById('cxBcCss')) return;
     const st = document.createElement('style'); st.id = 'cxBcCss';
-    st.textContent = '#cxBcWrap{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}'
+    st.textContent = ''
       + '#cxBcBox{width:100%;max-width:560px;max-height:92vh;overflow-y:auto;background:#17181c;color:#eceef2;border-radius:18px 18px 0 0;padding:16px 16px 22px;font-size:17px;line-height:1.45;box-sizing:border-box}'
       + '#cxBcBox h3{margin:0 0 4px;font-size:21px}#cxBcBox .sub{opacity:.7;font-size:14px;margin-bottom:10px}'
       + '#cxBcBox textarea{width:100%;box-sizing:border-box;min-height:110px;background:#0e0f12;color:#fff;border:1px solid #3a3d46;border-radius:12px;padding:12px;font-size:17px;font-family:inherit;resize:vertical}'
@@ -33183,61 +33184,73 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       + '#cxBcBox button.go:disabled{opacity:.5}'
       + '#cxBcBox .sec{margin-top:20px;padding-top:14px;border-top:2px dashed #3a3d46}'
       + '#cxBcBox .msg{margin-top:8px;font-size:15px;color:#fbbf24}'
-      + '#cxBcBtn{margin-left:auto}';
+      + '#cxBcBox .h2{margin:18px 0 4px;font-weight:800;font-size:18px}'
+      + '#cxBcBox .srch{width:100%;box-sizing:border-box;background:#0e0f12;color:#fff;border:1px solid #3a3d46;border-radius:12px;padding:11px 12px;font-size:17px;margin:6px 0}'
+      + '#cxBcBox .pv{margin-top:8px;padding:10px 12px;background:#22242b;border-radius:10px;font-size:15px;opacity:.9}#cxBcBox .pv:empty{display:none}'
+      + '#cxBcBox .cnt{margin-left:auto;align-self:center;font-size:14px;opacity:.7}'
+      + '#cxBcBox .row.big{border:0;font-size:19px}'
+      + '#cxBcBox button.plain{width:100%;margin-top:16px}'
+      + '#cxBcBox button.snd{padding:6px 10px;font-size:18px;background:#2b2e38}'
+      + '.cxBcWrapC{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}';
     document.head.appendChild(st);
   }
 
-  async function openPanel(){
+  function ensureWrap(id){
     css();
-    const old = document.getElementById('cxBcWrap'); if(old) old.remove();
-    const wrap = document.createElement('div'); wrap.id = 'cxBcWrap';
-    wrap.innerHTML = '<div id="cxBcBox"><h3>📢 Sabko message</h3><div class="sub">Loading…</div></div>';
+    const old = document.getElementById(id); if(old) old.remove();
+    const wrap = document.createElement('div'); wrap.id = id; wrap.className = 'cxBcWrapC';
+    wrap.innerHTML = '<div id="cxBcBox"><div class="sub">Loading…</div></div>';
     wrap.addEventListener('click', (e)=>{ if(e.target === wrap) wrap.remove(); });
     document.body.appendChild(wrap);
-    const box = wrap.querySelector('#cxBcBox');
-
-    const cfg = await loadCfg();
+    return wrap;
+  }
+  async function getMembers(){
     let names = []; try{ names = await loadRoomRegistry(); }catch(e){}
-    const me = kOf(myName);
-    const seen = new Set(); const members = [];
-    names.forEach(n=>{ const k = kOf(n); if(!n || k === me || seen.has(k)) return; seen.add(k); members.push({ name:n, key:k }); });
-    const except = new Set(Array.isArray(cfg.except) ? cfg.except : []);
-    const welcomeText = cfg.text || DEFAULT_WELCOME;
-    const welcomeOn = cfg.on !== false;
+    const me = kOf(myName); const seen = new Set(); const out = [];
+    names.forEach(n=>{ const k = kOf(n); if(!n || k === me || seen.has(k)) return; seen.add(k); out.push({ name:n, key:k }); });
+    return out;
+  }
+  function wireSearch(box, idInput, idList){
+    const inp = box.querySelector('#'+idInput); if(!inp) return;
+    inp.addEventListener('input', ()=>{
+      const q = inp.value.trim().toLowerCase();
+      box.querySelectorAll('#'+idList+' .row').forEach(r=>{ r.style.display = (!q || (r.getAttribute('data-n')||'').includes(q)) ? '' : 'none'; });
+    });
+  }
+  const preview = (tpl, name)=> fill(tpl, name || 'Rahul', myName);
 
+  // ================= 📢 BROADCAST =================
+  async function openPanel(){
+    const wrap = ensureWrap('cxBcWrap'); const box = wrap.querySelector('#cxBcBox');
+    const cfg = await loadCfg(); const members = await getMembers();
+    const except = new Set(Array.isArray(cfg.except) ? cfg.except : []);
     box.innerHTML = `
-      <h3>📢 Sabko message</h3>
-      <div class="sub">Neeche jin par ✔ hai unhe jayega. ❌ hatao = exception (unhe nahi jayega, yaad rahega). <b>{name}</b> likhoge to har user ka naam lag jayega.</div>
+      <h3>📢 Sabko message bhejo</h3>
+      <div class="sub">Ek hi baar me sabko. Jin par ✔ hai unhe jayega; ✔ hatao = exception (yaad rahega).</div>
       <textarea id="cxBcText" maxlength="1000" placeholder="Yahan message likho…"></textarea>
-      <div class="mini"><button type="button" id="cxBcAll">✔ Sab</button><button type="button" id="cxBcNone">✖ Koi nahi</button></div>
-      <div id="cxBcList">${members.length ? members.map(m=>`<label class="row"><input type="checkbox" data-k="${esc(m.key)}" ${except.has(m.key)?'':'checked'}><span class="nm">${esc(m.name)}</span><span class="tag">${except.has(m.key)?'exception':''}</span></label>`).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
+      <div class="sub" style="margin-top:6px">💡 <b>{name}</b> likhoge to har user ka naam lag jayega.</div>
+      <div class="pv" id="cxBcPv"></div>
+      <div class="h2">👥 Kisko bhejna hai</div>
+      <input type="search" id="cxBcQ" class="srch" placeholder="🔍 Naam dhoondho…">
+      <div class="mini"><button type="button" id="cxBcAll">✔ Sab</button><button type="button" id="cxBcNone">✖ Koi nahi</button><span class="cnt" id="cxBcCnt"></span></div>
+      <div id="cxBcList">${members.length ? members.map(m=>`<label class="row" data-n="${esc(m.name.toLowerCase())}"><input type="checkbox" data-k="${esc(m.key)}" ${except.has(m.key)?'':'checked'}><span class="nm">${esc(m.name)}</span><span class="tag">${except.has(m.key)?'🚫 exception':''}</span></label>`).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
       <button type="button" class="go" id="cxBcSend">📤 Bhejo</button>
       <div class="msg" id="cxBcMsg"></div>
-      <div class="sec">
-        <h3>👋 Welcome message (naye user ko auto)</h3>
-        <div class="sub">Jo naya user join karega use Admin ki taraf se ye msg apne aap jayega. {name} = user ka naam, {admin} = tumhara naam.</div>
-        <label class="row" style="border:0"><input type="checkbox" id="cxWelOn" ${welcomeOn?'checked':''}><span class="nm">Auto welcome ON</span></label>
-        <textarea id="cxWelText" maxlength="500">${esc(welcomeText)}</textarea>
-        <button type="button" class="go" id="cxWelSave" style="background:#2563eb">💾 Welcome save karo</button>
-        <div class="msg" id="cxWelMsg"></div>
-      </div>
-      <button type="button" id="cxBcClose" style="width:100%;margin-top:16px">Band karo</button>`;
-
+      <button type="button" id="cxBcClose" class="plain">Band karo</button>`;
     const $ = (id)=> box.querySelector('#'+id);
     const boxes = ()=> Array.from(box.querySelectorAll('#cxBcList input[data-k]'));
-    const persistExcept = async ()=>{
+    const upd = ()=>{ const n = boxes().filter(b=> b.checked).length; $('cxBcSend').textContent = '📤 ' + n + ' logo ko bhejo'; $('cxBcSend').disabled = !n; $('cxBcCnt').textContent = n + '/' + boxes().length + ' select'; };
+    const persist = async ()=>{
       const ex = boxes().filter(b=> !b.checked).map(b=> b.getAttribute('data-k'));
-      boxes().forEach(b=>{ const t = b.parentElement.querySelector('.tag'); if(t) t.textContent = b.checked ? '' : 'exception'; });
-      const c = await loadCfg(); c.except = ex; if(c.on === undefined) c.on = true; await saveCfg(c);
-      updateBtn();
+      boxes().forEach(b=>{ const t = b.parentElement.querySelector('.tag'); if(t) t.textContent = b.checked ? '' : '🚫 exception'; });
+      const c = await loadCfg(); c.except = ex; await saveCfg(c); upd();
     };
-    const updateBtn = ()=>{ const n = boxes().filter(b=> b.checked).length; $('cxBcSend').textContent = '📤 ' + n + ' logo ko bhejo'; $('cxBcSend').disabled = !n; };
-    updateBtn();
-    box.querySelector('#cxBcList').addEventListener('change', persistExcept);
-    $('cxBcAll').addEventListener('click', ()=>{ boxes().forEach(b=> b.checked = true); persistExcept(); });
-    $('cxBcNone').addEventListener('click', ()=>{ boxes().forEach(b=> b.checked = false); persistExcept(); });
+    upd(); wireSearch(box, 'cxBcQ', 'cxBcList');
+    $('cxBcText').addEventListener('input', ()=>{ const t = $('cxBcText').value.trim(); $('cxBcPv').textContent = t ? '👁 Preview: ' + preview(t) : ''; });
+    box.querySelector('#cxBcList').addEventListener('change', persist);
+    $('cxBcAll').addEventListener('click', ()=>{ boxes().forEach(b=> { if(b.parentElement.style.display !== 'none') b.checked = true; }); persist(); });
+    $('cxBcNone').addEventListener('click', ()=>{ boxes().forEach(b=> { if(b.parentElement.style.display !== 'none') b.checked = false; }); persist(); });
     $('cxBcClose').addEventListener('click', ()=> wrap.remove());
-
     $('cxBcSend').addEventListener('click', async ()=>{
       const text = $('cxBcText').value.trim();
       if(!text){ $('cxBcMsg').textContent = '⚠ Pehle message likho.'; return; }
@@ -33255,16 +33268,69 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       };
       await Promise.all([worker(), worker(), worker(), worker()]);
       $('cxBcMsg').textContent = '✅ ' + ok + ' ko chala gaya' + (fail ? ' · ❌ ' + fail + ' fail' : '') + '.';
-      $('cxBcText').value = ''; updateBtn();
+      $('cxBcText').value = ''; $('cxBcPv').textContent = ''; upd();
       try{ if(typeof chatLoadMembers === 'function') chatLoadMembers(); }catch(e){}
     });
+  }
 
+  // ================= 👋 AUTO WELCOME (alag button) =================
+  async function openWelcome(){
+    const wrap = ensureWrap('cxWelWrap'); const box = wrap.querySelector('#cxBcBox');
+    const cfg = await loadCfg(); const members = await getMembers();
+    let welcomed = {}; try{ await waitForFirebase(); welcomed = (await window.__fbGet(`rooms/${room()}/_welcomed`)) || {}; }catch(e){}
+    const exc = new Set(Array.isArray(cfg.welExcept) ? cfg.welExcept : []);
+    const on = cfg.on !== false;
+    const tagOf = (m, ex)=> ex ? '🚫 welcome nahi' : (welcomed[m.key] ? '✓ mil chuka' : '⏳ naya aaye to jayega');
+    box.innerHTML = `
+      <h3>👋 Auto Welcome Message</h3>
+      <div class="sub">Naya user join kare to tumhari taraf se apne aap ye message chala jata hai.</div>
+      <label class="row big"><input type="checkbox" id="cxWelOn" ${on?'checked':''}><span class="nm"><b>Auto welcome ${on?'ON':'OFF'}</b></span></label>
+      <textarea id="cxWelText" maxlength="500">${esc(cfg.text || DEFAULT_WELCOME)}</textarea>
+      <div class="sub" style="margin-top:6px">💡 <b>{name}</b> = user ka naam · <b>{admin}</b> = tumhara naam</div>
+      <div class="pv" id="cxWelPv"></div>
+      <button type="button" class="go" id="cxWelSave" style="background:#2563eb">💾 Save karo</button>
+      <div class="msg" id="cxWelMsg"></div>
+
+      <div class="h2">🚫 Exception — kisko welcome NAHI jana chahiye</div>
+      <div class="sub">✔ = welcome jayega · ✔ hatao = nahi jayega. 📨 dabao = us user ko abhi seedha bhejo.</div>
+      <input type="search" id="cxWelQ" class="srch" placeholder="🔍 Naam dhoondho…">
+      <div id="cxWelList">${members.length ? members.map(m=>`<label class="row" data-n="${esc(m.name.toLowerCase())}"><input type="checkbox" data-k="${esc(m.key)}" ${exc.has(m.key)?'':'checked'}><span class="nm">${esc(m.name)}</span><span class="tag">${tagOf(m, exc.has(m.key))}</span><button type="button" class="snd" data-n="${esc(m.name)}" data-k="${esc(m.key)}">📨</button></label>`).join('') : '<div class="sub">Abhi koi member nahi.</div>'}</div>
+      <button type="button" id="cxWelClose" class="plain">Band karo</button>`;
+    const $ = (id)=> box.querySelector('#'+id);
+    const pv = ()=>{ $('cxWelPv').textContent = '👁 Preview: ' + preview($('cxWelText').value.trim() || DEFAULT_WELCOME); };
+    pv(); $('cxWelText').addEventListener('input', pv);
+    $('cxWelOn').addEventListener('change', ()=>{ $('cxWelOn').parentElement.querySelector('b').textContent = 'Auto welcome ' + ($('cxWelOn').checked ? 'ON' : 'OFF'); });
+    wireSearch(box, 'cxWelQ', 'cxWelList');
+    $('cxWelClose').addEventListener('click', ()=> wrap.remove());
     $('cxWelSave').addEventListener('click', async ()=>{
       const c = await loadCfg();
       c.on = $('cxWelOn').checked; c.text = $('cxWelText').value.trim() || DEFAULT_WELCOME;
-      if(!c.init){ c.init = Date.now(); }
+      if(!c.init) c.init = Date.now();
       const ok = await saveCfg(c);
       $('cxWelMsg').textContent = ok ? '✅ Save ho gaya.' : '⚠ Server par save nahi hua (sirf is phone me). Firebase rules check karo.';
+    });
+    box.querySelector('#cxWelList').addEventListener('change', async (e)=>{
+      const cb = e.target; if(!cb || !cb.getAttribute || !cb.getAttribute('data-k')) return;
+      const c = await loadCfg(); const set = new Set(Array.isArray(c.welExcept) ? c.welExcept : []);
+      const k = cb.getAttribute('data-k'); if(cb.checked) set.delete(k); else set.add(k);
+      c.welExcept = Array.from(set); await saveCfg(c);
+      const t = cb.parentElement.querySelector('.tag'); const m = members.find(x=> x.key === k);
+      if(t && m) t.textContent = tagOf(m, !cb.checked);
+    });
+    box.querySelector('#cxWelList').addEventListener('click', async (e)=>{
+      const btn = e.target.closest && e.target.closest('button.snd'); if(!btn) return;
+      e.preventDefault(); e.stopPropagation();
+      const nm = btn.getAttribute('data-n'), k = btn.getAttribute('data-k');
+      if(!confirm(nm + ' ko welcome message abhi bhejna hai?')) return;
+      btn.disabled = true;
+      try{
+        const txt = fill($('cxWelText').value.trim() || DEFAULT_WELCOME, nm, myName).slice(0, CHAT_MAX_LEN);
+        await sendDirect(myName, nm, txt);
+        try{ await window.__fbSet(`rooms/${room()}/_welcomed/${k}`, Date.now()); welcomed[k] = Date.now(); }catch(err){}
+        const t = btn.parentElement.querySelector('.tag'); if(t) t.textContent = '✓ mil chuka';
+        $('cxWelMsg').textContent = '✅ ' + nm + ' ko bhej diya.';
+      }catch(err){ $('cxWelMsg').textContent = '❌ ' + nm + ' ko nahi gaya.'; }
+      btn.disabled = false;
     });
   }
 
@@ -33272,15 +33338,20 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     try{
       const head = document.querySelector('#chatInbox .chatHead'); if(!head) return;
       const show = (typeof isMeAdmin === 'function') && isMeAdmin();
-      let b = document.getElementById('cxBcBtn');
-      if(!show){ if(b) b.remove(); return; }
-      if(b) return;
+      let b1 = document.getElementById('cxBcBtn'), b2 = document.getElementById('cxWelBtn');
+      if(!show){ if(b1) b1.remove(); if(b2) b2.remove(); return; }
       css();
-      b = document.createElement('button'); b.type = 'button'; b.id = 'cxBcBtn'; b.className = 'chatIconBtn';
-      b.setAttribute('aria-label', 'Sabko message bhejo'); b.textContent = '📢';
-      b.addEventListener('click', openPanel);
       const lock = document.getElementById('chatLockBtn');
-      head.insertBefore(b, lock || null);
+      if(!b2){
+        b2 = document.createElement('button'); b2.type = 'button'; b2.id = 'cxWelBtn'; b2.className = 'chatIconBtn';
+        b2.setAttribute('aria-label', 'Auto welcome message'); b2.textContent = '👋'; b2.style.marginLeft = 'auto';
+        b2.addEventListener('click', openWelcome); head.insertBefore(b2, lock || null);
+      }
+      if(!b1){
+        b1 = document.createElement('button'); b1.type = 'button'; b1.id = 'cxBcBtn'; b1.className = 'chatIconBtn';
+        b1.setAttribute('aria-label', 'Sabko message bhejo'); b1.textContent = '📢';
+        b1.addEventListener('click', openPanel); head.insertBefore(b1, lock || null);
+      }
     }catch(e){}
   }
 
@@ -33340,6 +33411,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     const pr = presenceLabel(name);
     const seen = Math.max(u.l||0, (typeof presenceMap==='object' && presenceMap[key]) || 0);
     const isEx = Array.isArray(cfg.except) && cfg.except.includes(key);
+    const isWelEx = Array.isArray(cfg.welExcept) && cfg.welExcept.includes(key);
     const c = (b,l)=> `<div class="c"><b>${b}</b><span>${l}</span></div>`;
     box.innerHTML = `
       <h3>${pr.dot} ${esc(name)}</h3>
@@ -33364,6 +33436,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 
       <button type="button" id="cxUpView">👀 Poora tracker dekho</button>
       <button type="button" id="cxUpEx" class="${isEx ? 'ok' : 'warn'}">${isEx ? '✅ Exception se hatao (broadcast jayega)' : '🚫 Broadcast exception list me daalo'}</button>
+      <button type="button" id="cxUpWelEx" class="${isWelEx ? 'ok' : 'warn'}">${isWelEx ? '✅ Welcome exception se hatao (welcome jayega)' : '🚫 Auto welcome se bahar rakho'}</button>
       <div class="sub" id="cxUpMsg" style="margin-top:8px"></div>
       <button type="button" id="cxUpClose">Band karo</button>`;
     box.querySelector('#cxUpClose').addEventListener('click', ()=> wrap.remove());
@@ -33371,6 +33444,17 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       wrap.remove();
       try{ const ov = document.getElementById('chatOverlay'); if(ov){ const cb = document.getElementById('chatCloseBtn'); if(cb) cb.click(); } }catch(e){}
       try{ await switchViewing(name); switchTab('today'); }catch(e){}
+    });
+    box.querySelector('#cxUpWelEx').addEventListener('click', async ()=>{
+      const c2 = await window.__cxBcApi.loadCfg();
+      const ex = new Set(Array.isArray(c2.welExcept) ? c2.welExcept : []);
+      if(ex.has(key)) ex.delete(key); else ex.add(key);
+      c2.welExcept = Array.from(ex);
+      const ok = await window.__cxBcApi.saveCfg(c2);
+      const now = ex.has(key); const b = box.querySelector('#cxUpWelEx');
+      b.className = now ? 'ok' : 'warn';
+      b.textContent = now ? '✅ Welcome exception se hatao (welcome jayega)' : '🚫 Auto welcome se bahar rakho';
+      box.querySelector('#cxUpMsg').textContent = (now ? '🚫 ' + name + ' ko auto welcome nahi jayega.' : '✅ ' + name + ' ko auto welcome jayega.') + (ok ? '' : ' (⚠ server par save nahi hua, sirf is phone me)');
     });
     box.querySelector('#cxUpEx').addEventListener('click', async ()=>{
       const c2 = await window.__cxBcApi.loadCfg();
