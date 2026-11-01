@@ -32061,7 +32061,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var cs = document.createElement('style');
     cs.textContent = '#cxAiBar{position:fixed;right:8px;left:auto;top:calc(10% + 120px);z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
-      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
+      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .p{background:#ef5865}#cxAiBar .p.on{background:#b31f2d;box-shadow:0 0 0 2px #fff}#cxAiBar .x{padding:7px 9px;background:#555}'
       + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
       + '#cxAiBar.min .x{width:30px;height:30px;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:30px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(255,61,119,.5),0 0 10px rgba(61,184,255,.45);animation:cxAiPulse 2.4s ease-in-out infinite}'
       + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}'
@@ -32158,6 +32158,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mk('🔍 Google', 'g', function(e){ var b = e && e.currentTarget; withLoad(b, 'Google…', full('google')); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
     mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
+    var penBtn = mk('✏️ Pen', 'p', function(){ if(window.__cxPen) window.__cxPen.toggle(); }, 'Screen par likho (red pen) — dobara tap = band + clear');
+    window.__cxPenUI = function(on){ penBtn.classList.toggle('on', !!on); penBtn.textContent = on ? '✏️ Pen ON' : '✏️ Pen'; };
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
     /* poora bar drag */

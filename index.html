@@ -9378,9 +9378,15 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
   function setDrawMode(on){
     drawMode = on;
     canvas.classList.toggle('drawing', drawMode);
-    fab.classList.toggle('active', drawMode);
+    if(fab) fab.classList.toggle('active', drawMode);
     if(!on) document.documentElement.classList.remove('penSess');
+    try{ if(window.__cxPenUI) window.__cxPenUI(drawMode); }catch(e){}
   }
+  /* Google/Crop floating bar (cxAiBar) ka ✏️ Pen button isi se pen on/off karta hai */
+  window.__cxPen = {
+    toggle: function(){ clearScratch(); setDrawMode(!drawMode); return drawMode; },
+    isOn: function(){ return drawMode; }
+  };
 
   function clearScratch(){ ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
