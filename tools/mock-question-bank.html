@@ -307,6 +307,7 @@ const K="mqb_v1";let D=[],S="Math",imgs=[];
 const $=i=>document.getElementById(i);
 try{D=JSON.parse(localStorage.getItem(K)||"[]")}catch(e){}
 const TK="mqb_trash";let TR=[];try{TR=JSON.parse(localStorage.getItem(TK)||"[]")}catch(e){}
+function noImg(a){a.forEach(x=>{if(x&&x.img&&String(x.t||"").trim())x.img=""})}noImg(D);noImg(TR);
 let _warned=false;
 function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open("mqb_safe",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
 function idbPut(k,v){return idb().then(db=>new Promise((res,rej)=>{const t=db.transaction("s","readwrite");t.objectStore("s").put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>rej(t.error)})).catch(()=>false)}
@@ -319,9 +320,11 @@ function mirrorNow(){clearTimeout(_mt);_mt=0;const rec={D:D,TR:TR,ts:Date.now()}
     if(l!==d){idbPut("snap-"+d,rec).then(ok=>{if(ok){try{localStorage.setItem("mqb_snap",d)}catch(e){}idbKeys().then(ks=>{ks.filter(k=>/^snap-/.test(k)).sort().slice(0,-7).forEach(idbDel)})}})}}}
 function mirror(){if(!_mt)_mt=setTimeout(mirrorNow,700)}
 addEventListener("pagehide",()=>{if(_mt)mirrorNow()});document.addEventListener("visibilitychange",()=>{if(document.hidden&&_mt)mirrorNow()});
-function persist(){let ok=true;try{localStorage.setItem(K,JSON.stringify(D));localStorage.setItem(TK,JSON.stringify(TR))}catch(e){ok=false}
-  mirror();
-  if(!ok&&!_warned){_warned=true;try{toast("⚠ Phone storage bhar raha hai — questions backup copy mein safe hain. Export JSON bhi kar lo.")}catch(e){}}
+function persist(){noImg(D);noImg(TR);let ok=true;
+  try{localStorage.setItem(K,JSON.stringify(D));localStorage.setItem(TK,JSON.stringify(TR))}catch(e){ok=false}
+  if(!ok){/* localStorage full: text-only copy (app.js ke liye), images IndexedDB mein safe */
+    try{localStorage.setItem(K,JSON.stringify(D.map(x=>x&&x.img?Object.assign({},x,{img:""}):x)));localStorage.setItem(TK,JSON.stringify(TR.map(x=>x&&x.img?Object.assign({},x,{img:""}):x)))}catch(e){}
+    mirrorNow()}else mirror();
   return true}
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\n/g,"<br>")}
 function fmt(s){return (s||"").split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g).map((p,i)=>i%2?p.replace(/</g,"\\lt "):esc(p)).join("")}
@@ -444,10 +447,10 @@ window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},svg:{font
 /* ---- v6 extras ---- */
 function isW(x){return x.w>0&&(x.k||0)<2}
 function toast(m,lbl,fn){const t=$("toast");t.innerHTML="<span>"+m+"</span>"+(lbl?'<button id="tu">'+lbl+"</button>":"");t.hidden=false;if(lbl)$("tu").onclick=()=>{fn();t.hidden=true};clearTimeout(TO);TO=setTimeout(()=>{t.hidden=true},6000)}
-function updSz(){let kb=0,b=0;try{kb=Math.round(JSON.stringify(D).length/1024)}catch(e){}try{b=+localStorage.getItem("mqb_bk")||0}catch(e){}
-  const dy=b?Math.floor((Date.now()-b)/864e5):null,w=kb>3500?" ⚠ storage bhar raha hai — Export JSON karo.":"",
-  bk=!D.length?"":b?(dy>=7?" ⚠ Last backup "+dy+" din pehle.":" Last backup: "+(dy?dy+" din pehle":"aaj")):" ⚠ Abhi tak backup nahi liya.";
-  $("sz").textContent="💾 "+kb+" KB / ~5000 KB."+w+bk}
+function updSz(){let kb=0;try{kb=Math.round(JSON.stringify(D).length/1024)}catch(e){}
+  const set=t=>{const e=$("sz");if(e)e.textContent=t};
+  set("\uD83D\uDCBE "+kb+" KB used \u00b7 storage unlimited (IndexedDB)");
+  try{navigator.storage&&navigator.storage.estimate&&navigator.storage.estimate().then(r=>{if(r&&r.quota)set("\uD83D\uDCBE "+kb+" KB questions \u00b7 phone mein "+Math.round((r.quota-r.usage)/1048576)+" MB khaali")})}catch(e){}}
 function txtOf(x){return [x.t||"(image question)"].concat(x.o.map((o,j)=>o?"("+"ABCD"[j]+") "+o:"")).concat([x.a?"Ans: "+x.a:"",x.e?"Explanation: "+x.e:""]).filter(Boolean).join("\n")}
 window.cp=id=>{const x=D.find(y=>y.id==id);if(!x)return;const t=txtOf(x);
   const ok=()=>toast("📋 Copy ho gaya"),fb=()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");ok()}catch(e){toast("Copy nahi hua")}a.remove()};
@@ -610,10 +613,13 @@ setInterval(mkTick,1000);mkTick();
       const ks=(await idbKeys()).filter(k=>/^snap-/.test(k)).sort().reverse();
       for(const k of ks){const sn=await idbGet(k);if(sn&&sn.D&&sn.D.length){pool=sn.D;ptr=sn.TR||[];break}}
     }
+    let inbox=await idbGet("inbox");
+    if(Array.isArray(inbox)&&inbox.length){pool=inbox.concat(pool);idbPut("inbox",[])}
+    let imgFix=false;{const im=new Map();pool.forEach(x=>{if(x&&x.img)im.set(String(x.id),x.img)});D.forEach(x=>{if(x&&!x.img&&!String(x.t||"").trim()&&im.has(String(x.id))){x.img=im.get(String(x.id));imgFix=true}})}
     const have=new Set(D.map(x=>String(x.id))),tr=new Set(TR.map(x=>String(x.id)));
     const miss=pool.filter(x=>x&&x.id!=null&&!have.has(String(x.id))&&!tr.has(String(x.id)));
     const mt=ptr.filter(x=>x&&x.id!=null&&!tr.has(String(x.id))&&!have.has(String(x.id))&&!miss.some(m=>String(m.id)==String(x.id)));
-    if(miss.length||mt.length){D=D.concat(miss);TR=TR.concat(mt);persist();renderTabs();render();trUI();
+    if(miss.length||mt.length||imgFix){D=D.concat(miss);TR=TR.concat(mt);persist();renderTabs();render();trUI();
       if(miss.length)toast("♻ "+miss.length+" questions backup se wapas aa gaye")}
     else mirrorNow();
   })();
