@@ -307,16 +307,18 @@ if(el.length)G.push({id:'dEver',t:'📚 Evergreen Library',items:el,def:true,col
 return G}
 const flat=G=>[].concat(...G.map(g=>g.items));
 function listFor(st){if(st&&st.k=='c')return ALLA.filter(it=>it.cs.includes(st.key));return flat(buildGroups())}
-function go(st,push){st.d=push?(cur.d||0)+1:(st.d||0);if(push){try{history.pushState(st,'')}catch(e){}}draw(st)}
+const HIST=[],EMB=window.parent!==window;
+function go(st,push){if(push){HIST.push(cur);if(EMB){try{parent.postMessage('de-push','*')}catch(e){}}}draw(st)}
+function popNav(){if(HIST.length)draw(HIST.pop())}
 function draw(st){cur=st;stopAuto();closeAll();
 if(st.v=='reader'){ctx.list=listFor(st);ctx.i=Math.max(0,Math.min(st.i,ctx.list.length-1));renderReader();show('reader')}
 else if(st.v=='list'){renderList(st);show('pList')}
 else{renderHome();show('pHome')}}
 function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==id));const rd=id=='reader';$('reader').classList.toggle('on',rd);$('foot').hidden=!rd;document.body.classList.toggle('rd',rd);if(!rd){window.scrollTo(0,0);if(id=='pHome'&&homeFocus>=0){const c=document.querySelector('#homeGrid [data-i="'+homeFocus+'"]');if(c){const g=c.closest('.grp');if(g&&g.classList.contains('coll')){g.classList.remove('coll');COLL[g.dataset.g]=false}c.scrollIntoView({block:'center'})}}}}
-function back(){if((cur.d||0)>0){try{history.back();return}catch(e){}}
+function back(){if(HIST.length){if(EMB){try{parent.postMessage('de-histback','*');return}catch(e){}}popNav();return}
+if(EMB){try{parent.postMessage('de-exit','*');return}catch(e){}}
 draw({v:'home',d:0})}
-window.addEventListener('popstate',e=>draw(e.state||{v:'home',d:0}));
-try{history.replaceState({v:'home',d:0},'')}catch(e){}
+window.addEventListener('message',e=>{if(e.data==='de-back')popNav();else if(e.data==='de-home'){HIST.length=0;draw({v:'home',d:0})}});
 
 /* ---------- home ---------- */
 function renderHome(){
@@ -350,7 +352,7 @@ $('listGrid').innerHTML=L.map((it,i)=>artCard(it,i,'data-i="'+i+'"',isC)).join('
 /* ---------- reader ---------- */
 function renderReader(){
 const it=ctx.list[ctx.i],a=it.a,isC=cur.k=='c';
-cur.i=ctx.i;try{history.replaceState(cur,'')}catch(e){}
+cur.i=ctx.i;
 ls.set('de_last',JSON.stringify({id:a.id,title:a.title}));homeFocus=ctx.i;
 $('rTitle').textContent=cs(a.title);
 const chk=e=>'<label class="rdbox'+(e?' end':'')+'"><input type="checkbox" class="rdchk" data-ri="'+ctx.i+'"'+(isRd(it.key)?' checked':'')+'><span>✅ ये article पढ़ लिया</span></label>';
