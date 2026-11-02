@@ -31435,87 +31435,14 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   var GEM_DEF = "मास्टर प्रॉम्प्ट: SSC यूनिवर्सल '4-प्रश्न सेट' (गणित, रीजनिंग और अंग्रेजी)\n\n1. मुख्य प्रश्न (Main Question):\n * प्रश्न का प्रारूप: छात्र द्वारा दिए गए पूरे प्रश्न को हमेशा द्विभाषी (Bilingual - अंग्रेजी और हिंदी दोनों) में लिखें। प्रश्न का कोई भी हिस्सा अधूरा न छोड़ें।\n * मूल अवधारणा (Basic Concept): प्रश्न की जड़ और पूरी थ्योरी को आसान हिंदी में समझाएं, ताकि बेसिक्स 100% क्लियर हो जाएं। (अंग्रेजी के प्रश्नों के लिए ग्रामर रूल या वोकैबुलरी का लॉजिक विस्तार से बताएं)।\n * स्मार्ट ट्रिक (Smart Trick): परीक्षा में 10-15 सेकंड में उत्तर निकालने का सबसे तेज़ तरीका बताएं (गणित/रीजनिंग के लिए शॉर्ट ट्रिक या सीधा सूत्र; अंग्रेजी के लिए ऑप्शन एलिमिनेशन या कीवर्ड एप्रोच)।\n\n2. समान पैटर्न अभ्यास (Same Pattern Practice - 1 प्रश्न):\n * मुख्य प्रश्न के बिल्कुल समान कॉन्सेप्ट और ट्रिक पर आधारित 1 नया प्रश्न बनाएं।\n * प्रश्न की भाषा: पूरा प्रश्न हमेशा द्विभाषी (अंग्रेजी + हिंदी) होना चाहिए।\n * विकल्प (Options): हमेशा पूरे विकल्प लिखें।\n   * नया नियम: यदि विकल्पों में केवल संख्याएँ (Numbers) हैं, तो उन्हें दो बार (जैसे 36373/36373) नहीं लिखना है, उन्हें केवल एक ही बार लिखें।\n   * यदि विकल्प पूरे वाक्य (Sentence) या वाक्यांश के रूप में हैं, तो उन्हें हिंदी और अंग्रेजी दोनों में दें।\n * समाधान (Solution): पूरा समाधान आसान हिंदी में लिखें। किसी भी कठिन शब्द के आगे ब्रैकेट में उसका अंग्रेजी अनुवाद जरूर लिखें (जैसे: समानांतर (Parallel))। समाधान में केवल शॉर्टकट ट्रिक का ही उपयोग करें।\n\n3. विविध/उन्नत पैटर्न अभ्यास (Diverse/Advanced Practice - 2 प्रश्न):\n * उसी टॉपिक को थोड़ा घुमाकर या उच्च स्तर (Tier-2 लेवल) पर पूछने वाले 2 अलग-अलग प्रश्न बनाएं।\n * प्रारूप: पूरा प्रश्न (द्विभाषी), पूरे विकल्प (संख्या केवल एक बार, वाक्य दोनों भाषाओं में), और समाधान (हिंदी में, कठिन शब्द ब्रैकेट में अंग्रेजी के साथ) का नियम बिल्कुल ऊपर दिए गए सेक्शन 2 जैसा ही रहेगा।\n\n4. शर्तें (Strict Constraints):\n * पूरी बातचीत और समाधान केवल और केवल शुद्ध देवनागरी हिंदी में होंगे।\n * कोई भी स्टेप, कैलकुलेशन या ग्रामर का लॉजिक हवा में नहीं किया जाएगा, हर एक चीज़ स्पष्ट और स्टेप-बाय-स्टेप होनी चाहिए।\n * हमेशा पूरा प्रश्न और पूरे विकल्प लिखें, कोई भी शॉर्टकट या अधूरा वाक्य न लिखें।\n * विकल्पों का नियम सख्ती से लागू करें: संख्या = केवल 1 बार लिखें, वाक्य = 2 भाषाएं (अंग्रेजी + हिंदी)।";
   window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready'){ window.__gemExt = true; LS('sd:extok', '1'); } });
   try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
-  [800, 2500, 6000].forEach(function(ms){ setTimeout(function(){ try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){} }, ms); });
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden){ try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){} } });
   function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
-  /* ---- question text SAAF: app ka header/nav/stat kachra (EXAM TRACKER BY ..., "👑 ❓ 0%", 🔥 streak, timer, Question No., set naam) nahi — sirf question + options.
-         Pehle visible *WordText/*QuestionText + *OptList se seedha uthata hai; na mile to page ka text lekar kachra-lines hata deta hai.
-         Naya header-line chhute to localStorage 'sd:qnoise' me regex (pipe '|' se alag) daal do. ---- */
-  var QNOISE = [/exam\s*tracker/i, /yuvraj\s*sisodiya/i, /^question\s*no\.?\s*\d+\s*$/i, /^(?:\d{1,2}:){1,2}\d{2}$/, /mark(?:ed)?\s*for\s*review/i,
-    /^(?:save\s*(?:&|and)?\s*next|next|previous|prev|back|submit|clear|pause|resume|skip|hindi|english|हिंदी|अंग्रेज़ी)$/i,
-    /^[^\n]{0,60}[—–-]\s*set\s*\d+\s*$/i, /^q(?:uestion)?\s*\d+\s*\/\s*\d+$/i];
-  function qNoise(l){
-    var s = String(l).trim(); if(!s) return true;
-    if(!/[A-Za-z\u0900-\u097f]/.test(s) && /[\ud83c-\ud83e\u2600-\u27bf\ufe0f]/.test(s)) return true;   /* sirf emoji + number/% wali stat line */
-    for(var i = 0; i < QNOISE.length; i++){ if(QNOISE[i].test(s)) return true; }
-    var ex = LS('sd:qnoise'); if(ex){ try{ if(new RegExp(ex, 'i').test(s)) return true; }catch(e){} }
-    return false;
-  }
-  function scrubQ(tx){
-    return String(tx || '').replace(/\u00a0/g, ' ').split('\n').filter(function(l){ return !qNoise(l); }).map(function(l){ return l.replace(/[ \t]+/g, ' ').trim(); }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
-  }
-  function flatTxt(el){   /* layout ke bina bhi lines tootein: br / block ke baad newline, MathJax ka chhupa assistive text duplicate na ho */
-    var c = el.cloneNode(true);
-    Array.prototype.forEach.call(c.querySelectorAll('script,style,svg,canvas,mjx-assistive-mml,.MJX_Assistive_MathML,[hidden]'), function(x){ x.remove(); });
-    Array.prototype.forEach.call(c.querySelectorAll('br'), function(b){ b.replaceWith('\n'); });
-    Array.prototype.forEach.call(c.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5,h6'), function(b){ b.appendChild(document.createTextNode('\n')); });
-    return (c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  }
-  function structQ(scope){
-    try{
-      scope = (scope && scope.querySelectorAll) ? scope : document;
-      var shown = function(el){ return !!(el && el.getClientRects && el.getClientRects().length); };
-      var qEl = Array.prototype.filter.call(scope.querySelectorAll('[id$="WordText"],[id$="QuestionText"]'), shown)[0];
-      if(!qEl) return '';
-      var oEl = null, p = qEl;
-      for(var d = 0; p && d < 6 && !oEl; d++, p = p.parentElement){ oEl = Array.prototype.filter.call(p.querySelectorAll('[id$="OptList"]'), shown)[0] || null; }
-      if(!oEl) return '';
-      var opts = [];
-      Array.prototype.forEach.call(oEl.children, function(b, i){
-        var mk = b.querySelector('.examOptMark'), full = flatTxt(b).replace(/\s*\n\s*/g, ' ').trim(), m = mk ? flatTxt(mk).trim() : '';
-        if(m && full.indexOf(m) === 0) full = full.slice(m.length).trim();
-        if(full) opts.push('ABCDEFGH'.charAt(i) + ') ' + full);
-      });
-      if(opts.length < 2) return '';
-      var q = scrubQ(flatTxt(qEl)); if(!q) return '';
-      return q + '\n' + opts.join('\n');
-    }catch(e){ return ''; }
-  }
   function qText(t){
     try{
-      var s = structQ(t); if(!s) s = '';
-      if(!s){
-        var c = t.cloneNode(true);
-        Array.prototype.forEach.call(c.querySelectorAll('.examOptBtn'), function(ob, oi){ var mk = ob.querySelector('.examOptMark'), lt = mk ? (mk.textContent || '').trim() : 'ABCDEFGH'.charAt(oi); if(mk) mk.remove(); ob.insertBefore(document.createTextNode(lt + ') '), ob.firstChild); ob.appendChild(document.createTextNode('\n')); ob.classList.add('keepOpt'); });
-        Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,header,nav,button:not(.keepOpt),script,style,svg,canvas,img,input,select,textarea,[hidden],[id$="SolutionCard"],[id$="SolutionText"],[id$="SolutionTag"],[id$="TagWrap"],.dsSolBlock,.examReviewTag,mjx-assistive-mml'), function(x){ x.remove(); });
-        s = scrubQ(flatTxt(c));
-      }
-      return s.length > 9000 ? s.slice(0, 9000) + '…' : s;
+      var c = t.cloneNode(true);
+      Array.prototype.forEach.call(c.querySelectorAll('.calcNextTopRow,.calcBackBtn,#cxGemMain,.cxGemH,button,script,style,svg,canvas,img,input,select,textarea,[hidden]'), function(x){ x.remove(); });
+      var tx = (c.innerText || c.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      return tx.length > 9000 ? tx.slice(0, 9000) + '…' : tx;
     }catch(e){ return ''; }
-  }
-  /* ---- mobile: Google URL me query NAHI (prefilled query hi 'Continue with this search?' popup lati hai). Image + poora prompt clipboard / share sheet me.
-         Sirf agar chaaho: localStorage 'sd:mobq' = akshar (max 120) -> question ki pehli line utni URL me. Default 0 = bilkul khali. ---- */
-  function gUrl(txt){
-    var base = 'https://www.google.com/search?udm=50', cfg = LS('sd:mobq');
-    if(cfg === '0') return base;                         /* '0' = URL khali (popup se bachne ke liye) */
-    var s = String(txt || '').trim(), n = parseInt(cfg, 10);
-    s = s.slice(0, n > 0 ? Math.min(n, 1800) : 1800);    /* default: poora prompt + question URL me (pehle jaisa) */
-    return s ? base + '&q=' + encodeURIComponent(s) : base;
-  }
-  function shareImgTxt(pngB, jpgF, text){   /* image (file) + prompt text EK share me; text clipboard me bhi (kuch apps file ke saath text chhod dete hain) */
-    var f = jpgF || new File([pngB], 'question.png', { type: 'image/png' });
-    try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function(){}); }catch(e){}
-    var d = { files: [f], text: text };
-    try{ if(navigator.canShare && !navigator.canShare(d)){ d = { files: [f] }; if(!navigator.canShare(d)) return Promise.reject(new Error('is browser me file share support nahi')); } }catch(e){}
-    return navigator.share(d);
-  }
-  function copyReady(pngB, text){   /* tayyar blob = turant (sync) clipboard write, taaki tap ka gesture na jaye */
-    try{
-      if(navigator.clipboard && window.ClipboardItem){
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': pngB, 'text/plain': new Blob([text], { type: 'text/plain' }) })]).catch(function(){
-          navigator.clipboard.write([new ClipboardItem({ 'image/png': pngB })]).catch(function(){}); });
-      } else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).catch(function(){}); }
-    }catch(e){}
   }
   var MB_FOOT = "\n\n=== MOCK BANK BLOCK (bahut zaroori: sabse END mein, bilkul isi format mein. POORA block ---MOCKBANK--- se ---END--- tak EK HI code block (``` ... ```) ke andar likho, taaki maths render hokar bikhre nahi; code block ke andar plain text, bold/table ke bina) ===\n---MOCKBANK---\nSUBJECT: Math ya English ya Reasoning ya GK (koi ek)\nQ: <poora question. SUBJECT Math/Reasoning/GK ho to Hindi + English dono; lekin SUBJECT English ho to question aur options SIRF English mein (Hindi bilkul nahi); maths LaTeX \\( ... \\) mein>\nA) <option>\nB) <option>\nC) <option>\nD) <option>\nANS: <A ya B ya C ya D>\nEXP: <POORA DETAILED solution, upar ke jawab jaisa. HAR section aur HAR step ALAG NAYI LINE par likho, ek lambi line mein mat jodo. Is order mein:\nमूल अवधारणा (Basic Concept): ...\nस्मार्ट ट्रिक (Smart Trick): ...\nस्टेप 1: ...\nस्टेप 2: ...\nअतः उत्तर: ...\nगलत विकल्प: ...\nSaari maths/formula LaTeX mein \\( ... \\) ke andar likho, jaise \\(x=\\sqrt{45\\times 20}=30\\), \\(\\frac{a}{b}\\) — sqrt(...) ya * jaisa plain text mat likho. Koi line 'Q:', 'ANS:', 'EXP:' ya 'SUBJECT:' se shuru na ho>\n(is block mein SIRF 2 question likho: pehla = main question, doosra = practice questions mein se sabse HARD / tricky wala. Baaki practice questions is block mein MAT likho (wo sirf upar ke jawab mein rahenge). Dono ka EXP poora detailed aur line-wise; har question 'Q:' se shuru ho aur ek question ke liye sirf ek hi 'Q:' block ho)\n---END---";
   try{var __sp=localStorage.getItem('sd:gemprompt');if(__sp&&__sp.trim().indexOf('Tum ek expert SSC')===0){localStorage.removeItem('sd:gemprompt');}}catch(e){}
@@ -31630,29 +31557,6 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 
 
 
-  /* mobile "ready" sheet: screenshot pehle se bana hua hai, isliye har button apne FRESH tap me sync chalta hai (gesture expire nahi hota) */
-  function mobSheet(label, pngB, jpgF, text, url, preferShare){
-    if(document.hidden) return;
-    if(!hbar){ hbar = document.createElement('div'); hbar.id = 'cxGemHelp';
-      hbar.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:100001;background:rgba(20,22,27,.97);color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.35 sans-serif;max-width:94vw;box-shadow:0 4px 18px rgba(0,0,0,.55);text-align:center';
-      document.body.appendChild(hbar); }
-    hbar.innerHTML = ''; hbar.style.display = 'block';
-    var msg = document.createElement('div'); msg.style.marginBottom = '8px';
-    msg.textContent = '✅ Screenshot taiyar. ' + (preferShare ? 'Share dabao — image + prompt saath jayenge.' : label + ' kholne par box me ek baar long-press → Paste.');
-    hbar.appendChild(msg);
-    var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center'; hbar.appendChild(row);
-    function btn(txt, bg, fn){ var b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
-      b.style.cssText = 'border:0;border-radius:10px;padding:10px 14px;font:800 14px sans-serif;color:#fff;cursor:pointer;background:' + bg;
-      b.onclick = function(ev){ ev.stopPropagation(); fn(b); }; row.appendChild(b); return b; }
-    function doShare(){ shareImgTxt(pngB, jpgF, text).then(function(){ toast('📤 Image + prompt share ho gaya'); }, function(e){ if(e && e.name === 'AbortError') return; toast('⚠ Share nahi khula: ' + ((e && e.message) || e)); }); }
-    function doOpen(){ copyReady(pngB, text); var w2 = null; try{ w2 = window.open(url, '_blank'); }catch(e){} if(!w2) toast('⚠ Tab nahi khula — browser me popup allow karo'); }
-    var canSh = !!(navigator.share && navigator.canShare);
-    if(preferShare && canSh){ btn('📤 Share (image + prompt)', '#d84315', doShare); btn('🔍 ' + label + ' kholo', '#1a73e8', doOpen); }
-    else { btn('🔍 ' + label + ' kholo (copy + open)', '#1a73e8', doOpen); if(canSh) btn('📤 Share (image + prompt)', '#d84315', doShare); }
-    btn('📋 Dobara copy', '#2e7d32', function(b){ var o = b.textContent; copyReady(pngB, text); b.textContent = '✅ Copy ho gaya'; setTimeout(function(){ b.textContent = o; }, 1500); });
-    btn('✕', '#555', function(){ hbar.style.display = 'none'; });
-    clearTimeout(hbar._t); hbar._t = setTimeout(function(){ if(hbar) hbar.style.display = 'none'; }, 180000);
-  }
   /* ---- near-duplicate check: same/lagbhag same question + milte-julte options = repeat ---- */
 
   function mqTex(s){ return String(s || '').replace(/\\\[([\s\S]+?)\\\]/g, function(m, x){ return '$$' + x + '$$'; }).replace(/\\\(([\s\S]+?)\\\)/g, function(m, x){ return '$' + x + '$'; }); }
@@ -31852,27 +31756,22 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(!goo && !adminOK()){ toast('Gemini sirf admin ke liye hai — Google use karo'); return; }
       st.qt = st.ov ? st.ov.qt : qText(t);
       var ftxt = withQ(goo ? gemPromptG() : gemPrompt(), st.qt);       /* poora prompt + question + options text */
-      try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
-      var noExt = !(window.__gemExt || LS('sd:extok') === '1'), name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
-      /* TEXT-ONLY mode (mobile, extension nahi): localStorage 'sd:textonly' = '1' -> screenshot nahi; sirf prompt + question + options text clipboard me, Google/Gemini khulta hai, box me ek baar Paste */
-      if(!inFrame && mobile && noExt && LS('sd:textonly') === '1'){
-        var tOk = false; try{ await copyTxt(ftxt); tOk = true; }catch(e){}
-        var tUrl = goo ? gUrl(ftxt) : home, tW = null;
-        try{ tW = window.open(tUrl, '_blank'); }catch(e){}
-        toast(tOk ? (tW ? '📝 ' + label + ' khul gaya — prompt + question copy hai: box me long-press → Paste' : '📝 Text copy ho gaya — ' + label + ' khud kholo aur Paste karo') : '⚠ Copy nahi hua — app me wapas aakar dobara try karo');
-        return;
-      }
+      var noExt = !window.__gemExt, name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
       /* Gesture ke time hi clipboard write shuru: image + poora text EK SATH (image baad me resolve hoti hai) — popup khulne se PEHLE, warna focus chala jata hai */
       var pngP = (async function(){ if(!(await prep()) || !st.cv) throw new Error('snap'); return await new Promise(function(r, j){ st.cv.toBlob(function(b){ b ? r(b) : j(new Error('blob')); }, 'image/png'); }); })();
       pngP.catch(function(){});
       var copied = null;
-      var shareMode = goo && mobile && noExt && !inFrame && !!navigator.share && LS('sd:mobshare') === '1';   /* OPTIONAL (default band): mobile Google par image + prompt share sheet se */
       if(!inFrame && navigator.clipboard && window.ClipboardItem && (!mobile || !window.__gemExt)){
         try{ copied = copyImgTxt(pngP, ftxt).then(function(){ return true; }, function(){
           return navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]).then(function(){ return true; }, function(){ return false; }); }); }catch(e){ copied = Promise.resolve(false); }
       }
       var w = null;
-      /* MOBILE: Google/Gemini ab screenshot ready hone ke BAAD niche khulta hai (URL me query nahi) */
+      if(!inFrame && mobile && noExt){   /* MOBILE (extension nahi): Google/Gemini apne aap naye tab me khulta hai — Google par question+prompt URL se khud search ho jata hai */
+        var murl = home;
+        if(goo){ var qq = (st.qt ? st.qt + '\n\n' : '') + gemPromptG(); while(encodeURIComponent(qq).length > 6500) qq = qq.slice(0, Math.floor(qq.length * 0.9)); murl = 'https://www.google.com/search?udm=50&q=' + encodeURIComponent(qq); }
+        try{ w = window.open(murl, '_blank'); }catch(e){}
+        if(!w){ try{ location.href = murl; }catch(e){} }
+      }
       if(!inFrame && !mobile && noExt){ try{ var g = gemGeo(); w = window.open('', name, 'popup=yes,left=' + g.l + ',top=' + g.t + ',width=' + g.w + ',height=' + g.h);
         var blank = false; try{ blank = (w.location.href === 'about:blank'); }catch(e){} if(blank) w.location.href = home; }catch(e){} }
       toast('Screenshot ban raha hai…');
@@ -31880,28 +31779,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(!ok){ toast('Screenshot nahi ban paya' + (st.err ? ': ' + (st.err.message || st.err) : '')); return; }
       if(inFrame){ try{ window.parent.postMessage({ type: 'sd-ask-ai', image: st.du, text: ftxt, target: goo ? 'google' : '', from: 'app' }, '*'); }catch(e){} return; }
       if(mobile && noExt){
-        /* MOBILE (extension nahi): screenshot ab TAIYAR hai. Google URL me query nahi (popup se bachav) — image + poora prompt clipboard me, ya share sheet me. */
-        var pngB = null, jpgF = null;
-        try{ pngB = await pngP; }catch(e){}
-        try{ var jb = await new Promise(function(r){ st.cv.toBlob(r, 'image/jpeg', 0.9); }); if(jb) jpgF = new File([jb], 'question.jpg', { type: 'image/jpeg' }); }catch(e){}
-        var mc = copied ? await copied : false;          /* clipboard (image + prompt) page focused rehte hi */
-        var murl = goo ? gUrl(ftxt) : home;
-        var actOn = function(){ return !!(navigator.userActivation && navigator.userActivation.isActive); };
-        if(shareMode){
-          if(actOn()){
-            try{ await shareImgTxt(pngB, jpgF, ftxt); toast('📤 Image + prompt share ho gaya'); return; }
-            catch(e){ if(e && e.name === 'AbortError') return; }      /* sheet band ki */
-          }
-          mobSheet(label, pngB, jpgF, ftxt, murl, true);
-          toast('📤 Screenshot taiyar — "Share" dabao');
-          return;
-        }
-        if(actOn()){
-          var w3 = null; try{ w3 = window.open(murl, '_blank'); }catch(e){}
-          if(w3){ toast(goo ? (mc ? '🔍 Google khul gaya — image + prompt copy hai: box me long-press → Paste' : '🔍 Google khul gaya — image ke liye app me wapas aakar copy/share karo') : (mc ? '✅ Gemini khul gaya — image + prompt copy hai: box me long-press → Paste' : 'Gemini khul gaya — app me wapas aakar copy/share karo')); return; }
-        }
-        mobSheet(label, pngB, jpgF, ftxt, murl, false);       /* gesture nikal gaya / popup block: ek fresh tap se kholo */
-        toast('✅ Screenshot taiyar — "' + label + ' kholo" dabao');
+        var mc = copied ? await copied : false;
+        helperBar(label, pngP, ftxt, st.file);
+        toast(goo ? (mc ? '🔍 Google khul gaya (question search ho gaya) — image copy hai: box me long-press → Paste' : '🔍 Google khul gaya — image ke liye app me wapas aakar copy karo') : (mc ? '✅ Gemini khul gaya — image + prompt copy hai: box me long-press → Paste' : 'Gemini khul gaya — app me wapas aakar copy/share karo'));
         return;
       }
       if(noExt){        /* extension install nahi: clipboard (image + prompt + question) + khula window */
@@ -32075,7 +31955,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var cs = document.createElement('style');
     cs.textContent = '#cxAiBar{position:fixed;right:8px;left:auto;top:calc(10% + 120px);z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
-      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .p{background:#ef5865}#cxAiBar .p.on{background:#b31f2d;box-shadow:0 0 0 2px #fff}#cxAiBar .u{display:none;background:#f59e0b}#cxAiBar.penOn .u{display:inline-block}#cxAiBar.min .u{display:none!important}#cxAiBar .x{padding:7px 9px;background:#555}'
+      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
       + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
       + '#cxAiBar.min .x{width:30px;height:30px;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:30px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(255,61,119,.5),0 0 10px rgba(61,184,255,.45);animation:cxAiPulse 2.4s ease-in-out infinite}'
       + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}'
@@ -32131,7 +32011,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       toast('Screenshot ban raha hai…');
       await new Promise(function(r){ requestAnimationFrame(function(){ r(); }); });
       var cv; try{ cv = await shot(L, T, R, B); }catch(e){ toast('Screenshot nahi ban paya: ' + (e && e.message || e)); return; }
-      var qt = qtOv || ''; if(!qt){ try{ qt = scrubQ(textIn(L, T, R, B)); }catch(e){} }
+      var qt = qtOv || ''; if(!qt){ try{ qt = textIn(L, T, R, B); }catch(e){} }
       await main.sendNow(tgt, { cv: cv, qt: qt });
     }
     var picker = null;
@@ -32163,7 +32043,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       });
       ov.addEventListener('pointercancel', end);
     }
-    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight, structQ(document) || ''); }
+    function full(tg){ closePick(); return go(tg, 0, 0, window.innerWidth, window.innerHeight); }
     /* button par turant loading (⏳) — double tap bhi nahi */
     function withLoad(btn, name, p){ if(!btn || btn.__ld) return; btn.__ld = 1; var o = btn.textContent; btn.textContent = '⏳ ' + name; btn.style.opacity = '.75'; btn.style.pointerEvents = 'none';
       var d = function(){ if(!btn.__ld) return; btn.__ld = 0; btn.textContent = o; btn.style.opacity = ''; btn.style.pointerEvents = ''; }; setTimeout(d, 12000); Promise.resolve(p).catch(function(){}).then(d); }
@@ -32172,9 +32052,6 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mk('🔍 Google', 'g', function(e){ var b = e && e.currentTarget; withLoad(b, 'Google…', full('google')); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
     mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
-    var penBtn = mk('✏️ Pen', 'p', function(){ if(window.__cxPen) window.__cxPen.toggle(); }, 'Screen par likho (red pen) — dobara tap = band + clear');
-    mk('↶ Undo', 'u', function(){ if(window.__cxPen) window.__cxPen.undo(); }, 'Aakhri line hatao');
-    window.__cxPenUI = function(on){ bar.classList.toggle('penOn', !!on); penBtn.classList.toggle('on', !!on); penBtn.textContent = on ? '✏️ Pen ON' : '✏️ Pen'; };
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
     /* poora bar drag */
