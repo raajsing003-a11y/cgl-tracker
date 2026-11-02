@@ -1,5 +1,5 @@
 <!-- BUILD 20261020-1300 (Study Desk) -->
-<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><link rel="preconnect" href="https://www.youtube.com"><link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://s.ytimg.com"><link rel="preconnect" href="https://i.ytimg.com"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Study Desk</title>
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><script>/*SD-PAUSE*/(function(){var h=false;addEventListener('message',function(e){var d=e.data;if(d&&d.type==='sd-vis')h=!d.v});var si=window.setInterval,raf=window.requestAnimationFrame;window.setInterval=function(f,t){if(typeof f!=='function')return si.apply(window,arguments);var a=[].slice.call(arguments,2);return si(function(){if(h)return;f.apply(null,a)},t)};window.requestAnimationFrame=function(cb){return raf.call(window,function(ts){if(h){setTimeout(function(){raf.call(window,cb)},400);return}cb(ts)})}})();</script><style id="cx-nobf">*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}</style><link rel="preconnect" href="https://www.youtube.com"><link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://s.ytimg.com"><link rel="preconnect" href="https://i.ytimg.com"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Playfair+Display:wght@900&family=Space+Mono:wght@700&display=swap" rel="stylesheet"><title>Study Desk</title>
 <style>
 :root{--bg:#07080b;--tx:#f4f3ee;--mu:#8b8d96;--pn:rgba(14,15,20,.88);--ln:rgba(255,255,255,.12);--ac:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
@@ -1523,8 +1523,10 @@ setTimeout(()=>{try{window.dispatchEvent(new Event('resize'))}catch(e){}},400);
 
 <script>/* Study Desk bridge: top-bar timer/music sync + control (postMessage, works even on content://) */
 (function(){var P=window.parent;if(P===window)return;var q=function(s){return document.querySelector(s)};
+var lastSnap='',lastAt=0;
 function snap(){try{var t=q('#time'),s=q('#start'),m=q('.modes button.on'),a=q('#aud'),L=q('#laps');
-P.postMessage({type:'fd-ui',label:(t.textContent||'').trim(),running:/pause/i.test(s.textContent||''),mode:m?m.dataset.m:'stop',music:!!(a&&!a.paused),laps:L?[].map.call(L.children,function(l){return l.textContent}):[]},'*')}catch(e){}}
+var o={type:'fd-ui',label:(t.textContent||'').trim(),running:/pause/i.test(s.textContent||''),mode:m?m.dataset.m:'stop',music:!!(a&&!a.paused),laps:L?[].map.call(L.children,function(l){return l.textContent}):[]},j=JSON.stringify(o),n=Date.now();
+if(j===lastSnap&&n-lastAt<3000)return;lastSnap=j;lastAt=n;P.postMessage(o,'*')}catch(e){}}
 setInterval(snap,500);
 addEventListener('message',function(ev){if(ev.source!==P)return;var d=ev.data||{};if(d.type!=='sd-cmd')return;
 var map={start:'#start',reset:'#reset',lap:'#lap',music:'#mtg'},el=null;

@@ -11,7 +11,7 @@ D = os.path.dirname(os.path.abspath(__file__))
 rd = lambda f: open(os.path.join(D, f), encoding='utf-8', newline='').read()
 SRC = {'pdf': 'pdf-viewer.html', 'tube': 'study-tube.html', 'focus': 'focus-desk.html'}
 
-LOAD_OLD = "function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src;"
+LOAD_OLD = "function load(k){ var f=fr[k]; if(f && (!f.getAttribute('src') || f.dataset.un)){ delete f.dataset.un; f.src=f.dataset.src;"
 LOAD_NEW = r"""function blobUrl(k){
   var t=document.getElementById('src-'+k).textContent.trim(), bin=atob(t), u=new Uint8Array(bin.length);
   for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
@@ -19,7 +19,7 @@ LOAD_NEW = r"""function blobUrl(k){
   if(k==='focus'){ var dir=location.href.replace(/[?#].*$/,'').replace(/[^\/]*$/,''); html=html.replace(/<head([^>]*)>/i,'<head$1><base href="'+dir+'">'); }
   return URL.createObjectURL(new Blob([html],{type:'text/html'}));
 }
-function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=blobUrl(k);"""
+function load(k){ var f=fr[k]; if(f && (!f.getAttribute('src') || f.dataset.un)){ delete f.dataset.un; f.src=blobUrl(k);"""
 
 def build():
     s = rd('study-desk.html')

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="hi">
-<head>
+<head><style id="cx-nobf">*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}</style>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Study Desk</title>
@@ -178,10 +178,10 @@ body.hh #bar{display:none}body.hh #hshow{display:block}
 var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var main=$('#main'), fr={pdf:$('#p-pdf iframe'),tube:$('#p-tube iframe'),focus:$('#p-focus iframe'),tool:$('#p-tool iframe')};
 var view='pdf';
-var TOOLS=[['photo-studio.html','🎨','Photo Studio','Photoshop jaisa editor: layers, brush, text, crop, filters'],['supermaths.html','➗','Super Maths','Maths practice'],['superenglish.html','📖','Super English','English practice'],['superreasoning.html','🧩','Super Reasoning','Reasoning practice'],['reading.html','📚','Comprehension','Reading passages'],['vocab-srs.html','🧠','Vocab SRS','Spaced repetition words'],['mock-question-bank.html','📝','Question Bank','Mock questions'],['calc-speed-test.html','⚡','Calc Speed Test','Calculation speed'],['optional-elimination.html.html','🎯','SSC Trick Quiz','25Q sets'],['latestjob.html','💼','Latest Jobs','Sarkari jobs']];
+var TOOLS=[['photo-studio.html','🎨','Photo Studio','Photoshop jaisa editor: layers, brush, text, crop, filters'],['supermaths.html','➗','Super Maths','Maths practice'],['superenglish.html','📖','Super English','English practice'],['superreasoning.html','🧩','Super Reasoning','Reasoning practice'],['reading.html','📚','Comprehension','Reading passages'],['vocab-srs.html','🧠','Vocab SRS','Spaced repetition words'],['mock-question-bank.html','📝','Question Bank','Mock questions'],['calc-speed-test.html','⚡','Calc Speed Test','Calculation speed'],['optional-elimination.html','🎯','SSC Trick Quiz','25Q sets'],['latestjob.html','💼','Latest Jobs','Sarkari jobs']];
 var curTool=null; try{ curTool=localStorage.getItem('sd:tool'); }catch(e){}
 
-function load(k){ var f=fr[k]; if(f && !f.getAttribute('src')){ f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ if(window.__skipEnter){ window.__skipEnter=false; [0,500,1400].forEach(function(t){ setTimeout(browserEnter,t); }); } else tubeEnter(); },{once:true}); } }
+function load(k){ var f=fr[k]; if(f && (!f.getAttribute('src') || f.dataset.un)){ delete f.dataset.un; f.src=f.dataset.src; if(k==='tube') f.addEventListener('load',function(){ if(window.__skipEnter){ window.__skipEnter=false; [0,500,1400].forEach(function(t){ setTimeout(browserEnter,t); }); } else tubeEnter(); },{once:true}); } }
 function browserEnter(){ try{ fr.tube.contentWindow.postMessage('uv-browser-enter','*'); }catch(e){} }
 function tubeEnter(){ try{ fr.tube.contentWindow.postMessage('uv-study-enter','*'); }catch(e){} }
 function setView(v){
@@ -195,11 +195,24 @@ function setView(v){
   $('#tSplit').classList.toggle('on',v==='ptool');
   $$('.tabs button').forEach(function(b){ if(b.dataset.v==='tools') b.classList.toggle('on',v==='tools'||v==='tool'||v==='ptool'); });
   try{ localStorage.setItem('sd:view',v); }catch(e){}
+  sdSync();
 }
+
+/* ---- PERF (#28,#29): inactive frames pause/unload. focus: timer/music chalu ho to kabhi pause nahi. pdf/tool: tab chhodne ke 90s baad (overlay band ho to 20s) about:blank, wapas aane par reload. ---- */
+var SD_OPEN=true, sdT={pdf:0,tool:0};
+function sdVis(k,v){ try{ var f=fr[k]; if(f && f.getAttribute('src') && !f.dataset.un && f.contentWindow) f.contentWindow.postMessage({type:'sd-vis',v:v},'*'); }catch(e){} }
+function sdIsVis(k){ if(!SD_OPEN) return false; if(k==='pdf') return view==='pdf'||view==='split'||view==='ptool'; if(k==='tool') return view==='tool'||view==='ptool'; return false; }
+function sdUnload(k){ var f=fr[k]; if(!f||!f.getAttribute('src')||f.dataset.un||sdIsVis(k)) return; if(k==='tool'){ if(curTool==='photo-studio.html') return; f.removeAttribute('data-f'); } f.src='about:blank'; f.dataset.un='1'; }
+function sdSync(){
+  sdVis('focus', (SD_OPEN&&view==='focus')||FD.run||FD.music);
+  sdVis('tube', SD_OPEN&&(view==='tube'||view==='split'||view==='google'));
+  ['pdf','tool'].forEach(function(k){ if(sdIsVis(k)){ clearTimeout(sdT[k]); sdT[k]=0; } else if(!sdT[k] && fr[k].getAttribute('src') && !fr[k].dataset.un){ sdT[k]=setTimeout(function(){ sdT[k]=0; sdUnload(k); }, SD_OPEN?90000:20000); } });
+}
+setInterval(sdSync,10000);
 
 /* ---- tools launcher ---- */
 function openTool(f,keep){ var t=TOOLS.filter(function(x){return x[0]===f})[0]; if(!t) return; curTool=f; try{ localStorage.setItem('sd:tool',f); }catch(e){}
-  $('#tName').textContent=t[1]+' '+t[2]; if(fr.tool.getAttribute('data-f')!==f){ fr.tool.setAttribute('data-f',f); fr.tool.src='./'+f; }
+  $('#tName').textContent=t[1]+' '+t[2]; if(fr.tool.getAttribute('data-f')!==f){ fr.tool.setAttribute('data-f',f); delete fr.tool.dataset.un; fr.tool.src='./'+f; }
   if(!keep) setView(view==='ptool'?'ptool':'tool'); }
 $('#tgrid').innerHTML=TOOLS.map(function(t){ return '<button class="tcard" data-f="'+t[0]+'"><span class="ti">'+t[1]+'</span><b>'+t[2]+'</b><small>'+t[3]+'</small></button>'; }).join('');
 $('#tgrid').addEventListener('click',function(e){ var b=e.target.closest('.tcard'); if(b){ view='tool'; openTool(b.dataset.f); } });
@@ -231,6 +244,7 @@ window.addEventListener('message',function(e){
     else if(d&&d.type==='stv-chans'&&d.chans&&d.chans.length){ try{ localStorage.setItem('sd:chans',JSON.stringify(d.chans)); }catch(x){} }
     else if(d&&d.type==='stv-chans-get'){ try{ var sc=JSON.parse(localStorage.getItem('sd:chans')||'null'); if(sc&&sc.length) fr.tube.contentWindow.postMessage({type:'stv-chans-set',chans:sc},'*'); }catch(x){} }
     return; }
+  if(emb && e.source===window.parent && d && d.type==='sd-overlay'){ SD_OPEN=!!d.open; sdSync(); if(SD_OPEN) setView(view); return; }
   if(emb && e.source===window.parent){ if(d&&typeof d.type==='string'&&d.type.indexOf('st-')===0){ var tw=fr.tube.contentWindow; if(tw&&fr.tube.getAttribute('src')){ try{ tw.postMessage(d,'*'); }catch(x){} } if(fw&&fr.focus.getAttribute('src')){ try{ fw.postMessage(d,'*'); }catch(x){} } } else if(fw){ try{ fw.postMessage(d,'*'); }catch(x){} } }
 });
 function closeDesk(){ if(emb){ try{ window.parent.postMessage({type:'fd-close'},'*'); }catch(e){} } }
@@ -245,9 +259,9 @@ function tickClock(){ var d=new Date(); var t=p2(d.getHours()%12||12)+':'+p2(d.g
 /* ---- stopwatch + timer (Date.now based, tab switch par bhi chalta rehta hai) ---- */
 var FD={run:false,label:'00:00',mode:'stop',up:false,music:false,laps:[],seen:0};
 /* Ek hi timer: Study Desk (Study Desk) ka. Chip + panel postMessage se usi ko dikhate/chalate hain (content:// par bhi chalta hai). */
-function fsend(cmd,v){ try{ var w=fr.focus.getAttribute('src')&&fr.focus.contentWindow; if(w){ w.postMessage({type:'sd-cmd',cmd:cmd,v:v},'*'); return true; } }catch(e){} return false; }
+function fsend(cmd,v){ try{ var w=fr.focus.getAttribute('src')&&fr.focus.contentWindow; if(w){ w.postMessage({type:'sd-vis',v:true},'*'); w.postMessage({type:'sd-cmd',cmd:cmd,v:v},'*'); return true; } }catch(e){} return false; }
 function onUi(d){ FD.up=true; FD.seen=Date.now(); FD.label=d.label||'00:00'; FD.run=!!d.running; FD.mode=d.mode||'stop'; FD.music=!!d.music; FD.laps=d.laps||[]; render(); }
-function needFocus(){ if(FD.up&&Date.now()-FD.seen<4000) return false; load('focus'); toast('Study Desk timer khul raha hai… 1 second baad phir dabao'); return true; }
+function needFocus(){ if(FD.up&&(Date.now()-FD.seen<4000||fr.focus.getAttribute('src'))) return false; load('focus'); toast('Study Desk timer khul raha hai… 1 second baad phir dabao'); return true; }
 function dayKey(){ var d=new Date(); return 'sd:day:'+d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
 function addStudy(sec){ try{ var k=dayKey(); localStorage.setItem(k,(+localStorage.getItem(k)||0)+sec); }catch(e){} }
 var beepCtx; function beep(n){ try{ beepCtx=beepCtx||new (window.AudioContext||window.webkitAudioContext)(); for(var i=0;i<(n||3);i++){ (function(i){ var o=beepCtx.createOscillator(),g=beepCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(beepCtx.destination); var t=beepCtx.currentTime+i*.4; g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); })(i); } }catch(e){} try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){} }

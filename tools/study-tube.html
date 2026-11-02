@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>/*SD-PAUSE*/window.__sdH=false;addEventListener('message',function(e){var d=e.data;if(d&&d.type==='sd-vis'){window.__sdH=!d.v;if(d.v)try{dispatchEvent(new Event('sd-wake'))}catch(x){}}});window.__sdSI=function(f,t){return setInterval(function(){if(!window.__sdH)f()},t)};</script><style id="cx-nobf">*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}</style>
 <link rel="preconnect" href="https://www.googleapis.com" crossorigin><link rel="preconnect" href="https://i.ytimg.com" crossorigin><link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8525,7 +8526,9 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }
   label(document);
   let pend = 0;
-  new MutationObserver(() => { if (pend) return; pend = setTimeout(() => { pend = 0; label(document); }, 700); }).observe(document.body, { childList: true, subtree: true });
+  let stale = false;
+  window.addEventListener('sd-wake', () => { if (stale) { stale = false; label(document); } });
+  new MutationObserver(() => { if (pend) return; pend = setTimeout(() => { pend = 0; if (window.__sdH || document.hidden) { stale = true; return; } label(document); }, 3000); }).observe(document.body, { childList: true, subtree: true });
 
   // Enter / Space on a focused folder row = tap its title area (same as touch), but not when the heart/delete button has focus
   document.addEventListener('keydown', e => {
@@ -9681,7 +9684,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   }
   const ueh = window.updateEmptyHint;
   if (typeof ueh === 'function') window.updateEmptyHint = function () { const r = ueh.apply(this, arguments); setTimeout(ensureBtn, 450); return r; };
-  setTimeout(ensureBtn, 900); setInterval(ensureBtn, 4000);
+  setTimeout(ensureBtn, 900); __sdSI(ensureBtn, 4000);
 
   /* separate "Study" tab in the bottom nav (first item) + opens by default on app start */
   const nav = $('bottomNav');
@@ -10705,7 +10708,7 @@ __stvHook(org);
 
   /* ---------- watch log (minutes per day) ---------- */
   var LOG = rd('uv99:st:log', {}), since = 0;
-  setInterval(function () {
+  __sdSI(function () {
     var on = false, y = Y();
     try { on = !!(y && y.getPlayerState && y.getPlayerState() === 1); } catch (e) {}
     if (!on) { var v = fastV(); on = !!(v && !v.paused && !v.ended); }
@@ -10741,7 +10744,7 @@ __stvHook(org);
     if (!pill) { pill = document.createElement('div'); pill.id = 'stPomoPill'; pill.addEventListener('click', function () { openHub('pomo'); }); document.body.appendChild(pill); }
     pill.style.display = 'block'; pill.textContent = (P.phase === 'focus' ? '🍅 ' : '☕ ') + fmtMS(pLeft()) + (P.running ? '' : ' ⏸');
   }
-  setInterval(function () {
+  __sdSI(function () {
     if (P.running && P.end - Date.now() <= 0) { phaseEnd(); if (hub && tab === 'pomo') draw(); }
     pillUpdate();
     if (hub && tab === 'pomo') { var t = $('#stPT2', hub); if (t) t.textContent = fmtMS(pLeft()); }
@@ -11004,7 +11007,7 @@ __stvHook(org);
     if (!du || !curCh || curCh.length < 2) return;
     curCh.forEach(function (c) { if (c.s > 1 && c.s < du) { var i = document.createElement('i'); i.className = 'stx-tick'; i.style.left = (c.s / du * 100) + '%'; trk.appendChild(i); } });
   }
-  setInterval(function () {
+  __sdSI(function () {
     if (!$('#stOv')) { lastId = ''; return; }
     var id = curId();
     if (id && id !== lastId) { lastId = id; curCh = CH[id] || null; if ($('.stx')) { if (curCh) renderCh(); else loadCh(id); wlBtn(); } }
@@ -11087,7 +11090,7 @@ __stvHook(org);
       .then(function(r){return r.json()}).then(function(j){var s=j&&j.items&&j.items[0]&&j.items[0].statistics;if(!s)return;
         SC[v]={l:s.likeCount!=null?+s.likeCount:null,v:+s.viewCount,ts:Date.now()};var ks=Object.keys(SC);if(ks.length>200)delete SC[ks[0]];wr('uv99:st:stats',SC);if(cur===v)paint()}).catch(function(){});
   }
-  setInterval(function(){
+  __sdSI(function(){
     if(!$('#stOv')){cur='';return}
     build();var v=id();if(v&&v!==cur){cur=v;paint();stats(v)}
   },700);
@@ -11151,7 +11154,7 @@ __stvHook(org);
     var hd=$('#stOv .stv-hd');if(hd&&!$('#stmBtn')){var b=document.createElement('button');b.id='stmBtn';b.className='stv-ib';b.title='Library';b.textContent='📚';b.onclick=function(e){e.stopPropagation();open()};hd.insertBefore(b,$('#stS')||null)}
     var bar=$('.stl');if(bar&&!$('#stmQ')){var q=document.createElement('button');q.id='stmQ';q.textContent='＋ Queue';q.onclick=function(){var id=vid();if(!id)return;var t=$('#stPT');if(Q.some(function(v){return v.id===id}))return toast('Pehle se queue me hai');Q.push({id:id,t:t?t.textContent:id});wr('uv99:st:queue',Q);toast('▶ Queue me joda ('+Q.length+')')};bar.appendChild(q)}
   }
-  setInterval(function(){
+  __sdSI(function(){
     if(!$('#stOv'))return;btns();
     var y=window.__stvY&&window.__stvY();
     if(sleepAt&&Date.now()>=sleepAt){sleepAt=0;try{y.pauseVideo()}catch(e){}toast('😴 Sleep timer: pause')}
@@ -11220,7 +11223,7 @@ __stvHook(org);
   var b=document.createElement('button');b.id='stbBtn';b.textContent='⌘';b.title='Quick search (Ctrl+K)';
   b.style.cssText='position:fixed;right:10px;bottom:76px;z-index:2147482000;width:40px;height:40px;border-radius:50%;border:0;background:#3ea6ff;color:#000;font:700 18px system-ui;box-shadow:0 3px 12px #0007;opacity:.85';
   b.onclick=pal;document.body.appendChild(b);
-  setInterval(function(){b.style.display=document.getElementById('stOv')?'none':''},800);
+  __sdSI(function(){b.style.display=document.getElementById('stOv')?'none':''},800);
   window.uvPalette=pal;
 })();
 </script>
