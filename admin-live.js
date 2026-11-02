@@ -79,8 +79,8 @@
     }catch(e){ console.error('alv apply', e); }
     applying = false;
   }
-  function schedule(){ clearTimeout(timer); timer = setTimeout(apply, 300); }
-  new MutationObserver(function(){ if(!applying) schedule(); }).observe(document.documentElement, { childList:true, subtree:true, characterData:true });
+  function schedule(){ clearTimeout(timer); timer = setTimeout(apply, 1200); }
+  new MutationObserver(function(){ if(!applying) schedule(); }).observe(document.documentElement, { childList:true, subtree:true });
 
   base = JSON.stringify(D);
   // ---------- sync ----------
