@@ -1891,6 +1891,92 @@ window.__mqbShare = {
   const backBtn = document.getElementById('latestjobBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
+// Daily Editorial (tools/daily-editorial.html) — single-file offline editorial reader.
+// Admin nayi HTML upload karta hai -> Firebase rooms/<room>/_dailyEditorial {v,name,html}.
+// Sabhi members ko khulte hi nayi file mil jaati hai (IndexedDB me save, offline bhi chalti hai).
+(function initDailyEditorialPage(){
+  const openBtn = document.getElementById('calcDailyEditorialBtn');
+  const frame = document.getElementById('dailyeditorialFrame');
+  const backBtn = document.getElementById('dailyeditorialBackBtn');
+  const upBtn = document.getElementById('deUploadBtn');
+  const fileIn = document.getElementById('deFileInput');
+  const stat = document.getElementById('deStatus');
+  if(!openBtn || !frame) return;
+  let blobUrl = null, loadedKey = '';
+  const say = (t)=>{ if(stat) stat.textContent = t || ''; };
+  const roomPath = ()=>{ const c = getRoomCode(); return c ? ('rooms/'+c+'/_dailyEditorial') : null; };
+  const isAdm = ()=> !!(getRoomCode() && isMeAdmin());
+
+  // --- tiny IndexedDB key-value ---
+  function idb(){ return new Promise((res,rej)=>{ const r = indexedDB.open('deStore',1); r.onupgradeneeded = ()=>r.result.createObjectStore('kv'); r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error); }); }
+  async function kvGet(k){ try{ const d = await idb(); return await new Promise((res)=>{ const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=>res(q.result); q.onerror = ()=>res(null); }); }catch(e){ return null; } }
+  async function kvSet(k,v){ try{ const d = await idb(); await new Promise((res,rej)=>{ const t = d.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete = res; t.onerror = ()=>rej(t.error); }); return true; }catch(e){ return false; } }
+
+  function withTimeout(p, ms){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]); }
+
+  async function latestDoc(){
+    // Firebase me nayi ho to wo, nahi to local saved; dono na ho to None (bundled file chalegi)
+    let local = await kvGet('doc');
+    const p = roomPath();
+    if(p){
+      try{
+        const raw = await withTimeout(window.__fbGet(p), 3500);
+        const D = raw ? ((typeof raw === 'string') ? JSON.parse(raw) : raw) : null;
+        if(D && D.html && D.v && (!local || D.v > local.v)){ local = D; await kvSet('doc', D); }
+      }catch(e){}
+    }
+    return local && local.html ? local : null;
+  }
+
+  async function show(force){
+    say('');
+    const doc = await latestDoc();
+    const key = doc ? ('d'+doc.v) : 'bundled';
+    if(!force && frame.getAttribute('src') && key === loadedKey) return;
+    if(blobUrl){ try{ URL.revokeObjectURL(blobUrl); }catch(e){} blobUrl = null; }
+    if(doc){
+      blobUrl = URL.createObjectURL(new Blob([doc.html], {type:'text/html'}));
+      frame.setAttribute('src', blobUrl);
+    } else {
+      frame.setAttribute('src', frame.dataset.src);
+    }
+    loadedKey = key;
+  }
+
+  function refreshAdminUI(){ const a = isAdm(); if(upBtn) upBtn.hidden = !a; }
+
+  openBtn.addEventListener('click', async () => {
+    refreshAdminUI();
+    showCalcPage('dailyeditorial');
+    if(!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src); // turant kuch dikhe
+    await show(false);
+  });
+  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+
+  // --- Admin: upload HTML ---
+  if(upBtn && fileIn){
+    upBtn.addEventListener('click', ()=>{
+      if(!isAdm()) return say('Sirf room Admin upload kar sakta hai.');
+      if(!roomPath()) return say('Pehle Sync Room join karo.');
+      fileIn.value = ''; fileIn.click();
+    });
+    fileIn.addEventListener('change', async ()=>{
+      const f = fileIn.files && fileIn.files[0]; if(!f) return;
+      try{
+        const html = await f.text();
+        if(!/<html|<!doctype/i.test(html)) return say('❌ Ye HTML file nahi lag rahi.');
+        if(html.length > 8*1024*1024) return say('❌ File bahut badi hai (8 MB se kam rakho).');
+        say('⏳ Upload ho raha hai...');
+        const D = {v: Date.now(), name: f.name, html: html};
+        await window.__fbSet(roomPath(), JSON.stringify(D));
+        await kvSet('doc', D);
+        await show(true);
+        say('✅ ' + f.name + ' sabhi members ke liye set.');
+      }catch(e){ say('❌ Upload fail — internet check karo.'); }
+    });
+  }
+
+})();
 // Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
 (function initStudyTubePage(){
   const openBtn = document.getElementById('calcStudyTubeBtn');
@@ -8615,7 +8701,7 @@ const QUIZ_TAKING_EXCLUDE_RE = /(^menu$|^session$|menu$|list$|chapters$|lang$|in
 // browser Fullscreen API — avoids the "drag from top to exit fullscreen"
 // hint banner some mobile browsers/PWA hosts (e.g. GitHub Pages) show on
 // native fullscreen entry.
-const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'optelim', 'latestjob', 'studytube', 'readingsets', 'readingtype', 'readingnew', 'grammarch'];
+const NO_NATIVE_FULLSCREEN_PAGES = ['speedtest', 'flashcards', 'mockbank', 'superenglish', 'supermaths', 'superreasoning', 'optelim', 'latestjob', 'studytube', 'dailyeditorial', 'readingsets', 'readingtype', 'readingnew', 'grammarch'];
 function isQuizTakingPage(name){
   if(!name) return false;
   return !QUIZ_TAKING_EXCLUDE_RE.test(name);
@@ -8659,7 +8745,7 @@ function showCalcPage(name, _fromPopState){
   // isliye ise appQuizFullscreen takeover se explicitly exclude kiya hai,
   // baaki sab quiz-taking pages ke liye takeover pehle jaisa hi hai.
   const enteringQuiz = isQuizTakingPage(name) && name !== 'speedtest' && name !== 'flashcards' && name !== 'mockbank' && name !== 'superenglish' && name !== 'supermaths' && name !== 'superreasoning' && name !== 'optelim' && name !== 'latestjob' && name !== 'studytube' && name !== 'readingsets' && name !== 'readingtype' && name !== 'readingnew';
-  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning' && prevName !== 'optelim' && prevName !== 'latestjob' && prevName !== 'studytube' && prevName !== 'readingsets' && prevName !== 'readingtype' && prevName !== 'readingnew';
+  const wasInQuiz = isQuizTakingPage(prevName) && prevName !== 'speedtest' && prevName !== 'flashcards' && prevName !== 'mockbank' && prevName !== 'superenglish' && prevName !== 'supermaths' && prevName !== 'superreasoning' && prevName !== 'optelim' && prevName !== 'latestjob' && prevName !== 'studytube' && prevName !== 'dailyeditorial' && prevName !== 'readingsets' && prevName !== 'readingtype' && prevName !== 'readingnew';
   document.body.classList.toggle('appQuizFullscreen', enteringQuiz);
   const skipNativeFullscreen = NO_NATIVE_FULLSCREEN_PAGES.indexOf(name) !== -1;
   const skipNativeFullscreenPrev = NO_NATIVE_FULLSCREEN_PAGES.indexOf(prevName) !== -1;
@@ -8670,7 +8756,7 @@ function showCalcPage(name, _fromPopState){
   // Reading mode ab poori screen par khulta hai — app ka topbar, tabbar,
   // aur baaki sab UI is dauraan chhupa dete hain taaki sirf reader ke
   // apne controls hi dikhein.
-  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'editorialreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'latestjob' || name === 'studytube' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
+  document.body.classList.toggle('gkReaderFullscreen', name === 'gkreader' || name === 'speedtest' || name === 'flashcards' || name === 'mockbank' || name === 'superenglish' || name === 'supermaths' || name === 'superreasoning' || name === 'optelim' || name === 'latestjob' || name === 'studytube' || name === 'dailyeditorial' || name === 'readingsets' || name === 'readingtype' || name === 'readingnew');
   // Saved-quiz session ke dauraan koi question unsave ho sakta hai, isliye
   // menu par wapas aate hi count fresh kar do.
   if(name === 'gkquiz' && typeof gkQuizRender === 'function' && gkQuizManifest) safeRun(gkQuizRender, 'gkQuizRender');
@@ -20765,510 +20851,6 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ===== Editorial Reading (SSC CGL) =====
-(function(){
-  function getData(){ return window.EDITORIAL_DATA; }
-
-  let edCurrentCatId = null;
-  let edCurrentList = [];
-  let edCurrentIndex = 0;
-  const ED_FONT_MIN = 14, ED_FONT_MAX = 24, ED_FONT_DEFAULT = 17;
-  let edFontSize = parseInt(localStorage.getItem('editorialFontSize'), 10) || ED_FONT_DEFAULT;
-
-  function catCounts(){
-    const data = getData();
-    const counts = {};
-    if(!data) return counts;
-    data.editorials.forEach(e => { counts[e.cat] = (counts[e.cat] || 0) + 1; });
-    return counts;
-  }
-
-  function renderEditorialCategories(){
-    const data = getData();
-    const grid = document.getElementById('editorialCatGrid');
-    if(!grid) return;
-    if(!data){ grid.innerHTML = '<div style="padding:20px;opacity:0.7;">Loading…</div>'; return; }
-    const counts = catCounts();
-    grid.innerHTML = data.categories.map(c => `
-      <button class="edCatCard" data-cat="${c.id}">
-        <span class="edCatIcon">${c.icon}</span>
-        <span class="edCatName">${c.name}</span>
-        <span class="edCatCount">${counts[c.id] || 0} articles</span>
-      </button>
-    `).join('');
-    grid.querySelectorAll('.edCatCard').forEach(btn => {
-      btn.addEventListener('click', () => openEditorialCategory(btn.dataset.cat));
-    });
-  }
-
-  function getCategoryEditorials(catId){
-    const data = getData();
-    if(!data) return [];
-    return data.editorials.filter(e => e.cat === catId);
-  }
-
-  function openEditorialCategory(catId){
-    const data = getData();
-    if(!data) return;
-    edCurrentCatId = catId;
-    const list = getCategoryEditorials(catId);
-    const cat = data.categories.find(c => c.id === catId);
-    const titleEl = document.getElementById('editorialListTitle');
-    if(titleEl) titleEl.textContent = (cat ? cat.icon + ' ' + cat.name : 'Editorials');
-    const countEl = document.getElementById('editorialListCount');
-    if(countEl) countEl.textContent = list.length + ' Articles';
-    const grid = document.getElementById('editorialListGrid');
-    if(grid){
-      grid.innerHTML = list.map((e, i) => `
-        <button class="edArticleCard" data-idx="${i}">
-          <span class="edArticleIdx">${i+1}</span>
-          <span class="edArticleTitle">${e.title}</span>
-          <span class="edArticleMeta">${e.vocab.length} words</span>
-        </button>
-      `).join('');
-      grid.querySelectorAll('.edArticleCard').forEach(btn => {
-        btn.addEventListener('click', () => openEditorialReader(catId, parseInt(btn.dataset.idx, 10)));
-      });
-    }
-    showCalcPage('editoriallist');
-  }
-
-  const ED_READ_WPM = 150;
-  const ED_READ_MS_PER_WORD = 60000 / ED_READ_WPM;
-  const ED_READ_MIN_MS = 1800;
-  const ED_READ_MAX_MS = 22000;
-  const ED_WORDS_PER_UNIT = 45; // roughly kitne words ka ek "paragraph" chunk bane
-
-  function edCountWords(text){ return (text||'').trim().split(/\s+/).filter(Boolean).length; }
-  function edComputeReadMs(text){
-    const words = Math.max(edCountWords(text), 1);
-    const ms = words * ED_READ_MS_PER_WORD;
-    return Math.round(Math.max(ED_READ_MIN_MS, Math.min(ms, ED_READ_MAX_MS)));
-  }
-
-  // Editorial ka raw text ek hi lambi blob hoti hai (koi paragraph break
-  // nahi) — isliye sentence boundaries pe todke ~45-words ke pseudo-
-  // paragraphs banate hain, taaki auto-scroll ke paas snap karne ke liye
-  // discrete reading units hon (bilkul GK Reader jaisa experience).
-  function splitIntoReadUnits(text){
-    const sentences = (text || '').match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || [text];
-    const chunks = [];
-    let current = '';
-    let currentWords = 0;
-    sentences.forEach(sent => {
-      const w = edCountWords(sent);
-      if(currentWords > 0 && currentWords + w > ED_WORDS_PER_UNIT){
-        chunks.push(current.trim());
-        current = '';
-        currentWords = 0;
-      }
-      current += sent;
-      currentWords += w;
-    });
-    if(current.trim()) chunks.push(current.trim());
-    return chunks.length ? chunks : [text];
-  }
-
-  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  // Har vocab word ko article ke text mein dhoondh ke green clickable span
-  // mein wrap karta hai — automatic, kisi bhi editorial ke liye, based on
-  // us editorial ke apne vocab list se (data mein pehle se koi markup
-  // hone ki zaroorat nahi).
-  function highlightVocabInHtml(rawHtml, vocabList){
-    if(!vocabList || !vocabList.length) return escapeHtml(rawHtml);
-    // Lambe/multi-word phrases pehle match karo taaki chhote words unke
-    // andar se galti se match na ho jaayein (e.g. "burst out laughing"
-    // "burst" se pehle match hona chahiye).
-    const sorted = vocabList.slice().sort((a,b) => b.word.length - a.word.length);
-    const text = escapeHtml(rawHtml);
-    // Placeholder-based approach: pehle sab matches ko unique tokens se
-    // replace karo (taaki overlapping words dobara match na hon), phir
-    // end mein tokens ko actual span HTML se replace karo.
-    const tokens = [];
-    let working = text;
-    sorted.forEach((v, idx) => {
-      const word = v.word.trim();
-      if(!word) return;
-      const pattern = new RegExp('\\b' + escapeRegExp(word) + '\\b', 'gi');
-      working = working.replace(pattern, (match) => {
-        const tokenId = '\u0000VOCAB' + tokens.length + '\u0000';
-        tokens.push({ match, word: v.word, pos: v.pos || '', meaning: v.meaning || '', hindi: v.hindi || '' });
-        return tokenId;
-      });
-    });
-    tokens.forEach((t, i) => {
-      const tokenId = '\u0000VOCAB' + i + '\u0000';
-      const span = '<span class="vocabWord" data-word="' + escapeHtml(t.word) + '" data-pos="' + escapeHtml(t.pos) + '" data-meaning="' + escapeHtml(t.meaning) + '" data-hindi="' + escapeHtml(t.hindi) + '">' + t.match + '</span>';
-      working = working.split(tokenId).join(span);
-    });
-    return working;
-  }
-
-  function applyEdFontSize(){
-    const contentEl = document.getElementById('edReaderContent');
-    if(contentEl) contentEl.style.fontSize = edFontSize + 'px';
-  }
-
-  function renderEdReaderContent(){
-    const e = edCurrentList[edCurrentIndex];
-    if(!e) return;
-    const headerTitle = document.getElementById('edReaderHeaderTitle');
-    if(headerTitle) headerTitle.textContent = e.title;
-    const contentEl = document.getElementById('edReaderContent');
-    if(contentEl){
-      const paras = splitIntoReadUnits(e.html);
-      const paraHtml = paras.map((p, i) => {
-        const highlighted = highlightVocabInHtml(p, e.vocab);
-        const ms = edComputeReadMs(p);
-        return `<p class="gkP gkReadUnit" data-ridx="${i}" data-ms="${ms}" style="line-height:1.85;">${highlighted}</p>`;
-      }).join('');
-      contentEl.innerHTML = `<div class="edArticleTitleHead" style="font-size:1.25em;font-weight:900;margin-bottom:14px;color:#fff;">${escapeHtml(e.title)}</div>
-        ${paraHtml}`;
-      contentEl.scrollTop = 0;
-    }
-    resetEdReadingState();
-    const scrollEl = document.getElementById('calcPage-editorialreader');
-    if(scrollEl) scrollEl.scrollTop = 0;
-    applyEdFontSize();
-    const prevBtn = document.getElementById('edReaderPrevBtn');
-    const nextBtn = document.getElementById('edReaderNextBtn');
-    if(prevBtn) prevBtn.disabled = (edCurrentIndex <= 0);
-    if(nextBtn) nextBtn.disabled = (edCurrentIndex >= edCurrentList.length - 1);
-    updateEdProgress();
-  }
-
-  function updateEdProgress(){
-    if(edAutoScrollOn) return; // auto-scroll ke waqt fill per-paragraph timer control karta hai
-    const scrollEl = document.getElementById('calcPage-editorialreader');
-    const fill = document.getElementById('edReadProgressFill');
-    if(!scrollEl || !fill) return;
-    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
-    const pct = max > 0 ? (scrollEl.scrollTop / max) * 100 : 0;
-    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
-  }
-
-  // ===== Auto-scroll (GK Reader jaisa hi paragraph-snap engine, editorial ke liye) =====
-  const ED_AUTOSCROLL_SPEEDS = [0.5, 1, 1.5, 2];
-  let edAutoScrollOn = false;
-  let edAutoScrollSpeedIdx = 1;
-  let edAutoScrollWakeLock = null;
-  let edReadUnits = [];
-  let edActiveUnitIdx = -1;
-  let edUnitTimerId = null;
-  let edUnitDeadlineTs = null;
-  let edUnitRemainingMs = null;
-
-  function edGetScrollEl(){ return document.getElementById('calcPage-editorialreader'); }
-  function edGetContentEl(){ return document.getElementById('edReaderContent'); }
-  function edGetProgressFillEl(){ return document.getElementById('edReadProgressFill'); }
-
-  function updateEdAutoScrollUI(){
-    const playBtn = document.getElementById('edAutoScrollPlayBtn');
-    const speedBtn = document.getElementById('edAutoScrollSpeedBtn');
-    if(playBtn){
-      playBtn.innerHTML = edAutoScrollOn ? '&#10074;&#10074;' : '&#9654;';
-      playBtn.setAttribute('aria-label', edAutoScrollOn ? 'Pause auto scroll' : 'Play auto scroll');
-      playBtn.classList.toggle('gkAutoScrollPlaying', edAutoScrollOn);
-    }
-    if(speedBtn) speedBtn.textContent = ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx] + 'x';
-    const bar = document.getElementById('edReadProgressBar');
-    if(bar) bar.classList.toggle('gkReadProgressBar-on', edAutoScrollOn);
-  }
-
-  async function edRequestWakeLock(){
-    try{
-      if('wakeLock' in navigator){
-        edAutoScrollWakeLock = await navigator.wakeLock.request('screen');
-        edAutoScrollWakeLock.addEventListener('release', () => { edAutoScrollWakeLock = null; });
-      }
-    }catch(e){}
-  }
-  function edReleaseWakeLock(){
-    if(edAutoScrollWakeLock){ edAutoScrollWakeLock.release().catch(()=>{}); edAutoScrollWakeLock = null; }
-  }
-
-  function edStartProgressFill(ms){
-    const fill = edGetProgressFillEl();
-    if(!fill) return;
-    fill.style.transition = 'none';
-    fill.style.width = '0%';
-    void fill.offsetWidth;
-    fill.style.transition = `width ${ms}ms linear`;
-    fill.style.width = '100%';
-  }
-  function edFreezeProgressFill(){
-    const fill = edGetProgressFillEl();
-    if(!fill) return;
-    const currentWidth = getComputedStyle(fill).width;
-    fill.style.transition = 'none';
-    fill.style.width = currentWidth;
-  }
-  function edResetProgressFill(){
-    const fill = edGetProgressFillEl();
-    if(!fill) return;
-    fill.style.transition = 'none';
-    fill.style.width = '0%';
-  }
-
-  function edRefreshReadUnits(){
-    const contentEl = edGetContentEl();
-    edReadUnits = contentEl ? Array.from(contentEl.querySelectorAll('.gkReadUnit')) : [];
-  }
-  function edClearUnitTimer(){
-    if(edUnitTimerId){ clearTimeout(edUnitTimerId); edUnitTimerId = null; }
-  }
-  function edScrollUnitIntoView(idx){
-    const el = edReadUnits[idx];
-    const scrollEl = edGetScrollEl();
-    if(!el || !scrollEl) return;
-    const targetTop = scrollEl.scrollTop + (el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top) - 14;
-    scrollEl.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
-  }
-  function edArmUnitTimer(ms){
-    edClearUnitTimer();
-    edUnitDeadlineTs = Date.now() + ms;
-    edUnitRemainingMs = ms;
-    edStartProgressFill(ms);
-    edUnitTimerId = setTimeout(edAdvanceToNextUnit, ms);
-  }
-  function edAdvanceToNextUnit(){
-    edClearUnitTimer();
-    if(edActiveUnitIdx >= edReadUnits.length - 1){
-      edStopAutoScroll(true);
-      return;
-    }
-    edActiveUnitIdx += 1;
-    edScrollUnitIntoView(edActiveUnitIdx);
-    const ms = (parseInt(edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000) / ED_AUTOSCROLL_SPEEDS[edAutoScrollSpeedIdx];
-    edArmUnitTimer(ms);
-  }
-  function edFindVisibleUnitIdx(){
-    const scrollEl = edGetScrollEl();
-    if(!scrollEl || !edReadUnits.length) return 0;
-    const scrollTopEdge = scrollEl.getBoundingClientRect().top + 20;
-    let best = 0;
-    for(let i = 0; i < edReadUnits.length; i++){
-      if(edReadUnits[i].getBoundingClientRect().top <= scrollTopEdge) best = i;
-      else break;
-    }
-    return best;
-  }
-  function edStartAutoScroll(){
-    edRefreshReadUnits();
-    if(!edReadUnits.length) return;
-    edAutoScrollOn = true;
-    updateEdAutoScrollUI();
-    edRequestWakeLock();
-    edActiveUnitIdx = edFindVisibleUnitIdx() - 1;
-    if(edActiveUnitIdx < -1) edActiveUnitIdx = -1;
-    edAdvanceToNextUnit();
-  }
-  function edStopAutoScroll(reachedEnd){
-    edAutoScrollOn = false;
-    edClearUnitTimer();
-    edFreezeProgressFill();
-    edReleaseWakeLock();
-    updateEdAutoScrollUI();
-    if(reachedEnd){
-      edResetProgressFill();
-      edActiveUnitIdx = -1;
-      edUnitRemainingMs = null;
-      edUnitDeadlineTs = null;
-    }
-  }
-  function resetEdReadingState(){
-    edStopAutoScroll(false);
-    edActiveUnitIdx = -1;
-    edUnitRemainingMs = null;
-    edUnitDeadlineTs = null;
-    edResetProgressFill();
-    edReadUnits = [];
-  }
-  function edPauseAutoScroll(){
-    if(!edAutoScrollOn) return;
-    edUnitRemainingMs = edUnitDeadlineTs ? Math.max(300, edUnitDeadlineTs - Date.now()) : edUnitRemainingMs;
-    edAutoScrollOn = false;
-    edClearUnitTimer();
-    edFreezeProgressFill();
-    edReleaseWakeLock();
-    updateEdAutoScrollUI();
-  }
-  function edResumeAutoScroll(){
-    edRefreshReadUnits();
-    if(!edReadUnits.length) return;
-    edAutoScrollOn = true;
-    updateEdAutoScrollUI();
-    edRequestWakeLock();
-    if(edActiveUnitIdx < 0){ edAdvanceToNextUnit(); return; }
-    const ms = edUnitRemainingMs || (parseInt((edReadUnits[edActiveUnitIdx]||{}).getAttribute && edReadUnits[edActiveUnitIdx].getAttribute('data-ms'), 10) || 3000);
-    edArmUnitTimer(ms);
-  }
-  function edToggleAutoScroll(){
-    if(edAutoScrollOn) edPauseAutoScroll();
-    else if(edActiveUnitIdx >= 0 && edActiveUnitIdx < edReadUnits.length - 1 && edUnitRemainingMs) edResumeAutoScroll();
-    else edStartAutoScroll();
-  }
-  function edCycleAutoScrollSpeed(){
-    edAutoScrollSpeedIdx = (edAutoScrollSpeedIdx + 1) % ED_AUTOSCROLL_SPEEDS.length;
-    updateEdAutoScrollUI();
-    if(edAutoScrollOn && edUnitDeadlineTs){
-      const remainingAtOldSpeed = Math.max(300, edUnitDeadlineTs - Date.now());
-      edArmUnitTimer(remainingAtOldSpeed);
-    }
-  }
-
-  function openEditorialReader(catId, index){
-    edCurrentCatId = catId;
-    edCurrentList = getCategoryEditorials(catId);
-    edCurrentIndex = index;
-    showCalcPage('editorialreader');
-    renderEdReaderContent();
-  }
-
-  function openEdReaderListOverlay(){
-    const ov = document.getElementById('edReaderListOverlay');
-    const wrap = document.getElementById('edReaderListSheetGrid');
-    if(wrap){
-      wrap.innerHTML = edCurrentList.map((e, i) => `
-        <button class="edArticleCard" data-idx="${i}">
-          <span class="edArticleIdx">${i+1}</span>
-          <span class="edArticleTitle">${e.title}</span>
-        </button>
-      `).join('');
-      wrap.querySelectorAll('.edArticleCard').forEach(btn => {
-        btn.addEventListener('click', () => {
-          closeEdReaderListOverlay();
-          edCurrentIndex = parseInt(btn.dataset.idx, 10);
-          renderEdReaderContent();
-        });
-      });
-    }
-    if(ov) ov.classList.add('open');
-  }
-  function closeEdReaderListOverlay(){
-    const ov = document.getElementById('edReaderListOverlay');
-    if(ov) ov.classList.remove('open');
-  }
-
-  function showVocabPopup(word, pos, meaning, hindi){
-    const overlay = document.getElementById('vocabPopupOverlay');
-    const wordEl = document.getElementById('vocabPopupWord');
-    const meaningEl = document.getElementById('vocabPopupMeaning');
-    const hindiEl = document.getElementById('vocabPopupHindi');
-    if(wordEl) wordEl.textContent = word + (pos ? ' (' + pos + ')' : '');
-    if(meaningEl) meaningEl.textContent = meaning;
-    if(hindiEl){
-      if(hindi && hindi.trim()){
-        hindiEl.textContent = hindi;
-        hindiEl.classList.add('show');
-      } else {
-        hindiEl.textContent = '';
-        hindiEl.classList.remove('show');
-      }
-    }
-    if(overlay) overlay.classList.add('open');
-  }
-  function hideVocabPopup(){
-    const overlay = document.getElementById('vocabPopupOverlay');
-    if(overlay) overlay.classList.remove('open');
-  }
-
-  function initEditorialReading(){
-    renderEditorialCategories();
-
-    const openBtn = document.getElementById('calcEditorialBtn');
-    if(openBtn) openBtn.addEventListener('click', () => { renderEditorialCategories(); showCalcPage('editorialmenu'); });
-
-    const menuBackBtn = document.getElementById('editorialMenuBackBtn');
-    if(menuBackBtn) menuBackBtn.addEventListener('click', () => showCalcPage('menu'));
-
-    const listBackBtn = document.getElementById('editorialListBackBtn');
-    if(listBackBtn) listBackBtn.addEventListener('click', () => showCalcPage('editorialmenu'));
-
-    const readerBackBtn = document.getElementById('edReaderBackBtn');
-    if(readerBackBtn) readerBackBtn.addEventListener('click', () => {
-      resetEdReadingState();
-      closeEdReaderListOverlay();
-      if(edCurrentCatId) openEditorialCategory(edCurrentCatId);
-      else showCalcPage('editorialmenu');
-    });
-
-    const fontIncBtn = document.getElementById('edFontIncBtn');
-    if(fontIncBtn) fontIncBtn.addEventListener('click', () => {
-      edFontSize = Math.min(ED_FONT_MAX, edFontSize + 1);
-      localStorage.setItem('editorialFontSize', edFontSize);
-      applyEdFontSize();
-    });
-    const fontDecBtn = document.getElementById('edFontDecBtn');
-    if(fontDecBtn) fontDecBtn.addEventListener('click', () => {
-      edFontSize = Math.max(ED_FONT_MIN, edFontSize - 1);
-      localStorage.setItem('editorialFontSize', edFontSize);
-      applyEdFontSize();
-    });
-
-    const prevBtn = document.getElementById('edReaderPrevBtn');
-    if(prevBtn) prevBtn.addEventListener('click', () => {
-      if(edCurrentIndex > 0){ edCurrentIndex--; renderEdReaderContent(); }
-    });
-    const nextBtn = document.getElementById('edReaderNextBtn');
-    if(nextBtn) nextBtn.addEventListener('click', () => {
-      if(edCurrentIndex < edCurrentList.length - 1){ edCurrentIndex++; renderEdReaderContent(); }
-    });
-
-    const listBtn = document.getElementById('edReaderListBtn');
-    if(listBtn) listBtn.addEventListener('click', () => openEdReaderListOverlay());
-    const listCloseBtn = document.getElementById('edReaderListCloseBtn');
-    if(listCloseBtn) listCloseBtn.addEventListener('click', () => closeEdReaderListOverlay());
-    const listOverlay = document.getElementById('edReaderListOverlay');
-    if(listOverlay) listOverlay.addEventListener('click', (e) => { if(e.target === listOverlay) closeEdReaderListOverlay(); });
-
-    const contentEl = document.getElementById('edReaderContent');
-    if(contentEl) contentEl.addEventListener('click', (e) => {
-      const w = e.target.closest('.vocabWord');
-      if(w) showVocabPopup(w.dataset.word, w.dataset.pos, w.dataset.meaning, w.dataset.hindi);
-    });
-    const edScrollElForProgress = edGetScrollEl();
-    if(edScrollElForProgress) edScrollElForProgress.addEventListener('scroll', updateEdProgress, {passive:true});
-
-    const popupOverlay = document.getElementById('vocabPopupOverlay');
-    if(popupOverlay) popupOverlay.addEventListener('click', (e) => { if(e.target === popupOverlay) hideVocabPopup(); });
-    const popupClose = document.getElementById('vocabPopupClose');
-    if(popupClose) popupClose.addEventListener('click', hideVocabPopup);
-
-    // ----- Auto-scroll wiring -----
-    const edAutoScrollPlayBtn = document.getElementById('edAutoScrollPlayBtn');
-    if(edAutoScrollPlayBtn) edAutoScrollPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); edToggleAutoScroll(); });
-    const edAutoScrollSpeedBtn = document.getElementById('edAutoScrollSpeedBtn');
-    if(edAutoScrollSpeedBtn) edAutoScrollSpeedBtn.addEventListener('click', (e) => { e.stopPropagation(); edCycleAutoScrollSpeed(); });
-
-    const edAutoScrollScrollEl = edGetScrollEl();
-    if(edAutoScrollScrollEl){
-      ['touchstart','mousedown','wheel'].forEach(evt => {
-        edAutoScrollScrollEl.addEventListener(evt, (e) => {
-          if(!edAutoScrollOn) return;
-          if(e.target && e.target.closest && e.target.closest('.gkAutoScrollFab')) return;
-          edPauseAutoScroll();
-        }, {passive:true});
-      });
-    }
-    document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState === 'visible' && edAutoScrollOn && !edAutoScrollWakeLock){
-        edRequestWakeLock();
-      }
-    });
-    updateEdAutoScrollUI();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initEditorialReading);
-  } else {
-    initEditorialReading();
-  }
-})();
-
-
 // ===== Study Desk (premium study timer) <-> Tracker bridge =====
 // tools/focus-desk.html ek iframe overlay me chalta hai (band karne par bhi
 // chalta rehta hai). Study seconds har ~15s par yahan aate hain ->
@@ -31955,7 +31537,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var cs = document.createElement('style');
     cs.textContent = '#cxAiBar{position:fixed;right:8px;left:auto;top:calc(10% + 120px);z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
-      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .x{padding:7px 9px;background:#555}'
+      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .p{background:#ef5865}#cxAiBar .p.on{background:#b31f2d;box-shadow:0 0 0 2px #fff}#cxAiBar .u{display:none;background:#f59e0b}#cxAiBar.penOn .u{display:inline-block}#cxAiBar.min .u{display:none!important}#cxAiBar .x{padding:7px 9px;background:#555}'
       + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
       + '#cxAiBar.min .x{width:30px;height:30px;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:30px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(255,61,119,.5),0 0 10px rgba(61,184,255,.45);animation:cxAiPulse 2.4s ease-in-out infinite}'
       + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}'
@@ -32052,6 +31634,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mk('🔍 Google', 'g', function(e){ var b = e && e.currentTarget; withLoad(b, 'Google…', full('google')); }, 'Ab jo screen par dikh raha hai uska screenshot + text Google ko bhejo');
     mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
+    var penBtn = mk('✏️ Pen', 'p', function(){ if(window.__cxPen) window.__cxPen.toggle(); }, 'Screen par likho (red pen) — dobara tap = band + clear');
+    mk('↶ Undo', 'u', function(){ if(window.__cxPen) window.__cxPen.undo(); }, 'Aakhri line hatao');
+    window.__cxPenUI = function(on){ bar.classList.toggle('penOn', !!on); penBtn.classList.toggle('on', !!on); penBtn.textContent = on ? '✏️ Pen ON' : '✏️ Pen'; };
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
     /* poora bar drag */
