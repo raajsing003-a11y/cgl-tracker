@@ -1930,9 +1930,28 @@ window.__mqbShare = {
   try{ indexedDB.deleteDatabase('deStore'); }catch(e){}
   openBtn.addEventListener('click', () => {
     showCalcPage('dailyeditorial');
-    if(!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+    if(!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src + '?t=' + Date.now()); // cache-bust: hamesha GitHub wali fresh file
   });
-  if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
+  // Back handling: editorial ke andar ke screens (home -> list -> reader) parent history se sync hain.
+  // Editorial har andar ke step par 'de-push' bhejta hai (hum ek history entry push karte hain);
+  // device back par 'de-back' bhejte hain taaki ek screen peeche jaye, app se bahar na nikle.
+  const tell = (m) => { try{ frame.contentWindow.postMessage(m,'*'); }catch(e){} };
+  const onPage = () => { const a = document.querySelector('.calcPage.active'); return a && a.id === 'calcPage-dailyeditorial'; };
+  window.addEventListener('message', (e) => {
+    if(e.source !== frame.contentWindow) return;
+    if(e.data === 'de-push'){
+      try{ history.pushState({cgl50Tab:'calc', calcPage:'dailyeditorial'}, '', location.href); }catch(x){}
+    } else if(e.data === 'de-histback'){
+      try{ history.back(); }catch(x){}
+    } else if(e.data === 'de-exit'){
+      try{ history.back(); }catch(x){}
+      setTimeout(() => { if(onPage()) showCalcPage('menu', true); }, 180);
+    }
+  });
+  window.addEventListener('popstate', (e) => {
+    if(e.state && e.state.calcPage === 'dailyeditorial' && onPage()) tell('de-back');
+  });
+  if(backBtn) backBtn.addEventListener('click', () => { tell('de-home'); showCalcPage('menu'); });
 })();
 // Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
 (function initStudyTubePage(){
