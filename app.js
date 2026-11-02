@@ -11,8 +11,36 @@ window.__mqSave = window.__mqSave || function(D, nAdded){
   return true;
 };
 /* ===== SPEED: 250-900ms wale polling setInterval tab hidden hone par skip (sab time-based kaam Date.now() se hote hain, to safe) ===== */
-(function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; var _si = window.setInterval;
-  window.setInterval = function(fn, ms){ if(typeof fn === 'function' && ms >= 250 && ms <= 900){ var ex = Array.prototype.slice.call(arguments, 2); return _si.call(window, function(){ if(document.hidden) return; return fn.apply(this, ex); }, ms); } return _si.apply(window, arguments); };
+(function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; window.__cxBusy = function(){ try{ var b = document.body; if(b && b.classList.contains('appQuizFullscreen')) return true; var o = document.getElementById('sscMockOverlay'); if(o && o.style.display === 'block') return true; var f = document.getElementById('fdOverlay'); if(f && f.classList.contains('open')) return true; }catch(e){} return false; }; var _si = window.setInterval;
+  window.setInterval = function(fn, ms){ if(typeof fn === 'function' && ms >= 250 && ms <= 900){ var ex = Array.prototype.slice.call(arguments, 2); return _si.call(window, function(){ if(document.hidden || window.__cxBusy()) return; return fn.apply(this, ex); }, ms); } return _si.apply(window, arguments); };
+})();
+/* ===== FIX: mock timer wall-clock (background/lock me time sahi) + option select light update ===== */
+function cxTick(S){ var n = Date.now(); if(!S.__lt) S.__lt = n - 1000; var d = Math.floor((n - S.__lt) / 1000); if(d < 1) return 0; S.__lt += d * 1000; return d; }
+function cxLightSel(S, optId, gridId, stateFn, i){ try{ var ol = document.getElementById(optId), g = document.getElementById(gridId); if(!ol || !g || !ol.children.length || !g.children.length) return false; for(var k = 0; k < ol.children.length; k++) ol.children[k].classList.toggle('selected', k === i); var b = g.children[S.current]; if(b) b.className = 'examPaletteBtn ' + stateFn(S.current) + ' pCurrent'; return true; }catch(e){ return false; } }
+/* ===== CX RESUME (normal engines): answers/marked/current/timeLeft localStorage me 5s + pagehide par save; Start par resume offer (12h), submit par clear ===== */
+window.__cxRes = (function(){
+  var PRE = 'cxres1_', reg = {}, tm = null, FIELDS = ['answers','marked','visited','locked','revealed','current','timeLeft','sectionIdx','sectionTimeLeft','sectionSubmitted'];
+  function sig(S){ var h = 5381, q = S.questions || []; for(var i = 0; i < q.length; i++){ var x = q[i] || {}, t = String(x.q || x.q_en || x.question || x.q_hi || '').slice(0, 40); for(var j = 0; j < t.length; j++) h = ((h << 5) + h + t.charCodeAt(j)) | 0; } return q.length + ':' + h; }
+  function clear(k){ try{ localStorage.removeItem(PRE + k); }catch(e){} }
+  function save(r){ var S = r.S; if(!S) return; if(S.submitted){ clear(r.k); delete reg[r.k]; return; } if(!S.questions || !S.questions.length) return; var o = { t: Date.now(), sig: r.sig }; FIELDS.forEach(function(f){ if(S[f] !== undefined) o[f] = S[f]; }); try{ localStorage.setItem(PRE + r.k, JSON.stringify(o)); }catch(e){} }
+  function saveAll(){ for(var k in reg) save(reg[k]); }
+  function ensure(){ if(tm) return; tm = setInterval(function(){ if(document.hidden) return; saveAll(); }, 5000); document.addEventListener('visibilitychange', function(){ if(document.hidden) saveAll(); }); window.addEventListener('pagehide', saveAll); }
+  function offer(ns, ck, S){
+    var k = ns + '|' + ck, sg = sig(S), restored = false;
+    if(!window.__cxNoResume){
+      var o = null; try{ o = JSON.parse(localStorage.getItem(PRE + k) || 'null'); }catch(e){}
+      if(o && Date.now() - o.t < 43200000 && o.sig === sg && Array.isArray(o.answers) && o.answers.length === S.questions.length){
+        var ans = o.answers.filter(function(a){ return a !== null && a !== undefined; }).length, left = Math.max(0, Math.round((o.sectionTimeLeft != null && S.sections ? o.sectionTimeLeft : o.timeLeft) / 60));
+        if(confirm('Pichla adhura mock mila: ' + ans + '/' + S.questions.length + ' answered, ~' + left + ' min bacha.\n\nOK = Wahin se Resume\nCancel = Naye sire se shuru')){
+          FIELDS.forEach(function(f){ var v = o[f]; if(v === undefined || v === null) return; if(Array.isArray(v)){ if(Array.isArray(S[f]) && S[f].length === v.length) S[f] = v; } else if(typeof v === 'number') S[f] = v; });
+          S.paused = false; restored = true;
+        } else clear(k);
+      } else if(o) clear(k);
+    }
+    S.__rk = k; reg[k] = { k: k, S: S, sig: sg }; ensure();
+    return restored;
+  }
+  return { offer: offer, clear: clear, save: save, saveAll: saveAll };
 })();
 /* ===== CXPOLL: chat/call/camera UI "inject" pollers sirf tab chalte hain jab wo screen khuli ho (aur tab hidden na ho) =====
    Pehle 20+ setInterval (120-800ms) har waqt DOM scan karte the, chat band ho tab bhi -> main thread/battery. Ab idle me ~0 kaam.
@@ -13292,6 +13320,7 @@ function makeMathPyqQuiz(){
     examSession.timeLeft = EXAM_DURATION_SEC;
     examSession.submitted = false;
     examSession.paused = false;
+    window.__cxRes.offer('ex1', session.setKey, examSession);
     const titleEl = document.getElementById('examTitle');
     if(titleEl) titleEl.textContent = setLabel(session.setKey, n);
     examStopTimer();
@@ -13315,8 +13344,8 @@ function makeMathPyqQuiz(){
   }
   function examStartTimer(){
     examUpdateTimerDisplay();
-    examSession.timerId = setInterval(() => {
-      examSession.timeLeft--;
+    examSession.__lt = Date.now(); examSession.timerId = setInterval(() => {
+      examSession.timeLeft -= cxTick(examSession);
       examUpdateTimerDisplay();
       if(examSession.timeLeft <= 0){
         examStopTimer();
@@ -13412,7 +13441,7 @@ function makeMathPyqQuiz(){
 
   function examSelectOption(i){
     examSession.answers[examSession.current] = i;
-    examRenderQuestion();
+    if(!cxLightSel(examSession, 'examOptList', 'examPaletteGrid', examPaletteState, i)) examRenderQuestion();
   }
   function examGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
@@ -14811,6 +14840,7 @@ function makeReasoningMockQuiz(){
     examSession.timeLeft = EXAM_DURATION_SEC;
     examSession.submitted = false;
     examSession.paused = false;
+    window.__cxRes.offer('ex2', session.setKey, examSession);
     const titleEl = document.getElementById('reasoningmockExamTitle');
     if(titleEl) titleEl.textContent = setLabel(session.setKey, n);
     examStopTimer();
@@ -14834,8 +14864,8 @@ function makeReasoningMockQuiz(){
   }
   function examStartTimer(){
     examUpdateTimerDisplay();
-    examSession.timerId = setInterval(() => {
-      examSession.timeLeft--;
+    examSession.__lt = Date.now(); examSession.timerId = setInterval(() => {
+      examSession.timeLeft -= cxTick(examSession);
       examUpdateTimerDisplay();
       if(examSession.timeLeft <= 0){
         examStopTimer();
@@ -14923,7 +14953,7 @@ function makeReasoningMockQuiz(){
 
   function examSelectOption(i){
     examSession.answers[examSession.current] = i;
-    examRenderQuestion();
+    if(!cxLightSel(examSession, 'reasoningmockExamOptList', 'reasoningmockExamPaletteGrid', examPaletteState, i)) examRenderQuestion();
   }
   function examGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
@@ -15331,6 +15361,7 @@ function makeEnglishMockQuiz(){
     examSession.timeLeft = EXAM_DURATION_SEC;
     examSession.submitted = false;
     examSession.paused = false;
+    window.__cxRes.offer('ex3', session.setKey, examSession);
     const titleEl = document.getElementById('englishmockExamTitle');
     if(titleEl) titleEl.textContent = setLabel(session.setKey, n);
     examStopTimer();
@@ -15354,8 +15385,8 @@ function makeEnglishMockQuiz(){
   }
   function examStartTimer(){
     examUpdateTimerDisplay();
-    examSession.timerId = setInterval(() => {
-      examSession.timeLeft--;
+    examSession.__lt = Date.now(); examSession.timerId = setInterval(() => {
+      examSession.timeLeft -= cxTick(examSession);
       examUpdateTimerDisplay();
       if(examSession.timeLeft <= 0){
         examStopTimer();
@@ -15443,7 +15474,7 @@ function makeEnglishMockQuiz(){
 
   function examSelectOption(i){
     examSession.answers[examSession.current] = i;
-    examRenderQuestion();
+    if(!cxLightSel(examSession, 'englishmockExamOptList', 'englishmockExamPaletteGrid', examPaletteState, i)) examRenderQuestion();
   }
   function examGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
@@ -15840,6 +15871,7 @@ function makeEnglishFullMockQuiz(){
     examSession.marksWrong = m.wrong;
     examSession.submitted = false;
     examSession.paused = false;
+    window.__cxRes.offer('ex4', session.setKey, examSession);
     const titleEl = document.getElementById('engfullmockExamTitle');
     if(titleEl) titleEl.textContent = setLabel(session.setKey, n);
     examStopTimer();
@@ -15866,8 +15898,8 @@ function makeEnglishFullMockQuiz(){
   }
   function examStartTimer(){
     examUpdateTimerDisplay();
-    examSession.timerId = setInterval(() => {
-      examSession.timeLeft--;
+    examSession.__lt = Date.now(); examSession.timerId = setInterval(() => {
+      examSession.timeLeft -= cxTick(examSession);
       examUpdateTimerDisplay();
       if(examSession.timeLeft <= 0){
         examStopTimer();
@@ -15955,7 +15987,7 @@ function makeEnglishFullMockQuiz(){
 
   function examSelectOption(i){
     examSession.answers[examSession.current] = i;
-    examRenderQuestion();
+    if(!cxLightSel(examSession, 'engfullmockExamOptList', 'engfullmockExamPaletteGrid', examPaletteState, i)) examRenderQuestion();
   }
   function examGoTo(idx){
     if(idx < 0 || idx >= examSession.questions.length) return;
@@ -16366,6 +16398,7 @@ function emnativeStartExam(){
   emnativeSession.timeLeft = (emnativeLoaded.duration_min || 15) * 60;
   emnativeSession.submitted = false;
   emnativeSession.paused = false;
+  window.__cxRes.offer('em', emnativeCurrentKey + '/' + emnativeCurrentFile, emnativeSession);
   const titleEl = document.getElementById('emnativeExamTitle');
   if(titleEl) titleEl.textContent = emnativeMockLabel;
   emnativeStopTimer();
@@ -16383,8 +16416,8 @@ function emnativeUpdateTimerDisplay(){
 }
 function emnativeStartTimer(){
   emnativeUpdateTimerDisplay();
-  emnativeSession.timerId = setInterval(() => {
-    emnativeSession.timeLeft--;
+  emnativeSession.__lt = Date.now(); emnativeSession.timerId = setInterval(() => {
+    emnativeSession.timeLeft -= cxTick(emnativeSession);
     emnativeUpdateTimerDisplay();
     if(emnativeSession.timeLeft <= 0){
       emnativeStopTimer();
@@ -16465,7 +16498,7 @@ function emnativeRenderQuestion(){
 }
 function emnativeSelectOption(i){
   emnativeSession.answers[emnativeSession.current] = i;
-  emnativeRenderQuestion();
+  if(!cxLightSel(emnativeSession, 'emnativeExamOptList', 'emnativeExamPaletteGrid', emnativePaletteState, i)) emnativeRenderQuestion();
 }
 function emnativeGoTo(idx){
   if(idx < 0 || idx >= emnativeSession.questions.length) return;
@@ -17366,6 +17399,7 @@ function spnativeStartExam(){
   spnativeSession.timeLeft = spnativeMockModeActive ? 15 * 60 : (spnativeLoaded.duration_min || 15) * 60;
   spnativeSession.submitted = false;
   spnativeSession.paused = false;
+  window.__cxRes.offer('sp', spnativeCurrentKey + '/' + spnativeCurrentFile, spnativeSession);
   const titleEl = document.getElementById('spnativeExamTitle');
   if(titleEl) titleEl.textContent = spnativeMockLabel;
   spnativeStopTimer();
@@ -17383,8 +17417,8 @@ function spnativeUpdateTimerDisplay(){
 }
 function spnativeStartTimer(){
   spnativeUpdateTimerDisplay();
-  spnativeSession.timerId = setInterval(() => {
-    spnativeSession.timeLeft--;
+  spnativeSession.__lt = Date.now(); spnativeSession.timerId = setInterval(() => {
+    spnativeSession.timeLeft -= cxTick(spnativeSession);
     spnativeUpdateTimerDisplay();
     if(spnativeSession.timeLeft <= 0){
       spnativeStopTimer();
@@ -17954,6 +17988,7 @@ function p75nativeStartExam(){
   p75nativeSession.timeLeft = (p75nativeLoaded.duration_min || 15) * 60;
   p75nativeSession.submitted = false;
   p75nativeSession.paused = false;
+  window.__cxRes.offer('p75', p75nativeCurrentKey + '/' + p75nativeCurrentFile, p75nativeSession);
   const titleEl = document.getElementById('p75nativeExamTitle');
   if(titleEl) titleEl.textContent = p75nativeMockLabel;
   p75nativeStopTimer();
@@ -17971,8 +18006,8 @@ function p75nativeUpdateTimerDisplay(){
 }
 function p75nativeStartTimer(){
   p75nativeUpdateTimerDisplay();
-  p75nativeSession.timerId = setInterval(() => {
-    p75nativeSession.timeLeft--;
+  p75nativeSession.__lt = Date.now(); p75nativeSession.timerId = setInterval(() => {
+    p75nativeSession.timeLeft -= cxTick(p75nativeSession);
     p75nativeUpdateTimerDisplay();
     if(p75nativeSession.timeLeft <= 0){
       p75nativeStopTimer();
@@ -18671,6 +18706,7 @@ function mmnativeStartExam(){
     mmnativeSession.current = 0;
     mmnativeSession.timeLeft = (mmnativeLoaded.duration_min || 15) * 60;
   }
+  window.__cxRes.offer('mm', mmnativeCurrentKey + '/' + mmnativeCurrentFile, mmnativeSession);
   const titleEl = document.getElementById('mmnativeExamTitle');
   if(titleEl) titleEl.textContent = mmnativeMockLabel;
   mmnativeStopTimer();
@@ -18690,15 +18726,15 @@ function mmnativeUpdateTimerDisplay(){
 }
 function mmnativeStartTimer(){
   mmnativeUpdateTimerDisplay();
-  mmnativeSession.timerId = setInterval(() => {
+  mmnativeSession.__lt = Date.now(); mmnativeSession.timerId = setInterval(() => {
     if(mmnativeSession.sections){
-      mmnativeSession.sectionTimeLeft--;
+      mmnativeSession.sectionTimeLeft -= cxTick(mmnativeSession);
       mmnativeUpdateTimerDisplay();
       if(mmnativeSession.sectionTimeLeft <= 0){
         mmnativeAdvanceSection();
       }
     } else {
-      mmnativeSession.timeLeft--;
+      mmnativeSession.timeLeft -= cxTick(mmnativeSession);
       mmnativeUpdateTimerDisplay();
       if(mmnativeSession.timeLeft <= 0){
         mmnativeStopTimer();
@@ -18840,7 +18876,7 @@ function mmnativeRenderQuestion(){
 }
 function mmnativeSelectOption(i){
   mmnativeSession.answers[mmnativeSession.current] = i;
-  mmnativeRenderQuestion();
+  if(!cxLightSel(mmnativeSession, 'mmnativeExamOptList', 'mmnativeExamPaletteGrid', mmnativePaletteState, i)) mmnativeRenderQuestion();
 }
 function mmnativeGoTo(idx){
   if(idx < 0 || idx >= mmnativeSession.questions.length) return;
@@ -19786,11 +19822,17 @@ function renderFocusTodayText(){
   const line2 = document.getElementById('focusTodayText');
   if(line2) line2.innerHTML = '🔥 Today: <b>'+total+'m</b> studied';
 }
+/* #38: Study Desk har ~15s addStudySeconds -> poora state save() ; ab 25s trailing debounce + tab hide/pagehide par flush */
+var __cxSvT = 0;
+function cxSaveFlush(){ if(!__cxSvT) return; clearTimeout(__cxSvT); __cxSvT = 0; try{ save(); }catch(e){} }
+function cxSaveSoon(){ if(__cxSvT) return; __cxSvT = setTimeout(function(){ __cxSvT = 0; try{ save(); }catch(e){} }, 25000); }
+document.addEventListener('visibilitychange', function(){ if(document.hidden) cxSaveFlush(); });
+window.addEventListener('pagehide', cxSaveFlush);
 function addStudySeconds(subjectId, seconds){
   if(!subjectId || seconds<=0) return;
   const d = getDay(todayDayNum());
   d.studyMin[subjectId] = Math.round(((d.studyMin[subjectId]||0) + seconds/60) * 100) / 100;
-  save();
+  cxSaveSoon();
   renderFocusTodayText();
   autoTickTaskIfTargetMet(subjectId, d);
 }
@@ -20633,6 +20675,7 @@ if(homeInstallBtn) homeInstallBtn.addEventListener('click', runInstallAction);
 // even if the person just leaves the app open without tapping anything.
 function startLiveClockTicker(){
   setInterval(()=>{
+    if(window.__cxBusy && window.__cxBusy()) return;
     // Full scorecard refresh (stats, wallet, streak, last-4-days heatmap,
     // progress ring, etc.) so it keeps updating on its own all day long,
     // not just when the person taps/ticks something. Also picks up the day
@@ -20824,7 +20867,7 @@ if('serviceWorker' in navigator){
     registration.update().catch(function(){});
     // Har 20 second mein bhi dobara check karo — jab tak tab khula hai,
     // koi bhi naya deploy jald se jald detect ho jayega.
-    setInterval(function(){ registration.update().catch(function(){}); }, 20000);
+    setInterval(function(){ if(document.hidden || (window.__cxBusy && window.__cxBusy())) return; registration.update().catch(function(){}); }, 300000);
     // Tab wapas focus/visible hone par bhi turant check karo
     document.addEventListener('visibilitychange', function(){
       if(document.visibilityState === 'visible'){
@@ -20891,7 +20934,7 @@ if('serviceWorker' in navigator){
   // Timer kabhi apne aap start nahi hota — sirf Study Desk khulta hai.
   function openFD(){
     if(!fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
-    ov.classList.add('open');
+    ov.classList.add('open'); try{ fr.contentWindow.postMessage({type:'sd-overlay',open:true},'*'); }catch(e){}
     if(fdReady) push();
     if(fdReady && !fdRunning) fdSendGlobal();
   }
@@ -20916,7 +20959,7 @@ if('serviceWorker' in navigator){
     try{ await window.__fbSet(p, JSON.stringify(D)); ack(true, '✅ Sabhi members ke liye default set ho gaya (unke Study Desk kholte hi apne aap lag jayega).'); }
     catch(e){ ack(false, 'Firebase save fail hua — internet check karo.'); }
   }
-  function closeFD(){ ov.classList.remove('open'); push(); }
+  function closeFD(){ ov.classList.remove('open'); push(); try{ fr.contentWindow.postMessage({type:'sd-overlay',open:false},'*'); }catch(e){} }
   window.openFocusDesk = openFD;
 
   window.addEventListener('message', function(ev){
@@ -24384,7 +24427,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }catch(err){}
   }
   let lbRaf = 0;
-  const schedLb = ()=>{ if(lbRaf) return; if(document.body && document.body.classList.contains('cxChatOpen')) return; lbRaf = requestAnimationFrame(()=>{ lbRaf = 0; paintLb(); }); };
+  const schedLb = ()=>{ if(lbRaf || (window.__cxBusy && window.__cxBusy())) return; if(document.body && document.body.classList.contains('cxChatOpen')) return; lbRaf = requestAnimationFrame(()=>{ lbRaf = 0; paintLb(); }); };
   try{ new MutationObserver(schedLb).observe(document.body, { childList: true, subtree: true }); }catch(e){}
   const prevRerender = rerender;
   rerender = function(){ prevRerender(); schedLb(); };
@@ -28260,7 +28303,7 @@ const SlideType = (function(){
     const send = document.getElementById('chatSendBtn');
     if(send) send.addEventListener('click', ()=>{ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} });
   }
-  let syncRaf = 0; new MutationObserver(()=>{ if(syncRaf) return; syncRaf = requestAnimationFrame(()=>{ syncRaf = 0; sync(); }); }).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  let syncRaf = 0; new MutationObserver(()=>{ if(syncRaf || (window.__cxBusy && window.__cxBusy())) return; syncRaf = requestAnimationFrame(()=>{ syncRaf = 0; sync(); }); }).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   sync();
 })();
 
@@ -31671,7 +31714,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
     if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });
-  var tm = null; function sched(){ if(tm) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
+  var tm = null; function sched(){ if(tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
       for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
@@ -31685,9 +31728,10 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 (function(){
   if(window.__cxNatAtt) return; window.__cxNatAtt = true;
   var KEY = 'cgl50-native-attempts', silent = false;
-  function loadAll(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
+  var _c = null, _ct = 0; window.__cxNatBust = function(){ _c = null; };
+  function loadAll(){ var n = Date.now(); if(_c && n - _ct < 1500) return _c; try{ _c = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ _c = {}; } _ct = n; return _c; }
   function getSnap(k){ return loadAll()[k] || null; }
-  function putSnap(k, v){ var m = loadAll(); m[k] = v; try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+  function putSnap(k, v){ var m = loadAll(); m[k] = v; try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} window.__cxNatBust(); }
   function fmt(x){ return (Math.round(x * 100) / 100).toString(); }
   var CFG = {
     emnative:  { sess: function(){ return emnativeSession; },  ck: function(){ return emnativeCurrentKey + '/' + emnativeCurrentFile; },  submit: 'emnativeSubmit',  start: 'emnativeStartExam',  loaded: function(){ return emnativeLoaded; } },
@@ -31698,7 +31742,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   Object.keys(CFG).forEach(function(p){
     var c = CFG[p], orig = window[c.submit]; if(typeof orig !== 'function') return;
     window[c.submit] = function(){
-      var s = c.sess(), was = s.submitted, r = orig.apply(this, arguments);
+      var s = c.sess(), was = s.submitted, r = orig.apply(this, arguments); try{ if(s.submitted && s.__rk && window.__cxRes) window.__cxRes.clear(s.__rk); }catch(e){}
       try{
         if(!was && s.submitted && !silent){
           var q = s.questions || [], ans = s.answers || [], co = 0, wr = 0, mk = 0, tm = 0;
@@ -31719,7 +31763,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     try{
       await opener();
       if(!c.loaded()) return;
-      window[c.start]();
+      window.__cxNoResume = true; try{ window[c.start](); }finally{ window.__cxNoResume = false; }
       var s = c.sess(); s.answers = snap.answers.slice(); s.marked = (snap.marked || []).slice();
       window[c.submit]();
     }catch(err){}
@@ -31806,7 +31850,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
         var KEY = 'cgl50-native-attempts', all = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
         var att = m.correct + m.wrong;
         all[cur.ns + '|' + cur.key + '/' + cur.file] = { answers: m.answers, marked: m.marked, marks: m.score, totalMarks: m.totalMarks, correct: m.correct, wrong: m.wrong, skipped: m.total - att, total: m.total, acc: att ? Math.round(m.correct / att * 100) : 0, t: Date.now() };
-        localStorage.setItem(KEY, JSON.stringify(all));
+        localStorage.setItem(KEY, JSON.stringify(all)); if(window.__cxNatBust) window.__cxNatBust();
         pendingRefresh = true;
       }catch(x){}
     }
@@ -32472,15 +32516,19 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
 // ============================================================================
 (function killFloatingPencil(){
   const isPencilText = (t)=>{ t = (t||'').replace(/[\uFE0F\s]/g,''); return t === '\u270F' || t === '\u270E' || t === '\u{1F58A}' || t === '\u{1F58B}'; };
-  function sweep(){
+  let lastSweep = 0;
+  function sweep(force){
+    if(document.hidden || (window.__cxBusy && window.__cxBusy())) return;
+    const now = Date.now(); if(!force && now - lastSweep < 3000) return; lastSweep = now;
     try{
       const f = document.getElementById('scratchFab'); if(f) f.remove();
       document.querySelectorAll('button,div,a,span').forEach(el=>{
         if(el.__pencilChecked && el.__pencilGone) return;
-        const onlyIcon = el.querySelector && el.querySelector('.icoEdit') && !(el.textContent||'').trim();
-        if(!(isPencilText(el.textContent) || onlyIcon)) return;
         if(el.children.length > 1) return;
-        const cs = getComputedStyle(el);
+        const tc = el.textContent || '';
+        if(tc.length > 40 && tc.trim()) return;
+        const onlyIcon = el.querySelector && el.querySelector('.icoEdit') && !tc.trim();
+        if(!(isPencilText(tc) || onlyIcon)) return;
         let n = el, fixed = false;
         for(let i=0; n && n!==document.body && i<3; i++, n = n.parentElement){
           if(getComputedStyle(n).position === 'fixed'){ fixed = true; el = n; break; }
@@ -32495,11 +32543,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     }catch(e){}
   }
   let t = 0;
-  const later = ()=>{ clearTimeout(t); t = setTimeout(sweep, 250); };
+  const later = ()=>{ clearTimeout(t); t = setTimeout(sweep, 1500); };
   try{ new MutationObserver(later).observe(document.documentElement, { childList:true, subtree:true }); }catch(e){}
-  setInterval(sweep, 2000);
-  window.addEventListener('load', ()=>{ sweep(); setTimeout(sweep, 1500); });
-  sweep();
+  setInterval(sweep, 10000);
+  window.addEventListener('load', ()=>{ sweep(true); setTimeout(()=>sweep(true), 1500); });
+  sweep(true);
 })();
 
 // ============================================================================
