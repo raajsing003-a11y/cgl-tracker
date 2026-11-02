@@ -1920,90 +1920,19 @@ window.__mqbShare = {
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
 })();
 // Daily Editorial (tools/daily-editorial.html) — single-file offline editorial reader.
-// Admin nayi HTML upload karta hai -> Firebase rooms/<room>/_dailyEditorial {v,name,html}.
-// Sabhi members ko khulte hi nayi file mil jaati hai (IndexedDB me save, offline bhi chalti hai).
+// Sirf GitHub par update ki hui bundled HTML khulti hai. Admin upload / Firebase / IndexedDB wala system hata diya.
 (function initDailyEditorialPage(){
   const openBtn = document.getElementById('calcDailyEditorialBtn');
   const frame = document.getElementById('dailyeditorialFrame');
   const backBtn = document.getElementById('dailyeditorialBackBtn');
-  const upBtn = document.getElementById('deUploadBtn');
-  const fileIn = document.getElementById('deFileInput');
-  const stat = document.getElementById('deStatus');
   if(!openBtn || !frame) return;
-  let blobUrl = null, loadedKey = '';
-  const say = (t)=>{ if(stat) stat.textContent = t || ''; };
-  const roomPath = ()=>{ const c = getRoomCode(); return c ? ('rooms/'+c+'/_dailyEditorial') : null; };
-  const isAdm = ()=> !!(getRoomCode() && isMeAdmin());
-
-  // --- tiny IndexedDB key-value ---
-  function idb(){ return new Promise((res,rej)=>{ const r = indexedDB.open('deStore',1); r.onupgradeneeded = ()=>r.result.createObjectStore('kv'); r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error); }); }
-  async function kvGet(k){ try{ const d = await idb(); return await new Promise((res)=>{ const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=>res(q.result); q.onerror = ()=>res(null); }); }catch(e){ return null; } }
-  async function kvSet(k,v){ try{ const d = await idb(); await new Promise((res,rej)=>{ const t = d.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete = res; t.onerror = ()=>rej(t.error); }); return true; }catch(e){ return false; } }
-
-  function withTimeout(p, ms){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]); }
-
-  async function latestDoc(){
-    // Firebase me nayi ho to wo, nahi to local saved; dono na ho to None (bundled file chalegi)
-    let local = await kvGet('doc');
-    const p = roomPath();
-    if(p){
-      try{
-        const raw = await withTimeout(window.__fbGet(p), 3500);
-        const D = raw ? ((typeof raw === 'string') ? JSON.parse(raw) : raw) : null;
-        if(D && D.html && D.v && (!local || D.v > local.v)){ local = D; await kvSet('doc', D); }
-      }catch(e){}
-    }
-    return local && local.html ? local : null;
-  }
-
-  async function show(force){
-    say('');
-    const doc = await latestDoc();
-    const key = doc ? ('d'+doc.v) : 'bundled';
-    if(!force && frame.getAttribute('src') && key === loadedKey) return;
-    if(blobUrl){ try{ URL.revokeObjectURL(blobUrl); }catch(e){} blobUrl = null; }
-    if(doc){
-      blobUrl = URL.createObjectURL(new Blob([doc.html], {type:'text/html'}));
-      frame.setAttribute('src', blobUrl);
-    } else {
-      frame.setAttribute('src', frame.dataset.src);
-    }
-    loadedKey = key;
-  }
-
-  function refreshAdminUI(){ const a = isAdm(); if(upBtn) upBtn.hidden = !a; }
-
-  openBtn.addEventListener('click', async () => {
-    refreshAdminUI();
+  // Purani admin-uploaded copy (agar kisi phone me saved ho) saaf karo, taaki sirf GitHub wali file khule.
+  try{ indexedDB.deleteDatabase('deStore'); }catch(e){}
+  openBtn.addEventListener('click', () => {
     showCalcPage('dailyeditorial');
-    if(!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src); // turant kuch dikhe
-    await show(false);
+    if(!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
   });
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage('menu'));
-
-  // --- Admin: upload HTML ---
-  if(upBtn && fileIn){
-    upBtn.addEventListener('click', ()=>{
-      if(!isAdm()) return say('Sirf room Admin upload kar sakta hai.');
-      if(!roomPath()) return say('Pehle Sync Room join karo.');
-      fileIn.value = ''; fileIn.click();
-    });
-    fileIn.addEventListener('change', async ()=>{
-      const f = fileIn.files && fileIn.files[0]; if(!f) return;
-      try{
-        const html = await f.text();
-        if(!/<html|<!doctype/i.test(html)) return say('❌ Ye HTML file nahi lag rahi.');
-        if(html.length > 8*1024*1024) return say('❌ File bahut badi hai (8 MB se kam rakho).');
-        say('⏳ Upload ho raha hai...');
-        const D = {v: Date.now(), name: f.name, html: html};
-        await window.__fbSet(roomPath(), JSON.stringify(D));
-        await kvSet('doc', D);
-        await show(true);
-        say('✅ ' + f.name + ' sabhi members ke liye set.');
-      }catch(e){ say('❌ Upload fail — internet check karo.'); }
-    });
-  }
-
 })();
 // Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
 (function initStudyTubePage(){
