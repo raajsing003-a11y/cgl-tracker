@@ -1,3 +1,15 @@
+/* mqb save: localStorage full ho to bhi kabhi fail/popup nahi — naye questions IndexedDB inbox mein, Mock page open hote hi bank mein aa jate hain */
+window.__mqSave = window.__mqSave || function(D, nAdded){
+  try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); return true; }catch(e){}
+  try{ localStorage.setItem('mqb_v1', JSON.stringify(D.map(function(x){ return x && x.img ? Object.assign({}, x, {img:''}) : x; }))); }catch(e){}
+  try{
+    var added = D.slice(0, nAdded || 0), rq = indexedDB.open('mqb_safe', 1);
+    rq.onupgradeneeded = function(){ rq.result.createObjectStore('s'); };
+    rq.onsuccess = function(){ var db = rq.result, tx = db.transaction('s', 'readwrite'), os = tx.objectStore('s'), g = os.get('inbox');
+      g.onsuccess = function(){ os.put(added.concat(Array.isArray(g.result) ? g.result : []), 'inbox'); }; };
+  }catch(e){}
+  return true;
+};
 /* ===== SPEED: 250-900ms wale polling setInterval tab hidden hone par skip (sab time-based kaam Date.now() se hote hain, to safe) ===== */
 (function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; var _si = window.setInterval;
   window.setInterval = function(fn, ms){ if(typeof fn === 'function' && ms >= 250 && ms <= 900){ var ex = Array.prototype.slice.call(arguments, 2); return _si.call(window, function(){ if(document.hidden) return; return fn.apply(this, ex); }, ms); } return _si.apply(window, arguments); };
@@ -31423,6 +31435,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   var GEM_DEF = "मास्टर प्रॉम्प्ट: SSC यूनिवर्सल '4-प्रश्न सेट' (गणित, रीजनिंग और अंग्रेजी)\n\n1. मुख्य प्रश्न (Main Question):\n * प्रश्न का प्रारूप: छात्र द्वारा दिए गए पूरे प्रश्न को हमेशा द्विभाषी (Bilingual - अंग्रेजी और हिंदी दोनों) में लिखें। प्रश्न का कोई भी हिस्सा अधूरा न छोड़ें।\n * मूल अवधारणा (Basic Concept): प्रश्न की जड़ और पूरी थ्योरी को आसान हिंदी में समझाएं, ताकि बेसिक्स 100% क्लियर हो जाएं। (अंग्रेजी के प्रश्नों के लिए ग्रामर रूल या वोकैबुलरी का लॉजिक विस्तार से बताएं)।\n * स्मार्ट ट्रिक (Smart Trick): परीक्षा में 10-15 सेकंड में उत्तर निकालने का सबसे तेज़ तरीका बताएं (गणित/रीजनिंग के लिए शॉर्ट ट्रिक या सीधा सूत्र; अंग्रेजी के लिए ऑप्शन एलिमिनेशन या कीवर्ड एप्रोच)।\n\n2. समान पैटर्न अभ्यास (Same Pattern Practice - 1 प्रश्न):\n * मुख्य प्रश्न के बिल्कुल समान कॉन्सेप्ट और ट्रिक पर आधारित 1 नया प्रश्न बनाएं।\n * प्रश्न की भाषा: पूरा प्रश्न हमेशा द्विभाषी (अंग्रेजी + हिंदी) होना चाहिए।\n * विकल्प (Options): हमेशा पूरे विकल्प लिखें।\n   * नया नियम: यदि विकल्पों में केवल संख्याएँ (Numbers) हैं, तो उन्हें दो बार (जैसे 36373/36373) नहीं लिखना है, उन्हें केवल एक ही बार लिखें।\n   * यदि विकल्प पूरे वाक्य (Sentence) या वाक्यांश के रूप में हैं, तो उन्हें हिंदी और अंग्रेजी दोनों में दें।\n * समाधान (Solution): पूरा समाधान आसान हिंदी में लिखें। किसी भी कठिन शब्द के आगे ब्रैकेट में उसका अंग्रेजी अनुवाद जरूर लिखें (जैसे: समानांतर (Parallel))। समाधान में केवल शॉर्टकट ट्रिक का ही उपयोग करें।\n\n3. विविध/उन्नत पैटर्न अभ्यास (Diverse/Advanced Practice - 2 प्रश्न):\n * उसी टॉपिक को थोड़ा घुमाकर या उच्च स्तर (Tier-2 लेवल) पर पूछने वाले 2 अलग-अलग प्रश्न बनाएं।\n * प्रारूप: पूरा प्रश्न (द्विभाषी), पूरे विकल्प (संख्या केवल एक बार, वाक्य दोनों भाषाओं में), और समाधान (हिंदी में, कठिन शब्द ब्रैकेट में अंग्रेजी के साथ) का नियम बिल्कुल ऊपर दिए गए सेक्शन 2 जैसा ही रहेगा।\n\n4. शर्तें (Strict Constraints):\n * पूरी बातचीत और समाधान केवल और केवल शुद्ध देवनागरी हिंदी में होंगे।\n * कोई भी स्टेप, कैलकुलेशन या ग्रामर का लॉजिक हवा में नहीं किया जाएगा, हर एक चीज़ स्पष्ट और स्टेप-बाय-स्टेप होनी चाहिए।\n * हमेशा पूरा प्रश्न और पूरे विकल्प लिखें, कोई भी शॉर्टकट या अधूरा वाक्य न लिखें।\n * विकल्पों का नियम सख्ती से लागू करें: संख्या = केवल 1 बार लिखें, वाक्य = 2 भाषाएं (अंग्रेजी + हिंदी)।";
   window.addEventListener('message', function(e){ var d = e.data; if(e.source === window && d && d.type === 'sd-gemini-ext-ready'){ window.__gemExt = true; LS('sd:extok', '1'); } });
   try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
+  [800, 2500, 6000].forEach(function(ms){ setTimeout(function(){ try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){} }, ms); });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden){ try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){} } });
   function withQ(p, q){ return q ? ((p ? p + '\n\n' : '') + '--- Question (text) ---\n' + q) : p; }
   /* ---- question text SAAF: app ka header/nav/stat kachra (EXAM TRACKER BY ..., "👑 ❓ 0%", 🔥 streak, timer, Question No., set naam) nahi — sirf question + options.
          Pehle visible *WordText/*QuestionText + *OptList se seedha uthata hai; na mile to page ka text lekar kachra-lines hata deta hai.
@@ -31683,11 +31697,11 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var ts = Date.now(), n = 0;
       rs.forEach(function(r, i){
         if(r.done) return;
-        D2.unshift({ id: ts + i, s: r.q.s || sub0, tp: 'Other', pend: 1, t: r.q.t, img: (!imgUsed && img) ? img : '', o: r.q.o, a: r.q.a, e: r.q.e });
+        D2.unshift({ id: ts + i, s: r.q.s || sub0, tp: 'Other', pend: 1, t: r.q.t, img: (!r.q.t && !imgUsed && img) ? img : '', o: r.q.o, a: r.q.a, e: r.q.e });
         if(!imgUsed && img) imgUsed = true; r.done = true; n++;
       });
       if(!n) return;
-      try{ localStorage.setItem('mqb_v1', JSON.stringify(D2)); LS('cx:bankSub', sub0); }catch(e){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); rs.forEach(function(r){ r.done = false; }); return; }
+      window.__mqSave(D2, n); LS('cx:bankSub', sub0);
       toast('✅ ' + n + ' question Mock Question Add me add ho gaya');
       draw();
     }
@@ -31838,7 +31852,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       if(!goo && !adminOK()){ toast('Gemini sirf admin ke liye hai — Google use karo'); return; }
       st.qt = st.ov ? st.ov.qt : qText(t);
       var ftxt = withQ(goo ? gemPromptG() : gemPrompt(), st.qt);       /* poora prompt + question + options text */
-      var noExt = !window.__gemExt, name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
+      try{ window.postMessage({ type: 'sd-gemini-ping' }, '*'); }catch(e){}
+      var noExt = !(window.__gemExt || LS('sd:extok') === '1'), name = goo ? 'sd_google' : 'sd_gemini', home = goo ? 'https://www.google.com/search?udm=50' : gemUrl(), label = goo ? 'Google' : 'Gemini';
       /* TEXT-ONLY mode (mobile, extension nahi): localStorage 'sd:textonly' = '1' -> screenshot nahi; sirf prompt + question + options text clipboard me, Google/Gemini khulta hai, box me ek baar Paste */
       if(!inFrame && mobile && noExt && LS('sd:textonly') === '1'){
         var tOk = false; try{ await copyTxt(ftxt); tOk = true; }catch(e){}
@@ -31952,9 +31967,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       var img = c2.toDataURL('image/jpeg', 0.7), pq = parseQ(qText(t)), sub = bankSubject(t), D = [];
       try{ D = JSON.parse(LS('mqb_v1') || '[]') || []; }catch(e){ D = []; }
       if(pq.t && D.some(function(x){ return mqSame(pq, x); })){ toast('Ye question pehle se Mock bank me hai'); return; }
-      D.unshift({ id: Date.now(), s: sub, tp: 'Other', pend: 1, t: pq.t, img: img, o: pq.o, a: pq.a, e: pq.e });
-      try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); LS('cx:bankSub', sub); }
-      catch(e){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
+      D.unshift({ id: Date.now(), s: sub, tp: 'Other', pend: 1, t: pq.t, img: pq.t ? '' : img, o: pq.o, a: pq.a, e: pq.e });
+      window.__mqSave(D, 1); LS('cx:bankSub', sub);
       toast('✅ ' + sub + ' · Mock Question Add me add ho gaya' + (pq.a ? ' (answer ' + pq.a + ')' : ' (answer khali — bank me bhar do)'));
     };
     function saveBank(list, sub0, img){
@@ -31963,10 +31977,10 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       list.forEach(function(q, i){
         var sub = q.s || sub0;
         if(D.some(function(x){ return mqSame(q, x); })){ dup++; return; }
-        D.unshift({ id: ts + i, s: sub, tp: 'Other', pend: 1, t: q.t, img: (n === 0 && img) ? img : '', o: q.o, a: q.a, e: q.e }); n++;
+        D.unshift({ id: ts + i, s: sub, tp: 'Other', pend: 1, t: q.t, img: (!q.t && n === 0 && img) ? img : '', o: q.o, a: q.a, e: q.e }); n++;
       });
       if(!n){ toast(dup ? 'Ye questions pehle se Mock bank me hain' : 'Koi question nahi mila'); return; }
-      try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); LS('cx:bankSub', sub0); }catch(e){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
+      window.__mqSave(D, n); LS('cx:bankSub', sub0);
       toast('✅ ' + n + ' question Mock Question Add me add ho gaye (' + (list[0].s || sub0) + ')' + (dup ? ' · ' + dup + ' pehle se the' : ''));
     }
     h.addReply = async function(){
@@ -32061,7 +32075,7 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     var cs = document.createElement('style');
     cs.textContent = '#cxAiBar{position:fixed;right:8px;left:auto;top:calc(10% + 120px);z-index:10040;display:flex;gap:6px;align-items:center;background:rgba(20,22,27,.92);color:#fff;border-radius:12px;padding:5px 7px;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.45);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}'
       + '#cxAiBar button,#cxAiPick button{border:0;border-radius:9px;padding:7px 10px;font:700 12.5px sans-serif;color:#fff;cursor:pointer;background:#444}'
-      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .p{background:#ef5865}#cxAiBar .p.on{background:#b31f2d;box-shadow:0 0 0 2px #fff}#cxAiBar .x{padding:7px 9px;background:#555}'
+      + '#cxAiBar .g,#cxAiPick .g{background:#1a73e8}#cxAiBar .m,#cxAiPick .m{background:#6a4cff}#cxAiBar .c{background:#00897b}#cxAiBar .p{background:#ef5865}#cxAiBar .p.on{background:#b31f2d;box-shadow:0 0 0 2px #fff}#cxAiBar .u{display:none;background:#f59e0b}#cxAiBar.penOn .u{display:inline-block}#cxAiBar.min .u{display:none!important}#cxAiBar .x{padding:7px 9px;background:#555}'
       + '#cxAiBar.min>*:not(.x){display:none}#cxAiBar.min{padding:0;background:none;box-shadow:none}'
       + '#cxAiBar.min .x{width:30px;height:30px;min-width:0;padding:0;border-radius:50%;font-size:15px;line-height:30px;background:conic-gradient(from 200deg,#ff3d77,#ff9a3d,#ffd93d,#3dffa0,#3db8ff,#8a5cff,#ff3d77);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(255,61,119,.5),0 0 10px rgba(61,184,255,.45);animation:cxAiPulse 2.4s ease-in-out infinite}'
       + '@keyframes cxAiPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}'
@@ -32159,7 +32173,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     mk('🤖 Gemini', 'm', function(e){ var b = e && e.currentTarget; withLoad(b, 'Gemini…', full('gemini')); }, 'Screen ka screenshot + text Gemini ko bhejo (sirf admin)');
     mk('✂ Crop', 'c', startCrop, 'Area chuno (drag) — sirf wahi hissa bhejo');
     var penBtn = mk('✏️ Pen', 'p', function(){ if(window.__cxPen) window.__cxPen.toggle(); }, 'Screen par likho (red pen) — dobara tap = band + clear');
-    window.__cxPenUI = function(on){ penBtn.classList.toggle('on', !!on); penBtn.textContent = on ? '✏️ Pen ON' : '✏️ Pen'; };
+    mk('↶ Undo', 'u', function(){ if(window.__cxPen) window.__cxPen.undo(); }, 'Aakhri line hatao');
+    window.__cxPenUI = function(on){ bar.classList.toggle('penOn', !!on); penBtn.classList.toggle('on', !!on); penBtn.textContent = on ? '✏️ Pen ON' : '✏️ Pen'; };
     var xb = mk('–', 'x', function(){ setMin(!bar.classList.contains('min')); }, 'Chhota / bada');
     function setMin(m){ bar.classList.toggle('min', m); xb.textContent = m ? '🔍' : '–'; LS('cx:aiMin2', m ? '1' : '0'); setTimeout(place, 0); }
     /* poora bar drag */
@@ -32188,9 +32203,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     d.items.forEach(function(q){
       if(!q || (!q.t && !q.img)) return; ids.push(q.id); q = mqFix(q);
       if(D.some(function(x){ return x.id === q.id || (!q.force && q.t && mqSame(q, x)); })){ skipped.push(q.id); return; }
-      D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', ctp: String(q.c || q.tp || q.chapter || '').slice(0, 60), pend: 1, t: q.t || '', img: q.img || '', o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
+      D.unshift({ id: q.id, s: q.s || 'Math', tp: 'Other', ctp: String(q.c || q.tp || q.chapter || '').slice(0, 60), pend: 1, t: q.t || '', img: q.t ? '' : (q.img || ''), o: q.o || ['', '', '', ''], a: q.a || '', e: q.e || '' }); n++;
     });
-    try{ localStorage.setItem('mqb_v1', JSON.stringify(D)); }catch(x){ toast('⚠ Storage bhar gaya — Mock Question Add me Export JSON karke purane hatao'); return; }
+    window.__mqSave(D, n);
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
     if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });

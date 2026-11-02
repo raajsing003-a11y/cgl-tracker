@@ -9385,10 +9385,23 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
   /* Google/Crop floating bar (cxAiBar) ka ✏️ Pen button isi se pen on/off karta hai */
   window.__cxPen = {
     toggle: function(){ clearScratch(); setDrawMode(!drawMode); return drawMode; },
+    undo: function(){ return undoStroke(); },
     isOn: function(){ return drawMode; }
   };
 
-  function clearScratch(){ ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  let strokes = [], cur = null;
+  function clearScratch(){ ctx.clearRect(0, 0, canvas.width, canvas.height); strokes = []; cur = null; }
+  function redrawAll(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 2; ctx.strokeStyle = '#ff3b3b';
+    strokes.forEach(function(st){
+      ctx.beginPath(); ctx.moveTo(st[0].x, st[0].y);
+      if(st.length === 1) ctx.lineTo(st[0].x + 0.1, st[0].y);
+      for(let i = 1; i < st.length; i++) ctx.lineTo(st[i].x, st[i].y);
+      ctx.stroke();
+    });
+  }
+  function undoStroke(){ if(!strokes.length) return false; strokes.pop(); redrawAll(); return true; }
 
   // Pen button par click karne se hamesha drawing clear ho jaati hai
   // (Clear ka alag button nahi chahiye), aur saath mein pen on/off bhi toggle hota hai.
@@ -9485,6 +9498,7 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
     const p = getPos(e);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
+    cur = [{ x: p.x, y: p.y }];
     canvas.setPointerCapture(e.pointerId);
   });
 
@@ -9494,6 +9508,7 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
     const p = getPos(e);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+    if(cur) cur.push({ x: p.x, y: p.y });
   });
 
   function passThroughClick(e){
@@ -9529,7 +9544,10 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
   function stopDrawing(e){
     if(drawing && !moved && drawMode){
       passThroughClick(e);
+    } else if(drawing && cur && cur.length > 1){
+      strokes.push(cur);
     }
+    cur = null;
     drawing = false;
     moved = false;
   }
@@ -9541,7 +9559,7 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
 <script defer src="./data/editorial-data.js"></script>
 <script defer src="./data/loader.js"></script>
 <script defer src="./admin-live.js"></script>
-<script defer src="./mains-target.js?v=20261031-mt15"></script>
+<script defer src="./mains-target.js?v=20261102-mt17"></script>
 <script defer src="./help-tab.js?v=20261031-h2"></script>
 </body>
 </html>
