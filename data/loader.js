@@ -158,7 +158,7 @@
   function loadAppScript() {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = './app.js?v=20261102-de4';
+      s.src = './app.js?v=20261102-de9';
       s.onload = resolve;
       s.onerror = () => reject(new Error('Failed to load app.js'));
       document.body.appendChild(s);
