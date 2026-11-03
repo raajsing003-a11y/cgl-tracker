@@ -3,7 +3,7 @@
 // Har fetch network se pehle try hota hai, cache sirf OFFLINE fallback ke liye hai.
 // Naya deploy karte hi (chahe 1 line change ho), users ko turant milega.
 
-const CACHE_VERSION = 'v20261102-de16';
+const CACHE_VERSION = 'v20261102-de21';
 const CACHE_NAME = 'cgl-tracker-' + CACHE_VERSION;
 
 // Sirf offline-fallback ke liye — install ke time kuch bhi force pre-cache nahi karte,
@@ -38,23 +38,38 @@ self.addEventListener('activate', (event) => {
 });
 
 // ---------- FETCH ----------
-// Pure network-first: hamesha fresh file lao. Cache sirf tab use hota hai
-// jab internet na ho (offline fallback), taaki purani/stale file kabhi na dikhe.
+// FAST MODE (v4):
+//  - Doosre sites (Firebase, gstatic, CDN) ko SW chhedta hi nahi (pehle har request SW se guzarti thi + cache me copy hoti thi).
+//  - index.html / navigation: network-first, par 4s me jawab na aaye to cache turant (slow net par app hang nahi hoga).
+//  - Baaki apni files (js/css/json/tools): stale-while-revalidate — cache se TURANT, peeche se fresh laakar cache update.
+//  - Har deploy par CACHE_VERSION badalta hai => purana cache saaf => pehli baar naya hi aata hai.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
-  // Video / Range requests: SW ko bypass (seek chale, 10MB cache me na bhare)
   if (req.headers.has('range') || /\.mp4(\?|$)/i.test(req.url)) return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;   // cross-origin: browser khud sambhale
 
-  event.respondWith(
-    fetch(req, { cache: 'no-cache' }) // browser ka apna HTTP cache bhi bypass karo
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-        return response;
-      })
-      .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
-  );
+  const isDoc = req.mode === 'navigate' || /\/(index\.html)?$/.test(url.pathname) || /sw\.js$|manifest\.json$/.test(url.pathname);
+
+  if (isDoc){
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const net = fetch(req, { cache: 'no-cache' }).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; });
+      const cached = await cache.match(req) || await cache.match('./index.html');
+      if (!cached) return net.catch(() => Response.error());
+      return Promise.race([net, new Promise((r) => setTimeout(() => r(cached), 4000))]).catch(() => cached);
+    })());
+    return;
+  }
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(req);
+    const refresh = fetch(req, { cache: 'no-cache' }).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; });
+    if (cached) { event.waitUntil(refresh.catch(() => {})); return cached; }
+    return refresh.catch(() => caches.match('./index.html'));
+  })());
 });
 
 // ---------- MANUAL TRIGGER ----------

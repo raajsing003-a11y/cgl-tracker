@@ -9557,7 +9557,7 @@ async function appDefPublish(manual){
   }catch(e){ appDefLastMsg = '⚠ Publish fail hua — internet check karo.'; return false; }
 }
 async function appDefAdminTick(){
-  if(appDefBusy) return;
+  if(appDefBusy || document.hidden) return;
   const p = appDefPath();
   if(!p || !isMeAdmin() || !appDefAutoOn()) return;
   appDefBusy = true;

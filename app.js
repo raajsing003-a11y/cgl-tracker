@@ -2983,7 +2983,23 @@ async function mergeWithRemoteBeforeSave(localState, name){
 }
 
 
-async function save(opts){
+// ===== save(): serial + coalesce =====
+// Pehle har tap par alag save() chalta tha (Firebase GET + merge + 3 writes) aur tez taps par sab ek saath race karte the.
+// Ab saves ek ke baad ek chalte hain; jab ek chal raha ho aur kai naye aayen to sirf EK trailing save lagta hai
+// (wo run hote waqt latest `state` padhta hai, isliye kuch miss nahi hota). overwrite wale (Reset/Restore) hamesha alag, turant-baad chalte hain.
+let _svChain = Promise.resolve(), _svNormalQueued = null;
+function save(opts){
+  if(opts && opts.overwrite){
+    _svNormalQueued = null;
+    _svChain = _svChain.catch(()=>{}).then(()=>_saveImpl(opts));
+    return _svChain;
+  }
+  if(_svNormalQueued) return _svNormalQueued;
+  const p = _svChain.catch(()=>{}).then(()=>{ _svNormalQueued = null; return _saveImpl({}); });
+  _svNormalQueued = p; _svChain = p;
+  return p;
+}
+async function _saveImpl(opts){
   opts = opts || {};
   // Normally only the owner's own key is ever written. The one exception:
   // the Admin has explicitly flipped Edit Mode on while looking at another
@@ -3862,9 +3878,24 @@ function renderAnnouncementCard(){
   card.classList.add('show');
 }
 
+// ===== Rank tab perf: overlap guard + per-member memo + UI-only cached re-render =====
+let _cpRendering = false, _cpPending = false, _cpRowsCache = null, _cpUiOnly = false;
+const _cpMemo = new Map(); // "name|day|week" -> {raw, stats, at}
 async function renderCompetePanel(){
+  if(_cpRendering){ _cpPending = true; return; }   // overlapping calls ek me merge
+  _cpRendering = true;
+  try{ await _renderCompetePanelImpl(); }
+  finally{
+    _cpRendering = false; _cpUiOnly = false;
+    if(_cpPending){ _cpPending = false; setTimeout(()=>{ renderCompetePanel(); }, 80); }
+  }
+}
+// mode/sort/pin jaise UI-only clicks: network + compute dobara nahi, last rows se turant draw
+function renderCompetePanelUiOnly(){ _cpUiOnly = true; return renderCompetePanel(); }
+async function _renderCompetePanelImpl(){
   const el = document.getElementById('competePanel');
   if(!el) return;
+  if(!el.firstElementChild) el.innerHTML = '<div class="losshint" style="padding:18px 6px;">⏳ Rank load ho raha hai…</div>';
   const friends = loadFriendsList();
   // Perf: registry + admin/hidden meta are two independent reads — fire them
   // together instead of one-after-another so a slow tick doesn't stack up
@@ -3880,20 +3911,42 @@ async function renderCompetePanel(){
   // per tick, which is a big chunk of blocked/janky time every 25s.
   const todayIdx = todayDayNum();
   const weekRange = thisWeekDayRange();
+  const _cpKey = names.map(n=>n.toLowerCase()).join('|') + '|' + todayIdx + '|' + weekRange.from + '-' + weekRange.to;
+  let rows;
+  if(_cpUiOnly && _cpRowsCache && _cpRowsCache.key === _cpKey){
+    rows = _cpRowsCache.rows.map(r=>({ ...r }));
+  } else {
   const usageAll = await loadUsageForLB();
-  const rows = await Promise.all(names.map(async (nm)=>{
-    const st = await loadPlayerState(nm);
+  rows = await Promise.all(names.map(async (nm)=>{
+    // memo: member ka raw state same hai to JSON.parse + 3 compute dobara nahi (5 min tak)
+    let stats = null, raw = null;
+    const mk = nm.toLowerCase() + '|' + todayIdx + '|' + weekRange.from + '-' + weekRange.to;
+    if(getRoomCode()){ try{ raw = await kvdbGet(playerKey(nm)); }catch(e){} }
+    const hit = raw ? _cpMemo.get(mk) : null;
+    if(hit && hit.raw === raw && (Date.now() - hit.at) < 300000){ stats = hit.stats; }
+    else {
+      await new Promise(r=>setTimeout(r, 0));   // UI ko saans lene do
+      let st = null;
+      if(raw){ try{ st = JSON.parse(raw); }catch(e){ st = null; } }
+      if(!st) st = await loadPlayerState(nm);
+      stats = {
+        ...computeStatsFrom(st),
+        todayStats: computeRangeStatsFrom(st, todayIdx, todayIdx),
+        weekStats: computeRangeStatsFrom(st, weekRange.from, weekRange.to)
+      };
+      if(raw) _cpMemo.set(mk, { raw, stats, at: Date.now() });
+    }
     const uu = usageAll[presenceKey(nm)];
     return {
       name: nm,
       useAll: usageSecFor(uu,'all'), useToday: usageSecFor(uu,'today'), useWeek: usageSecFor(uu,'week'), useSec: usageSecFor(uu,'all'),
       joinIdx: (()=>{ const i=roomNames.findIndex(x=>x.toLowerCase()===nm.toLowerCase()); return i<0 ? 99999 : i; })(),
-      ...computeStatsFrom(st),
-      todayStats: computeRangeStatsFrom(st, todayIdx, todayIdx),
-      weekStats: computeRangeStatsFrom(st, weekRange.from, weekRange.to),
+      ...stats,
       isLive: true
     };
   }));
+  _cpRowsCache = { key: _cpKey, rows: rows.map(r=>({ ...r })) };
+  }
   // Rank primarily by overall completion %, but that number is rounded and
   // measured against the *whole* plan length — so early on, lots of people
   // sit tied at the same (often 0%) pct even though their real effort
@@ -4029,14 +4082,14 @@ async function renderCompetePanel(){
       const mode = btn.getAttribute('data-lbmode');
       if(mode===leaderboardMode) return;
       leaderboardMode = mode;
-      renderCompetePanel();
+      renderCompetePanelUiOnly();
     });
   });
   const sortBtn = document.getElementById('lbSortBtn');
   if(sortBtn) sortBtn.addEventListener('click', ()=>{
     lbSortJoin = !lbSortJoin;
     try{ localStorage.setItem('cgl-lb-sortjoin', lbSortJoin?'1':'0'); }catch(e){}
-    renderCompetePanel();
+    renderCompetePanelUiOnly();
   });
   el.querySelectorAll('.lbview').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
@@ -4047,7 +4100,7 @@ async function renderCompetePanel(){
   el.querySelectorAll('.lbpin').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       togglePinned(btn.getAttribute('data-pin'));
-      renderCompetePanel();
+      renderCompetePanelUiOnly();
     });
   });
   const addBtn = document.getElementById('addFriendBtn');
@@ -20738,6 +20791,7 @@ if(homeInstallBtn) homeInstallBtn.addEventListener('click', runInstallAction);
 // even if the person just leaves the app open without tapping anything.
 function startLiveClockTicker(){
   setInterval(()=>{
+    if(document.hidden) return;
     if(window.__cxBusy && window.__cxBusy()) return;
     // Full scorecard refresh (stats, wallet, streak, last-4-days heatmap,
     // progress ring, etc.) so it keeps updating on its own all day long,
@@ -22447,7 +22501,7 @@ if('serviceWorker' in navigator){
     const now = Date.now(); if(!force && now - lastSweep < 3000) return; lastSweep = now;
     try{
       const f = document.getElementById('scratchFab'); if(f) f.remove();
-      document.querySelectorAll('button,div,a,span').forEach(el=>{
+      document.querySelectorAll('body > button, body > div, body > a, body > span').forEach(el=>{
         if(el.__pencilChecked && el.__pencilGone) return;
         if(el.children.length > 1) return;
         const tc = el.textContent || '';
@@ -22885,7 +22939,7 @@ if('serviceWorker' in navigator){
 
   window.__cxBcApi = { loadCfg, saveCfg };
   cxPoll('chat', ensureButton, 1000);
-  setTimeout(adminInit, 6000); setInterval(adminInit, 90000);
+  setTimeout(adminInit, 6000); setInterval(()=>{ if(!document.hidden) adminInit(); }, 90000);
   setTimeout(maybeWelcomeMe, 9000); setInterval(()=>{ if(!document.hidden) maybeWelcomeMe(); }, 45000);
 })();
 
@@ -23089,7 +23143,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261102-de11';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261103-de19';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };
