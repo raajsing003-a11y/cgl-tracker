@@ -921,6 +921,28 @@ $("dl_ch").onclick=()=>delMany(D.filter(x=>x.s==S&&x.tp==F),S+" / "+F);
 const _trList=trList;trList=function(){_trList.apply(this,arguments);const l=$("trl");if(TR.length&&l&&!$("trall"))l.insertAdjacentHTML("afterbegin",'<div class="row" style="margin:0 0 10px"><button class="btn y" id="trall">↩ Sab '+TR.length+' restore karo</button></div>');
   const b=$("trall");if(b)b.onclick=()=>{if(!confirm(TR.length+" questions wapas laane hain?"))return;const now=Date.now();TR.forEach(x=>{delete x.dt;x.mt=now});D=TR.concat(D);TR=[];persist();renderTabs();render();trUI()}};
 
+/* Trash: permanently delete (ek click) — local + cloud (taaki sync wapas na laaye) */
+async function trPurge(ids){
+  const set=new Set(ids.map(String));if(!set.size)return;
+  TR=TR.filter(x=>!set.has(String(x.id)));persist();trUI();
+  let cloud="";
+  if(FBR&&QM&&DM){
+    const upd={};set.forEach(id=>{upd[BASE+"/q/"+id]=null;upd[BASE+"/im/"+id]=null;upd[BASE+"/del/"+id]=null;delete QM[id];delete DM[id];TSS.delete(id)});
+    saveTSS();
+    try{await pushChunks(upd,900000)}catch(e){cloud=" (cloud se hatana fail — baad me dobara try karo)"}
+  }
+  toast(set.size+" question hamesha ke liye delete"+cloud);
+}
+window.trPurge1=id=>{if(!confirm("Ye question hamesha ke liye delete karna hai? Wapas nahi aayega."))return;trPurge([id])};
+const _trList2=trList;trList=function(){_trList2.apply(this,arguments);const l=$("trl");if(!l||!TR.length)return;
+  l.querySelectorAll('button[onclick^="trRestore("]').forEach(b=>{if(b.nextElementSibling&&b.nextElementSibling.dataset&&b.nextElementSibling.dataset.pg)return;
+    const id=b.getAttribute("onclick").match(/trRestore\((.*?)\)/)[1];
+    const d=document.createElement("button");d.className="btn";d.dataset.pg="1";d.style.cssText="color:var(--rd,#f87171);border-color:var(--rd,#f87171)";d.textContent="🗑 Delete forever";d.setAttribute("onclick","trPurge1("+id+")");b.after(d)});
+  if(!$("trpall")){const r=document.createElement("div");r.className="row";r.style.margin="0 0 10px";
+    r.innerHTML='<button class="btn" id="trpall" style="color:var(--rd,#f87171);border-color:var(--rd,#f87171)">🗑 Sab '+TR.length+' hamesha ke liye delete karo</button>';l.prepend(r);
+    $("trpall").onclick=()=>{if(!confirm(TR.length+" questions HAMESHA ke liye delete honge (cloud se bhi). Wapas nahi aayenge. Pakka?"))return;trPurge(TR.map(x=>x.id))}}};
+if($("trl")&&$("trl").dataset.o=="1")trList();
+
 /* ================================================================
    3) EXPORT (PDF + Word)
    ================================================================ */
