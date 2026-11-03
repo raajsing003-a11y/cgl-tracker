@@ -3285,7 +3285,30 @@ async function maybePromptSetPassword(){
     if(!ok) localStorage.setItem('cgl50-pw-snooze', new Date().toDateString());
   }catch(e){}
 }
-document.addEventListener('click', e=>{ const b = e.target.closest && e.target.closest('#settingsBtn'); if(b){ e.preventDefault(); openSetPasswordFlow(); } });
+// ⚙️ Settings: settings.js pehle tap par lazy load hota hai
+(function(){
+  let busy = 0;
+  document.addEventListener('click', e=>{
+    const b = e.target.closest && e.target.closest('#settingsBtn'); if(!b) return;
+    e.preventDefault();
+    if(window.openSettingsHub){ window.openSettingsHub(); return; }
+    if(busy) return; busy = 1;
+    const s = document.createElement('script'); s.src = './settings.js?v=20261103-s1';
+    s.onload = ()=>{ busy = 0; try{ window.cxApplyUiPrefs(); window.openSettingsHub(); }catch(err){} };
+    s.onerror = ()=>{ busy = 0; alert('Settings load nahi hui. Internet check karo.'); };
+    document.body.appendChild(s);
+  });
+  // text size + animations pref start par hi apply (settings.js ke bina)
+  try{
+    const z = parseInt(localStorage.getItem('cgl50-ui-zoom') || '100', 10) || 100;
+    if(z !== 100) document.body.style.zoom = z / 100;
+    if(localStorage.getItem('cgl50-ui-nomotion') === '1'){
+      const st = document.createElement('style'); st.id = 'cxNoMotionCss';
+      st.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}';
+      document.head.appendChild(st);
+    }
+  }catch(e){}
+})();
 
 async function loadRegistry(){
   if(window.storage && typeof window.storage.get === 'function'){
