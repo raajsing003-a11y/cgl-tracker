@@ -2780,6 +2780,7 @@ function startRoomAutoSync(){
     // Perf: on a slow/spotty connection a tick can take longer than 25s —
     // skip overlapping runs instead of letting them stack up and compete
     // for the network + main thread at the same time.
+    if(window.__cxBusy && window.__cxBusy()) return;   // mock/quiz chal raha ho to heavy room-sync skip (lag fix)
     if(roomSyncInFlight) return;
     roomSyncInFlight = true;
     try{
@@ -22394,7 +22395,7 @@ if('serviceWorker' in navigator){
   }
   function closeOv(){
     var ov = document.getElementById('sscMockOverlay');
-    if(ov && ov.style.display !== 'none'){ ov.style.display = 'none'; var fr = ov.firstChild; fr.onload = null; fr.src = 'about:blank'; setTimeout(refreshGrid, 50); return true; }
+    if(ov && ov.style.display !== 'none'){ ov.style.display = 'none'; var fr = document.getElementById('sscMockFrame'); fr.onload = null; fr.src = 'about:blank'; setTimeout(refreshGrid, 50); setTimeout(function(){ try{ flushPendingSyncQueue(); }catch(x){} }, 800); return true; }
     return false;
   }
   /* SSC CGL Tier-2 Paper-I: section-wise timer, section switch nahi, 3 marks / -1 negative */
@@ -22419,7 +22420,7 @@ if('serviceWorker' in navigator){
     if(!data || !data.questions || !data.questions.length){ alert('Ye mock abhi available nahi hai.'); return; }
     var e = o.entry || {};
     var title = o.label + ' \u2014 ' + (e.label || ('Mock ' + e.n));
-    var ov = ensureOverlay(), fr = ov.firstChild; cur = o;
+    var ov = ensureOverlay(), fr = document.getElementById('sscMockFrame'); cur = o;
     fr.onload = function(){
       if(fr.getAttribute('src') !== 'ssc-player.html') return;
       fr.contentWindow.postMessage({ type:'mpInit', data:data, meta:Object.assign({ id:o.ns + '/' + o.key + '/' + o.file, title:title, sec:SECS[o.key] || 'Mock Test', app:true, review: rv ? { answers: rv.answers, marked: rv.marked } : null }, mainsCfg(o, data.questions.length)) }, '*');
