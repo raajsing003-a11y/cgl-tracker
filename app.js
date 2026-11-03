@@ -2303,10 +2303,13 @@ async function kvdbCreateRoom(){
 // This matters a lot on patchy mobile data: without retries, a single
 // dropped request during app-open could look identical to "this player
 // has no data yet" and fall through to a blank/stale local copy.
+// Firebase path segments mein . # $ [ ] / allowed nahi — encodeURIComponent '.' ko nahi chhoda karta,
+// isliye naam mein '.' hone par write 'invalid path' se fail hokar Sync pending atka rehta tha.
+function fbSafeSeg(k){ return encodeURIComponent(k).replace(/\./g,'%2E').replace(/[#$\[\]]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase()); }
 async function kvdbGet(key){
   const room = getRoomCode();
   if(!room) return null;
-  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  const path = `rooms/${room}/${fbSafeSeg(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
@@ -2325,7 +2328,7 @@ async function kvdbGet(key){
 async function kvdbSet(key, value){
   const room = getRoomCode();
   if(!room) return false;
-  const path = `rooms/${room}/${encodeURIComponent(key)}`;
+  const path = `rooms/${room}/${fbSafeSeg(key)}`;
   let lastErr = null;
   for(let attempt=0; attempt<3; attempt++){
     try{
