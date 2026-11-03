@@ -3088,11 +3088,78 @@ async function migrateOldDataIfNeeded(name){
   }
 }
 
+
+// ===== NAAM RULE: sirf letters + numbers + space (emoji / . - _ jaise special character nahi) =====
+const CX_NAME_MAX = 20;
+const CX_NAME_MSG = '⚠️ Naam me sirf letters, numbers aur space chalega (emoji ya . - _ jaise special character nahi). Dusra naam rakho (2 se 20 akshar).';
+function cxNameClean(n){
+  let s = String(n == null ? '' : n);
+  try{ s = s.normalize('NFKC'); }catch(e){}
+  s = s.replace(/[\uFE00-\uFE0F\u200B-\u200D\u20E3\u2060\uFEFF]/g, '');
+  try{ s = s.replace(/[^\p{L}\p{M}\p{N} ]/gu, ''); }catch(e){ s = s.replace(/[^A-Za-z0-9 ]/g, ''); }
+  return s.replace(/\s+/g, ' ').trim().slice(0, CX_NAME_MAX).trim();
+}
+function cxNameValid(n){ n = String(n == null ? '' : n).trim(); return n.length >= 2 && n === cxNameClean(n); }
+async function cxRegistryNames(){
+  let all = [];
+  try{ all = all.concat(await loadRegistry()); }catch(e){}
+  try{ if(getRoomCode()){ const raw = await kvdbGet('_registry'); if(raw){ const l = JSON.parse(raw); if(Array.isArray(l)) all = all.concat(l); } } }catch(e){}
+  return all.map(x=>String(x));
+}
+// Purane naam me emoji/special character ho to: saaf karke naya naam, progress naye naam par copy, purana naam registry se hata do.
+async function cxMigrateDirtyName(old){
+  const oldL = String(old).toLowerCase();
+  const names = await cxRegistryNames();
+  const taken = n => names.some(r => r.toLowerCase() === n.toLowerCase() && r.toLowerCase() !== oldL);
+  let cand = cxNameClean(old);
+  let tries = 0;
+  while(!cxNameValid(cand) || taken(cand)){
+    const why = !cxNameValid(cand) ? CX_NAME_MSG : '⚠️ Yeh naam already kisi aur ne le rakha hai. Dusra naam rakho.';
+    const r = prompt('Tumhare naam "' + old + '" me emoji/special character hai, wo ab allowed nahi.\n' + why + '\n\nNaya naam likho:', cxNameClean(old));
+    if(r === null || ++tries > 5){
+      cand = cxNameClean(old);
+      if(!cxNameValid(cand)) cand = 'Player' + Math.floor(100 + Math.random()*900);
+      else if(taken(cand)) cand = cand.slice(0, CX_NAME_MAX - 4) + Math.floor(100 + Math.random()*900);
+      break;
+    }
+    cand = cxNameClean(r);
+  }
+  try{
+    const lj = localStorage.getItem(localPlayerKey(old));
+    if(lj && !localStorage.getItem(localPlayerKey(cand))) localStorage.setItem(localPlayerKey(cand), lj);
+    const lq = localStorage.getItem(quizDetailLocalKey(old));
+    if(lq && !localStorage.getItem(quizDetailLocalKey(cand))) localStorage.setItem(quizDetailLocalKey(cand), lq);
+  }catch(e){}
+  if(getRoomCode()){
+    try{
+      const lj2 = localStorage.getItem(localPlayerKey(cand));
+      const rj = lj2 || await kvdbGet(playerKey(old));
+      if(rj) await kvdbSet(playerKey(cand), rj);
+      const rq = await kvdbGet(quizDetailPlayerKey(old));
+      if(rq) await kvdbSet(quizDetailPlayerKey(cand), rq);
+    }catch(e){ console.error('name migrate data', e); }
+  }
+  try{ localStorage.setItem('cgl50-myname', cand); }catch(e){}
+  try{ await registerPlayer(cand); if(getRoomCode()) await addToRoomRegistry(cand); }catch(e){}
+  try{ const l = await loadRegistry(); const nl = l.filter(n => String(n).toLowerCase() !== oldL); if(nl.length !== l.length) await saveRegistry(nl); }catch(e){}
+  try{
+    if(getRoomCode()){
+      const raw = await kvdbGet('_registry');
+      if(raw){ const l = JSON.parse(raw); if(Array.isArray(l)){ const nl = l.filter(n => String(n).toLowerCase() !== oldL); if(nl.length !== l.length){ await kvdbSet('_registry', JSON.stringify(nl)); roomRegistryCacheAt = 0; } } }
+      const m = await loadRoomMeta();
+      if(m && m.admin && String(m.admin).toLowerCase() === oldL){ await setRoomAdmin(cand); }
+    }
+  }catch(e){ console.error('name migrate registry', e); }
+  try{ setTimeout(()=>alert('✅ Tumhara naam badal gaya: "' + cand + '" (emoji/special character allowed nahi). Progress naye naam par aa gaya hai.'), 800); }catch(e){}
+  return cand;
+}
+
 function getOrCreateMyName(){
   let name = null;
   try{ name = localStorage.getItem('cgl50-myname'); }catch(e){}
   if(!name){
     name = (prompt('👤 Apna naam likho (dost isi naam se tumhara progress dekh payega):','') || '').trim();
+    if(name && !cxNameValid(name)) name = cxNameClean(name);
     if(!name) name = 'Player' + Math.floor(100 + Math.random()*900);
     try{ localStorage.setItem('cgl50-myname', name); }catch(e){}
   }
@@ -3117,6 +3184,7 @@ function showOnboardingModal(){
     const statusEl = document.getElementById('onbStatus');
     const showStatus = (msg)=>{ if(statusEl){ statusEl.style.display='block'; statusEl.textContent = msg; } };
 
+    if(nameInput){ nameInput.maxLength = CX_NAME_MAX; nameInput.addEventListener('input', ()=>{ const c = cxNameClean(nameInput.value + '|').replace(/\|/g,''); let v = nameInput.value; try{ v = v.normalize('NFKC').replace(/[\uFE00-\uFE0F\u200B-\u200D\u20E3\u2060\uFEFF]/g,'').replace(/[^\p{L}\p{M}\p{N} ]/gu,''); }catch(e){ v = v.replace(/[^A-Za-z0-9 ]/g,''); } if(v !== nameInput.value) nameInput.value = v; }); }
     if(deferredInstallPrompt && installBtn) installBtn.style.display = 'inline-block';
     if(installBtn) installBtn.addEventListener('click', async ()=>{
       if(deferredInstallPrompt){
@@ -3131,6 +3199,7 @@ function showOnboardingModal(){
 
     function finish(name){
       name = (name||'').trim();
+      if(name && !cxNameValid(name)) name = cxNameClean(name);
       if(!name) name = 'Player' + Math.floor(100 + Math.random()*900);
       try{ localStorage.setItem('cgl50-myname', name); }catch(e){}
       modal.style.display = 'none';
@@ -3140,6 +3209,7 @@ function showOnboardingModal(){
     if(joinBtn) joinBtn.addEventListener('click', async ()=>{
       const name = nameInput.value.trim();
       if(!name){ showStatus('⚠️ Pehle apna naam likho.'); return; }
+      if(!cxNameValid(name)){ showStatus(CX_NAME_MSG); return; }
       joinBtn.disabled = true;
       try{
         if(await nameIsLocked(name)){
@@ -3213,6 +3283,7 @@ function adminOkFor(name){ try{ return localStorage.getItem(ADMIN_OK_KEY) === St
 async function getOrCreateMyNameAsync(){
   let name = null;
   try{ name = localStorage.getItem('cgl50-myname'); }catch(e){}
+  if(name && !cxNameValid(name)){ try{ name = await cxMigrateDirtyName(name); }catch(e){ console.error('name fix', e); name = cxNameClean(name) || ('Player' + Math.floor(100 + Math.random()*900)); try{ localStorage.setItem('cgl50-myname', name); }catch(_){} } }
   if(name && await nameIsLocked(name, true) && !adminOkFor(name)){
     // is device par ye admin naam bina password ke tha — ab password maango, nahi to naya naam
     if(await askAdminPassword(name)) return name;
@@ -3707,6 +3778,7 @@ function renderProfileBar(){
         return;
       }
 
+      if(!cxNameValid(raw)){ alert(CX_NAME_MSG); return; }
       const newName = raw;
       if(newName.toLowerCase()===myName.toLowerCase()) return;
       if(await nameIsLocked(newName)){
