@@ -2277,7 +2277,8 @@ async function waitForFirebase(timeoutMs=10000){
     if(Date.now()-start > timeoutMs) throw new Error('Firebase load nahi ho paya (timeout) — page reload karo.');
     await new Promise(r=>setTimeout(r,50));
   }
-  await window.__fbReadyPromise;
+  try{ await window.__fbReadyPromise; }
+  catch(e){ if(window.__fbReset){ window.__fbReset(); await window.__fbReadyPromise; } else throw e; }
 }
 async function kvdbCreateRoom(){
   try{
@@ -2329,10 +2330,11 @@ async function kvdbSet(key, value){
   for(let attempt=0; attempt<3; attempt++){
     try{
       await waitForFirebase();
-      await window.__fbSet(path, value);
+      await Promise.race([window.__fbSet(path, value), new Promise((_,rej)=>setTimeout(()=>rej(new Error('Firebase write timeout (net slow)')),15000))]);
+      window.__lastSyncErr = '';
       return true;
     }catch(e){
-      lastErr = e;
+      lastErr = e; window.__lastSyncErr = (e && (e.code || e.message)) ? String(e.code||'') + ' ' + String(e.message||'') : String(e);
       if(attempt < 2) await new Promise(r=>setTimeout(r, 400*(attempt+1)));
     }
   }
@@ -2425,6 +2427,7 @@ async function flushPendingSyncQueue(){
 }
 function startPendingSyncWatcher(){
   updateSyncStatusIndicator();
+  try{ const bd = document.getElementById('syncPendingBadge'); if(bd){ bd.style.pointerEvents='auto'; bd.addEventListener('click', ()=>{ alert('Sync pending kyu: ' + (window.__lastSyncErr || 'abhi tak koi error nahi mila (net check karo)') + '\n\nOK dabate hi abhi dobara sync try hoga.'); flushPendingSyncQueue(); }); } }catch(e){}
   window.addEventListener('online', ()=>{ flushPendingSyncQueue(); });
   // Backstop for mobile browsers where 'online' fires unreliably (or not
   // at all) — a plain timer eventually catches every case regardless.
@@ -22224,9 +22227,10 @@ if('serviceWorker' in navigator){
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
     if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });
-  var tm = null; function sched(){ if(tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
+  var tm = null; function sched(){ if(document.querySelector('#sscMockOverlay[style*="block"]') || tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
-      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
+      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && t.closest && t.closest('[id*="Exam"],[id*="exam"],#sscMockOverlay')) continue; /* mock me option click par scan nahi (lag fix) */
+      if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
@@ -22313,7 +22317,7 @@ if('serviceWorker' in navigator){
     var o = document.getElementById('sscMockOverlay'); if(o) return o;
     o = document.createElement('div'); o.id = 'sscMockOverlay';
     o.style.cssText = 'display:none;position:fixed;inset:0;z-index:2147483000;background:#fff';
-    o.innerHTML = '<iframe id="sscMockFrame" title="SSC Pattern Mock" allow="fullscreen" style="border:0;width:100%;height:100%;display:block"></iframe>';
+    o.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 15px sans-serif;color:#555">⏳ Mock load ho raha hai...</div><iframe id="sscMockFrame" title="SSC Pattern Mock" allow="fullscreen" style="position:relative;border:0;width:100%;height:100%;display:block;background:transparent"></iframe>';
     document.body.appendChild(o); return o;
   }
   function closeOv(){

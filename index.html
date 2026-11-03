@@ -3515,7 +3515,9 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
     appId: "1:165701458469:web:e6870346d665a6508ebdcc"
   };
   const V = "https://www.gstatic.com/firebasejs/12.15.0/";
-  const fbP = (async function(){
+  let fbP;
+  function fbInit(){
+  fbP = (async function(){
     const [A, Au, D] = await Promise.all([import(V + "firebase-app.js"), import(V + "firebase-auth.js"), import(V + "firebase-database.js")]);
     const app = A.initializeApp(firebaseConfig);
     return { auth: Au.getAuth(app), db: D.getDatabase(app), Au: Au, D: D };
@@ -3528,6 +3530,11 @@ body:has(#fdOverlay.open) .fdHero::before,body:has(#fdOverlay.open) .fdHero .fdS
     });
   });
   window.__fbReadyPromise.catch(function(){});
+  }
+  fbInit();
+  /* retry: pehli baar offline/blocked ho to promise hamesha rejected rehta tha -> reload tak sync band. Ab dobara try hota hai */
+  window.__fbReset = function(){ fbInit(); fbP.then(function(F){ fbSync = F; }, function(){}); };
+
   async function ready(){ await window.__fbReadyPromise; return await fbP; }
   window.__fbGet = async function(path){
     const F = await ready();
