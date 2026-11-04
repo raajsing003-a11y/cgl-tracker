@@ -216,13 +216,13 @@ background:linear-gradient(160deg,color-mix(in srgb,var(--cc,#38bdf8) 16%,var(--
 --hic:#fde047;--tbr:1;--gold:#f5c76b;--mw:100%;--hs:.95}
 html[data-theme=sepia],html[data-theme=light]{--hic:#8a5a00}
 html,body{background:#000}
-body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+body{-webkit-font-smoothing:antialiased;text-rendering:auto;
 background:radial-gradient(120% 60% at 50% -10%,rgba(124,92,255,.10),transparent 60%),radial-gradient(90% 50% at 100% 0,rgba(245,199,107,.06),transparent 55%),#000;background-attachment:fixed}
 html[data-theme=sepia] body{background:var(--bg)}html[data-theme=light] body{background:var(--bg)}
 /* full width, device aware */
 .wrap,.gkReaderContent{max-width:var(--mw);width:100%;margin-left:auto;margin-right:auto}
 .wrap{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
-.gkReaderContent{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));filter:brightness(var(--tbr))}
+.gkReaderContent{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
 .fin2{max-width:var(--mw)}
 .chipbar{max-width:var(--mw);margin:0 auto;padding-left:max(14px,env(safe-area-inset-left))}
 @media(min-width:900px){.gkCatGrid,.grpBody{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}.edCatGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}}
@@ -373,6 +373,36 @@ body{background-attachment:scroll!important}
 .edArticleCard,.edCatCard,.post{contain:layout style!important}
 #homeGrid,#listGrid,#lstGrid{transform:translateZ(0)}
 html,body{overscroll-behavior-y:auto}
+</style>
+<style id="uniBrightFix">
+/* Article ki text-brightness poore reader par (questions, headings, explanation, cards) same lage */
+#content{--tw:color-mix(in srgb,var(--white) var(--tp),var(--bg));--tm:color-mix(in srgb,var(--muted) var(--tp),var(--bg));--ta:color-mix(in srgb,var(--amber) var(--tp),var(--bg));--tt:color-mix(in srgb,var(--text) var(--tp),var(--bg))}
+#content .q .qt,#content .gkH2,#content summary,#content .pw{color:var(--tw)!important}
+#content .card i,#content .card .q2,#content .card .ln span,#content .rmeta,#content .hint,#content .todo,#content .pMeta{color:var(--tm)!important}
+#content .card .h,#content .ex{color:var(--ta)!important}
+#content .opt,#content .sj,#content .hiL,#content .hiBtn,#content details,#content .card{color:var(--tt)}
+/* upar ka index (section chips) hata diya */
+#chips,.chipbar{display:none!important}
+/* auto-play: jis paragraph par tap karo wahi se start hoga */
+#content .ru{cursor:pointer}
+#content .ru.ruStart>.gkP{outline:2px solid var(--gold,#f5c76b)!important;outline-offset:-2px}
+</style>
+<style id="readerSmoothFix">
+/* reader scroll smooth: shadows/transitions/tap effects hatao, touch pan-y */
+.gkReaderFooter{box-shadow:none!important}
+#content .opt,#content .q,#content .gkP,#content .card,#content .ru{transition:none!important;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+#content .opt:active{transform:none!important}
+#reader{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* A B C D ek line me (jab chhote ho aur fit ho) */
+#content .q.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}
+#content .q.row4>*{grid-column:1/-1}
+#content .q.row4>.opt{grid-column:auto;margin:0;padding:8px 4px;min-height:42px;gap:5px;justify-content:center;align-items:center}
+#content .q.row4>.opt .ob{width:20px;height:20px;font-size:10px;margin-top:0}
+#content .q.row4>.opt .ot{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-align:center}
+#content .q.flow{display:flex;flex-wrap:wrap;gap:8px}
+#content .q.flow>*{flex:0 0 100%}
+#content .q.flow>.opt{flex:1 1 auto;width:auto;min-width:0;margin:0}
+#content .q.flow>.opt .ot{white-space:nowrap}
 </style>
 </head><body>
 <div class="bl" aria-hidden="true"></div>
@@ -574,11 +604,13 @@ const names={ed:'The editorial explained',vc:'Vocabulary ('+a.vocab.length+' wor
 const edG=a.ed.filter(g=>!(g.length==1&&/^📘/.test(g[0].en)));const dtl=(it.date&&!/evergreen|NCERT/i.test(it.date)?calI(it.date)+' '+it.date+' · ':'')+cs((a.src||'').split(' · Topic')[0]).replace(/\s*,?\s*\b\d{1,2}\s+[A-Z][a-z]{2,8}\.?,?\s+\d{4}/,'');const secs=[['ed',edG.length?'<div class="pMeta" style="margin:0 0 12px;font-weight:600">'+dtl+'</div>'+edG.map(g=>g.map(c=>'<div class="ru" data-ms="'+Math.max(1800,Math.min(22000,wc(c.en)*400))+'"><p class="en gkP">'+mk(c.en)+'</p>'+(c.hi?'<div class="hiL">'+c.hi+'</div>':'<button class="hiBtn" data-en="'+encodeURIComponent(c.en.replace(/\{\{([^|]+)\|[^}]*\}\}/g,'$1'))+'">🌐 हिंदी देखो</button><div class="hiL hiX" hidden></div>')+'</div>').join('')+'<div class="pgap"></div>').join(''):''],['vc',a.vocab.map(card).join('')],['rc',a.rc.length?qb(a.rc):''],['pj',a.pj.length?qb(a.pj):''],['es',a.es.length?qb(a.es):''],['fb',(a.fb&&a.fb.length)?qb(a.fb):''],['qz',(a.qz&&a.qz.length)?qb(a.qz):''],['id',a.idioms.map(v=>'<div class="card"><div><b class="w">'+v[0]+'</b></div><div class="h">'+v[1]+'</div>'+(v[3]?'<div class="ln"><span>English:</span> '+v[3]+'</div>':'')+'<div class="q2"><i>“'+v[2]+'”</i></div></div>').join('')],['fq',a.fq.map(f=>'<details><summary>'+f[0]+'</summary><div class="hiL">'+f[1]+'</div></details>').join('')]].filter(s=>s[1]).sort((x,y)=>SEC_ORDER.indexOf(x[0])-SEC_ORDER.indexOf(y[0]));
 document.title='Daily Editorial';
 $('content').innerHTML=chk(0)+'<div class="gkChapTitle">'+cs(a.title)+'</div>'+(a.es&&a.es.length?'<div class="p2Tag">⭐ PHASE 2 · Questions ready</div>':'')+(a.todo?'<div class="todo">'+a.todo+'</div>':'')+'<hr class="rule">'+secs.map(s=>(s[0]=='ed'?'<div id="s-ed"></div>':'<h2 class="gkH2" id="s-'+s[0]+'">'+names[s[0]]+'</h2>')+s[1]+(s[0]=='ed'?chk(1):'')).join('')+'<div style="height:70vh" aria-hidden="true"></div>';
-$('chips').innerHTML=secs.map(s=>'<button class="chip" data-s="'+s[0]+'">'+SEC.find(x=>x[0]==s[0])[1]+'</button>').join('');
-$('reader').scrollTop=0;
+$('chips').innerHTML='';
+$('reader').scrollTop=0;startEl=null;requestAnimationFrame(fitOpts);
 $('prev').disabled=ctx.i<=0;$('next').disabled=ctx.i>=ctx.list.length-1;
 spy()}
-function spy(){if(window.spyLock&&Date.now()<window.spyLock)return;const hs=document.querySelectorAll('.gkH2');let id='';for(let k=0;k<hs.length;k++){if(hs[k].getBoundingClientRect().top<=110)id=hs[k].id.slice(2);else break}const _c=document.querySelector('.chip.on');if(_c&&_c.dataset.s==id)return;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.s==id))}
+function fitOpts(){const qs=document.querySelectorAll('#content .q');qs.forEach(q=>q.classList.remove('row4','flow'));qs.forEach(q=>{const os=q.querySelectorAll('.opt');if(os.length!==4)return;let mx=0;os.forEach(o=>{const t=o.querySelector('.ot');mx=Math.max(mx,((t&&t.textContent)||'').trim().length)});if(mx>16)return;q.classList.add('row4');const bad=[...os].some(o=>{const t=o.querySelector('.ot');return !t||t.scrollWidth>t.clientWidth+1});if(bad){q.classList.remove('row4');q.classList.add('flow')}})}
+window.addEventListener('resize',()=>requestAnimationFrame(fitOpts));
+function spy(){return;if(window.spyLock&&Date.now()<window.spyLock)return;const hs=document.querySelectorAll('.gkH2');let id='';for(let k=0;k<hs.length;k++){if(hs[k].getBoundingClientRect().top<=110)id=hs[k].id.slice(2);else break}const _c=document.querySelector('.chip.on');if(_c&&_c.dataset.s==id)return;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.s==id))}
 function step(n){const i=ctx.i+n;if(i<0||i>=ctx.list.length)return;stopAuto();ctx.i=i;renderReader()}
 
 /* ---------- word popup ---------- */
@@ -586,7 +618,7 @@ function showWord(w){const pk=vmFind(w);const v=lk(pk||w);$('popBody').innerHTML
 function closeAll(){document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'))}
 
 /* ---------- auto-scroll (paragraph by paragraph) ---------- */
-const SPD=[.5,1,1.5,2];let auto=false,si=1,units=[],ai=-1,tmr=null,dl=0,rem=0,wl=null;
+const SPD=[.5,1,1.5,2];let auto=false,si=1,units=[],ai=-1,tmr=null,dl=0,rem=0,wl=null,startEl=null;
 function autoUI(){$('play').innerHTML=auto?'&#10074;&#10074;':'&#9654;';$('play').classList.toggle('run',auto);$('spd').textContent=SPD[si]+'x';$('prog').classList.toggle('on',auto)}
 function fill(ms){const f=$('progFill');f.style.transition='none';f.style.width='0%';void f.offsetWidth;f.style.transition='width '+ms+'ms linear';f.style.width='100%'}
 function freeze(){const f=$('progFill');const w=getComputedStyle(f).width;f.style.transition='none';f.style.width=w}
@@ -596,14 +628,18 @@ function unitMs(u){const b=parseInt(u.dataset.ms,10)||3000;return b*(document.bo
 function nextUnit(){clearTimeout(tmr);if(ai>=units.length-1){stopAuto(true);return}ai++;const R=$('reader'),el=units[ai];R.scrollTo({top:Math.max(0,R.scrollTop+el.getBoundingClientRect().top-R.getBoundingClientRect().top-70),behavior:'smooth'});arm(unitMs(el))}
 async function wake(){try{if('wakeLock' in navigator){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}}catch(e){}}
 function unwake(){if(wl){wl.release().catch(()=>{});wl=null}}
-function startAuto(){units=[...document.querySelectorAll('#content .ru')];if(!units.length)return;auto=true;autoUI();wake();const R=$('reader'),top=R.getBoundingClientRect().top+70;let b=-1;for(let i=0;i<units.length;i++){if(units[i].getBoundingClientRect().top<=top)b=i;else break}ai=Math.max(-1,b-1);nextUnit()}
+function pickStart(){units=[...document.querySelectorAll('#content .ru')];if(!units.length)return -1;if(startEl&&document.body.contains(startEl)){const k=units.indexOf(startEl);if(k>=0)return k}const R=$('reader'),top=R.getBoundingClientRect().top+70;for(let i=0;i<units.length;i++){if(units[i].getBoundingClientRect().bottom>top-20)return i}return units.length-1}
+function clearStartEl(){if(startEl)startEl.classList.remove('ruStart');startEl=null}
+function canResume(){if(startEl&&document.body.contains(startEl))return false;if(!(ai>=0&&ai<units.length-1&&rem))return false;const el=units[ai];if(!el||!document.body.contains(el))return false;const R=$('reader'),r=el.getBoundingClientRect(),rr=R.getBoundingClientRect();return r.bottom>rr.top&&r.top<rr.bottom}
+function startAuto(){const k=pickStart();if(k<0)return;clearStartEl();auto=true;autoUI();wake();ai=k-1;nextUnit()}
 function pauseAuto(){if(!auto)return;rem=Math.max(300,dl-Date.now());auto=false;clearTimeout(tmr);freeze();unwake();autoUI()}
 function resumeAuto(){auto=true;autoUI();wake();if(ai<0){nextUnit();return}arm(rem||3000)}
 function stopAuto(end){auto=false;clearTimeout(tmr);unwake();if(end||true){zero()}ai=-1;rem=0;units=[];autoUI()}
-$('play').onclick=e=>{e.stopPropagation();if(auto)pauseAuto();else if(ai>=0&&ai<units.length-1&&rem)resumeAuto();else startAuto()};
+$('play').onclick=e=>{e.stopPropagation();if(auto)pauseAuto();else if(canResume())resumeAuto();else startAuto()};
+$('reader').addEventListener('click',e=>{if(auto)return;const t=e.target;if(t.closest('.hw,button,a,input,label,summary,details,.hiBtn,.opt,.q'))return;const u=t.closest('.ru');if(!u)return;if(window.getSelection&&String(window.getSelection()).length)return;if(startEl===u){clearStartEl();return}clearStartEl();startEl=u;u.classList.add('ruStart');ai=-1;rem=0});
 $('spd').onclick=e=>{e.stopPropagation();si=(si+1)%SPD.length;autoUI();if(auto){const left=Math.max(300,dl-Date.now());arm(left/SPD[si]*SPD[(si+SPD.length-1)%SPD.length])}};
 ['touchstart','mousedown','wheel'].forEach(ev=>$('reader').addEventListener(ev,()=>{if(auto)pauseAuto()},{passive:true}));
-let spyT=0,spyE=0;$('reader').addEventListener('scroll',()=>{clearTimeout(spyE);spyE=setTimeout(()=>{window.spyLock=0;spy()},180);if(spyT)return;spyT=requestAnimationFrame(()=>{spyT=0;spy()})},{passive:true});
+
 
 /* ---------- clicks ---------- */
 document.addEventListener('click',e=>{const t=e.target;
@@ -647,7 +683,7 @@ function apply(){
 R.dataset.theme=C.theme;
 R.style.setProperty('--tp',Math.min(100,C.tp)+'%');R.style.setProperty('--bl',C.bl/100);
 R.style.setProperty('--fam',FAM[C.fam]||FAM.sys);R.style.setProperty('--fw',C.fw);
-R.style.setProperty('--fs',C.fs+'px');R.style.setProperty('--hs',C.hs/100);R.style.setProperty('--lh',C.lh/10);R.style.setProperty('--ls',(C.ls/100)+'em');C.wd=Math.max(40,Math.min(100,+C.wd||100));R.style.setProperty('--mw',C.wd+'%');R.style.setProperty('--tbr',C.tp>100?(C.tp/100).toFixed(2):1);R.style.setProperty('--hmix',(100-(C.tp>100?Math.min(45,(C.tp-100)*0.75):0)).toFixed(0)+'%');
+R.style.setProperty('--fs',C.fs+'px');R.style.setProperty('--hs',C.hs/100);R.style.setProperty('--lh',C.lh/10);R.style.setProperty('--ls',(C.ls/100)+'em');C.wd=Math.max(40,Math.min(100,+C.wd||100));R.style.setProperty('--mw',C.wd+'%');R.style.setProperty('--tbr',C.tp>100?(C.tp/100).toFixed(2):1);{const _ct=document.getElementById('content');if(_ct)_ct.style.filter=C.tp>100?'brightness('+(C.tp/100).toFixed(2)+')':'none'};window.fitOpts&&requestAnimationFrame(window.fitOpts);R.style.setProperty('--hmix',(100-(C.tp>100?Math.min(45,(C.tp-100)*0.75):0)).toFixed(0)+'%');
 if(C.theme=='sepia'||C.theme=='light'){R.style.removeProperty('--hwc');R.style.removeProperty('--hic')}else{R.style.setProperty('--hwc',C.hwc);R.style.setProperty('--hic',C.hic)}
 const bl=document.querySelector('.bl');if(bl)bl.style.display=C.bl>0?'block':'none';B.classList.toggle('just',!!C.just);B.classList.toggle('nou',!!C.nou);B.classList.toggle('focus',!!C.focus);
 const f=(id,v,fmt)=>{const e=q('#'+id);e.value=v;e.nextElementSibling.textContent=fmt(v)};
