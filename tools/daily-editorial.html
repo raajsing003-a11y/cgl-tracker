@@ -237,7 +237,7 @@ html[data-theme=sepia] body{background:var(--bg)}html[data-theme=light] body{bac
 /* premium surfaces */
 .calcSubTitle{font-weight:800;letter-spacing:.3px;background:linear-gradient(100deg,#fff,var(--gold) 55%,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
 .calcBackBtn,.gearBtn,.xBtn{background:linear-gradient(145deg,#15151b,#09090c);border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 14px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07)}
-.homeBar{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid rgba(255,255,255,.07)}
+.homeBar{background:rgba(0,0,0,.96);border-bottom:1px solid rgba(255,255,255,.07)}
 .seg button{border-radius:16px;background:linear-gradient(145deg,#12121a,#08080b);border:1px solid rgba(255,255,255,.09);letter-spacing:.2px}
 .seg button[aria-pressed=true],.cf[aria-pressed=true],.row button[aria-pressed=true]{background:linear-gradient(135deg,#f5c76b,#f59e7b 55%,#c084fc);color:#120c02;box-shadow:0 6px 20px rgba(245,199,107,.25)}
 .grid-label{color:var(--gold);letter-spacing:3px;border-top:1px solid;border-image:linear-gradient(90deg,rgba(245,199,107,.5),transparent) 1}
@@ -258,7 +258,7 @@ html[data-theme=sepia] body{background:var(--bg)}html[data-theme=light] body{bac
 .chip{background:linear-gradient(145deg,#14141a,#09090c);border:1px solid rgba(255,255,255,.1)}
 .chip.on{background:linear-gradient(135deg,#f5c76b,#f59e7b);color:#120c02;box-shadow:0 4px 16px rgba(245,199,107,.3)}
 .hw{color:var(--hwc);text-shadow:0 0 14px color-mix(in srgb,var(--hwc) 35%,transparent)}
-.gkReaderFooter{background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -10px 30px rgba(0,0,0,.8)}
+.gkReaderFooter{background:rgba(0,0,0,.97);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -10px 30px rgba(0,0,0,.8)}
 .fb{border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
 .sheet{background:linear-gradient(180deg,#0e0e14,#000);border-top:1.5px solid rgba(245,199,107,.4);border-radius:26px 26px 0 0;box-shadow:0 -14px 50px rgba(0,0,0,.9)}
 .sheet{max-width:min(640px,100%)}
@@ -559,7 +559,7 @@ const names={ed:'The editorial explained',vc:'Vocabulary ('+a.vocab.length+' wor
 const edG=a.ed.filter(g=>!(g.length==1&&/^📘/.test(g[0].en)));const dtl=(it.date&&!/evergreen|NCERT/i.test(it.date)?calI(it.date)+' '+it.date+' · ':'')+cs((a.src||'').split(' · Topic')[0]).replace(/\s*,?\s*\b\d{1,2}\s+[A-Z][a-z]{2,8}\.?,?\s+\d{4}/,'');const secs=[['ed',edG.length?'<div class="pMeta" style="margin:0 0 12px;font-weight:600">'+dtl+'</div>'+edG.map(g=>g.map(c=>'<div class="ru" data-ms="'+Math.max(1800,Math.min(22000,wc(c.en)*400))+'"><p class="en gkP">'+mk(c.en)+'</p>'+(c.hi?'<div class="hiL">'+c.hi+'</div>':'<button class="hiBtn" data-en="'+encodeURIComponent(c.en.replace(/\{\{([^|]+)\|[^}]*\}\}/g,'$1'))+'">🌐 हिंदी देखो</button><div class="hiL hiX" hidden></div>')+'</div>').join('')+'<div class="pgap"></div>').join(''):''],['vc',a.vocab.map(card).join('')],['rc',a.rc.length?qb(a.rc):''],['pj',a.pj.length?qb(a.pj):''],['es',a.es.length?qb(a.es):''],['fb',(a.fb&&a.fb.length)?qb(a.fb):''],['qz',(a.qz&&a.qz.length)?qb(a.qz):''],['id',a.idioms.map(v=>'<div class="card"><div><b class="w">'+v[0]+'</b></div><div class="h">'+v[1]+'</div>'+(v[3]?'<div class="ln"><span>English:</span> '+v[3]+'</div>':'')+'<div class="q2"><i>“'+v[2]+'”</i></div></div>').join('')],['fq',a.fq.map(f=>'<details><summary>'+f[0]+'</summary><div class="hiL">'+f[1]+'</div></details>').join('')]].filter(s=>s[1]).sort((x,y)=>SEC_ORDER.indexOf(x[0])-SEC_ORDER.indexOf(y[0]));
 document.title='Daily Editorial';
 $('content').innerHTML=chk(0)+'<div class="gkChapTitle">'+cs(a.title)+'</div>'+(a.es&&a.es.length?'<div class="p2Tag">⭐ PHASE 2 · Questions ready</div>':'')+(a.todo?'<div class="todo">'+a.todo+'</div>':'')+'<hr class="rule">'+secs.map(s=>(s[0]=='ed'?'<div id="s-ed"></div>':'<h2 class="gkH2" id="s-'+s[0]+'">'+names[s[0]]+'</h2>')+s[1]+(s[0]=='ed'?chk(1):'')).join('')+'<div style="height:70vh" aria-hidden="true"></div>';
-$('chips').innerHTML='<button class="pill" id="thi" aria-pressed="'+!document.body.classList.contains('nohi')+'">हिंदी पंक्तियाँ</button><button class="pill" id="thw" aria-pressed="'+!document.body.classList.contains('nohw')+'">शब्द (हिंदी)</button><span class="sep"></span>'+secs.map(s=>'<button class="chip" data-s="'+s[0]+'">'+SEC.find(x=>x[0]==s[0])[1]+'</button>').join('');
+$('chips').innerHTML=secs.map(s=>'<button class="chip" data-s="'+s[0]+'">'+SEC.find(x=>x[0]==s[0])[1]+'</button>').join('');
 $('reader').scrollTop=0;
 $('prev').disabled=ctx.i<=0;$('next').disabled=ctx.i>=ctx.list.length-1;
 spy()}
@@ -623,8 +623,8 @@ $('b-top').onclick=()=>{$('set').classList.remove('open');$('reader').scrollTo({
 
 /* ---------- settings ---------- */
 (function(){
-const DEF={theme:'dim',tp:100,bl:0,fam:'sys',fw:500,fs:18,hs:100,lh:17,ls:0,wd:100,hic:'#fde047',just:0,nou:0,focus:0,hwc:'#34d399'};
-let C=Object.assign({},DEF);try{Object.assign(C,JSON.parse(ls.get('de_cfg','{}')))}catch(e){}
+const DEF={theme:'dim',tp:80,bl:0,fam:'sys',fw:500,fs:18,hs:100,lh:17,ls:0,wd:100,hic:'#fde047',just:0,nou:0,focus:0,hwc:'#34d399'};
+let C=Object.assign({},DEF);try{Object.assign(C,JSON.parse(ls.get('de_cfg','{}')))}catch(e){}try{if(ls.get('de_tp80','')!=='1'){if(C.tp==100)C.tp=80;ls.set('de_tp80','1');ls.set('de_cfg',JSON.stringify(C))}}catch(e){}
 const R=document.documentElement,B=document.body,q=s=>document.querySelector(s);
 const FAM={sys:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",serif:"Georgia,'Times New Roman',serif",round:"ui-rounded,'SF Pro Rounded','Nunito','Segoe UI',system-ui,sans-serif"};
 const save=()=>ls.set('de_cfg',JSON.stringify(C));
@@ -661,20 +661,7 @@ if(!v){btn.textContent='⏳ अनुवाद हो रहा है…';try{v
 box.textContent=v;box.hidden=false;btn.hidden=true;return true}
 document.addEventListener('click',async e=>{const b=e.target.closest('.hiBtn');if(!b)return;e.stopPropagation();
 if(b.classList.contains('hiPar')){b.textContent='⏳ …';const bs=[];let n=b.previousElementSibling;while(n&&n.classList.contains('ru')){const x=n.querySelector('button.hiBtn[data-en]');if(x&&!x.hidden)bs.unshift(x);n=n.previousElementSibling}
-let ok=true;for(const x of bs){if(!await fill(x)){ok=false;break}}if(ok)b.hidden=true;else b.textContent='⚠ इंटरनेट चाहिए, फिर टैप करो'}else fill(b)},true)})();</script><div class="toast" id="toast"></div><script>(function(){
-const cols=['#fde047','#fbbf24','#fb923c','#bef264','#5eead4','#f9a8d4','#ffffff'],ws=[100,88,72,56];
-let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1100)}
-function go(f){const g=window.__cfg;if(!g)return;const C=g.C();f(C);g.apply();g.save()}
-function build(){const bar=document.getElementById('chips');if(!bar||bar.querySelector('.qk'))return;
-const d=document.createElement('div');d.className='qk';
-d.innerHTML='<button data-q="bd" aria-label="Dimmer">☀−</button><button data-q="bu" aria-label="Brighter">☀+</button><button data-q="w" aria-label="Width">↔</button><button class="qc" data-q="c" aria-label="Hindi colour"></button>';
-bar.prepend(d)}
-document.addEventListener('click',e=>{const b=e.target.closest('.qk button');if(!b)return;e.stopPropagation();const k=b.dataset.q;
-if(k=='bu')go(C=>{C.tp=Math.min(160,C.tp+10);toast('Brightness '+C.tp+'%')});
-else if(k=='bd')go(C=>{C.tp=Math.max(45,C.tp-10);toast('Brightness '+C.tp+'%')});
-else if(k=='w')go(C=>{const i=ws.indexOf(C.wd);C.wd=ws[(i+1)%ws.length];toast('Width '+C.wd+'%')});
-else go(C=>{const i=cols.indexOf(C.hic);C.hic=cols[(i+1)%cols.length];toast('Hindi colour')})},true);
-new MutationObserver(build).observe(document.getElementById('reader'),{childList:true,subtree:true});build()})();;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
+let ok=true;for(const x of bs){if(!await fill(x)){ok=false;break}}if(ok)b.hidden=true;else b.textContent='⚠ इंटरनेट चाहिए, फिर टैप करो'}else fill(b)},true)})();</script><div class="toast" id="toast"></div><script>;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
 </script><script>/* DE-PERSIST + DE-SCORE: tick/score ka backup IndexedDB me; har section ka marks (+3 sahi, -1 galat) */
 (function(){const DB='de_persist',ST='kv',KEYS=['de_read','de_score'];
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
