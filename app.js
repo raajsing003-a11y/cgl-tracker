@@ -1946,10 +1946,12 @@ window.__mqbShare = {
   // device back par 'de-back' bhejte hain taaki ek screen peeche jaye, app se bahar na nikle.
   const tell = (m) => { try{ frame.contentWindow.postMessage(m,'*'); }catch(e){} };
   const onPage = () => { const a = document.querySelector('.calcPage.active'); return a && a.id === 'calcPage-dailyeditorial'; };
+  let dePushed = 0; // editorial ke andar ke kitne steps ne parent history entry push ki
+  openBtn.addEventListener('click', () => { dePushed = 0; });
   window.addEventListener('message', (e) => {
     if(e.source !== frame.contentWindow) return;
     if(e.data === 'de-push'){
-      try{ history.pushState({cgl50Tab:'calc', calcPage:'dailyeditorial'}, '', location.href); }catch(x){}
+      try{ history.pushState({cgl50Tab:'calc', calcPage:'dailyeditorial'}, '', location.href); dePushed++; }catch(x){}
     } else if(e.data === 'de-histback'){
       try{ history.back(); }catch(x){}
     } else if(e.data === 'de-exit'){
@@ -1958,9 +1960,15 @@ window.__mqbShare = {
     }
   });
   window.addEventListener('popstate', (e) => {
-    if(e.state && e.state.calcPage === 'dailyeditorial' && onPage()) tell('de-back');
+    if(e.state && e.state.calcPage === 'dailyeditorial' && onPage()){ if(dePushed > 0) dePushed--; tell('de-back'); }
+    else if(!onPage()) dePushed = 0;
   });
-  if(backBtn) backBtn.addEventListener('click', () => { tell('de-home'); showCalcPage('menu'); upCnt(); });
+  // App button: editorial ke andar ke saare steps + editorial ki entry ek saath peeche, seedha menu par.
+  if(backBtn) backBtn.addEventListener('click', () => {
+    tell('de-home'); const n = dePushed + 1; dePushed = 0;
+    try{ history.go(-n); }catch(x){}
+    setTimeout(() => { if(onPage()) showCalcPage('menu', true); upCnt(); }, 350);
+  });
 })();
 // Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
 (function initStudyTubePage(){
@@ -9005,14 +9013,51 @@ function showCalcPage(name, _fromPopState){
 // ab left-swipe se bhi agla sawaal aata hai — Next ➜ button (upar ya neeche)
 // dabane jaisa hi kaam karta hai. Ek hi generic helper hai taaki 12+ quizzes
 // mein alag-alag copy-paste na karna pade.
-function attachQuizSwipeNext(pageId, nextFn){
+function attachQuizSwipeNext(pageId, nextFn, prevFn){
+  attachQuizSwipe(pageId, nextFn, prevFn);
+}
+// Left swipe = agla sawaal, Right swipe = pichhla sawaal. Naye sawaal par
+// jaate hi page ke sabse upar (question ki starting) par scroll ho jaata hai,
+// chahe pehle solution kitna bhi neeche tak khula ho.
+function quizScrollToStart(pageId){
+  try{
+    window.scrollTo(0, 0);
+    const el = document.getElementById(pageId);
+    let n = el;
+    while(n && n !== document.body){
+      if(n.scrollTop > 0) n.scrollTop = 0;
+      n = n.parentElement;
+    }
+    const sc = document.scrollingElement || document.documentElement;
+    if(sc) sc.scrollTop = 0;
+  }catch(e){}
+}
+function quizSwipeBlocked(target, boundary){
+  // Horizontally scrollable cheez (table, formula, code, input) ke andar
+  // shuru hui swipe ko question-swipe na maano.
+  let n = target;
+  while(n && n !== boundary && n.nodeType === 1){
+    if(/^(INPUT|TEXTAREA|SELECT|TABLE|PRE)$/.test(n.tagName)) return true;
+    if(n.classList && (n.classList.contains('katex-display') || n.classList.contains('chartscroll'))) return true;
+    if(n.scrollWidth > n.clientWidth + 4){
+      const ox = getComputedStyle(n).overflowX;
+      if(ox === 'auto' || ox === 'scroll') return true;
+    }
+    n = n.parentElement;
+  }
+  return false;
+}
+function attachQuizSwipe(pageId, nextFn, prevFn){
   const el = document.getElementById(pageId);
-  if(!el || typeof nextFn !== 'function') return;
-  let startX = 0, startY = 0, tracking = false;
+  if(!el) return;
+  if(el.__quizSwipeBound) return;
+  el.__quizSwipeBound = true;
+  let startX = 0, startY = 0, tracking = false, startTarget = null;
   el.addEventListener('touchstart', function(e){
-    if(e.touches.length !== 1) return;
+    if(e.touches.length !== 1){ tracking = false; return; }
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+    startTarget = e.target;
     tracking = true;
   }, {passive:true});
   el.addEventListener('touchend', function(e){
@@ -9021,12 +9066,33 @@ function attachQuizSwipeNext(pageId, nextFn){
     const t = e.changedTouches[0];
     const dx = t.clientX - startX;
     const dy = t.clientY - startY;
-    // Mostly-horizontal, leftward, and long enough to be a deliberate swipe
-    // (not an accidental brush while scrolling/tapping an answer option).
-    if(dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.5){
+    // Mostly-horizontal aur itni lambi ki jaan-boojh kar ki gayi swipe lage
+    // (scroll ya option tap ke dauraan galti se na lage).
+    if(Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if(quizSwipeBlocked(startTarget, el)) return;
+    if(dx < 0 && typeof nextFn === 'function'){
       safeRun(nextFn, 'quizSwipeNext(' + pageId + ')');
+      quizScrollToStart(pageId);
+    } else if(dx > 0 && typeof prevFn === 'function'){
+      safeRun(prevFn, 'quizSwipePrev(' + pageId + ')');
+      quizScrollToStart(pageId);
     }
   }, {passive:true});
+}
+// Pichhle sawaal par wapas aane par agar pehle answer de chuke the to wahi
+// answer + solution dobara dikha do (score dobara count na ho isliye pehle
+// purana count ghata kar selectFn se wapas lagwate hain).
+function quizReplayAnswer(session, selectFn){
+  const idx = session.index;
+  const a = session.userAnswers ? session.userAnswers[idx] : null;
+  if(a == null) return;
+  const q = session.questions[idx];
+  if(!q) return;
+  if(a === q.answer){ if(session.correct > 0) session.correct--; }
+  else { if(session.wrong > 0) session.wrong--; }
+  session.userAnswers[idx] = null;
+  session.answered = false;
+  selectFn(a);
 }
 
 // ===== Calc practice engine =====
@@ -9948,6 +10014,13 @@ function goToNextVocabQuestion(){
   else endVocabQuiz();
 }
 
+function goToPrevVocabQuestion(){
+  if(vocabSession.index <= 0) return;
+  vocabSession.index--;
+  renderVocabQuestion();
+  quizReplayAnswer(vocabSession, (i) => selectVocabAnswer(i));
+}
+
 function endVocabQuiz(){
   const total = vocabSession.correct + vocabSession.wrong;
   const acc = total ? Math.round((vocabSession.correct / total) * 100) : 0;
@@ -10017,7 +10090,7 @@ function initVocabQuiz(){
   if(nextBtn) nextBtn.addEventListener('click', goToNextVocabQuestion);
   const nextBtnTop = document.getElementById('vocabNextBtnTop');
   if(nextBtnTop) nextBtnTop.addEventListener('click', goToNextVocabQuestion);
-  attachQuizSwipeNext('calcPage-vocab', goToNextVocabQuestion);
+  attachQuizSwipe('calcPage-vocab', goToNextVocabQuestion, goToPrevVocabQuestion);
   const backBtn = document.getElementById('vocabBackBtn');
   if(backBtn) backBtn.addEventListener('click', () => showCalcPage(vocabSession.originPage || 'vocabmenu'));
   const againBtn = document.getElementById('vocabResultAgainBtn');
@@ -10037,7 +10110,7 @@ function initVocabQuiz(){
   if(spellingNextBtn) spellingNextBtn.addEventListener('click', goToNextSpellingQuestion);
   const spellingNextBtnTop = document.getElementById('spellingNextBtnTop');
   if(spellingNextBtnTop) spellingNextBtnTop.addEventListener('click', goToNextSpellingQuestion);
-  attachQuizSwipeNext('calcPage-spelling', goToNextSpellingQuestion);
+  attachQuizSwipe('calcPage-spelling', goToNextSpellingQuestion, goToPrevSpellingQuestion);
   const spellingAgainBtn = document.getElementById('spellingResultAgainBtn');
   if(spellingAgainBtn) spellingAgainBtn.addEventListener('click', () => startSpellingQuiz());
   const spellingResBackBtn = document.getElementById('spellingResultBackBtn');
@@ -10072,7 +10145,7 @@ function initVocabQuiz(){
   if(idiomNextBtn) idiomNextBtn.addEventListener('click', goToNextIdiomQuestion);
   const idiomNextBtnTop = document.getElementById('idiomNextBtnTop');
   if(idiomNextBtnTop) idiomNextBtnTop.addEventListener('click', goToNextIdiomQuestion);
-  attachQuizSwipeNext('calcPage-idiom', goToNextIdiomQuestion);
+  attachQuizSwipe('calcPage-idiom', goToNextIdiomQuestion, goToPrevIdiomQuestion);
   const idiomAgainBtn = document.getElementById('idiomResultAgainBtn');
   if(idiomAgainBtn) idiomAgainBtn.addEventListener('click', () => startIdiomQuiz());
   const idiomResBackBtn = document.getElementById('idiomResultBackBtn');
@@ -10317,6 +10390,13 @@ function goToNextSpellingQuestion(){
   spellingSession.index++;
   if(spellingSession.index < spellingSession.questions.length) renderSpellingQuestion();
   else endSpellingQuiz();
+}
+
+function goToPrevSpellingQuestion(){
+  if(spellingSession.index <= 0) return;
+  spellingSession.index--;
+  renderSpellingQuestion();
+  quizReplayAnswer(spellingSession, (i) => selectSpellingAnswer(i));
 }
 
 function endSpellingQuiz(){
@@ -10825,6 +10905,13 @@ function goToNextIdiomQuestion(){
   else endIdiomQuiz();
 }
 
+function goToPrevIdiomQuestion(){
+  if(idiomSession.index <= 0) return;
+  idiomSession.index--;
+  renderIdiomQuestion();
+  quizReplayAnswer(idiomSession, (i) => selectIdiomAnswer(i));
+}
+
 function endIdiomQuiz(){
   const total = idiomSession.correct + idiomSession.wrong;
   const acc = total ? Math.round((idiomSession.correct / total) * 100) : 0;
@@ -11069,6 +11156,13 @@ function goToNextGrammarQuestion(){
   else endGrammarQuiz();
 }
 
+function goToPrevGrammarQuestion(){
+  if(grammarSession.index <= 0) return;
+  grammarSession.index--;
+  renderGrammarQuestion();
+  quizReplayAnswer(grammarSession, (i) => selectGrammarAnswer(i));
+}
+
 function endGrammarQuiz(){
   const total = grammarSession.correct + grammarSession.wrong;
   const acc = total ? Math.round((grammarSession.correct / total) * 100) : 0;
@@ -11113,7 +11207,7 @@ function initGrammarQuiz(){
   if(grammarNextBtn) grammarNextBtn.addEventListener('click', goToNextGrammarQuestion);
   const grammarNextBtnTop = document.getElementById('grammarNextBtnTop');
   if(grammarNextBtnTop) grammarNextBtnTop.addEventListener('click', goToNextGrammarQuestion);
-  attachQuizSwipeNext('calcPage-grammar', goToNextGrammarQuestion);
+  attachQuizSwipe('calcPage-grammar', goToNextGrammarQuestion, goToPrevGrammarQuestion);
   const grammarAgainBtn = document.getElementById('grammarResultAgainBtn');
   if(grammarAgainBtn) grammarAgainBtn.addEventListener('click', () => startGrammarQuiz());
   const grammarResBackBtn = document.getElementById('grammarResultBackBtn');
@@ -11444,6 +11538,12 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -11490,7 +11590,7 @@ function makeReasoningQuiz(prefix, SETS, label, menuBackPage, topicMeta, groupCo
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById(prefix + 'NextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-' + prefix, goToNext);
+    attachQuizSwipe('calcPage-' + prefix, goToNext, goToPrev);
     const againBtn = document.getElementById(prefix + 'ResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz());
     const resBackBtn = document.getElementById(prefix + 'ResultBackBtn');
@@ -11753,6 +11853,12 @@ function makeDigitalSumQuiz(){
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -11804,7 +11910,7 @@ function makeDigitalSumQuiz(){
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById('digitalsumNextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-digitalsum', goToNext);
+    attachQuizSwipe('calcPage-digitalsum', goToNext, goToPrev);
     const againBtn = document.getElementById('digitalsumResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById('digitalsumResultBackBtn');
@@ -11949,6 +12055,12 @@ function makeCalcSetQuiz(prefix, SETS, label, icon, mainBtnId, topicMeta, backPa
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -12000,7 +12112,7 @@ function makeCalcSetQuiz(prefix, SETS, label, icon, mainBtnId, topicMeta, backPa
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById(prefix + 'NextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-' + prefix, goToNext);
+    attachQuizSwipe('calcPage-' + prefix, goToNext, goToPrev);
     const againBtn = document.getElementById(prefix + 'ResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById(prefix + 'ResultBackBtn');
@@ -12171,6 +12283,12 @@ function makeUnitDigitQuiz(){
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -12222,7 +12340,7 @@ function makeUnitDigitQuiz(){
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById('unitdigitNextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-unitdigit', goToNext);
+    attachQuizSwipe('calcPage-unitdigit', goToNext, goToPrev);
     const againBtn = document.getElementById('unitdigitResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById('unitdigitResultBackBtn');
@@ -12431,6 +12549,12 @@ function makeStatementQuiz(){
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -12482,7 +12606,7 @@ function makeStatementQuiz(){
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById('statementNextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-statement', goToNext);
+    attachQuizSwipe('calcPage-statement', goToNext, goToPrev);
     const againBtn = document.getElementById('statementResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById('statementResultBackBtn');
@@ -12662,6 +12786,12 @@ function makeDecisionMakingQuiz(){
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -12713,7 +12843,7 @@ function makeDecisionMakingQuiz(){
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById('decisionmakingNextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-decisionmaking', goToNext);
+    attachQuizSwipe('calcPage-decisionmaking', goToNext, goToPrev);
     const againBtn = document.getElementById('decisionmakingResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById('decisionmakingResultBackBtn');
@@ -12887,6 +13017,12 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
   }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
+  }
   function endQuiz(){
     const total = session.correct + session.wrong;
     const acc = total ? Math.round((session.correct / total) * 100) : 0;
@@ -12938,7 +13074,7 @@ function makeBilingualSetQuiz(prefix, SETS, label, icon, mainBtnId, unitLabel, m
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById(prefix + 'NextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-' + prefix, goToNext);
+    attachQuizSwipe('calcPage-' + prefix, goToNext, goToPrev);
     const againBtn = document.getElementById(prefix + 'ResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById(prefix + 'ResultBackBtn');
@@ -13046,7 +13182,7 @@ function makeMathPyqQuiz(){
   function hasMockAttempt(setKey){
     return !!getMockAttempt(setKey);
   }
-  const session = { setKey: null, lang: 'hi', questions: [], index: 0, correct: 0, wrong: 0, answered: false };
+  const session = { setKey: null, lang: 'hi', questions: [], index: 0, correct: 0, wrong: 0, answered: false, userAnswers: [] };
 
   const TOPIC_META = {
     heightdistance: { hi: "ऊँचाई और दूरी", en: "Height & Distance", icon: "🗼" },
@@ -13323,6 +13459,7 @@ function makeMathPyqQuiz(){
     if(!(await window.ensureTopicReady(srcSets))) return;
     session.questions = buildSetPool(session.setKey);
     session.index = 0;
+    session.userAnswers = [];
     session.correct = 0;
     session.wrong = 0;
     session.answered = false;
@@ -13387,6 +13524,7 @@ function makeMathPyqQuiz(){
     session.answered = true;
     const q = session.questions[session.index];
     const correct = i === q.answer;
+    session.userAnswers[session.index] = i;
     if(correct) session.correct++; else session.wrong++;
     document.querySelectorAll('#mathpyqAnsGrid .calcAnsBtn').forEach((b, idx) => {
       b.classList.add('disabled');
@@ -13416,6 +13554,12 @@ function makeMathPyqQuiz(){
     session.index++;
     if(session.index < session.questions.length) renderQuestion();
     else endQuiz();
+  }
+  function goToPrev(){
+    if(session.index <= 0) return;
+    session.index--;
+    renderQuestion();
+    quizReplayAnswer(session, (i) => selectAnswer(i));
   }
   function endQuiz(){
     const total = session.correct + session.wrong;
@@ -13480,7 +13624,7 @@ function makeMathPyqQuiz(){
     if(nextBtn) nextBtn.addEventListener('click', goToNext);
     const nextBtnTop = document.getElementById('mathpyqNextBtnTop');
     if(nextBtnTop) nextBtnTop.addEventListener('click', goToNext);
-    attachQuizSwipeNext('calcPage-mathpyq', goToNext);
+    attachQuizSwipe('calcPage-mathpyq', goToNext, goToPrev);
     const againBtn = document.getElementById('mathpyqResultAgainBtn');
     if(againBtn) againBtn.addEventListener('click', () => startQuiz(session.lang));
     const resBackBtn = document.getElementById('mathpyqResultBackBtn');
@@ -13870,6 +14014,8 @@ function makeMathPyqQuiz(){
     });
     const resultPrevBtn = document.getElementById('resultPrevBtn');
     if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => resultGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-mathpyqexam', () => examGoTo(examSession.current + 1), () => examGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-mathpyqresult', () => resultGoTo(examSession.current + 1), () => resultGoTo(examSession.current - 1));
     const resultNextBtn = document.getElementById('resultNextBtn');
     if(resultNextBtn) resultNextBtn.addEventListener('click', () => {
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
@@ -15396,6 +15542,8 @@ function makeReasoningMockQuiz(){
     });
     const resultPrevBtn = document.getElementById('reasoningmockResultPrevBtn');
     if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => resultGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-reasoningmockexam', () => examGoTo(examSession.current + 1), () => examGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-reasoningmockresult', () => resultGoTo(examSession.current + 1), () => resultGoTo(examSession.current - 1));
     const resultNextBtn = document.getElementById('reasoningmockResultNextBtn');
     if(resultNextBtn) resultNextBtn.addEventListener('click', () => {
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
@@ -15902,6 +16050,8 @@ function makeEnglishMockQuiz(){
     });
     const resultPrevBtn = document.getElementById('englishmockResultPrevBtn');
     if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => resultGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-englishmockexam', () => examGoTo(examSession.current + 1), () => examGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-englishmockresult', () => resultGoTo(examSession.current + 1), () => resultGoTo(examSession.current - 1));
     const resultNextBtn = document.getElementById('englishmockResultNextBtn');
     if(resultNextBtn) resultNextBtn.addEventListener('click', () => {
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
@@ -16408,6 +16558,8 @@ function makeEnglishFullMockQuiz(){
     });
     const resultPrevBtn = document.getElementById('engfullmockResultPrevBtn');
     if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => resultGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-engfullmockexam', () => examGoTo(examSession.current + 1), () => examGoTo(examSession.current - 1));
+    attachQuizSwipe('calcPage-engfullmockresult', () => resultGoTo(examSession.current + 1), () => resultGoTo(examSession.current - 1));
     const resultNextBtn = document.getElementById('engfullmockResultNextBtn');
     if(resultNextBtn) resultNextBtn.addEventListener('click', () => {
       if(examSession.current < examSession.questions.length - 1) resultGoTo(examSession.current + 1);
@@ -16885,6 +17037,8 @@ function initEmMocksMenu(){
   if(resultOptList) resultOptList.addEventListener('click', emnativeResultReveal);
   const resultPrevBtn = document.getElementById('emnativeResultPrevBtn');
   if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => emnativeResultGoTo(emnativeSession.current - 1));
+  attachQuizSwipe('calcPage-emnativeexam', () => emnativeGoTo(emnativeSession.current + 1), () => emnativeGoTo(emnativeSession.current - 1));
+  attachQuizSwipe('calcPage-emnativeresult', () => emnativeResultGoTo(emnativeSession.current + 1), () => emnativeResultGoTo(emnativeSession.current - 1));
   const resultNextBtn = document.getElementById('emnativeResultNextBtn');
   if(resultNextBtn) resultNextBtn.addEventListener('click', () => emnativeResultGoTo(emnativeSession.current + 1));
 }
@@ -17927,6 +18081,8 @@ function initSuperPracticeQuiz(){
   if(resultOptList) resultOptList.addEventListener('click', spnativeResultReveal);
   const resultPrevBtn = document.getElementById('spnativeResultPrevBtn');
   if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => spnativeResultGoTo(spnativeSession.current - 1));
+  attachQuizSwipe('calcPage-spnativeexam', () => spnativeGoTo(spnativeSession.current + 1), () => spnativeGoTo(spnativeSession.current - 1));
+  attachQuizSwipe('calcPage-spnativeresult', () => spnativeResultGoTo(spnativeSession.current + 1), () => spnativeResultGoTo(spnativeSession.current - 1));
   const resultNextBtn = document.getElementById('spnativeResultNextBtn');
   if(resultNextBtn) resultNextBtn.addEventListener('click', () => spnativeResultGoTo(spnativeSession.current + 1));
   const resultLangBtn = document.getElementById('spnativeResultLangBtn');
@@ -18489,6 +18645,8 @@ function initP75Native(){
   if(resultOptList) resultOptList.addEventListener('click', p75nativeResultReveal);
   const resultPrevBtn = document.getElementById('p75nativeResultPrevBtn');
   if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => p75nativeResultGoTo(p75nativeSession.current - 1));
+  attachQuizSwipe('calcPage-p75nativeexam', () => p75nativeGoTo(p75nativeSession.current + 1), () => p75nativeGoTo(p75nativeSession.current - 1));
+  attachQuizSwipe('calcPage-p75nativeresult', () => p75nativeResultGoTo(p75nativeSession.current + 1), () => p75nativeResultGoTo(p75nativeSession.current - 1));
   const resultNextBtn = document.getElementById('p75nativeResultNextBtn');
   if(resultNextBtn) resultNextBtn.addEventListener('click', () => p75nativeResultGoTo(p75nativeSession.current + 1));
   const resultLangBtn = document.getElementById('p75nativeResultLangBtn');
@@ -19268,6 +19426,8 @@ function initMainsMockNative(){
   if(resultOptList) resultOptList.addEventListener('click', mmnativeResultReveal);
   const resultPrevBtn = document.getElementById('mmnativeResultPrevBtn');
   if(resultPrevBtn) resultPrevBtn.addEventListener('click', () => mmnativeResultGoTo(mmnativeSession.current - 1));
+  attachQuizSwipe('calcPage-mmnativeexam', () => mmnativeGoTo(mmnativeSession.current + 1), () => mmnativeGoTo(mmnativeSession.current - 1));
+  attachQuizSwipe('calcPage-mmnativeresult', () => mmnativeResultGoTo(mmnativeSession.current + 1), () => mmnativeResultGoTo(mmnativeSession.current - 1));
   const resultNextBtn = document.getElementById('mmnativeResultNextBtn');
   if(resultNextBtn) resultNextBtn.addEventListener('click', () => mmnativeResultGoTo(mmnativeSession.current + 1));
   const resultLangBtn = document.getElementById('mmnativeResultLangBtn');
