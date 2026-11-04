@@ -675,15 +675,57 @@ else if(k=='bd')go(C=>{C.tp=Math.max(45,C.tp-10);toast('Brightness '+C.tp+'%')})
 else if(k=='w')go(C=>{const i=ws.indexOf(C.wd);C.wd=ws[(i+1)%ws.length];toast('Width '+C.wd+'%')});
 else go(C=>{const i=cols.indexOf(C.hic);C.hic=cols[(i+1)%cols.length];toast('Hindi colour')})},true);
 new MutationObserver(build).observe(document.getElementById('reader'),{childList:true,subtree:true});build()})();;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
-</script><script>/* DE-PERSIST: padhe huye (tick) articles ka backup IndexedDB me, taaki localStorage clear ho to bhi wapas aa jaye */
-(function(){const LK='de_read',DB='de_persist',ST='kv';
+</script><script>/* DE-PERSIST + DE-SCORE: tick/score ka backup IndexedDB me; har section ka marks (+3 sahi, -1 galat) */
+(function(){const DB='de_persist',ST='kv',KEYS=['de_read','de_score'];
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
 function open(){return new Promise((res,rej)=>{try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
-function idbGet(){return open().then(db=>new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).get(LK);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)}))}
-function idbSet(v){return open().then(db=>new Promise((res,rej)=>{const t=db.transaction(ST,'readwrite');t.objectStore(ST).put(v,LK);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)}))}
-function mirror(){try{idbSet(JSON.stringify(RD)).catch(()=>{})}catch(e){}}
+function idbGet(k){return open().then(db=>new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)}))}
+function idbSet(k,v){return open().then(db=>new Promise((res,rej)=>{const t=db.transaction(ST,'readwrite');t.objectStore(ST).put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)}))}
+let SC={};try{SC=JSON.parse(ls.get('de_score','{}'))||{}}catch(e){SC={}}
+function mirror(){try{idbSet('de_read',JSON.stringify(RD)).catch(()=>{});idbSet('de_score',JSON.stringify(SC)).catch(()=>{})}catch(e){}}
+function saveSC(){ls.set('de_score',JSON.stringify(SC));mirror()}
 document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('input.rdchk'))setTimeout(mirror,0)});
-idbGet().then(v=>{let o={};try{o=JSON.parse(v||'{}')||{}}catch(e){}let add=0;for(const k in o){if(!RD[k]){RD[k]=1;add++}}
-if(add){ls.set(LK,JSON.stringify(RD));try{draw(cur)}catch(e){try{renderHome()}catch(x){}}}
-mirror()}).catch(()=>{});
-})();</script></body></html>
+const SECQ=['es','rc','pj','fb','qz'],NM={es:'Error Spotting',rc:'Reading Comp',pj:'Para Jumbles',fb:'Fill in Blanks',qz:'Quiz'};
+const sc=(r,w)=>3*r-w,pct=(r,w)=>r+w?Math.round(r*100/(r+w)):0,col=p=>p<50?'#f87171':p<75?'#fbbf24':'#34d399';
+function statOf(m,A){let r=0,w=0;for(const i in(m||{})){const q=A&&A[i];if(q==null)continue;(+m[i]===+q?r++:w++)}return{r,w}}
+/* correct answers: article ke data se */
+function ansMap(a,sec){const L=a[sec]||[];const o={};L.forEach((q,i)=>o[i]=q.a);return o}
+function artByKey(k){const x=ALLA.find(i=>i.key==k);return x&&x.a}
+function secStat(k,sec){const a=artByKey(k);return a?statOf((SC[k]||{})[sec],ansMap(a,sec)):{r:0,w:0}}
+function tag(){const c=document.getElementById('content');if(!c||!ctx.list[ctx.i])return;let sec=null,qi=0;
+[...c.children].forEach(el=>{if(el.tagName=='H2'&&el.id&&el.id.indexOf('s-')==0){sec=el.id.slice(2);qi=0;if(SECQ.includes(sec)){const b=document.createElement('div');b.className='scb';b.dataset.sec=sec;el.after(b)}}else if(sec&&SECQ.includes(sec)&&el.classList&&el.classList.contains('q')){el.dataset.sec=sec;el.dataset.qi=qi++}});
+const qs=c.querySelectorAll('.q[data-sec]');if(qs.length){const tot=document.createElement('div');tot.className='scTot';tot.id='scTot';const sp=c.lastElementChild;c.insertBefore(tot,sp)}}
+function restore(){const k=ctx.list[ctx.i].key,m=SC[k];if(!m)return;document.querySelectorAll('#content .q[data-sec]').forEach(q=>{const ch=m[q.dataset.sec]&&m[q.dataset.sec][q.dataset.qi];if(ch==null)return;const o=q.querySelectorAll('.opt'),a=+q.dataset.a;q.classList.add('done');if(o[a])o[a].classList.add('ok');if(+ch!==a&&o[+ch])o[+ch].classList.add('no')})}
+function badges(){const c=document.getElementById('content');if(!c||!ctx.list[ctx.i])return;const k=ctx.list[ctx.i].key;let R=0,W=0,N=0,rows=[];
+SECQ.forEach(sec=>{const n=c.querySelectorAll('.q[data-sec="'+sec+'"]').length;if(!n)return;const s=secStat(k,sec);R+=s.r;W+=s.w;N+=n;const p=pct(s.r,s.w),b=c.querySelector('.scb[data-sec="'+sec+'"]');
+if(b)b.innerHTML='<span>'+NM[sec]+' score: <b style="color:'+(s.r+s.w?col(p):'inherit')+'">'+sc(s.r,s.w)+'</b> / '+3*n+'</span><span>✅ '+s.r+' · ❌ '+s.w+' · बाकी '+(n-s.r-s.w)+'</span>';rows.push({sec,n,s,p})});
+const t=document.getElementById('scTot');if(!t)return;const att=rows.filter(x=>x.s.r+x.s.w);let weak=null;if(att.length>1)weak=att.reduce((x,y)=>y.p<x.p?y:x);
+t.innerHTML='<div class="scH">📊 इस article का Score: <b>'+sc(R,W)+'</b> / '+3*N+' <small>(✅ '+R+' · ❌ '+W+' · बाकी '+(N-R-W)+')</small></div>'+rows.map(x=>'<div class="scR"><span>'+NM[x.sec]+(weak&&weak.sec==x.sec?' <em>⚠ कमज़ोर</em>':'')+'</span><span>'+sc(x.s.r,x.s.w)+'/'+3*x.n+(x.s.r+x.s.w?' · '+x.p+'%':'')+'</span><i style="width:'+(x.s.r+x.s.w?x.p:0)+'%;background:'+col(x.p)+'"></i></div>').join('')+'<button class="scRst" data-scrst="1">🔄 ये article दोबारा करो (score reset)</button>'}
+const _rr=renderReader;renderReader=function(){_rr.apply(this,arguments);try{tag();restore();badges()}catch(e){console.error(e)}};
+/* Overall analysis */
+function overall(){const agg={};SECQ.forEach(s=>agg[s]={r:0,w:0});const arts=[];
+for(const k in SC){let r=0,w=0;SECQ.forEach(sec=>{const s=secStat(k,sec);agg[sec].r+=s.r;agg[sec].w+=s.w;r+=s.r;w+=s.w});if(r+w)arts.push({k,r,w})}
+let R=0,W=0;SECQ.forEach(s=>{R+=agg[s].r;W+=agg[s].w});
+const att=SECQ.filter(s=>agg[s].r+agg[s].w),big=att.filter(s=>agg[s].r+agg[s].w>=3),pool=big.length?big:att;let weak=null;if(att.length>1)weak=pool.reduce((x,y)=>pct(agg[y].r,agg[y].w)<pct(agg[x].r,agg[x].w)?y:x);
+let h='<div class="scH">कुल Score: <b>'+sc(R,W)+'</b> <small>(✅ '+R+' · ❌ '+W+' · Accuracy '+pct(R,W)+'%)</small></div>';
+if(!att.length)h+='<p style="opacity:.7;margin:10px 0">अभी तक कोई question attempt नहीं किया। Article खोलकर questions हल करो (+3 सही, −1 गलत)।</p>';
+else{if(weak)h+='<div class="scWeak">⚠ सबसे कमज़ोर section: <b>'+NM[weak]+'</b> ('+pct(agg[weak].r,agg[weak].w)+'% accuracy)</div>';
+h+=SECQ.map(s=>{const a=agg[s],n=a.r+a.w,p=pct(a.r,a.w);return '<div class="scR"><span>'+NM[s]+(weak==s?' <em>⚠ कमज़ोर</em>':'')+'</span><span>'+(n?sc(a.r,a.w)+' · ✅ '+a.r+' ❌ '+a.w+' · '+p+'%':'—')+'</span><i style="width:'+(n?p:0)+'%;background:'+col(p)+'"></i></div>'}).join('');
+arts.sort((x,y)=>pct(x.r,x.w)-pct(y.r,y.w));h+='<div class="scH" style="margin-top:14px;font-size:13px">Articles (कमज़ोर पहले)</div>'+arts.slice(0,12).map(x=>'<div class="scA"><span>'+x.k.slice(x.k.indexOf('|')+1).slice(0,70)+'</span><b style="color:'+col(pct(x.r,x.w))+'">'+sc(x.r,x.w)+' · '+pct(x.r,x.w)+'%</b></div>').join('');
+h+='<button class="scRst" data-scall="1">🗑 सारे scores reset</button>'}
+document.getElementById('scBody').innerHTML=h}
+/* UI inject */
+const st=document.createElement('style');st.textContent='.scb{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;margin:-2px 0 10px;padding:8px 12px;border-radius:10px;background:rgba(127,127,127,.14);border:1px solid rgba(127,127,127,.28);font-size:12.5px;font-weight:700}.scTot,.scWeak{margin:18px 0 10px;padding:14px;border-radius:14px;background:rgba(127,127,127,.14);border:1px solid rgba(127,127,127,.3)}.scWeak{margin:10px 0;border-color:#f87171;font-size:13.5px}.scH{font-size:15px;font-weight:800;margin-bottom:8px}.scH small{font-weight:600;opacity:.75}.scR{position:relative;display:flex;justify-content:space-between;gap:8px;padding:8px 2px 11px;font-size:13px;font-weight:700;border-bottom:1px solid rgba(127,127,127,.2)}.scR i{position:absolute;left:0;bottom:3px;height:4px;border-radius:2px}.scR em{font-style:normal;color:#f87171;font-size:11.5px}.scA{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;font-size:12.5px;border-bottom:1px solid rgba(127,127,127,.15)}.scRst{display:block;width:100%;margin-top:12px;padding:11px;border-radius:12px;border:1px solid rgba(127,127,127,.4);background:transparent;color:inherit;font-weight:700;font-size:13px}#scBtn{margin:6px 0 8px}';document.head.appendChild(st);
+const ov=document.createElement('div');ov.className='ov';ov.id='scOv';ov.innerHTML='<div class="sheet"><div class="sheetHead"><span>📊 मेरा Score &amp; कमज़ोर section</span><button class="xBtn" data-close="scOv" aria-label="Close">&#10005;</button></div><div id="scBody"></div></div>';document.body.appendChild(ov);
+const lbl=document.getElementById('homeLbl');if(lbl){const b=document.createElement('button');b.className='pill';b.id='scBtn';b.textContent='📊 Score / कमज़ोर section';lbl.before(b)}
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest)return;
+const ob=t.closest('.opt');if(ob){const q=ob.closest('.q');if(q&&!q.classList.contains('done')&&q.dataset.sec&&ctx.list[ctx.i]){const k=ctx.list[ctx.i].key;SC[k]=SC[k]||{};SC[k][q.dataset.sec]=SC[k][q.dataset.sec]||{};SC[k][q.dataset.sec][q.dataset.qi]=+ob.dataset.k;saveSC();setTimeout(badges,0)}return}
+if(t.closest('#scBtn')){overall();document.getElementById('scOv').classList.add('open');return}
+if(t.closest('[data-scrst]')){if(confirm('इस article का score reset करें?')){const k=ctx.list[ctx.i].key,R=document.getElementById('reader'),y=R.scrollTop;delete SC[k];saveSC();renderReader();R.scrollTop=y}return}
+if(t.closest('[data-scall]')){if(confirm('सारे articles का score reset करें?')){SC={};saveSC();overall()}return}
+},true);
+idbGet('de_read').then(v=>{let o={};try{o=JSON.parse(v||'{}')||{}}catch(e){}let add=0;for(const k in o){if(!RD[k]){RD[k]=1;add++}}if(add){ls.set('de_read',JSON.stringify(RD));try{draw(cur)}catch(e){try{renderHome()}catch(x){}}}
+return idbGet('de_score')}).then(v=>{let o={};try{o=JSON.parse(v||'{}')||{}}catch(e){}let add=0;for(const k in o)for(const s in o[k])for(const i in o[k][s]){SC[k]=SC[k]||{};SC[k][s]=SC[k][s]||{};if(SC[k][s][i]==null){SC[k][s][i]=o[k][s][i];add++}}
+if(add){ls.set('de_score',JSON.stringify(SC));try{draw(cur)}catch(e){}}mirror()}).catch(()=>{});
+})();
+</script></body></html>
