@@ -675,4 +675,15 @@ else if(k=='bd')go(C=>{C.tp=Math.max(45,C.tp-10);toast('Brightness '+C.tp+'%')})
 else if(k=='w')go(C=>{const i=ws.indexOf(C.wd);C.wd=ws[(i+1)%ws.length];toast('Width '+C.wd+'%')});
 else go(C=>{const i=cols.indexOf(C.hic);C.hic=cols[(i+1)%cols.length];toast('Hindi colour')})},true);
 new MutationObserver(build).observe(document.getElementById('reader'),{childList:true,subtree:true});build()})();;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
-</script></body></html>
+</script><script>/* DE-PERSIST: padhe huye (tick) articles ka backup IndexedDB me, taaki localStorage clear ho to bhi wapas aa jaye */
+(function(){const LK='de_read',DB='de_persist',ST='kv';
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+function open(){return new Promise((res,rej)=>{try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+function idbGet(){return open().then(db=>new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).get(LK);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)}))}
+function idbSet(v){return open().then(db=>new Promise((res,rej)=>{const t=db.transaction(ST,'readwrite');t.objectStore(ST).put(v,LK);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)}))}
+function mirror(){try{idbSet(JSON.stringify(RD)).catch(()=>{})}catch(e){}}
+document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('input.rdchk'))setTimeout(mirror,0)});
+idbGet().then(v=>{let o={};try{o=JSON.parse(v||'{}')||{}}catch(e){}let add=0;for(const k in o){if(!RD[k]){RD[k]=1;add++}}
+if(add){ls.set(LK,JSON.stringify(RD));try{draw(cur)}catch(e){try{renderHome()}catch(x){}}}
+mirror()}).catch(()=>{});
+})();</script></body></html>
