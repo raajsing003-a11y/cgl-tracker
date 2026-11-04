@@ -362,6 +362,18 @@ img,video,table,pre,iframe{max-width:100%}
 .grid-label{display:none}
 @media (prefers-reduced-motion:reduce){.ncCls,.hero,.grp,.ncBook{animation:none}}
 </style>
+<style id="scrollPerfFix">
+/* Scroll lag fix: fixed background + bade blur shadows + content-visibility jank hatao */
+body{background-attachment:scroll!important}
+.edArticleCard,.edCatCard,.post,.card,.q,.gkP,.grpHead,.hero,.ncBook,.ncCls{
+  box-shadow:none!important;transition:none!important;content-visibility:visible!important;
+  contain-intrinsic-size:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.edArticleCard.post.p2{box-shadow:0 0 0 1px rgba(255,46,99,.35)!important}
+.ncCls,.hero,.grp,.ncBook{animation:none!important}
+.edArticleCard,.edCatCard,.post{contain:layout style!important}
+#homeGrid,#listGrid,#lstGrid{transform:translateZ(0)}
+html,body{overscroll-behavior-y:auto}
+</style>
 </head><body>
 <div class="bl" aria-hidden="true"></div>
 
@@ -492,16 +504,19 @@ return G}
 const flat=G=>[].concat(...G.map(g=>g.items));
 const BKS=[['Flamingo','📕','Class XII · Flamingo','#f472b6','XII','English Core · Prose + Poetry'],['Vistas','📘','Class XII · Vistas','#f59e0b','XII','Supplementary Reader'],['Hornbill','📗','Class XI · Hornbill','#34d399','XI','English Core · Prose'],['Woven Words','📙','Class XI · Woven Words','#fb923c','XI','Elective English'],['Kaleidoscope','📓','Class XII · Kaleidoscope','#60a5fa','XII','Elective English'],['Snapshots','📔','Class XI · Snapshots','#a78bfa','XI','Supplementary Reader'],['First Flight','📒','Class X · First Flight','#facc15','X','English Textbook · Prose'],['Footprints without Feet','👣','Class X · Footprints without Feet','#2dd4bf','X','Supplementary Reader'],['Moments','📗','Class IX · Moments','#4ade80','IX','Supplementary Reader'],['Honeydew','🍯','Class VIII · Honeydew','#fbbf24','VIII','English Textbook · Prose'],['Kaveri','📖','Class IX · Kaveri','#fb7185','IX','Textbook · Prose'],['Poorvi','🌅','Class VI · Poorvi','#38bdf8','VI','Textbook · Prose'],['Honeysuckle','🌼','Class VI · Honeysuckle','#f9a8d4','VI','Textbook · Prose'],['A Pact with the Sun','☀️','Class VI · A Pact with the Sun','#f97316','VI','Supplementary Reader'],['It So Happened','🎒','Class VIII · It So Happened','#c084fc','VIII','Supplementary Reader'],['An Alien Hand','🖐️','Class VII · An Alien Hand','#a3e635','VII','Supplementary Reader'],['Words and Expressions 1','📝','Class IX · Words and Expressions 1','#93c5fd','IX','Workbook · Reading Passages'],['Words and Expressions 2','📝','Class X · Words and Expressions 2','#e879f9','X','Workbook · Reading Passages'],['Poorvi (Class VIII)','🌄','Class VIII · Poorvi','#f0abfc','VIII','English Textbook · Prose'],['Santoor','🎻','Class IV · Santoor','#f87171','IV','English Textbook · Prose'],['Poorvi (Class VII)','🏔️','Class VII · Poorvi','#fdba74','VII','English Textbook · Prose']];BKS.forEach(b=>{ICON[b[0]]=b[1];COL[b[0]]=b[3]});
 function listFor(st){if(st&&st.k=='q'){const q=String(st.key||'').toLowerCase();return ALLA.filter(it=>(it.a.title+' '+(it.a.src||'')+' '+(it.a.bk||'')+' '+it.cs.join(' ')).toLowerCase().includes(q))}if(st&&st.k=='t')return ALLA.filter(it=>it.n&&it.a.th==st.key);if(st&&st.k=='b')return ALLA.filter(it=>it.n&&it.a.bk==st.key);if(st&&st.k=='c')return ALLA.filter(it=>it.cs.includes(st.key));return flat(buildGroups())}
-function go(st,push){st.d=push?(cur.d||0)+1:(st.d||0);if(push){try{history.pushState(st,'')}catch(e){}}draw(st)}
+const EMB=(function(){try{return window.parent!==window}catch(e){return true}})(),ST=[];const pm=m=>{try{window.parent.postMessage(m,'*')}catch(e){}};
+function go(st,push){if(EMB){if(push){ST.push(cur);pm('de-push')}st.d=ST.length;draw(st);return}st.d=push?(cur.d||0)+1:(st.d||0);if(push){try{history.pushState(st,'')}catch(e){}}draw(st)}
 function draw(st){cur=st;stopAuto();closeAll();
 if(st.v=='reader'){ctx.list=listFor(st);ctx.i=Math.max(0,Math.min(st.i,ctx.list.length-1));renderReader();show('reader')}
 else if(st.v=='list'){renderList(st);show('pList')}
 else{renderHome();show('pHome')}}
 function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==id));const rd=id=='reader';$('reader').classList.toggle('on',rd);$('foot').hidden=!rd;document.body.classList.toggle('rd',rd);if(!rd){window.scrollTo(0,0);if(id=='pHome'&&homeFocus>=0){for(const k in LZ){const z=LZ[k];if(homeFocus>=z.base&&homeFocus<z.base+z.items.length){const g=document.querySelector('.grp[data-g="'+k+'"]');if(g){if(g.classList.contains('coll')){g.classList.remove('coll');COLL[k]=false}const b=g.querySelector('.grpBody');if(b&&!b.firstChild)b.innerHTML=lzHtml(k)}}}const c=document.querySelector('#homeGrid [data-i="'+homeFocus+'"]');if(c)c.scrollIntoView({block:'center'})}}}
-function back(){if((cur.d||0)>0){try{history.back();return}catch(e){}}
+function back(){if(EMB){if(ST.length>0){pm('de-histback');return}draw({v:'home',d:0});return}if((cur.d||0)>0){try{history.back();return}catch(e){}}
 draw({v:'home',d:0})}
-window.addEventListener('popstate',e=>draw(e.state||{v:'home',d:0}));
-try{history.replaceState({v:'home',d:0},'')}catch(e){}
+if(!EMB){window.addEventListener('popstate',e=>draw(e.state||{v:'home',d:0}));try{history.replaceState({v:'home',d:0},'')}catch(e){}}
+else window.addEventListener('message',e=>{if(e.source!==window.parent)return;const m=e.data;
+if(m==='de-back'){if(document.querySelector('.ov.open')){closeAll();pm('de-push');return}if(ST.length>0){stopAuto();draw(ST.pop())}}
+else if(m==='de-home'){ST.length=0;closeAll();draw({v:'home',d:0})}});
 
 /* ---------- home ---------- */
 function updateHero(){let h=$('hero');if(!h){h=document.createElement('div');h.id='hero';const hb=document.querySelector('.homeBar');hb.parentNode.insertBefore(h,hb);let _ht;h.addEventListener('input',ev=>{if(ev.target.id=='hq'){clearTimeout(_ht);const t=ev.target;_ht=setTimeout(()=>{const q=t.value.trim();const b=$('hqBtn');if(q.length<2){b.hidden=true;return}const n=listFor({k:'q',key:q}).length;b.hidden=false;b.textContent=n?'🔍 '+n+' result'+(n>1?'s':'')+' · tap to open':'No results';b.disabled=!n},180)}});h.addEventListener('keydown',ev=>{if(ev.target.id=='hq'&&ev.key=='Enter'){const b=$('hqBtn');if(!b.hidden&&!b.disabled)b.click()}});h.addEventListener('click',ev=>{if(ev.target.id=='hqBtn'){go({v:'list',k:'q',key:$('hq').value.trim()},true)}})}
@@ -563,7 +578,7 @@ $('chips').innerHTML=secs.map(s=>'<button class="chip" data-s="'+s[0]+'">'+SEC.f
 $('reader').scrollTop=0;
 $('prev').disabled=ctx.i<=0;$('next').disabled=ctx.i>=ctx.list.length-1;
 spy()}
-function spy(){if(window.spyLock&&Date.now()<window.spyLock)return;const R=$('reader'),hs=[...document.querySelectorAll('.gkH2')];let id='';hs.forEach(h=>{if(h.getBoundingClientRect().top<=110)id=h.id.slice(2)});document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.s==id))}
+function spy(){if(window.spyLock&&Date.now()<window.spyLock)return;const hs=document.querySelectorAll('.gkH2');let id='';for(let k=0;k<hs.length;k++){if(hs[k].getBoundingClientRect().top<=110)id=hs[k].id.slice(2);else break}const _c=document.querySelector('.chip.on');if(_c&&_c.dataset.s==id)return;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.s==id))}
 function step(n){const i=ctx.i+n;if(i<0||i>=ctx.list.length)return;stopAuto();ctx.i=i;renderReader()}
 
 /* ---------- word popup ---------- */
@@ -653,15 +668,15 @@ apply();
 })();
 autoUI();renderHome();
 </script><script>(function(){const K='de_hi:';function h(t){let x=5381;for(let i=0;i<t.length;i++)x=((x<<5)+x+t.charCodeAt(i))|0;return x>>>0}
-async function one(q){try{const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q='+encodeURIComponent(q));const j=await r.json();return j[0].map(x=>x[0]).join('')}catch(e){}
-const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(q)+'&langpair=en|hi');const j=await r.json();return j.responseData.translatedText}
+async function one(q){for(let n=0;n<2;n++){try{const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q='+encodeURIComponent(q));if(r.ok){const j=await r.json();const t=j[0].map(x=>x[0]).join('');if(t)return t}}catch(e){}await new Promise(z=>setTimeout(z,600))}
+const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(q)+'&langpair=en|hi');const j=await r.json();const t=j&&j.responseData&&j.responseData.translatedText;if(!t||+j.responseStatus!==200||/MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t))throw new Error('limit');return t}
 async function tr(t){const ps=t.match(/[^.!?]+[.!?”"’]*\s*/g)||[t],cs=[];let b='';for(const p of ps){if((b+p).length>400&&b){cs.push(b);b=p}else b+=p}if(b)cs.push(b);const o=[];for(const c of cs)o.push(await one(c.trim()));return o.join(' ')}
 async function fill(btn){const box=btn.nextElementSibling,t=decodeURIComponent(btn.dataset.en),k=K+h(t);let v=null;try{v=localStorage.getItem(k)}catch(e){}
-if(!v){btn.textContent='⏳ अनुवाद हो रहा है…';try{v=await tr(t);try{localStorage.setItem(k,v)}catch(e){}}catch(e){btn.textContent='⚠ इंटरनेट चाहिए, फिर टैप करो';return false}}
+if(!v){btn.textContent='⏳ अनुवाद हो रहा है…';try{v=await tr(t);try{localStorage.setItem(k,v)}catch(e){}}catch(e){btn.textContent='⚠ अनुवाद नहीं हुआ (नेट/limit) — थोड़ी देर बाद टैप करो';return false}}
 box.textContent=v;box.hidden=false;btn.hidden=true;return true}
 document.addEventListener('click',async e=>{const b=e.target.closest('.hiBtn');if(!b)return;e.stopPropagation();
 if(b.classList.contains('hiPar')){b.textContent='⏳ …';const bs=[];let n=b.previousElementSibling;while(n&&n.classList.contains('ru')){const x=n.querySelector('button.hiBtn[data-en]');if(x&&!x.hidden)bs.unshift(x);n=n.previousElementSibling}
-let ok=true;for(const x of bs){if(!await fill(x)){ok=false;break}}if(ok)b.hidden=true;else b.textContent='⚠ इंटरनेट चाहिए, फिर टैप करो'}else fill(b)},true)})();</script><div class="toast" id="toast"></div><script>;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
+let ok=true;for(const x of bs){if(!await fill(x)){ok=false;break}}if(ok)b.hidden=true;else b.textContent='⚠ अनुवाद नहीं हुआ (नेट/limit) — थोड़ी देर बाद टैप करो'}else fill(b)},true)})();</script><div class="toast" id="toast"></div><script>;try{const sc=document.getElementById('segCal');if(sc)sc.outerHTML=calI(new Date())}catch(e){}
 </script><script>/* DE-PERSIST + DE-SCORE: tick/score ka backup IndexedDB me; har section ka marks (+3 sahi, -1 galat) */
 (function(){const DB='de_persist',ST='kv',KEYS=['de_read','de_score'];
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
