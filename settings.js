@@ -68,7 +68,7 @@ function setSw(rowEl, on){ var s = rowEl.querySelector('.cxsSw'); if(s) s.classL
 
 async function doBackup(){
   var out = { app: 'cgl-tracker', exportedAt: new Date().toISOString(), name: (typeof myName !== 'undefined' ? myName : ''), data: {} };
-  try{ for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(!k || k.indexOf(USERPW_PREFIX) === 0) continue; if(/^(cgl|cx)/i.test(k)) out.data[k] = localStorage.getItem(k); } }catch(e){}
+  try{ for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(!k || k.indexOf(USERPW_PREFIX) === 0) continue; if(/^(cgl|cx|de_read)/i.test(k)) out.data[k] = localStorage.getItem(k); } }catch(e){}
   var blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
   var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = 'cgl-backup-' + (out.name || 'me') + '-' + new Date().toISOString().slice(0, 10) + '.json';
