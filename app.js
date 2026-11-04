@@ -1931,6 +1931,10 @@ window.__mqbShare = {
   const frame = document.getElementById('dailyeditorialFrame');
   const backBtn = document.getElementById('dailyeditorialBackBtn');
   if(!openBtn || !frame) return;
+  // Button par 'kitne article padhe' (editorial ke de_read tick se) dikhao.
+  const cntEl = document.getElementById('deReadCnt');
+  const upCnt = () => { try{ const n = Object.keys(JSON.parse(localStorage.getItem('de_read')||'{}')).length; if(cntEl) cntEl.textContent = '✅ ' + n + ' padhe'; }catch(e){} };
+  upCnt(); window.addEventListener('focus', upCnt); document.addEventListener('visibilitychange', upCnt);
   // Purani admin-uploaded copy (agar kisi phone me saved ho) saaf karo, taaki sirf GitHub wali file khule.
   try{ indexedDB.deleteDatabase('deStore'); }catch(e){}
   openBtn.addEventListener('click', () => {
@@ -1956,7 +1960,7 @@ window.__mqbShare = {
   window.addEventListener('popstate', (e) => {
     if(e.state && e.state.calcPage === 'dailyeditorial' && onPage()) tell('de-back');
   });
-  if(backBtn) backBtn.addEventListener('click', () => { tell('de-home'); showCalcPage('menu'); });
+  if(backBtn) backBtn.addEventListener('click', () => { tell('de-home'); showCalcPage('menu'); upCnt(); });
 })();
 // Study Tube (tools/study-tube.html) — sirf allowlist channels ka YouTube feed, Shorts/recommendations nahi. Back dabane par video pause (postMessage).
 (function initStudyTubePage(){
