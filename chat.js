@@ -2205,7 +2205,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     .cxxFmt button:active{background:var(--accent,#fbbf24);color:#120d00;}
     .cxxFmt small{color:var(--muted,#aaa5ad);font-size:11px;margin-left:auto;}
     .cxxSmart{display:none;gap:8px;padding:6px 12px;background:var(--panel,#111013);overflow-x:auto;flex-shrink:0;border-top:1px solid var(--border,#333038);}
-    .cxxSmart.on{display:flex;}
+    .cxxSmart,.cxxSmart.on{display:none!important;}
     .cxxSmart button{white-space:nowrap;border-radius:16px;border:1px solid var(--accent,#fbbf24);background:transparent;color:var(--accent,#fbbf24);padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
     .cxxSmart button:active{background:var(--accent,#fbbf24);color:#120d00;}
     .cxxSmart i{font-style:normal;font-size:11px;color:var(--muted,#aaa5ad);align-self:center;white-space:nowrap;}
@@ -2375,7 +2375,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(/\?|\bkya\b|\bkaise\b|\bkab\b|\bkahan\b|\bkaun\b|\bkitna\b|\bkonsa\b|\bkyu\b|\bkyun\b/.test(t)) return ['Haan', 'Nahi', 'Baad me batata hoon'];
     return ['Okay 👍', 'Theek hai', 'Thanks 🙏'];
   }
-  const smartOn = ()=> LS(P() + 'smart', true) !== false;
+  const smartOn = ()=> false;   // Smart reply chips (Hi!/Hello/Kya haal hai?) hata diye
   function refreshSmart(){
     const bar = $('cxxSmart'); if(!bar) return;
     const hide = ()=>{ if(bar.classList.contains('on')) bar.classList.remove('on'); if(bar.firstChild) bar.innerHTML = ''; };
@@ -2439,7 +2439,6 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     more.onclick = ()=> xsheet('Chat options', [
       { ico: '🔤', label: 'Font size', fn: fontSheet },
       { ico: '🅰️', label: 'Text style (Bold / Italic / Strike)', fn: ()=> $('cxxFmt').classList.toggle('on') },
-      { ico: '✨', label: smartOn() ? 'Smart replies band karo' : 'Smart replies chalu karo', fn: ()=>{ LW(P() + 'smart', !smartOn()); refreshSmart(); toast(smartOn() ? 'Smart replies chalu' : 'Smart replies band'); } },
       isSelf() ? null : { ico: '🔖', label: 'Saved Messages kholo', fn: ()=> chatOpenConv(myName) }
     ].concat((window.cxxExtra || []).map(f=>{ try{ return f(); }catch(e){ return null; } })));
     head.appendChild(more);
@@ -9679,6 +9678,19 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   #chatOverlay .chatDaySep span{background:#23242f!important}
   #chatOverlay .cbub,#chatOverlay .cmsg.me .cbub{box-shadow:none!important;animation:none!important}
   #chatOverlay .chatMsgs{scroll-behavior:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  /* LAGFIX13: upar ke dark rang sirf DARK theme ke liye the; Light theme me ye override chalte hain (pehle light me bhi dark reh jaate the) */
+  #chatOverlay[data-cxth="light"] .chatHead{background:#ffffff!important;border-bottom:1px solid #dcdee3!important;color:#1d1e22!important}
+  #chatOverlay[data-cxth="light"] .chatComposer{background:#ffffff!important;border:1px solid #dcdee3!important;border-top:1px solid #dcdee3!important}
+  #chatOverlay[data-cxth="light"] .chatComposer textarea,#chatOverlay[data-cxth="light"] .chatComposer #chatInput{color:#1d1e22!important;background:transparent!important}
+  #chatOverlay[data-cxth="light"] .chatComposer #chatInput::placeholder{color:#8a8d95!important}
+  #chatOverlay[data-cxth="light"] .cmsg.them .cbub{background:#ffffff!important;color:#1d1e22!important;border:1px solid #e3e5ea!important}
+  #chatOverlay[data-cxth="light"] .cmsg.me .cbub{background:#d8e6f6!important;background-image:none!important;color:#1d1e22!important}
+  #chatOverlay[data-cxth="light"] .cmsg .cbub a{color:#1a5fb4}
+  #chatOverlay[data-cxth="light"] .chatDaySep span{background:#e9ebef!important;border:1px solid #dcdee3!important;color:#6b6e76!important}
+  /* LAGFIX15: lambi chat me aakhri 40 ke purane messages screen se bahar hon to browser unko paint/layout nahi karta (scroll + typing halka) */
+  #chatOverlay .chatMsgs > .cmsg:nth-last-child(n+40){content-visibility:auto;contain-intrinsic-size:auto 64px}
+  /* chat khula ho to infinite animations band (shimmer / online-dot pulse) */
+  body:has(#chatOverlay.open) #chatBtn::before,#chatOverlay .chatDot{animation:none!important}
   `;
   document.head.appendChild(s);
 })();
