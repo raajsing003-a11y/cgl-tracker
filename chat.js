@@ -9660,3 +9660,25 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   #chatConv .chatComposer:focus-within,#cxkBar:focus-within{animation:none!important}`;
   document.head.appendChild(st);
 })();
+
+
+/* ===== LAGFIX12: scroll + typing lag ki asli wajah (CSS) =====
+   Premium skin ke backdrop-filter:blur har received bubble, day-separator, header aur composer par lagaye the.
+   Scroll karte waqt har frame par peeche ka content dobara blur hota tha, aur typing me composer ka blur
+   (poori messages list ke upar) har key par dobara bante the -> poora app hang. Ab sab blur band; background
+   thode zyada opaque rakhe taaki look lagbhag wahi dikhe. Bubble ki bhaari blur-shadow aur har re-render par
+   chalne wali cxPop animation bhi band. */
+(function lagfix12(){
+  if(document.getElementById('cxLagfix12')) return;
+  const s = document.createElement('style'); s.id = 'cxLagfix12';
+  s.textContent = `
+  #chatOverlay .chatHead,#chatOverlay .chatComposer,#chatOverlay .cbub,#chatOverlay .chatDaySep span,#chatOverlay .cmsg .cbub{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #chatOverlay .chatHead{background:rgb(20,21,33)!important;box-shadow:none!important}
+  #chatOverlay .chatComposer{background:rgb(16,17,27)!important}
+  #chatOverlay .cmsg.them .cbub{background:#23242f!important}
+  #chatOverlay .chatDaySep span{background:#23242f!important}
+  #chatOverlay .cbub,#chatOverlay .cmsg.me .cbub{box-shadow:none!important;animation:none!important}
+  #chatOverlay .chatMsgs{scroll-behavior:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  `;
+  document.head.appendChild(s);
+})();

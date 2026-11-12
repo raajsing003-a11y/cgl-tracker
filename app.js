@@ -11,7 +11,7 @@ window.__mqSave = window.__mqSave || function(D, nAdded){
   return true;
 };
 /* ===== SPEED: 250-900ms wale polling setInterval tab hidden hone par skip (sab time-based kaam Date.now() se hote hain, to safe) ===== */
-(function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; window.__cxBusy = function(){ try{ var b = document.body; if(b && b.classList.contains('appQuizFullscreen')) return true; var o = document.getElementById('sscMockOverlay'); if(o && o.style.display === 'block') return true; var f = document.getElementById('fdOverlay'); if(f && f.classList.contains('open')) return true; }catch(e){} return false; }; var _si = window.setInterval;
+(function(){ if(window.__cxSiWrap) return; window.__cxSiWrap = 1; window.__cxChatOpen = function(){ try{ var c = document.getElementById('chatOverlay'); return !!(c && c.classList.contains('open')); }catch(e){ return false; } }; /* LAGFIX12 */ window.__cxBusy = function(){ try{ var b = document.body; if(b && b.classList.contains('appQuizFullscreen')) return true; var o = document.getElementById('sscMockOverlay'); if(o && o.style.display === 'block') return true; var f = document.getElementById('fdOverlay'); if(f && f.classList.contains('open')) return true; }catch(e){} return false; }; var _si = window.setInterval;
   window.setInterval = function(fn, ms){ if(typeof fn === 'function' && ms >= 250 && ms <= 900){ var ex = Array.prototype.slice.call(arguments, 2); return _si.call(window, function(){ if(document.hidden || window.__cxBusy()) return; return fn.apply(this, ex); }, ms); } return _si.apply(window, arguments); };
 })();
 /* ===== FIX: mock timer wall-clock (background/lock me time sahi) + option select light update ===== */
@@ -2801,6 +2801,7 @@ function startRoomAutoSync(){
     // skip overlapping runs instead of letting them stack up and compete
     // for the network + main thread at the same time.
     if(window.__cxBusy && window.__cxBusy()) return;   // mock/quiz chal raha ho to heavy room-sync skip (lag fix)
+    if(window.__cxChatOpen && window.__cxChatOpen()) return;   // LAGFIX12: chat khula ho to room-sync ruka
     if(document.hidden) return;   // background tab me heavy sync (JSON compare + render) nahi
     if(roomSyncInFlight) return;
     roomSyncInFlight = true;
@@ -21045,6 +21046,7 @@ function startLiveClockTicker(){
   setInterval(()=>{
     if(document.hidden) return;
     if(window.__cxBusy && window.__cxBusy()) return;
+    if(window.__cxChatOpen && window.__cxChatOpen()) return;   // LAGFIX12: chat khula ho to peeche ka renderAll nahi
     // Full scorecard refresh (stats, wallet, streak, last-4-days heatmap,
     // progress ring, etc.) so it keeps updating on its own all day long,
     // not just when the person taps/ticks something. Also picks up the day
@@ -23396,7 +23398,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf11';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf12';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };
