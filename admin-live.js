@@ -68,19 +68,29 @@
         if(+o.fs) r.push('font-size:'+Math.min(80,Math.max(8,+o.fs))+'px'); if(/^#[0-9a-f]{6}$/i.test(o.color||'')) r.push('color:'+o.color);
         if(/^#[0-9a-f]{6}$/i.test(o.bg||'')) r.push('background:'+o.bg); if(o.fw) r.push('font-weight:700');
         return r.length ? k.replace(/[{}<>]/g,'')+'{'+r.join('!important;')+'!important}' : ''; }).join('\n');
-      styleEl().textContent = hideCss + '\n' + lockCss + '\n' + stCss + '\n' + cleanCss(D.css);
+      var cssAll = hideCss + '\n' + lockCss + '\n' + stCss + '\n' + cleanCss(D.css);
+      var se = styleEl(); if(se.__alvLast !== cssAll){ se.textContent = cssAll; se.__alvLast = cssAll; }
       applyAdd();
       applyText(); applyOrder();
       var b = document.getElementById('alvBanner');
       if(D.banner){
         if(!b){ b = document.createElement('div'); b.id = 'alvBanner'; b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99990;background:#f5b301;color:#111;font:600 13px/1.4 system-ui;padding:8px 12px;text-align:center;'; document.body.appendChild(b); }
-        b.textContent = D.banner;
+        if(b.textContent !== D.banner) b.textContent = D.banner;
       } else if(b) b.remove();
     }catch(e){ console.error('alv apply', e); }
     applying = false;
   }
-  function schedule(){ clearTimeout(timer); timer = setTimeout(apply, 1200); }
-  new MutationObserver(function(){ if(!applying) schedule(); }).observe(document.documentElement, { childList:true, subtree:true });
+  function hasDom(){ return Object.keys(D.text).length || Object.keys(D.order).length || D.add.length || D.banner; }
+  function schedule(){ if(document.hidden || !hasDom()) return; clearTimeout(timer); timer = setTimeout(function(){ if(document.hidden) return; apply(); }, 2500); }
+  function mine(n){ try{ if(!n) return false; if(n.nodeType !== 1) n = n.parentNode; return !!(n && n.closest && n.closest('#alvUI,#alvBanner,[id^="alvA_"]')); }catch(e){ return false; } }
+  function startObs(){
+    if(!document.body) return;
+    new MutationObserver(function(ms){
+      if(applying || document.hidden) return;
+      for(var i = 0; i < ms.length; i++){ if(!mine(ms[i].target)){ schedule(); return; } }
+    }).observe(document.body, { childList:true, subtree:true });
+  }
+  if(document.body) startObs(); else document.addEventListener('DOMContentLoaded', startObs);
 
   base = JSON.stringify(D);
   // ---------- sync ----------
@@ -184,7 +194,8 @@
   }
   function ui(){
     var u = document.getElementById('alvUI');
-    if(!admin()){ if(u) u.remove(); on = false; return; }
+    // ✏️ edit FAB admin ko bhi nahi dikhana — hamesha hata do
+    if(true){ if(u) u.remove(); on = false; return; }
     if(u) return;
     u = document.createElement('div'); u.id = 'alvUI'; u.style.cssText = 'font:13px system-ui';
     var bs = 'border:0;border-radius:10px;background:#33333d;color:#fff;padding:9px 11px;font-size:14px';
@@ -223,7 +234,7 @@
     else if(a==='add') addItem(); else if(a==='undo') undo(); else if(a==='bk') backup(); else if(a==='rs') restore();
   }
 
-  setInterval(ui, 3000); setTimeout(ui, 1500);
+  setTimeout(ui, 1500);
   setTimeout(pull, 2500); setInterval(function(){ if(!document.hidden) pull(); }, 120000);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(pull, 800); });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', apply); else apply();

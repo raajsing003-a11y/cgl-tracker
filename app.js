@@ -2796,10 +2796,14 @@ function startRoomAutoSync(){
     // skip overlapping runs instead of letting them stack up and compete
     // for the network + main thread at the same time.
     if(window.__cxBusy && window.__cxBusy()) return;   // mock/quiz chal raha ho to heavy room-sync skip (lag fix)
+    if(document.hidden) return;   // background tab me heavy sync (JSON compare + render) nahi
     if(roomSyncInFlight) return;
     roomSyncInFlight = true;
     try{
-      await renderCompetePanel();
+      // Perf: Compete panel dikh nahi raha to har 25s sab members ka state download+compute nahi — 75s me ek baar (dikhte hi turant)
+      const _cpEl = document.getElementById('competePanel');
+      const _cpVis = !!(_cpEl && _cpEl.offsetParent !== null);
+      if(_cpVis || !window.__cpLastAuto || Date.now() - window.__cpLastAuto > 75000){ window.__cpLastAuto = Date.now(); await renderCompetePanel(); }
       if(viewingName !== myName){
         state = await loadPlayerState(viewingName);
         applyLoadedExtras();
@@ -22467,7 +22471,7 @@ if('serviceWorker' in navigator){
     window.postMessage({ type: 'sd-mock-import-ack', ids: ids, skipped: skipped }, '*');
     if(n || skipped.length) toast('📥 Extension se ' + n + ' naye question aaye' + (skipped.length ? ' · ' + skipped.length + ' repeat chhode' : ''));
   });
-  var tm = null; function sched(){ if(document.querySelector('#sscMockOverlay[style*="block"]') || tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 700); }   /* throttle (pehle har DOM change par scan) */
+  var tm = null; function sched(){ if(document.querySelector('#sscMockOverlay[style*="block"]') || tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 1800); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
       for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && t.closest && t.closest('[id*="Exam"],[id*="exam"],#sscMockOverlay')) continue; /* mock me option click par scan nahi (lag fix) */
       if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
@@ -22767,7 +22771,7 @@ if('serviceWorker' in navigator){
   }
   let t = 0;
   const later = ()=>{ clearTimeout(t); t = setTimeout(sweep, 1500); };
-  try{ new MutationObserver((ms)=>{ for(let i = 0; i < ms.length; i++){ const ad = ms[i].addedNodes; for(let j = 0; j < ad.length; j++){ if(ad[j].nodeType === 1){ later(); return; } } } }).observe(document.documentElement, { childList:true, subtree:true }); }catch(e){}
+  try{ new MutationObserver((ms)=>{ for(let i = 0; i < ms.length; i++){ if(ms[i].target !== document.body) continue; const ad = ms[i].addedNodes; for(let j = 0; j < ad.length; j++){ if(ad[j].nodeType === 1){ later(); return; } } } }).observe(document.documentElement, { childList:true, subtree:true }); }catch(e){}
   setInterval(sweep, 30000);
   window.addEventListener('load', ()=>{ sweep(true); setTimeout(()=>sweep(true), 1500); });
   sweep(true);
@@ -23387,7 +23391,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261103-de19';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf4';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };
@@ -23417,4 +23421,19 @@ if('serviceWorker' in navigator){
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stubInstall); else stubInstall();
   var kick = function(){ if(window.requestIdleCallback) requestIdleCallback(window.__cxLoadChat, { timeout: 2500 }); else setTimeout(window.__cxLoadChat, 1500); };
   if(document.readyState === 'complete') setTimeout(kick, 300); else window.addEventListener('load', function(){ setTimeout(kick, 300); });
+})();
+
+// ============================================================================
+// ✏️ Admin ko pencil icons KAHIN nahi dikhne chahiye (floating FAB, task-row pencil, icoEdit, sticker-edit, chat menu icon).
+// Sirf admin par lagta hai; baaki members ka UI waisa hi rehta hai. Halka: ek CSS + 2s me ek class-toggle.
+// ============================================================================
+(function adminNoPencil(){
+  try{
+    const st = document.createElement('style'); st.id = 'cxNoPenCss';
+    st.textContent =
+      'body.cxNoPen .icoEdit,body.cxNoPen #alvUI,body.cxNoPen #alvFab,body.cxNoPen #scratchFab,body.cxNoPen #cxsk4Ed,body.cxNoPen .taskEditIconBtn{display:none !important;}';
+    document.head.appendChild(st);
+    const upd = ()=>{ try{ document.body && document.body.classList.toggle('cxNoPen', typeof isMeAdmin === 'function' && !!isMeAdmin()); }catch(e){} };
+    upd(); setInterval(()=>{ if(!document.hidden) upd(); }, 2000);
+  }catch(e){}
 })();
