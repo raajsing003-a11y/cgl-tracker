@@ -59,7 +59,7 @@ var cxPoll = (function(){
       const o = isOpen(scope);
       if(o && scope === 'chat' && Date.now() - window.__cxIA < 1200) return;
       if(o || r.was){ r.was = o; try{ const p = fn(); if(p && p.catch) p.catch(()=>{}); }catch(e){} }
-    }, ms);
+    }, Math.max(ms, 1500));   // LAGFIX9: chat pollers kam se kam 1.5s
   }
   poll.kick = (scope)=>{ reg.forEach(r=>{ if(r.scope === scope){ r.was = true; try{ const p = r.fn(); if(p && p.catch) p.catch(()=>{}); }catch(e){} } }); };
   return poll;
@@ -22478,7 +22478,7 @@ if('serviceWorker' in navigator){
   });
   var tm = null; function sched(){ if(document.querySelector('#sscMockOverlay[style*="block"]') || tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 1800); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
-      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && t.closest && t.closest('[id*="Exam"],[id*="exam"],#sscMockOverlay')) continue; /* mock me option click par scan nahi (lag fix) */
+      for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && t.closest && t.closest('[id*="Exam"],[id*="exam"],#sscMockOverlay,#chatOverlay,#callOv,#cxCam')) continue; /* mock me option click par scan nahi (lag fix) */
       if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
@@ -23396,7 +23396,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf5';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf11';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };

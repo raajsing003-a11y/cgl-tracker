@@ -614,6 +614,7 @@ function chatAutosize(){
     _asRaf = 0;
     const ta = chatEl('chatInput');
     if(!ta) return;
+    if(ta.value.length < 24 && ta.value.indexOf('\n') < 0){ if(ta.style.height) ta.style.height = ''; return; }   // LAGFIX10: 1 line me reflow nahi
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   });
@@ -914,9 +915,13 @@ function chatInjectUI(){
   chatEl('chatMsgs').addEventListener('click', (e)=>{
     if(e.target.closest('#chatOlderBtn')) chatLoadOlder();
   });
-  chatEl('chatMsgs').addEventListener('scroll', ()=>{
-    if(chatNearBottom()){ const np = chatEl('chatNewPill'); if(np) np.hidden = true; }
-  }, { passive: true });
+  (function(){   // LAGFIX9: scroll par kaam frame me ek baar + scrolling class (effects/touch-hit-test band)
+    const mb = chatEl('chatMsgs'); let r = 0, to = 0;
+    mb.addEventListener('scroll', ()=>{
+      if(r) return;
+      r = requestAnimationFrame(()=>{ r = 0; if(chatNearBottom()){ const np = chatEl('chatNewPill'); if(np && !np.hidden) np.hidden = true; } });
+    }, { passive: true });
+  })();
   chatEl('chatNewPill').addEventListener('click', ()=>{ chatScrollBottom(); chatEl('chatNewPill').hidden = true; });
   chatEl('chatSendBtn').addEventListener('mousedown', (e)=> e.preventDefault()); // keyboard band na ho
   chatEl('chatSendBtn').addEventListener('click', chatSend);
@@ -3363,7 +3368,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   let lbRaf = 0;
   let lbLast = 0, lbTo = 0;
   const schedLb = ()=>{ if(lbRaf || lbTo || (window.__cxBusy && window.__cxBusy())) return; if(document.body && document.body.classList.contains('cxChatOpen')) return; const wait = Math.max(0, 400 - (Date.now() - lbLast)); lbTo = setTimeout(()=>{ lbTo = 0; lbRaf = requestAnimationFrame(()=>{ lbRaf = 0; lbLast = Date.now(); paintLb(); }); }, wait); };
-  try{ new MutationObserver(schedLb).observe(document.body, { childList: true, subtree: true }); }catch(e){}
+  try{ new MutationObserver((ms)=>{ for(let i = 0; i < ms.length; i++){ const t = ms[i].target; if(!(t && t.nodeType === 1 && t.closest && t.closest('#chatOverlay'))){ schedLb(); return; } } }).observe(document.body, { childList: true, subtree: true }); }catch(e){}
   const prevRerender = rerender;
   rerender = function(){ prevRerender(); schedLb(); };
   schedLb();
@@ -6454,10 +6459,7 @@ void main(){
       else { o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(320, t + .05); g.gain.setValueAtTime(.1, t); g.gain.exponentialRampToValueAtTime(.0001, t + .06); o.start(t); o.stop(t + .07); }
     }catch(e){}
   }
-  function buzz(){
-    if(S.hap && navigator.vibrate){ try{ navigator.vibrate([0, 6, 12, 24][S.hap] || 6); }catch(e){} }
-    tick();
-  }
+  function buzz(){ /* LAGFIX9: har key par vibrate/sound hata diya (lag ka bada karan) */ }
 
   // ---------------- clipboard history ----------------
   let CB = jget(CBK, []); if(!Array.isArray(CB)) CB = [];
@@ -6511,11 +6513,12 @@ void main(){
     return out.slice(0, 9);
   }
   let rq = 0;
-  function refresh(){ if(rq) return; rq = requestAnimationFrame(()=>{ rq = 0; paintSug(); }); }
+  function refresh(){ if(rq) return; rq = setTimeout(()=>{ rq = 0; requestAnimationFrame(paintSug); }, 180); }   // LAGFIX9: debounce
   function paintSug(){
     const box = $('cxkSug'); if(!box) return;
     cur = suggestions();
-    box.innerHTML = cur.length ? cur.map((c, i)=> '<span class="c' + (c.em ? ' em' : '') + '" data-i="' + i + '">' + esc(c.l) + '</span>').join('') : '<span class="hint">Smart keyboard ON</span>';
+    const h9 = cur.length ? cur.map((c, i)=> '<span class="c' + (c.em ? ' em' : '') + '" data-i="' + i + '">' + esc(c.l) + '</span>').join('') : '<span class="hint">Smart keyboard ON</span>';
+    if(box.__h9 !== h9){ box.__h9 = h9; box.innerHTML = h9; }   // LAGFIX9: same ho to DOM mat chhedo
   }
 
   // ---------------- look (themes / bg / one-hand) ----------------
@@ -6780,7 +6783,7 @@ void main(){
     if(it === 'insertText' && e.data === ' ') autoExpand();
     refresh();
   }, true);
-  document.addEventListener('selectionchange', ()=>{ if(S.on) refresh(); });
+  document.addEventListener('selectionchange', ()=>{ if(S.on && document.activeElement && document.activeElement.id === 'chatInput') refresh(); });   // LAGFIX9: sirf chat box ka cursor
 
   // ---------------- menu entries + inject loop ----------------
   function injectMenu(){
@@ -7242,7 +7245,7 @@ const SlideType = (function(){
     const send = document.getElementById('chatSendBtn');
     if(send) send.addEventListener('click', ()=>{ try{ navigator.vibrate && navigator.vibrate(10); }catch(e){} });
   }
-  let syncRaf = 0, syncTo = 0; new MutationObserver(()=>{ if(syncRaf || syncTo || (window.__cxBusy && window.__cxBusy())) return; syncTo = setTimeout(()=>{ syncTo = 0; syncRaf = requestAnimationFrame(()=>{ syncRaf = 0; sync(); }); }, 250); }).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  let syncRaf = 0, syncTo = 0; new MutationObserver((ms)=>{ if(syncRaf || syncTo || (window.__cxBusy && window.__cxBusy())) return; let rel = false; for(let i = 0; i < ms.length; i++){ const t = ms[i].target; if(t && t.nodeType === 1 && (t.id === 'chatOverlay' || !(t.closest && t.closest('#chatOverlay')))){ rel = true; break; } } if(!rel) return; syncTo = setTimeout(()=>{ syncTo = 0; syncRaf = requestAnimationFrame(()=>{ syncRaf = 0; sync(); }); }, 250); }).observe(document.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
   sync();
 })();
 
@@ -8824,7 +8827,7 @@ const AIReply = (function(){
   #chatOverlay .cmsg.cxPop{animation:cxP23in .26s cubic-bezier(.2,.9,.3,1.15) both}
   #chatOverlay .cmsg.me.cxPop{transform-origin:100% 100%}#chatOverlay .cmsg.them.cxPop{transform-origin:0 100%}
   @keyframes cxP23in{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
-  #chatOverlay .chatDaySep{position:sticky;top:6px;z-index:3;margin:12px 0 8px;pointer-events:none}
+  #chatOverlay .chatDaySep{position:static;top:6px;z-index:3;margin:12px 0 8px;pointer-events:none}
   #chatOverlay .chatDaySep span{background:var(--panel2,#1a181d);border:1px solid rgba(255,255,255,.08);padding:4px 13px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.25);letter-spacing:.3px}
   #chatOverlay .chatLockNote{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.07)}
   #chatOverlay .chatComposer{border-top:1px solid rgba(255,255,255,.06)!important;box-shadow:0 -8px 24px rgba(0,0,0,.22);transition:box-shadow .2s,border-color .2s}
@@ -8880,7 +8883,7 @@ const AIReply = (function(){
     box = b; known = new Set(); primed = false; missed = 0;
     if(mo) mo.disconnect();
     mo = new MutationObserver(sched); mo.observe(box, { childList: true });
-    box.addEventListener('scroll', updFab, { passive: true });
+    let fabRaf = 0; box.addEventListener('scroll', ()=>{ if(fabRaf) return; fabRaf = requestAnimationFrame(()=>{ fabRaf = 0; updFab(); }); }, { passive: true });   // LAGFIX9
     const conv = document.getElementById('chatConv') || box.parentElement;
     if(conv && !document.getElementById('cxP23Fab')){
       fab = document.createElement('button'); fab.id = 'cxP23Fab'; fab.type = 'button'; fab.setAttribute('aria-label', 'Latest message par jao');
@@ -8968,7 +8971,7 @@ const AIReply = (function(){
     const ta = $('chatInput'); if(!ta || !autoMs || !bar) return;
     if(!ta.value.trim() || isEditing()) return;
     bar.style.setProperty('--cxas', (autoMs / 1000) + 's');
-    bar.classList.add('on'); void bar.offsetWidth; bar.classList.add('run');
+    bar.classList.add('on'); requestAnimationFrame(()=>{ if(timer) bar.classList.add('run'); });   // LAGFIX9: har keystroke par forced reflow nahi
     timer = setTimeout(()=>{
       timer = 0; stop();
       const t = $('chatInput'), sb = $('chatSendBtn');
@@ -9640,3 +9643,20 @@ setInterval(()=>{ try{ if(!document.hidden) appDefMemberSync(); }catch(e){} }, 1
 document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) setTimeout(appDefMemberSync, 800); }catch(e){} });
 
 
+
+
+/* ===== LAGFIX 9: scroll + typing smoothness (CSS only, safe) ===== */
+(function(){
+  if(document.getElementById('cxLf9')) return;
+  const st = document.createElement('style'); st.id = 'cxLf9';
+  st.textContent = `
+  #chatOverlay .cbub,#chatOverlay .cxPop{animation:none!important;box-shadow:none!important;text-shadow:none!important}
+  #chatOverlay .chatMsgs{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  #chatOverlay .cmsg{contain:layout style}
+  #chatOverlay .chatComposer textarea,#chatOverlay #chatInput{transition:none!important}
+  #chatOverlay .chatMsgs{touch-action:pan-y}
+  body:has(#chatOverlay.open) .topbar,body:has(#chatOverlay.open) .viewbar,body:has(#chatOverlay.open) .wrap,body:has(#chatOverlay.open) .tabbar{visibility:hidden}
+  #chatOverlay{visibility:visible}
+  #chatConv .chatComposer:focus-within,#cxkBar:focus-within{animation:none!important}`;
+  document.head.appendChild(st);
+})();
