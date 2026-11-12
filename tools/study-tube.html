@@ -9247,7 +9247,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
       if (e.source !== window.parent) return; var m = e.data || {};
       if (m.type === 'st-role') {
         isAdm = !!m.admin;
-        if (isAdm) { toast('👑 Admin mode: channels/settings sabke liye auto publish hongi'); if (!tmr) { lastSig = JSON.stringify(snapG()); tmr = setInterval(function () { if (!isAdm) return; var s; try { s = JSON.stringify(snapG()); } catch (x) { return; } if (s !== lastSig) pubG(true); }, 6000); } }
+        if (isAdm) { toast('👑 Admin mode: channels/settings sabke liye auto publish hongi'); if (!tmr) { lastSig = JSON.stringify(snapG()); tmr = setInterval(function () { if (!isAdm || document.hidden) return; var s; try { s = JSON.stringify(snapG()); } catch (x) { return; } if (s !== lastSig) pubG(true); }, 6000); } }
       } else if (m.type === 'st-global' && m.data) { applyG(m.data); }
       else if (m.type === 'st-global-ack') { if (m.ok) { setGv(m.v); if (!m.silent) toast(m.msg); } else { lastSig = null; if (!m.silent || isAdm) toast('⚠ ' + m.msg); } }
     });

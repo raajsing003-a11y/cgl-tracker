@@ -930,7 +930,7 @@ const ad=$('#adial'),cA=$('#cA'),rot=(el,a)=>el.setAttribute('transform','rotate
 function hands(){const d=new Date(),s=d.getSeconds()+d.getMilliseconds()/1e3;
  if(CF.cs==='analog'){const q=x=>cA.querySelector(x);rot(q('.h'),(d.getHours()%12+d.getMinutes()/60)*30);rot(q('.m'),(d.getMinutes()+s/60)*6);rot(q('.s'),s*6)}
  if(CF.ts==='analog'){const t=mode==='stop'?elapsed:left,q=x=>ad.querySelector(x);rot(q('.h'),(t/3600%12)*30);rot(q('.m'),(t/60%60)*6);rot(q('.s'),(t%60)*6)}}
-setInterval(hands,200);
+setInterval(function(){if(!document.hidden)hands()},200);
 const gs={ts:$('#tsg'),cs:$('#csg')},rows={};
 [['ts',TS],['cs',CS]].forEach(([k,L])=>L.forEach(([id,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=id;b.onclick=()=>{CF[k]=id;W('cf',CF);fx()};gs[k].append(b)}));
 function pick(k,v){if(k==='ac'&&!v)v='#e5484d';CF[k]=v;W('cf',CF);k==='ac'?apply():fx()}
