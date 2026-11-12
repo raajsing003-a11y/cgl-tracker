@@ -620,7 +620,7 @@ kbd { font-family: inherit; border: 1px solid var(--line); border-bottom-width: 
   /* ---------- Study upgrades: last page yaad, bookmarks, recent PDFs (IndexedDB) ---------- */
   var docKey = '', posLock = false;
   window.__saveStudyPos = function (n) { if (docKey && !posLock) { try { localStorage.setItem('pdfpos:' + docKey, n); } catch (e) {} } };
-  function idb() { return new Promise(function (res, rej) { var r = indexedDB.open('sd-pdf', 1); r.onupgradeneeded = function () { r.result.createObjectStore('recent', { keyPath: 'id' }); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+  var _sdPdfDb = null; function idb() { if (_sdPdfDb) return _sdPdfDb; _sdPdfDb = new Promise(function (res, rej) { var r = indexedDB.open('sd-pdf', 1); r.onupgradeneeded = function () { r.result.createObjectStore('recent', { keyPath: 'id' }); }; r.onsuccess = function () { var d = r.result; d.onversionchange = function () { try { d.close(); } catch (e) {} _sdPdfDb = null; }; d.onclose = function () { _sdPdfDb = null; }; res(d); }; r.onerror = function () { _sdPdfDb = null; rej(r.error); }; }); return _sdPdfDb; }
   function idbTx(mode, fn) { return idb().then(function (db) { return new Promise(function (res, rej) { var t = db.transaction('recent', mode), st = t.objectStore('recent'), out = fn(st); t.oncomplete = function () { res(out && out.result); }; t.onerror = function () { rej(t.error); }; }); }); }
   async function recentPut(file) {
     if (file.size > 150 * 1024 * 1024) return;

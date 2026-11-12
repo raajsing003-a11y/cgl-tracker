@@ -73,7 +73,7 @@ var IDX=null, CACHE={}, ST={}, view={}, cur=null;
 function load(){try{ST=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){ST={}}if(!ST.q)ST.q={};if(!ST.pos)ST.pos={};}
 var tm=null;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}clearTimeout(tm);tm=setTimeout(mirror,800)}
-function idb(cb){try{var r=indexedDB.open('supereng_safe',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv')};r.onsuccess=function(){cb(r.result)};r.onerror=function(){cb(null)}}catch(e){cb(null)}}
+var _idbC=null;function idb(cb){if(_idbC)return cb(_idbC);try{var r=indexedDB.open('supereng_safe',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv')};r.onsuccess=function(){_idbC=r.result;_idbC.onversionchange=function(){try{_idbC.close()}catch(e){}_idbC=null};cb(_idbC)};r.onerror=function(){cb(null)}}catch(e){cb(null)}}
 function mirror(){idb(function(d){if(!d)return;try{d.transaction('kv','readwrite').objectStore('kv').put(JSON.stringify(ST),'st')}catch(e){}})}
 function restore(done){if(Object.keys(ST.q).length){done();return}
   idb(function(d){if(!d){done();return}try{var g=d.transaction('kv').objectStore('kv').get('st');g.onsuccess=function(){if(g.result){try{ST=JSON.parse(g.result);if(!ST.q)ST.q={};if(!ST.pos)ST.pos={}}catch(e){}}done()};g.onerror=done}catch(e){done()}})}

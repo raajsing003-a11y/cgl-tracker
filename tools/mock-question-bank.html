@@ -309,7 +309,7 @@ try{D=JSON.parse(localStorage.getItem(K)||"[]")}catch(e){}
 const TK="mqb_trash";let TR=[];try{TR=JSON.parse(localStorage.getItem(TK)||"[]")}catch(e){}
 function noImg(a){a.forEach(x=>{if(x&&x.img&&String(x.t||"").trim())x.img=""})}noImg(D);noImg(TR);
 let _warned=false;
-function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open("mqb_safe",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+let _mqbDb=null;function idb(){if(_mqbDb)return _mqbDb;_mqbDb=new Promise((res,rej)=>{try{const r=indexedDB.open("mqb_safe",1);r.onupgradeneeded=()=>r.result.createObjectStore("s");r.onsuccess=()=>{const d=r.result;d.onversionchange=()=>{try{d.close()}catch(e){}_mqbDb=null};d.onclose=()=>{_mqbDb=null};res(d)};r.onerror=()=>{_mqbDb=null;rej(r.error)}}catch(e){_mqbDb=null;rej(e)}});return _mqbDb}
 function idbPut(k,v){return idb().then(db=>new Promise((res,rej)=>{const t=db.transaction("s","readwrite");t.objectStore("s").put(v,k);t.oncomplete=()=>res(true);t.onerror=()=>rej(t.error)})).catch(()=>false)}
 function idbGet(k){return idb().then(db=>new Promise((res,rej)=>{const r=db.transaction("s").objectStore("s").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})).catch(()=>null)}
 function idbKeys(){return idb().then(db=>new Promise((res,rej)=>{const r=db.transaction("s").objectStore("s").getAllKeys();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})).catch(()=>[])}
