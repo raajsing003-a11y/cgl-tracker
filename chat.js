@@ -305,21 +305,24 @@ document.addEventListener('visibilitychange', ()=>{
   }
   if(chatView === 'conv') chatMarkRead();
 });
-function chatFitViewport(){
+let _fvRaf = 0, _fvH = '', _fvT = '', _fvScroll = false;
+function chatFitViewportNow(){
+  _fvRaf = 0;
   const ov = chatEl('chatOverlay');
   if(!ov) return;
   const vv = window.visualViewport;
-  if(vv){
-    ov.style.height = vv.height + 'px';
-    ov.style.top = vv.offsetTop + 'px';
-  } else {
-    ov.style.height = '';
-    ov.style.top = '0px';
-  }
+  const h = vv ? (vv.height + 'px') : '', t = vv ? (vv.offsetTop + 'px') : '0px';
+  if(h !== _fvH){ ov.style.height = h; _fvH = h; }
+  if(t !== _fvT){ ov.style.top = t; _fvT = t; }
+  if(_fvScroll){ _fvScroll = false; if(chatView==='conv') chatScrollBottom(); }
+}
+function chatFitViewport(scrollAfter){
+  if(scrollAfter === true) _fvScroll = true;
+  if(!_fvRaf) _fvRaf = requestAnimationFrame(chatFitViewportNow);   // LAGFIX8: keyboard events ki bauchaar ek frame me ek hi layout
 }
 if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', ()=>{ chatFitViewport(); if(chatView==='conv') chatScrollBottom(); });
-  window.visualViewport.addEventListener('scroll', chatFitViewport);
+  window.visualViewport.addEventListener('resize', ()=>{ chatFitViewport(true); });
+  window.visualViewport.addEventListener('scroll', ()=>{ chatFitViewport(); });
 }
 
 // ---------- inbox UI ----------
@@ -604,11 +607,16 @@ async function chatSend(){
     chatToastMsg(denied ? 'Message nahi gaya — is naam ki chat kisi aur device se bandhi hai.' : 'Message nahi gaya — internet check karo.');
   }
 }
+let _asRaf = 0;
 function chatAutosize(){
-  const ta = chatEl('chatInput');
-  if(!ta) return;
-  ta.style.height = 'auto';
-  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  if(_asRaf) return;
+  _asRaf = requestAnimationFrame(()=>{   // LAGFIX8: har keystroke par sync reflow nahi, frame me ek baar
+    _asRaf = 0;
+    const ta = chatEl('chatInput');
+    if(!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
 }
 function chatToastMsg(msg){
   const t = chatEl('chatToast');
@@ -1196,7 +1204,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const e = escapeHtml;
     let body = '';
     if(m.k === 'i'){
-      body = `<img class="cimg" src="${e(a.th || '')}" alt="Photo" data-act="img" data-fid="${e(a.fid || '')}">`;
+      body = `<img class="cimg" decoding="async" src="${e(a.th || '')}" alt="Photo" data-act="img" data-fid="${e(a.fid || '')}">`;
     } else if(m.k === 'f' || m.k === 'v'){
       body = `<div class="cfile" data-act="${m.k === 'v' ? 'vid' : 'file'}" data-fid="${e(a.fid || '')}" data-n="${e(a.n || 'file')}" data-mt="${e(a.mt || '')}"><div class="cfico">${m.k === 'v' ? '🎬' : '📄'}</div><div><div class="cfnm">${e(a.n || 'File')}</div><div class="cfsz">${e(fmtSize(Number(a.s) || 0))} · tap karo</div></div></div>`;
     } else if(m.k === 'a'){
@@ -2365,7 +2373,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   const smartOn = ()=> LS(P() + 'smart', true) !== false;
   function refreshSmart(){
     const bar = $('cxxSmart'); if(!bar) return;
-    const hide = ()=>{ bar.classList.remove('on'); bar.innerHTML = ''; };
+    const hide = ()=>{ if(bar.classList.contains('on')) bar.classList.remove('on'); if(bar.firstChild) bar.innerHTML = ''; };
     const ta = $('chatInput');
     if(!smartOn() || !chatPeer || isSelf() || chatView !== 'conv' || (ta && ta.value.trim())){ hide(); return; }
     const ids = chatSortedIds(); if(!ids.length){ hide(); return; }

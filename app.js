@@ -47,12 +47,17 @@ window.__cxRes = (function(){
    Chat khulte hi kick('chat') se sab ek baar turant chalte hain (buttons pehle se jaldi). Band hone par ek aakhri cleanup run. */
 var cxPoll = (function(){
   const reg = [], ids = { chat: 'chatOverlay', call: 'callOv', cam: 'cxCam' };
+  /* LAGFIX8: chat me scroll/typing chal raha ho to background inject-pollers ruk jaate hain (user rukte hi ~1.2s me chal jaate hain) */
+  window.__cxIA = 0;
+  (function(){ const mark = ()=>{ window.__cxIA = Date.now(); }; const o = { passive: true, capture: true };
+    document.addEventListener('scroll', mark, o); document.addEventListener('touchmove', mark, o); document.addEventListener('keydown', mark, o); document.addEventListener('input', mark, o); })();
   const isOpen = (sc)=>{ const o = document.getElementById(ids[sc]); return !!(o && o.classList.contains('open')); };
   function poll(scope, fn, ms){
     const r = { scope, fn, was: false }; reg.push(r);
     return setInterval(()=>{
       if(document.hidden) return;
       const o = isOpen(scope);
+      if(o && scope === 'chat' && Date.now() - window.__cxIA < 1200) return;
       if(o || r.was){ r.was = o; try{ const p = fn(); if(p && p.catch) p.catch(()=>{}); }catch(e){} }
     }, ms);
   }
@@ -23391,7 +23396,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf4';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf5';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };
