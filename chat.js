@@ -3507,8 +3507,11 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     })();
   }
   // IndexedDB cache: pack dobara download na ho (data bachta hai)
+  let _stkDb = null;
   function idb(){
-    return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-stk-cache', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('p'); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } });
+    if(_stkDb) return _stkDb;
+    _stkDb = new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-stk-cache', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('p'); r.onsuccess = ()=>{ const d = r.result; d.onversionchange = ()=>{ try{ d.close(); }catch(e){} _stkDb = null; }; d.onclose = ()=>{ _stkDb = null; }; res(d); }; r.onerror = ()=>{ _stkDb = null; rej(r.error); }; }catch(e){ _stkDb = null; rej(e); } });
+    return _stkDb;
   }
   async function idbGet(k){ try{ const d = await idb(); return await new Promise(res=>{ const q = d.transaction('p').objectStore('p').get(k); q.onsuccess = ()=> res(q.result || null); q.onerror = ()=> res(null); }); }catch(e){ return null; } }
   async function idbSet(k, v){ try{ const d = await idb(); d.transaction('p', 'readwrite').objectStore('p').put(v, k); }catch(e){} }
@@ -6010,7 +6013,8 @@ void main(){
   const CX_GIPHY_DEF = 'h0gvEhMVTdMBdfiv9M5tJV2CXNXEZNA0';   // built-in key: kisi ko alag se key nahi daalni; localStorage/admin key ho to wahi pehle
   const getKey = ()=>{ try{ return localStorage.getItem(KEYK) || CX_GIPHY_DEF; }catch(e){ return CX_GIPHY_DEF; } };
   const setKey = (k)=>{ try{ k ? localStorage.setItem(KEYK, k) : localStorage.removeItem(KEYK); }catch(e){} };
-  function idb(){ return new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-gifs', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('g', { keyPath: 'id' }); r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error); }catch(e){ rej(e); } }); }
+  let _gifDb = null;
+  function idb(){ if(_gifDb) return _gifDb; _gifDb = new Promise((res, rej)=>{ try{ const r = indexedDB.open('cx-gifs', 1); r.onupgradeneeded = ()=> r.result.createObjectStore('g', { keyPath: 'id' }); r.onsuccess = ()=>{ const d = r.result; d.onversionchange = ()=>{ try{ d.close(); }catch(e){} _gifDb = null; }; d.onclose = ()=>{ _gifDb = null; }; res(d); }; r.onerror = ()=>{ _gifDb = null; rej(r.error); }; }catch(e){ _gifDb = null; rej(e); } }); return _gifDb; }
   async function gAll(){ const d = await idb(); return new Promise((res, rej)=>{ const q = d.transaction('g').objectStore('g').getAll(); q.onsuccess = ()=> res((q.result || []).sort((a, b)=> b.ts - a.ts)); q.onerror = ()=> rej(q.error); }); }
   async function gPut(o){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').put(o); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
   async function gDel(id){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').delete(id); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
