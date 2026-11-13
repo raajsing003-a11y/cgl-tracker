@@ -3212,11 +3212,24 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
 
   // ---------- avatar override ----------
   const prevAv = chatAvatarHtml;
+  // LAGFIX19: profile photo (data URL, ~24KB) har inbox render par HTML me bhar kar dobara decode hoti thi -> ek baar blob URL bana kar cache
+  const _avC = new Map();
+  function avUrl(d){
+    let u = _avC.get(d); if(u) return u;
+    try{
+      const i = d.indexOf(','), head = d.slice(5, i);
+      if(!/;base64$/.test(head)) return d;
+      const bin = atob(d.slice(i + 1)), arr = new Uint8Array(bin.length);
+      for(let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+      u = URL.createObjectURL(new Blob([arr], { type: head.split(';')[0] }));
+      _avC.set(d, u); return u;
+    }catch(err){ return d; }
+  }
   chatAvatarHtml = function(name, cls){
     try{
       const k = chatSeenKey(name);
       const e = k === chatMyKey() ? ME : PROF[k];
-      if(e && okImg(e.p)) return `<div class="chatAv ${cls || ''}" style="background:#222 center/cover no-repeat url('${e.p}')"></div>`;
+      if(e && okImg(e.p)) return `<div class="chatAv ${cls || ''}" style="background:#222 center/cover no-repeat url('${avUrl(e.p)}')"></div>`;
     }catch(err){}
     return prevAv(name, cls);
   };
@@ -9731,9 +9744,40 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   #chatOverlay .chatMsgs > .cmsg:nth-last-child(n+40){content-visibility:auto;contain-intrinsic-size:auto 64px}
   /* chat khula ho to infinite animations band (shimmer / online-dot pulse) */
   body:has(#chatOverlay.open) #chatBtn::before,#chatOverlay .chatDot{animation:none!important}
+  /* LAGFIX19: inbox scroll - off-screen rows paint nahi hote, list avatars par bhaari shadow band */
+  #chatOverlay #chatList .chatRow{content-visibility:auto;contain-intrinsic-size:auto 68px}
+  #chatOverlay #chatList .chatAv{box-shadow:none!important}
+  #chatOverlay #chatList{contain:layout style;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   /* LAGFIX16: composer ka layout/style baaki chat se alag -> type karte waqt message list dobara layout nahi hoti */
   #chatOverlay .chatComposer{contain:layout style}
   #chatOverlay #chatInput{will-change:auto!important;text-rendering:optimizeSpeed}
   `;
   document.head.appendChild(s);
+})();
+
+/* ===== LAGFIX19: inbox render coalesce =====
+   Presence / index / profile updates ek ke baad ek aate hain aur har baar poori list innerHTML se dobara banti thi
+   (scroll ke beech me bhi) -> scroll atakta tha. Ab: pehla render turant, baaki 250ms me ek, aur scroll chal raha ho to ruk kar. */
+(function lagfix19(){
+  if(typeof chatRenderInbox !== 'function') return;
+  const real = chatRenderInbox; let t = 0, last = 0, scrollAt = 0, bound = null;
+  function bind(){
+    const l = document.getElementById('chatList'); if(!l || l === bound) return; bound = l;
+    const mark = ()=>{ scrollAt = Date.now(); };
+    l.addEventListener('scroll', mark, { passive: true });
+    l.addEventListener('touchmove', mark, { passive: true });
+  }
+  function run(){
+    if(Date.now() - scrollAt < 300){ t = setTimeout(run, 350); return; }
+    t = 0; last = Date.now();
+    try{ real(); }catch(e){ console.error(e); }
+  }
+  chatRenderInbox = function(){
+    bind();
+    if(t) return;
+    const now = Date.now();
+    const wait = (now - scrollAt < 300) ? 350 : (now - last < 250 ? 250 - (now - last) : 0);
+    if(wait <= 0){ last = now; try{ real(); }catch(e){ console.error(e); } return; }
+    t = setTimeout(run, wait);
+  };
 })();

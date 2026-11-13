@@ -22480,6 +22480,7 @@ if('serviceWorker' in navigator){
   });
   var tm = null; function sched(){ if(document.querySelector('#sscMockOverlay[style*="block"]') || tm || (window.__cxBusy && window.__cxBusy())) return; tm = setTimeout(function(){ tm = null; if(!document.hidden) scan(); }, 1800); }   /* throttle (pehle har DOM change par scan) */
   function start(){ mount(); new MutationObserver(function(ms){
+      if(tm) return; try{ var co = document.getElementById('chatOverlay'); if(co && co.classList.contains('open')) return; }catch(e){}   /* LAGFIX20: chat khula ho ya scan pehle se queued ho to har mutation par kaam nahi */
       for(var i = 0; i < ms.length; i++){ var t = ms[i].target; if(t && t.nodeType === 1 && t.closest && t.closest('[id*="Exam"],[id*="exam"],#sscMockOverlay,#chatOverlay,#callOv,#cxCam')) continue; /* mock me option click par scan nahi (lag fix) */
       if(t && t.nodeType === 1 && (t.id === 'cxGemMain' || (t.closest && t.closest('#cxGemMain,.cxGemH,#cxGemToast,#cxAiBar,#cxAiCrop,#cxAiPick')))) continue; sched(); return; } })
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] }); scan(); }
@@ -23398,7 +23399,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf18';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf20';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };
