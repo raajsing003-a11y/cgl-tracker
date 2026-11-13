@@ -23399,7 +23399,7 @@ if('serviceWorker' in navigator){
   var st = 0;
   window.__cxLoadChat = function(){
     if(st) return; st = 1;
-    var s = document.createElement('script'); s.src = './chat.js?v=20261112-lf20';
+    var s = document.createElement('script'); s.src = './chat.js?v=20261113d-lf20';
     s.onerror = function(){ st = 0; };
     (document.body || document.documentElement).appendChild(s);
   };

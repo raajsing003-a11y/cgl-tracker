@@ -8289,7 +8289,7 @@ const AIReply = (function(){
 (function chatPlus20(){
   if(window.__cxPlus20) return; window.__cxPlus20 = 1;
   const MODES = ['dark', 'light', 'auto'], ICO = { dark: '🌙', light: '☀️', auto: '🌓' }, LBL = { dark: 'Dark theme', light: 'Light theme', auto: 'Auto (phone ke hisaab se)' };
-  const getMode = ()=>{ try{ const m = localStorage.getItem('cxTheme'); return MODES.includes(m) ? m : 'dark'; }catch(e){ return 'dark'; } };
+  const getMode = ()=>{ try{ if(!localStorage.getItem('cxThemeDarkV2')){ localStorage.setItem('cxThemeDarkV2','1'); localStorage.setItem('cxTheme','dark'); return 'dark'; } const m = localStorage.getItem('cxTheme'); return MODES.includes(m) ? m : 'dark'; }catch(e){ return 'dark'; } };
   let mode = getMode();
   const mq = (typeof matchMedia === 'function') ? matchMedia('(prefers-color-scheme: light)') : null;
   const eff = ()=> mode === 'auto' ? (mq && mq.matches ? 'light' : 'dark') : mode;
