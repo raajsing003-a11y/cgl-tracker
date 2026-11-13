@@ -456,12 +456,17 @@ function chatScrollBottom(){
   const box = chatEl('chatMsgs');
   if(box) box.scrollTop = box.scrollHeight;
 }
+// LAGFIX18: chat kholte hi 25 messages ek ke baad ek aate hain; har ek par layout padhna (scrollHeight) + scroll karna = 25 forced reflow.
+// Ab "pehle neeche tha ya nahi" ek baar naapa jaata hai (50ms cache) aur scroll frame me ek hi baar hota hai.
+let _nbT = 0, _nbV = true, _sbRaf = 0;
+function chatNearBottomCached(){ const n = performance.now(); if(n - _nbT < 50) return _nbV; _nbV = chatNearBottom(); _nbT = n; return _nbV; }
+function chatScrollBottomSoon(){ if(_sbRaf) return; _sbRaf = requestAnimationFrame(()=>{ _sbRaf = 0; chatScrollBottom(); }); }
 function chatOnMsg(peer, id, m){
   if(chatPeer !== peer || !m || chatMsgs.has(id)) return;
   const box = chatEl('chatMsgs');
   if(!box) return;
   let last = null; for(const k of chatMsgs.keys()){ if(last === null || k > last) last = k; }   // FAST: sort ki jagah max key (O(n), no sort)
-  const wasBottom = chatNearBottom();
+  const wasBottom = chatNearBottomCached();
   chatMsgs.set(id, m);
   const mine = m.f === chatMyKey();
   if(!mine){
@@ -480,7 +485,7 @@ function chatOnMsg(peer, id, m){
     chatRenderAll(true);
   }
   chatUpdateOlderBtn();
-  if(mine || wasBottom){ chatScrollBottom(); }
+  if(mine || wasBottom){ chatScrollBottomSoon(); }
   else if(!mine){ const np = chatEl('chatNewPill'); if(np) np.hidden = false; }
   if(!mine) chatMarkRead();
   if(!mine){ try{ AIReply.onIncoming(peer, id, m); }catch(e){} }
@@ -607,14 +612,18 @@ async function chatSend(){
     chatToastMsg(denied ? 'Message nahi gaya — is naam ki chat kisi aur device se bandhi hai.' : 'Message nahi gaya — internet check karo.');
   }
 }
-let _asRaf = 0;
+let _asRaf = 0, _asLen = 0;
 function chatAutosize(){
   if(_asRaf) return;
   _asRaf = requestAnimationFrame(()=>{   // LAGFIX8: har keystroke par sync reflow nahi, frame me ek baar
     _asRaf = 0;
     const ta = chatEl('chatInput');
     if(!ta) return;
-    if(ta.value.length < 24 && ta.value.indexOf('\n') < 0){ if(ta.style.height) ta.style.height = ''; return; }   // LAGFIX10: 1 line me reflow nahi
+    const len = ta.value.length, shrink = len < _asLen; _asLen = len;
+    if(len < 24 && ta.value.indexOf('\n') < 0){ if(ta.style.height) ta.style.height = ''; return; }   // LAGFIX10: 1 line me reflow nahi
+    // LAGFIX16: type karte waqt height tabhi badlo jab sach me zarurat ho (pehle har keystroke par height=auto + reflow hota tha)
+    if(!shrink){ if(ta.scrollHeight <= ta.clientHeight + 1) return; }
+    else if(!ta.style.height) return;
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   });
@@ -1771,9 +1780,40 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     });
   };
   const rerender = ()=>{ try{ chatRenderAll(true); }catch(e){} updatePinBar(); };
+  // LAGFIX17: reactions/edit/pin/view-once update aane par poori chat dobara draw nahi hoti (images dobara decode hoke hang aata tha) -- sirf badle huye bubbles patch hote hain
+  let XS = {}, PINID = '';
+  function patchIds(ids){
+    const box = $('chatMsgs'); if(!box) return false;
+    for(const id of ids){
+      const m = chatMsgs.get(id); if(!m) continue;
+      const el = box.querySelector(`.cmsg[data-id="${CSS.escape(id)}"]`);
+      const h = chatBubbleHtml(id, m);
+      if(!el){ if(h) return false; continue; }
+      if(!h){ el.remove(); continue; }
+      el.outerHTML = h;
+    }
+    return true;
+  }
+  const rerenderX = ()=>{
+    const next = {}, all = new Set(Object.keys(XS));
+    Object.keys(X).forEach(k=>{ next[k] = JSON.stringify(X[k]); all.add(k); });
+    const changed = []; all.forEach(k=>{ if(XS[k] !== next[k]) changed.push(k); });
+    XS = next;
+    if(!changed.length){ updatePinBar(); return; }
+    let ok = false;
+    if(changed.length <= 12){ try{ ok = patchIds(changed); }catch(e){ ok = false; } }
+    if(!ok) rerender(); else updatePinBar();
+  };
+  const rerenderPin = ()=>{
+    const nid = (PIN && PIN.id) || '', ids = [PINID, nid].filter(Boolean);
+    PINID = nid;
+    let ok = false;
+    try{ ok = patchIds(ids); }catch(e){ ok = false; }
+    if(!ok) rerender(); else updatePinBar();
+  };
 
   // ---------------- listeners per conversation ----------------
-  function unsubAll(){ subs.forEach(u=>{ try{ u(); }catch(e){} }); subs = []; X = {}; DV = 0; PIN = null; TY = null; reply = null; editing = null; clearTimeout(tyTimer); updateBars(); }
+  function unsubAll(){ subs.forEach(u=>{ try{ u(); }catch(e){} }); subs = []; X = {}; XS = {}; PINID = ''; DV = 0; PIN = null; TY = null; reply = null; editing = null; clearTimeout(tyTimer); updateBars(); }
   const prevTeardown = chatTeardownConv;
   chatTeardownConv = function(){ cxTyping(null, true); unsubAll(); prevTeardown(); };
   const prevOpen = chatOpenConv;
@@ -1783,9 +1823,9 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const peer = chatPeer, bp = basePair(), pk = peer.key;
     const ok = ()=> chatPeer === peer;
     try{
-      const a = await window.__fbListenReady(`${bp}/x`, (v)=>{ if(!ok()) return; X = v || {}; rerender(); });
+      const a = await window.__fbListenReady(`${bp}/x`, (v)=>{ if(!ok()) return; X = v || {}; rerenderX(); });
       const b = await window.__fbListenReady(`${bp}/dv/${pk}`, (v)=>{ if(!ok()) return; DV = Number(v) || 0; chatRefreshTicks(); });
-      const c = await window.__fbListenReady(`${bp}/pin`, (v)=>{ if(!ok()) return; PIN = v; rerender(); });
+      const c = await window.__fbListenReady(`${bp}/pin`, (v)=>{ if(!ok()) return; PIN = v; rerenderPin(); });
       const d = await window.__fbListenReady(`${bp}/ty/${pk}`, (v)=>{ if(!ok()) return; TY = v && v.k ? v.k : null; tyAt = Date.now(); chatRefreshStatus(); clearTimeout(tyTimer); if(TY) tyTimer = setTimeout(()=>{ TY = null; chatRefreshStatus(); }, 6000); });
       subs.push(a, b, c, d);
       if(!ok()) unsubAll();
@@ -9691,6 +9731,9 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   #chatOverlay .chatMsgs > .cmsg:nth-last-child(n+40){content-visibility:auto;contain-intrinsic-size:auto 64px}
   /* chat khula ho to infinite animations band (shimmer / online-dot pulse) */
   body:has(#chatOverlay.open) #chatBtn::before,#chatOverlay .chatDot{animation:none!important}
+  /* LAGFIX16: composer ka layout/style baaki chat se alag -> type karte waqt message list dobara layout nahi hoti */
+  #chatOverlay .chatComposer{contain:layout style}
+  #chatOverlay #chatInput{will-change:auto!important;text-rendering:optimizeSpeed}
   `;
   document.head.appendChild(s);
 })();
