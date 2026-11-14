@@ -9841,3 +9841,318 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     t = setTimeout(run, wait);
   };
 })();
+
+
+// ============================================================================
+// CHAT PLUS 30: 🎬 TUBE IN CHAT + 🎧 SAATH SUNO
+//  - Chat ke andar Study Tube (tools/study-tube.html, wahi file => channels/subscribe/history/likes ka localStorage SAME, auto sync).
+//  - Video dekhte hue chat karo; ⬇ se mini bar (video chhota/hidden, music chalta rahe: ⏪ ⏯ ⏩).
+//  - 🎧 Saath suno: jo tum chalao / pause / seek karo wahi samne wale ke paas bhi (Firebase: _chats/<pair>/yt).
+//  - 📤 current video chat me card ki tarah bhejo; chat me YouTube link par tap = Tube me khule.
+//  Entry: chat header ka 🎬 ya "+" menu -> "YouTube / Saath suno".
+// ============================================================================
+(function chatTube(){
+  const $ = (id)=> document.getElementById(id);
+  const toast = (m)=>{ try{ chatToastMsg(m); }catch(e){} };
+  const esc = (s)=> String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const YT_RE = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|embed\/|live\/|v\/))([\w-]{11})/i;
+  const ID_RE = /^[\w-]{11}$/;
+  let box = null, inv = null, fr = null, mode = 'off', synced = false, unL = null, lPair = '', skew = 0, remoteV = 0, quietUntil = 0, lastRemote = null;
+  let last = { id: '', st: -1, t: 0, at: 0 };
+  const titles = {};
+  const basePair = ()=> chatBase() + '/_chats/' + chatPeer.pair;
+
+  // ---------- Study Tube frame accessors (same-origin) ----------
+  const W = ()=>{ try{ return fr && fr.contentWindow; }catch(e){ return null; } };
+  const P = ()=>{ try{ const w = W(); return w && w.__stYT ? w.__stYT() : null; }catch(e){ return null; } };
+  const CU = ()=>{ try{ const w = W(); return w && w.__stvCur ? w.__stvCur() : null; }catch(e){ return null; } };
+  const pst = ()=>{ try{ const p = P(); return p && p.getPlayerState ? p.getPlayerState() : -1; }catch(e){ return -1; } };
+  const ptime = ()=>{ try{ const p = P(); return p && p.getCurrentTime ? Number(p.getCurrentTime()) || 0 : 0; }catch(e){ return 0; } };
+  const pdur = ()=>{ try{ const p = P(); return p && p.getDuration ? Number(p.getDuration()) || 0 : 0; }catch(e){ return 0; } };
+  function curTitle(){
+    const c = CU(); if(!c || !c.id) return '';
+    let t = '';
+    try{ const p = P(), vd = p && p.getVideoData && p.getVideoData(); if(vd && vd.video_id === c.id && vd.title) t = vd.title; }catch(e){}
+    if(!t && c.t && c.t !== 'YouTube video') t = c.t;
+    if(t) titles[c.id] = t;
+    return t || titles[c.id] || c.t || 'YouTube video';
+  }
+
+  // ---------- UI ----------
+  function css(){
+    if($('cxtStyles')) return;
+    const s = document.createElement('style'); s.id = 'cxtStyles';
+    s.textContent = `
+    #cxTube{display:none;flex:0 0 auto;flex-direction:column;background:#0f1117;border-bottom:1px solid #2a2f3d;position:relative;z-index:5}
+    #cxTube.on{display:flex}
+    #cxTube .cxtBar{display:flex;align-items:center;gap:4px;padding:6px 8px;min-height:46px}
+    #cxTube .cxtBar button{flex:none;background:#1c2030;color:#e8eaf2;border:0;border-radius:10px;min-width:36px;height:36px;font-size:16px;padding:0 6px}
+    #cxTube .cxtBar button.on{background:#2563eb;color:#fff}
+    #cxTube .cxtBar #cxtPP{background:#c0392b;color:#fff;min-width:40px}
+    #cxTube .cxtTi{flex:1;min-width:0;font-size:13px;font-weight:700;color:#dfe3ef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+    #cxTube .cxtTi small{display:block;font-weight:500;opacity:.6;font-size:11px;overflow:hidden;text-overflow:ellipsis}
+    #cxTube .cxtPg{height:3px;background:#1c2030}
+    #cxTube .cxtPg i{display:block;height:100%;width:0;background:#e53935;transition:width .9s linear}
+    #cxTube .cxtBody{position:relative;height:min(52vh,430px);overflow:hidden}
+    #cxTube.mini .cxtBody{height:0}
+    #cxTube iframe{position:absolute;left:0;top:0;width:100%;height:min(52vh,430px);border:0;background:#000}
+    .cxtInv{display:none;align-items:center;gap:8px;padding:8px 12px;background:#1d2a44;color:#dbe7ff;font-size:13px;font-weight:700;flex:0 0 auto}
+    .cxtInv.on{display:flex}
+    .cxtInv span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cxtInv button{border:0;border-radius:9px;padding:7px 12px;font-weight:800;font-size:13px}
+    .cxtInv .j{background:#2563eb;color:#fff}.cxtInv .n{background:#2a3350;color:#cdd7f5}
+    .cxyt{position:relative;width:min(240px,64vw);cursor:pointer}
+    .cxyt img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;display:block;background:#000}
+    .cxyt .cxytp{position:absolute;left:50%;top:calc(50% - 26px);transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
+    .cxyt .cxytt{font-size:13px;font-weight:700;margin-top:6px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .cxyt .cxyts{font-size:11px;opacity:.65;margin-top:2px}`;
+    document.head.appendChild(s);
+  }
+  function build(){
+    if(box && box.isConnected) return true;
+    const conv = $('chatConv'); if(!conv) return false;
+    const head = conv.querySelector('.chatHead'); if(!head) return false;
+    css();
+    box = document.createElement('div'); box.id = 'cxTube';
+    box.innerHTML = '<div class="cxtBar"><button type="button" data-t="b10" aria-label="10 sec peeche">&#9194;</button><button type="button" data-t="pp" id="cxtPP" aria-label="Play/Pause">&#9654;</button><button type="button" data-t="f10" aria-label="10 sec aage">&#9193;</button><div class="cxtTi" id="cxtTi"></div><button type="button" data-t="sync" id="cxtSy" title="Saath suno">&#127911;</button><button type="button" data-t="share" title="Chat me bhejo">&#128228;</button><button type="button" data-t="mode" id="cxtMd" title="Chhota / bada">&#11015;</button><button type="button" data-t="x" title="Band">&#10005;</button></div><div class="cxtPg"><i id="cxtPgI"></i></div><div class="cxtBody"></div>';
+    head.insertAdjacentElement('afterend', box);
+    box.addEventListener('click', onBar);
+    fr = null;
+    return true;
+  }
+  function showInv(d){
+    if(!inv || !inv.isConnected){
+      const conv = $('chatConv'), head = conv && conv.querySelector('.chatHead'); if(!head) return;
+      css();
+      inv = document.createElement('div'); inv.className = 'cxtInv';
+      inv.innerHTML = '<span id="cxtIv"></span><button type="button" class="j">Join &#127911;</button><button type="button" class="n">&#10005;</button>';
+      head.insertAdjacentElement('afterend', inv);
+      inv.querySelector('.j').addEventListener('click', join);
+      inv.querySelector('.n').addEventListener('click', ()=> showInv(null));
+    }
+    if(!d){ inv.classList.remove('on'); return; }
+    const t = $('cxtIv'); if(t) t.textContent = '\uD83C\uDFA7 ' + (chatPeer ? chatPeer.name : 'Dost') + ' sun raha hai: ' + (d.ti || 'YouTube video');
+    inv.classList.add('on');
+  }
+  function ensureFrame(){
+    if(!build()) return false;
+    if(!fr){
+      fr = document.createElement('iframe'); fr.name = 'cxTube'; fr.title = 'Study Tube';
+      fr.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); fr.allowFullscreen = true;
+      fr.src = './tools/study-tube.html';
+      box.querySelector('.cxtBody').appendChild(fr);
+    }
+    return true;
+  }
+  function waitApi(){
+    return new Promise((res)=>{ let n = 0; const t = setInterval(()=>{ const w = W(); if(w && w.__stvOpen && w.__stvEnter){ clearInterval(t); res(w); } else if(++n > 80){ clearInterval(t); res(null); } }, 150); });
+  }
+  function setMode(m){
+    if(!build()) return;
+    mode = m;
+    box.classList.toggle('on', m !== 'off'); box.classList.toggle('mini', m === 'mini');
+    const md = $('cxtMd'); if(md) md.innerHTML = m === 'mini' ? '&#11014;' : '&#11015;';
+    ui();
+  }
+  async function openTube(){
+    if(!chatPeer){ toast('Pehle kisi ki chat kholo.'); return; }
+    if(!ensureFrame()) return;
+    setMode('full');
+    const w = await waitApi(); if(w) w.__stvEnter();
+  }
+  function closeTube(){
+    try{ const p = P(); if(p && pst() === 1) p.pauseVideo(); }catch(e){}
+    if(synced) endSync(true);
+    if(box) setMode('off');
+  }
+  async function openVideo(v, at){
+    await openTube();
+    const w = await waitApi(); if(!w){ toast('Study Tube load nahi hua.'); return false; }
+    w.__stvEnter();
+    if(v.t) titles[v.id] = v.t;
+    return w.__stvOpen({ id: v.id, t: v.t || 'YouTube video' }, at);
+  }
+
+  function ui(st, t){
+    if(!box) return;
+    if(st == null){ st = pst(); t = ptime(); }
+    const c = CU(), ti = $('cxtTi');
+    if(ti){
+      const title = c && c.id ? curTitle() : 'Study Tube — video chuno / link paste karo';
+      const sub = synced ? '\uD83C\uDFA7 ' + (chatPeer ? chatPeer.name : '') + ' ke saath sync' : (c && c.cn ? c.cn : '');
+      const h = esc(title) + (sub ? '<small>' + esc(sub) + '</small>' : '');
+      if(ti.dataset.h !== h){ ti.innerHTML = h; ti.dataset.h = h; }
+    }
+    const pp = $('cxtPP'); if(pp) pp.innerHTML = st === 1 ? '&#10074;&#10074;' : '&#9654;';
+    const sy = $('cxtSy'); if(sy) sy.classList.toggle('on', synced);
+    const d = pdur(), pg = $('cxtPgI'); if(pg) pg.style.width = d > 0 ? Math.min(100, (t / d) * 100) + '%' : '0';
+  }
+  function onBar(e){
+    const b = e.target.closest('[data-t]'); if(!b) return;
+    const a = b.dataset.t, p = P();
+    if(a === 'pp'){
+      if(!p || !CU()){ setMode('full'); toast('Pehle koi video chuno.'); return; }
+      try{ pst() === 1 ? p.pauseVideo() : p.playVideo(); }catch(x){}
+    } else if(a === 'b10' || a === 'f10'){
+      if(p){ try{ p.seekTo(Math.max(0, ptime() + (a === 'b10' ? -10 : 10)), true); }catch(x){} }
+    } else if(a === 'sync'){ synced ? endSync() : startSync(); }
+    else if(a === 'share'){ shareNow(); }
+    else if(a === 'mode'){ setMode(mode === 'mini' ? 'full' : 'mini'); }
+    else if(a === 'x'){ closeTube(); }
+  }
+  async function shareNow(){
+    const c = CU(); if(!c || !c.id){ toast('Pehle koi video chalao.'); return; }
+    if(!window.cxSend){ toast('Send abhi available nahi.'); return; }
+    const ti = curTitle();
+    const ok = await window.cxSend({ k: 'yt', a: { id: c.id, ti: String(ti).slice(0, 100), ch: String(c.cn || '').slice(0, 40) } }, null, '\uD83C\uDFAC ' + ti);
+    if(ok !== false) toast('Chat me bhej diya');
+  }
+
+  // ---------- Saath suno (sync) ----------
+  async function calib(){
+    try{
+      if(!chatPeer) return;
+      const p = basePair() + '/ysk/' + chatMyKey(), t0 = Date.now();
+      await window.__fbSet(p, { ts: { '.sv': 'timestamp' } });
+      const r = await window.__fbGet(p), t1 = Date.now();
+      if(r && r.ts) skew = Number(r.ts) - Math.round((t0 + t1) / 2);
+    }catch(e){}
+  }
+  function publish(id, st, t){
+    if(!chatPeer || !ID_RE.test(id || '')) return;
+    const o = { id, ti: String(titles[id] || curTitle() || '').slice(0, 100), by: chatMyKey(), st: st === 1 ? 1 : 2, t: Math.round(t * 10) / 10, ts: { '.sv': 'timestamp' }, v: Date.now() };
+    window.__fbSet(basePair() + '/yt', o).catch(()=>{});
+  }
+  async function startSync(){
+    if(!chatPeer) return;
+    synced = true; ui();
+    await calib();
+    toast('\uD83C\uDFA7 Saath suno ON \u2014 jo chalaoge wahi ' + chatPeer.name + ' bhi sunega');
+    const c = CU(); if(c && c.id){ const st = pst(); publish(c.id, st, ptime()); last = { id: c.id, st: (st === 1 || st === 2) ? st : -1, t: ptime(), at: Date.now() }; }
+  }
+  function endSync(silent){ synced = false; ui(); if(!silent) toast('Saath suno band'); }
+  function force(d, target, t0){
+    const p = P(); if(!p) return;
+    quietUntil = Date.now() + 2500;
+    try{
+      const tg = target + (d.st === 1 ? (Date.now() - t0) / 1000 : 0);
+      if(Math.abs(ptime() - tg) > 2) p.seekTo(tg, true);
+      const s = pst();
+      if(d.st === 1 && s !== 1) p.playVideo(); else if(d.st !== 1 && s === 1) p.pauseVideo();
+    }catch(e){}
+  }
+  async function apply(d){
+    const t0 = Date.now();
+    const age = d.st === 1 ? Math.min(45, Math.max(0, (t0 + skew - Number(d.ts || 0)) / 1000)) : 0;
+    const target = (Number(d.t) || 0) + age;
+    quietUntil = t0 + 3500;
+    const c = CU();
+    if(!c || c.id !== d.id){
+      if(mode === 'off') await openTube(); else ensureFrame();
+      const w = await waitApi(); if(!w) return;
+      w.__stvEnter();
+      if(d.ti) titles[d.id] = d.ti;
+      w.__stvOpen({ id: d.id, t: d.ti || 'YouTube video' }, target);
+      setTimeout(()=> force(d, target, t0), 2200);
+      setTimeout(()=> force(d, target, t0), 4800);
+    } else force(d, target, t0);
+    last.id = d.id;
+  }
+  async function join(){
+    const d = lastRemote; if(!d) return;
+    showInv(null);
+    await openTube();
+    synced = true; ui();
+    await calib();
+    await apply(d);
+    toast('\uD83C\uDFA7 Ab saath sun rahe ho');
+  }
+  function onRemote(val){
+    if(!val || typeof val !== 'object' || !ID_RE.test(val.id || '')) return;
+    if(val.by === chatMyKey()) return;
+    const ver = Number(val.v) || 0; if(ver && ver === remoteV) return; remoteV = ver;
+    lastRemote = val;
+    if(synced){ apply(val); return; }
+    const age = (Date.now() + skew - Number(val.ts || 0)) / 1000;
+    if(val.st === 1 && age < 120) showInv(val); else if(inv) showInv(null);
+  }
+  function ensureListen(){
+    const want = (chatView === 'conv' && chatPeer) ? chatPeer.pair : '';
+    if(want === lPair) return;
+    if(typeof unL === 'function'){ try{ unL(); }catch(e){} }
+    unL = null;
+    if(lPair){ synced = false; if(mode !== 'off'){ try{ const p = P(); if(p && pst() === 1) p.pauseVideo(); }catch(e){} setMode('off'); } }
+    lPair = want; remoteV = 0; lastRemote = null; skew = 0;
+    if(inv) showInv(null);
+    if(!want) return;
+    const mine = want;
+    calib();
+    window.__fbListenReady(basePair() + '/yt', (val)=>{ if(lPair === mine) onRemote(val); })
+      .then((u)=>{ if(lPair === mine) unL = u; else { try{ u && u(); }catch(e){} } }).catch(()=>{});
+  }
+
+  function tick(){
+    try{
+      ensureListen();
+      if(!box || mode === 'off') return;
+      if(box.offsetParent === null){   // chat band/inbox par gaye -> awaaz band
+        try{ if(pst() === 1) P().pauseVideo(); }catch(e){}
+        if(synced) endSync(true);
+        return;
+      }
+      const st = pst(), t = ptime(), c = CU(), id = c ? c.id : '', now = Date.now();
+      ui(st, t);
+      if(!synced || !id){ last = { id, st: (st === 1 || st === 2) ? st : last.st, t, at: now }; return; }
+      if(st !== 1 && st !== 2){ last.id = id; return; }   // buffering/cued: ignore
+      let ch = false;
+      if(id !== last.id) ch = true;
+      else if(st !== last.st) ch = true;
+      else if(st === 1){ const exp = last.t + (now - last.at) / 1000; if(Math.abs(t - exp) > 2.5) ch = true; }
+      else if(Math.abs(t - last.t) > 1.2) ch = true;
+      last = { id, st, t, at: now };
+      if(ch && now > quietUntil) publish(id, st, t);
+    }catch(e){}
+  }
+  setInterval(tick, 1000);
+
+  // ---------- chat card (k:'yt') + links ----------
+  const prevBubble = chatBubbleHtml;
+  chatBubbleHtml = function(id, m){
+    if(m && m.k === 'yt' && m.a && ID_RE.test(m.a.id || '')){
+      const a = m.a, mine = m.f === chatMyKey(), pending = chatPending.has(id);
+      const seen = mine && !pending && Number(m.ts) <= chatPeerReadTs;
+      const tick = mine ? `<span class="chatTick ${seen ? 'seen' : ''}">${pending ? '\uD83D\uDD53' : (seen ? '\u2713\u2713' : '\u2713')}</span>` : '';
+      return `<div class="cmsg ${mine ? 'me' : 'them'}" data-id="${esc(id)}" data-ts="${Number(m.ts) || 0}"><div class="cbub"><div class="cxyt" data-ytid="${esc(a.id)}" data-yti="${esc(a.ti || '')}"><img src="https://i.ytimg.com/vi/${esc(a.id)}/mqdefault.jpg" alt="" loading="lazy"><b class="cxytp">&#9654;</b><div class="cxytt">${esc(a.ti || 'YouTube video')}</div><div class="cxyts">Tap: chat me dekho \u00b7 \uD83C\uDFA7 saath suno</div></div><span class="cmeta">${esc(chatTimeStr(m.ts))}${tick}</span></div></div>`;
+    }
+    return prevBubble(id, m);
+  };
+  document.addEventListener('click', (e)=>{
+    const card = e.target.closest && e.target.closest('#chatMsgs .cxyt');
+    if(card){ e.preventDefault(); e.stopPropagation(); openVideo({ id: card.dataset.ytid, t: card.dataset.yti || '' }); return; }
+    const a = e.target.closest && e.target.closest('#chatMsgs .ctext a');
+    if(a){ const m = YT_RE.exec(a.getAttribute('href') || ''); if(m){ e.preventDefault(); e.stopPropagation(); openVideo({ id: m[1], t: '' }); } }
+  }, true);
+  window.addEventListener('message', (e)=>{
+    if(e.data === 'cx-tube-exit' && fr && e.source === fr.contentWindow){ if(pst() === 1) setMode('mini'); else closeTube(); }
+  });
+
+  // ---------- entry points ----------
+  function hook(){
+    const head = document.querySelector('#chatConv .chatHead');
+    if(head && !head.querySelector('#cxtHb')){
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chatIconBtn'; b.id = 'cxtHb'; b.title = 'YouTube / Saath suno'; b.textContent = '\uD83C\uDFAC'; b.style.marginLeft = 'auto';
+      b.addEventListener('click', ()=>{ if(mode === 'off') openTube(); else setMode(mode === 'mini' ? 'full' : 'mini'); });
+      head.appendChild(b);
+    }
+    const m = $('cxMenu');
+    if(m && !m.querySelector('[data-xs="tube"]')){
+      m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="tube"><span>\uD83C\uDFAC</span>YouTube / Saath suno</button>');
+      m.querySelector('[data-xs="tube"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); openTube(); });
+    }
+    build();
+    const ta = $('chatInput');
+    if(ta && !ta.dataset.cxt){ ta.dataset.cxt = '1'; ta.addEventListener('focus', ()=>{ if(mode === 'full' && window.innerHeight < 720 && pst() === 1) setMode('mini'); }); }
+  }
+  cxPoll('chat', ()=>{ try{ hook(); }catch(e){} }, 800);
+  window.cxTube = { open: openTube, openVideo, close: closeTube, get synced(){ return synced; } };
+})();
