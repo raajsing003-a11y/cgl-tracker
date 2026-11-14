@@ -6084,6 +6084,11 @@ void main(){
   async function gPut(o){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').put(o); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
   async function gDel(id){ const d = await idb(); return new Promise((res, rej)=>{ const t = d.transaction('g', 'readwrite'); t.objectStore('g').delete(id); t.oncomplete = res; t.onerror = ()=> rej(t.error); }); }
 
+  let tabG = 's';
+  const RECK = 'cxg-recent';
+  const CATS = [['\u2764\uFE0F Pyaar','love'],['\uD83E\uDD17 Hug','hug'],['\uD83D\uDE02 Funny','funny'],['\uD83D\uDE22 Sad','sad'],['\uD83D\uDE21 Gussa','angry'],['\uD83C\uDF1E Good morning','good morning'],['\uD83C\uDF82 Birthday','birthday'],['\uD83D\uDE4F Thanks','thank you'],['\uD83D\uDE14 Sorry','sorry'],['\uD83D\uDD25 Meme','meme'],['\uD83D\uDC31 Cat','cat'],['\uD83C\uDF8C Anime','anime'],['\uD83D\uDE34 Good night','good night'],['\uD83C\uDF89 Congrats','congratulations']];
+  const recents = ()=>{ try{ const a = JSON.parse(localStorage.getItem(RECK) || '[]'); return Array.isArray(a) ? a.filter(x => typeof x === 'string').slice(0, 8) : []; }catch(e){ return []; } };
+  const addRecent = (q)=>{ q = String(q || '').trim().toLowerCase(); if(!q || q.length < 2 || q.indexOf('\uD83C\uDFB2') === 0) return; try{ const a = [q].concat(recents().filter(x => x !== q)).slice(0, 8); localStorage.setItem(RECK, JSON.stringify(a)); }catch(e){} };
   let roomL = [], on = false, del = false, saved = [], urls = [], online = [], busy = false, lastQ = null, off = 0, more = false, tok = 0, chips = null, dbT = 0;
 
   function styles(){
@@ -6092,17 +6097,40 @@ void main(){
     s.textContent = `
     #cxsk4Gif{flex:1;overflow:auto;display:none;padding:8px 10px}
     #cxsk4Gif.on{display:block}
-    #cxsk4Gif .gtop{display:flex;gap:6px;margin-bottom:8px}
-    #cxsk4Gif .gtop input{flex:1;min-width:0;background:#20242e;color:#eee;border:0;border-radius:10px;padding:8px 10px;font-size:14px}
-    #cxsk4Gif .gtop button{background:#20242e;color:#ddd;border:0;border-radius:10px;padding:8px 11px;font-size:14px}
-    #cxsk4Gif .gtop button.on{background:#c0392b;color:#fff}
+    #cxsk4Gif .gtop{display:flex;gap:6px;align-items:center;position:sticky;top:-8px;z-index:3;margin:-8px -10px 8px;padding:8px 10px;background:#171a21;box-shadow:0 6px 10px -8px #000}
+    #cxsk4Gif .gsb{flex:1;min-width:0;display:flex;align-items:center;background:#262b38;border:1.5px solid #323a4e;border-radius:14px;padding:0 4px 0 2px;transition:border-color .15s,background .15s}
+    #cxsk4Gif .gsb:focus-within{border-color:#2563eb;background:#1d2230}
+    #cxsk4Gif .gsb input{flex:1;min-width:0;background:transparent;color:#f1f3f8;border:0;outline:0;padding:11px 4px;font-size:16px}
+    #cxsk4Gif .gsb input::placeholder{color:#8a93a8}
+    #cxsk4Gif .gsb button{background:transparent;color:#9aa3b8;border:0;border-radius:10px;padding:6px 8px;font-size:17px;line-height:1}
+    #cxsk4Gif .gsb button[data-g="clr"]{display:none;font-size:15px}
+    #cxsk4Gif .gsb.has button[data-g="clr"]{display:block}
+    #cxsk4Gif .gtop>button{flex:none;background:#262b38;color:#ddd;border:0;border-radius:12px;width:42px;height:42px;padding:0;font-size:17px}
+    #cxsk4Gif .gtop>button.on{background:#c0392b;color:#fff}
+    #cxsk4.gifm .pn{height:min(66vh,480px)}
+    #cxsk4Gif .gtop{flex-wrap:wrap}
+    #cxsk4Gif .gtabs{flex:0 0 100%;display:flex;gap:6px;margin-top:2px}
+    #cxsk4Gif .gtabs button{flex:1;background:#20242e;color:#aab2c5;border:0;border-radius:10px;padding:8px 4px;font-size:13px;font-weight:700}
+    #cxsk4Gif .gtabs button.on{background:#2563eb;color:#fff}
+    #cxsk4Gif .gg{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+    #cxsk4Gif .gg button{transition:transform .12s}
+    #cxsk4Gif .gg button:active{transform:scale(.93)}
+    #cxsk4Gif .gg img{opacity:0;transition:opacity .25s}
+    #cxsk4Gif .gg img.ld{opacity:1}
+    #cxsk4Gif .gg .sk{aspect-ratio:1;border-radius:10px;background:linear-gradient(100deg,#20242e 30%,#2c3242 50%,#20242e 70%);background-size:200% 100%;animation:cxgSk 1.1s linear infinite}
+    @keyframes cxgSk{from{background-position:200% 0}to{background-position:-200% 0}}
+    #cxsk4Gif .chs.rc button{background:#1d2a44;color:#9db8ff}
+    #cxsk4Gif .chs{scrollbar-width:none}
+    #cxsk4Gif .chs::-webkit-scrollbar{display:none}
+    #cxsk4Gif .nt.em{text-align:center;opacity:.7;padding:26px 10px}
     #cxsk4Gif .h{font-size:12px;opacity:.6;margin:8px 2px 4px}
     #cxsk4Gif .gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
     #cxsk4Gif .gg button{background:#20242e;border:0;border-radius:10px;padding:0;aspect-ratio:1;position:relative;overflow:hidden;color:#8a93a8;font-size:28px}
     #cxsk4Gif .gg button img{width:100%;height:100%;object-fit:cover;display:block}
     #cxsk4Gif .gg .x{position:absolute;top:2px;right:2px;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center}
     #cxsk4Gif .chs{display:flex;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px}
-    #cxsk4Gif .chs button{flex:none;background:#20242e;color:#cdd3e0;border:0;border-radius:14px;padding:5px 11px;font-size:12.5px}
+    #cxsk4Gif .chs button{flex:none;background:#20242e;color:#cdd3e0;border:0;border-radius:14px;padding:6px 12px;font-size:13px}
+    #cxsk4Gif .chs button.on{background:#2563eb;color:#fff}
     #cxsk4Gif .gg .st{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.55);border-radius:10px;width:22px;height:22px;font-size:12px;line-height:22px;text-align:center}
     #cxsk4Gif .h b{opacity:.9}
     #cxsk4Gif .nt{font-size:12.5px;opacity:.65;padding:10px 4px;line-height:1.45}`;
@@ -6119,7 +6147,7 @@ void main(){
     const btn = document.createElement('button'); btn.type = 'button'; btn.id = 'cxsk4GifBtn'; btn.dataset.t = 'gif'; btn.textContent = 'GIF';
     tb.insertBefore(btn, tb.firstElementChild || null);   // GIF tab sabse pehle (Emoji se pehle)
     const box = document.createElement('div'); box.id = 'cxsk4Gif';
-    box.innerHTML = '<div class="gtop"><input type="search" id="cxgQ" placeholder="GIF search (Giphy)"><button type="button" data-g="go">&#128269;</button><button type="button" data-g="rnd" title="Random">&#127922;</button><button type="button" data-g="add">&#10133;</button><button type="button" data-g="del" id="cxgDel">&#128465;</button></div><div id="cxgBody"></div>';
+    box.innerHTML = '<div class="gtop"><div class="gsb" id="cxgSb"><button type="button" data-g="go" aria-label="Search">&#128269;</button><input type="search" id="cxgQ" placeholder="GIF dhundo... (hug, funny, love)" enterkeyhint="search" autocomplete="off"><button type="button" data-g="clr" aria-label="Clear">&#10005;</button></div><button type="button" data-g="rnd" title="Random">&#127922;</button><button type="button" data-g="add" title="Gallery se GIF">&#10133;</button><button type="button" data-g="del" id="cxgDel" title="Hatao">&#128465;</button><div class="gtabs" id="cxgTabs"><button type="button" data-gt="s">&#128269; Search</button><button type="button" data-gt="m" id="cxgTm">&#11088; Meri</button><button type="button" data-gt="r" id="cxgTr">&#128101; Sab ke</button></div></div><div id="cxgBody"></div>';
     gd.parentNode.insertBefore(box, gd.nextSibling);
     const inp = document.createElement('input'); inp.type = 'file'; inp.id = 'cxgF'; inp.accept = 'image/gif'; inp.multiple = true; inp.hidden = true; p.appendChild(inp);
     inp.addEventListener('change', async (e)=>{
@@ -6139,18 +6167,20 @@ void main(){
       hide();   // baaki tabs purane handler se chalte hain
     }, true);
     box.addEventListener('click', onClick);
-    $('cxgQ').addEventListener('input', ()=>{ clearTimeout(dbT); if(!getKey()) return; const v = $('cxgQ').value.trim(); if(v.length === 1) return; dbT = setTimeout(()=>{ if(on) search(v === '' ? true : false); }, 450); });   // live search (debounce)
-    box.addEventListener('scroll', ()=>{ if(on && getKey() && !busy && more && box.scrollHeight - box.scrollTop - box.clientHeight < 320) search(false, true); }, { passive: true });   // infinite scroll
+    box.addEventListener('load', (e)=>{ if(e.target && e.target.tagName === 'IMG') e.target.classList.add('ld'); }, true);
+    box.addEventListener('error', (e)=>{ if(e.target && e.target.tagName === 'IMG'){ e.target.classList.add('ld'); e.target.style.visibility = 'hidden'; } }, true);
+    $('cxgQ').addEventListener('input', ()=>{ const sb = $('cxgSb'); if(sb) sb.classList.toggle('has', !!$('cxgQ').value); clearTimeout(dbT); if(!getKey()) return; const v = $('cxgQ').value.trim(); if(v.length === 1) return; dbT = setTimeout(()=>{ if(on) search(v === '' ? true : false); }, 450); });   // live search (debounce)
+    box.addEventListener('scroll', ()=>{ if(on && tabG === 's' && getKey() && !busy && more && box.scrollHeight - box.scrollTop - box.clientHeight < 320) search(false, true); }, { passive: true });   // infinite scroll
     $('cxgQ').addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); search(); } });
     return true;
   }
   function show(){
     if(!build()) return;
-    on = true; del = false;
+    on = true; del = false; tabG = 's';
     const p = $('cxsk4');
     p.querySelectorAll('.tb [data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === 'gif'));
     const ed = $('cxsk4Ed'); if(ed) ed.hidden = true;
-    $('cxsk4Gd').style.display = 'none'; $('cxsk4Gif').classList.add('on');
+    $('cxsk4Gd').style.display = 'none'; $('cxsk4Gif').classList.add('on'); p.classList.add('gifm'); $('cxsk4Gif').scrollTop = 0;
     $('cxgQ').parentNode.style.display = getKey() ? 'flex' : 'flex';
     refreshSaved().then(()=>{ paint(); loadChips(); if(getKey() && !online.length && lastQ === null) search(true); });
   }
@@ -6158,6 +6188,7 @@ void main(){
     if(!on) return;
     on = false; revoke();
     const g = $('cxsk4Gd'); if(g) g.style.display = '';
+    const pp = $('cxsk4'); if(pp) pp.classList.remove('gifm');
     const b = $('cxsk4Gif'); if(b) b.classList.remove('on');
     const gb = $('cxsk4GifBtn'); if(gb) gb.classList.remove('on');
   }
@@ -6167,22 +6198,48 @@ void main(){
     const body = $('cxgBody'); if(!body || !on) return;
     revoke();
     const dbtn = $('cxgDel'); if(dbtn) dbtn.classList.toggle('on', del);
+    const tb = $('cxgTabs');
+    if(tb){
+      tb.querySelectorAll('[data-gt]').forEach(x => x.classList.toggle('on', x.dataset.gt === tabG));
+      const tm = $('cxgTm'), tr = $('cxgTr');
+      if(tm) tm.innerHTML = '&#11088; Meri' + (saved.length ? ' (' + saved.length + ')' : '');
+      if(tr) tr.innerHTML = '&#128101; Sab ke' + (roomL.length ? ' (' + roomL.length + ')' : '');
+    }
+    const grid = (n)=> '<div class="gg">' + Array.from({ length: n }, ()=> '<div class="sk"></div>').join('') + '</div>';
     let h = '';
-    if(!getKey()) h += '<div class="nt">Online GIF search ke liye <b>Giphy API key</b> chahiye (free: developers.giphy.com). Admin key daal de to sab ko apne aap mil jati hai.<br><button type="button" data-g="key" style="margin-top:6px;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:7px 12px;font-size:13px">&#128273; Key add karo</button></div>';
-    h += '<div class="h">Meri GIFs ' + (del ? '&mdash; hatane ke liye tap karo' : '') + '</div><div class="gg">';
-    h += '<button type="button" data-g="add" aria-label="GIF add">&#10133;</button>';
-    saved.forEach((g, i)=>{ const u = URL.createObjectURL(g.blob); urls.push(u); h += '<button type="button" data-s="' + i + '"><img src="' + u + '" alt="">' + (del ? '<span class="x">&#10005;</span>' : '') + '</button>'; });
-    h += '</div>';
-    if(roomL.length){ h += '<div class="h">&#128101; Sab ke GIFs (jo bhi use kare, sab ke paas)</div><div class="gg">'; roomL.forEach((o, i)=>{ h += '<button type="button" data-r="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"></button>'; }); h += '</div>'; }
-    if(getKey() && chips && chips.length) h += '<div class="chs">' + chips.map(c => '<button type="button" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('') + '</div>';
-    if(getKey()){
-      h += '<div class="h">' + (lastQ ? 'Search: ' + esc(lastQ) : 'Trending') + (busy ? ' ...' : '') + '</div><div class="gg">';
-      online.forEach((o, i)=>{ h += '<button type="button" data-o="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"><span class="st" data-st="' + i + '">&#11088;</span></button>'; });
+    if(tabG === 's'){
+      if(!getKey()) h += '<div class="nt">Online GIF search ke liye <b>Giphy API key</b> chahiye (free: developers.giphy.com). Admin key daal de to sab ko apne aap mil jati hai.<br><button type="button" data-g="key" style="margin-top:6px;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:7px 12px;font-size:13px">&#128273; Key add karo</button></div>';
+      else {
+        const rc = recents();
+        if(rc.length) h += '<div class="chs rc">' + rc.map(c => '<button type="button" data-c="' + esc(c) + '"' + (c === lastQ ? ' class="on"' : '') + '>&#128344; ' + esc(c) + '</button>').join('') + '<button type="button" data-g="rclr" aria-label="Saaf">&#10005;</button></div>';
+        const cat = CATS.map(x => [x[0], x[1]]);
+        (chips || []).forEach(c => { if(!cat.some(x => x[1] === c.toLowerCase())) cat.push([c, c]); });
+        h += '<div class="chs">' + cat.map(x => '<button type="button" data-c="' + esc(x[1]) + '"' + (x[1] === lastQ ? ' class="on"' : '') + '>' + esc(x[0]) + '</button>').join('') + '</div>';
+        h += '<div class="h">' + (lastQ ? '&#128270; <b>' + esc(lastQ) + '</b>' : '&#128293; Trending') + (busy && online.length ? ' ...' : '') + '</div>';
+        if(busy && !online.length) h += grid(9);
+        else {
+          h += '<div class="gg">';
+          online.forEach((o, i)=>{ h += '<button type="button" data-o="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"><span class="st" data-st="' + i + '">&#11088;</span></button>'; });
+          h += '</div>';
+          if(busy) h += grid(3);
+          if(!busy && lastQ && !online.length) h += '<div class="nt em">&#128533; Koi GIF nahi mili.<br>Dusra word try karo.</div>';
+          if(!busy && !more && online.length) h += '<div class="nt em" style="padding:10px">&mdash; bas itni hi &mdash;</div>';
+        }
+        h += '<div class="nt"><button type="button" data-g="key" style="background:transparent;color:#8a93a8;border:0;font-size:12px;text-decoration:underline">Giphy key badlo / hatao</button></div>';
+      }
+    } else if(tabG === 'm'){
+      h += '<div class="h">Meri GIFs ' + (del ? '&mdash; hatane ke liye tap karo' : '&mdash; jo bhejoge wo yahan apne aap aati hain') + '</div><div class="gg">';
+      h += '<button type="button" data-g="add" aria-label="GIF add">&#10133;</button>';
+      saved.forEach((g, i)=>{ const u = URL.createObjectURL(g.blob); urls.push(u); h += '<button type="button" data-s="' + i + '"><img src="' + u + '" alt="">' + (del ? '<span class="x">&#10005;</span>' : '') + '</button>'; });
       h += '</div>';
-      h += '<div class="nt"><button type="button" data-g="key" style="background:transparent;color:#8a93a8;border:0;font-size:12px;text-decoration:underline">Giphy key badlo / hatao</button></div>';
+      if(!saved.length) h += '<div class="nt em">Abhi koi GIF save nahi.<br>Search me &#11088; dabao ya &#10133; se gallery se lo.</div>';
+    } else {
+      if(roomL.length){ h += '<div class="h">&#128101; Sab ke GIFs (jo bhi use kare, sab ke paas)</div><div class="gg">'; roomL.forEach((o, i)=>{ h += '<button type="button" data-r="' + i + '"><img src="' + esc(o.p) + '" alt="" loading="lazy"></button>'; }); h += '</div>'; }
+      else h += '<div class="nt em">Abhi koi shared GIF nahi.<br>Koi bhi GIF bhejega to yahan sabko dikhegi.</div>';
     }
     const bx = $('cxsk4Gif'), sy = bx ? bx.scrollTop : 0;
     body.innerHTML = h; if(bx) bx.scrollTop = sy;
+    setTimeout(()=>{ try{ body.querySelectorAll('.gg img:not(.ld)').forEach(i => i.classList.add('ld')); }catch(e){} }, 4000);
   }
 
   const mapG = (d)=>{
@@ -6193,7 +6250,7 @@ void main(){
     const k = getKey();
     if(!k){ toast('Pehle Giphy API key add karo.'); return; }
     const q = append ? (lastQ || '') : (trend === true ? '' : ($('cxgQ').value || '').trim());
-    const my = ++tok;
+    const my = ++tok; tabG = 's';
     if(!append){ off = 0; online = []; more = false; }
     lastQ = q; busy = true; paint();
     try{
@@ -6208,7 +6265,7 @@ void main(){
       off += raw.length;
       const tot = j.pagination && Number(j.pagination.total_count);
       more = raw.length >= 24 && (!tot || off < tot) && off < 240;
-      if(!online.length) toast('Koi GIF nahi mili.');
+      if(!online.length) toast('Koi GIF nahi mili.'); else if(!append && q) addRecent(q);
     }catch(e){ if(my !== tok) return; if(!append) online = []; more = false; const em = String(e && e.message || e), c = (em.match(/http (\d{3})/) || [])[1];
       toast(c === '401' || c === '403' ? 'Giphy key galat/band hai (' + c + ') — nayi key daalo (developers.giphy.com)' : c === '429' ? 'Giphy limit poori (429) — thodi der baad try karo ya production key lo' : c ? 'Giphy error ' + c : 'Giphy tak network nahi pahunchi — internet/VPN/adblock check karo'); }
     busy = false; paint();
@@ -6216,7 +6273,7 @@ void main(){
   async function randomG(){
     const k = getKey(); if(!k){ toast('Pehle Giphy API key add karo.'); return; }
     const tag = ($('cxgQ').value || '').trim(), my = ++tok;
-    off = 0; more = false; lastQ = '🎲 Random' + (tag ? ' · ' + tag : ''); online = []; busy = true; paint();
+    tabG = 's'; off = 0; more = false; lastQ = '🎲 Random' + (tag ? ' · ' + tag : ''); online = []; busy = true; paint();
     try{
       const rs = await Promise.all(Array.from({ length: 8 }, ()=> fetch('https://api.giphy.com/v1/gifs/random?api_key=' + encodeURIComponent(k) + '&rating=pg-13&tag=' + encodeURIComponent(tag) + '&_=' + Math.random()).then(r => r.ok ? r.json() : null).catch(()=> null)));
       if(my !== tok) return;
@@ -6344,10 +6401,13 @@ void main(){
     const b = e.target.closest('button'); if(!b) return;
     const g = b.dataset.g;
     if(g === 'add'){ if(saved.length >= MAXG){ toast('Max ' + MAXG + ' GIF. Pehle kuch hatao.'); return; } $('cxgF').click(); return; }
-    if(g === 'del'){ del = !del; paint(); return; }
+    if(b.dataset.gt){ tabG = b.dataset.gt; if(tabG !== 'm') del = false; paint(); const bx = $('cxsk4Gif'); if(bx) bx.scrollTop = 0; return; }
+    if(g === 'rclr'){ try{ localStorage.removeItem(RECK); }catch(err){} paint(); return; }
+    if(g === 'del'){ del = !del; if(del) tabG = 'm'; paint(); return; }
     if(g === 'go'){ search(); return; }
+    if(g === 'clr'){ const q = $('cxgQ'); q.value = ''; const sb = $('cxgSb'); if(sb) sb.classList.remove('has'); search(true); try{ q.focus(); }catch(err){} return; }
     if(g === 'rnd'){ randomG(); return; }
-    if(b.dataset.c){ $('cxgQ').value = b.dataset.c; search(); return; }
+    if(b.dataset.c){ $('cxgQ').value = b.dataset.c; const sb = $('cxgSb'); if(sb) sb.classList.add('has'); search(); return; }
     if(g === 'key'){
       const cur = getKey();
       const v = prompt('Giphy API key paste karo (khaali chhodo = hata do):', cur);
