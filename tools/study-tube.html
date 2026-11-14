@@ -9138,7 +9138,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   const isPart = v => { const q = prog[v.id]; return !!(q && q.d && q.p > 20 && q.p < q.d - 20); };
   function pushS() { try { history.pushState({ stv: 1 }, ''); depth++; } catch (e) {} }
   function popS() { if (depth > 0) { ign++; depth--; try { history.back(); } catch (e) { ign--; } } }
-  function exitHost() { if (EMB) { try { parent.postMessage('uv-study-exit', '*'); } catch (e) {} } else { close(); mark('navHome'); } }
+  function exitHost() { if (EMB) { try { parent.postMessage(window.name === 'cxTube' ? 'cx-tube-exit' : 'uv-study-exit', '*'); } catch (e) {} } else { close(); mark('navHome'); } }
   function goBack() { if (depth > 0) { try { history.back(); } catch (e) { exitHost(); } } else exitHost(); }
   async function wake(on) { try { if (on) { if (!wl && navigator.wakeLock) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } else if (wl) { await wl.release(); wl = null; } } catch (e) { wl = null; } }
   function tmShow() { const e = $('stTm'); if (!e) return; const m = Math.floor(day.s / 60); e.textContent = 'Aaj ' + (m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min') + (lim ? ' / ' + (lim >= 60 ? lim / 60 + 'h' : lim + 'm') : ''); }
@@ -9381,6 +9381,10 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   /* ---------- player ---------- */
   let ytP = null;
   window.__stYT = () => yt;
+  /* CHAT bridge (chat.js 'Tube in chat' + Saath suno): koi bhi video id seedha chalao / abhi kya chal raha hai */
+  window.__stvEnter = function () { try { if (!ov) open(); return true; } catch (e) { return false; } };
+  window.__stvOpen = function (v, at) { try { if (!v || !/^[\w-]{11}$/.test(v.id || '')) return false; if (!ov) open(); hAdd({ id: v.id, t: v.t || 'YouTube video', c: v.c || '', cn: v.cn || '', p: Date.now() }); play(v.id, typeof at === 'number' ? at : undefined); return true; } catch (e) { return false; } };
+  window.__stvCur = function () { return cur ? { id: cur.id, t: cur.t || '', c: cur.c || '', cn: cur.cn || '' } : null; };
   function ytReady() {
     if (window.YT && YT.Player) return Promise.resolve();
     if (ytP) return ytP;
@@ -9413,7 +9417,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     } else { save(); if (e.data === 0 && cur) { const d = yt.getDuration(); prog[cur.id] = { p: d, d, t: Date.now() }; wr('uv99:st:prog', prog); const i = lastList.findIndex(x => x.id === cur.id), nx = i >= 0 ? lastList[i + 1] : null; render(); if (an && nx && left() > 0) { toast('Next: ' + nx.t.slice(0, 40)); setTimeout(() => { if (ov) play(nx.id); }, 1200); } } }
   }
   function onErr() { ldOff(); const m = $('stPT'); if (m) m.insertAdjacentHTML('afterend', '<div class="stv-er">This video blocks embedding, so it cannot play here.</div>'); }
-  async function play(id) {
+  async function play(id, at) {
     if (left() <= 0) return toast('Daily study limit reached');
     const v = cache.v.concat(res || [], hist).find(x => x.id === id); if (!v) return; cur = v; hAdd(v);
     const c = chans.find(x => x.id === v.c) || {};
@@ -9422,7 +9426,7 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
     const er = ov.querySelector('.stv-er'); if (er) er.remove();
     ldOn();
     exitFast(false); spd(); await ytReady();
-    const sv = prog[id], start = sv && sv.d && sv.p < sv.d - 15 ? Math.floor(sv.p) : 0;
+    const sv = prog[id], start = (typeof at === 'number' && at >= 0) ? Math.floor(at) : (sv && sv.d && sv.p < sv.d - 15 ? Math.floor(sv.p) : 0);
     if (yt && yt.loadVideoById) yt.loadVideoById({ videoId: id, startSeconds: start });
     else yt = new YT.Player('stYT', { host: 'https://www.youtube-nocookie.com', width: '100%', height: '100%', videoId: id,
       playerVars: { rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, autoplay: 1, start, fs: 0, controls: 0, disablekb: 1 },
