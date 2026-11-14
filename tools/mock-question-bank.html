@@ -140,7 +140,7 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
 <details class="card mo"><summary>⚙ Display &amp; Tools</summary><div class="ctl" style="margin:12px 0 0"><button class="btn" id="fr">↺ Size reset</button><label class="m">Text <input type="range" id="fs" min="70" max="200" step="5"></label><label class="m">Explanation <input type="range" id="es" min="70" max="200" step="5"></label><button class="btn" id="tg_cp">📏 Compact</button><button class="btn" id="tg_sh">🔀 Shuffle</button><button class="btn" id="pr_rs" hidden>🔄 Practice reset</button><button class="btn" id="st_rs">🧹 Stats reset</button></div><div class="m" style="margin-top:10px">Shortcuts: <b>E</b> = explanation on/off · Practice mein <b>1-4</b> ya <b>A-D</b> = option chuno</div></details>
 
 <div class="card">
-  <div class="seg"><button class="on" data-p="t">✍ Text paste</button><button data-p="i">🖼 Image</button></div>
+  <div class="seg"><button class="on" data-p="t">✍ Text paste</button><button data-p="i" hidden>🖼 Image</button></div>
   <div id="p_t">
     <textarea id="bk" placeholder="1 ya jitne chaho questions paste karo — options, answer, trick, LaTeX, chapter sab auto..."></textarea>
     <div class="row"><button class="btn y" id="bkgo">⚡ Add</button><label class="btn" for="bkf">📄 .txt</label><input type="file" id="bkf" accept=".txt,.md" hidden></div>
@@ -406,7 +406,7 @@ const ha=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&qu
 function renderTabs(){
   $("tabs").innerHTML=Object.keys(T).map(s=>`<button class="${s==S?"on":""}" data-s="${s}"><i>${IC[s]}</i>${s}</button>`).join("");
   $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{S=b.dataset.s;F="";E=null;LIM=40;fillTopics();renderTabs();render()});
-  const A=D.filter(x=>x.s==S);
+  const A=D.filter(x=>x.s==S&&hasTxt(x));
   $("st").innerHTML=`<div class="st"><b>${D.length}</b><span>Total Q</span></div><div class="st"><b>${A.length}</b><span>${S}</span></div><div class="st"><b>${new Set(A.map(x=>x.tp)).size}</b><span>Chapters</span></div>`;updSz()}
 function fillTopics(){$("tp").innerHTML=Object.keys(T[S]).map(t=>`<option>${t}</option>`).join("");$("tp").value="Other"}
 function editor(x){return `<div class="qi ed"><div class="qh"><span class="qn">Edit</span></div><textarea id="e_t">${ha(x.t)}</textarea>${"abcd".split("").map((c,j)=>`<input type="text" id="e_${c}" value="${ha(x.o[j])}" placeholder="Option ${"ABCD"[j]}">`).join("")}<select id="e_a">${["","A","B","C","D"].map(v=>`<option value="${v}" ${v==x.a?"selected":""}>${v?"Sahi answer: "+v:"Sahi answer: —"}</option>`).join("")}</select><textarea id="e_e" placeholder="Trick / Explanation">${ha(x.e)}</textarea><div class="row"><button class="btn y" onclick="esave(${x.id})">💾 Save</button><button class="btn" onclick="E=null;render()">Cancel</button></div></div>`}
@@ -416,7 +416,7 @@ function qcard(x,i){
   const ops=x.o.map((o,j)=>{if(!o)return"";let c="";if(rv&&j==k)c=" c";else if(pr&&done&&j==AN[x.id])c=" w";
     const tap=pr&&!done;return `<div class="op${c}${tap?" t":""}" ${tap?`onclick="pick(${x.id},${j})"`:""}><span class="l">${"ABCD"[j]}</span><span>${fmt(o)}</span></div>`}).join("");
   return `<div class="qi"><div class="qh"><span class="qn">Q${i+1}</span>${rv&&x.a?`<span class="ans">✓ Ans ${x.a}</span>`:""}${x.n?`<span class="m">${x.n-(x.w||0)}✓ ${x.w||0}✗</span>`:""}<button class="star" onclick="star(${x.id})">${x.f?"⭐":"☆"}</button></div>${x.t?`<div class="qt">${fmt(x.t)}</div>`:""}${x.img?`<img class="q" src="${x.img}" onclick="zoom(this.src)">`:""}${ops}${x.e&&rv?`<details ${(OP[x.id]!==undefined?OP[x.id]:P.ex)?"open":""}><summary onclick="OP[${x.id}]=!this.parentNode.open">💡 Trick / Explanation</summary><div style="margin-top:8px">${fmt(x.e)}</div></details>`:""}<div class="ft"><select onchange="mv(${x.id},this.value)">${Object.keys(T[x.s]).map(t=>`<option ${t==x.tp?"selected":""}>${t}</option>`).join("")}</select><span><button class="x" style="color:var(--mu)" onclick="cp(${x.id})">📋</button> <button class="x" style="color:var(--ac)" onclick="ed(${x.id})">✏ Edit</button> <button class="x" onclick="del(${x.id})">🗑</button></span></div></div>`}
-function render(){const q=$("sr").value.toLowerCase(),A=D.filter(x=>x.s==S),cnt={};A.forEach(x=>cnt[x.tp]=(cnt[x.tp]||0)+1);
+function render(){const q=$("sr").value.toLowerCase(),A=D.filter(x=>x.s==S&&hasTxt(x)),cnt={};A.forEach(x=>cnt[x.tp]=(cnt[x.tp]||0)+1);
   const ns=A.filter(x=>x.f).length,nw=A.filter(isW).length,nn=A.filter(x=>!x.n).length;if(F&&!["★","✗","○"].includes(F)&&!cnt[F])F="";if(F=="★"&&!ns)F="";if(F=="✗"&&!nw)F="";if(F=="○"&&!(nn&&nn<A.length))F="";
   $("chips").innerHTML=`<button class="chip ${F?"":"on"}" data-t="">सभी ${A.length}</button>`+(ns?`<button class="chip ${F=="★"?"on":""}" data-t="★">⭐ ${ns}</button>`:"")+(nw?`<button class="chip ${F=="✗"?"on":""}" data-t="✗">❌ Weak ${nw}</button>`:"")+(nn&&nn<A.length?`<button class="chip ${F=="○"?"on":""}" data-t="○">🆕 Naye ${nn}</button>`:"")+Object.keys(cnt).sort().map(t=>`<button class="chip ${t==F?"on":""}" data-t="${t}">${t} ${cnt[t]}</button>`).join("");
   const L=A.filter(x=>(!F||(F=="★"?x.f:F=="✗"?isW(x):F=="○"?!x.n:x.tp==F))&&(!q||((x.t||"")+x.o.join(" ")+x.tp+(x.e||"")).toLowerCase().includes(q)));
@@ -473,7 +473,8 @@ const mmss=z=>{z=Math.max(0,Math.floor(z));return String(Math.floor(z/60)).padSt
 function shuf(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function mkEl(x){return !!(x&&x.a&&"ABCD".indexOf(x.a)>=0&&(x.t||x.img)&&x.o.filter(Boolean).length>=2&&x.o["ABCD".indexOf(x.a)])}
+function hasTxt(x){return !!(x&&String(x.t||"").trim())}/* TEXT-ONLY: image-only questions hide (data delete nahi) */
+function mkEl(x){return !!(x&&x.a&&"ABCD".indexOf(x.a)>=0&&x.t&&x.o.filter(Boolean).length>=2&&x.o["ABCD".indexOf(x.a)])}
 function mkCfg(){if(!CF)CF=Object.assign({cnt:{},src:"all",pos:2,neg:.5,min:15,auto:true,shq:true,sho:false,mix:false,ex:{}},lsGet(MKF,{}));return CF}
 function mkPool(s,C){C=C||mkCfg();const ex=C.ex[s]||[];return D.filter(x=>x.s==s&&mkEl(x)&&ex.indexOf(x.tp)<0&&({all:1,new:!x.n,weak:isW(x),star:!!x.f,rev:isW(x)||!x.n})[C.src])}
 function mkN(s,C){const p=mkPool(s,C).length,v=C.cnt[s];return Math.min(v===undefined?25:v,p)}
@@ -810,6 +811,10 @@ async function reconcile(){
   try{
     let changed=false;const now=Date.now(),upd={};
     const dm=DM;
+    /* IMAGE-QUESTIONS HATAO: bina text wale (image-only) questions Trash me + cloud tombstone; image data (RAM) free */
+    {const bad=D.filter(x=>x&&!x.pend&&!hasTxt(x)&&(x.img||(QM[String(x.id)]&&QM[String(x.id)].hi)));
+     bad.forEach(x=>{D.splice(D.indexOf(x),1);x.img="";x.dt=now;TR.push(x);changed=true});
+     TR.forEach(x=>{if(x&&x.img&&!hasTxt(x))x.img=""})}
     /* (a) tombstone vs mere D (live) */
     for(const x of D.slice()){const id=String(x.id);if(dm[id]==null)continue;
       if(TSS.has(id)||(x.mt||0)>dm[id]){ /* maine khud restore kiya */
@@ -856,13 +861,19 @@ async function reconcile(){
 }
 
 async function fetchImgs(){
-  if(imgBusy||!FBR||!QM)return;imgBusy=true;
+  return;/* TEXT-ONLY: images fetch band */if(imgBusy||!FBR||!QM)return;imgBusy=true;
+  /* PERF: pehle ye saari images ek saath kheench kar har 15 par persist()+refreshUI() chalata tha
+     (poora bank dobara likhna/draw karna) aur persist ->sync -> fetchImgs ka loop banta tha => page hang.
+     Ab: ek baar me max 24 images, batch ke beech main thread ko saans, persist/refresh sirf end me. */
   try{
-    const need=D.filter(x=>!x.img&&QM[String(x.id)]&&QM[String(x.id)].hi&&!(fetchImgs.fail&&fetchImgs.fail[x.id]>Date.now()));
-    let n=0;fetchImgs.fail=fetchImgs.fail||{};
+    fetchImgs.fail=fetchImgs.fail||{};
+    /* PERF/MEMORY: images ki total RAM limit (~120MB text). Pehle bina limit saari images D me bharti thi => GBs memory (Task Manager me 9.4GB) */
+    let used=0;D.forEach(x=>{if(x&&x.img)used+=x.img.length});if(used>120e6)return;
+    const need=D.filter(x=>!x.img&&QM[String(x.id)]&&QM[String(x.id)].hi&&!(fetchImgs.fail[x.id]>Date.now())).slice(0,24);
+    let n=0;
     for(let i=0;i<need.length;i+=3){
       await Promise.all(need.slice(i,i+3).map(async x=>{try{const v=await FBR.get(BASE+"/im/"+x.id);if(typeof v==="string"&&v){x.img=v;n++}else fetchImgs.fail[x.id]=Date.now()+60000}catch(e){fetchImgs.fail[x.id]=Date.now()+60000}}));
-      if(n&&(i/3)%5==4){persist();refreshUI()}}
+      used=0;D.forEach(x=>{if(x&&x.img)used+=x.img.length});if(used>120e6)break;await new Promise(r=>setTimeout(r,80))}
     if(n){persist();refreshUI()}
   }finally{imgBusy=false}}
 
@@ -880,7 +891,12 @@ const _esave=window.esave;if(_esave)window.esave=function(id){_esave.apply(this,
 const _mv=window.mv;if(_mv)window.mv=function(id){_mv.apply(this,arguments);const x=D.find(y=>y.id==id);if(x){x.mt=Date.now();persist()}};
 const _trr=window.trRestore;if(_trr)window.trRestore=function(id){_trr.apply(this,arguments);const x=D.find(y=>y.id==id);if(x){x.mt=Date.now();persist()}};
 /* import / new add me 'by' (kisne dala) dikhane ke liye */
-const _qcard=qcard;qcard=function(x,i){let h=_qcard(x,i);if(x&&x.by&&x.by!==me())h=h.replace(/(<span class="qn">[^<]*<\/span>)/,'$1<span class="m">👤 '+hh(x.by)+"</span>");return h};
+const _qcard=qcard;qcard=function(x,i){
+  /* PERF: base64 img DOM me daalte hi sync decode hota tha (15s hang) -> token se lazy; badi string par regex bhi nahi */
+  const real=x&&x.img,lz=typeof real==="string"&&real.slice(0,5)==="data:";
+  if(lz)x.img="data:LZ"+x.id;
+  let h;try{h=_qcard(x,i)}finally{if(lz)x.img=real}
+  if(lz)h=h.split('src="data:LZ'+x.id+'"').join('data-lz="'+x.id+'"');if(x&&x.by&&x.by!==me())h=h.replace(/(<span class="qn">[^<]*<\/span>)/,'$1<span class="m">👤 '+hh(x.by)+"</span>");return h};
 
 /* ================================================================
    2) UI: sync strip + Delete + Export cards
@@ -901,10 +917,14 @@ MAIN.insertAdjacentHTML("beforeend",`
  <div class="row"><button class="btn" id="dl_sub" style="color:var(--rd);border-color:var(--rd)"></button><button class="btn" id="dl_ch" style="color:var(--rd);border-color:var(--rd)" hidden></button></div></div>`);
 
 function dlLabels(){
-  const A=D.filter(x=>x.s==S);$("dl_sub").textContent="🗑 "+S+" ke SAB "+A.length+" questions delete";$("dl_sub").disabled=!A.length;
+  const A=D.filter(x=>x.s==S&&hasTxt(x));$("dl_sub").textContent="🗑 "+S+" ke SAB "+A.length+" questions delete";$("dl_sub").disabled=!A.length;
   const n=(F&&!["★","✗","○"].includes(F))?A.filter(x=>x.tp==F).length:0;$("dl_ch").hidden=!n;if(n)$("dl_ch").textContent="🗑 Sirf chapter “"+F+"” ke "+n+" Q delete"}
 const _rt=renderTabs;renderTabs=function(){const r=_rt.apply(this,arguments);try{dlLabels()}catch(e){}return r};
-const _rd=render;render=function(){const r=_rd.apply(this,arguments);try{dlLabels()}catch(e){}return r};
+/* PERF: list ki base64 images sirf screen ke paas aane par load */
+const _lzIO=("IntersectionObserver" in window)?new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const im=e.target;_lzIO.unobserve(im);const id=im.getAttribute("data-lz");const q=D.find(y=>String(y.id)===id);im.removeAttribute("data-lz");if(q&&q.img){im.decoding="async";im.src=q.img}}),{rootMargin:"300px"}):null;
+function lazyImgs(){document.querySelectorAll("img[data-lz]").forEach(im=>{if(_lzIO)_lzIO.observe(im);else{const id=im.getAttribute("data-lz"),q=D.find(y=>String(y.id)===id);im.removeAttribute("data-lz");if(q&&q.img)im.src=q.img}})}
+(function(){const st=document.createElement("style");st.textContent="img[data-lz]{display:block;min-height:180px;width:100%;max-width:100%;background:rgba(128,128,128,.12);border-radius:8px}";document.head.appendChild(st)})();
+const _rd=render;render=function(){const r=_rd.apply(this,arguments);try{dlLabels()}catch(e){}try{lazyImgs()}catch(e){}return r};
 
 function delMany(L,label){
   if(!L.length){toast("Delete karne ke liye kuch nahi hai");return}
@@ -915,7 +935,7 @@ function delMany(L,label){
   persist();renderTabs();render();trUI();
   toast("🗑 "+L.length+" questions Deleted me gaye","↩ Undo",()=>{
     const s2=new Set(L);TR=TR.filter(x=>!s2.has(x));L.forEach(x=>{delete x.dt;x.mt=Date.now()});D=L.concat(D);persist();renderTabs();render();trUI()})}
-$("dl_sub").onclick=()=>delMany(D.filter(x=>x.s==S),S);
+$("dl_sub").onclick=()=>delMany(D.filter(x=>x.s==S&&hasTxt(x)),S);
 $("dl_ch").onclick=()=>delMany(D.filter(x=>x.s==S&&x.tp==F),S+" / "+F);
 /* Trash: ek saath sab restore */
 const _trList=trList;trList=function(){_trList.apply(this,arguments);const l=$("trl");if(TR.length&&l&&!$("trall"))l.insertAdjacentHTML("afterbegin",'<div class="row" style="margin:0 0 10px"><button class="btn y" id="trall">↩ Sab '+TR.length+' restore karo</button></div>');
@@ -957,8 +977,8 @@ const L_DOCX=["https://cdn.jsdelivr.net/npm/docx@9.8.1/dist/index.iife.js","http
 
 function pickItems(){
   const sc=$("ex_sc").value;let L;
-  if(sc=="list")L=(typeof CL!=="undefined"&&CL&&CL.length)?CL.slice():D.filter(x=>x.s==S);
-  else if(sc=="sub")L=D.filter(x=>x.s==S);else L=D.slice();
+  if(sc=="list")L=(typeof CL!=="undefined"&&CL&&CL.length)?CL.slice():D.filter(x=>x.s==S&&hasTxt(x));
+  else if(sc=="sub")L=D.filter(x=>x.s==S&&hasTxt(x));else L=D.slice();
   /* subject (T order) -> chapter (A-Z) -> jaisa list me hai */
   const so=SUBS();const g={};L.forEach(x=>{const k=x.s+"\u0001"+(x.tp||"Other");(g[k]=g[k]||[]).push(x)});
   return Object.keys(g).sort((a,b)=>{const[as,at]=a.split("\u0001"),[bs,bt]=b.split("\u0001");return so.indexOf(as)-so.indexOf(bs)||(at<bt?-1:at>bt?1:0)}).reduce((o,k)=>o.concat(g[k]),[])}
