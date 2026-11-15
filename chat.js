@@ -8731,6 +8731,7 @@ const AIReply = (function(){
     p.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--panel,#111013);border-bottom:1px solid var(--border,#333038)"><button type="button" id="cxAvBack" class="chatIconBtn">←</button><div style="flex:1;min-width:0"><div id="cxAvTitle" style="font-weight:800;font-size:16px;color:var(--white,#eeecf0)">👁 Admin: sab chats</div><div style="font-size:11.5px;color:var(--muted,#aaa5ad)">Read-only · har view log hota hai</div></div></div><div id="cxAvBody" style="flex:1;overflow:auto;padding:10px 12px;max-width:640px;width:100%;margin:0 auto;box-sizing:border-box"></div>';
     document.body.appendChild(p);
     $('cxAvBack').onclick = ()=>{ if(p._view === 'conv') showList(); else p.style.display = 'none'; };
+    $('cxAvBody').addEventListener('click', onBodyClick);
     return p;
   }
   function nameOfKey(k, map){ return (map && map[k]) || k; }
@@ -8761,6 +8762,51 @@ const AIReply = (function(){
       body.querySelectorAll('button[data-pair]').forEach(b=> b.onclick = ()=> openPair(b.dataset.pair, b.dataset.a, b.dataset.b));
     }catch(e){ console.error(e); body.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444">Chats load nahi hui. Firebase rules me Admin ko read allow hai?</div>'; }
   }
+
+  // ADMIN PHOTO VIEW: photo ka thumbnail seedha dikhta hai; tap = full photo (rooms/<room>/_chats/<pair>/f/<fid>)
+  function body(m, pair){
+    const a = m.a || {};
+    if(m.k === 'i'){
+      const cap = m.t ? `<div style="margin-top:4px">${esc(m.t)}</div>` : '';
+      if(a.sk) return a.th ? `<img src="${esc(a.th)}" alt="Sticker" style="max-width:110px;max-height:110px;display:block">` : '🎭 Sticker';
+      const vo = a.vo ? '<div style="font-size:11px;color:var(--muted,#aaa5ad);margin-bottom:4px">👁 Ek baar dekhne wali photo</div>' : '';
+      const thumb = a.th
+        ? `<img data-aimg="${esc(a.fid || '')}" data-pair="${esc(pair)}" src="${esc(a.th)}" alt="Photo" style="max-width:220px;max-height:260px;border-radius:8px;display:block;cursor:pointer">`
+        : `<button type="button" data-aimg="${esc(a.fid || '')}" data-pair="${esc(pair)}" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border,#333038);background:var(--panel,#111013);color:inherit;cursor:pointer">📷 Photo kholo</button>`;
+      return vo + thumb + cap;
+    }
+    if(m.k === 'v' && a.th) return `<img data-avid="${esc(a.fid || '')}" data-pair="${esc(pair)}" data-mt="${esc(a.mt || '')}" src="${esc(a.th)}" alt="Video" style="max-width:220px;max-height:260px;border-radius:8px;display:block;cursor:pointer"><div style="font-size:12px;margin-top:3px">🎬 Video · tap karo</div>` + (m.t ? `<div>${esc(m.t)}</div>` : '');
+    return esc(prev(m));
+  }
+  const fcache = new Map();
+  async function adminFile(pair, fid){
+    if(!fid) throw new Error('nofid');
+    const key = pair + '/' + fid; if(fcache.has(key)) return fcache.get(key);
+    const v = await window.__fbGet(`${chatBase()}/_chats/${pair}/f/${fid}`);
+    if(!v || !v.d) throw new Error('missing');
+    fcache.set(key, v.d); return v.d;
+  }
+  function lightbox(kind, src){
+    let lb = $('cxAvLb'); if(lb) lb.remove();
+    lb = document.createElement('div'); lb.id = 'cxAvLb';
+    lb.style.cssText = 'position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)';
+    lb.innerHTML = (kind === 'vid' ? `<video src="${src}" controls autoplay playsinline style="max-width:100%;max-height:100%"></video>` : `<img src="${src}" alt="" style="max-width:100%;max-height:100%;object-fit:contain">`) + '<button type="button" style="position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:20px">✕</button>';
+    lb.onclick = (e)=>{ if(e.target.tagName !== 'IMG' && e.target.tagName !== 'VIDEO') lb.remove(); };
+    document.body.appendChild(lb);
+  }
+  function dataBlobUrl(d){ const [h, b] = d.split(','); const mt = (h.match(/:(.*?);/) || [])[1] || 'application/octet-stream'; const bin = atob(b), u = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return URL.createObjectURL(new Blob([u], { type: mt })); }
+  async function onBodyClick(e){
+    const t = e.target.closest('[data-aimg],[data-avid]'); if(!t) return;
+    const isVid = t.hasAttribute('data-avid'), fid = isVid ? t.dataset.avid : t.dataset.aimg;
+    try{
+      if(typeof chatToastMsg === 'function') chatToastMsg(isVid ? 'Video khul rahi hai…' : 'Photo khul rahi hai…');
+      const d = await adminFile(t.dataset.pair, fid);
+      lightbox(isVid ? 'vid' : 'img', isVid ? dataBlobUrl(d) : d);
+    }catch(err){
+      if(typeof chatToastMsg === 'function') chatToastMsg('Full photo nahi mili (upload adhoori ya delete ho chuki).');
+      else if(!isVid && t.tagName === 'IMG') lightbox('img', t.src);
+    }
+  }
   async function openPair(pair, a, b){
     const p = ensurePanel(); p._view = 'conv';
     const names = p._names || {};
@@ -8775,7 +8821,7 @@ const AIReply = (function(){
       body.innerHTML = arr.map(([id, m])=>{
         m = m || {}; const d = new Date(Number(m.ts) || 0), day = d.toDateString();
         const sep = day !== lastDay ? `<div style="text-align:center;font-size:11px;color:var(--muted,#aaa5ad);margin:10px 0 4px">${esc(d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}))}</div>` : ''; lastDay = day;
-        return sep + `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038)"><div style="font-size:11.5px;font-weight:800;color:var(--accent,#fbbf24)">${esc(nameOfKey(m.f, names))} <span style="font-weight:600;color:var(--muted,#aaa5ad)">· ${esc(d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="margin-top:3px;word-break:break-word;white-space:pre-wrap">${esc(prev(m))}</div></div>`;
+        return sep + `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038)"><div style="font-size:11.5px;font-weight:800;color:var(--accent,#fbbf24)">${esc(nameOfKey(m.f, names))} <span style="font-weight:600;color:var(--muted,#aaa5ad)">· ${esc(d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="margin-top:3px;word-break:break-word;white-space:pre-wrap">${body(m, pair)}</div></div>`;
       }).join('');
       body.scrollTop = body.scrollHeight;
     }catch(e){ console.error(e); body.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444">Messages load nahi hue (rules/network).</div>'; }
