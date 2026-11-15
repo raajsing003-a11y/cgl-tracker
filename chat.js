@@ -8764,7 +8764,7 @@ const AIReply = (function(){
   }
 
   // ADMIN PHOTO VIEW: photo ka thumbnail seedha dikhta hai; tap = full photo (rooms/<room>/_chats/<pair>/f/<fid>)
-  function body(m, pair){
+  function msgBody(m, pair){
     const a = m.a || {};
     if(m.k === 'i'){
       const cap = m.t ? `<div style="margin-top:4px">${esc(m.t)}</div>` : '';
@@ -8821,7 +8821,7 @@ const AIReply = (function(){
       body.innerHTML = arr.map(([id, m])=>{
         m = m || {}; const d = new Date(Number(m.ts) || 0), day = d.toDateString();
         const sep = day !== lastDay ? `<div style="text-align:center;font-size:11px;color:var(--muted,#aaa5ad);margin:10px 0 4px">${esc(d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}))}</div>` : ''; lastDay = day;
-        return sep + `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038)"><div style="font-size:11.5px;font-weight:800;color:var(--accent,#fbbf24)">${esc(nameOfKey(m.f, names))} <span style="font-weight:600;color:var(--muted,#aaa5ad)">· ${esc(d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="margin-top:3px;word-break:break-word;white-space:pre-wrap">${body(m, pair)}</div></div>`;
+        return sep + `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--panel2,#1a181d);border:1px solid var(--border,#333038)"><div style="font-size:11.5px;font-weight:800;color:var(--accent,#fbbf24)">${esc(nameOfKey(m.f, names))} <span style="font-weight:600;color:var(--muted,#aaa5ad)">· ${esc(d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}))}</span></div><div style="margin-top:3px;word-break:break-word;white-space:pre-wrap">${msgBody(m, pair)}</div></div>`;
       }).join('');
       body.scrollTop = body.scrollHeight;
     }catch(e){ console.error(e); body.innerHTML = '<div style="padding:20px;text-align:center;color:#ef4444">Messages load nahi hue (rules/network).</div>'; }
