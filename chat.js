@@ -10310,16 +10310,8 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
       m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="tube"><span>\uD83C\uDFAC</span>YouTube / Saath suno</button>');
       m.querySelector('[data-xs="tube"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); openTube(); });
     }
-    if(head){
-      const adm = typeof isMeAdmin === 'function' && isMeAdmin();
-      let rb = head.querySelector('#cxrrHb');
-      if(adm && !rb){
-        rb = document.createElement('button'); rb.type = 'button'; rb.className = 'chatIconBtn'; rb.id = 'cxrrHb';
-        rb.addEventListener('click', ()=>{ chatToggleRR(); });
-        const tb = head.querySelector('#cxtHb'); if(tb) head.insertBefore(rb, tb); else head.appendChild(rb);
-      }
-      if(rb){ if(!adm){ rb.remove(); } else { const off = chatRRHidden(); const t = off ? '\uD83D\uDE48' : '\uD83D\uDC41\uFE0F'; if(rb.textContent !== t){ rb.textContent = t; rb.title = off ? 'Read receipts OFF (tap: ON)' : 'Read receipts ON (tap: OFF)'; } } }
-    }
+    // Read-receipts (👁) ab header me nahi — jagah bachti hai taaki 🎬 dikhe. Option ⋮ menu me hai (sirf Admin).
+    if(head){ const rb = head.querySelector('#cxrrHb'); if(rb) rb.remove(); }
     build();
     const ta = $('chatInput');
     if(ta && !ta.dataset.cxt){ ta.dataset.cxt = '1'; ta.addEventListener('focus', ()=>{ if(mode === 'full' && window.innerHeight < 720 && pst() === 1) setMode('mini'); }); }
