@@ -543,6 +543,15 @@ function chatRefreshTicks(){
     tk.classList.toggle('seen', seen);
   });
 }
+// Admin ke liye: read receipts (blue tick) chupao — samne wale ko pata nahi chalega ki tumne padha
+function chatRRHidden(){ try{ return localStorage.getItem('cx-rr-off') === '1' && typeof isMeAdmin === 'function' && !!isMeAdmin(); }catch(e){ return false; } }
+function chatToggleRR(){
+  if(!(typeof isMeAdmin === 'function' && isMeAdmin())){ chatToastMsg('Ye option sirf Admin ke liye hai.'); return false; }
+  const off = chatRRHidden();
+  try{ localStorage.setItem('cx-rr-off', off ? '0' : '1'); }catch(e){}
+  chatToastMsg(off ? '👁️ Read receipts ON — ab samne wale ko blue tick dikhega' : '🙈 Read receipts OFF — tum padho, samne wale ko blue tick nahi dikhega');
+  return true;
+}
 function chatMarkRead(){
   if(!chatPeer || document.hidden) return;
   clearTimeout(chatMarkReadTimer);
@@ -551,7 +560,7 @@ function chatMarkRead(){
     if(!p || document.hidden) return;
     const idx = chatIdx[p.key];
     const needIdx = !!(idx && Number(idx.u) > 0);
-    const needRead = chatLastIncomingTs > chatReadSentTs;
+    const needRead = !chatRRHidden() && chatLastIncomingTs > chatReadSentTs;
     if(!needIdx && !needRead) return;
     const b = `${chatBase()}/_chats/${p.pair}/r/${chatMyKey()}`;
     const up = {};
@@ -586,7 +595,7 @@ async function chatSend(){
     bn: kb === me ? myName : peer.name
   };
   up[`${b}/_chats/${peer.pair}/m/${id}`] = { f: me, t: text, ts: TS };
-  up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
+  if(!chatRRHidden()) up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
   up[`${b}/_chatIdx/${me}/${peer.key}/n`] = peer.name;
   up[`${b}/_chatIdx/${me}/${peer.key}/l`] = preview;
   up[`${b}/_chatIdx/${me}/${peer.key}/ts`] = TS;
@@ -1097,7 +1106,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     const needMeta = !window.__cxMetaSent.has(peer.pair);
     if(needMeta){ window.__cxMetaSent.add(peer.pair); up[`${b}/_chats/${peer.pair}/meta`] = { a: ka, b: kb, an: ka === me ? myName : peer.name, bn: kb === me ? myName : peer.name }; }
     up[`${b}/_chats/${peer.pair}/m/${id}`] = m;
-    up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
+    if(!chatRRHidden()) up[`${b}/_chats/${peer.pair}/r/${me}`] = TS;
     const pv = String(preview || '').slice(0, 80);
     up[`${b}/_chatIdx/${me}/${peer.key}/n`] = peer.name;
     up[`${b}/_chatIdx/${me}/${peer.key}/l`] = pv;
@@ -1765,7 +1774,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     }
     if(m.f === me && !chatPending.has(id)){
       const ts = Number(m.ts) || 0;
-      if(ts > chatPeerReadTs && ts <= DV) h = h.replace(/<span class="chatTick ">✓<\/span>/, '<span class="chatTick dlv">✓✓</span>');
+      if(false && ts > chatPeerReadTs && ts <= DV) h = h.replace(/<span class="chatTick ">✓<\/span>/, '<span class="chatTick dlv">✓✓</span>');
     }
     return h;
   };
@@ -1774,7 +1783,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     box.querySelectorAll('.cmsg.me').forEach(el=>{
       const id = el.dataset.id, tk = el.querySelector('.chatTick'); if(!tk) return;
       const pend = chatPending.has(id), ts = Number(el.dataset.ts);
-      const seen = !pend && ts <= chatPeerReadTs, dlv = !pend && ts <= DV;
+      const seen = !pend && ts <= chatPeerReadTs, dlv = false;
       tk.textContent = pend ? '🕓' : (seen || dlv ? '✓✓' : '✓');
       tk.classList.toggle('seen', seen); tk.classList.toggle('dlv', dlv && !seen);
     });
@@ -2103,6 +2112,7 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       { ico: '⭐', label: 'Starred messages', fn: starredList },
       { ico: '🖼️', label: 'Wallpaper', fn: wallpaperSheet },
       { ico: muted ? '🔔' : '🔕', label: muted ? 'Notifications on karo' : 'Notifications mute karo', fn: ()=>{ const s = mutedSet(); muted ? s.delete(key) : s.add(key); LW(P() + 'mute', [...s]); toast(muted ? 'Unmute ho gaya' : 'Mute ho gaya'); } },
+      ...(isMeAdmin() ? [{ ico: chatRRHidden() ? '🙈' : '👁️', label: 'Read receipts (blue tick): ' + (chatRRHidden() ? 'OFF — samne wale ko nahi dikhta' : 'ON') + ' · sirf Admin', fn: chatToggleRR }] : []),
       { ico: '📄', label: 'Chat export (PDF — poori chat)', fn: exportPdf },
       { ico: '⏬', label: 'Saare purane messages load karo', fn: loadAllManual },
       { ico: '📤', label: 'Chat export (txt)', fn: exportChat },
@@ -10253,6 +10263,16 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
     if(m && !m.querySelector('[data-xs="tube"]')){
       m.insertAdjacentHTML('beforeend', '<button type="button" data-xs="tube"><span>\uD83C\uDFAC</span>YouTube / Saath suno</button>');
       m.querySelector('[data-xs="tube"]').addEventListener('click', (e)=>{ e.preventDefault(); m.classList.remove('open'); openTube(); });
+    }
+    if(head){
+      const adm = typeof isMeAdmin === 'function' && isMeAdmin();
+      let rb = head.querySelector('#cxrrHb');
+      if(adm && !rb){
+        rb = document.createElement('button'); rb.type = 'button'; rb.className = 'chatIconBtn'; rb.id = 'cxrrHb';
+        rb.addEventListener('click', ()=>{ chatToggleRR(); });
+        const tb = head.querySelector('#cxtHb'); if(tb) head.insertBefore(rb, tb); else head.appendChild(rb);
+      }
+      if(rb){ if(!adm){ rb.remove(); } else { const off = chatRRHidden(); const t = off ? '\uD83D\uDE48' : '\uD83D\uDC41\uFE0F'; if(rb.textContent !== t){ rb.textContent = t; rb.title = off ? 'Read receipts OFF (tap: ON)' : 'Read receipts ON (tap: OFF)'; } } }
     }
     build();
     const ta = $('chatInput');
