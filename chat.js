@@ -2103,6 +2103,8 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
       { ico: '⭐', label: 'Starred messages', fn: starredList },
       { ico: '🖼️', label: 'Wallpaper', fn: wallpaperSheet },
       { ico: muted ? '🔔' : '🔕', label: muted ? 'Notifications on karo' : 'Notifications mute karo', fn: ()=>{ const s = mutedSet(); muted ? s.delete(key) : s.add(key); LW(P() + 'mute', [...s]); toast(muted ? 'Unmute ho gaya' : 'Mute ho gaya'); } },
+      { ico: '📄', label: 'Chat export (PDF — poori chat)', fn: exportPdf },
+      { ico: '⏬', label: 'Saare purane messages load karo', fn: loadAllManual },
       { ico: '📤', label: 'Chat export (txt)', fn: exportChat },
       { ico: '🧹', label: 'Chat clear karo (sirf mere liye)', bad: true, fn: ()=>{ if(confirm('Is chat ke saare messages sirf tumhare device se hat jayenge. Pakka?')){ LW(P() + 'clr:' + pairOf(), Date.now()); rerender(); toast('Chat clear ho gayi'); } } },
       (blocked || isMeAdmin()) ? { ico: '🚫', label: blocked ? 'Unblock karo' : 'Block karo', bad: !blocked, fn: ()=> toggleBlock(key) } : { ico: '🔒', label: 'Block sirf Admin kar sakta hai', fn: ()=>{} },
@@ -2114,13 +2116,74 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
     if(!ids.length){ sheet('Starred messages', [{ ico: 'ℹ️', label: 'Abhi koi starred message nahi', fn: ()=>{} }]); return; }
     sheet('Starred messages', ids.reverse().map(id=>{ const m = chatMsgs.get(id); return { ico: '⭐', label: nameOf(m.f) + ': ' + previewOf(m).slice(0, 60), fn: ()=> scrollToMsg(id) }; }));
   }
-  function exportChat(){
+  async function exportChat(){
+    toast('⏳ Poori chat load ho rahi hai…');
+    try{ await loadAllOlder(); }catch(e){}
     const hid = hidSet(), clr = clrTs();
     const lines = chatSortedIds().map(id=>{ const m = chatMsgs.get(id), x = X[id] || {}; if(!m || hid.has(id) || x.del || (Number(m.ts) || 0) <= clr) return null; const d = new Date(Number(m.ts) || 0); return `[${d.toLocaleDateString('en-IN')} ${d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}] ${m.f === chatMyKey() ? myName : chatPeer.name}: ${(x.ed && x.ed.t) || previewOf(m)}`; }).filter(Boolean);
     if(!lines.length){ toast('Export karne ko kuch nahi.'); return; }
     const blob = new Blob(['Chat: ' + myName + ' & ' + chatPeer.name + '\n\n' + lines.join('\n')], { type: 'text/plain' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'chat-' + chatPeer.name.replace(/\W+/g, '_') + '.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=> URL.revokeObjectURL(a.href), 20000);
-    toast('Sirf load hue messages export hue.');
+    toast('Poori chat export ho gayi.');
+  }
+  async function loadAllOlder(){
+    if(!chatPeer) return;
+    const peer = chatPeer;
+    let guard = 0;
+    while(!chatNoMoreOlder && chatPeer === peer && guard++ < 400){
+      const ids = chatSortedIds(); if(!ids.length) break;
+      const arr = await window.__fbChatOlder(`${chatBase()}/_chats/${peer.pair}/m`, ids[0], 100);
+      arr.forEach(([id, m])=> chatMsgs.set(id, m));
+      if(arr.length < 100) chatNoMoreOlder = true;
+      if(!chatNoMoreOlder) toast('⏳ ' + chatMsgs.size + ' messages load hue…');
+    }
+    if(chatPeer === peer) chatRenderAll(true);
+  }
+  async function loadAllManual(){
+    toast('⏳ Saare purane messages load ho rahe hain…');
+    try{ await loadAllOlder(); toast('✅ Poori chat load ho gayi (' + chatMsgs.size + ' messages)'); }catch(e){ toast('Kuch purane messages load nahi hue. Net check karo.'); }
+  }
+  async function exportPdf(){
+    if(!chatPeer) return;
+    toast('⏳ Poori chat load ho rahi hai…');
+    try{ await loadAllOlder(); }catch(e){ toast('Kuch purane messages load nahi hue — jitne mile utne export honge.'); }
+    const hid = hidSet(), clr = clrTs();
+    const E = (v)=> String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let body = '', lastDay = '', n = 0;
+    chatSortedIds().forEach(id=>{
+      const m = chatMsgs.get(id), x = X[id] || {};
+      if(!m || hid.has(id) || x.del || (Number(m.ts) || 0) <= clr) return;
+      const d = new Date(Number(m.ts) || 0), mine = m.f === chatMyKey();
+      const day = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+      if(day !== lastDay){ body += '<div class="ds"><span>' + E(day) + '</span></div>'; lastDay = day; }
+      const txt = (x.ed && x.ed.t) || (m.k === 'yt' ? '🎬 YouTube: ' + ((m.a && m.a.ti) || '') + (m.a && m.a.id ? '  https://youtu.be/' + m.a.id : '') : previewOf(m));
+      body += '<div class="r ' + (mine ? 'me' : 'th') + '"><div class="b"><div class="n">' + E(mine ? myName : chatPeer.name) + '</div><div class="t">' + E(txt).replace(/\n/g, '<br>') + '</div><div class="tm">' + E(d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })) + '</div></div></div>';
+      n++;
+    });
+    if(!n){ toast('Export karne ko kuch nahi.'); return; }
+    const title = 'Chat — ' + myName + ' & ' + chatPeer.name;
+    const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + E('chat-' + chatPeer.name.replace(/\W+/g, '_')) + '</title><style>'
+      + '@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      + 'body{font-family:system-ui,"Noto Sans Devanagari","Segoe UI",Arial,sans-serif;color:#1b1d24;margin:0;font-size:12.5px;line-height:1.45}'
+      + 'h1{font-size:19px;margin:0 0 2px}.sub{color:#667;font-size:11.5px;margin-bottom:14px;border-bottom:2px solid #e3e6ee;padding-bottom:8px}'
+      + '.ds{text-align:center;margin:14px 0 8px;page-break-after:avoid}.ds span{background:#eef1f8;color:#556;border-radius:12px;padding:3px 12px;font-size:11px;font-weight:700}'
+      + '.r{display:flex;margin:4px 0;page-break-inside:avoid}.r.me{justify-content:flex-end}'
+      + '.b{max-width:78%;border-radius:12px;padding:6px 10px 4px}.me .b{background:#dcebff;border-bottom-right-radius:3px}.th .b{background:#f1f2f6;border-bottom-left-radius:3px}'
+      + '.n{font-size:10.5px;font-weight:800;color:#2f5bd6;margin-bottom:1px}.th .n{color:#9a4b00}.t{word-wrap:break-word;overflow-wrap:anywhere;white-space:normal}.tm{font-size:9.5px;color:#778;text-align:right;margin-top:2px}'
+      + '</style></head><body><h1>' + E(title) + '</h1><div class="sub">' + n + ' messages &bull; export: ' + E(new Date().toLocaleString('en-IN')) + '</div>' + body + '</body></html>';
+    try{
+      const f = document.createElement('iframe');
+      f.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;height:600px;border:0;opacity:0';
+      document.body.appendChild(f);
+      const doc = f.contentWindow.document; doc.open(); doc.write(html); doc.close();
+      setTimeout(()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); toast('📄 Print dialog me "Save as PDF" chuno'); }catch(e){ dl(); } }, 500);
+      setTimeout(()=>{ try{ f.remove(); }catch(e){} }, 180000);
+    }catch(e){ dl(); }
+    function dl(){
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'chat-' + chatPeer.name.replace(/\W+/g, '_') + '.html';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=> URL.revokeObjectURL(a.href), 20000);
+      toast('Print nahi khula — HTML file download hui, use browser me khol ke Print > Save as PDF karo.');
+    }
   }
   function toggleBlock(key){
     const s = blockedByMe(); const was = s.has(key);
@@ -10197,4 +10260,47 @@ document.addEventListener('visibilitychange', ()=>{ try{ if(!document.hidden) se
   }
   cxPoll('chat', ()=>{ try{ hook(); }catch(e){} }, 800);
   window.cxTube = { open: openTube, openVideo, close: closeTube, get synced(){ return synced; } };
+})();
+
+
+// ============================================================================
+// CHAT PLUS 31: purane messages — upar scroll karte hi apne aap load (button dabana zaroori nahi)
+// ============================================================================
+(function chatOlderAuto(){
+  let busy = false;
+  function attach(){
+    const box = document.getElementById('chatMsgs');
+    if(!box || box.dataset.cxo) return;
+    box.dataset.cxo = '1';
+    box.addEventListener('scroll', ()=>{
+      if(busy || chatNoMoreOlder || !chatPeer || box.scrollTop > 80 || chatMsgs.size < CHAT_PAGE) return;
+      busy = true;
+      Promise.resolve(chatLoadOlder()).catch(()=>{}).finally(()=> setTimeout(()=>{ busy = false; }, 700));
+    }, { passive: true });
+  }
+  // chat kholte hi peeche se saare purane messages chup-chap load (user ko kuch dabana nahi)
+  let bgPair = '', bgRun = 0;
+  async function bgAll(pair){
+    const my = ++bgRun;
+    for(let w = 0; w < 30 && chatMsgs.size === 0; w++) await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 1200));
+    let guard = 0;
+    while(my === bgRun && chatPeer && chatPeer.pair === pair && !chatNoMoreOlder && guard++ < 200){
+      const ids = chatSortedIds(); if(!ids.length) break;
+      let arr;
+      try{ arr = await window.__fbChatOlder(`${chatBase()}/_chats/${pair}/m`, ids[0], 200); }catch(e){ break; }
+      if(my !== bgRun || !chatPeer || chatPeer.pair !== pair) return;
+      arr.forEach(([id, m])=> chatMsgs.set(id, m));
+      if(arr.length < 200) chatNoMoreOlder = true;
+      chatRenderAll(true);
+      await new Promise(r => setTimeout(r, 250));
+    }
+  }
+  function watch(){
+    const p = (chatView === 'conv' && chatPeer) ? chatPeer.pair : '';
+    if(p === bgPair) return;
+    bgPair = p;
+    if(p) bgAll(p); else bgRun++;
+  }
+  cxPoll('chat', ()=>{ attach(); watch(); }, 1000);
 })();
