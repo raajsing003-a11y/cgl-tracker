@@ -9385,6 +9385,47 @@ document.getElementById('importPresetsInput').addEventListener('change', (e) => 
   window.__stvEnter = function () { try { if (!ov) open(); return true; } catch (e) { return false; } };
   window.__stvOpen = function (v, at) { try { if (!v || !/^[\w-]{11}$/.test(v.id || '')) return false; if (!ov) open(); hAdd({ id: v.id, t: v.t || 'YouTube video', c: v.c || '', cn: v.cn || '', p: Date.now() }); play(v.id, typeof at === 'number' ? at : undefined); return true; } catch (e) { return false; } };
   window.__stvCur = function () { return cur ? { id: cur.id, t: cur.t || '', c: cur.c || '', cn: cur.cn || '' } : null; };
+  /* LOCK-SCREEN controls + AUTO-RESUME (app/tab se bahar jaane par gaana wapas chalu) */
+  (function bgPlay() {
+    let want = false, lastId = '', lastKick = 0, hid = false;
+    const P = function () { try { return yt && yt.getPlayerState ? yt : null; } catch (e) { return null; } };
+    const st = function () { const p = P(); try { return p ? p.getPlayerState() : -1; } catch (e) { return -1; } };
+    const ms = ('mediaSession' in navigator) ? navigator.mediaSession : null;
+    function meta() {
+      if (!ms || !cur || !cur.id || lastId === cur.id) return;
+      lastId = cur.id;
+      try {
+        ms.metadata = new MediaMetadata({ title: cur.t || 'Study Tube', artist: cur.cn || 'YouTube', album: 'Study Tube', artwork: [{ src: 'https://i.ytimg.com/vi/' + cur.id + '/mqdefault.jpg', sizes: '320x180', type: 'image/jpeg' }] });
+      } catch (e) {}
+    }
+    function act(fn) { return function (d) { try { const p = P(); if (p) fn(p, d || {}); } catch (e) {} }; }
+    if (ms) {
+      const set = function (n, f) { try { ms.setActionHandler(n, f); } catch (e) {} };
+      set('play', act(function (p) { want = true; p.playVideo(); }));
+      set('pause', act(function (p) { want = false; p.pauseVideo(); }));
+      set('seekbackward', act(function (p, d) { p.seekTo(Math.max(0, p.getCurrentTime() - (d.seekOffset || 10)), true); }));
+      set('seekforward', act(function (p, d) { p.seekTo(p.getCurrentTime() + (d.seekOffset || 10), true); }));
+      set('seekto', act(function (p, d) { if (typeof d.seekTime === 'number') p.seekTo(d.seekTime, true); }));
+    }
+    function tick() {
+      const p = P(); if (!p || !cur) return;
+      const s = st(), now = Date.now();
+      meta();
+      if (ms) { try { ms.playbackState = s === 1 ? 'playing' : (s === 2 ? 'paused' : 'none'); } catch (e) {} }
+      if (ms && s === 1 && ms.setPositionState) { try { const d = p.getDuration(); if (d > 0) ms.setPositionState({ duration: d, position: Math.min(d, p.getCurrentTime()), playbackRate: 1 }); } catch (e) {} }
+      if (!document.hidden) { if (s === 1) want = true; else if (s === 2 && !hid) want = false; }
+      else if (want && s === 2 && now - lastKick > 3000) { lastKick = now; try { p.playVideo(); } catch (e) {} }
+    }
+    function back() {
+      hid = false;
+      const p = P(); if (!p || !cur) return;
+      if (want && st() !== 1) { try { p.playVideo(); } catch (e) {} }
+    }
+    document.addEventListener('visibilitychange', function () { if (document.hidden) { hid = true; } else { setTimeout(back, 150); setTimeout(back, 1200); } });
+    window.addEventListener('pageshow', function () { setTimeout(back, 200); });
+    window.addEventListener('focus', function () { setTimeout(back, 300); });
+    setInterval(tick, 1000);
+  })();
   function ytReady() {
     if (window.YT && YT.Player) return Promise.resolve();
     if (ytP) return ytP;
