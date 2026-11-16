@@ -135,6 +135,10 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
 <body>
 <div class="hd"><div><small>EXAM TRACKER</small><b>📚 Mock Question Bank</b></div><div style="display:flex;gap:8px"><button class="ic" id="mkb" aria-label="Auto Mock">📝</button><button class="ic" id="th" aria-label="Theme" style="display:none">🌓</button></div></div>
 <div class="main">
+<div class="card" id="extbox" style="margin-bottom:12px">
+  <button class="btn y" id="extdl" type="button" style="width:100%">🧩 Extension download (zip)</button>
+  <div class="m" id="extmsg" style="margin-top:8px;line-height:1.5">Download → unzip → Chrome/Edge me <b>chrome://extensions</b> → <b>Developer mode</b> ON → <b>Load unpacked</b> → unzip kiya folder chuno.</div>
+</div>
 <div class="gd" id="st"></div>
 <div class="ctl"><button class="btn" id="fm">A−</button><span class="m" id="fv">100%</span><button class="btn" id="fp">A+</button><button class="btn" id="tg_ex">💡 Explanation</button><button class="btn" id="tg_pr">🎯 Practice</button><button class="btn" id="mkb2">📝 Auto Mock</button><span class="m" id="tm"></span><span class="m" id="ps"></span></div>
 <details class="card mo"><summary>⚙ Display &amp; Tools</summary><div class="ctl" style="margin:12px 0 0"><button class="btn" id="fr">↺ Size reset</button><label class="m">Text <input type="range" id="fs" min="70" max="200" step="5"></label><label class="m">Explanation <input type="range" id="es" min="70" max="200" step="5"></label><button class="btn" id="tg_cp">📏 Compact</button><button class="btn" id="tg_sh">🔀 Shuffle</button><button class="btn" id="pr_rs" hidden>🔄 Practice reset</button><button class="btn" id="st_rs">🧹 Stats reset</button></div><div class="m" style="margin-top:10px">Shortcuts: <b>E</b> = explanation on/off · Practice mein <b>1-4</b> ya <b>A-D</b> = option chuno</div></details>
@@ -177,11 +181,9 @@ body.cp .qi{padding:10px;margin-bottom:8px}body.cp .op{padding:6px 10px;margin-t
     <label class="btn" for="imp">⬆ Import</label><input type="file" id="imp" accept=".json" hidden>
     <button class="btn" onclick="window.print()">🖨 Print</button>
     <button class="btn" id="exptxt">📝 Export TXT (current list)</button>
-    <a class="btn" id="extdl" href="./questions_analysis_uv.zip" download="questions_analysis_uv.zip" style="text-decoration:none;display:inline-flex;align-items:center">🧩 Extension download (zip)</a>
     <button class="btn" id="dupf">🧬 Repeat questions hatao</button>
     <button class="btn" id="clr" hidden>x</button><button class="btn" id="trb">♻ Deleted questions (0)</button>
   </div>
-  <div class="m" style="margin-top:8px;line-height:1.5">🧩 Extension: zip download karo → unzip karo → Chrome/Edge me <b>chrome://extensions</b> kholo → <b>Developer mode</b> ON → <b>Load unpacked</b> → unzip kiya hua folder chuno. (Naya version aaye to purana hatake dobara load karo.)</div>
   <div class="m" id="sz" style="margin-top:10px"></div><div id="trl" style="margin-top:10px"></div>
 </div>
 </div>
@@ -1204,6 +1206,27 @@ initSync();
     g("fx_r").value="";const b=g("fx_b"),k=+b.value||0;if(b.options[k+1])b.value=String(k+1)};
   g("fx_un").onclick=()=>{let o={};try{o=JSON.parse(localStorage.getItem(BK)||"{}")}catch(e){}const ks=Object.keys(o);if(!ks.length){g("fx_m").textContent="Wapas karne ko kuch nahi";return}
     let n=0;D.forEach(x=>{if(x&&o[x.id]!==undefined){x.tp=o[x.id];n++}});localStorage.removeItem(BK);persist();try{renderTabs();render()}catch(e){}g("fx_m").textContent="↩ "+n+" question ka pichla chapter wapas"};
+})();
+</script>
+<script>
+(function(){
+  var b=document.getElementById('extdl'), msg=document.getElementById('extmsg'), URLZ='./questions_analysis_uv.zip', NAME='questions_analysis_uv.zip';
+  function say(t,bad){ msg.innerHTML=t; msg.style.color=bad?'#e5484d':''; }
+  function save(blob){ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=NAME; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(u)},60000); }
+  b.addEventListener('click', async function(){
+    b.disabled=true; var old=b.textContent; b.textContent='⏳ Download ho raha hai…';
+    try{
+      var r=await fetch(URLZ+'?t='+Date.now(),{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var blob=await r.blob(), h=new Uint8Array(await blob.slice(0,2).arrayBuffer());
+      if(h[0]!==0x50||h[1]!==0x4B) throw new Error('zip nahi mili (server file nahi de raha)');
+      save(new Blob([blob],{type:'application/zip'}));
+      say('✅ '+NAME+' ('+Math.round(blob.size/1024)+' KB) download ho gayi. Ab unzip karke <b>chrome://extensions</b> → Developer mode → Load unpacked.');
+    }catch(e){
+      say('❌ Download fail: '+(e&&e.message||e)+'. Check karo ki <b>tools/questions_analysis_uv.zip</b> deploy/upload ho chuki hai.',true);
+    }
+    b.disabled=false; b.textContent=old;
+  });
 })();
 </script>
 </body>
