@@ -984,6 +984,7 @@ function chatInjectUI(){
 //    Call tabhi bajti hai jab dusre ka app khula (ya background me zinda) ho.
 //    Mobile data par kuch networks ko TURN server chahiye — neeche CALL_TURN me daalo.
 const CHAT_FILE_MAX = 1.5 * 1024 * 1024;
+const CHAT_DOC_MAX = 6 * 1024 * 1024;   // zip / pdf / doc etc. (base64 ~8 MB, Firebase RTDB 10 MB write limit ke andar)
 const CHAT_VOICE_MAX_S = 120;
 const CALL_RING_MS = 45000;
 // Optional TURN (agar kisi network par call connect na ho): [{urls:'turn:host:3478', username:'..', credential:'..'}]
@@ -1152,9 +1153,10 @@ const CALL_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.
   }
   async function sendFile(file){
     if(file.type.startsWith('image/')) return sendImage(file);
-    if(file.size > CHAT_FILE_MAX){ toast('File bahut badi hai (max ' + fmtSize(CHAT_FILE_MAX) + '). Chhoti file ya Drive link bhejo.'); return; }
+    const lim = file.type.startsWith('video/') ? CHAT_FILE_MAX : CHAT_DOC_MAX;   // video chhota hi, zip/doc 6 MB tak
+    if(file.size > lim){ toast('File bahut badi hai (max ' + fmtSize(lim) + '). Chhoti file ya Drive link bhejo.'); return; }
     try{
-      toast('Bhej rahe hain…');
+      toast(file.size > 1024 * 1024 ? 'Bhej rahe hain… (' + fmtSize(file.size) + ', thoda time lagega)' : 'Bhej rahe hain…');
       const data = await readAsDataURL(file);
       const isVid = file.type.startsWith('video/');
       await xSend({ k: isVid ? 'v' : 'f', a: { n: file.name || 'file', s: file.size, mt: file.type || 'application/octet-stream' } }, data, (isVid ? '🎬 ' : '📄 ') + (file.name || 'File'));
